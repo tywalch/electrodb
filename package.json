@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tywalch/stratify.git"
+    "url": "git+https://github.com/tywalch/electrodb.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/tywalch/electro/issues"
+    "url": "https://github.com/tywalch/electrodb/issues"
   },
-  "homepage": "https://github.com/tywalch/electro#readme",
+  "homepage": "https://github.com/tywalch/electrodb#readme",
   "devDependencies": {
     "aws-sdk": "^2.630.0",
     "chai": "^4.2.0",
