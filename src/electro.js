@@ -37,7 +37,12 @@ const queryTypes = {
 let clauses = {
 	index: {
 		action: (electro, state, ...args) => {
-			return electro._fulfillPk(state, ...args);
+			if (typeof args[0] === "object") {
+				let {pk} = electro._orderedFacetsFromObject(args[0], electro.index);
+				return electro._fulfillPk(state, ...pk);
+			} else {
+				return electro._fulfillPk(state, ...args);
+			}
 		},
 		children: [
 			"get",
@@ -229,7 +234,7 @@ class Entity {
 		}
 	}
 
-	create(attributes = {}) {
+	put(attributes = {}) {
 		let keys = this._makeKeysFromAttributes(attributes);
 		let item = {
 			...attributes,
