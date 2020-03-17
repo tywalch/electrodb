@@ -79,14 +79,13 @@ class Entity {
 			pk = {},
 			sks = [],
 			data = {},
-			options = {},
 		} = chainResults;
 
 		switch (method) {
 			case MethodTypes.get:
-				return this._makeGetParams(pk, sks, options);
+				return this._makeGetParams(pk, ...sks);
 			case MethodTypes.delete:
-				break;
+				return this._makeDeleteParams(pk, ...sks);
 			case MethodTypes.put:
 				break;
 			case MethodTypes.update:
@@ -128,22 +127,6 @@ class Entity {
 		}
 	}
 
-	_makeGetParams(pk, sk) {
-		let params = {
-			TableName: this.model.table,
-			Key: this._makeParameterKey(pk, sk),
-		};
-		return params;
-	}
-
-	_makeDeleteParams(pk, sk) {
-		let params = {
-			TableName: this.model.table,
-			Key: this._makeParameterKey(pk, sk),
-		};
-		return params;
-	}
-
 	_makeKeyPrefixes(service = "", entity = "", version = "1") {
 		return {
 			pk: `$${service}_${version}`,
@@ -179,19 +162,6 @@ class Entity {
 			} else {
 				break;
 			}
-		}
-		return key;
-	}
-
-	_makeParameterKey(index, pk, sk) {
-		let name = this.model.translations.indexes.fromIndexToAccessPattern[index];
-		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
-		let accessPattern = this.model.indexes[name];
-		let key = {
-			[accessPattern.pk.field]: pk,
-		};
-		if (hasSortKey && sk !== undefined) {
-			key[accessPattern.sk.field] = sk;
 		}
 		return key;
 	}
