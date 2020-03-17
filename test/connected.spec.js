@@ -247,6 +247,57 @@ describe("database interactions", async () => {
 		// console.log("NO RESULTS", noResults);
 	}).timeout(20000);
 
+	it("Should perform an entire record crud lifecycle with root method syntax", async () => {
+		let electro = new Entity(schema, DocumentClient);
+		let contact1 = makeContact();
+		let keys = {
+			userId: contact1.userId,
+			contactId: contact1.contactId,
+			emailAddress: contact1.emailAddress
+		};
+		let data = {
+			...contact1.data,
+			...keys
+		};
+		await electro.put(data).go();
+
+		await electro.update(keys)
+			.set({
+				requiresReminding: false,
+				hasChildren: false,
+				priority: "high",
+			})
+			.go();
+
+		let getResults = await electro.get(keys).go();
+
+		expect(getResults).to.be.deep.equal({
+			userId: contact1.userId,
+			contactId: contact1.contactId,
+			emailAddress: contact1.emailAddress,
+			hasChildren: false,
+			priority: "high",
+			name: "blah",
+			isFreeWeekEnds: true,
+			note: "blah",
+			contactFrequency: 50,
+			requiresReminding: false,
+			category: "blah",
+			isFreeWeekdays: true,
+			notRequiredButDefaults: "DEFAULT_VALUE",
+			description: "blah",
+			type: "message",
+		});
+
+		let deleteResults = await electro.delete(keys).go();
+		expect(deleteResults).to.be.an("object").that.is.empty;
+
+		let noResults = await electro.get(keys).go();
+
+		expect(noResults).to.be.an("object").that.is.empty;
+		// console.log("NO RESULTS", noResults);
+	}).timeout(20000);
+
 	it("Should perform an entire record crud lifecycle", async () => {
 		let electro = new Entity(schema, DocumentClient);
 		let user = uuidv4();

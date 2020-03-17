@@ -119,66 +119,66 @@ describe("Entity", () => {
 		let MallStores = new Entity(schema);
 		// console.log(JSON.stringify(MallStores.schema));
 	});
-	describe("Making keys", () => {
-		let MallStores = new Entity(schema);
-		let mall = "EastPointe";
-		let store = "LatteLarrys";
-		let building = "BuildingA";
-		let id = uuidV4();
-		let category = "coffee";
-		let unit = "B54";
-		let leaseEnd = "2020-01-20";
-		it("Should return the approprate pk and sk for a given index", () => {
-			let index = schema.indexes.categories.index;
-			let { pk, sk } = MallStores.makeIndexKeys(
-				index,
-				{ mall },
-				{ category, building, unit, store },
-			);
-			expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
-			expect(sk)
-				.to.be.an("array")
-				.and.have.length(1)
-				.and.include(
-					"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys",
-				);
-		});
-		it("Should stop making a key early when there is a gap in the supplied facets", () => {
-			let index = schema.indexes.categories.index;
-			let { pk, sk } = MallStores.makeIndexKeys(
-				index,
-				{ mall },
-				{ category, building, store },
-			);
-			expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
-			expect(sk)
-				.to.be.an("array")
-				.and.have.length(1)
-				.and.include("$MallStores#category_coffee#building_BuildingA#unit_");
-		});
-		it("Should return the approprate pk and multiple sks when given multiple", () => {
-			let index = schema.indexes.shops.index;
-			let { pk, sk } = MallStores.makeIndexKeys(
-				index,
-				{ store },
-				{ mall, building: "building1" },
-				{ mall, building: "building5" },
-			);
-			expect(pk).to.equal("$MallStoreDirectory_1#store_LatteLarrys");
-			expect(sk)
-				.to.be.an("array")
-				.and.have.length(2)
-				.and.to.have.members([
-					"$MallStores#mall_EastPointe#building_building1#unit_",
-					"$MallStores#mall_EastPointe#building_building5#unit_",
-				]);
-		});
-		it("Should throw on bad index", () => {
-			expect(() => MallStores.makeIndexKeys("bad_index")).to.throw(
-				"Invalid index: bad_index",
-			);
-		});
-	});
+	// describe("Making keys", () => {
+	// 	let MallStores = new Entity(schema);
+	// 	let mall = "EastPointe";
+	// 	let store = "LatteLarrys";
+	// 	let building = "BuildingA";
+	// 	let id = uuidV4();
+	// 	let category = "coffee";
+	// 	let unit = "B54";
+	// 	let leaseEnd = "2020-01-20";
+	// 	it("Should return the approprate pk and sk for a given index", () => {
+	// 		let index = schema.indexes.categories.index;
+	// 		let { pk, sk } = MallStores.makeIndexKeys(
+	// 			index,
+	// 			{ mall },
+	// 			{ category, building, unit, store },
+	// 		);
+	// 		expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
+	// 		expect(sk)
+	// 			.to.be.an("array")
+	// 			.and.have.length(1)
+	// 			.and.include(
+	// 				"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys",
+	// 			);
+	// 	});
+	// 	it("Should stop making a key early when there is a gap in the supplied facets", () => {
+	// 		let index = schema.indexes.categories.index;
+	// 		let { pk, sk } = MallStores.makeIndexKeys(
+	// 			index,
+	// 			{ mall },
+	// 			{ category, building, store },
+	// 		);
+	// 		expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
+	// 		expect(sk)
+	// 			.to.be.an("array")
+	// 			.and.have.length(1)
+	// 			.and.include("$MallStores#category_coffee#building_BuildingA#unit_");
+	// 	});
+	// 	it("Should return the approprate pk and multiple sks when given multiple", () => {
+	// 		let index = schema.indexes.shops.index;
+	// 		let { pk, sk } = MallStores.makeIndexKeys(
+	// 			index,
+	// 			{ store },
+	// 			{ mall, building: "building1" },
+	// 			{ mall, building: "building5" },
+	// 		);
+	// 		expect(pk).to.equal("$MallStoreDirectory_1#store_LatteLarrys");
+	// 		expect(sk)
+	// 			.to.be.an("array")
+	// 			.and.have.length(2)
+	// 			.and.to.have.members([
+	// 				"$MallStores#mall_EastPointe#building_building1#unit_",
+	// 				"$MallStores#mall_EastPointe#building_building5#unit_",
+	// 			]);
+	// 	});
+	// 	it("Should throw on bad index", () => {
+	// 		expect(() => MallStores.makeIndexKeys("bad_index")).to.throw(
+	// 			"Invalid index: bad_index",
+	// 		);
+	// 	});
+	// });
 	describe("Identifying indexes by facets", () => {
 		let MallStores = new Entity(schema);
 		let mall = "123";

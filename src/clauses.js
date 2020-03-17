@@ -236,14 +236,77 @@ class QueryChain {
 		return [sk1, sk2];
 	}
 
-	_makeParams(options = {}) {
-		let index = this.index;
-		let method = this.query.method;
-		let type = this.query.type;
-		let sks = this._consolidateKeys(this.query.keys.sk);
+	_makeParameterKey(index, pk, sk) {
+		let name = this.electro.model.translations.indexes.fromIndexToAccessPattern[
+			index
+		];
+		let hasSortKey = this.electro.model.lookup.indexHasSortKeys[index];
+		let accessPattern = this.electro.model.indexes[name];
+		let key = {
+			[accessPattern.pk.field]: pk,
+		};
+		if (hasSortKey && sk !== undefined) {
+			key[accessPattern.sk.field] = sk;
+		}
+		return key;
 	}
 
-	_addOptions() {}
+	_makeGetParams(table, pk, sk) {
+		let params = {
+			TableName: table,
+			Key: this._makeParameterKey(pk, sk),
+		};
+		return params;
+	}
+
+	_makeDeleteParams(table, pk, sk) {
+		let params = {
+			TableName: table,
+			Key: this._makeParameterKey(pk, sk),
+		};
+		return params;
+	}
+
+	_makeParams(options = {}) {
+		let table = this.electro.model.table;
+		let pk = this.query.keys.pk;
+		let sks = this._consolidateKeys(this.query.keys.sk);
+
+		switch (this.query.method) {
+			case MethodTypes.get:
+				return this._makeGetParams(table, pk, ...sks);
+			case MethodTypes.delete:
+				return this._makeDeleteParams(table, pk, ...sks);
+			case MethodTypes.put:
+				break;
+			case MethodTypes.update:
+				break;
+			case MethodTypes.scan:
+			case MethodTypes.query:
+				return this._queryParams(pk, ...sks);
+			default:
+				throw new Error(`Invalid method: ${method}`);
+		}
+	}
+
+	_queryParams(pk, ...sks) {
+		switch (this.query.type) {
+			case QueryTypes.begins:
+				break;
+			case QueryTypes.and:
+				break;
+			case QueryTypes.gte:
+				break;
+			case QueryTypes.gt:
+				break;
+			case QueryTypes.lte:
+				break;
+			case QueryTypes.lt:
+				break;
+			default:
+				throw new Error(`Invalid method: ${method}`);
+		}
+	}
 
 	_setQueryFacet(type, facets) {
 		let query = QueryTypes[type];
