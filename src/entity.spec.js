@@ -3,6 +3,10 @@ const { expect } = require("chai");
 const moment = require("moment");
 const uuidV4 = require("uuid/v4");
 
+/*
+	todo: add check for untilized SKs to then be converted to filters  
+*/
+
 let schema = {
 	service: "MallStoreDirectory",
 	entity: "MallStores",
@@ -210,41 +214,211 @@ describe("Entity", () => {
 			let unit = "B54";
 			let leaseEnd = "2020-01-20";
 			let rent = "0.00";
-			buildingOne = "BuildingA";
-			buildingTwo = "BuildingF";
+			let buildingOne = "BuildingA";
+			let buildingTwo = "BuildingF";
+			let unitOne = "A1";
+			let unitTwo = "F6";
 			let get = MallStores.get({id}).params();
 			expect(get).to.be.deep.equal({
 				TableName: 'StoreDirectory',
-				Key: { pk: [ id ] }
+				Key: { pk: `$MallStoreDirectory_1#id_${id}` }
 			});
 
 			let del = MallStores.delete({id}).params();
 			expect(del).to.be.deep.equal({
 				TableName: 'StoreDirectory',
-				Key: { pk: [ id ] }
+				Key: { pk: `$MallStoreDirectory_1#id_${id}` }
 			});
 
 			let update = MallStores.update({id}).set({mall, store, building, category, unit, rent, leaseEnd}).params();
-			console.log("UPDATE", JSON.stringify(update));
-			// expect(del).to.be.deep.equal({
-			// 	TableName: 'StoreDirectory',
-			// 	Key: { pk: [ id ] }
-			// });
-			// expect(del).to.have.keys("go", "params");
-			// let update = MallStores.update({id}).set({rent, category});
-			// expect(update).to.have.keys("go", "params", "set");
-			// let put = MallStores.put({store, mall, building, rent, category, leaseEnd, unit});
-			// expect(put).to.have.keys("go", "params");
-			// let queryUnitsBetween = MallStores.query.units({mall}).between({building: buildingOne}, {building: buildingTwo});
-			// expect(queryUnitsBetween).to.have.keys("go", "params");
-			// let queryUnitGt = MallStores.query.units({mall}).gt({building});
-			// expect(queryUnitGt).to.have.keys("go", "params");
-			// let queryUnitsGte = MallStores.query.units({mall}).gte({building});
-			// expect(queryUnitsGte).to.have.keys("go", "params");
-			// let queryUnitsLte = MallStores.query.units({mall}).lte({building});
-			// expect(queryUnitsLte).to.have.keys("go", "params");
-			// let queryUnitsLt = MallStores.query.units({mall}).lt({building});
-			// expect(queryUnitsLt).to.have.keys("go", "params");
+			expect(update).to.deep.equal({
+				UpdateExpression: 'SET #mall = :mall, #store = :store, #building = :building, #unit = :unit, #category = :category, #leaseEnd = :leaseEnd, #rent = :rent, #pk = :pk, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk, #gsi2pk = :gsi2pk, #gsi2sk = :gsi2sk, #gsi3pk = :gsi3pk, #gsi3sk = :gsi3sk, #gsi4pk = :gsi4pk, #gsi4sk = :gsi4sk',
+				ExpressionAttributeNames: {
+					'#mall': 'mall',
+					'#store': 'store',
+					'#building': 'building',
+					'#unit': 'unit',
+					'#category': 'category',
+					'#leaseEnd': 'leaseEnd',
+					'#rent': 'rent',
+					'#pk': 'pk',
+					'#gsi1pk': 'gsi1pk',
+					'#gsi1sk': 'gsi1sk',
+					'#gsi2pk': 'gsi2pk',
+					'#gsi2sk': 'gsi2sk',
+					'#gsi3pk': 'gsi3pk',
+					'#gsi3sk': 'gsi3sk',
+					'#gsi4pk': 'gsi4pk',
+					'#gsi4sk': 'gsi4sk'
+				},
+				ExpressionAttributeValues: {
+					':mall': mall,
+					':store': store,
+					':building': building,
+					':unit': unit,
+					':category': category,
+					':leaseEnd': leaseEnd,
+					':rent': rent,
+					':pk': `$MallStoreDirectory_1#id_${id}`,
+					':gsi1pk': `$MallStoreDirectory_1#mall_${mall}`,
+					':gsi1sk': `$MallStores#building_${building}#unit_${unit}#store_${store}`,
+					':gsi2pk': `$MallStoreDirectory_1#mall_${mall}`,
+					':gsi2sk': `$MallStores#leaseEnd_${leaseEnd}#store_${store}#building_${building}#unit_${unit}`,
+					':gsi3pk': `$MallStoreDirectory_1#mall_${mall}`,
+					':gsi3sk': `$MallStores#category_${category}#building_${building}#unit_${unit}#store_${store}`,
+					':gsi4pk': `$MallStoreDirectory_1#store_${store}`,
+					':gsi4sk': `$MallStores#mall_${mall}#building_${building}#unit_${unit}`
+				},
+				TableName: 'StoreDirectory',
+				Key: {
+					pk: `$MallStoreDirectory_1#id_${id}`
+				}
+			});
+			
+			let put = MallStores.put({store, mall, building, rent, category, leaseEnd, unit}).params();
+			expect(put).to.deep.equal({
+				Item: {
+				  id: put.Item.id,
+				  mall,
+				  store,
+				  building,
+				  unit,
+				  category,
+				  leaseEnd,
+				  rent,
+				  pk: `$MallStoreDirectory_1#id_${put.Item.id}`,
+				  gsi1pk: `$MallStoreDirectory_1#mall_${mall}`,
+				  gsi1sk: `$MallStores#building_${building}#unit_${unit}#store_${store}`,
+				  gsi2pk: `$MallStoreDirectory_1#mall_${mall}`,
+				  gsi2sk: `$MallStores#leaseEnd_2020-01-20#store_${store}#building_${building}#unit_${unit}`,
+				  gsi3pk: `$MallStoreDirectory_1#mall_${mall}`,
+				  gsi3sk: `$MallStores#category_${category}#building_${building}#unit_${unit}#store_${store}`,
+				  gsi4pk: `$MallStoreDirectory_1#store_${store}`,
+				  gsi4sk: `$MallStores#mall_${mall}#building_${building}#unit_${unit}`,
+				},
+				TableName: 'StoreDirectory'
+			});
+			let beingsWithOne = MallStores.query.units({mall, building}).params();
+			expect(beingsWithOne).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+				  ':pk': `$MallStoreDirectory_1#mall_${mall}`,
+				  ':sk1': `$MallStores#building_${building}#unit_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)'
+			});
+			let beingsWithTwo = MallStores.query.units({mall, building, store}).params();
+			expect(beingsWithTwo).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+				  ':pk': `$MallStoreDirectory_1#mall_${mall}`,
+				  ':sk1': `$MallStores#building_${building}#unit_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)'
+			});
+			let beingsWithThree = MallStores.query.units({mall, building, unit}).params();
+			expect(beingsWithThree).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+				  ':pk': `$MallStoreDirectory_1#mall_${mall}`,
+				  ':sk1': `$MallStores#building_${building}#unit_${unit}#store_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)'
+			});
+			
+			let queryUnitsBetweenOne = MallStores.query.units({mall}).between({building: buildingOne, unit}, {building: buildingTwo, unit}).params();
+			expect(queryUnitsBetweenOne).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk', '#sk2': 'gsi1sk' },
+				ExpressionAttributeValues: {
+				  ':pk': `$MallStoreDirectory_1#mall_${mall}`,
+				  ':sk1': `$MallStores#building_${buildingOne}#unit_B54#store_`,
+				  ':sk2': `$MallStores#building_${buildingTwo}#unit_B54#store_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+			});
+
+			let queryUnitsBetweenTwo = MallStores.query.units({mall, building}).between({unit: unitOne}, {unit: unitTwo}).params();
+			expect(queryUnitsBetweenTwo).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk', '#sk2': 'gsi1sk' },
+				ExpressionAttributeValues: {
+				  ':pk': `$MallStoreDirectory_1#mall_${mall}`,
+				  ':sk1': `$MallStores#building_${building}#unit_${unitOne}#store_`,
+				  ':sk2': `$MallStores#building_${building}#unit_${unitTwo}#store_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+			});
+
+			let queryUnitsBetweenThree = MallStores.query.units({mall, building}).between({store}, {store}).params();
+			expect(queryUnitsBetweenThree).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk', '#sk2': 'gsi1sk' },
+				ExpressionAttributeValues: {
+				  ':pk': `$MallStoreDirectory_1#mall_${mall}`,
+				  ':sk1': `$MallStores#building_${building}#unit_`,
+				  ':sk2': `$MallStores#building_${building}#unit_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+			});
+
+			let queryUnitGt = MallStores.query.units({mall}).gt({building}).params();
+			
+			expect(queryUnitGt).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': `$MallStoreDirectory_1#mall_${mall}`,
+					':sk1': `$MallStores#building_${building}#unit_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+			});
+			
+			let queryUnitsGte = MallStores.query.units({mall}).gte({building}).params();
+			expect(queryUnitsGte).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': `$MallStoreDirectory_1#mall_${mall}`,
+					':sk1': `$MallStores#building_${building}#unit_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+			});
+
+			let queryUnitsLte = MallStores.query.units({mall}).lte({building}).params();
+			expect(queryUnitsLte).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': `$MallStoreDirectory_1#mall_${mall}`,
+					':sk1': `$MallStores#building_${building}#unit_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+			});
+
+			let queryUnitsLt = MallStores.query.units({mall}).lt({building}).params();
+			expect(queryUnitsLt).to.deep.equal({
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': `$MallStoreDirectory_1#mall_${mall}`,
+					':sk1': `$MallStores#building_${building}#unit_`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				TableName: 'StoreDirectory',
+				KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+			});
 		})
 	})
 	describe("Making keys", () => {
@@ -410,9 +584,9 @@ describe("Entity", () => {
 				{ store, mall, building, unit },
 				facets.sk,
 			);
-			expect(allMatches).to.be.deep.equal([mall, building, unit, store]);
-			expect(pkMatches).to.be.deep.equal([mall]);
-			expect(skMatches).to.be.deep.equal([building, unit, store]);
+			expect(allMatches).to.be.deep.equal({mall, building, unit, store});
+			expect(pkMatches).to.be.deep.equal({mall});
+			expect(skMatches).to.be.deep.equal({building, unit, store});
 		});
 		it("Should find missing properties from supplied keys", () => {
 			let index = schema.indexes.units.index;

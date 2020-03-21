@@ -23,8 +23,16 @@ const MethodTypes = {
 	delete: "delete",
 };
 
+const Comparisons = {
+	gte: ">=",
+	gt: ">",
+	lte: "<=",
+	lt: "<",
+};
+
 module.exports = {
 	KeyTypes,
 	QueryTypes,
 	MethodTypes,
+	Comparisons,
 };
