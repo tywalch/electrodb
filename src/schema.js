@@ -27,7 +27,7 @@ class Attribute {
 			);
 		} else if (cast === "string") {
 			return val => {
-				if (typeof val === undefined) {
+				if (val === undefined) {
 					throw new Error(
 						`Attribute ${name} is undefined and cannot be cast to type ${cast}`,
 					);
@@ -39,7 +39,7 @@ class Attribute {
 			};
 		} else if (cast === "number") {
 			return val => {
-				if (typeof val === undefined) {
+				if (val === undefined) {
 					throw new Error(
 						`Attribute ${name} is undefined and cannot be cast to type ${cast}`,
 					);
@@ -74,7 +74,7 @@ class Attribute {
 				return [isValid, reason];
 			};
 		} else {
-			val => [true, ""];
+			return val => [true, ""];
 		}
 	}
 
@@ -106,8 +106,8 @@ class Attribute {
 	}
 
 	_isType(value) {
-		if (val === undefined) {
-			return [this.required, this.required ? "" : "Value is required"];
+		if (value === undefined) {
+			return [!this.required, this.required ? "Value is required" : ""];
 		} else if (this.type === "enum") {
 			let isIncluded = this.enumArray.includes(value);
 			let reason = isIncluded
@@ -131,7 +131,7 @@ class Attribute {
 		try {
 			let [isTyped, typeError] = this._isType(value);
 			let [isValid, validationError] = this.validate(value);
-			let reason = [typeError, validationError].join(", ");
+			let reason = [typeError, validationError].filter(Boolean).join(", ");
 			return [isTyped && isValid, reason];
 		} catch (err) {
 			return [false, err.message];
@@ -140,12 +140,17 @@ class Attribute {
 
 	val(value) {
 		value = this.cast(value);
-		if (typeof value === undefined) {
+		if (value === undefined) {
 			value = this.default();
 		}
+		return value;
+	}
+
+	getValidate(value) {
+		value = this.val(value);
 		let [isValid, validationError] = this.isValid(value);
 		if (!isValid) {
-			throw new Error(`Invalid attribute ${this.name}: ${validationError}`);
+			throw new Error(`Invalid value for attribute "${this.name}": ${validationError}.`);
 		}
 		return value;
 	}
@@ -160,6 +165,8 @@ class Schema {
 		this.translationForTable = schema.translationForTable;
 		this.translationForRetrieval = schema.translationForRetrieval;
 	}
+
+	_validateProperties() {}
 
 	_normalizeAttributes(attributes = {}, facets = {}) {
 		let invalidProperties = [];
@@ -177,8 +184,8 @@ class Schema {
 			if (attribute.attr && facets.fields.includes(attribute.attr)) {
 				continue;
 			}
-			let isPk = !!facets.byType[KeyTypes.pk].find(
-				facet => facet.name === name,
+			let isPk = !!facets.byIndex[""].pk.find(
+				facet => facet === name
 			);
 			let definition = {
 				name,
@@ -189,6 +196,7 @@ class Schema {
 				validate: attribute.validate,
 				readOnly: !!attribute.readOnly || isPk,
 				indexes: facets.byAttr[name] || [],
+				type: attribute.type,
 			};
 			if (usedAttrs[definition.attr] || usedAttrs[name]) {
 				invalidProperties.push({
@@ -222,7 +230,54 @@ class Schema {
 		}
 	}
 
-	_validateProperties(properties) {}
+	getValidate(payload = {}) {
+		let record = {};
+		for (let [name, value] of Object.entries(payload)) {
+			record[name] = this.attributes[name].getValidate(value);
+		}
+		return record;
+	}
+
+	translateToFields(payload = {}) {
+		let record = {};
+		for (let [name, value] of Object.entries(payload)) {
+			let field = this.translationForTable[name];
+			record[field] = value;
+		}
+		return record;
+	}
+
+	translateToAttributes(payload = {}) {
+		let record = {};
+		for (let [name, value] of Object.entries(payload)) {
+			let field = this.translationForRetrieval[name];
+			record[field] = value;
+		}
+		return record;
+	}
+
+	checkCreate(payload = {}) {
+		let record = {};
+		for (let attribute of Object.values(this.attributes)) {
+			let value = payload[attribute.name];
+			record[attribute.field] = attribute.getValidate(value)
+		}
+		return record;
+	}
+
+	checkUpdate(payload = {}) {
+		let record = {};
+		for (let attribute of Object.values(this.attributes)) {
+			let value = payload[attribute.name];
+			if (value === undefined) continue;
+			if (attribute.readOnly) {
+				throw new Error(`Attribute ${attribute.name} is Read-Only and cannot be updated`);
+			} else {
+				record[attribute.field] = attribute.getValidate(value)
+			}
+		}
+		return record;
+	}
 }
 
 module.exports = {

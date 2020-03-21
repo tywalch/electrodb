@@ -34,7 +34,7 @@ const queryTypes = {
 
 let clauses = {
 	index: {
-		action(cproxy, state = {}, facets = {}) {
+		action(entity, state = {}, facets = {}) {
 			// todo: maybe all key info is passed on the subsequent query identifiers?
 			// todo: look for article/list of all dynamodb query limitations
 			return state;
@@ -42,47 +42,47 @@ let clauses = {
 		children: ["get", "delete", "update", "query"],
 	},
 	get: {
-		action(cproxy, state = {}, facets = {}) {
-			state.query.pk = cproxy._expectFacets(facets, cproxy.facets.pk);
-			cproxy._setQueryFacet(QueryTypes.eq, facets);
+		action(entity, state = {}, facets = {}) {
+			state.query.pk = entity._expectFacets(facets, entity.facets.pk);
+			entity._setQueryFacet(QueryTypes.eq, facets);
 			state.query.method = MethodTypes.get;
 			return state;
 		},
 		children: ["params", "go"],
 	},
 	delete: {
-		action(cproxy, state = {}, facets = {}) {
-			state.query.pk = cproxy._expectFacets(facets, cproxy.facets.pk);
-			cproxy._setQueryFacet(QueryTypes.eq, facets);
+		action(entity, state = {}, facets = {}) {
+			state.query.pk = entity._expectFacets(facets, entity.facets.pk);
+			entity._setQueryFacet(QueryTypes.eq, facets);
 			state.query.method = MethodTypes.delete;
 			return state;
 		},
 		children: ["params", "go"],
 	},
 	put: {
-		action(cproxy, state = {}, payload = {}) {
-			state.query.pk = cproxy._expectFacets(payload, cproxy.facets.pk);
-			cproxy._setQueryFacet(QueryTypes.eq, payload);
+		action(entity, state = {}, payload = {}) {
+			state.query.pk = entity._expectFacets(payload, entity.facets.pk);
+			entity._setQueryFacet(QueryTypes.eq, payload);
 			state.query.method = MethodTypes.put;
-			cproxy.query.put.data = Object.assign({}, payload);
+			entity.query.put.data = Object.assign({}, payload);
 			return state;
 		},
 		children: ["params", "go"],
 	},
 	update: {
-		action(cproxy, state = {}, facets = {}) {
-			state.query.pk = cproxy._expectFacets(facets, cproxy.facets.pk);
-			cproxy._setQueryFacet(QueryTypes.eq, facets);
+		action(entity, state = {}, facets = {}) {
+			state.query.pk = entity._expectFacets(facets, entity.facets.pk);
+			entity._setQueryFacet(QueryTypes.eq, facets);
 			state.query.method = MethodTypes.update;
 			return state;
 		},
 		children: updateChildren,
 	},
 	set: {
-		action(cproxy, state = {}, data) {
-			cproxy.query.update.set = Object.assign(
+		action(entity, state = {}, data) {
+			entity.query.update.set = Object.assign(
 				{},
-				cproxy.query.update.set,
+				entity.query.update.set,
 				data,
 			);
 			return state;
@@ -90,73 +90,81 @@ let clauses = {
 		children: updateChildren,
 	},
 	query: {
-		action(cproxy, state = {}, facets = {}) {
-			cproxy._expectFacets(facets, Object.keys(facets), `"query" facets`);
-			cproxy._setQueryFacet(QueryTypes.begins, facets);
+		action(entity, state = {}, facets = {}) {
+			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
+			entity._setQueryFacet(QueryTypes.begins, facets);
 			state.query.method = MethodTypes.query;
 		},
 		children: ["between", "gte", "gt", "lte", "lt"],
 	},
 	between: {
-		action(cproxy, state = {}, facets = {}) {
-			cproxy._expectFacets(facets, Object.keys(facets), `"between" facets`);
-			cproxy._setQueryFacet(QueryTypes.between, facets);
+		action(entity, state = {}, facets = {}) {
+			entity._expectFacets(facets, Object.keys(facets), `"between" facets`);
+			entity._setQueryFacet(QueryTypes.between, facets);
 			return state;
 		},
 		children: ["and"],
 	},
 	and: {
-		action(cproxy, state = {}, facets = {}) {
-			cproxy._expectFacets(facets, Object.keys(facets), `"and" facets`);
-			cproxy._setQueryFacet(QueryTypes.and, facets);
+		action(entity, state = {}, facets = {}) {
+			entity._expectFacets(facets, Object.keys(facets), `"and" facets`);
+			entity._setQueryFacet(QueryTypes.and, facets);
 			return state;
 		},
 		children: ["go", "params"],
 	},
 	gt: {
-		action(cproxy, state = {}, facets = {}) {
-			cproxy._expectFacets(facets, Object.keys(facets), `"gt" facets`);
-			cproxy._setQueryFacet(QueryTypes.gt, facets);
+		action(entity, state = {}, facets = {}) {
+			entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
+			entity._setQueryFacet(QueryTypes.gt, facets);
 			return state;
 		},
 		children: queryChildren,
 	},
 	gte: {
-		action(cproxy, state = {}, facets = {}) {
-			cproxy._expectFacets(facets, Object.keys(facets), `"gte" facets`);
-			cproxy._setQueryFacet(QueryTypes.gte, facets);
+		action(entity, state = {}, facets = {}) {
+			entity._expectFacets(facets, Object.keys(facets), `"gte" facets`);
+			entity._setQueryFacet(QueryTypes.gte, facets);
 			return state;
 		},
 		children: queryChildren,
 	},
 	lt: {
-		action(cproxy, state = {}, facets = {}) {
-			cproxy._expectFacets(facets, Object.keys(facets), `"lt" facets`);
-			cproxy._setQueryFacet(QueryTypes.lt, facets);
+		action(entity, state = {}, facets = {}) {
+			entity._expectFacets(facets, Object.keys(facets), `"lt" facets`);
+			entity._setQueryFacet(QueryTypes.lt, facets);
 			return state;
 		},
 		children: queryChildren,
 	},
 	lte: {
-		action(cproxy, state = {}, facets = {}) {
-			cproxy._expectFacets(facets, Object.keys(facets), `"lte" facets`);
-			cproxy._setQueryFacet(QueryTypes.lte, facets);
+		action(entity, state = {}, facets = {}) {
+			entity._expectFacets(facets, Object.keys(facets), `"lte" facets`);
+			entity._setQueryFacet(QueryTypes.lte, facets);
 			return state;
 		},
 		children: queryChildren,
 	},
 	params: {
-		action(cproxy, state = {}, options) {},
+		action(entity, state = {}, options) {
+			console.log("PARAMSzz");
+			if (state.query.method === MethodTypes.query) {
+				return entity._queryParams(state, options);
+			} else {
+				return entity._params(state, options);
+			}
+		},
 		children: [],
 	},
 	go: {
-		action(cproxy, state = {}, options) {
+		action(entity, state = {}, options) {
 			state["go"] = true;
 			return state;
 		},
 		children: [],
 	},
 };
+
 
 class QueryChain {
 	constructor(electro, clauses) {
