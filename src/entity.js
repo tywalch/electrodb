@@ -1,47 +1,7 @@
 "use strict";
 const { Schema, Attribute } = require("./schema");
-const { KeyTypes, QueryTypes, MethodTypes } = require("./types");
-// const { clauses } = require("./clauses");
+const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
 
-const comparisons = {
-	gte: ">=",
-	gt: ">",
-	lte: "<=",
-	lt: "<",
-};
-
-const methodTypes = {
-	PUT: "put",
-	GET: "get",
-	QUERY: "query",
-	UPDATE: "update",
-	DELETE: "delete",
-};
-
-const queryTypes = {
-	BETWEEN: "between",
-	AND: "and",
-	GTE: "gte",
-	GT: "gt",
-	LTE: "lte",
-	LT: "lt",
-};
-
-let queryChildren = [
-	"get",
-	"delete",
-	"update",
-	"eq",
-	"gt",
-	"lt",
-	"gte",
-	"lte",
-	"between",
-	"params",
-	"go",
-];
-
-let updateChildren = ["set", "params", "go"];
 
 let clauses = {
 	index: {
@@ -132,6 +92,7 @@ let clauses = {
 	},
 	query: {
 		action(entity, state = {}, facets = {}) {
+			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
 			state.query.method = MethodTypes.query;
 			state.query.type = QueryTypes.begins;
@@ -142,7 +103,7 @@ let clauses = {
 			});
 			return state;
 		},
-		children: ["between", "gte", "gt", "lte", "lt"],
+		children: ["between", "gte", "gt", "lte", "lt", "params", "go"],
 	},
 	between: {
 		action(entity, state = {}, startingFacets = {}, endingFacets = {}) {
@@ -218,7 +179,7 @@ let clauses = {
 	params: {
 		action(entity, state = {}, options) {
 			if (state.query.method === MethodTypes.query) {
-				return entity._queryParams(state, options);
+				return entity._queryParams(state.query, options);
 			} else {
 				return entity._params(state.query, options);
 			}
@@ -269,7 +230,7 @@ class Entity {
 				.query(facets);
 		};
 		for (let accessPattern in this.model.indexes) {
-			let index = this.model.indexes[accessPattern];
+			let index = this.model.indexes[accessPattern].index;
 			this.query[accessPattern] = (...values) => this._makeChain(index, clauses, clauses.index).query(...values);
 		}
 	}
@@ -349,17 +310,16 @@ class Entity {
 		// 	sks = [],
 		// 	data = {},
 		// } = chainState;
-		
+		let conlidatedQueryFacets = this._consolidateQueryFacets(chainState.keys.sk);
 		
 		switch (chainState.method) {
 			case MethodTypes.get:
-				return this._makeGetParams(chainState.keys.pk, ...chainState.keys.sk);
 			case MethodTypes.delete:
-				return this._makeDeleteParams(chainState.keys.pk, ...chainState.keys.sk);
+				return this._makeSimpleIndexParams( chainState.keys.pk, ...conlidatedQueryFacets);
 			case MethodTypes.put:
-				return this._makeUpdateParams(chainState.keys.pk, chainState.keys.sk, chainState.update);
+				return this._makePutParams(chainState.put, chainState.keys.pk, ...chainState.keys.sk);
 			case MethodTypes.update:
-				return 
+				return this._makeUpdateParams(chainState.update, chainState.keys.pk, ...conlidatedQueryFacets);
 				break;
 			// case MethodTypes.scan:
 			// case MethodTypes.query:
@@ -382,101 +342,257 @@ class Entity {
 		return key;
 	}
 
-	_makeGetParams(pk, sk) {
+	_makeSimpleIndexParams(pk, sk) {
 		let index = "";
+		
+		let keys = this._makeIndexKeys(index, pk, sk);
 		let params = {
 			TableName: this.model.table,
-			Key: this._makeParameterKey("", pk, sk),
+			Key: this._makeParameterKey(index, keys.pk, keys.sk),
 		};
 		return params;
 	}
 
-	_makeDeleteParams(pk, sk) {
-		let params = {
-			TableName: this.model.table,
-			Key: this._makeParameterKey("", pk, sk),
+	_makeUpdateParams({set} = {}, pk = {}, sk = {}) {
+		let {indexKey, updatedKeys} = this._getUpdatedKeys(pk, sk, set);
+		let translatedAttributes = this.model.schema.translateToFields(set);
+		let item = {
+			...translatedAttributes,
+			...updatedKeys,
 		};
+		let {
+			UpdateExpression,
+			ExpressionAttributeNames,
+			ExpressionAttributeValues,
+		} = this._updateExpressionBuilder(item);
+		
+		let params = {
+			UpdateExpression,
+			ExpressionAttributeNames,
+			ExpressionAttributeValues,
+			TableName: this.model.table,
+			Key: indexKey,
+		};
+		return params;
+
+	}
+
+	_makePutParams({data} = {}, pk, sk) {
+		let {updatedKeys} = this._getUpdatedKeys(pk, sk, data);
+		let translatedAttributes = this.model.schema.translateToFields(data);
+		let params = {
+			Item: {
+				...translatedAttributes,
+				...updatedKeys,
+			},
+			TableName: this.model.table
+		}
 		return params;
 	}
 
-	_makeUpdateParams(pk = [], sk = [], data = {}) {
-		let index = "";
-		let indexFacets = this.model.facets.byIndex[index];
-		let keyAttributes = {};
-		for (let i = 0; i < pk.length; i++) {
-			let {name, type} = indexFacets.all[i] || {};
-			if (type === KeyTypes.pk) {
-				pkAttributes[name] = pk[i];
-			} else {
-				break;
+	_updateExpressionBuilder(data = {}) {
+		let skip = this.model.schema.getReadOnly();
+		return this._expressionAttributeBuilder(data, { skip });
+	}
+
+	_queryKeyExpressionAttributeBuilder(index, pk, ...sks) {
+		let translate = { ...this.model.translations.keys[index] };
+		let restrict = ["pk"];
+		let keys = { pk };
+		for (let i = 0; i < sks.length; i++) {
+			let id = `sk${i + 1}`;
+			keys[id] = sks[i];
+			restrict.push(id);
+			translate[id] = translate["sk"];
+		}
+		let keyExpressions = this._expressionAttributeBuilder(keys, {
+			translate,
+			restrict,
+		});
+		return {
+			ExpressionAttributeNames: Object.assign(
+				{},
+				keyExpressions.ExpressionAttributeNames,
+			),
+			ExpressionAttributeValues: Object.assign(
+				{},
+				keyExpressions.ExpressionAttributeValues,
+			),
+		};
+	}
+
+	_expressionAttributeBuilder(item = {}, options = {}) {
+		let {
+			require = [],
+			reject = [],
+			restrict = [],
+			skip = [],
+			translate = {},
+		} = options;
+		/*
+        In order of execution:
+        require   - if all elements in require are not present as attributes, it throws.
+        reject    - if an attribute on item is present in "reject", it throws.
+        restrict  - if an attribute on item is not present in "restrict", it throws.
+        skip      - if an attribute matches an element in "skip", it is skipped.
+        translate - if an attribute in item matches a property in "translate", use the value in "translate".
+    */
+		let expressions = {
+			UpdateExpression: [],
+			ExpressionAttributeNames: {},
+			ExpressionAttributeValues: {},
+		};
+
+		if (require.length) {
+			let props = Object.keys(item);
+			let missing = require.filter(prop => !props.includes(prop));
+			if (!missing) {
+				throw new Error(`Item is missing attributes: ${missing.join(", ")}`);
 			}
 		}
-		// let translatedAttributes = this.model.schema.translateToFields({...pkAttributes, ...data.set});
 
-		// let [isIncomplete, {incomplete, complete}] = this._getIndexImpact({...pkAttributes, ...data.set});
-		// if (isIncomplete) {
-		// 	throw new Error("")
-		// }
-		let composedKeys = this._makeKeysFromAttributes({...pkAttributes, ...data.set});
-		return composedKeys;
-		// let item = {
-		// 	...translatedAttributes,
-		// 	...composedKeys,
-		// };
-		// let {
-		// 	UpdateExpression,
-		// 	ExpressionAttributeNames,
-		// 	ExpressionAttributeValues,
-		// } = this._updateExpressionBuilder(item);
-		// let params = {
-		// 	UpdateExpression,
-		// 	ExpressionAttributeNames,
-		// 	ExpressionAttributeValues,
-		// 	TableName: this.schema.table,
-		// 	Key: this._makeParamKeys(pk, ...sk),
-		// };
-		// return params;
+		for (let prop in item) {
+			if (reject.includes(prop)) {
+				throw new Error(`Invalid attribute ${prop}`);
+			}
+			if (restrict.length && !restrict.includes(prop)) {
+				throw new Error(
+					`${prop} is not a valid attribute: ${restrict.join(", ")}`,
+				);
+			}
+			if (prop === undefined || skip.includes(prop)) {
+				continue;
+			}
+
+			let name = prop;
+			let value = item[prop];
+			let nameProp = `#${prop}`;
+			let valProp = `:${prop}`;
+
+			if (translate[prop]) {
+				name = translate[prop];
+			}
+
+			expressions.UpdateExpression.push(`${nameProp} = ${valProp}`);
+			expressions.ExpressionAttributeNames[nameProp] = name;
+			expressions.ExpressionAttributeValues[valProp] = value;
+		}
+		expressions.UpdateExpression = `SET ${expressions.UpdateExpression.join(
+			", ",
+		)}`;
+		return expressions;
 	}
 
-	_queryParams(chainResults) {
-		let {
-			index = "",
-			method = "",
-			type = "",
-			pk = {},
-			sks = [],
-			data = {},
-			options = {},
-		} = chainResults;
-
-		switch (type) {
+	_queryParams(chainState) {
+		// let {
+		// 	index = "",
+		// 	method = "",
+		// 	type = "",
+		// 	pk = {},
+		// 	sks = [],
+		// 	data = {},
+		// 	options = {},
+		// } = chainState;
+		let conlidatedQueryFacets = this._consolidateQueryFacets(chainState.keys.sk);
+		let {pk, sk} = this._makeIndexKeys(chainState.index, chainState.keys.pk, ...conlidatedQueryFacets)
+		switch (chainState.type) {
 			case QueryTypes.begins:
-				break;
+				return this._makeBeginsWithQueryParams(chainState.index, pk, ...sk)
+			case QueryTypes.between:
+				return this._makeBetweenQueryParams(chainState.index, pk, ...sk)
 			case QueryTypes.gte:
-				break;
 			case QueryTypes.gt:
-				break;
 			case QueryTypes.lte:
-				break;
 			case QueryTypes.lt:
-				break;
+				return this._makeComparisonQueryParams(chainState.index, chainState.type, pk, ...sk)
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
 	}
 
+	_makeBetweenQueryParams(index, pk, ...sk) {
+		let {
+			ExpressionAttributeNames,
+			ExpressionAttributeValues,
+		} = this._queryKeyExpressionAttributeBuilder(index, pk, ...sk);
+		let params = {
+			ExpressionAttributeNames,
+			ExpressionAttributeValues,
+			IndexName: index,
+			TableName: this.model.table,
+			KeyConditionExpression: `#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2`,
+		};
+		return params;
+	}
+
+	_makeBeginsWithQueryParams(index, pk, sk) {
+		let {
+			ExpressionAttributeNames,
+			ExpressionAttributeValues,
+		} = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
+		let params = {
+			ExpressionAttributeNames,
+			ExpressionAttributeValues,
+			IndexName: index,
+			TableName: this.model.table,
+			KeyConditionExpression: `#pk = :pk and begins_with(#sk1, :sk1)`,
+		};
+		return params;
+	}
+
+	_makeComparisonQueryParams(index, comparison, pk, sk) {
+		let operator = Comparisons[comparison];
+		if (!operator) {
+			throw new Error(`Unexpected comparison operator "${comparison}", expected ${Object.values(Comparisons).join(", ")}`);
+		}
+		let {
+			ExpressionAttributeNames,
+			ExpressionAttributeValues,
+		} = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
+		let params = {
+			ExpressionAttributeNames,
+			ExpressionAttributeValues,
+			IndexName: index,
+			TableName: this.model.table,
+			KeyConditionExpression: `#pk = :pk and #sk1 ${operator} :sk1`,
+		};
+		return params;
+	}
+
 	_makeKeysFromAttributes(attributes = {}) {
 		let [isIncomplete, {incomplete, complete}] = this._getIndexImpact(attributes);
-		let incompleteFacets = this._getUniqueIndexImpact(incomplete);
 		let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index])
 		if (isIncomplete) {
-			throw new Error(`Incomplete facets: Without the facets ${incompleteFacets.join(", ")} the following access patterns ${incompleteAccessPatterns.join(", ")} cannot be updated`);
+			throw new Error(`Incomplete facets: Without the facets ${incomplete.join(", ")} the following access patterns ${incompleteAccessPatterns.join(", ")} cannot be updated`);
 		}
-		let indexKeys = {}
-		for (let index of Object.values(this.model.translations.fromIndexToAccessPattern)) {
+		let indexKeys = {};
+		for (let index of Object.keys(this.model.translations.indexes.fromIndexToAccessPattern)) {
 			indexKeys[index] = this._makeIndexKeys(index, complete, complete)
 		}
 		return indexKeys;
+	}
+
+	_getUpdatedKeys(pk = {}, sk = {}, set = {}) {
+		let updateIndex = "";
+		let keyTranslations = this.model.translations.keys;
+		let keyAttributes = {...sk, ...pk};
+		let composedKeys = this._makeKeysFromAttributes({...keyAttributes, ...set});
+		let updatedKeys = {};
+		let indexKey = {}
+		for (let [index, keys] of Object.entries(composedKeys)) {
+			let {pk, sk} = keyTranslations[index];
+			if (index === updateIndex) {
+				indexKey[pk] = keys.pk;
+				if (sk) {
+					indexKey[sk] = keys.sk[0];
+				}
+			}
+			updatedKeys[pk] = keys.pk;
+			if (sk) {
+				updatedKeys[sk] = keys.sk[0];
+			}
+		}
+		return {indexKey, updatedKeys};
 	}
 
 	_getIndexImpact(attributes = {}) {
@@ -517,10 +633,13 @@ class Entity {
 		let sk1 = {};
 		let sk2 = {};
 		for (let { type, facets } of queryFacets) {
-			if (type === QueryTypes.and) {
-				sk2 = Object.assign({}, sk2, facets);
+			if (type === QueryTypes.between) {
+				sk1 = {...sk1, ...facets};
+			} else if (type === QueryTypes.and) {
+				sk2 = {...sk2, ...facets};
 			} else {
-				sk1 = Object.assign({}, sk1, facets);
+				sk1 = {...sk1, ...facets};
+				sk2 = {...sk2, ...facets};
 			}
 		}
 		return [sk1, sk2];
@@ -529,7 +648,9 @@ class Entity {
 	_buildQueryFacets(facets, skFacets) {
 		let queryFacets = this._findProperties(facets, skFacets).reduce(
 			(result, [name, value]) => {
-				result[name] = value;
+				if (value) {
+					result[name] = value;
+				}
 				return result;
 			},
 			{},
@@ -559,14 +680,12 @@ class Entity {
 
 	_expectProperties(obj = {}, properties = []) {
 		let missing = [];
-		let matching = [];
+		let matching = {};
 		this._findProperties(obj, properties).forEach(([name, value]) => {
 			if (value === undefined) {
 				missing.push(name);
 			} else {
-				// todo: I'm thinking this should build an object not push unnamed values to an array?
-				// todo: In the _makeUpdateParams function i'm a little too far removed now from the ACTUAL property something is and have to summize it's property from the order. Less than ideal :( 
-				matching.push(value);
+				matching[name] = value;
 			}
 		});
 		return [!!missing.length, missing, matching];
@@ -590,8 +709,10 @@ class Entity {
 		let facets = this.model.facets.byIndex[index];
 		let pk = this._makeKey(this.model.prefixes.pk, facets.pk, pkFacets);
 		let sk = [];
-		for (let skFacet of skFacets) {
-			sk.push(this._makeKey(this.model.prefixes.sk, facets.sk, skFacet));
+		if (this.model.lookup.indexHasSortKeys[index]) {
+			for (let skFacet of skFacets) {
+				sk.push(this._makeKey(this.model.prefixes.sk, facets.sk, skFacet));
+			}
 		}
 		return { pk, sk };
 	}
@@ -797,7 +918,6 @@ class Entity {
 				indexHasSortKeys,
 			},
 			translations: {
-				comparisons,
 				keys: indexField,
 				indexes: indexAccessPattern,
 			},

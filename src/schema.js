@@ -242,7 +242,9 @@ class Schema {
 		let record = {};
 		for (let [name, value] of Object.entries(payload)) {
 			let field = this.translationForTable[name];
-			record[field] = value;
+			if (value !== undefined) {
+				record[field] = value;
+			}
 		}
 		return record;
 	}
@@ -277,6 +279,10 @@ class Schema {
 			}
 		}
 		return record;
+	}
+
+	getReadOnly() {
+		return Object.values(this.attributes).filter(attribute => attribute.readOnly).map(attribute => attribute.name);
 	}
 }
 
