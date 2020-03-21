@@ -48,7 +48,7 @@ let schema = {
 		leaseEnd: {
 			type: "string",
 			required: true,
-			validate: date => moment(date, "YYYY-MM-DD").isValid(),
+			validate: date => moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
 		},
 		rent: {
 			type: "string",
@@ -119,66 +119,195 @@ describe("Entity", () => {
 		let MallStores = new Entity(schema);
 		// console.log(JSON.stringify(MallStores.schema));
 	});
-	// describe("Making keys", () => {
-	// 	let MallStores = new Entity(schema);
-	// 	let mall = "EastPointe";
-	// 	let store = "LatteLarrys";
-	// 	let building = "BuildingA";
-	// 	let id = uuidV4();
-	// 	let category = "coffee";
-	// 	let unit = "B54";
-	// 	let leaseEnd = "2020-01-20";
-	// 	it("Should return the approprate pk and sk for a given index", () => {
-	// 		let index = schema.indexes.categories.index;
-	// 		let { pk, sk } = MallStores.makeIndexKeys(
-	// 			index,
-	// 			{ mall },
-	// 			{ category, building, unit, store },
-	// 		);
-	// 		expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
-	// 		expect(sk)
-	// 			.to.be.an("array")
-	// 			.and.have.length(1)
-	// 			.and.include(
-	// 				"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys",
-	// 			);
-	// 	});
-	// 	it("Should stop making a key early when there is a gap in the supplied facets", () => {
-	// 		let index = schema.indexes.categories.index;
-	// 		let { pk, sk } = MallStores.makeIndexKeys(
-	// 			index,
-	// 			{ mall },
-	// 			{ category, building, store },
-	// 		);
-	// 		expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
-	// 		expect(sk)
-	// 			.to.be.an("array")
-	// 			.and.have.length(1)
-	// 			.and.include("$MallStores#category_coffee#building_BuildingA#unit_");
-	// 	});
-	// 	it("Should return the approprate pk and multiple sks when given multiple", () => {
-	// 		let index = schema.indexes.shops.index;
-	// 		let { pk, sk } = MallStores.makeIndexKeys(
-	// 			index,
-	// 			{ store },
-	// 			{ mall, building: "building1" },
-	// 			{ mall, building: "building5" },
-	// 		);
-	// 		expect(pk).to.equal("$MallStoreDirectory_1#store_LatteLarrys");
-	// 		expect(sk)
-	// 			.to.be.an("array")
-	// 			.and.have.length(2)
-	// 			.and.to.have.members([
-	// 				"$MallStores#mall_EastPointe#building_building1#unit_",
-	// 				"$MallStores#mall_EastPointe#building_building5#unit_",
-	// 			]);
-	// 	});
-	// 	it("Should throw on bad index", () => {
-	// 		expect(() => MallStores.makeIndexKeys("bad_index")).to.throw(
-	// 			"Invalid index: bad_index",
-	// 		);
-	// 	});
-	// });
+	describe("Schema validation", () => {
+		let MallStores = new Entity(schema);
+		it("Should enforce enum validation on enum type attribute", () => {
+			let [isValid, reason] = MallStores.model.schema.attributes.category.isValid("BAD_CATEGORY");
+			expect(!isValid);
+			expect(reason).to.eq("Value not found in set of acceptable values: food/coffee, food/meal, clothing, electronics, department, misc");
+		});
+		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", () => {
+			let id = uuidV4();
+			let rent = "0.00";
+			let category = "food/coffee";
+			let mall = "EastPointe";
+			expect(() => MallStores.update({id}).set({rent, category, id})).to.throw("Attribute id is Read-Only and cannot be updated");
+			expect(() => MallStores.update({id}).set({rent, category, mall})).to.not.throw();
+		})
+		it("Should identify impacted indexes from attributes", () => {
+			let id = uuidV4();
+			let rent = "0.00";
+			let category = "food/coffee";
+			let mall = "EastPointe";
+			let leaseEnd = "2020/04/27";
+			let unit = "B45"
+			let building = "BuildingB";
+			let store = "LatteLarrys"
+			let impact1 = MallStores._getIndexImpact({rent, category, mall});
+			let impact2 = MallStores._getIndexImpact({leaseEnd});
+			let impact3 = MallStores._getIndexImpact({mall});
+			expect(impact1).to.deep.equal([
+				true,
+				{
+					incomplete: [ 'building', 'unit', 'store', 'building', 'unit' ],
+					complete: { mall, category }
+				}
+			]);
+			expect(impact2).to.deep.equal([
+				true,
+				{
+					incomplete: [ "store", "building", "unit" ],
+					complete: { leaseEnd }
+				}
+			]);
+			expect(impact3).to.deep.equal([
+				true,
+				{
+					incomplete: [ "building", "unit" ],
+					complete: { mall }
+				}
+			]);
+		})
+	})
+	describe("navigate query chains", () => {
+		let MallStores = new Entity(schema);
+		it("Should allow for a multiple combinations given a schema", () => {
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let building = "BuildingA";
+			let id = uuidV4();
+			let category = "food/coffee";
+			let unit = "B54";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			buildingOne = "BuildingA";
+			buildingTwo = "BuildingF";
+			let get = MallStores.get({id});
+			expect(get).to.have.keys("go", "params");
+			let del = MallStores.delete({id});
+			expect(del).to.have.keys("go", "params");
+			let update = MallStores.update({id}).set({rent, category});
+			expect(update).to.have.keys("go", "params", "set");
+			let put = MallStores.put({store, mall, building, rent, category, leaseEnd, unit});
+			expect(put).to.have.keys("go", "params");
+			let queryUnitsBetween = MallStores.query.units({mall}).between({building: buildingOne}, {building: buildingTwo});
+			expect(queryUnitsBetween).to.have.keys("go", "params");
+			let queryUnitGt = MallStores.query.units({mall}).gt({building});
+			expect(queryUnitGt).to.have.keys("go", "params");
+			let queryUnitsGte = MallStores.query.units({mall}).gte({building});
+			expect(queryUnitsGte).to.have.keys("go", "params");
+			let queryUnitsLte = MallStores.query.units({mall}).lte({building});
+			expect(queryUnitsLte).to.have.keys("go", "params");
+			let queryUnitsLt = MallStores.query.units({mall}).lt({building});
+			expect(queryUnitsLt).to.have.keys("go", "params");
+		});
+		it("Should create parameters for a given chain", () => {
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let building = "BuildingA";
+			let id = uuidV4();
+			let category = "food/coffee";
+			let unit = "B54";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			buildingOne = "BuildingA";
+			buildingTwo = "BuildingF";
+			let get = MallStores.get({id}).params();
+			expect(get).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				Key: { pk: [ id ] }
+			});
+
+			let del = MallStores.delete({id}).params();
+			expect(del).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				Key: { pk: [ id ] }
+			});
+
+			let update = MallStores.update({id}).set({mall, store, building, category, unit, rent, leaseEnd}).params();
+			console.log("UPDATE", JSON.stringify(update));
+			// expect(del).to.be.deep.equal({
+			// 	TableName: 'StoreDirectory',
+			// 	Key: { pk: [ id ] }
+			// });
+			// expect(del).to.have.keys("go", "params");
+			// let update = MallStores.update({id}).set({rent, category});
+			// expect(update).to.have.keys("go", "params", "set");
+			// let put = MallStores.put({store, mall, building, rent, category, leaseEnd, unit});
+			// expect(put).to.have.keys("go", "params");
+			// let queryUnitsBetween = MallStores.query.units({mall}).between({building: buildingOne}, {building: buildingTwo});
+			// expect(queryUnitsBetween).to.have.keys("go", "params");
+			// let queryUnitGt = MallStores.query.units({mall}).gt({building});
+			// expect(queryUnitGt).to.have.keys("go", "params");
+			// let queryUnitsGte = MallStores.query.units({mall}).gte({building});
+			// expect(queryUnitsGte).to.have.keys("go", "params");
+			// let queryUnitsLte = MallStores.query.units({mall}).lte({building});
+			// expect(queryUnitsLte).to.have.keys("go", "params");
+			// let queryUnitsLt = MallStores.query.units({mall}).lt({building});
+			// expect(queryUnitsLt).to.have.keys("go", "params");
+		})
+	})
+	describe("Making keys", () => {
+		let MallStores = new Entity(schema);
+		let mall = "EastPointe";
+		let store = "LatteLarrys";
+		let building = "BuildingA";
+		let id = uuidV4();
+		let category = "coffee";
+		let unit = "B54";
+		let leaseEnd = "2020-01-20";
+		it("Should return the approprate pk and sk for a given index", () => {
+			let index = schema.indexes.categories.index;
+			let { pk, sk } = MallStores._makeIndexKeys(
+				index,
+				{ mall },
+				{ category, building, unit, store },
+			);
+			expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
+			expect(sk)
+				.to.be.an("array")
+				.and.have.length(1)
+				.and.include(
+					"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys",
+				);
+		});
+		it("Should stop making a key early when there is a gap in the supplied facets", () => {
+			let index = schema.indexes.categories.index;
+			let { pk, sk } = MallStores._makeIndexKeys(
+				index,
+				{ mall },
+				{ category, building, store },
+			);
+			expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
+			expect(sk)
+				.to.be.an("array")
+				.and.have.length(1)
+				.and.include("$MallStores#category_coffee#building_BuildingA#unit_");
+		});
+		it("Should return the approprate pk and multiple sks when given multiple", () => {
+			let index = schema.indexes.shops.index;
+			let { pk, sk } = MallStores._makeIndexKeys(
+				index,
+				{ store },
+				{ mall, building: "building1" },
+				{ mall, building: "building5" },
+			);
+			expect(pk).to.equal("$MallStoreDirectory_1#store_LatteLarrys");
+			expect(sk)
+				.to.be.an("array")
+				.and.have.length(2)
+				.and.to.have.members([
+					"$MallStores#mall_EastPointe#building_building1#unit_",
+					"$MallStores#mall_EastPointe#building_building5#unit_",
+				]);
+		});
+		it("Should throw on bad index", () => {
+			expect(() => MallStores._makeIndexKeys("bad_index")).to.throw(
+				"Invalid index: bad_index",
+			);
+		});
+	});
+	
 	describe("Identifying indexes by facets", () => {
 		let MallStores = new Entity(schema);
 		let mall = "123";
@@ -254,6 +383,59 @@ describe("Entity", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ unit });
 			expect(keys).to.be.deep.equal([]);
 			expect(index).to.be.deep.equal("");
+		});
+	});
+	describe("_expectFacets", () => {
+		let MallStores = new Entity(schema);
+		let mall = "mall-value";
+		let store = "store-value";
+		let building = "building-value";
+		let id = "id-value";
+		let category = "category-value";
+		let unit = "unit-value";
+		let leaseEnd = "lease-value";
+		it("Should find all, pk, and sk matches", () => {
+			let index = schema.indexes.units.index;
+			let facets = MallStores.model.facets.byIndex[index];
+			let all = facets.all.map(facet => facet.name);
+			let allMatches = MallStores._expectFacets(
+				{ store, mall, building, unit },
+				all,
+			);
+			let pkMatches = MallStores._expectFacets(
+				{ store, mall, building, unit },
+				facets.pk,
+			);
+			let skMatches = MallStores._expectFacets(
+				{ store, mall, building, unit },
+				facets.sk,
+			);
+			expect(allMatches).to.be.deep.equal([mall, building, unit, store]);
+			expect(pkMatches).to.be.deep.equal([mall]);
+			expect(skMatches).to.be.deep.equal([building, unit, store]);
+		});
+		it("Should find missing properties from supplied keys", () => {
+			let index = schema.indexes.units.index;
+			let facets = MallStores.model.facets.byIndex[index];
+			let all = facets.all.map(facet => facet.name);
+			let allMatches = () => MallStores._expectFacets({ store }, all);
+			let pkMatches = () =>
+				MallStores._expectFacets(
+					{ store, building, unit },
+					facets.pk,
+					"partition keys",
+				);
+			let skMatches = () =>
+				MallStores._expectFacets({ store, mall, building }, facets.sk, "sort keys");
+			expect(allMatches).to.throw(
+				"Incomplete or invalid key facets supplied. Missing properties: mall, building, unit",
+			);
+			expect(pkMatches).to.throw(
+				"Incomplete or invalid partition keys supplied. Missing properties: mall",
+			);
+			expect(skMatches).to.throw(
+				"Incomplete or invalid sort keys supplied. Missing properties: unit",
+			);
 		});
 	});
 });
