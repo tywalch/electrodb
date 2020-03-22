@@ -1,7 +1,7 @@
 "use strict";
-const { Schema, Attribute } = require("./schema");
+const { Schema } = require("./schema");
 const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
-
+const { FilterFactory, FilterTypes } = require("./filters");
 
 let clauses = {
 	index: {
@@ -18,10 +18,13 @@ let clauses = {
 			state.query.method = MethodTypes.get;
 			state.query.type = QueryTypes.eq;
 			if (state.hasSortKey) {
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				let queryFacets = entity._buildQueryFacets(
+					facets,
+					state.query.facets.sk,
+				);
 				state.query.keys.sk.push({
 					type: state.query.type,
-					facets: queryFacets
+					facets: queryFacets,
 				});
 			}
 			return state;
@@ -34,10 +37,13 @@ let clauses = {
 			state.query.method = MethodTypes.delete;
 			state.query.type = QueryTypes.eq;
 			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				let queryFacets = entity._buildQueryFacets(
+					facets,
+					state.query.facets.sk,
+				);
 				state.query.keys.sk.push({
 					type: state.query.type,
-					facets: queryFacets
+					facets: queryFacets,
 				});
 			}
 			return state;
@@ -46,15 +52,18 @@ let clauses = {
 	},
 	put: {
 		action(entity, state = {}, payload = {}) {
-			let record = entity.model.schema.checkCreate({...payload});
+			let record = entity.model.schema.checkCreate({ ...payload });
 			state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
 			state.query.method = MethodTypes.put;
 			state.query.type = QueryTypes.eq;
 			if (state.hasSortKey) {
-			let queryFacets = entity._buildQueryFacets(record, state.query.facets.sk);
+				let queryFacets = entity._buildQueryFacets(
+					record,
+					state.query.facets.sk,
+				);
 				state.query.keys.sk.push({
 					type: state.query.type,
-					facets: queryFacets
+					facets: queryFacets,
 				});
 			}
 			state.query.put.data = Object.assign({}, record);
@@ -68,10 +77,13 @@ let clauses = {
 			state.query.method = MethodTypes.update;
 			state.query.type = QueryTypes.eq;
 			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				let queryFacets = entity._buildQueryFacets(
+					facets,
+					state.query.facets.sk,
+				);
 				state.query.keys.sk.push({
 					type: state.query.type,
-					facets: queryFacets
+					facets: queryFacets,
 				});
 			}
 			return state;
@@ -80,7 +92,7 @@ let clauses = {
 	},
 	set: {
 		action(entity, state = {}, data) {
-			let record = entity.model.schema.checkUpdate({...data});
+			let record = entity.model.schema.checkUpdate({ ...data });
 			state.query.update.set = Object.assign(
 				{},
 				state.query.update.set,
@@ -99,7 +111,7 @@ let clauses = {
 			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 			state.query.keys.sk.push({
 				type: state.query.type,
-				facets: queryFacets
+				facets: queryFacets,
 			});
 			return state;
 		},
@@ -107,18 +119,32 @@ let clauses = {
 	},
 	between: {
 		action(entity, state = {}, startingFacets = {}, endingFacets = {}) {
-			entity._expectFacets(startingFacets, Object.keys(startingFacets), `"between" facets`);
-			entity._expectFacets(endingFacets, Object.keys(endingFacets), `"and" facets`);
+			entity._expectFacets(
+				startingFacets,
+				Object.keys(startingFacets),
+				`"between" facets`,
+			);
+			entity._expectFacets(
+				endingFacets,
+				Object.keys(endingFacets),
+				`"and" facets`,
+			);
 			state.query.type = QueryTypes.between;
-			let queryEndingFacets = entity._buildQueryFacets(endingFacets, state.query.facets.sk);
-			let queryStartingFacets = entity._buildQueryFacets(startingFacets, state.query.facets.sk);
+			let queryEndingFacets = entity._buildQueryFacets(
+				endingFacets,
+				state.query.facets.sk,
+			);
+			let queryStartingFacets = entity._buildQueryFacets(
+				startingFacets,
+				state.query.facets.sk,
+			);
 			state.query.keys.sk.push({
 				type: QueryTypes.and,
-				facets: queryEndingFacets
+				facets: queryEndingFacets,
 			});
 			state.query.keys.sk.push({
 				type: QueryTypes.between,
-				facets: queryStartingFacets
+				facets: queryStartingFacets,
 			});
 			return state;
 		},
@@ -131,7 +157,7 @@ let clauses = {
 			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 			state.query.keys.sk.push({
 				type: state.query.type,
-				facets: queryFacets
+				facets: queryFacets,
 			});
 			return state;
 		},
@@ -144,7 +170,7 @@ let clauses = {
 			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 			state.query.keys.sk.push({
 				type: state.query.type,
-				facets: queryFacets
+				facets: queryFacets,
 			});
 			return state;
 		},
@@ -157,7 +183,7 @@ let clauses = {
 			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 			state.query.keys.sk.push({
 				type: state.query.type,
-				facets: queryFacets
+				facets: queryFacets,
 			});
 			return state;
 		},
@@ -170,7 +196,7 @@ let clauses = {
 			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 			state.query.keys.sk.push({
 				type: state.query.type,
-				facets: queryFacets
+				facets: queryFacets,
 			});
 			return state;
 		},
@@ -188,8 +214,13 @@ let clauses = {
 	},
 	go: {
 		action(entity, state = {}, options) {
-			state["go"] = true;
-			return state;
+			let params = {};
+			if (state.query.method === MethodTypes.query) {
+				params = entity._queryParams(state.query, options);
+			} else {
+				params = entity._params(state.query, options);
+			}
+			return entity.go(state.query.method, params, options);
 		},
 		children: [],
 	},
@@ -222,17 +253,59 @@ class Entity {
 		this._validateModel(model);
 		this.client = client;
 		this.model = this._parseModel(model);
+		this._filterBuilder = new FilterFactory(
+			this.model.schema.attributes,
+			FilterTypes,
+		);
 		this.query = {};
 		this.find = (facets = {}) => {
 			let index = this._findBestIndexKeyMatch(facets);
-			return new QueryChain(this, clauses)
-				.make(index, this.model.facets.byIndex[index])
-				.query(facets);
+			let clausesWithFilters = this._injectFiltersIntoClauses(
+				clauses,
+				this.model.filters,
+			);
+			return this._makeChain(index, clausesWithFilters, clauses.index).query(
+				facets,
+			);
 		};
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
-			this.query[accessPattern] = (...values) => this._makeChain(index, clauses, clauses.index).query(...values);
+			this.query[accessPattern] = (...values) => {
+				let clausesWithFilters = this._injectFiltersIntoClauses(
+					clauses,
+					this.model.filters,
+				);
+				return this._makeChain(index, clausesWithFilters, clauses.index).query(
+					...values,
+				);
+			};
 		}
+	}
+
+	_injectFiltersIntoClauses(clauses = {}, filters = {}) {
+		let injected = { ...clauses };
+		let filterParents = Object.entries(injected)
+			.filter(clause => {
+				let [name, { children }] = clause;
+				return children.includes("go");
+			})
+			.map(([name]) => name);
+		let filterChildren = [];
+		for (let [name, filter] of Object.entries(filters)) {
+			filterChildren.push(name);
+			injected[name] = {
+				action: this._filterBuilder.buildClause(filter),
+				children: ["params", "go"],
+			};
+		}
+		for (let parent of filterParents) {
+			injected[parent] = { ...injected[parent] };
+			injected[parent].children = [
+				...filterChildren,
+				...injected[parent].children,
+			];
+		}
+		return injected;
 	}
 
 	_validateModel(model = {}) {}
@@ -281,7 +354,7 @@ class Entity {
 				index: index,
 				type: "",
 				method: "",
-				facets: {...facets},
+				facets: { ...facets },
 				update: {
 					set: {},
 				},
@@ -292,14 +365,66 @@ class Entity {
 					pk: {},
 					sk: [],
 				},
+				filter: {},
 			},
 			hasSortKey: this.model.lookup.indexHasSortKeys[index],
 			indexComplete: false,
-		}
+		};
 		return this._chain(state, clauses, rootClause);
 	}
 
-	_go() {}
+	_cleanseRetrievedData(item = {}, options = {}) {
+		let { includeKeys } = options;
+		let data = {};
+		let names = this.model.schema.translationForRetrieval;
+		for (let [attr, value] of Object.entries(item)) {
+			let name = names[attr];
+			if (name) {
+				data[name] = value;
+			} else if (includeKeys) {
+				data[attr] = value;
+			} else {
+				// an index key
+			}
+		}
+		return data;
+	}
+
+	async go(method, params = {}, options = {}) {
+		let config = {
+			includeKeys: options.includeKeys,
+			originalErr: options.originalErr,
+			raw: options.raw,
+		};
+
+		let stackTrace = new Error();
+		try {
+			let response = await this.client[method](params).promise();
+
+			if (config.raw) {
+				return response;
+			}
+
+			let data = {};
+			if (method === "put") {
+				data = this._cleanseRetrievedData(params.Item, config);
+			} else if (response.Item) {
+				data = this._cleanseRetrievedData(response.Item);
+			} else if (response.Items) {
+				data = response.Items.map(item =>
+					this._cleanseRetrievedData(item, config),
+				);
+			}
+			return data;
+		} catch (err) {
+			if (config.originalErr) {
+				return Promise.reject(err);
+			} else {
+				stackTrace.message = err.message;
+				return Promise.reject(stackTrace);
+			}
+		}
+	}
 
 	_params(chainState = {}) {
 		// let {
@@ -310,16 +435,29 @@ class Entity {
 		// 	sks = [],
 		// 	data = {},
 		// } = chainState;
-		let conlidatedQueryFacets = this._consolidateQueryFacets(chainState.keys.sk);
-		
+		let conlidatedQueryFacets = this._consolidateQueryFacets(
+			chainState.keys.sk,
+		);
+
 		switch (chainState.method) {
 			case MethodTypes.get:
 			case MethodTypes.delete:
-				return this._makeSimpleIndexParams( chainState.keys.pk, ...conlidatedQueryFacets);
+				return this._makeSimpleIndexParams(
+					chainState.keys.pk,
+					...conlidatedQueryFacets,
+				);
 			case MethodTypes.put:
-				return this._makePutParams(chainState.put, chainState.keys.pk, ...chainState.keys.sk);
+				return this._makePutParams(
+					chainState.put,
+					chainState.keys.pk,
+					...chainState.keys.sk,
+				);
 			case MethodTypes.update:
-				return this._makeUpdateParams(chainState.update, chainState.keys.pk, ...conlidatedQueryFacets);
+				return this._makeUpdateParams(
+					chainState.update,
+					chainState.keys.pk,
+					...conlidatedQueryFacets,
+				);
 				break;
 			// case MethodTypes.scan:
 			// case MethodTypes.query:
@@ -344,17 +482,17 @@ class Entity {
 
 	_makeSimpleIndexParams(pk, sk) {
 		let index = "";
-		
+
 		let keys = this._makeIndexKeys(index, pk, sk);
 		let params = {
 			TableName: this.model.table,
-			Key: this._makeParameterKey(index, keys.pk, keys.sk),
+			Key: this._makeParameterKey(index, keys.pk, ...keys.sk),
 		};
 		return params;
 	}
 
-	_makeUpdateParams({set} = {}, pk = {}, sk = {}) {
-		let {indexKey, updatedKeys} = this._getUpdatedKeys(pk, sk, set);
+	_makeUpdateParams({ set } = {}, pk = {}, sk = {}) {
+		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, set);
 		let translatedAttributes = this.model.schema.translateToFields(set);
 		let item = {
 			...translatedAttributes,
@@ -365,7 +503,7 @@ class Entity {
 			ExpressionAttributeNames,
 			ExpressionAttributeValues,
 		} = this._updateExpressionBuilder(item);
-		
+
 		let params = {
 			UpdateExpression,
 			ExpressionAttributeNames,
@@ -374,24 +512,26 @@ class Entity {
 			Key: indexKey,
 		};
 		return params;
-
 	}
 
-	_makePutParams({data} = {}, pk, sk) {
-		let {updatedKeys} = this._getUpdatedKeys(pk, sk, data);
+	_makePutParams({ data } = {}, pk, sk) {
+		let { updatedKeys } = this._getUpdatedKeys(pk, sk, data);
 		let translatedAttributes = this.model.schema.translateToFields(data);
 		let params = {
 			Item: {
 				...translatedAttributes,
 				...updatedKeys,
 			},
-			TableName: this.model.table
-		}
+			TableName: this.model.table,
+		};
 		return params;
 	}
 
 	_updateExpressionBuilder(data = {}) {
-		let skip = this.model.schema.getReadOnly();
+		let skip = [
+			...this.model.schema.getReadOnly(),
+			...this.model.facets.fields,
+		];
 		return this._expressionAttributeBuilder(data, { skip });
 	}
 
@@ -409,6 +549,7 @@ class Entity {
 			translate,
 			restrict,
 		});
+
 		return {
 			ExpressionAttributeNames: Object.assign(
 				{},
@@ -421,7 +562,11 @@ class Entity {
 		};
 	}
 
-	_expressionAttributeBuilder(item = {}, options = {}) {
+	_expressionAttributeBuilder(
+		item = {},
+		options = {},
+		{ noDuplicateNames } = {},
+	) {
 		let {
 			require = [],
 			reject = [],
@@ -493,81 +638,169 @@ class Entity {
 		// 	data = {},
 		// 	options = {},
 		// } = chainState;
-		let conlidatedQueryFacets = this._consolidateQueryFacets(chainState.keys.sk);
-		let {pk, sk} = this._makeIndexKeys(chainState.index, chainState.keys.pk, ...conlidatedQueryFacets)
+		let conlidatedQueryFacets = this._consolidateQueryFacets(
+			chainState.keys.sk,
+		);
+		let { pk, sk } = this._makeIndexKeys(
+			chainState.index,
+			chainState.keys.pk,
+			...conlidatedQueryFacets,
+		);
 		switch (chainState.type) {
 			case QueryTypes.begins:
-				return this._makeBeginsWithQueryParams(chainState.index, pk, ...sk)
+				return this._makeBeginsWithQueryParams(
+					chainState.index,
+					chainState.filter,
+					pk,
+					...sk,
+				);
 			case QueryTypes.between:
-				return this._makeBetweenQueryParams(chainState.index, pk, ...sk)
+				return this._makeBetweenQueryParams(
+					chainState.index,
+					chainState.filter,
+					pk,
+					...sk,
+				);
 			case QueryTypes.gte:
 			case QueryTypes.gt:
 			case QueryTypes.lte:
 			case QueryTypes.lt:
-				return this._makeComparisonQueryParams(chainState.index, chainState.type, pk, ...sk)
+				return this._makeComparisonQueryParams(
+					chainState.index,
+					chainState.type,
+					chainState.filter,
+					pk,
+					...sk,
+				);
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
 	}
 
-	_makeBetweenQueryParams(index, pk, ...sk) {
-		let {
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
-		} = this._queryKeyExpressionAttributeBuilder(index, pk, ...sk);
+	_makeBetweenQueryParams(index = "", filter = {}, pk = {}, ...sk) {
+		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
+			index,
+			pk,
+			...sk,
+		);
+		delete keyExpressions.ExpressionAttributeNames["#sk2"];
 		let params = {
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
 			IndexName: index,
 			TableName: this.model.table,
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(
+				filter.ExpressionAttributeNames,
+				keyExpressions.ExpressionAttributeNames,
+			),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(
+				filter.ExpressionAttributeValues,
+				keyExpressions.ExpressionAttributeValues,
+			),
 			KeyConditionExpression: `#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2`,
 		};
+		if (filter.FilterExpression) {
+			params.FilterExpression = filter.FilterExpression;
+		}
 		return params;
 	}
 
-	_makeBeginsWithQueryParams(index, pk, sk) {
-		let {
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
-		} = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
+	_makeBeginsWithQueryParams(index = "", filter = {}, pk = {}, sk = {}) {
+		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
+			index,
+			pk,
+			sk,
+		);
 		let params = {
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
 			IndexName: index,
 			TableName: this.model.table,
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(
+				filter.ExpressionAttributeNames,
+				keyExpressions.ExpressionAttributeNames,
+			),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(
+				filter.ExpressionAttributeValues,
+				keyExpressions.ExpressionAttributeValues,
+			),
 			KeyConditionExpression: `#pk = :pk and begins_with(#sk1, :sk1)`,
 		};
+		if (filter.FilterExpression) {
+			params.FilterExpression = filter.FilterExpression;
+		}
 		return params;
 	}
 
-	_makeComparisonQueryParams(index, comparison, pk, sk) {
+	_mergeExpressionsAttributes(...expressionAttributes) {
+		let merged = {};
+		for (let obj of expressionAttributes) {
+			if (obj) {
+				merged = { ...merged, ...obj };
+			}
+		}
+		return merged;
+	}
+
+	_makeComparisonQueryParams(
+		index = "",
+		comparison = "",
+		filter = {},
+		pk = {},
+		sk = {},
+	) {
 		let operator = Comparisons[comparison];
 		if (!operator) {
-			throw new Error(`Unexpected comparison operator "${comparison}", expected ${Object.values(Comparisons).join(", ")}`);
+			throw new Error(
+				`Unexpected comparison operator "${comparison}", expected ${Object.values(
+					Comparisons,
+				).join(", ")}`,
+			);
 		}
-		let {
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
-		} = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
+		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
+			index,
+			pk,
+			sk,
+		);
 		let params = {
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
 			IndexName: index,
 			TableName: this.model.table,
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(
+				filter.ExpressionAttributeNames,
+				keyExpressions.ExpressionAttributeNames,
+			),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(
+				filter.ExpressionAttributeValues,
+				keyExpressions.ExpressionAttributeValues,
+			),
 			KeyConditionExpression: `#pk = :pk and #sk1 ${operator} :sk1`,
 		};
+		if (filter.FilterExpression) {
+			params.FilterExpression = filter.FilterExpression;
+		}
 		return params;
 	}
 
-	_makeKeysFromAttributes(attributes = {}) {
-		let [isIncomplete, {incomplete, complete}] = this._getIndexImpact(attributes);
-		let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index])
+	_expectIndexFacets(attributes = {}) {
+		let [isIncomplete, { incomplete, complete }] = this._getIndexImpact(
+			attributes,
+		);
+		let incompleteAccessPatterns = incomplete.map(
+			({ index }) =>
+				this.model.translations.indexes.fromIndexToAccessPattern[index],
+		);
 		if (isIncomplete) {
-			throw new Error(`Incomplete facets: Without the facets ${incomplete.join(", ")} the following access patterns ${incompleteAccessPatterns.join(", ")} cannot be updated`);
+			throw new Error(
+				`Incomplete facets: Without the facets ${incomplete.join(
+					", ",
+				)} the following access patterns ${incompleteAccessPatterns.join(
+					", ",
+				)} cannot be updated`,
+			);
 		}
+		return complete;
+	}
+
+	_makeKeysFromAttributes(indexes, attributes = {}) {
 		let indexKeys = {};
-		for (let index of Object.keys(this.model.translations.indexes.fromIndexToAccessPattern)) {
-			indexKeys[index] = this._makeIndexKeys(index, complete, complete)
+		for (let index of indexes) {
+			indexKeys[index] = this._makeIndexKeys(index, attributes, attributes);
 		}
 		return indexKeys;
 	}
@@ -575,12 +808,19 @@ class Entity {
 	_getUpdatedKeys(pk = {}, sk = {}, set = {}) {
 		let updateIndex = "";
 		let keyTranslations = this.model.translations.keys;
-		let keyAttributes = {...sk, ...pk};
-		let composedKeys = this._makeKeysFromAttributes({...keyAttributes, ...set});
+		let keyAttributes = { ...sk, ...pk };
+		let completeFacets = this._expectIndexFacets({
+			...keyAttributes,
+			...set,
+		});
+		let composedKeys = this._makeKeysFromAttributes(completeFacets.indexes, {
+			...completeFacets.facets,
+			...set,
+		});
 		let updatedKeys = {};
-		let indexKey = {}
+		let indexKey = {};
 		for (let [index, keys] of Object.entries(composedKeys)) {
-			let {pk, sk} = keyTranslations[index];
+			let { pk, sk } = keyTranslations[index];
 			if (index === updateIndex) {
 				indexKey[pk] = keys.pk;
 				if (sk) {
@@ -592,41 +832,60 @@ class Entity {
 				updatedKeys[sk] = keys.sk[0];
 			}
 		}
-		return {indexKey, updatedKeys};
+		return { indexKey, updatedKeys };
 	}
 
 	_getIndexImpact(attributes = {}) {
 		let impactedIndexes = {};
+		let completedIndexes = [];
 		let facets = {};
 		for (let [attribute, indexes] of Object.entries(this.model.facets.byAttr)) {
 			if (attributes[attribute]) {
 				facets[attribute] = attributes[attribute];
-				indexes.forEach(({index, type}) => {
-					impactedIndexes[index] = impactedIndexes[index] || {}
+				indexes.forEach(({ index, type }) => {
+					impactedIndexes[index] = impactedIndexes[index] || {};
 					impactedIndexes[index][type] = impactedIndexes[index][type] || [];
 					impactedIndexes[index][type].push(attribute);
 				});
 			}
 		}
-		let incomplete = Object.entries(this.model.facets.byIndex).map(([index, {pk, sk}]) => {
-			let impacted = impactedIndexes[index];
-			if (impacted) {
-				let impact;
-				if (impacted[KeyTypes.sk] && impacted[KeyTypes.sk].length !== sk.length) {
-					impact = impact || {index, missing: []};
-					impact.missing = [...impact.missing, ...sk.filter(attr => !impacted[KeyTypes.sk].includes(attr))];
+		let incomplete = Object.entries(this.model.facets.byIndex)
+			.map(([index, { pk, sk }]) => {
+				let impacted = impactedIndexes[index];
+				if (impacted) {
+					let impact;
+					let missingPk =
+						impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
+					let missingSk =
+						impacted[KeyTypes.sk] && impacted[KeyTypes.sk].length !== sk.length;
+					if (missingPk) {
+						impact = impact || { index, missing: [] };
+						impact.missing = [
+							...impact.missing,
+							...pk.filter(attr => !impacted[KeyTypes.pk].includes(attr)),
+						];
+					}
+					if (missingSk) {
+						impact = impact || { index, missing: [] };
+						impact.missing = [
+							...impact.missing,
+							...sk.filter(attr => !impacted[KeyTypes.sk].includes(attr)),
+						];
+					}
+					if (!missingPk && !missingSk) {
+						completedIndexes.push(index);
+					}
+					return impact;
 				}
-				if (impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length) {
-					impact = impact || {index, missing: []};
-					impact.missing = [...impact.missing, ...pk.filter(attr => !impacted[KeyTypes.pk].includes(attr))];
-				}
-				return impact;
-			}
-		})
-		.filter(Boolean)
-		.reduce((result, {missing}) => [...result, ...missing], [])
+			})
+			.filter(Boolean)
+			.reduce((result, { missing }) => [...result, ...missing], []);
 		let isIncomplete = !!incomplete.length;
-		return [isIncomplete, {incomplete, complete: facets}];
+		let complete = {
+			facets,
+			indexes: completedIndexes,
+		};
+		return [isIncomplete, { incomplete, complete }];
 	}
 
 	_consolidateQueryFacets(queryFacets) {
@@ -634,12 +893,12 @@ class Entity {
 		let sk2 = {};
 		for (let { type, facets } of queryFacets) {
 			if (type === QueryTypes.between) {
-				sk1 = {...sk1, ...facets};
+				sk1 = { ...sk1, ...facets };
 			} else if (type === QueryTypes.and) {
-				sk2 = {...sk2, ...facets};
+				sk2 = { ...sk2, ...facets };
 			} else {
-				sk1 = {...sk1, ...facets};
-				sk2 = {...sk2, ...facets};
+				sk1 = { ...sk1, ...facets };
+				sk2 = { ...sk2, ...facets };
 			}
 		}
 		return [sk1, sk2];
@@ -655,7 +914,7 @@ class Entity {
 			},
 			{},
 		);
-		return { ...queryFacets }
+		return { ...queryFacets };
 	}
 
 	_expectFacets(obj = {}, properties = [], type = "key facets") {
@@ -898,22 +1157,17 @@ class Entity {
 			indexAccessPattern,
 		} = this._normalizeIndexes(model.indexes);
 		let schema = new Schema(model.attributes, facets);
-
+		let filters = model.filters || {};
 		return {
 			service,
 			version,
 			entity,
 			table,
 			schema,
-			indexes,
 			facets,
+			indexes,
+			filters,
 			prefixes,
-			// enum: {
-			// 	attributes: {
-			// 		...enums,
-			// 	},
-			// 	keys: facets.fields,
-			// },
 			lookup: {
 				indexHasSortKeys,
 			},
@@ -921,6 +1175,7 @@ class Entity {
 				keys: indexField,
 				indexes: indexAccessPattern,
 			},
+
 			original: model,
 		};
 	}
@@ -938,4 +1193,5 @@ class Entity {
 
 module.exports = {
 	Entity,
+	clauses,
 };

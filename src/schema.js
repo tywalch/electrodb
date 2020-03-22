@@ -150,7 +150,9 @@ class Attribute {
 		value = this.val(value);
 		let [isValid, validationError] = this.isValid(value);
 		if (!isValid) {
-			throw new Error(`Invalid value for attribute "${this.name}": ${validationError}.`);
+			throw new Error(
+				`Invalid value for attribute "${this.name}": ${validationError}.`,
+			);
 		}
 		return value;
 	}
@@ -184,9 +186,7 @@ class Schema {
 			if (attribute.attr && facets.fields.includes(attribute.attr)) {
 				continue;
 			}
-			let isPk = !!facets.byIndex[""].pk.find(
-				facet => facet === name
-			);
+			let isKey = !!facets.byIndex[""].all.find(facet => facet.name === name);
 			let definition = {
 				name,
 				required: !!attribute.required,
@@ -194,7 +194,7 @@ class Schema {
 				hide: !!attribute.hide,
 				default: attribute.default,
 				validate: attribute.validate,
-				readOnly: !!attribute.readOnly || isPk,
+				readOnly: !!attribute.readOnly || isKey,
 				indexes: facets.byAttr[name] || [],
 				type: attribute.type,
 			};
@@ -262,7 +262,7 @@ class Schema {
 		let record = {};
 		for (let attribute of Object.values(this.attributes)) {
 			let value = payload[attribute.name];
-			record[attribute.field] = attribute.getValidate(value)
+			record[attribute.field] = attribute.getValidate(value);
 		}
 		return record;
 	}
@@ -273,16 +273,20 @@ class Schema {
 			let value = payload[attribute.name];
 			if (value === undefined) continue;
 			if (attribute.readOnly) {
-				throw new Error(`Attribute ${attribute.name} is Read-Only and cannot be updated`);
+				throw new Error(
+					`Attribute ${attribute.name} is Read-Only and cannot be updated`,
+				);
 			} else {
-				record[attribute.field] = attribute.getValidate(value)
+				record[attribute.field] = attribute.getValidate(value);
 			}
 		}
 		return record;
 	}
 
 	getReadOnly() {
-		return Object.values(this.attributes).filter(attribute => attribute.readOnly).map(attribute => attribute.name);
+		return Object.values(this.attributes)
+			.filter(attribute => attribute.readOnly)
+			.map(attribute => attribute.name);
 	}
 }
 
