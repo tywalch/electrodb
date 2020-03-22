@@ -5,106 +5,121 @@ let queryChildren = [
 	"gte",
 	"lte",
 	"between",
-	"params",
 	"begins",
 	"exists",
 	"notExists",
 	"contains",
 	"notContains",
-	"go",
-	"and",
-	"or",
 ];
+let FilterTypes = {
+	eq: function eq(name, value) {
+		return ` (${name} = ${value}) `;
+	},
+	gt: function gt(name, value) {
+		return ` (${name} > ${value}) `;
+	},
+	lt: function lt(name, value) {
+		return ` (${name} < ${value}) `;
+	},
+	gte: function gte(name, value) {
+		return ` (${name} >= ${value}) `;
+	},
+	lte: function lte(name, value) {
+		return ` (${name} <= ${value}) `;
+	},
+	between: function between(name, value1, value2) {
+		return ` (${name} between ${value1} and ${value2}) `;
+	},
+	begins: function begins(name, value) {
+		return ` begins_with(${name}, ${value}) `;
+	},
+	exists: function exists(name, value) {
+		return ` exists(${name}, ${value}) `;
+	},
+	notExists: function notExists(name, value) {
+		return ` (not exists(${name}, ${value})) `;
+	},
+	contains: function contains(name, value) {
+		return ` (contains(${name}, ${value})) `;
+	},
+	notContains: function notContains(name, value) {
+		return ` (not contains(${name}, ${value})) `;
+	},
+};
 
-function eq(name, value) {
-	return `${name} = ${value}`;
-}
-
-function gt(name, value) {
-	return `${name} > ${value}`;
-}
-
-function lt(name, value) {
-	return `${name} < ${value}`;
-}
-
-function gte(name, value) {
-	return `${name} >= ${value}`;
-}
-
-function lte(name, value) {
-	return `${name} <= ${value}`;
-}
-
-function between(name, value1, value2) {
-	return `${name} between ${value1} and ${value2}`;
-}
-
-function begins(name, value) {
-	return `begins_with(${name}, ${value})`;
-}
-
-function exists() {
-	return `exists(${name}, ${value})`;
-}
-
-function notExists() {
-	return `not exists(${name}, ${value})`;
-}
-
-function contains() {
-	return `contains(${name}, ${value})`;
-}
-
-function notContains() {
-	return `not contains(${name}, ${value})`;
-}
-
-function and(...filters) {}
-
-function or(...filters) {}
-
-const AttributeTypes = ["string", "number", "boolean", "enum"];
-const CastTypes = ["string", "number"];
-
-class Attribute {
-	constructor(definition = {}) {
-		this.name = definition.name;
-		this.field = definition.field || definition.name;
-		this.readOnly = !!definition.readOnly;
-		this.required = !!definition.required;
-		this.cast = definition.cast;
-		this.default = definition.default || "";
-		this.validate = definition.validate;
-		this.indexes = [...(definition.indexes || [])];
-		if (Array.isArray(definition.type)) {
-			this.type = "enum";
-			this.enumArray = [...definition.type];
-		} else {
-			this.type = definition.type || "string";
-		}
-
-		if (!AttributeTypes.includes(this.type)) {
-			throw new Error(
-				`Invalid "type" property for attribute: "${
-					definition.name
-				}". Acceptable types include ${AttributeTypes.join(", ")}`,
-			);
-		}
-
-		if (cast !== undefined && !AttributeTypes.includes(this.cast)) {
-			throw new Error(
-				`Invalid "cast" property for attribute: "${
-					definition.name
-				}". Acceptable types include ${AttributeTypes.join(", ")}`,
-			);
-		}
-	}
-}
-
-class Filter {
-	constructor(attributes = {}) {
+class FilterFactory {
+	constructor(attributes = {}, filterTypes = {}) {
 		this.attributes = { ...attributes };
-		this.filters = {};
+		this.filters = {
+			...filterTypes,
+		};
+	}
+
+	_buildFilterAttributes(setName, setValue, getValueCount) {
+		let attributes = {};
+		for (let [name, attribute] of Object.entries(this.attributes)) {
+			let filterAttribute = {};
+			for (let [type, template] of Object.entries(this.filters)) {
+				Object.defineProperty(filterAttribute, type, {
+					get: () => {
+						return (...values) => {
+							let attrName = `#${name}`;
+							setName(attrName, attribute.field);
+							let attrValues = [];
+							for (let value of values) {
+								let [isValid, errMessage] = attribute.isValid(value);
+								if (!isValid) {
+									throw new Error(errMessage);
+								}
+
+								let valueCount = getValueCount(name);
+								let attrValue = `:${name}${valueCount}`;
+								setValue(attrValue, value);
+								attrValues.push(attrValue);
+							}
+							let expression = template(attrName, ...attrValues);
+							if (typeof expression !== "string") {
+								throw new Error(
+									"Invalid filter response. Expected result to be of type string",
+								);
+							} else {
+								return expression.trim();
+							}
+						};
+					},
+				});
+			}
+			attributes[name] = filterAttribute;
+		}
+		return attributes;
+	}
+
+	buildClause(filterFn) {
+		return (entity, state, ...params) => {
+			state.query.filter.ExpressionAttributeNames =
+				state.query.filter.ExpressionAttributeNames || {};
+			state.query.filter.ExpressionAttributeValues =
+				state.query.filter.ExpressionAttributeValues || {};
+			state.query.filter.valueCount = state.query.filter.valueCount || {};
+			let getValueCount = name => {
+				if (state.query.filter.valueCount[name] === undefined) {
+					state.query.filter.valueCount[name] = 1;
+				}
+				return state.query.filter.valueCount[name]++;
+			};
+			let setName = (name, value) =>
+				(state.query.filter.ExpressionAttributeNames[name] = value);
+			let setValue = (name, value) =>
+				(state.query.filter.ExpressionAttributeValues[name] = value);
+			let attributes = this._buildFilterAttributes(
+				setName,
+				setValue,
+				getValueCount,
+			);
+			state.query.filter.FilterExpression = filterFn(attributes, ...params);
+			return state;
+		};
 	}
 }
+
+module.exports = { FilterFactory, FilterTypes };
