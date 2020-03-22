@@ -1,4 +1,4 @@
-const { Entity, clauses } = require("./entity");
+const { Entity, clauses } = require("../src/entity");
 const { expect } = require("chai");
 const moment = require("moment");
 const uuidV4 = require("uuid/v4");

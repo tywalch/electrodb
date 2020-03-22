@@ -249,15 +249,6 @@ class Schema {
 		return record;
 	}
 
-	translateToAttributes(payload = {}) {
-		let record = {};
-		for (let [name, value] of Object.entries(payload)) {
-			let field = this.translationForRetrieval[name];
-			record[field] = value;
-		}
-		return record;
-	}
-
 	checkCreate(payload = {}) {
 		let record = {};
 		for (let attribute of Object.values(this.attributes)) {
