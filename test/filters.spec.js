@@ -1,8 +1,8 @@
 const moment = require("moment");
 const uuidV4 = require("uuid/v4");
 const { expect } = require("chai");
-let { Entity } = require("./entity");
-let { FilterFactory, FilterTypes } = require("./filters");
+let { Entity } = require("../src/entity");
+let { FilterFactory, FilterTypes } = require("../src/filters");
 
 let model = {
 	service: "MallStoreDirectory",

@@ -1,4 +1,4 @@
-const { Schemas, Attribute, AttributeTypes } = require("./schema");
+const { Schemas, Attribute, AttributeTypes } = require("../src/schema");
 
 let schema = {
 	service: "MallStoreDirectory",
@@ -45,7 +45,8 @@ let schema = {
 		leaseEnd: {
 			type: "string",
 			required: true,
-			validate: date => moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
+			validate: date =>
+				moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
 		},
 		rent: {
 			type: "string",
@@ -110,14 +111,3 @@ let schema = {
 		},
 	},
 };
-
-describe("Schema", () => {
-    describe("Attributes", () => {
-        let MallStores = new Entity(schema);
-        describe("Validations", () => {
-            let badCategory = "bad_category";
-            expect()
-        })
-    })
-})
-
