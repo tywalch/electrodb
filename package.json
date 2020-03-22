@@ -19,6 +19,8 @@
   "devDependencies": {
     "aws-sdk": "^2.630.0",
     "chai": "^4.2.0",
+    "mocha": "7.1.1",
+    "moment": "^2.24.0",
     "nyc": "^15.0.0",
     "uuid": "^7.0.1"
   }

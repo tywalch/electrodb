@@ -1,3 +1,3 @@
-const {Entity} = require("./src/electro");
+const { Entity } = require("./src/entity");
 
-module.exports = {Entity};
+module.exports = { Entity };
