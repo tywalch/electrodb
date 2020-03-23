@@ -427,14 +427,6 @@ class Entity {
 	}
 
 	_params(chainState = {}) {
-		// let {
-		// 	index = "",
-		// 	method = "",
-		// 	type = "",
-		// 	pk = {},
-		// 	sks = [],
-		// 	data = {},
-		// } = chainState;
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
 			chainState.keys.sk,
 		);
@@ -458,10 +450,6 @@ class Entity {
 					chainState.keys.pk,
 					...conlidatedQueryFacets,
 				);
-				break;
-			// case MethodTypes.scan:
-			// case MethodTypes.query:
-			// 	return this._queryParams(chainResults);
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
@@ -629,15 +617,6 @@ class Entity {
 	}
 
 	_queryParams(chainState) {
-		// let {
-		// 	index = "",
-		// 	method = "",
-		// 	type = "",
-		// 	pk = {},
-		// 	sks = [],
-		// 	data = {},
-		// 	options = {},
-		// } = chainState;
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
 			chainState.keys.sk,
 		);
