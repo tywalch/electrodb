@@ -1053,7 +1053,7 @@ class Entity {
 				index: indexName,
 				type: KeyTypes.pk,
 				field: index.pk.field || "",
-				compose: [...index.pk.compose],
+				facets: [...index.pk.facets],
 			};
 			let sk = {};
 
@@ -1063,7 +1063,7 @@ class Entity {
 					index: indexName,
 					type: KeyTypes.sk,
 					field: index.sk.field || "",
-					compose: [...index.sk.compose],
+					facets: [...index.sk.facets],
 				};
 				facets.fields.push(sk.field);
 			}
@@ -1075,12 +1075,12 @@ class Entity {
 			};
 
 			let attributes = [
-				...pk.compose.map(name => ({
+				...pk.facets.map(name => ({
 					name,
 					index: indexName,
 					type: KeyTypes.pk,
 				})),
-				...(sk.compose || []).map(name => ({
+				...(sk.facets || []).map(name => ({
 					name,
 					index: indexName,
 					type: KeyTypes.sk,
@@ -1106,8 +1106,8 @@ class Entity {
 			facets.fields.push(pk.field);
 
 			facets.byIndex[indexName] = {
-				pk: pk.compose,
-				sk: sk.compose,
+				pk: pk.facets,
+				sk: sk.facets,
 				all: attributes,
 			};
 

@@ -13,27 +13,27 @@ let model = {
 		id: {
 			type: "string",
 			default: () => uuidV4(),
-			field: "storeLocationId",
+			facets: "storeLocationId",
 		},
 		mall: {
 			type: "string",
 			required: true,
-			field: "mallId",
+			facets: "mallId",
 		},
 		store: {
 			type: "string",
 			required: true,
-			field: "storeId",
+			facets: "storeId",
 		},
 		building: {
 			type: "string",
 			required: true,
-			field: "buildingId",
+			facets: "buildingId",
 		},
 		unit: {
 			type: "string",
 			required: true,
-			field: "unitId",
+			facets: "unitId",
 		},
 		category: {
 			type: [
@@ -65,51 +65,51 @@ let model = {
 	indexes: {
 		store: {
 			pk: {
-				field: "pk",
+				facets: "pk",
 				compose: ["id"],
 			},
 		},
 		units: {
 			index: "gsi1pk-gsi1sk-index",
 			pk: {
-				field: "gsi1pk",
+				facets: "gsi1pk",
 				compose: ["mall"],
 			},
 			sk: {
-				field: "gsi1sk",
+				facets: "gsi1sk",
 				compose: ["building", "unit", "store"],
 			},
 		},
 		leases: {
 			index: "gsi2pk-gsi2sk-index",
 			pk: {
-				field: "gsi2pk",
+				facets: "gsi2pk",
 				compose: ["mall"],
 			},
 			sk: {
-				field: "gsi2sk",
+				facets: "gsi2sk",
 				compose: ["leaseEnd", "store", "building", "unit"],
 			},
 		},
 		categories: {
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
-				field: "gsi3pk",
+				facets: "gsi3pk",
 				compose: ["mall"],
 			},
 			sk: {
-				field: "gsi3sk",
+				facets: "gsi3sk",
 				compose: ["category", "building", "unit", "store"],
 			},
 		},
 		shops: {
 			index: "gsi4pk-gsi4sk-index",
 			pk: {
-				field: "gsi4pk",
+				facets: "gsi4pk",
 				compose: ["store"],
 			},
 			sk: {
-				field: "gsi4sk",
+				facets: "gsi4sk",
 				compose: ["mall", "building", "unit"],
 			},
 		},

@@ -79,51 +79,51 @@ let schema = {
 		store: {
 			pk: {
 				field: "pk",
-				compose: ["id"],
+				facets: ["id"],
 			},
 		},
 		units: {
 			index: "gsi1pk-gsi1sk-index",
 			pk: {
 				field: "gsi1pk",
-				compose: ["mall"],
+				facets: ["mall"],
 			},
 			sk: {
 				field: "gsi1sk",
-				compose: ["building", "unit", "store"],
+				facets: ["building", "unit", "store"],
 			},
 		},
 		leases: {
 			index: "gsi2pk-gsi2sk-index",
 			pk: {
 				field: "gsi2pk",
-				compose: ["mall"],
+				facets: ["mall"],
 			},
 			sk: {
 				field: "gsi2sk",
-				compose: ["leaseEnd", "store", "building", "unit"],
+				facets: ["leaseEnd", "store", "building", "unit"],
 			},
 		},
 		categories: {
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
 				field: "gsi3pk",
-				compose: ["mall"],
+				facets: ["mall"],
 			},
 			sk: {
 				field: "gsi3sk",
-				compose: ["category", "building", "unit", "store"],
+				facets: ["category", "building", "unit", "store"],
 			},
 		},
 		shops: {
 			index: "gsi4pk-gsi4sk-index",
 			pk: {
 				field: "gsi4pk",
-				compose: ["store"],
+				facets: ["store"],
 			},
 			sk: {
 				field: "gsi4sk",
-				compose: ["mall", "building", "unit"],
+				facets: ["mall", "building", "unit"],
 			},
 		},
 	},
