@@ -3,8 +3,7 @@ tests:
     - test for return non string from filter
     - test for each filter type
   entity
-    - find method
-    - scan method
+    
     - test for connected delete test w/ sortKey
     - test for each option
       - raw
@@ -16,3 +15,8 @@ tests:
     - test for regex validation
     - test for invalid attribute type  
     - test for bad "isValid" attribute result
+
+features: 
+  - if no client passed, no calling "go" method
+  - find method
+  - scan method
