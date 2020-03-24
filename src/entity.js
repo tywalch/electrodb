@@ -967,7 +967,7 @@ class Entity {
 				break;
 			}
 		}
-		return key;
+		return key.toLowerCase();
 	}
 
 	_findBestIndexKeyMatch(attributes = {}) {
