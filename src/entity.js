@@ -405,7 +405,13 @@ class Entity {
 			includeKeys: options.includeKeys,
 			originalErr: options.originalErr,
 			raw: options.raw,
+			params: options.params || {}
 		};
+		for (let [name, value] of Object.entries(config.params)) {
+			if (value !== undefined) {
+				params[name] = value;
+			}
+		}
 
 		let stackTrace = new Error();
 		try {
