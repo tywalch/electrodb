@@ -199,14 +199,14 @@ attributes: {
 
 | Property | Type | Required | Description |  
 | -------- | :--: | :--: | ----------- |  
-| `type`  | `string|string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, or an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`. |  
+| `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, or an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`. |  
 `required` | `boolean` | no | Whether or not the value is required when creating a new record. |  
-`default` | `value|() => value` | no | Either the default value itself or a synchronous function that returns the desired value. |  
-`validate` | `RegExp|() => boolean` | no | Either regex match the incoming value against or a synchronous function that returns a boolean. |  
+`default` | `value`, `() => value` | no | Either the default value itself or a synchronous function that returns the desired value. |  
+`validate` | `RegExp`, `() => boolean` | no | Either regex match the incoming value against or a synchronous function that returns a boolean. |  
 `field` | `string` | no | The name of the attribute as it exists dynamo, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
 `readOnly` | `boolean` | no | Prevents update of the property after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are by read-only by default.
 `label` | `string` | no | Used in index composition to prefix key facets. By default, the `AttributeName` is used as the label.
-`cast` | `"number"|"string"|"boolean"` | no | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
+`cast` | `"number"`, `"string"`, `"boolean"` | no | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
 
 ## Indexes
 The indexes object requires at least the definition of the tables natural **Partition Key** and (if applicable) **Sort Key**.
@@ -262,7 +262,7 @@ indexes: {
 ## Filters 
 Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further. By adding Filters to your model you can extend your queries with custom filters. Below is the traditional way you would add a filter to Dynamo's DocumentClient directly along side how you would accomplish the same using a Filter function.
 
-```json
+```javascript
 {
   IndexName: 'gsi2pk-gsi2sk-index',
   TableName: 'electro',
@@ -539,7 +539,6 @@ let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 let unitId = "B47";
 await StoreLocations.get({storeId, mallId, buildingId, unitId}).go();
-
 ```
 ### `Delete` Method
 Provide all facets in an object to the `delete` method to delete a record
@@ -589,31 +588,31 @@ await StoreLocations
 All queries start from the Access Pattern defined in the schema. 
 
 ```javascript
-	const MallStore = new Entity(schema); 
-	// Each Access Pattern is available on the Entity instance
-	// MallStore.stores()
-	// MallStore.malls()
+const MallStore = new Entity(schema); 
+// Each Access Pattern is available on the Entity instance
+// MallStore.stores()
+// MallStore.malls()
 ```
 
 #### Partition Key Facets
 All queries require (*at minimum*) the **Facets** included in its defined **Partition Key**. They can be supplied in the order they are composed or in a single object when invoking the **Access Pattern**.
 ```javascript
-	const MallStore = new Entity(schema);
-	//	stores
-	//	pk: ["storeId"]
-	//	sk: ["mallId", "buildingId", "unitId"]
-	
-	let storeId = "LatteLarrys";
-	let mallId = "EastPointe";
+const MallStore = new Entity(schema);
+//	stores
+//	pk: ["storeId"]
+//	sk: ["mallId", "buildingId", "unitId"]
 
-	// Good: As an object
-	MallStore.stores({storeId});
+let storeId = "LatteLarrys";
+let mallId = "EastPointe";
 
-	// Bad: Facets missing, will throw
-	MallStore.stores(); // err: Params passed to ENTITY method, must only include storeId
+// Good: As an object
+MallStore.stores({storeId});
 
-	// Bad: Facets not included, will throw
-	MallStore.stores({mallId}); // err: Params passed to ENTITY method, must only include storeId
+// Bad: Facets missing, will throw
+MallStore.stores(); // err: Params passed to ENTITY method, must only include storeId
+
+// Bad: Facets not included, will throw
+MallStore.stores({mallId}); // err: Params passed to ENTITY method, must only include storeId
 ```
 
 After invoking the **Access Pattern** with the required **Partition Key** **Facets**, you can now choose what **Sort Key Facets** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
@@ -630,15 +629,15 @@ The `params` method _ends_ a query chain, and synchronously formats your query i
 
 ```javascript
 let config = {};
-let stores  =  MallStores.query
-				.leases({ mallId })
-				.between(
-					{ leaseEndDate:  "2020-06-01" }, 
-					{ leaseEndDate:  "2020-07-31" })
-				.filter(attr) => attr.rent.lte("5000.00"))
-				.params(config);
+let stores = MallStores.query
+    .leases({ mallId })
+    .between(
+      { leaseEndDate:  "2020-06-01" }, 
+      { leaseEndDate:  "2020-07-31" })
+    .filter(attr) => attr.rent.lte("5000.00"))
+    .params(config);
 
-// Result:
+// Results:
 {
   IndexName: 'gsi2pk-gsi2sk-index',
   TableName: 'electro',
@@ -674,34 +673,45 @@ let stores  =  MallStores.query
 ## Query Chain Examples
 Below are _all_ chain possibilities available given the MallStore model. 
 ```javascript
-	// leases  
-	// pk: ["mallId"]  
-	// sk: ["buildingId", "unitId", "storeId"]
-	
-	let mallId = "EastPointe";
-	
-	// begins_with
-	MallStore.query.leases({mallId}).go()
-	MallStore.query.leases({mallId, leaseEndDate: "2020-03"}}).go();
-	MallStore.query.leases({mallId, leaseEndDate: "2020-03-22", rent: "2000.00"}).go();
-	
-	// gt, gte, lt, lte
-	MallStore.query.leases({mallId}).gt({leaseEndDate}).go();
-	MallStore.query.leases({mallId}).gte({leaseEndDate}).go();
-	MallStore.query.leases({mallId}).lt({leaseEndDate}).go();
-	MallStore.query.leases({mallId}).lte({leaseEndDate}).go();
+// leases  
+// pk: ["mallId"]  
+// sk: ["buildingId", "unitId", "storeId"]
 
-	// between
-	MallStore.query.leases({mallId}).between({leaseEndDate: "2020-03"}, {leaseEndDate: "2020-04"}).go();
+let mallId = "EastPointe";
 
-	// filters -- applied after any of the sort key operators above 
-	let june = "2020-06";
-	let july = "2020-07"; 
-	let discount = "500.00";
-	let maxRent = "2000.00";
-	let minRent = "5000.00";
-	MallStore.query.leases({mallId, leaseEndDate: june}).rentDiscount(discount, maxRent, minRent).go();
-	MallStore.query.leases({mallId}).between({leaseEndDate: june}, {leaseEndDate: july}).byCategory("food/coffee").go();
+// begins_with
+MallStore.query.leases({mallId}).go()
+MallStore.query.leases({mallId, leaseEndDate: "2020-03"}}).go();
+MallStore.query.leases({mallId, leaseEndDate: "2020-03-22", rent: "2000.00"}).go();
+
+// gt, gte, lt, lte
+MallStore.query.leases({mallId}).gt({leaseEndDate}).go();
+MallStore.query.leases({mallId}).gte({leaseEndDate}).go();
+MallStore.query.leases({mallId}).lt({leaseEndDate}).go();
+MallStore.query.leases({mallId}).lte({leaseEndDate}).go();
+
+// between
+MallStore.query.leases({mallId}).between({leaseEndDate: "2020-03"}, {leaseEndDate: "2020-04"}).go();
+
+// filters -- applied after any of the sort key operators above 
+let june = "2020-06";
+let july = "2020-07"; 
+let discount = "500.00";
+let maxRent = "2000.00";
+let minRent = "5000.00";
+
+MallStore.query
+  .leases({mallId, leaseEndDate: june})
+  .rentDiscount(discount, maxRent, minRent)
+  .go();
+
+MallStore.query
+  .leases({mallId})
+  .between(
+    {leaseEndDate: june}, 
+    {leaseEndDate: july})
+  .byCategory("food/coffee")
+  .go();
 ```
 
 ## Query Options
@@ -756,14 +766,14 @@ await MallStore.create({
 Returns the following:
 ```json
 {
-	mallId: "EastPointe",
-	storeId: "LatteLarrys",
-	buildingId: "BuildingA1",
-	unitId: "B47",
-	category: "spite store",
-	leaseEndDate: "2020-02-29",
-	rent: "5000.00",
-	discount: "0.00",
+	"mallId": "EastPointe",
+	"storeId": "LatteLarrys",
+	"buildingId": "BuildingA1",
+	"unitId": "B47",
+	"category": "spite store",
+	"leaseEndDate": "2020-02-29",
+	"rent": "5000.00",
+	"discount": "0.00",
 }
 ```
 ---
@@ -780,9 +790,9 @@ await StoreLocations.update({storeId, mallId, buildingId, unitId}).set({
 }).go();
 ```
 Returns the following:
-```javascript
+```json
 {
-	leaseEndDate: "2021-02-28"
+	"leaseEndDate": "2021-02-28"
 }
 ```
 
@@ -797,16 +807,16 @@ let unitId = "B47";
 await StoreLocations.get({storeId, mallId, buildingId, unitId}).go();
 ```
 Returns the following:
-```javascript
+```json
 {
-	mallId: "EastPointe",
-	storeId: "LatteLarrys",
-	buildingId: "BuildingA1",
-	unitId: "B47",
-	category: "spite store",
-	leaseEndDate: "2021-02-28",
-	rent: "5000.00",
-	discount: "0.00"
+	"mallId": "EastPointe",
+	"storeId": "LatteLarrys",
+	"buildingId": "BuildingA1",
+	"unitId": "B47",
+	"category": "spite store",
+	"leaseEndDate": "2021-02-28",
+	"rent": "5000.00",
+	"discount": "0.00"
 }
 ```
 
@@ -867,8 +877,10 @@ let mallId = "EastPointe";
 let q4StartDate = "2020-10-01";
 let q4EndDate = "2020-12-31";
 let stores = await StoreLocations.leases(mallId)
-				.between ({leaseEndDate: q4StartDate}, {leaseEndDate: q4EndDate})
-				.go();
+    .between (
+      {leaseEndDate: q4StartDate}, 
+      {leaseEndDate: q4EndDate})
+    .go();
 ```
 Spite-stores with release renewals this year  ([Requirement #3](#shopping-mall-requirements))  
 ```javascript
@@ -877,9 +889,11 @@ let yearStarDate = "2020-01-01";
 let yearEndDate = "2020-12-31";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.leases(mallId)
-				.between ({leaseEndDate: yearStarDate}, {leaseEndDate: yearEndDate})
-				.filter(attr => attr.category.eq("Spite Store"))
-				.go();
+    .between (
+      {leaseEndDate: yearStarDate}, 
+      {leaseEndDate: yearEndDate})
+    .filter(attr => attr.category.eq("Spite Store"))
+    .go();
 ```
 
 All Latte Larry's in a particular mall building (crazy for any store except a coffee shop)
