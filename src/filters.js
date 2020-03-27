@@ -31,7 +31,7 @@ let FilterTypes = {
 		return ` ( ${name} between ${value1} and ${value2} ) `;
 	},
 	begins: function begins(name, value) {
-		return ` (begins_with(${name}, ${value})) `;
+		return ` ( begins_with(${name}, ${value})) `;
 	},
 	exists: function exists(name, value) {
 		return ` ( exists(${name}, ${value}) ) `;
