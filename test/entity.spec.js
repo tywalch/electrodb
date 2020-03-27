@@ -236,18 +236,39 @@ describe("Entity", () => {
 				.units({ mall })
 				.between({ building: buildingOne }, { building: buildingTwo });
 			expect(queryUnitsBetween).to.have.keys(
+				"filter",
 				"go",
 				"params",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitGt = MallStores.query.units({ mall }).gt({ building });
-			expect(queryUnitGt).to.have.keys("go", "params", "rentsLeaseEndFilter");
+			expect(queryUnitGt).to.have.keys(
+				"filter",
+				"go",
+				"params",
+				"rentsLeaseEndFilter",
+			);
 			let queryUnitsGte = MallStores.query.units({ mall }).gte({ building });
-			expect(queryUnitsGte).to.have.keys("go", "params", "rentsLeaseEndFilter");
+			expect(queryUnitsGte).to.have.keys(
+				"filter",
+				"go",
+				"params",
+				"rentsLeaseEndFilter",
+			);
 			let queryUnitsLte = MallStores.query.units({ mall }).lte({ building });
-			expect(queryUnitsLte).to.have.keys("go", "params", "rentsLeaseEndFilter");
+			expect(queryUnitsLte).to.have.keys(
+				"filter",
+				"go",
+				"params",
+				"rentsLeaseEndFilter",
+			);
 			let queryUnitsLt = MallStores.query.units({ mall }).lt({ building });
-			expect(queryUnitsLt).to.have.keys("go", "params", "rentsLeaseEndFilter");
+			expect(queryUnitsLt).to.have.keys(
+				"filter",
+				"go",
+				"params",
+				"rentsLeaseEndFilter",
+			);
 		});
 		it("Should create parameters for a given chain", () => {
 			let mall = "EastPointe";
@@ -265,13 +286,13 @@ describe("Entity", () => {
 			let get = MallStores.get({ id }).params();
 			expect(get).to.be.deep.equal({
 				TableName: "StoreDirectory",
-				Key: { pk: `$MallStoreDirectory_1#id_${id}` },
+				Key: { pk: `$mallstoredirectory_1#id_${id}` },
 			});
 
 			let del = MallStores.delete({ id }).params();
 			expect(del).to.be.deep.equal({
 				TableName: "StoreDirectory",
-				Key: { pk: `$MallStoreDirectory_1#id_${id}` },
+				Key: { pk: `$mallstoredirectory_1#id_${id}` },
 			});
 
 			let update = MallStores.update({ id })
@@ -300,7 +321,7 @@ describe("Entity", () => {
 				},
 				TableName: "StoreDirectory",
 				Key: {
-					pk: `$MallStoreDirectory_1#id_${id}`,
+					pk: `$mallstoredirectory_1#id_${id}`,
 				},
 			});
 
@@ -323,15 +344,15 @@ describe("Entity", () => {
 					category,
 					leaseEnd,
 					rent,
-					pk: `$MallStoreDirectory_1#id_${put.Item.id}`,
-					gsi1pk: `$MallStoreDirectory_1#mall_${mall}`,
-					gsi1sk: `$MallStores#building_${building}#unit_${unit}#store_${store}`,
-					gsi2pk: `$MallStoreDirectory_1#mall_${mall}`,
-					gsi2sk: `$MallStores#leaseEnd_2020-01-20#store_${store}#building_${building}#unit_${unit}`,
-					gsi3pk: `$MallStoreDirectory_1#mall_${mall}`,
-					gsi3sk: `$MallStores#category_${category}#building_${building}#unit_${unit}#store_${store}`,
-					gsi4pk: `$MallStoreDirectory_1#store_${store}`,
-					gsi4sk: `$MallStores#mall_${mall}#building_${building}#unit_${unit}`,
+					pk: `$mallstoredirectory_1#id_${put.Item.id}`,
+					gsi1pk: `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					gsi1sk: `$MallStores#building_${building}#unit_${unit}#store_${store}`.toLowerCase(),
+					gsi2pk: `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					gsi2sk: `$MallStores#leaseEnd_2020-01-20#store_${store}#building_${building}#unit_${unit}`.toLowerCase(),
+					gsi3pk: `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					gsi3sk: `$MallStores#category_${category}#building_${building}#unit_${unit}#store_${store}`.toLowerCase(),
+					gsi4pk: `$MallStoreDirectory_1#store_${store}`.toLowerCase(),
+					gsi4sk: `$MallStores#mall_${mall}#building_${building}#unit_${unit}`.toLowerCase(),
 				},
 				TableName: "StoreDirectory",
 			});
@@ -339,8 +360,8 @@ describe("Entity", () => {
 			expect(beingsWithOne).to.deep.equal({
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -352,8 +373,8 @@ describe("Entity", () => {
 			expect(beingsWithTwo).to.deep.equal({
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -365,8 +386,8 @@ describe("Entity", () => {
 			expect(beingsWithThree).to.deep.equal({
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_${unit}#store_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_${unit}#store_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -386,9 +407,9 @@ describe("Entity", () => {
 					"#sk1": "gsi1sk",
 				},
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${buildingOne}#unit_B54#store_`,
-					":sk2": `$MallStores#building_${buildingTwo}#unit_B54#store_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${buildingOne}#unit_B54#store_`.toLowerCase(),
+					":sk2": `$MallStores#building_${buildingTwo}#unit_B54#store_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -405,9 +426,9 @@ describe("Entity", () => {
 					"#sk1": "gsi1sk",
 				},
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_${unitOne}#store_`,
-					":sk2": `$MallStores#building_${building}#unit_${unitTwo}#store_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_${unitOne}#store_`.toLowerCase(),
+					":sk2": `$MallStores#building_${building}#unit_${unitTwo}#store_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -424,9 +445,9 @@ describe("Entity", () => {
 					"#sk1": "gsi1sk",
 				},
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_`,
-					":sk2": `$MallStores#building_${building}#unit_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
+					":sk2": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -441,8 +462,8 @@ describe("Entity", () => {
 			expect(queryUnitGt).to.deep.equal({
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -456,8 +477,8 @@ describe("Entity", () => {
 			expect(queryUnitsGte).to.deep.equal({
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -471,8 +492,8 @@ describe("Entity", () => {
 			expect(queryUnitsLte).to.deep.equal({
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -486,8 +507,8 @@ describe("Entity", () => {
 			expect(queryUnitsLt).to.deep.equal({
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
-					":pk": `$MallStoreDirectory_1#mall_${mall}`,
-					":sk1": `$MallStores#building_${building}#unit_`,
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -511,12 +532,14 @@ describe("Entity", () => {
 				{ mall },
 				{ category, building, unit, store },
 			);
-			expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
+			expect(pk).to.equal(
+				"$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
+			);
 			expect(sk)
 				.to.be.an("array")
 				.and.have.length(1)
 				.and.include(
-					"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys",
+					"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys".toLowerCase(),
 				);
 		});
 		it("Should stop making a key early when there is a gap in the supplied facets", () => {
@@ -526,11 +549,15 @@ describe("Entity", () => {
 				{ mall },
 				{ category, building, store },
 			);
-			expect(pk).to.equal("$MallStoreDirectory_1#mall_EastPointe");
+			expect(pk).to.equal(
+				"$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
+			);
 			expect(sk)
 				.to.be.an("array")
 				.and.have.length(1)
-				.and.include("$MallStores#category_coffee#building_BuildingA#unit_");
+				.and.include(
+					"$MallStores#category_coffee#building_BuildingA#unit_".toLowerCase(),
+				);
 		});
 		it("Should return the approprate pk and multiple sks when given multiple", () => {
 			let index = schema.indexes.shops.index;
@@ -540,13 +567,15 @@ describe("Entity", () => {
 				{ mall, building: "building1" },
 				{ mall, building: "building5" },
 			);
-			expect(pk).to.equal("$MallStoreDirectory_1#store_LatteLarrys");
+			expect(pk).to.equal(
+				"$MallStoreDirectory_1#store_LatteLarrys".toLowerCase(),
+			);
 			expect(sk)
 				.to.be.an("array")
 				.and.have.length(2)
 				.and.to.have.members([
-					"$MallStores#mall_EastPointe#building_building1#unit_",
-					"$MallStores#mall_EastPointe#building_building5#unit_",
+					"$MallStores#mall_EastPointe#building_building1#unit_".toLowerCase(),
+					"$MallStores#mall_EastPointe#building_building5#unit_".toLowerCase(),
 				]);
 		});
 		it("Should throw on bad index", () => {
@@ -708,11 +737,16 @@ describe("Entity", () => {
 				({ children }) =>
 					children.includes("rentsLeaseEndFilter") || !children.includes("go"),
 			);
+
+			// Inject children to include the model filter AND a "filter" for inline filters.
 			expect(injectedChildren)
 				.to.be.an("array")
-				.and.have.length(Object.keys(injected).length - 1);
+				.and.have.length(Object.keys(injected).length - 2);
+
 			expect(injected).includes.property("rentsLeaseEndFilter");
+			expect(injected).includes.property("filter");
 			expect(injected.rentsLeaseEndFilter).to.have.keys(["children", "action"]);
+			expect(injected.filter).to.have.keys(["children", "action"]);
 			expect(clauses).to.not.deep.equal(injected);
 			expect(clauses).to.not.have.key("rentsLeaseEndFilter");
 			let noSideEffectsOnClauses = Object.values(clauses).every(
@@ -746,12 +780,12 @@ describe("Entity", () => {
 					":mall1": "EastPointe",
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
-					":pk": "$MallStoreDirectory_1#mall_EastPointe",
-					":sk1": "$MallStores#building_BuildingA#unit_",
+					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
+					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
-					"((#rent >= :rent1) AND (#mall = :mall1)) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
+					"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
 			});
 		});
 
@@ -781,12 +815,12 @@ describe("Entity", () => {
 					":mall1": "EastPointe",
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
-					":pk": "$MallStoreDirectory_1#mall_EastPointe",
-					":sk1": "$MallStores#building_BuildingA#unit_",
+					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
+					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
-					"((#rent >= :rent1) AND (#mall = :mall1)) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
+					"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
 			});
 		});
 		it("Should add filtered fields to the between params", () => {
@@ -817,13 +851,13 @@ describe("Entity", () => {
 					":mall1": "EastPointe",
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
-					":pk": "$MallStoreDirectory_1#mall_EastPointe",
-					":sk1": "$MallStores#category_food/coffee#building_BuildingA#unit_",
-					":sk2": "$MallStores#category_food/coffee#building_BuildingF#unit_",
+					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
+					":sk1": "$MallStores#category_food/coffee#building_BuildingA#unit_".toLowerCase(),
+					":sk2": "$MallStores#category_food/coffee#building_BuildingF#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
 				FilterExpression:
-					"((#rent >= :rent1) AND (#mall = :mall1)) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
+					"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
 			});
 		});
 		it("Should add filtered fields to the comparison params", () => {
@@ -854,12 +888,12 @@ describe("Entity", () => {
 					":mall1": "EastPointe",
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
-					":pk": "$MallStoreDirectory_1#mall_EastPointe",
-					":sk1": "$MallStores#leaseEnd_20201231#store_",
+					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
+					":sk1": "$MallStores#leaseEnd_20201231#store_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
 				FilterExpression:
-					"((#rent >= :rent1) AND (#mall = :mall1)) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
+					"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
 			});
 		});
 	});

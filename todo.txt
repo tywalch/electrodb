@@ -20,3 +20,5 @@ features:
   - if no client passed, no calling "go" method
   - find method
   - scan method
+  - go, params, filter as invalid filter names
+  

@@ -132,7 +132,7 @@ let model = {
 };
 
 describe("Entity", async () => {
-	let MallStores = new Entity(model, client);
+	let MallStores = new Entity(model, { client });
 	describe("Simple crud", async () => {
 		let mall = "EastPointe";
 		let store = "LatteLarrys";
