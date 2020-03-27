@@ -214,6 +214,9 @@ let clauses = {
 	},
 	go: {
 		action(entity, state = {}, options) {
+			if (entity.client === undefined) {
+				throw new Error("No client defined on model");
+			}
 			let params = {};
 			if (state.query.method === MethodTypes.query) {
 				params = entity._queryParams(state.query, options);
@@ -249,7 +252,7 @@ const utilities = {
 };
 
 class Entity {
-	constructor(model, client) {
+	constructor(model = {}, { client } = {}) {
 		this._validateModel(model);
 		this.client = client;
 		this.model = this._parseModel(model);
@@ -298,6 +301,13 @@ class Entity {
 				children: ["params", "go"],
 			};
 		}
+		filterChildren.push("filter");
+		injected["filter"] = {
+			action: (entity, state, fn) => {
+				return this._filterBuilder.buildClause(fn)(entity, state);
+			},
+			children: ["params", "go"],
+		};
 		for (let parent of filterParents) {
 			injected[parent] = { ...injected[parent] };
 			injected[parent].children = [
