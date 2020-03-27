@@ -67,11 +67,11 @@ npm install electrodb --save
 ```  
 
 # Usage
-Unlike in traditional sql databases, a single *DynamoDB* table will include multiple entities along side each other. Additionally *DynamoDB* utilizes *Partition* and *Sort Keys* to query records and allow for heretical relationships. 
+Unlike in traditional sql databases, a single *DynamoDB* table will include multiple entities along side each other. Additionally, *DynamoDB* utilizes *Partition* and *Sort Keys* to query records to allow for hierarchical relationships. ElectroDB allows you to make the most of these concepts with less headaches. 
 
 ## Entities  
 
-In ***ElectroDB*** an `Entity` is a single record that represents a single business object. For example, in a simple contact application, one entity might represent a Person and another entity my represent a Contact method for that person (email, phone, etc.).     
+In ***ElectroDB*** an `Entity` is a single record that represents a single business object. For example, in a simple contact application, one entity could represent a Person and another entity might represent a Contact method for that person (email, phone, etc.).
 
 Require or import `Entity` from `electrodb`:    
 ```javascript  
@@ -169,7 +169,7 @@ const UserContacts = new Entity(model, {client});
 | Property | Description |  
 | ----------- | ----------- |  
 | service  | Name of the application using the entity, used to namespace all entities |  
-entity | Name of the entity that is the schema represents |  
+entity | Name of the entity that the schema represents |  
 table | Name of the dynamodb table in aws |  
 version | (optional) The version number of the schema, used to namespace keys |  
 attributes | An object containing each attribute that makes up the schema |  
@@ -180,7 +180,7 @@ filters | An object containing user defined filter template functions.
 **Attributes** define an **Entity** record. The `propertyName` represents the value your code will use to represent an attribute. 
 
 > **Pro-Tip:**
-> Using the `field` property it is possible to map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. 
+> Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. 
 
 ```typescript
 attributes: {
@@ -202,14 +202,14 @@ attributes: {
 | `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, or an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`. |  
 `required` | `boolean` | no | Whether or not the value is required when creating a new record. |  
 `default` | `value`, `() => value` | no | Either the default value itself or a synchronous function that returns the desired value. |  
-`validate` | `RegExp`, `() => boolean` | no | Either regex match the incoming value against or a synchronous function that returns a boolean. |  
+`validate` | `RegExp`, `() => boolean` | no | Either regex or a synchronous callback to return a boolean. |  
 `field` | `string` | no | The name of the attribute as it exists dynamo, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
 `readOnly` | `boolean` | no | Prevents update of the property after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are by read-only by default.
 `label` | `string` | no | Used in index composition to prefix key facets. By default, the `AttributeName` is used as the label.
 `cast` | `"number"`, `"string"`, `"boolean"` | no | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
 
 ## Indexes
-The indexes object requires at least the definition of the tables natural **Partition Key** and (if applicable) **Sort Key**.
+The `indexes` object requires at least the definition of the table's natural **Partition Key** and (if applicable) **Sort Key**.
 
 Indexes are defined, and later referenced by their `accessPatternName`. These defined via a `facets` array that is made up of attributes names as listed the model.
 
@@ -237,12 +237,12 @@ indexes: {
 | `sk`  | `object` | no | Configuration for the sk of that index or table |  
 `sk.facets` | `boolean` | no | An array that represents the order in which attributes are concatenated to facets the key (see [Facets](#facets) below for more on this functionality). |  
 `sk.field` | `string` | yes | The name of the attribute as it exists dynamo, if named differently in the schema attributes. |  
-`index` | `string` | yes | Used only when the `Index` defined is a *Global Secondary Index*, this is left blank for the table's primary index.  
+`index` | `string` | yes | Used only when the `Index` defined is a *Global Secondary Index*; this is left blank for the table's primary index.  
 
 ## Facets 
-A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together form either a **Partition Key** or an **Sort Key** key, which define an `index`. 
+A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or an **Sort Key** key, which define an `index`. 
 
-For example, in the following **Access Pattern** "`locations`" is made up of the facets `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the `schema`:
+For example, in the following **Access Pattern**, "`locations`" is made up of the facets `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the `schema`:
 
 ```javascript
 indexes: {
@@ -260,7 +260,7 @@ indexes: {
 ```
 
 ## Filters 
-Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further. By adding Filters to your model you can extend your queries with custom filters. Below is the traditional way you would add a filter to Dynamo's DocumentClient directly along side how you would accomplish the same using a Filter function.
+Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further. By adding Filters to your model, you can extend your queries with custom filters. Below is the traditional way you would add a filter to Dynamo's DocumentClient directly along side how you would accomplish the same using a Filter function.
 
 ```javascript
 {
@@ -377,7 +377,7 @@ let stores  =  MallStores.query
 }
 ```
 
-Filter functions allow you write a `FilterExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions. This object contains every Attribute defined in the Entity's Model with the following operators as methods:
+Filter functions allow you to write a `FilterExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions. This object contains every Attribute defined in the Entity's Model with the following operators as methods:
 
 operator | example | result
 | ----------- | ----------- | ----------- |  
@@ -396,10 +396,10 @@ operator | example | result
 This functionality allows you to write the remaining logic of your `FilterExpression` with ease. Add complex nested `and`/`or` conditions or other `FilterExpression` logic while ElectroDB handles the  `ExpressionAttributeNames` and `ExpressionAttributeValues`.
 
 # Building Queries
-Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys it is critical to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
-1. You must always supply the **Partition Key** in full for all queries to **DynamoDB**
-2. You currently only have the following operators available on a **Sort Key**: `begins_with`, `between`, `>`, `>=`, `<`, `<=`, and `Equals`
-3. To act on single record you will need to know the full  **Partition Key** and **Sort Key** for that record.
+Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is critical to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
+1. You must always supply the **Partition Key** in full for all queries to **DynamoDB**.
+2. You currently only have the following operators available on a **Sort Key**: `begins_with`, `between`, `>`, `>=`, `<`, `<=`, and `Equals`.
+3. To act on single record, you will need to know the full  **Partition Key** and **Sort Key** for that record.
 
 ### Sort Key Operations 
 | operator | use case |
@@ -412,12 +412,10 @@ Forming a composite **Partition Key** and **Sort Key** is a critical step in pla
 | `lt` | Keys greater than some value |
 | `lte` | Keys greater than or equal to some value |
 
-Carefully considering your **Facet** order will allow ***ElectroDB** to express hierarchical relationships and unlock more available **Access Patterns** for your application.
-
 ### Using Facets to Make Heretical Keys
 Carefully considering your **Facet** order will allow ***ElectroDB** to express hierarchical relationships and unlock more available **Access Patterns** for your application. 
 
-For example, let's say you have a `MallStore`	Entity that represents Store Locations inside Malls:
+For example, let's say you have a `MallStore` Entity that represents Store Locations inside Malls:
 
 #### Shopping Mall Stores
 ```javascript
@@ -514,18 +512,18 @@ let model = {
 };
 ```
 
-Each record represents one *Store* location, all stores related to *Malls* we manage. 
+Each record represents one Store location. All Stores are located in Malls we manage. 
 
-To satisfy requirements for searching based on location, you could use the following keys: Each `MallStore` record would have a **Partition Key**  with the store's `storeId`. This key alone is not enough to identify a particular store. Now lets compose a **Sort Key** for the store's location attribute ordered hierarchically (mall/building/unit): `["mallId", "buildingId", "unitId"]`. 
+To satisfy requirements for searching based on location, you could use the following keys: Each `MallStore` record would have a **Partition Key**  with the store's `storeId`. This key alone is not enough to identify a particular store. To solve this, compose a **Sort Key** for the store's location attribute ordered hierarchically (mall/building/unit): `["mallId", "buildingId", "unitId"]`. 
 
-The `MallStore` entity above, using just the `stores` **Index** can now enables four **Access Patterns**:
+The `MallStore` entity above, using just the `stores` **Index** alone enables four **Access Patterns**:
 1. All `LatteLarrys` locations in all *Malls*
 2. All `LatteLarrys` locations in one *Mall*
 3. All `LatteLarrys` locations inside a specific *Mall*
 4. A specific `LatteLarrys` inside of a *Mall* and *Building*
 
 ## Query Chains
-Queries are in ***ElectroDB***  are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Facets** to create performant lookups. To accomplish this, ***ElectroDB*** offers a predictable chainable API.
+Queries in ***ElectroDB*** are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Facets** to create performant lookups. To accomplish this, ***ElectroDB*** offers a predictable chainable API.
 
 > Examples in this section using the `MallStore` schema defined [above](#shopping-mall-stores). 
 
@@ -541,7 +539,8 @@ let unitId = "B47";
 await StoreLocations.get({storeId, mallId, buildingId, unitId}).go();
 ```
 ### `Delete` Method
-Provide all facets in an object to the `delete` method to delete a record
+Provide all facets in an object to the `delete` method to delete a record.
+
 ```javascript
 let storeId = "LatteLarrys";
 let mallId = "EastPointe";
@@ -551,7 +550,7 @@ await StoreLocations.delete({storeId, mallId, buildingId, unitId}).go();
 ```
 
 ### `Put` Record
-Provide all *required* Attributes as defined in the model to create a new record. ElectroDB will enforce any defined defined validations, defaults, casting, and field aliasing.
+Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
 ```javascript
 let store = {
 	storeId: "LatteLarrys",
@@ -656,7 +655,7 @@ let stores = MallStores.query
 ### `.go()`
 The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. 
 
-> For more information on the options available in the `config` object, checkout the section [Query Options](#query-options).
+> For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
 
 ```javascript
 let config = {};
@@ -671,7 +670,8 @@ let stores  =  MallStores.query
 ```
 
 ## Query Chain Examples
-Below are _all_ chain possibilities available given the MallStore model. 
+Below are _all_ chain possibilities available, given the `MallStore` model. 
+
 ```javascript
 // leases  
 // pk: ["mallId"]  
@@ -715,7 +715,7 @@ MallStore.query
 ```
 
 ## Query Options
-By default **ElectroDB** enables you to work with records as the names and properties defined in the model. Additionally it removes the need to deal directly with the docClient parameters which can be complex for a team without as much experience with DynamoDB. The Query Options object can be passed to both the `.params()` and `.go()` methods when building you query. Below are the options available:
+By default **ElectroDB** enables you to work with records as the names and properties defined in the model. Additionally, it removes the need to deal directly with the docClient parameters which can be complex for a team without as much experience with DynamoDB. The Query Options object can be passed to both the `.params()` and `.go()` methods when building you query. Below are the options available:
 
 ```typescript
 let options = {
@@ -729,16 +729,16 @@ let options = {
 | ----------- | ----------- |  
 | params  | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
 | raw  | Returns query results as they were returned by the docClient.  
-| includeKeys | By default **ElectroDB** does not return partition, sort, or global keys in its response. 
-| originalErr | By default **ElectroDB** alters stacktrace any returned exceptions received from the client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
+| includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. 
+| originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
 # Examples
 
 ### Shopping Mall Property Management App
-For an example lets look at the needs of application used to manage Shopping Mall properties. The application assists employees in the day-to-day operations of multiple Shopping Malls
+For an example, lets look at the needs of application used to manage Shopping Mall properties. The application assists employees in the day-to-day operations of multiple Shopping Malls.
 #### Shopping Mall Requirements
 1. As a Maintenance Worker I need to know which stores are currently in each Mall down to the Building they are located.
-2. As a Helpdesk Employee I need to locate related stores in Mall locations by Store Category
-3. As a Property Manager I need to identify upcoming leases in need of renewal
+2. As a Helpdesk Employee I need to locate related stores in Mall locations by Store Category.
+3. As a Property Manager I need to identify upcoming leases in need of renewal.
 
 Create a new Entity using the `MallStore` schema defined [above](#shopping-mall-stores) 
 
