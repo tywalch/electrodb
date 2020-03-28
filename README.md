@@ -123,7 +123,7 @@ let model = {
 		contact: {
 			pk: {
 				field: "PK",
-				facets: "value"
+				facets: ["value"]
 			},
 			sk: {
 				field: "SK",
