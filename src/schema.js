@@ -259,7 +259,7 @@ class Schema {
 	applyAttributeGetters(payload = {}) {
 		let attributes = {...payload};
 		for (let [name, value] of Object.entries(attributes)) {
-			attributes[name] = this.attributes[name].get(value, attributes);
+			attributes[name] = this.attributes[name].get(value, {...payload});
 		}
 		return attributes;
 	}
@@ -267,7 +267,7 @@ class Schema {
 	applyAttributeSetters(payload = {}) {
 		let attributes = {...payload};
 		for (let [name, value] of Object.entries(attributes)) {
-			attributes[name] = this.attributes[name].set(value, attributes);
+			attributes[name] = this.attributes[name].set(value, {...payload});
 		}
 		return attributes;
 	}
