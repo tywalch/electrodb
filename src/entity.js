@@ -431,7 +431,8 @@ class Entity {
 					this._cleanseRetrievedData(item, config),
 				);
 			}
-			return data;
+			let appliedGets = this.model.schema.applyAttributeGetters(data);
+			return appliedGets;
 		} catch (err) {
 			if (config.originalErr) {
 				return Promise.reject(err);
@@ -496,10 +497,11 @@ class Entity {
 	}
 
 	_makeUpdateParams({ set } = {}, pk = {}, sk = {}) {
-		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, set);
-		let translatedAttributes = this.model.schema.translateToFields(set);
+		let setAttributes = this.model.schema.applyAttributeSetters(set);
+		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
+		let transatedFields = this.model.schema.translateToFields(setAttributes);
 		let item = {
-			...translatedAttributes,
+			...transatedFields,
 			...updatedKeys,
 		};
 		let {
@@ -519,11 +521,12 @@ class Entity {
 	}
 
 	_makePutParams({ data } = {}, pk, sk) {
-		let { updatedKeys } = this._getUpdatedKeys(pk, sk, data);
-		let translatedAttributes = this.model.schema.translateToFields(data);
+		let setAttributes = this.model.schema.applyAttributeSetters(data);
+		let { updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
+		let transatedFields = this.model.schema.translateToFields(setAttributes);
 		let params = {
 			Item: {
-				...translatedAttributes,
+				...transatedFields,
 				...updatedKeys,
 			},
 			TableName: this.model.table,
