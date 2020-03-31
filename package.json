@@ -23,5 +23,8 @@
     "moment": "^2.24.0",
     "nyc": "^15.0.0",
     "uuid": "^7.0.1"
+  },
+  "dependencies": {
+    "jsonschema": "1.2.5"
   }
 }
