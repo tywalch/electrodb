@@ -192,7 +192,9 @@ attributes: {
 		"field": [string]
 		"readOnly": [boolean]
 		"label": [string]
-		"cast": ["number"|"string"|"boolean"]
+		"cast": ["number"|"string"|"boolean"],
+		get: (attribute, schema) => value,
+		set: (attribute, schema) => value 
 	}
 }
 ```
@@ -207,6 +209,8 @@ attributes: {
 `readOnly` | `boolean` | no | Prevents update of the property after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are by read-only by default.
 `label` | `string` | no | Used in index composition to prefix key facets. By default, the `AttributeName` is used as the label.
 `cast` | `"number"`, `"string"`, `"boolean"` | no | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
+`set` | `(attribute, schema) => value` | no | A synchronous callback allowing you apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put 
+`get` | `(attribute, schema) => value` | no | A synchronous callback allowing you apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database. 
 
 ## Indexes
 The `indexes` object requires at least the definition of the table's natural **Partition Key** and (if applicable) **Sort Key**.
