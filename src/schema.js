@@ -12,10 +12,26 @@ class Attribute {
 		this.cast = this._makeCast(definition.name, definition.cast);
 		this.default = this._makeDefault(definition.default);
 		this.validate = this._makeValidate(definition.validate);
+		this.get = this._makeGet(definition.name, definition.get);
+		this.set = this._makeGet(definition.name, definition.set);
 		this.indexes = [...(definition.indexes || [])];
 		let { type, enumArray } = this._makeType(this.name, definition.type);
 		this.type = type;
 		this.enumArray = enumArray;
+	}
+
+	_makeGet(name, get = (attribute, model) => attribute) {
+		if (typeof get !== "function") {
+			throw new Error(`Invalid "get" property for attribure ${name}. Please ensure value is a function or undefined.`);
+		}
+		return get;
+	}
+
+	_makeSet(name, set = (attribute, model) => attribute) {
+		if (typeof get !== "function") {
+			throw new Error(`Invalid "set" property for attribure ${name}. Please ensure value is a function or undefined.`);
+		}
+		return set;
 	}
 
 	_makeCast(name, cast) {
@@ -183,35 +199,37 @@ class Schema {
 			if (facets.fields.includes(name)) {
 				continue;
 			}
-			if (attribute.attr && facets.fields.includes(attribute.attr)) {
+			if (attribute.field && facets.fields.includes(attribute.field)) {
 				continue;
 			}
 			let isKey = !!facets.byIndex[""].all.find(facet => facet.name === name);
 			let definition = {
 				name,
 				required: !!attribute.required,
-				attr: attribute.attr || name,
+				field: attribute.field || name,
 				hide: !!attribute.hide,
 				default: attribute.default,
 				validate: attribute.validate,
 				readOnly: !!attribute.readOnly || isKey,
 				indexes: facets.byAttr[name] || [],
 				type: attribute.type,
+				get: attribute.get,
+				set: attribute.set
 			};
-			if (usedAttrs[definition.attr] || usedAttrs[name]) {
+			if (usedAttrs[definition.field] || usedAttrs[name]) {
 				invalidProperties.push({
 					name,
-					property: "attr",
-					value: definition.attr,
-					expected: `Unique attr property, already used by attribute ${
-						usedAttrs[definition.attr]
+					property: "field",
+					value: definition.field,
+					expected: `Unique field property, already used by attribute ${
+						usedAttrs[definition.field]
 					}`,
 				});
 			} else {
-				usedAttrs[definition.attr] = definition.name;
+				usedAttrs[definition.field] = definition.name;
 			}
-			translationForTable[definition.name] = definition.attr;
-			translationForRetrieval[definition.attr] = definition.name;
+			translationForTable[definition.name] = definition.field;
+			translationForRetrieval[definition.field] = definition.name;
 			normalized[name] = new Attribute(definition);
 		}
 		if (invalidProperties.length) {
@@ -236,6 +254,22 @@ class Schema {
 			record[name] = this.attributes[name].getValidate(value);
 		}
 		return record;
+	}
+
+	applyAttributeGetters(payload = {}) {
+		let attributes = {...payload};
+		for (let [name, value] of Object.entries(attributes)) {
+			attributes[name] = this.attributes[name].get(value, attributes);
+		}
+		return attributes;
+	}
+
+	applyAttributeSetters(payload = {}) {
+		let attributes = {...payload};
+		for (let [name, value] of Object.entries(attributes)) {
+			attributes[name] = this.attributes[name].set(value, attributes);
+		}
+		return attributes;
 	}
 
 	translateToFields(payload = {}) {
