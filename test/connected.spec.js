@@ -273,6 +273,163 @@ describe("Entity", async () => {
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
 	});
+	describe("Getters/Setters", async () => {
+		let db = new Entity(
+			{
+				service: "testing",
+				entity: "tester",
+				table: "electro",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						default: () => uuidv4(),
+					},
+					date: {
+						type: "string",
+						default: () => moment.utc().format(),
+					},
+					prop1: {
+						type: "string",
+						field: "prop1Field",
+						set: (prop1, { id }) => {
+							if (id) {
+								return `${prop1} SET ${id}`;
+							} else {
+								return `${prop1} SET`;
+							}
+						},
+						get: prop1 => `${prop1} GET`,
+					},
+					prop2: {
+						type: "string",
+						field: "prop2Field",
+						get: (prop2, { id }) => `${prop2} GET ${id}`,
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							facets: ["date"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"],
+						},
+					},
+				},
+			},
+			{ client },
+		);
+
+		it("Should show getter/setter values on put", async () => {
+			let date = moment.utc().format();
+			let id = uuidv4();
+			let prop1 = "aaa";
+			let prop2 = "bbb";
+			let record = await db.put({ date, id, prop1, prop2 }).go();
+			expect(record).to.deep.equal({
+				id,
+				date,
+				prop1: `${prop1} SET ${id} GET`,
+				prop2: `${prop2} GET ${id}`,
+			});
+			let fetchedRecord = await db.get({ date, id }).go();
+			expect(fetchedRecord).to.deep.equal({
+				id,
+				date,
+				prop1: `${prop1} SET ${id} GET`,
+				prop2: `${prop2} GET ${id}`,
+			});
+			let updatedProp1 = "ZZZ";
+			let updatedRecord = await db
+				.update({ date, id })
+				.set({ prop1: updatedProp1 })
+				.go();
+			expect(updatedRecord).to.deep.equal({});
+			let getUpdatedRecord = await db.get({ date, id }).go();
+			expect(getUpdatedRecord).to.deep.equal({
+				id,
+				date,
+				prop1: "ZZZ SET GET",
+				prop2: "bbb GET " + id,
+			});
+		});
+	});
+	describe("Query Options", async () => {
+		let db = new Entity(
+			{
+				service: "testing",
+				entity: "tester",
+				table: "electro",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+					},
+					date: {
+						type: "string",
+					},
+					someValue: {
+						type: "string",
+						required: true,
+						set: val => val + " wham",
+						get: val => val + " bam",
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							facets: ["date"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"],
+						},
+					},
+				},
+			},
+			{ client },
+		);
+		it("Should return the originally returned results", async () => {
+			let id = uuidv4();
+			let date = moment.utc().format();
+			let someValue = "ABDEF";
+			let putRecord = await db.put({ id, date, someValue }).go({ raw: true });
+			expect(putRecord).to.deep.equal({});
+			let getRecord = await db.get({ id, date }).go({ raw: true });
+			expect(getRecord).to.deep.equal({
+				Item: {
+					id,
+					date,
+					someValue: someValue + " wham",
+					sk: `$tester#id_${id}`.toLowerCase(),
+					pk: `$testing_1#date_${date}`.toLowerCase(),
+				},
+			});
+			let updateRecord = await db
+				.update({ id, date })
+				.set({ someValue })
+				.go({ raw: true });
+			expect(updateRecord).to.deep.equal({});
+			let queryRecord = await db.query.record({ id, date }).go({ raw: true });
+			expect(queryRecord).to.deep.equal({
+				Items: [
+					{
+						id,
+						date,
+						someValue: someValue + " wham",
+						sk: `$tester#id_${id}`.toLowerCase(),
+						pk: `$testing_1#date_${date}`.toLowerCase(),
+					},
+				],
+				Count: 1,
+				ScannedCount: 1,
+			});
+		});
+	});
 	describe("Filters", async () => {
 		it("Should filter results with custom user filter", async () => {
 			let store = "LatteLarrys";
@@ -368,13 +525,20 @@ describe("Entity", async () => {
 			);
 			let date = moment.utc().format();
 			let property = "ABDEF";
+			let recordParams = db.put({ date, property }).params();
+			expect(recordParams.Item.propertyVal).to.equal(property);
 			let record = await db.put({ date, property }).go();
 			let found = await db.query
 				.record({ date })
 				.filter(attr => attr.property.eq(property))
 				.go();
-			console.log("RECORD", record);
-			console.log("FOUND", found);
+			let foundParams = db.query
+				.record({ date })
+				.filter(attr => attr.property.eq(property))
+				.params();
+			expect(foundParams.ExpressionAttributeNames["#property"]).to.equal(
+				"propertyVal",
+			);
 			expect(found)
 				.to.be.an("array")
 				.and.have.length(1)
