@@ -300,21 +300,21 @@ describe("Entity", () => {
 				.params();
 			expect(update).to.deep.equal({
 				UpdateExpression:
-					"SET #mall = :mall, #store = :store, #building = :building, #unit = :unit, #category = :category, #leaseEnd = :leaseEnd, #rent = :rent",
+					"SET #mall = :mall, #storeId = :storeId, #buildingId = :buildingId, #unitId = :unitId, #category = :category, #leaseEnd = :leaseEnd, #rent = :rent",
 				ExpressionAttributeNames: {
 					"#mall": "mall",
-					"#store": "store",
-					"#building": "building",
-					"#unit": "unit",
+					"#storeId": "storeId",
+					"#buildingId": "buildingId",
+					"#unitId": "unitId",
 					"#category": "category",
 					"#leaseEnd": "leaseEnd",
 					"#rent": "rent",
 				},
 				ExpressionAttributeValues: {
 					":mall": mall,
-					":store": store,
-					":building": building,
-					":unit": unit,
+					":storeId": store,
+					":buildingId": building,
+					":unitId": unit,
 					":category": category,
 					":leaseEnd": leaseEnd,
 					":rent": rent,
@@ -334,17 +334,18 @@ describe("Entity", () => {
 				leaseEnd,
 				unit,
 			}).params();
+
 			expect(put).to.deep.equal({
 				Item: {
-					id: put.Item.id,
+					storeLocationId: put.Item.storeLocationId,
 					mall,
-					store,
-					building,
-					unit,
+					storeId: store,
+					buildingId: building,
+					unitId: unit,
 					category,
 					leaseEnd,
 					rent,
-					pk: `$mallstoredirectory_1#id_${put.Item.id}`,
+					pk: `$mallstoredirectory_1#id_${put.Item.storeLocationId}`,
 					gsi1pk: `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					gsi1sk: `$MallStores#building_${building}#unit_${unit}#store_${store}`.toLowerCase(),
 					gsi2pk: `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
