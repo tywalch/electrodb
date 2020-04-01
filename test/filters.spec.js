@@ -179,5 +179,41 @@ describe("Filter", () => {
 				"Value not found in set of acceptable values: food/coffee, food/meal, clothing, electronics, department, misc",
 			);
 		});
+		it("Should not allow filters named 'go', 'params', or 'filter'", () => {
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						default: () => uuidV4(),
+						facets: "storeLocationId",
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						},
+					},
+				},
+				filters: {},
+			};
+			schema.filters = { go: () => "" };
+			expect(() => new Entity(schema)).to.throw(
+				`Invalid filter name. Filter cannot be named "go", "params", or "filter"`,
+			);
+			schema.filters = { params: () => "" };
+			expect(() => new Entity(schema)).to.throw(
+				`Invalid filter name. Filter cannot be named "go", "params", or "filter"`,
+			);
+			schema.filters = { filter: () => "" };
+			expect(() => new Entity(schema)).to.throw(
+				`Invalid filter name. Filter cannot be named "go", "params", or "filter"`,
+			);
+		});
 	});
 });
