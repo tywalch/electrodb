@@ -130,9 +130,26 @@ let schema = {
 };
 
 describe("Entity", () => {
-	describe("Schema parsing", () => {
+	describe("'client' validation", () => {
+		let mall = "EastPointe";
+		let store = "LatteLarrys";
+		let building = "BuildingA";
+		let category = "food/coffee";
+		let unit = "B54";
+		let leaseEnd = "2020-01-20";
+		let rent = "0.00";
 		let MallStores = new Entity(schema);
-		// console.log(JSON.stringify(MallStores.schema));
+		expect(() =>
+			MallStores.put({
+				store,
+				mall,
+				building,
+				rent,
+				category,
+				leaseEnd,
+				unit,
+			}).go(),
+		).to.throw("No client defined on model");
 	});
 	describe("Schema validation", () => {
 		let MallStores = new Entity(schema);

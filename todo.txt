@@ -3,10 +3,7 @@ tests:
     - test for return non string from filter
     - test for each filter type
   entity
-    
-    - test for connected delete test w/ sortKey
     - test for each option
-      - raw
       - original error
       - includeKeys
     - test for incomplete incomplete facets on update
@@ -17,8 +14,5 @@ tests:
     - test for bad "isValid" attribute result
 
 features: 
-  - if no client passed, no calling "go" method
   - find method
   - scan method
-  - go, params, filter as invalid filter names
-  

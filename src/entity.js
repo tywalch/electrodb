@@ -1166,6 +1166,23 @@ class Entity {
 		};
 	}
 
+	_normalizeFilters(filters = {}) {
+		let normalized = {};
+		let invalidFilterNames = ["go", "params", "filter"];
+
+		for (let [name, fn] of Object.entries(filters)) {
+			if (invalidFilterNames.includes(name)) {
+				throw new Error(
+					`Invalid filter name. Filter cannot be named "go", "params", or "filter"`,
+				);
+			} else {
+				normalized[name] = fn;
+			}
+		}
+
+		return normalized;
+	}
+
 	_parseModel(model = {}) {
 		let { service, entity, table, version = "1" } = model;
 		let prefixes = this._makeKeyPrefixes(service, entity, version);
@@ -1177,7 +1194,7 @@ class Entity {
 			indexAccessPattern,
 		} = this._normalizeIndexes(model.indexes);
 		let schema = new Schema(model.attributes, facets);
-		let filters = model.filters || {};
+		let filters = this._normalizeFilters(model.filters);
 		return {
 			service,
 			version,
