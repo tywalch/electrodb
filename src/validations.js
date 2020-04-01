@@ -69,7 +69,7 @@ const Index = {
 					required: true,
 				},
 				facets: {
-					type: ["array", "string"],
+					type: "array",
 					minItems: 1,
 					items: {
 						type: "string",
@@ -87,7 +87,7 @@ const Index = {
 					required: true,
 				},
 				facets: {
-					type: ["array", "string"],
+					type: "array",
 					minItems: 1,
 					required: true,
 					items: {
@@ -162,14 +162,15 @@ function validateModel(model = {}) {
 			errors
 				.map(err => {
 					let message = `${err.property}`;
-					if (err.argument === "isFunction") {
-						return `${message} must be a function`;
-					} else if (err.argument === "isFunctionOrString") {
-						return `${message} must be either a function or string`;
-					} else if (err.argument === "isFunctionOrRegexp") {
-						return `${message} must be either a function or Regexp`;
-					} else {
-						return `${message} ${err.message}`;
+					switch (err.argument) {
+						case "isFunction":
+							return `${message} must be a function`;
+						case "isFunctionOrString":
+							return `${message} must be either a function or string`;
+						case "isFunctionOrRegexp":
+							return `${message} must be either a function or Regexp`;
+						default:
+							return `${message} ${err.message}`;
 					}
 				})
 				.join(", "),

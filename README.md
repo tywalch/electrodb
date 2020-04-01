@@ -442,23 +442,23 @@ let model = {
 			required: true,  
 		},  
 		unitId: {  
-		    type: "string",  
+			type: "string",  
 			required: true,
 		},  
 		category: {  
-		    type: [
-			    "spite store",
-			    "food/coffee", 
-			    "food/meal", 
-			    "clothing", 
-			    "electronics", 
-			    "department", 
-			    "misc"
-		    ],  
+			type: [
+				"spite store",
+				"food/coffee", 
+				"food/meal", 
+				"clothing", 
+				"electronics", 
+				"department", 
+				"misc"
+			],  
 			required: true  
 		},  
 		leaseEndDate: {  
-		    type: "string",  
+			type: "string",  
 			required: true  
 		},
 		rent: {
