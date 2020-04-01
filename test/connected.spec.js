@@ -8,8 +8,8 @@ const client = new DynamoDB.DocumentClient({
 });
 
 let model = {
-	service: "MallStoreDirectory",
-	entity: "MallStores",
+	service: "BugBeater",
+	entity: "test",
 	table: "electro",
 	version: "1",
 	attributes: {
@@ -318,15 +318,16 @@ describe("Entity", async () => {
 			let filteredStores = stores.filter(store => {
 				return store.mall === mall && store.rent <= max;
 			});
+
 			let belowMarketUnits = await MallStores.query
 				.units({ mall, building })
 				.maxRent(max)
 				.go();
+
 			expect(belowMarketUnits)
 				.to.be.an("array")
 				.and.have.length(3)
 				.and.deep.have.members(filteredStores);
-			// console.log(belowMarketUnits);
 		}).timeout(20000);
 	});
 });

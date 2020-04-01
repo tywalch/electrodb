@@ -2,6 +2,7 @@
 const { Schema } = require("./schema");
 const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
+const validations = require("./validations");
 
 let clauses = {
 	index: {
@@ -66,6 +67,7 @@ let clauses = {
 					facets: queryFacets,
 				});
 			}
+
 			state.query.put.data = Object.assign({}, record);
 			return state;
 		},
@@ -318,7 +320,9 @@ class Entity {
 		return injected;
 	}
 
-	_validateModel(model = {}) {}
+	_validateModel(model = {}) {
+		return validations.model(model);
+	}
 
 	get(facets = {}) {
 		let index = "";
@@ -405,7 +409,7 @@ class Entity {
 			includeKeys: options.includeKeys,
 			originalErr: options.originalErr,
 			raw: options.raw,
-			params: options.params || {}
+			params: options.params || {},
 		};
 		for (let [name, value] of Object.entries(config.params)) {
 			if (value !== undefined) {
@@ -431,7 +435,16 @@ class Entity {
 					this._cleanseRetrievedData(item, config),
 				);
 			}
-			let appliedGets = this.model.schema.applyAttributeGetters(data);
+
+			let appliedGets;
+			if (Array.isArray(data)) {
+				appliedGets = data.map(item =>
+					this.model.schema.applyAttributeGetters(item),
+				);
+			} else {
+				appliedGets = this.model.schema.applyAttributeGetters(data);
+			}
+			// let appliedGets = this.model.schema.applyAttributeGetters(data);
 			return appliedGets;
 		} catch (err) {
 			if (config.originalErr) {
@@ -522,6 +535,7 @@ class Entity {
 
 	_makePutParams({ data } = {}, pk, sk) {
 		let setAttributes = this.model.schema.applyAttributeSetters(data);
+
 		let { updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
 		let transatedFields = this.model.schema.translateToFields(setAttributes);
 		let params = {
@@ -785,11 +799,13 @@ class Entity {
 		);
 		if (isIncomplete) {
 			throw new Error(
-				`Incomplete facets: Without the facets ${incomplete.join(
-					", ",
-				)} the following access patterns ${incompleteAccessPatterns.join(
-					", ",
-				)} cannot be updated`,
+				`Incomplete facets: Without the facets ${incomplete
+					.filter(val => val !== undefined)
+					.join(
+						", ",
+					)} the following access patterns ${incompleteAccessPatterns
+					.filter(val => val !== undefined)
+					.join(", ")}cannot be updated.`,
 			);
 		}
 		return complete;
