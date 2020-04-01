@@ -21,7 +21,7 @@ let schema = {
 		mall: {
 			type: "string",
 			required: true,
-			field: "mallId",
+			field: "mall",
 		},
 		store: {
 			type: "string",
