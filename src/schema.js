@@ -13,25 +13,35 @@ class Attribute {
 		this.default = this._makeDefault(definition.default);
 		this.validate = this._makeValidate(definition.validate);
 		this.get = this._makeGet(definition.name, definition.get);
-		this.set = this._makeGet(definition.name, definition.set);
+		this.set = this._makeSet(definition.name, definition.set);
 		this.indexes = [...(definition.indexes || [])];
 		let { type, enumArray } = this._makeType(this.name, definition.type);
 		this.type = type;
 		this.enumArray = enumArray;
 	}
 
-	_makeGet(name, get = (attribute, model) => attribute) {
-		if (typeof get !== "function") {
-			throw new Error(`Invalid "get" property for attribure ${name}. Please ensure value is a function or undefined.`);
+	_makeGet(name, get) {
+		if (typeof get === "function") {
+			return get;
+		} else if (get === undefined) {
+			return attr => attr;
+		} else {
+			throw new Error(
+				`Invalid "get" property for attribure ${name}. Please ensure value is a function or undefined.`,
+			);
 		}
-		return get;
 	}
 
-	_makeSet(name, set = (attribute, model) => attribute) {
-		if (typeof get !== "function") {
-			throw new Error(`Invalid "set" property for attribure ${name}. Please ensure value is a function or undefined.`);
+	_makeSet(name, set) {
+		if (typeof set === "function") {
+			return set;
+		} else if (set === undefined) {
+			return attr => attr;
+		} else {
+			throw new Error(
+				`Invalid "set" property for attribure ${name}. Please ensure value is a function or undefined.`,
+			);
 		}
-		return set;
 	}
 
 	_makeCast(name, cast) {
@@ -214,7 +224,7 @@ class Schema {
 				indexes: facets.byAttr[name] || [],
 				type: attribute.type,
 				get: attribute.get,
-				set: attribute.set
+				set: attribute.set,
 			};
 			if (usedAttrs[definition.field] || usedAttrs[name]) {
 				invalidProperties.push({
@@ -257,17 +267,25 @@ class Schema {
 	}
 
 	applyAttributeGetters(payload = {}) {
-		let attributes = {...payload};
+		let attributes = { ...payload };
 		for (let [name, value] of Object.entries(attributes)) {
-			attributes[name] = this.attributes[name].get(value, {...payload});
+			if (this.attributes[name] === undefined) {
+				attributes[name] = value;
+			} else {
+				attributes[name] = this.attributes[name].get(value, { ...payload });
+			}
 		}
 		return attributes;
 	}
 
 	applyAttributeSetters(payload = {}) {
-		let attributes = {...payload};
+		let attributes = { ...payload };
 		for (let [name, value] of Object.entries(attributes)) {
-			attributes[name] = this.attributes[name].set(value, {...payload});
+			if (this.attributes[name] !== undefined) {
+				attributes[name] = this.attributes[name].set(value, { ...payload });
+			} else {
+				attributes[name] = value;
+			}
 		}
 		return attributes;
 	}
@@ -287,7 +305,7 @@ class Schema {
 		let record = {};
 		for (let attribute of Object.values(this.attributes)) {
 			let value = payload[attribute.name];
-			record[attribute.field] = attribute.getValidate(value);
+			record[attribute.name] = attribute.getValidate(value);
 		}
 		return record;
 	}
@@ -302,7 +320,7 @@ class Schema {
 					`Attribute ${attribute.name} is Read-Only and cannot be updated`,
 				);
 			} else {
-				record[attribute.field] = attribute.getValidate(value);
+				record[attribute.name] = attribute.getValidate(value);
 			}
 		}
 		return record;
