@@ -2,6 +2,7 @@
 const { Schema } = require("./schema");
 const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
+const validations = require("./validations");
 
 let clauses = {
 	index: {
@@ -318,7 +319,9 @@ class Entity {
 		return injected;
 	}
 
-	_validateModel(model = {}) {}
+	_validateModel(model = {}) {
+		return validations.model(model);
+	}
 
 	get(facets = {}) {
 		let index = "";
@@ -405,7 +408,7 @@ class Entity {
 			includeKeys: options.includeKeys,
 			originalErr: options.originalErr,
 			raw: options.raw,
-			params: options.params || {}
+			params: options.params || {},
 		};
 		for (let [name, value] of Object.entries(config.params)) {
 			if (value !== undefined) {
@@ -785,11 +788,13 @@ class Entity {
 		);
 		if (isIncomplete) {
 			throw new Error(
-				`Incomplete facets: Without the facets ${incomplete.join(
-					", ",
-				)} the following access patterns ${incompleteAccessPatterns.join(
-					", ",
-				)} cannot be updated`,
+				`Incomplete facets: Without the facets ${incomplete
+					.filter(val => val !== undefined)
+					.join(
+						", ",
+					)} the following access patterns ${incompleteAccessPatterns
+					.filter(val => val !== undefined)
+					.join(", ")} cannot be updated`,
 			);
 		}
 		return complete;

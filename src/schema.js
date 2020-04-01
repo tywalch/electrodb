@@ -13,7 +13,7 @@ class Attribute {
 		this.default = this._makeDefault(definition.default);
 		this.validate = this._makeValidate(definition.validate);
 		this.get = this._makeGet(definition.name, definition.get);
-		this.set = this._makeGet(definition.name, definition.set);
+		this.set = this._makeSet(definition.name, definition.set);
 		this.indexes = [...(definition.indexes || [])];
 		let { type, enumArray } = this._makeType(this.name, definition.type);
 		this.type = type;
@@ -22,14 +22,18 @@ class Attribute {
 
 	_makeGet(name, get = (attribute, model) => attribute) {
 		if (typeof get !== "function") {
-			throw new Error(`Invalid "get" property for attribure ${name}. Please ensure value is a function or undefined.`);
+			throw new Error(
+				`Invalid "get" property for attribure ${name}. Please ensure value is a function or undefined.`,
+			);
 		}
 		return get;
 	}
 
 	_makeSet(name, set = (attribute, model) => attribute) {
-		if (typeof get !== "function") {
-			throw new Error(`Invalid "set" property for attribure ${name}. Please ensure value is a function or undefined.`);
+		if (typeof set !== "function") {
+			throw new Error(
+				`Invalid "set" property for attribure ${name}. Please ensure value is a function or undefined.`,
+			);
 		}
 		return set;
 	}
@@ -214,7 +218,7 @@ class Schema {
 				indexes: facets.byAttr[name] || [],
 				type: attribute.type,
 				get: attribute.get,
-				set: attribute.set
+				set: attribute.set,
 			};
 			if (usedAttrs[definition.field] || usedAttrs[name]) {
 				invalidProperties.push({
@@ -257,17 +261,19 @@ class Schema {
 	}
 
 	applyAttributeGetters(payload = {}) {
-		let attributes = {...payload};
+		let attributes = { ...payload };
 		for (let [name, value] of Object.entries(attributes)) {
-			attributes[name] = this.attributes[name].get(value, {...payload});
+			attributes[name] = this.attributes[name].get(value, { ...payload });
 		}
 		return attributes;
 	}
 
 	applyAttributeSetters(payload = {}) {
-		let attributes = {...payload};
+		let attributes = { ...payload };
 		for (let [name, value] of Object.entries(attributes)) {
-			attributes[name] = this.attributes[name].set(value, {...payload});
+			if (this.attributes[name] !== undefined) {
+				attributes[name] = this.attributes[name].set(value, { ...payload });
+			}
 		}
 		return attributes;
 	}
