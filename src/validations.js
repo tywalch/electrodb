@@ -69,7 +69,7 @@ const Index = {
 					required: true,
 				},
 				facets: {
-					type: "array",
+					type: ["array", "string"],
 					minItems: 1,
 					items: {
 						type: "string",
@@ -87,7 +87,7 @@ const Index = {
 					required: true,
 				},
 				facets: {
-					type: "array",
+					type: ["array", "string"],
 					minItems: 1,
 					required: true,
 					items: {
