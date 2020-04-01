@@ -269,6 +269,9 @@ For example, in the following **Access Pattern**, "`locations`" is made up of th
 }
 ```
 
+For `PK` values, the `service` and `version` values from the model are prefixed onto the key.
+For `SK` values, the `entity` value from the model is prefixed onto the key. 
+
 ### Facet Arrays
 In a Facet Array, each element is the name of the corresponding Attribute defined in the Model. If the Attribute has a `label` property, that will be used to prefix the facets, otherwise the full Attribute name will be used.
 ```javascript
