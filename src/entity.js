@@ -697,7 +697,6 @@ class Entity {
 		);
 		delete keyExpressions.ExpressionAttributeNames["#sk2"];
 		let params = {
-			IndexName: index,
 			TableName: this.model.table,
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.ExpressionAttributeNames,
@@ -709,6 +708,9 @@ class Entity {
 			),
 			KeyConditionExpression: `#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2`,
 		};
+		if (index) {
+			params["IndexName"] = index;
+		}
 		if (filter.FilterExpression) {
 			params.FilterExpression = filter.FilterExpression;
 		}
@@ -722,7 +724,6 @@ class Entity {
 			sk,
 		);
 		let params = {
-			IndexName: index,
 			TableName: this.model.table,
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.ExpressionAttributeNames,
@@ -734,6 +735,9 @@ class Entity {
 			),
 			KeyConditionExpression: `#pk = :pk and begins_with(#sk1, :sk1)`,
 		};
+		if (index) {
+			params["IndexName"] = index;
+		}
 		if (filter.FilterExpression) {
 			params.FilterExpression = filter.FilterExpression;
 		}
@@ -771,7 +775,6 @@ class Entity {
 			sk,
 		);
 		let params = {
-			IndexName: index,
 			TableName: this.model.table,
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.ExpressionAttributeNames,
@@ -783,6 +786,9 @@ class Entity {
 			),
 			KeyConditionExpression: `#pk = :pk and #sk1 ${operator} :sk1`,
 		};
+		if (index) {
+			params["IndexName"] = index;
+		}
 		if (filter.FilterExpression) {
 			params.FilterExpression = filter.FilterExpression;
 		}

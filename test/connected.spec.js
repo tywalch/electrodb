@@ -329,5 +329,56 @@ describe("Entity", async () => {
 				.and.have.length(3)
 				.and.deep.have.members(filteredStores);
 		}).timeout(20000);
+
+		it("Should filter with the correct field name", async () => {
+			let db = new Entity(
+				{
+					service: "testing",
+					entity: "tester",
+					table: "electro",
+					version: "1",
+					attributes: {
+						id: {
+							type: "string",
+							default: () => uuidv4(),
+						},
+						date: {
+							type: "string",
+							default: () => moment.utc().format(),
+						},
+						property: {
+							type: "string",
+							field: "propertyVal",
+						},
+					},
+					indexes: {
+						record: {
+							pk: {
+								field: "pk",
+								facets: ["date"],
+							},
+							sk: {
+								field: "sk",
+								facets: ["id"],
+							},
+						},
+					},
+				},
+				{ client },
+			);
+			let date = moment.utc().format();
+			let property = "ABDEF";
+			let record = await db.put({ date, property }).go();
+			let found = await db.query
+				.record({ date })
+				.filter(attr => attr.property.eq(property))
+				.go();
+			console.log("RECORD", record);
+			console.log("FOUND", found);
+			expect(found)
+				.to.be.an("array")
+				.and.have.length(1)
+				.and.to.have.deep.members([record]);
+		});
 	});
 });
