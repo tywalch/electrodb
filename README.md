@@ -24,6 +24,8 @@ Table of Contents
   - [Attributes](#attributes)
   - [Indexes](#indexes)
   - [Facets](#facets)
+	- [Facet Arrays](#facet-arrays)
+	- [Facet Templates](#facet-templates)
   - [Filters](#filters)
     - [Defined on the model](#defined-on-the-model)
     - [Defined via "Filter" method after query operators](#defined-via-filter-method-after-query-operators)
@@ -239,16 +241,55 @@ indexes: {
 `pk.facets` | `boolean` | no | An array that represents the order in which attributes are concatenated to facets the key (see [Facets](#facets) below for more on this functionality). |  
 `pk.field` | `string` | yes | The name of the attribute as it exists dynamo, if named differently in the schema attributes. | 
 | `sk`  | `object` | no | Configuration for the sk of that index or table |  
-`sk.facets` | `boolean` | no | An array that represents the order in which attributes are concatenated to facets the key (see [Facets](#facets) below for more on this functionality). |  
+`sk.facets` | `array | string` | no | Either an Array that represents the order in which attributes are concatenated to facets the key, or a String for a facet template. (see [Facets](#facets) below for more on this functionality). |  
 `sk.field` | `string` | yes | The name of the attribute as it exists dynamo, if named differently in the schema attributes. |  
 `index` | `string` | yes | Used only when the `Index` defined is a *Global Secondary Index*; this is left blank for the table's primary index.  
 
 ## Facets 
 A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or an **Sort Key** key, which define an `index`. 
 
-For example, in the following **Access Pattern**, "`locations`" is made up of the facets `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the `schema`:
+There are two ways to provide facets:
+1. As a [Facet Array](#facet-arrays)
+2. As a [Facet Template](#facet-templates)
 
+For example, in the following **Access Pattern**, "`locations`" is made up of the facets `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the `schema`:
+```
+// Input
+{
+    storeId: "STOREVALUE",
+    mallId: "MALLVALUE",
+    buildingId: "BUILDINGVALUE",
+    unitId: "UNITVALUE"
+};
+
+// Output:
+{
+	pk: '$mallstoredirectory_1#storeId_storevalue',
+	sk: '$mallstores#mallid_mallvalue#buildingid_buildingvalue#unitid_unitvalue'
+}
+```
+
+### Facet Arrays
+In a Facet Array, each element is the name of the corresponding Attribute defined in the Model. If the Attribute has a `label` property, that will be used to prefix the facets, otherwise the full Attribute name will be used.
 ```javascript
+attributes: {
+	storeId: {
+		type: "string",
+		label: "sid",
+	},
+	mallId: {
+		type: "string",
+		label: "mid",
+	},
+	buildingId: {
+		type: "string",
+		label: "bid",
+	},
+	unitId: {
+		type: "string",
+		label: "uid",
+	}
+},
 indexes: {
 	locations: {
 		pk: {
@@ -260,6 +301,69 @@ indexes: {
 			facets: ["mallId", "buildingId", "unitId"]
 		}
 	}
+}
+// Input
+{
+    storeId: "STOREVALUE",
+    mallId: "MALLVALUE",
+    buildingId: "BUILDINGVALUE",
+    unitId: "UNITVALUE"
+};
+
+// Output:
+{
+	pk: '$mallstoredirectory_1#sid_storevalue',
+	sk: '$mallstores#mid_mallvalue#bid_buildingvalue#uid_unitvalue'
+}
+```
+### Facet Templates
+In a Facet Template, you provide a formatted template for ElectroDB to use when making keys. 
+
+The syntax to a Facet Template is simple using the following rules: 
+	1. Only alphanumeric, underscore, colons, and hash symbols are valid. the following regex is used to determine validity: `/^[A-Z1-9:#_]+$/gi`
+	2. Attributes are identified by a prefixed colon and the attributes name. For example, the syntax `:storeId`  will matches `storeId` attribute in the `model`
+	3. Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_:mallId#bid_:buildingId`. 
+```javascript
+attributes: {
+	storeId: {
+		type: "string"
+	},
+	mallId: {
+		type: "string"
+	},
+	buildingId: {
+		type: "string"
+	},
+	unitId: {
+		type: "string"
+	}
+},
+indexes: {
+	locations: {
+		pk: {
+			field: "pk",
+			facets: "sid_:storeId"
+		},
+		sk: {
+			field: "sk",
+			facets: "mid_:mallId#bid_:buildingId#uid_:unitId"]
+		}
+	}
+}
+
+
+// Input
+{
+    storeId: "STOREVALUE",
+    mallId: "MALLVALUE",
+    buildingId: "BUILDINGVALUE",
+    unitId: "UNITVALUE"
+};
+
+// Output:
+{
+	pk: '$mallstoredirectory_1#sid_storevalue',
+	sk: '$mallstores#mid_mallvalue#bid_buildingvalue#uid_unitvalue'
 }
 ```
 
