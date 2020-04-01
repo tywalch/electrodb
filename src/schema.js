@@ -20,22 +20,28 @@ class Attribute {
 		this.enumArray = enumArray;
 	}
 
-	_makeGet(name, get = (attribute, model) => attribute) {
-		if (typeof get !== "function") {
+	_makeGet(name, get) {
+		if (typeof get === "function") {
+			return get;
+		} else if (get === undefined) {
+			return attr => attr;
+		} else {
 			throw new Error(
 				`Invalid "get" property for attribure ${name}. Please ensure value is a function or undefined.`,
 			);
 		}
-		return get;
 	}
 
-	_makeSet(name, set = (attribute, model) => attribute) {
-		if (typeof set !== "function") {
+	_makeSet(name, set) {
+		if (typeof set === "function") {
+			return set;
+		} else if (set === undefined) {
+			return attr => attr;
+		} else {
 			throw new Error(
 				`Invalid "set" property for attribure ${name}. Please ensure value is a function or undefined.`,
 			);
 		}
-		return set;
 	}
 
 	_makeCast(name, cast) {
@@ -263,7 +269,11 @@ class Schema {
 	applyAttributeGetters(payload = {}) {
 		let attributes = { ...payload };
 		for (let [name, value] of Object.entries(attributes)) {
-			attributes[name] = this.attributes[name].get(value, { ...payload });
+			if (this.attributes[name] === undefined) {
+				attributes[name] = value;
+			} else {
+				attributes[name] = this.attributes[name].get(value, { ...payload });
+			}
 		}
 		return attributes;
 	}
@@ -273,6 +283,8 @@ class Schema {
 		for (let [name, value] of Object.entries(attributes)) {
 			if (this.attributes[name] !== undefined) {
 				attributes[name] = this.attributes[name].set(value, { ...payload });
+			} else {
+				attributes[name] = value;
 			}
 		}
 		return attributes;
@@ -293,7 +305,7 @@ class Schema {
 		let record = {};
 		for (let attribute of Object.values(this.attributes)) {
 			let value = payload[attribute.name];
-			record[attribute.field] = attribute.getValidate(value);
+			record[attribute.name] = attribute.getValidate(value);
 		}
 		return record;
 	}
@@ -308,7 +320,7 @@ class Schema {
 					`Attribute ${attribute.name} is Read-Only and cannot be updated`,
 				);
 			} else {
-				record[attribute.field] = attribute.getValidate(value);
+				record[attribute.name] = attribute.getValidate(value);
 			}
 		}
 		return record;

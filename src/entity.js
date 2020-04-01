@@ -67,6 +67,7 @@ let clauses = {
 					facets: queryFacets,
 				});
 			}
+
 			state.query.put.data = Object.assign({}, record);
 			return state;
 		},
@@ -434,7 +435,16 @@ class Entity {
 					this._cleanseRetrievedData(item, config),
 				);
 			}
-			let appliedGets = this.model.schema.applyAttributeGetters(data);
+
+			let appliedGets;
+			if (Array.isArray(data)) {
+				appliedGets = data.map(item =>
+					this.model.schema.applyAttributeGetters(item),
+				);
+			} else {
+				appliedGets = this.model.schema.applyAttributeGetters(data);
+			}
+			// let appliedGets = this.model.schema.applyAttributeGetters(data);
 			return appliedGets;
 		} catch (err) {
 			if (config.originalErr) {
@@ -525,6 +535,7 @@ class Entity {
 
 	_makePutParams({ data } = {}, pk, sk) {
 		let setAttributes = this.model.schema.applyAttributeSetters(data);
+
 		let { updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
 		let transatedFields = this.model.schema.translateToFields(setAttributes);
 		let params = {
@@ -794,7 +805,7 @@ class Entity {
 						", ",
 					)} the following access patterns ${incompleteAccessPatterns
 					.filter(val => val !== undefined)
-					.join(", ")} cannot be updated`,
+					.join(", ")}cannot be updated.`,
 			);
 		}
 		return complete;
