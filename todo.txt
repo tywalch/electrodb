@@ -12,7 +12,6 @@ tests:
     - test for regex validation
     - test for invalid attribute type  
     - test for bad "isValid" attribute result
-
 features: 
   - find method
   - scan method
