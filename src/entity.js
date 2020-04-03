@@ -1062,6 +1062,42 @@ class Entity {
 		};
 	}
 
+	_parseComposedKey(key = "") {
+		if (!key.match(/^[A-Z1-9:#_]+$/gi)) {
+			throw new Error(`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: ${key}`);
+		}
+		let facets = {};
+		let names = key.match(/:[A-Z1-9]+/gi);
+		if (!names) {
+			throw new Error(`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: ${key}`)
+		}
+		let labels = key.split(/:[A-Z1-9]+/gi);
+		for (let i = 0; i < names.length; i++) {
+			let name = names[i].replace(":", "");
+			let label = labels[i];
+			if (name !== "") {
+				facets[name] = label.replace(/#|_/gi, "");
+			}
+		}
+		return facets;
+	}
+
+	_parseFacets(facets) {
+		if (Array.isArray(facets)) {
+			return {
+				facetLabels: {},
+				facetArray: facets,
+			}
+		} else {
+			let facetLabels = this._parseComposedKey(facets);
+			return {
+				facetLabels,
+				facetArray: Object.keys(facetLabels),
+			}
+		}
+	}
+	
+
 	_normalizeIndexes(indexes = {}) {
 		let normalized = {};
 		let indexFieldTranslation = {};
@@ -1079,6 +1115,7 @@ class Entity {
 			bySlot: [],
 			fields: [],
 			attributes: [],
+			labels: {},
 		};
 
 		let accessPatterns = Object.keys(indexes);
@@ -1089,22 +1126,28 @@ class Entity {
 			let indexName = index.index || "";
 			let hasSk = !!index.sk;
 			indexHasSortKeys[indexName] = hasSk;
+			let {facetArray, facetLabels} = this._parseFacets(index.pk.facets);
+			facets.labels = Object.assign({}, facets.labels, facetLabels);
 			let pk = {
 				accessPattern,
+				facetLabels,
 				index: indexName,
 				type: KeyTypes.pk,
 				field: index.pk.field || "",
-				facets: [...index.pk.facets],
+				facets: [...facetArray],
 			};
 			let sk = {};
 
 			if (hasSk) {
+				let {facetArray, facetLabels} = this._parseFacets(index.sk.facets);
+				facets.labels = Object.assign({}, facets.labels, facetLabels);
 				sk = {
+					facetLabels,
 					accessPattern,
 					index: indexName,
 					type: KeyTypes.sk,
 					field: index.sk.field || "",
-					facets: [...index.sk.facets],
+					facets: [...facetArray],
 				};
 				facets.fields.push(sk.field);
 			}
