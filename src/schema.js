@@ -243,15 +243,21 @@ class Schema {
 			translationForRetrieval[definition.field] = definition.name;
 			normalized[name] = new Attribute(definition);
 		}
-		let missingFacetAttributes = facets.attributes.filter(({name}) => {
-			return !normalized[name]
-		}).map(facet => `"${facet.type}: ${facet.name}"`);
+		let missingFacetAttributes = facets.attributes
+			.filter(({ name }) => {
+				return !normalized[name];
+			})
+			.map(facet => `"${facet.type}: ${facet.name}"`);
 		if (missingFacetAttributes.length) {
-			throw new Error(`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(", ")}`);
+			throw new Error(
+				`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(
+					", ",
+				)}`,
+			);
 		}
 		if (invalidProperties.length) {
 			let message = invalidProperties.map(
-				prop => 
+				prop =>
 					`Schema Validation Error: Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`,
 			);
 			throw new Error(message);

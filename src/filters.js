@@ -94,6 +94,30 @@ class FilterFactory {
 		return attributes;
 	}
 
+	_concatFilterExpression(existingExpression = "", newExpression = "") {
+		if (typeof existingExpression === "string" && existingExpression.length) {
+			existingExpression = existingExpression.replace(/\n|\r/g, "").trim();
+			newExpression = newExpression.replace(/\n|\r/g, "").trim();
+
+			let existingNeedsParens =
+				!existingExpression.startsWith("(") &&
+				!existingExpression.endsWith(")");
+			let newNeedsParens =
+				!newExpression.startsWith("(") && !newExpression.endsWith(")");
+			if (existingNeedsParens) {
+				console.log("EXISTING", existingExpression);
+				existingExpression = `(${existingExpression})`;
+			}
+			if (newNeedsParens) {
+				console.log("new", newExpression);
+				newExpression = `(${newExpression})`;
+			}
+			return `${existingExpression} AND ${newExpression}`;
+		} else {
+			return newExpression;
+		}
+	}
+
 	buildClause(filterFn) {
 		return (entity, state, ...params) => {
 			state.query.filter.ExpressionAttributeNames =
@@ -116,7 +140,11 @@ class FilterFactory {
 				setValue,
 				getValueCount,
 			);
-			state.query.filter.FilterExpression = filterFn(attributes, ...params);
+			let expression = filterFn(attributes, ...params);
+			state.query.filter.FilterExpression = this._concatFilterExpression(
+				state.query.filter.FilterExpression,
+				expression,
+			);
 			return state;
 		};
 	}

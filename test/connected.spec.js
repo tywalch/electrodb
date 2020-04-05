@@ -273,11 +273,12 @@ describe("Entity", async () => {
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
 	});
+
 	describe("Getters/Setters", async () => {
 		let db = new Entity(
 			{
 				service: "testing",
-				entity: "tester",
+				entity: uuidv4(),
 				table: "electro",
 				version: "1",
 				attributes: {
@@ -355,13 +356,14 @@ describe("Entity", async () => {
 				prop1: "ZZZ SET GET",
 				prop2: "bbb GET " + id,
 			});
-		});
+		}).timeout(20000);
 	});
 	describe("Query Options", async () => {
+		let entity = uuidv4();
 		let db = new Entity(
 			{
 				service: "testing",
-				entity: "tester",
+				entity: entity,
 				table: "electro",
 				version: "1",
 				attributes: {
@@ -405,7 +407,7 @@ describe("Entity", async () => {
 					id,
 					date,
 					someValue: someValue + " wham",
-					sk: `$tester#id_${id}`.toLowerCase(),
+					sk: `$${entity}#id_${id}`.toLowerCase(),
 					pk: `$testing_1#date_${date}`.toLowerCase(),
 				},
 			});
@@ -421,7 +423,7 @@ describe("Entity", async () => {
 						id,
 						date,
 						someValue: someValue + " wham",
-						sk: `$tester#id_${id}`.toLowerCase(),
+						sk: `$${entity}#id_${id}`.toLowerCase(),
 						pk: `$testing_1#date_${date}`.toLowerCase(),
 					},
 				],
@@ -491,7 +493,7 @@ describe("Entity", async () => {
 			let db = new Entity(
 				{
 					service: "testing",
-					entity: "tester",
+					entity: uuidv4(),
 					table: "electro",
 					version: "1",
 					attributes: {
@@ -544,5 +546,70 @@ describe("Entity", async () => {
 				.and.have.length(1)
 				.and.to.have.deep.members([record]);
 		});
+		it("Should allow for multiple filters", async () => {
+			let entity = uuidv4();
+			let db = new Entity(
+				{
+					service: "testing",
+					entity: entity,
+					table: "electro",
+					version: "1",
+					attributes: {
+						id: {
+							type: "string",
+							default: () => uuidv4(),
+						},
+						property: {
+							type: "string",
+							field: "propertyVal",
+						},
+						color: {
+							type: ["red", "green"],
+						},
+					},
+					indexes: {
+						record: {
+							pk: {
+								field: "pk",
+								facets: ["id"],
+							},
+							sk: {
+								field: "sk",
+								facets: ["property"],
+							},
+						},
+					},
+				},
+				{ client },
+			);
+			let date = moment.utc().format();
+			let colors = ["red", "green"];
+			let properties = ["A", "B", "C", "D", "E", "F"];
+			let records = await Promise.all(
+				properties.map((property, i) => {
+					let color = colors[i % 2];
+					return db.put({ property, color }).go();
+				}),
+			);
+			let expectedMembers = records.filter(
+				record => record.color !== "green" && record.property !== "A",
+			);
+			// console.log(records);
+			let found = await db.scan
+				.filter(({ property }) => property.gt("A"))
+				.filter(
+					({ color, id }) => `
+					(${color.notContains("green")} OR ${id.contains("weird_value")})
+				`,
+				)
+				.filter(({ property }) => property.notContains("Z"))
+				.go();
+			expect(found)
+				.to.be.an("array")
+				.and.have.length(expectedMembers.length)
+				.and.to.have.deep.members(expectedMembers);
+		});
 	});
+
+	// });
 });
