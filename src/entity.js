@@ -11,7 +11,14 @@ let clauses = {
 			// todo: look for article/list of all dynamodb query limitations
 			return state;
 		},
-		children: ["get", "delete", "update", "query", "put"],
+		children: ["get", "delete", "update", "query", "put", "scan"],
+	},
+	scan: {
+		action(entity, state) {
+			state.query.method = MethodTypes.scan;
+			return state;
+		},
+		children: ["params", "go"],
 	},
 	get: {
 		action(entity, state = {}, facets = {}) {
@@ -263,23 +270,20 @@ class Entity {
 			FilterTypes,
 		);
 		this.query = {};
+		let clausesWithFilters = this._injectFiltersIntoClauses(
+			clauses,
+			this.model.filters,
+		);
 		this.find = (facets = {}) => {
 			let index = this._findBestIndexKeyMatch(facets);
-			let clausesWithFilters = this._injectFiltersIntoClauses(
-				clauses,
-				this.model.filters,
-			);
 			return this._makeChain(index, clausesWithFilters, clauses.index).query(
 				facets,
 			);
 		};
+		this.scan = this._makeChain("", clausesWithFilters, clauses.index).scan();
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
 			this.query[accessPattern] = (...values) => {
-				let clausesWithFilters = this._injectFiltersIntoClauses(
-					clauses,
-					this.model.filters,
-				);
 				return this._makeChain(index, clausesWithFilters, clauses.index).query(
 					...values,
 				);
@@ -295,12 +299,13 @@ class Entity {
 				return children.includes("go");
 			})
 			.map(([name]) => name);
+		let modelFilters = Object.keys(filters);
 		let filterChildren = [];
 		for (let [name, filter] of Object.entries(filters)) {
 			filterChildren.push(name);
 			injected[name] = {
 				action: this._filterBuilder.buildClause(filter),
-				children: ["params", "go"],
+				children: ["params", "go", "filter", ...modelFilters],
 			};
 		}
 		filterChildren.push("filter");
@@ -308,7 +313,7 @@ class Entity {
 			action: (entity, state, fn) => {
 				return this._filterBuilder.buildClause(fn)(entity, state);
 			},
-			children: ["params", "go"],
+			children: ["params", "go", "filter", ...modelFilters],
 		};
 		for (let parent of filterParents) {
 			injected[parent] = { ...injected[parent] };
@@ -456,30 +461,23 @@ class Entity {
 		}
 	}
 
-	_params(chainState = {}) {
-		let conlidatedQueryFacets = this._consolidateQueryFacets(
-			chainState.keys.sk,
-		);
+	_params({ keys = {}, method = "", put = {}, update = {}, filter = {} } = {}) {
+		let conlidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 
-		switch (chainState.method) {
+		switch (method) {
 			case MethodTypes.get:
 			case MethodTypes.delete:
-				return this._makeSimpleIndexParams(
-					chainState.keys.pk,
-					...conlidatedQueryFacets,
-				);
+				return this._makeSimpleIndexParams(keys.pk, ...conlidatedQueryFacets);
 			case MethodTypes.put:
-				return this._makePutParams(
-					chainState.put,
-					chainState.keys.pk,
-					...chainState.keys.sk,
-				);
+				return this._makePutParams(put, keys.pk, ...keys.sk);
 			case MethodTypes.update:
 				return this._makeUpdateParams(
-					chainState.update,
-					chainState.keys.pk,
+					update,
+					keys.pk,
 					...conlidatedQueryFacets,
 				);
+			case MethodTypes.scan:
+				return this._makeScanParam(filter);
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
@@ -496,6 +494,18 @@ class Entity {
 			key[accessPattern.sk.field] = sk;
 		}
 		return key;
+	}
+
+	_makeScanParam(filter = {}) {
+		let params = {
+			TableName: this.model.table,
+		};
+		if (filter.FilterExpression) {
+			params.ExpressionAttributeNames = filter.ExpressionAttributeNames;
+			params.ExpressionAttributeValues = filter.ExpressionAttributeValues;
+			params.FilterExpression = filter.FilterExpression;
+		}
+		return params;
 	}
 
 	_makeSimpleIndexParams(pk, sk) {
@@ -1064,12 +1074,16 @@ class Entity {
 
 	_parseComposedKey(key = "") {
 		if (!key.match(/^[A-Z1-9:#_]+$/gi)) {
-			throw new Error(`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: ${key}`);
+			throw new Error(
+				`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: ${key}`,
+			);
 		}
 		let facets = {};
 		let names = key.match(/:[A-Z1-9]+/gi);
 		if (!names) {
-			throw new Error(`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: ${key}`)
+			throw new Error(
+				`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: ${key}`,
+			);
 		}
 		let labels = key.split(/:[A-Z1-9]+/gi);
 		for (let i = 0; i < names.length; i++) {
@@ -1087,16 +1101,15 @@ class Entity {
 			return {
 				facetLabels: {},
 				facetArray: facets,
-			}
+			};
 		} else {
 			let facetLabels = this._parseComposedKey(facets);
 			return {
 				facetLabels,
 				facetArray: Object.keys(facetLabels),
-			}
+			};
 		}
 	}
-	
 
 	_normalizeIndexes(indexes = {}) {
 		let normalized = {};
@@ -1126,7 +1139,7 @@ class Entity {
 			let indexName = index.index || "";
 			let hasSk = !!index.sk;
 			indexHasSortKeys[indexName] = hasSk;
-			let {facetArray, facetLabels} = this._parseFacets(index.pk.facets);
+			let { facetArray, facetLabels } = this._parseFacets(index.pk.facets);
 			facets.labels = Object.assign({}, facets.labels, facetLabels);
 			let pk = {
 				accessPattern,
@@ -1139,7 +1152,7 @@ class Entity {
 			let sk = {};
 
 			if (hasSk) {
-				let {facetArray, facetLabels} = this._parseFacets(index.sk.facets);
+				let { facetArray, facetLabels } = this._parseFacets(index.sk.facets);
 				facets.labels = Object.assign({}, facets.labels, facetLabels);
 				sk = {
 					facetLabels,

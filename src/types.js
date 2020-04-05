@@ -21,6 +21,7 @@ const MethodTypes = {
 	scan: "scan",
 	update: "update",
 	delete: "delete",
+	scan: "scan",
 };
 
 const Comparisons = {
