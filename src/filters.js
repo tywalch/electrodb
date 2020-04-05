@@ -105,9 +105,11 @@ class FilterFactory {
 			let newNeedsParens =
 				!newExpression.startsWith("(") && !newExpression.endsWith(")");
 			if (existingNeedsParens) {
+				console.log("EXISTING", existingExpression);
 				existingExpression = `(${existingExpression})`;
 			}
 			if (newNeedsParens) {
+				console.log("new", newExpression);
 				newExpression = `(${newExpression})`;
 			}
 			return `${existingExpression} AND ${newExpression}`;

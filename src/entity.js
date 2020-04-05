@@ -497,24 +497,41 @@ class Entity {
 	}
 
 	_makeScanParam(filter = {}) {
+		// let _makeKey
+		// let { pk, sk } = this._makeIndexKeys();
+		let indexBase = "";
+		let facets = this.model.facets.byIndex[indexBase];
+		let keys = this._makeParameterKey(
+			indexBase,
+			this._makeKey(this.model.prefixes.pk, facets.pk),
+			this._makeKey(this.model.prefixes.sk, facets.sk),
+		);
+		let keyExpressions = this._expressionAttributeBuilder(keys);
 		let params = {
 			TableName: this.model.table,
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(
+				filter.ExpressionAttributeNames,
+				keyExpressions.ExpressionAttributeNames,
+			),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(
+				filter.ExpressionAttributeValues,
+				keyExpressions.ExpressionAttributeValues,
+			),
+			FilterExpression: `(begins_with(#pk, :pk) AND begins_with(#sk, :sk))`,
 		};
 		if (filter.FilterExpression) {
-			params.ExpressionAttributeNames = filter.ExpressionAttributeNames;
-			params.ExpressionAttributeValues = filter.ExpressionAttributeValues;
-			params.FilterExpression = filter.FilterExpression;
+			params.FilterExpression = `${params.FilterExpression} AND ${filter.FilterExpression}`;
 		}
 		return params;
 	}
 
-	_makeSimpleIndexParams(pk, sk) {
+	_makeSimpleIndexParams(partition, sort) {
 		let index = "";
-
-		let keys = this._makeIndexKeys(index, pk, sk);
+		let keys = this._makeIndexKeys(index, partition, sort);
+		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
 		let params = {
+			Key,
 			TableName: this.model.table,
-			Key: this._makeParameterKey(index, keys.pk, ...keys.sk),
 		};
 		return params;
 	}
@@ -566,7 +583,7 @@ class Entity {
 		return this._expressionAttributeBuilder(data, { skip });
 	}
 
-	_queryKeyExpressionAttributeBuilder(index, pk, ...sks) {
+	_queryKeyExpressionAttributeBuilder(index = "", pk, ...sks) {
 		let translate = { ...this.model.translations.keys[index] };
 		let restrict = ["pk"];
 		let keys = { pk };

@@ -615,45 +615,47 @@ describe("Entity", () => {
 					},
 					date: {
 						type: "string",
-						field: "dateTime"
+						field: "dateTime",
 					},
 					prop1: {
 						type: "string",
 					},
 					prop2: {
 						type: "string",
-					}
+					},
 				},
 				indexes: {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#p1_:prop1`
+							facets: `id_:id#p1_:prop1`,
 						},
 						sk: {
 							field: "sk",
-							facets: `d_:date#p2_:prop2`
-						}
-					}
-				}
-			}
+							facets: `d_:date#p2_:prop2`,
+						},
+					},
+				},
+			};
 			let mallStore = new Entity(schema);
-			let putParams = mallStore.put({
-				id: "IDENTIFIER",
-				date: "DATE",
-				prop1: "PROPERTY1",
-				prop2: "PROPERTY2"
-			}).params();
+			let putParams = mallStore
+				.put({
+					id: "IDENTIFIER",
+					date: "DATE",
+					prop1: "PROPERTY1",
+					prop2: "PROPERTY2",
+				})
+				.params();
 			expect(putParams).to.deep.equal({
 				Item: {
-					storeLocationId: 'IDENTIFIER',
-					dateTime: 'DATE',
-					prop1: 'PROPERTY1',
-					prop2: 'PROPERTY2',
-					pk: '$mallstoredirectory_1#id_identifier#p1_property1',
-					sk: '$mallstores#d_date#p2_property2'
+					storeLocationId: "IDENTIFIER",
+					dateTime: "DATE",
+					prop1: "PROPERTY1",
+					prop2: "PROPERTY2",
+					pk: "$mallstoredirectory_1#id_identifier#p1_property1",
+					sk: "$mallstores#d_date#p2_property2",
 				},
-				TableName: 'StoreDirectory'
+				TableName: "StoreDirectory",
 			});
 		});
 		it("Should throw on invalid characters in facet template (string)", () => {
@@ -669,29 +671,31 @@ describe("Entity", () => {
 					},
 					date: {
 						type: "string",
-						field: "dateTime"
+						field: "dateTime",
 					},
 					prop1: {
 						type: "string",
 					},
 					prop2: {
 						type: "string",
-					}
+					},
 				},
 				indexes: {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#p1_:prop1`
+							facets: `id_:id#p1_:prop1`,
 						},
 						sk: {
 							field: "sk",
-							facets: `d_:date|p2_:prop2`
-						}
-					}
-				}
-			}
-			expect(() => new Entity(schema)).to.throw(`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: d_:date|p2_:prop2`);
+							facets: `d_:date|p2_:prop2`,
+						},
+					},
+				},
+			};
+			expect(() => new Entity(schema)).to.throw(
+				`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: d_:date|p2_:prop2`,
+			);
 		});
 		it("Should default labels to facet attribute names in facet template (string)", () => {
 			const schema = {
@@ -706,46 +710,48 @@ describe("Entity", () => {
 					},
 					date: {
 						type: "string",
-						field: "dateTime"
+						field: "dateTime",
 					},
 					prop1: {
 						type: "string",
 					},
 					prop2: {
 						type: "string",
-					}
+					},
 				},
 				indexes: {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#:prop1`
+							facets: `id_:id#:prop1`,
 						},
 						sk: {
 							field: "sk",
-							facets: `:date#p2_:prop2`
-						}
-					}
-				}
-			}
+							facets: `:date#p2_:prop2`,
+						},
+					},
+				},
+			};
 			let mallStore = new Entity(schema);
-			let putParams = mallStore.put({
-				id: "IDENTIFIER",
-				date: "DATE",
-				prop1: "PROPERTY1",
-				prop2: "PROPERTY2"
-			}).params();
+			let putParams = mallStore
+				.put({
+					id: "IDENTIFIER",
+					date: "DATE",
+					prop1: "PROPERTY1",
+					prop2: "PROPERTY2",
+				})
+				.params();
 			expect(putParams).to.deep.equal({
 				Item: {
-					storeLocationId: 'IDENTIFIER',
-					dateTime: 'DATE',
-					prop1: 'PROPERTY1',
-					prop2: 'PROPERTY2',
-					pk: '$mallstoredirectory_1#id_identifier#prop1_property1',
-					sk: '$mallstores#date_date#p2_property2'
+					storeLocationId: "IDENTIFIER",
+					dateTime: "DATE",
+					prop1: "PROPERTY1",
+					prop2: "PROPERTY2",
+					pk: "$mallstoredirectory_1#id_identifier#prop1_property1",
+					sk: "$mallstores#date_date#p2_property2",
 				},
-				TableName: 'StoreDirectory'
-			})
+				TableName: "StoreDirectory",
+			});
 		});
 		it("Should throw on invalid characters in facet template (string)", () => {
 			const schema = {
@@ -760,29 +766,31 @@ describe("Entity", () => {
 					},
 					date: {
 						type: "string",
-						field: "dateTime"
+						field: "dateTime",
 					},
 					prop1: {
 						type: "string",
 					},
 					prop2: {
 						type: "string",
-					}
+					},
 				},
 				indexes: {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#p1_:prop1`
+							facets: `id_:id#p1_:prop1`,
 						},
 						sk: {
 							field: "sk",
-							facets: `dbsfhdfhsdshfshf`
-						}
-					}
-				}
-			}
-			expect(() => new Entity(schema)).to.throw(`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: dbsfhdfhsdshfshf`);
+							facets: `dbsfhdfhsdshfshf`,
+						},
+					},
+				},
+			};
+			expect(() => new Entity(schema)).to.throw(
+				`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: dbsfhdfhsdshfshf`,
+			);
 		});
 		it("Should throw when defined facets are not in attributes: facet template and facet array", () => {
 			const schema = {
@@ -797,30 +805,32 @@ describe("Entity", () => {
 					},
 					date: {
 						type: "string",
-						field: "dateTime"
+						field: "dateTime",
 					},
 					prop1: {
 						type: "string",
 					},
 					prop2: {
 						type: "string",
-					}
+					},
 				},
 				indexes: {
 					record: {
 						pk: {
 							field: "pk",
-							facets: ["id", "prop5"]
+							facets: ["id", "prop5"],
 						},
 						sk: {
 							field: "sk",
-							facets: `:date#p3_:prop3#p4_:prop4`
-						}
-					}
-				}
-			}
-			expect(() => new Entity(schema)).to.throw(`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: "pk: prop5", "sk: prop3", "sk: prop4"`);
-		});  
+							facets: `:date#p3_:prop3#p4_:prop4`,
+						},
+					},
+				},
+			};
+			expect(() => new Entity(schema)).to.throw(
+				`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: "pk: prop5", "sk: prop3", "sk: prop4"`,
+			);
+		});
 	});
 
 	describe("Identifying indexes by facets", () => {
@@ -979,7 +989,7 @@ describe("Entity", () => {
 			// Inject children to include the model filter AND a "filter" for inline filters.
 			expect(injectedChildren)
 				.to.be.an("array")
-				.and.have.length(Object.keys(injected).length - 2);
+				.and.have.length(Object.keys(injected).length);
 
 			expect(injected).includes.property("rentsLeaseEndFilter");
 			expect(injected).includes.property("filter");
