@@ -15,50 +15,51 @@
 Table of Contents
 =================
 - [ElectroDB](#electrodb)
-  - [Features](#features)
+	- [Features](#features)
 - [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Entities](#entities)
-  - [Model](#model)
-  - [Attributes](#attributes)
-  - [Indexes](#indexes)
-  - [Facets](#facets)
-	- [Facet Arrays](#facet-arrays)
-	- [Facet Templates](#facet-templates)
-  - [Filters](#filters)
-    - [Defined on the model](#defined-on-the-model)
-    - [Defined via "Filter" method after query operators](#defined-via-filter-method-after-query-operators)
+	- [Entities](#entities)
+	- [Model](#model)
+	- [Attributes](#attributes)
+	- [Indexes](#indexes)
+	- [Facets](#facets)
+		- [Facet Arrays](#facet-arrays)
+		- [Facet Templates](#facet-templates)
+	- [Filters](#filters)
+		- [Defined on the model](#defined-on-the-model)
+		- [Defined via "Filter" method after query operators](#defined-via-filter-method-after-query-operators)
+		- [Multiple Filters](#multiple-filters)
 - [Building Queries](#building-queries)
-    - [Sort Key Operations](#sort-key-operations)
-    - [Using Facets to Make Heretical Keys](#using-facets-to-make-heretical-keys)
-      - [Shopping Mall Stores](#shopping-mall-stores)
-  - [Query Chains](#query-chains)
-    - [`Get` Method](#get-method)
-    - [`Delete` Method](#delete-method)
-    - [`Put` Record](#put-record)
-    - [`Update` Record](#update-record)
-    - [`Query` Records](#query-records)
-      - [Partition Key Facets](#partition-key-facets)
-    - [Execute Query `.go() and .params()`](#execute-query-go-and-params)
-    - [`.params()`](#params)
-    - [`.go()`](#go)
-  - [Query Chain Examples](#query-chain-examples)
-  - [Query Options](#query-options)
+		- [Sort Key Operations](#sort-key-operations)
+		- [Using Facets to Make Heretical Keys](#using-facets-to-make-heretical-keys)
+			- [Shopping Mall Stores](#shopping-mall-stores)
+	- [Query Chains](#query-chains)
+		- [`Get` Method](#get-method)
+		- [`Delete` Method](#delete-method)
+		- [`Put` Record](#put-record)
+		- [`Update` Record](#update-record)
+		- [`Query` Records](#query-records)
+			- [Partition Key Facets](#partition-key-facets)
+		- [Execute Query `.go() and .params()`](#execute-query-go-and-params)
+		- [`.params()`](#params)
+		- [`.go()`](#go)
+	- [Query Chain Examples](#query-chain-examples)
+	- [Query Options](#query-options)
 - [Examples](#examples)
-    - [Shopping Mall Property Management App](#shopping-mall-property-management-app)
-      - [Shopping Mall Requirements](#shopping-mall-requirements)
-  - [Access Patterns are accessible on the StoreLocation](#access-patterns-are-accessible-on-the-storelocation)
-    - [`PUT` Record](#put-record-1)
-      - [Add a new Store to the Mall:](#add-a-new-store-to-the-mall)
-    - [`UPDATE` Record](#update-record-1)
-      - [Change the Store's Lease Date:](#change-the-stores-lease-date)
-    - [`GET` Record](#get-record)
-      - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
-    - [`DELETE` Record](#delete-record)
-      - [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
-    - [`Query` Records](#query-records-1)
-      - [Find Stores that match core access patterns](#find-stores-that-match-core-access-patterns)
+		- [Shopping Mall Property Management App](#shopping-mall-property-management-app)
+			- [Shopping Mall Requirements](#shopping-mall-requirements)
+	- [Access Patterns are accessible on the StoreLocation](#access-patterns-are-accessible-on-the-storelocation)
+		- [`PUT` Record](#put-record-1)
+			- [Add a new Store to the Mall:](#add-a-new-store-to-the-mall)
+		- [`UPDATE` Record](#update-record-1)
+			- [Change the Store's Lease Date:](#change-the-stores-lease-date)
+		- [`GET` Record](#get-record)
+			- [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
+		- [`DELETE` Record](#delete-record)
+			- [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
+		- [`Query` Records](#query-records-1)
+			- [Find Stores that match core access patterns](#find-stores-that-match-core-access-patterns)
 
 # Installation    
   
@@ -350,7 +351,7 @@ indexes: {
 		},
 		sk: {
 			field: "sk",
-			facets: "mid_:mallId#bid_:buildingId#uid_:unitId"]
+			facets: "mid_:mallId#bid_:buildingId#uid_:unitId"
 		}
 	}
 }
@@ -489,7 +490,7 @@ let stores  =  MallStores.query
 }
 ```
 
-Filter functions allow you to write a `FilterExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions. This object contains every Attribute defined in the Entity's Model with the following operators as methods:
+Filter functions allow you to write a `FilterExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions. This object contains every Attribute defined in the Entity's Model with the following operators as methods: 
 
 operator | example | result
 | ----------- | ----------- | ----------- |  
@@ -506,6 +507,53 @@ operator | example | result
 `between` | `rent.between(minRent, maxRent)` | `( #rent between :rent1 and :rent2 )`
 
 This functionality allows you to write the remaining logic of your `FilterExpression` with ease. Add complex nested `and`/`or` conditions or other `FilterExpression` logic while ElectroDB handles the  `ExpressionAttributeNames` and `ExpressionAttributeValues`.
+
+### Multiple Filters
+It is possible to include chain multiple filters. The resulting FilterExpressions are concatinated with an implicit `AND` operator.
+
+```javascript
+let MallStores = new Entity(model, client);
+let mallId = "EastPointe";
+let stateDate = "2020-04-01";
+let endDate = "2020-07-01";
+let maxRent = "5000.00";
+let minRent = "2000.00";
+let promotion = "1000.00";
+let stores = MallStores.query
+	.leases({ mallId })
+	.between({ leaseEndDate: stateDate }, { leaseEndDate: endDate })
+	.filter(({ rent, discount }) => `
+		${rent.between(minRent, maxRent)} AND ${discount.eq(promotion)}
+	`)
+	.filter(({ category }) => `
+		${category.eq("food/coffee")}
+	`)
+	.params();
+
+// Results
+{
+  TableName: 'StoreDirectory',
+  ExpressionAttributeNames: {
+    '#rent': 'rent',
+    '#discount': 'discount',
+    '#category': 'category',
+    '#pk': 'gsi3pk',
+    '#sk1': 'gsi3sk'
+  },
+  ExpressionAttributeValues: {
+    ':rent1': '2000.00',
+    ':rent2': '5000.00',
+    ':discount1': '1000.00',
+    ':category1': 'food/coffee',
+    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
+    ':sk1': '$mallstore#leaseenddate_2020-04-01#storeid_',
+    ':sk2': '$mallstore#leaseenddate_2020-07-01#storeid_'
+  },
+  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
+  IndexName: 'gsi2pk-gsi2sk-index',
+  FilterExpression: '( #rent between :rent1 and :rent2 ) AND ( #discount = :discount1 ) AND ( #category = :category1 )'
+}
+```
 
 # Building Queries
 Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is critical to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
