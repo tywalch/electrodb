@@ -39,6 +39,7 @@ Table of Contents
 		- [`Delete` Method](#delete-method)
 		- [`Put` Record](#put-record)
 		- [`Update` Record](#update-record)
+		- [`Scan` Records](#scan-records)
 		- [`Query` Records](#query-records)
 			- [Partition Key Facets](#partition-key-facets)
 		- [Execute Query `.go() and .params()`](#execute-query-go-and-params)
@@ -737,6 +738,21 @@ let category = "food/meal";
 await StoreLocations
 	.update({storeId, mallId, buildingId, unitId})
 	.set({category})
+	.go();
+```
+
+### `Scan` Records
+When scanning for rows, you can use filters the same as you would any query. For more detial on filters, see the [Filters](#filters) section.
+
+*Note: `Scan` functionality will be scoped to your Entity. This means your results will only include records that match the Entity defined in the model.*
+```javascript
+await StoreLocations.scan
+	.filter(({category}) => `
+		${category.eq("food/coffee")} OR ${category.eq("spite store")}  
+	`)
+	.filter(({leaseEndDate}) => `
+		${leaseEndDate.between("2020-03", "2020-04")}
+	`)
 	.go();
 ```
 
