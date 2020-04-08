@@ -395,7 +395,7 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
     ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
   },
   KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND (#discount <= :discount1)'
+  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
 }
 ```
 ### Defined on the model
@@ -448,7 +448,7 @@ let stores  =  MallStores.query
     ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
   },
   KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND (#discount <= :discount1)'
+  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
 }
 ```
 ### Defined via "Filter" method after query operators 
@@ -487,7 +487,7 @@ let stores  =  MallStores.query
     ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
   },
   KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND (#discount <= :discount1)'
+  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
 }
 ```
 
@@ -495,17 +495,17 @@ Filter functions allow you to write a `FilterExpression` without having to worry
 
 operator | example | result
 | ----------- | ----------- | ----------- |  
-`gte` | `rent.gte(maxRent)` | `( #rent >= :rent1 )`
-`gt` | `rent.gt(maxRent)` | `( #rent > :rent1 )`
-`lte` | `rent.lte(maxRent)` | `( #rent <= :rent1 )`
-`lt` | `rent.lt(maxRent)` | `( #rent < :rent1 )`
-`eq` | `rent.eq(maxRent)` | `( #rent = :rent1)`
-`begins` | `rent.begins(maxRent)` | `( begins_with(#rent, :rent1) )`
-`exists` | `rent.exists(maxRent)` | `( exists(#rent = :rent1) )`
-`notExists` | `rent.notExists(maxRent)` | `( not exists(#rent = :rent1) )`
-`contains` | `rent.contains(maxRent)` | `( contains(#rent = :rent1) )`
-`notContains` | `rent.notContains(maxRent)` | `( not contains(#rent = :rent1) )`
-`between` | `rent.between(minRent, maxRent)` | `( #rent between :rent1 and :rent2 )`
+`gte` | `rent.gte(maxRent)` | `#rent >= :rent1`
+`gt` | `rent.gt(maxRent)` | `#rent > :rent1`
+`lte` | `rent.lte(maxRent)` | `#rent <= :rent1`
+`lt` | `rent.lt(maxRent)` | `#rent < :rent1`
+`eq` | `rent.eq(maxRent)` | `#rent = :rent1`
+`begins` | `rent.begins(maxRent)` | `begins_with(#rent, :rent1)`
+`exists` | `rent.exists(maxRent)` | `exists(#rent = :rent1)`
+`notExists` | `rent.notExists(maxRent)` | `not exists(#rent = :rent1)`
+`contains` | `rent.contains(maxRent)` | `contains(#rent = :rent1)`
+`notContains` | `rent.notContains(maxRent)` | `not contains(#rent = :rent1)`
+`between` | `rent.between(minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
 
 This functionality allows you to write the remaining logic of your `FilterExpression` with ease. Add complex nested `and`/`or` conditions or other `FilterExpression` logic while ElectroDB handles the  `ExpressionAttributeNames` and `ExpressionAttributeValues`.
 
@@ -552,7 +552,7 @@ let stores = MallStores.query
   },
   KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
   IndexName: 'gsi2pk-gsi2sk-index',
-  FilterExpression: '( #rent between :rent1 and :rent2 ) AND ( #discount = :discount1 ) AND ( #category = :category1 )'
+  FilterExpression: '(#rent between :rent1 and :rent2) AND (#discount = :discount1 AND #category = :category1)'
 }
 ```
 
@@ -824,7 +824,7 @@ let stores = MallStores.query
     ':sk2': '$mallstore#leaseenddate_2020-07-31#rent_'
   },
   KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '( #rent <= :rent1 )'
+  FilterExpression: '#rent <= :rent1'
 }
 ```
 

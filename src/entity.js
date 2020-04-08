@@ -822,9 +822,10 @@ class Entity {
 		return params;
 	}
 
-	_expectIndexFacets(attributes = {}) {
+	_expectIndexFacets(attributes = {}, facets = {}) {
 		let [isIncomplete, { incomplete, complete }] = this._getIndexImpact(
 			attributes,
+			facets
 		);
 		let incompleteAccessPatterns = incomplete.map(
 			({ index }) =>
@@ -856,12 +857,13 @@ class Entity {
 		let updateIndex = "";
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
-		let completeFacets = this._expectIndexFacets({
-			...keyAttributes,
-			...set,
-		});
+		let completeFacets = this._expectIndexFacets({...set}, {...keyAttributes});
+		// complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
+		if (!completeFacets.indexes.includes(updateIndex)) {
+			completeFacets.indexes.push(updateIndex);
+		}
 		let composedKeys = this._makeKeysFromAttributes(completeFacets.indexes, {
-			...completeFacets.facets,
+			...keyAttributes,
 			...set,
 		});
 		let updatedKeys = {};
@@ -882,7 +884,8 @@ class Entity {
 		return { indexKey, updatedKeys };
 	}
 
-	_getIndexImpact(attributes = {}) {
+	_getIndexImpact(attributes = {}, included = {}) {
+		let includedFacets = Object.keys(included);
 		let impactedIndexes = {};
 		let completedIndexes = [];
 		let facets = {};
@@ -899,33 +902,31 @@ class Entity {
 		let incomplete = Object.entries(this.model.facets.byIndex)
 			.map(([index, { pk, sk }]) => {
 				let impacted = impactedIndexes[index];
+				let impact = { index, missing: [] };
 				if (impacted) {
-					let impact;
 					let missingPk =
 						impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
 					let missingSk =
 						impacted[KeyTypes.sk] && impacted[KeyTypes.sk].length !== sk.length;
 					if (missingPk) {
-						impact = impact || { index, missing: [] };
 						impact.missing = [
 							...impact.missing,
-							...pk.filter(attr => !impacted[KeyTypes.pk].includes(attr)),
+							...pk.filter(attr => !impacted[KeyTypes.pk].includes(attr) && !includedFacets.includes(attr)),
 						];
 					}
 					if (missingSk) {
-						impact = impact || { index, missing: [] };
 						impact.missing = [
 							...impact.missing,
-							...sk.filter(attr => !impacted[KeyTypes.sk].includes(attr)),
+							...sk.filter(attr => !impacted[KeyTypes.sk].includes(attr) && !includedFacets.includes(attr)),
 						];
 					}
 					if (!missingPk && !missingSk) {
 						completedIndexes.push(index);
 					}
-					return impact;
 				}
+				return impact;
 			})
-			.filter(Boolean)
+			.filter(({missing}) => missing.length)
 			.reduce((result, { missing }) => [...result, ...missing], []);
 		let isIncomplete = !!incomplete.length;
 		let complete = {
