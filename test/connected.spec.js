@@ -594,7 +594,6 @@ describe("Entity", async () => {
 			let expectedMembers = records.filter(
 				record => record.color !== "green" && record.property !== "A",
 			);
-			// console.log(records);
 			let found = await db.scan
 				.filter(({ property }) => property.gt("A"))
 				.filter(
@@ -604,12 +603,11 @@ describe("Entity", async () => {
 				)
 				.filter(({ property }) => property.notContains("Z"))
 				.go();
+
 			expect(found)
 				.to.be.an("array")
 				.and.have.length(expectedMembers.length)
 				.and.to.have.deep.members(expectedMembers);
 		});
 	});
-
-	// });
 });
