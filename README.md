@@ -64,12 +64,12 @@ Table of Contents
 	- [Coming Soon:](#coming-soon)
 
 # Installation    
-  
+
 Install from NPM  
-  
+
 ```bash  
 npm install electrodb --save
-```  
+```
 
 # Usage
 Unlike in traditional sql databases, a single *DynamoDB* table will include multiple entities along side each other. Additionally, *DynamoDB* utilizes *Partition* and *Sort Keys* to query records to allow for hierarchical relationships. ElectroDB allows you to make the most of these concepts with less headaches. 
@@ -81,12 +81,12 @@ In ***ElectroDB*** an `Entity` is a single record that represents a single busin
 Require or import `Entity` from `electrodb`:    
 ```javascript  
 const {Entity} = require("electrodb");
-```  
+```
 
 ## Model  
-  
+
 Create an Entity's schema   
-  
+
 ```javascript
 const  DynamoDB  =  require("aws-sdk/clients/dynamodb");
 const {Entity} = require("electrodb");
@@ -169,11 +169,11 @@ let model = {
 };
 
 const UserContacts = new Entity(model, {client});
- ```
- 
-| Property | Description |  
-| ----------- | ----------- |  
-| service  | Name of the application using the entity, used to namespace all entities |  
+```
+
+| Property | Description |
+| ----------- | ----------- |
+| service  | Name of the application using the entity, used to namespace all entities |
 entity | Name of the entity that the schema represents |  
 table | Name of the dynamodb table in aws |  
 version | (optional) The version number of the schema, used to namespace keys |  
@@ -204,9 +204,9 @@ attributes: {
 }
 ```
 
-| Property | Type | Required | Description |  
-| -------- | :--: | :--: | ----------- |  
-| `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, or an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`. |  
+| Property | Type | Required | Description |
+| -------- | :--: | :--: | ----------- |
+| `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, or an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`. |
 `required` | `boolean` | no | Whether or not the value is required when creating a new record. |  
 `default` | `value`, `() => value` | no | Either the default value itself or a synchronous function that returns the desired value. |  
 `validate` | `RegExp`, `() => boolean` | no | Either regex or a synchronous callback to return a boolean. |  
@@ -238,9 +238,9 @@ indexes: {
 }
 ```
 
-| Property | Type | Required | Description |  
-| -------- | :--: | :--: | ----------- |  
-| `pk`  | `object` | yes | Configuration for the pk of that index or table |  
+| Property | Type | Required | Description |
+| -------- | :--: | :--: | ----------- |
+| `pk`  | `object` | yes | Configuration for the pk of that index or table |
 `pk.facets` | `boolean` | no | An array that represents the order in which attributes are concatenated to facets the key (see [Facets](#facets) below for more on this functionality). |  
 `pk.field` | `string` | yes | The name of the attribute as it exists dynamo, if named differently in the schema attributes. | 
 | `sk`  | `object` | no | Configuration for the sk of that index or table |  
@@ -309,6 +309,7 @@ indexes: {
 		}
 	}
 }
+    
 // Input
 {
     storeId: "STOREVALUE",
@@ -330,6 +331,7 @@ The syntax to a Facet Template is simple using the following rules:
 	1. Only alphanumeric, underscore, colons, and hash symbols are valid. the following regex is used to determine validity: `/^[A-Z1-9:#_]+$/gi`
 	2. Attributes are identified by a prefixed colon and the attributes name. For example, the syntax `:storeId`  will matches `storeId` attribute in the `model`
 	3. Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_:mallId#bid_:buildingId`. 
+
 ```javascript
 attributes: {
 	storeId: {
@@ -1083,5 +1085,7 @@ let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
 ## Coming Soon:
-- `Collection` class for relating and querying across multiple entities.
-- 
+- `Collection` class for relating and querying across multiple entities, configuring/enforcing relationships
+- `.page()` finish method (like `.params()` and `.go()`) to allow for easier pagination of results
+- Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
+- Default query options defined on the `model` to give more general control of interactions with the Entity.
