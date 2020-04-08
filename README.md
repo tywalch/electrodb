@@ -61,6 +61,7 @@ Table of Contents
 			- [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
 		- [`Query` Records](#query-records-1)
 			- [Find Stores that match core access patterns](#find-stores-that-match-core-access-patterns)
+	- [Coming Soon:](#coming-soon)
 
 # Installation    
   
@@ -1081,3 +1082,6 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
+## Coming Soon:
+- `Collection` class for relating and querying across multiple entities.
+- 

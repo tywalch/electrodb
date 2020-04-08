@@ -158,7 +158,7 @@ describe("Filter", () => {
 						},
 						valueCount: { rent: 2, mall: 2, leaseEnd: 3 },
 						FilterExpression:
-							"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
+							"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
 					},
 				},
 			});

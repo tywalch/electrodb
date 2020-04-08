@@ -187,8 +187,14 @@ describe("Entity", () => {
 			let impact1 = MallStores._getIndexImpact({ rent, category, mall });
 			let impact2 = MallStores._getIndexImpact({ leaseEnd });
 			let impact3 = MallStores._getIndexImpact({ mall });
-			let impact4 = MallStores._getIndexImpact({ rent, mall }, {id, building, unit});
-			let impact5 = MallStores._getIndexImpact({ rent, leaseEnd, category }, {store, building, unit, store});
+			let impact4 = MallStores._getIndexImpact(
+				{ rent, mall },
+				{ id, building, unit },
+			);
+			let impact5 = MallStores._getIndexImpact(
+				{ rent, leaseEnd, category },
+				{ store, building, unit, store },
+			);
 			expect(impact1).to.deep.equal([
 				true,
 				{
@@ -225,24 +231,24 @@ describe("Entity", () => {
 				{
 					incomplete: [],
 					complete: {
-					  facets: { mall: 'EastPointe' },
-					  indexes: [
-						'gsi1pk-gsi1sk-index',
-						'gsi2pk-gsi2sk-index',
-						'gsi3pk-gsi3sk-index'
-					  ]
-					}
-				}
+						facets: { mall: "EastPointe" },
+						indexes: [
+							"gsi1pk-gsi1sk-index",
+							"gsi2pk-gsi2sk-index",
+							"gsi3pk-gsi3sk-index",
+						],
+					},
+				},
 			]);
 			expect(impact5).to.deep.equal([
 				false,
 				{
 					incomplete: [],
 					complete: {
-					  facets: { leaseEnd: '2020/04/27', category: 'food/coffee' },
-					  indexes: []
-					}
-				}
+						facets: { leaseEnd: "2020/04/27", category: "food/coffee" },
+						indexes: [],
+					},
+				},
 			]);
 		});
 	});
@@ -1059,7 +1065,7 @@ describe("Entity", () => {
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
-					"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
+					"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
 			});
 		});
 
@@ -1094,7 +1100,7 @@ describe("Entity", () => {
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
-					"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
+					"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
 			});
 		});
 		it("Should add filtered fields to the between params", () => {
@@ -1131,7 +1137,7 @@ describe("Entity", () => {
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
 				FilterExpression:
-					"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
+					"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
 			});
 		});
 		it("Should add filtered fields to the comparison params", () => {
@@ -1167,7 +1173,7 @@ describe("Entity", () => {
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
 				FilterExpression:
-					"(( #rent >= :rent1 ) AND ( #mall = :mall1 )) OR ( #leaseEnd between :leaseEnd1 and :leaseEnd2 )",
+					"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
 			});
 		});
 	});
