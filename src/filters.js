@@ -13,37 +13,37 @@ let queryChildren = [
 ];
 let FilterTypes = {
 	eq: function eq(name, value) {
-		return ` ( ${name} = ${value} ) `;
+		return `${name} = ${value}`;
 	},
 	gt: function gt(name, value) {
-		return ` ( ${name} > ${value} ) `;
+		return `${name} > ${value}`;
 	},
 	lt: function lt(name, value) {
-		return ` ( ${name} < ${value} ) `;
+		return `${name} < ${value}`;
 	},
 	gte: function gte(name, value) {
-		return ` ( ${name} >= ${value} ) `;
+		return `${name} >= ${value}`;
 	},
 	lte: function lte(name, value) {
-		return ` ( ${name} <= ${value} ) `;
+		return `${name} <= ${value}`;
 	},
 	between: function between(name, value1, value2) {
-		return ` ( ${name} between ${value1} and ${value2} ) `;
+		return `(${name} between ${value1} and ${value2})`;
 	},
 	begins: function begins(name, value) {
-		return ` ( begins_with(${name}, ${value})) `;
+		return `begins_with(${name}, ${value})`;
 	},
 	exists: function exists(name, value) {
-		return ` ( exists(${name}, ${value}) ) `;
+		return `exists(${name}, ${value})`;
 	},
 	notExists: function notExists(name, value) {
-		return ` ( not exists(${name}, ${value}) ) `;
+		return `not exists(${name}, ${value})`;
 	},
 	contains: function contains(name, value) {
-		return ` ( contains(${name}, ${value}) ) `;
+		return `contains(${name}, ${value})`;
 	},
 	notContains: function notContains(name, value) {
-		return ` ( not contains(${name}, ${value}) ) `;
+		return `not contains(${name}, ${value})`;
 	},
 };
 

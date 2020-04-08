@@ -1,244 +1,45 @@
-// const moment = require("moment");
-// const uuidv4 = require("uuid/v4");
-// const DynamoDB = require("aws-sdk/clients/dynamodb");
-// const client = new DynamoDB.DocumentClient({
-// 	region: "us-east-1",
-// });
-// const { Entity } = require("../src/entity");
-// let WeatherSill = new Entity(
-// 	{
-// 		service: "WeatherSill",
-// 		entity: "video",
-// 		table: "weathersill",
-// 		version: "1",
-// 		attributes: {
-// 			fileName: {
-// 				type: "string",
-// 				required: true,
-// 				label: "id",
-// 			},
-// 			dateTime: {
-// 				type: "string",
-// 				default: () => moment.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
-// 				label: "dt",
-// 			},
-// 			phase: {
-// 				type: "string",
-// 				required: true,
-// 				label: "ph",
-// 			},
-// 			main: {
-// 				type: "string",
-// 				required: true,
-// 			},
-// 			city: {
-// 				type: "string",
-// 				required: true,
-// 			},
-// 			description: {
-// 				type: "string",
-// 				label: "de",
-// 			},
-// 			year: {
-// 				type: "string",
-// 				default: () => moment.utc().format("YYYY"),
-// 			},
-// 			month: {
-// 				type: "string",
-// 				default: () => moment.utc().format("MM"),
-// 				label: "mo",
-// 			},
-// 			day: {
-// 				type: "string",
-// 				default: () => moment.utc().format("DD"),
-// 			},
-// 			hour: {
-// 				type: "string",
-// 				default: () => moment.utc().format("HH"),
-// 			},
-// 			minutes: {
-// 				type: "string",
-// 				default: () => moment.utc().format("mm"),
-// 			},
-// 			temp: {
-// 				type: "number",
-// 			},
-// 			pressure: {
-// 				type: "number",
-// 			},
-// 			humidity: {
-// 				type: "number",
-// 			},
-// 			temp_min: {
-// 				type: "number",
-// 			},
-// 			temp_max: {
-// 				type: "number",
-// 			},
-// 			wind: {
-// 				type: "number",
-// 			},
-// 			clouds: {
-// 				type: "number",
-// 				default: () => -1,
-// 				label: "cl",
-// 			},
-// 			rain: {
-// 				type: "number",
-// 			},
-// 			snow: {
-// 				type: "number",
-// 			},
-// 			sunrise: {
-// 				type: "number",
-// 			},
-// 			sunset: {
-// 				type: "number",
-// 			},
-// 			visibility: {
-// 				type: "number",
-// 				default: () => -1,
-// 			},
-// 		},
-// 		indexes: {
-// 			video: {
-// 				pk: {
-// 					field: "pk",
-// 					facets: ["fileName"],
-// 				},
-// 				sk: {
-// 					field: "sk",
-// 					facets: ["city", "dateTime"],
-// 				},
-// 			},
-// 			weather: {
-// 				index: "gsi1pk-gsi1sk-Index",
-// 				pk: {
-// 					field: "gsi1pk",
-// 					facets: ["phase", "main", "city"],
-// 				},
-// 				sk: {
-// 					field: "gsi1sk",
-// 					facets: ["month", "description", "clouds", "fileName"],
-// 				},
-// 			},
-// 		},
-// 		filters: {},
-// 	},
-// 	{ client },
-// );
+const { Entity, clauses } = require("../src/entity");
+const { expect } = require("chai");
+const moment = require("moment");
+const uuidV4 = require("uuid/v4");
 
-// WeatherSill.scan
-// 	.filter(({ year }) => year.eq("2020"))
-// 	.filter(
-// 		({ temp, minutes }) => `
-// 		${temp.lte(70)} OR ${minutes.eq("19")}
-// 	`,
-// 	)
-// 	.go()
-// 	.then(console.log)
-// 	.catch(console.log);
+/*
+	todo: add check for untilized SKs to then be converted to filters  
+*/
 
-// console.log(
-// 	WeatherSill.scan
-// 		.filter(({ year }) => year.eq("2020"))
-// 		.filter(({ temp }) => temp.lte(70))
-// 		.params(),
-// );
-
-// let entity = uuidv4();
-// let db = new Entity(
-// 	{
-// 		service: "testing",
-// 		entity: entity,
-// 		table: "electro",
-// 		version: "1",
-// 		attributes: {
-// 			id: {
-// 				type: "string",
-// 				default: () => uuidv4(),
-// 			},
-// 			property: {
-// 				type: "string",
-// 				field: "propertyVal",
-// 			},
-// 			color: {
-// 				type: ["red", "green"],
-// 			},
-// 		},
-// 		indexes: {
-// 			record: {
-// 				pk: {
-// 					field: "pk",
-// 					facets: ["id"],
-// 				},
-// 				sk: {
-// 					field: "sk",
-// 					facets: ["property"],
-// 				},
-// 			},
-// 		},
-// 	},
-// 	{ client },
-// );
-// async function doIt() {
-// 	console.log("ENTITYzz", entity);
-// 	let date = moment.utc().format();
-// 	let colors = ["red", "green"];
-// 	let properties = ["A", "B", "C", "D", "E", "F"];
-// 	let records = await Promise.all(
-// 		properties.map((property, i) => {
-// 			let color = colors[i % 2];
-// 			return db.put({ property, color }).go();
-// 		}),
-// 	);
-// 	let expectedMembers = records.filter(
-// 		record => record.color !== "green" && record.property !== "A",
-// 	);
-// 	// console.log(records);
-// 	let found = await db.scan
-// 		.filter(({ property }) => property.gt("A"))
-// 		.filter(
-// 			({ color, id }) => `
-// 			(${color.notContains("green")} OR ${id.contains("weird_value")})
-// 		`,
-// 		)
-// 		.filter(({ property }) => property.notContains("Z"))
-// 		.go();
-// 	console.log("FOUND++++++++++++", found);
-// }
-// doIt()
-// 	.then(console.log)
-// 	.catch(console.log);
-const DynamoDB = require("aws-sdk/clients/dynamodb");
-const { Entity } = require("../src/entity");
-const client = new DynamoDB.DocumentClient();
-
-let model = {
+let schema = {
 	service: "MallStoreDirectory",
-	entity: "MallStore",
+	entity: "MallStores",
 	table: "StoreDirectory",
 	version: "1",
 	attributes: {
-		mallId: {
+		id: {
 			type: "string",
-			required: true,
+			default: () => uuidV4(),
+			field: "storeLocationId",
 		},
-		storeId: {
+		mall: {
 			type: "string",
 			required: true,
+			field: "mall",
 		},
-		buildingId: {
+		store: {
 			type: "string",
 			required: true,
+			field: "storeId",
 		},
-		unitId: {
+		building: {
 			type: "string",
 			required: true,
+			field: "buildingId",
+		},
+		unit: {
+			type: "string",
+			required: true,
+			field: "unitId",
 		},
 		category: {
 			type: [
-				"spite store",
 				"food/coffee",
 				"food/meal",
 				"clothing",
@@ -248,85 +49,200 @@ let model = {
 			],
 			required: true,
 		},
-		leaseEndDate: {
+		leaseEnd: {
 			type: "string",
 			required: true,
+			validate: date =>
+				moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
 		},
 		rent: {
 			type: "string",
-			required: true,
-			validate: /^(\d+\.\d{2})$/,
-		},
-		discount: {
-			type: "string",
 			required: false,
 			default: "0.00",
-			validate: /^(\d+\.\d{2})$/,
+		},
+		adjustments: {
+			type: "string",
+			required: false,
+		},
+	},
+	filters: {
+		rentsLeaseEndFilter: function(
+			attr,
+			{ lowRent, beginning, end, location } = {},
+		) {
+			return `(${attr.rent.gte(lowRent)} AND ${attr.mall.eq(
+				location,
+			)}) OR ${attr.leaseEnd.between(beginning, end)}`;
 		},
 	},
 	indexes: {
-		stores: {
+		store: {
 			pk: {
 				field: "pk",
-				facets: ["storeId"],
-			},
-			sk: {
-				field: "sk",
-				facets: ["mallId", "buildingId", "unitId"],
+				facets: ["id"],
 			},
 		},
-		malls: {
+		units: {
 			index: "gsi1pk-gsi1sk-index",
 			pk: {
 				field: "gsi1pk",
-				facets: ["mallId"],
+				facets: ["mall"],
 			},
 			sk: {
 				field: "gsi1sk",
-				facets: ["buildingId", "unitId", "storeId"],
+				facets: ["building", "unit", "store"],
 			},
 		},
 		leases: {
 			index: "gsi2pk-gsi2sk-index",
 			pk: {
+				field: "gsi2pk",
+				facets: ["mall"],
+			},
+			sk: {
+				field: "gsi2sk",
+				facets: ["leaseEnd", "store", "building", "unit"],
+			},
+		},
+		categories: {
+			index: "gsi3pk-gsi3sk-index",
+			pk: {
 				field: "gsi3pk",
-				facets: ["mallId"],
+				facets: ["mall"],
 			},
 			sk: {
 				field: "gsi3sk",
-				facets: ["leaseEndDate", "storeId", "buildingId", "unitId"],
+				facets: ["category", "building", "unit", "store"],
 			},
 		},
-	},
-	filters: {
-		byCategory: ({ category }, name) => category.eq(name),
-		rentDiscount: (attributes, discount, max, min) => {
-			return `${attributes.discount.lte(
-				discount,
-			)} AND ${attributes.rent.between(max, min)}`;
+		shops: {
+			index: "gsi4pk-gsi4sk-index",
+			pk: {
+				field: "gsi4pk",
+				facets: ["store"],
+			},
+			sk: {
+				field: "gsi4sk",
+				facets: ["mall", "building", "unit"],
+			},
 		},
 	},
 };
 
-let MallStores = new Entity(model, client);
-let mallId = "EastPointe";
-let stateDate = "2020-04-01";
-let endDate = "2020-07-01";
-let maxRent = "5000.00";
-let minRent = "2000.00";
-let promotion = "1000.00";
-let stores = MallStores.query
-	.leases({ mallId })
-	.between({ leaseEndDate: stateDate }, { leaseEndDate: endDate })
-	.filter(
-		({ rent, discount }) => `
-		${rent.between(minRent, maxRent)} AND ${discount.eq(promotion)}
-	`,
-	)
-	.filter(
-		({ category }) => `
-		${category.eq("food/coffee")}
-	`,
-	)
-	.params();
-console.log(stores);
+describe("_getIndexImpact", () => {
+	let MallStores = new Entity(schema);
+	it("Should identify impacted indexes from attributes", () => {
+		let id = uuidV4();
+		let rent = "0.00";
+		let category = "food/coffee";
+		let mall = "EastPointe";
+		let leaseEnd = "2020/04/27";
+		let unit = "B45";
+		let building = "BuildingB";
+		let store = "LatteLarrys";
+		let impact1 = MallStores._getIndexImpact({ rent, category, mall });
+		let impact2 = MallStores._getIndexImpact({ leaseEnd });
+		let impact3 = MallStores._getIndexImpact({ mall });
+		let impact4 = MallStores._getIndexImpact({ rent, mall }, {id, building, unit});
+		let impact5 = MallStores._getIndexImpact({ rent, leaseEnd, category }, {store, building, unit, store});
+		
+		expect(impact1).to.deep.equal([
+			true,
+			{
+				incomplete: ["building", "unit", "store", "building", "unit"],
+				complete: {
+					facets: { mall, category },
+					indexes: ["gsi1pk-gsi1sk-index", "gsi2pk-gsi2sk-index"],
+				},
+			},
+		]);
+		expect(impact2).to.deep.equal([
+			true,
+			{
+				incomplete: ["store", "building", "unit"],
+				complete: { facets: { leaseEnd }, indexes: [] },
+			},
+		]);
+		expect(impact3).to.deep.equal([
+			true,
+			{
+				incomplete: ["building", "unit"],
+				complete: {
+					facets: { mall },
+					indexes: [
+						"gsi1pk-gsi1sk-index",
+						"gsi2pk-gsi2sk-index",
+						"gsi3pk-gsi3sk-index",
+					],
+				},
+			},
+		]);
+		expect(impact4).to.deep.equal([
+			false,
+			{
+				incomplete: [],
+				complete: {
+				  facets: { mall: 'EastPointe' },
+				  indexes: [
+					'gsi1pk-gsi1sk-index',
+					'gsi2pk-gsi2sk-index',
+					'gsi3pk-gsi3sk-index'
+				  ]
+				}
+			}
+		]);
+		expect(impact5).to.deep.equal([
+			false,
+			{
+				incomplete: [],
+				complete: {
+				  facets: { leaseEnd: '2020/04/27', category: 'food/coffee' },
+				  indexes: []
+				}
+			}
+		]);
+	});
+	it("Should create parameters for a given chain", () => {
+		let mall = "EastPointe";
+		let store = "LatteLarrys";
+		let building = "BuildingA";
+		let id = uuidV4();
+		let category = "food/coffee";
+		let unit = "B54";
+		let leaseEnd = "2020-01-20";
+		let rent = "0.00";
+		let buildingOne = "BuildingA";
+		let buildingTwo = "BuildingF";
+		let unitOne = "A1";
+		let unitTwo = "F6";
+		let update = MallStores.update({ id })
+				.set({ mall, store, building, category, unit, rent, leaseEnd })
+				.params();
+			expect(update).to.deep.equal({
+				UpdateExpression:
+					"SET #mall = :mall, #storeId = :storeId, #buildingId = :buildingId, #unitId = :unitId, #category = :category, #leaseEnd = :leaseEnd, #rent = :rent",
+				ExpressionAttributeNames: {
+					"#mall": "mall",
+					"#storeId": "storeId",
+					"#buildingId": "buildingId",
+					"#unitId": "unitId",
+					"#category": "category",
+					"#leaseEnd": "leaseEnd",
+					"#rent": "rent",
+				},
+				ExpressionAttributeValues: {
+					":mall": mall,
+					":storeId": store,
+					":buildingId": building,
+					":unitId": unit,
+					":category": category,
+					":leaseEnd": leaseEnd,
+					":rent": rent,
+				},
+				TableName: "StoreDirectory",
+				Key: {
+					pk: `$mallstoredirectory_1#id_${id}`,
+				},
+			});
+	});
+});

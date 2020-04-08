@@ -187,6 +187,8 @@ describe("Entity", () => {
 			let impact1 = MallStores._getIndexImpact({ rent, category, mall });
 			let impact2 = MallStores._getIndexImpact({ leaseEnd });
 			let impact3 = MallStores._getIndexImpact({ mall });
+			let impact4 = MallStores._getIndexImpact({ rent, mall }, {id, building, unit});
+			let impact5 = MallStores._getIndexImpact({ rent, leaseEnd, category }, {store, building, unit, store});
 			expect(impact1).to.deep.equal([
 				true,
 				{
@@ -217,6 +219,30 @@ describe("Entity", () => {
 						],
 					},
 				},
+			]);
+			expect(impact4).to.deep.equal([
+				false,
+				{
+					incomplete: [],
+					complete: {
+					  facets: { mall: 'EastPointe' },
+					  indexes: [
+						'gsi1pk-gsi1sk-index',
+						'gsi2pk-gsi2sk-index',
+						'gsi3pk-gsi3sk-index'
+					  ]
+					}
+				}
+			]);
+			expect(impact5).to.deep.equal([
+				false,
+				{
+					incomplete: [],
+					complete: {
+					  facets: { leaseEnd: '2020/04/27', category: 'food/coffee' },
+					  indexes: []
+					}
+				}
 			]);
 		});
 	});
