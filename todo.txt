@@ -14,4 +14,3 @@ tests:
     - test for bad "isValid" attribute result
 features: 
   - find method
-  - scan method

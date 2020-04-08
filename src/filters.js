@@ -98,18 +98,15 @@ class FilterFactory {
 		if (typeof existingExpression === "string" && existingExpression.length) {
 			existingExpression = existingExpression.replace(/\n|\r/g, "").trim();
 			newExpression = newExpression.replace(/\n|\r/g, "").trim();
-
 			let existingNeedsParens =
 				!existingExpression.startsWith("(") &&
 				!existingExpression.endsWith(")");
 			let newNeedsParens =
 				!newExpression.startsWith("(") && !newExpression.endsWith(")");
 			if (existingNeedsParens) {
-				console.log("EXISTING", existingExpression);
 				existingExpression = `(${existingExpression})`;
 			}
 			if (newNeedsParens) {
-				console.log("new", newExpression);
 				newExpression = `(${newExpression})`;
 			}
 			return `${existingExpression} AND ${newExpression}`;
