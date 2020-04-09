@@ -768,8 +768,8 @@ All queries start from the Access Pattern defined in the schema.
 ```javascript
 const MallStore = new Entity(schema); 
 // Each Access Pattern is available on the Entity instance
-// MallStore.stores()
-// MallStore.malls()
+// MallStore.query.stores()
+// MallStore.query.malls()
 ```
 
 #### Partition Key Facets
@@ -784,13 +784,13 @@ let storeId = "LatteLarrys";
 let mallId = "EastPointe";
 
 // Good: As an object
-MallStore.stores({storeId});
+MallStore.query.stores({storeId});
 
 // Bad: Facets missing, will throw
-MallStore.stores(); // err: Params passed to ENTITY method, must only include storeId
+MallStore.query.stores(); // err: Params passed to ENTITY method, must only include storeId
 
 // Bad: Facets not included, will throw
-MallStore.stores({mallId}); // err: Params passed to ENTITY method, must only include storeId
+MallStore.query.stores({mallId}); // err: Params passed to ENTITY method, must only include storeId
 ```
 
 After invoking the **Access Pattern** with the required **Partition Key** **Facets**, you can now choose what **Sort Key Facets** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
