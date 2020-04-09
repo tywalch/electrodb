@@ -402,14 +402,14 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 }
 ```
 ### Defined on the model
+
 ```javascript
-// Filter object located on the entity model
+/**
+	* Filter by low rent a specific mall or a leaseEnd withing a specific range  
+	* @param {Object} attributes - All attributes from the model with methods for each filter operation  
+	* @param {...*} values - Values passed when calling the filter in a query chain.
+**/
 filters: {
-	/**
-	 * Filter by low rent a specific mall or a leaseEnd withing a specific range  
-	 * @param {Object} attributes - All attributes from the model with methods for each filter operation  
-	 * @param {...*} values - Values passed when calling the filter in a query chain.
-	 */
 	rentPromotions: function(attributes, minRent, maxRent, promotion)  {
 		let {rent, discount} = attributes;
 		return `
