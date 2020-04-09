@@ -32,7 +32,7 @@ Table of Contents
 		- [Multiple Filters](#multiple-filters)
 - [Building Queries](#building-queries)
 		- [Sort Key Operations](#sort-key-operations)
-		- [Using Facets to Make Heretical Keys](#using-facets-to-make-heretical-keys)
+		- [Using facets to make hierarchical keys](#using-facets-to-make-hierarchical-keys)
 			- [Shopping Mall Stores](#shopping-mall-stores)
 	- [Query Chains](#query-chains)
 		- [`Get` Method](#get-method)
@@ -576,7 +576,7 @@ Forming a composite **Partition Key** and **Sort Key** is a critical step in pla
 | `lt` | Keys greater than some value |
 | `lte` | Keys greater than or equal to some value |
 
-### Using Facets to Make Heretical Keys
+### Using facets to make hierarchical keys
 Carefully considering your **Facet** order will allow ***ElectroDB** to express hierarchical relationships and unlock more available **Access Patterns** for your application. 
 
 For example, let's say you have a `MallStore` Entity that represents Store Locations inside Malls:
