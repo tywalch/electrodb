@@ -381,13 +381,13 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 
 ```javascript
 {
-  IndexName: 'gsi2pk-gsi2sk-index',
+  IndexName: 'idx2',
   TableName: 'electro',
   ExpressionAttributeNames: {
     '#rent': 'rent',
     '#discount': 'discount',
-    '#pk': 'gsi2pk',
-    '#sk1': 'gsi2sk'
+    '#pk': 'idx2pk',
+    '#sk1': 'idx2sk'
   },
   ExpressionAttributeValues: {
     ':rent1': '2000.00',
@@ -402,14 +402,14 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 }
 ```
 ### Defined on the model
+
 ```javascript
-// Filter object located on the entity model
+/**
+	* Filter by low rent a specific mall or a leaseEnd withing a specific range  
+	* @param {Object} attributes - All attributes from the model with methods for each filter operation  
+	* @param {...*} values - Values passed when calling the filter in a query chain.
+**/
 filters: {
-	/**
-	 * Filter by low rent a specific mall or a leaseEnd withing a specific range  
-	 * @param {Object} attributes - All attributes from the model with methods for each filter operation  
-	 * @param {...*} values - Values passed when calling the filter in a query chain.
-	 */
 	rentPromotions: function(attributes, minRent, maxRent, promotion)  {
 		let {rent, discount} = attributes;
 		return `
@@ -434,13 +434,13 @@ let stores  =  MallStores.query
 
 // Results
 {
-  IndexName: 'gsi2pk-gsi2sk-index',
+  IndexName: 'idx2',
   TableName: 'electro',
   ExpressionAttributeNames: {
     '#rent': 'rent',
     '#discount': 'discount',
-    '#pk': 'gsi2pk',
-    '#sk1': 'gsi2sk'
+    '#pk': 'idx2pk',
+    '#sk1': 'idx2sk'
   },
   ExpressionAttributeValues: {
     ':rent1': '2000.00',
@@ -473,13 +473,13 @@ let stores  =  MallStores.query
 
 // Results
 {
-  IndexName: 'gsi2pk-gsi2sk-index',
+  IndexName: 'idx2',
   TableName: 'electro',
   ExpressionAttributeNames: {
     '#rent': 'rent',
     '#discount': 'discount',
-    '#pk': 'gsi2pk',
-    '#sk1': 'gsi2sk'
+    '#pk': 'idx2pk',
+    '#sk1': 'idx2sk'
   },
   ExpressionAttributeValues: {
     ':rent1': '2000.00',
@@ -541,8 +541,8 @@ let stores = MallStores.query
     '#rent': 'rent',
     '#discount': 'discount',
     '#category': 'category',
-    '#pk': 'gsi3pk',
-    '#sk1': 'gsi3sk'
+    '#pk': 'idx2pk',
+    '#sk1': 'idx2sk'
   },
   ExpressionAttributeValues: {
     ':rent1': '2000.00',
@@ -554,7 +554,7 @@ let stores = MallStores.query
     ':sk2': '$mallstore#leaseenddate_2020-07-01#storeid_'
   },
   KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  IndexName: 'gsi2pk-gsi2sk-index',
+  IndexName: 'idx2',
   FilterExpression: '(#rent between :rent1 and :rent2) AND (#discount = :discount1 AND #category = :category1)'
 }
 ```
@@ -645,24 +645,24 @@ let model = {
 			}  
 		},  
 		malls: {  
-			index: "gsi1pk-gsi1sk-index",  
+			index: "idx1",  
 			pk: {
-				field: "gsi1pk",
+				field: "idx1pk",
 				facets: ["mallId"]
 			},  
 			sk: {
-				field: "gsi1sk",
+				field: "idx1sk",
 				facets: ["buildingId", "unitId", "storeId"]
 			}  
 		},
 		leases: {
-			index: "gsi2pk-gsi2sk-index",
+			index: "idx2",
 			pk: {
-				field: "gsi3pk",
+				field: "idx2pk",
 				facets: ["mallId"]
 			},  
 			sk: {
-				field: "gsi3sk",
+				field: "idx2pk",
 				facets: ["leaseEndDate", "storeId", "buildingId", "unitId"]
 			}  
 		}
@@ -817,9 +817,9 @@ let stores = MallStores.query
 
 // Results:
 {
-  IndexName: 'gsi2pk-gsi2sk-index',
+  IndexName: 'idx2',
   TableName: 'electro',
-  ExpressionAttributeNames: { '#rent': 'rent', '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+  ExpressionAttributeNames: { '#rent': 'rent', '#pk': 'idx2pk', '#sk1': 'idx2sk' },
   ExpressionAttributeValues: {
     ':rent1': '5000.00',
     ':pk': '$mallstoredirectory_1#mallid_eastpointe',
