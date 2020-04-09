@@ -61,7 +61,7 @@ Table of Contents
 			- [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
 		- [`Query` Records](#query-records-1)
 			- [Find Stores that match core access patterns](#find-stores-that-match-core-access-patterns)
-	- [Coming Soon:](#coming-soon)
+- [Coming Soon:](#coming-soon)
 
 # Installation    
 
