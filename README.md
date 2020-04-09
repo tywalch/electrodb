@@ -1084,7 +1084,7 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
-## Coming Soon:
+# Coming Soon:
 - `Collection` class for relating and querying across multiple entities, configuring/enforcing relationships
 - `.page()` finish method (like `.params()` and `.go()`) to allow for easier pagination of results
 - Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
