@@ -198,8 +198,8 @@ attributes: {
 		"readOnly": [boolean]
 		"label": [string]
 		"cast": ["number"|"string"|"boolean"],
-		get: (attribute, schema) => value,
-		set: (attribute, schema) => value 
+		"get": (attribute, schema) => value,
+		"set": (attribute, schema) => value 
 	}
 }
 ```
