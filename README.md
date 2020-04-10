@@ -30,9 +30,9 @@ let stores  =  MallStores.query
 	.params();
 ```
 Into This:
-```json
+```javascript
 {
-  IndexName: 'idx2',
+  "IndexName": idx2',
   TableName: 'electro',
   ExpressionAttributeNames: {
     '#rent': 'rent',
