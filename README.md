@@ -83,7 +83,7 @@ Table of Contents
 		- [`Scan` Records](#scan-records)
 		- [`Query` Records](#query-records)
 			- [Partition Key Facets](#partition-key-facets)
-		- [Execute Query `.go() and .params()`](#execute-query-go-and-params)
+	- [Execute Query `.go() and .params()`](#execute-query-go-and-params)
 		- [`.params()`](#params)
 		- [`.go()`](#go)
 	- [Query Chain Examples](#query-chain-examples)
@@ -836,7 +836,7 @@ MallStore.query.stores({mallId}); // err: Params passed to ENTITY method, must o
 
 After invoking the **Access Pattern** with the required **Partition Key** **Facets**, you can now choose what **Sort Key Facets** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
 
-### Execute Query `.go() and .params()` 
+## Execute Query `.go() and .params()` 
 Lastly, all query chains end with either a `.go()` or a `.params()` method invocation. These will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
