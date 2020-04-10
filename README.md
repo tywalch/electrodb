@@ -49,7 +49,7 @@ Into This:
     ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
   },
   KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount1 <= :discount1'
+  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
 }
 ```
 
