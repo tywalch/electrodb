@@ -12,6 +12,47 @@
 - **Simple Sort Key Condition Querying**: Write efficient sort key queries by easily building compose keys.
 - **Simple Filter Composition**: Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
 
+Turn this:
+```javascript
+let MallStores  =  new Entity(model,  client);
+let mallId  =  "EastPointe";
+let stateDate = "2020-04-01";
+let endDate = "2020-07-01";
+let maxRent = "5000.00";
+let minRent = "2000.00";
+let promotion = "1000.00";
+let stores  =  MallStores.query
+	.leases({ mallId })
+	.between({ leaseEndDate:  stateDate }, { leaseEndDate:  endDate })
+	.filter(({rent, discount}) => `
+		${rent.between(minRent, maxRent)} AND ${discount.lte(promotion)}
+	`)
+	.params();
+```
+Into This:
+```json
+{
+  IndexName: 'idx2',
+  TableName: 'electro',
+  ExpressionAttributeNames: {
+    '#rent': 'rent',
+    '#discount': 'discount',
+    '#pk': 'idx2pk',
+    '#sk1': 'idx2sk'
+  },
+  ExpressionAttributeValues: {
+    ':rent1': '2000.00',
+    ':rent2': '5000.00',
+    ':discount1': '1000.00',
+    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
+    ':sk1': '$mallstore#leaseenddate_2020-04-01#rent_',
+    ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
+  },
+  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
+  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
+}
+```
+
 Table of Contents
 =================
 - [ElectroDB](#electrodb)
