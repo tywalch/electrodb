@@ -12,38 +12,71 @@ let queryChildren = [
 	"notContains",
 ];
 let FilterTypes = {
-	eq: function eq(name, value) {
-		return `${name} = ${value}`;
+	eq: {
+		template: function eq(name, value) {
+			return `${name} = ${value}`;
+		},
+		strict: true,
 	},
-	gt: function gt(name, value) {
-		return `${name} > ${value}`;
+	gt: {
+		template: function gt(name, value) {
+			return `${name} > ${value}`;
+		},
+		strict: false
 	},
-	lt: function lt(name, value) {
-		return `${name} < ${value}`;
+	lt: {
+		template: function lt(name, value) {
+			return `${name} < ${value}`;
+		},
+		strict: false
 	},
-	gte: function gte(name, value) {
-		return `${name} >= ${value}`;
+	gte: {
+		template: function gte(name, value) {
+			return `${name} >= ${value}`;
+		},
+		strict: false
 	},
-	lte: function lte(name, value) {
-		return `${name} <= ${value}`;
+	lte: {
+		template: function lte(name, value) {
+			return `${name} <= ${value}`;
+		},
+		strict: false
 	},
-	between: function between(name, value1, value2) {
-		return `(${name} between ${value1} and ${value2})`;
+	between: {
+		template: function between(name, value1, value2) {
+			return `(${name} between ${value1} and ${value2})`;
+		},
+		strict: false
 	},
-	begins: function begins(name, value) {
-		return `begins_with(${name}, ${value})`;
+	begins: {
+		template: function begins(name, value) {
+			return `begins_with(${name}, ${value})`;
+		},
+		strict: false
 	},
-	exists: function exists(name, value) {
-		return `exists(${name}, ${value})`;
+	exists: {
+		template: function exists(name, value) {
+			return `exists(${name}, ${value})`;
+		},
+		strict: false
 	},
-	notExists: function notExists(name, value) {
-		return `not exists(${name}, ${value})`;
+	notExists: {
+		template: function notExists(name, value) {
+			return `not exists(${name}, ${value})`;
+		},
+		strict: false
 	},
-	contains: function contains(name, value) {
-		return `contains(${name}, ${value})`;
+	contains: {
+		template: function contains(name, value) {
+			return `contains(${name}, ${value})`;
+		},
+		strict: false
 	},
-	notContains: function notContains(name, value) {
-		return `not contains(${name}, ${value})`;
+	notContains: {
+		template: function notContains(name, value) {
+			return `not contains(${name}, ${value})`;
+		},
+		strict: false
 	},
 };
 
@@ -59,7 +92,7 @@ class FilterFactory {
 		let attributes = {};
 		for (let [name, attribute] of Object.entries(this.attributes)) {
 			let filterAttribute = {};
-			for (let [type, template] of Object.entries(this.filters)) {
+			for (let [type, {strict, template}] of Object.entries(this.filters)) {
 				Object.defineProperty(filterAttribute, type, {
 					get: () => {
 						return (...values) => {
@@ -67,9 +100,11 @@ class FilterFactory {
 							setName(attrName, attribute.field);
 							let attrValues = [];
 							for (let value of values) {
-								let [isValid, errMessage] = attribute.isValid(value);
-								if (!isValid) {
-									throw new Error(errMessage);
+								if (strict) {
+									let [isValid, errMessage] = attribute.isValid(value);
+									if (!isValid) {
+										throw new Error(errMessage);
+									}
 								}
 
 								let valueCount = getValueCount(name);

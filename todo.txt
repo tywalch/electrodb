@@ -9,7 +9,6 @@ tests:
     - test for incomplete incomplete facets on update
   schema
     - test for invalid cast type
-    - test for regex validation
     - test for invalid attribute type  
     - test for bad "isValid" attribute result
 features: 

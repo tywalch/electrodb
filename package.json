@@ -4,7 +4,8 @@
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha ./test/offline**.spec.js",
+    "test-all": "mocha ./test/**.spec.js"
   },
   "repository": {
     "type": "git",

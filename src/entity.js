@@ -402,8 +402,6 @@ class Entity {
 				data[name] = value;
 			} else if (includeKeys) {
 				data[attr] = value;
-			} else {
-				// an index key
 			}
 		}
 		return data;
@@ -825,7 +823,7 @@ class Entity {
 	_expectIndexFacets(attributes = {}, facets = {}) {
 		let [isIncomplete, { incomplete, complete }] = this._getIndexImpact(
 			attributes,
-			facets
+			facets,
 		);
 		let incompleteAccessPatterns = incomplete.map(
 			({ index }) =>
@@ -857,7 +855,10 @@ class Entity {
 		let updateIndex = "";
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
-		let completeFacets = this._expectIndexFacets({...set}, {...keyAttributes});
+		let completeFacets = this._expectIndexFacets(
+			{ ...set },
+			{ ...keyAttributes },
+		);
 		// complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
 		if (!completeFacets.indexes.includes(updateIndex)) {
 			completeFacets.indexes.push(updateIndex);
@@ -911,13 +912,21 @@ class Entity {
 					if (missingPk) {
 						impact.missing = [
 							...impact.missing,
-							...pk.filter(attr => !impacted[KeyTypes.pk].includes(attr) && !includedFacets.includes(attr)),
+							...pk.filter(
+								attr =>
+									!impacted[KeyTypes.pk].includes(attr) &&
+									!includedFacets.includes(attr),
+							),
 						];
 					}
 					if (missingSk) {
 						impact.missing = [
 							...impact.missing,
-							...sk.filter(attr => !impacted[KeyTypes.sk].includes(attr) && !includedFacets.includes(attr)),
+							...sk.filter(
+								attr =>
+									!impacted[KeyTypes.sk].includes(attr) &&
+									!includedFacets.includes(attr),
+							),
 						];
 					}
 					if (!missingPk && !missingSk) {
@@ -926,7 +935,7 @@ class Entity {
 				}
 				return impact;
 			})
-			.filter(({missing}) => missing.length)
+			.filter(({ missing }) => missing.length)
 			.reduce((result, { missing }) => [...result, ...missing], []);
 		let isIncomplete = !!incomplete.length;
 		let complete = {
