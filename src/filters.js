@@ -55,14 +55,14 @@ let FilterTypes = {
 		strict: false
 	},
 	exists: {
-		template: function exists(name, value) {
-			return `exists(${name}, ${value})`;
+		template: function exists(name) {
+			return `attribute_exists(${name})`;
 		},
 		strict: false
 	},
 	notExists: {
-		template: function notExists(name, value) {
-			return `not exists(${name}, ${value})`;
+		template: function notExists(name) {
+			return `attribute_not_exists(${name})`;
 		},
 		strict: false
 	},
@@ -109,8 +109,10 @@ class FilterFactory {
 
 								let valueCount = getValueCount(name);
 								let attrValue = `:${name}${valueCount}`;
-								setValue(attrValue, value);
-								attrValues.push(attrValue);
+								if (template.length > 1) {
+									setValue(attrValue, value);
+									attrValues.push(attrValue);
+								}
 							}
 							let expression = template(attrName, ...attrValues);
 							if (typeof expression !== "string") {
