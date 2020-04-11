@@ -423,7 +423,6 @@ class Entity {
 		let stackTrace = new Error();
 		try {
 			let response = await this.client[method](params).promise();
-
 			if (config.raw) {
 				return response;
 			}

@@ -545,8 +545,8 @@ operator | example | result
 `lt` | `rent.lt(maxRent)` | `#rent < :rent1`
 `eq` | `rent.eq(maxRent)` | `#rent = :rent1`
 `begins` | `rent.begins(maxRent)` | `begins_with(#rent, :rent1)`
-`exists` | `rent.exists(maxRent)` | `exists(#rent = :rent1)`
-`notExists` | `rent.notExists(maxRent)` | `not exists(#rent = :rent1)`
+`exists` | `rent.exists()` | `attribute_exists(#rent)`
+`notExists` | `rent.notExists()` | `attribute_not_exists(#rent)`
 `contains` | `rent.contains(maxRent)` | `contains(#rent = :rent1)`
 `notContains` | `rent.notContains(maxRent)` | `not contains(#rent = :rent1)`
 `between` | `rent.between(minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
