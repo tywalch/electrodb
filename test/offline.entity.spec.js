@@ -729,51 +729,55 @@ describe("Entity", () => {
 					dateTime: "DATE",
 					prop1: "PROPERTY1",
 					prop2: "PROPERTY2",
-					pk: "$mallstoredirectory_1#id_identifier#p1_property1",
-					sk: "$mallstores#d_date#p2_property2",
+					pk: "id_identifier#p1_property1",
+					sk: "d_date#p2_property2",
 				},
 				TableName: "StoreDirectory",
 			});
 		});
-		it("Should throw on invalid characters in facet template (string)", () => {
-			const schema = {
-				service: "MallStoreDirectory",
-				entity: "MallStores",
-				table: "StoreDirectory",
-				version: "1",
-				attributes: {
-					id: {
-						type: "string",
-						field: "storeLocationId",
-					},
-					date: {
-						type: "string",
-						field: "dateTime",
-					},
-					prop1: {
-						type: "string",
-					},
-					prop2: {
-						type: "string",
-					},
-				},
-				indexes: {
-					record: {
-						pk: {
-							field: "pk",
-							facets: `id_:id#p1_:prop1`,
-						},
-						sk: {
-							field: "sk",
-							facets: `d_:date|p2_:prop2`,
-						},
-					},
-				},
-			};
-			expect(() => new Entity(schema)).to.throw(
-				`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: d_:date|p2_:prop2`,
-			);
-		});
+		
+		/* This test was removed because facet templates was refactored to remove all electrodb opinions. */
+		// 
+		// it("Should throw on invalid characters in facet template (string)", () => {
+		// 	const schema = {
+		// 		service: "MallStoreDirectory",
+		// 		entity: "MallStores",
+		// 		table: "StoreDirectory",
+		// 		version: "1",
+		// 		attributes: {
+		// 			id: {
+		// 				type: "string",
+		// 				field: "storeLocationId",
+		// 			},
+		// 			date: {
+		// 				type: "string",
+		// 				field: "dateTime",
+		// 			},
+		// 			prop1: {
+		// 				type: "string",
+		// 			},
+		// 			prop2: {
+		// 				type: "string",
+		// 			},
+		// 		},
+		// 		indexes: {
+		// 			record: {
+		// 				pk: {
+		// 					field: "pk",
+		// 					facets: `id_:id#p1_:prop1`,
+		// 				},
+		// 				sk: {
+		// 					field: "sk",
+		// 					facets: `d_:date|p2_:prop2`,
+		// 				},
+		// 			},
+		// 		},
+		// 	};
+		// 	expect(() => new Entity(schema)).to.throw(
+		// 		`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: d_:date|p2_:prop2`,
+		// 	);
+		// });
+
 		it("Should default labels to facet attribute names in facet template (string)", () => {
 			const schema = {
 				service: "MallStoreDirectory",
@@ -824,8 +828,70 @@ describe("Entity", () => {
 					dateTime: "DATE",
 					prop1: "PROPERTY1",
 					prop2: "PROPERTY2",
-					pk: "$mallstoredirectory_1#id_identifier#prop1_property1",
-					sk: "$mallstores#date_date#p2_property2",
+					pk: "id_identifier#property1",
+					sk: "date#p2_property2",
+				},
+				TableName: "StoreDirectory",
+			});
+		});
+		it("Should allow for mixed custom/composed facets, and adding collection prefixes when defined", () => {
+			const schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "storeLocationId",
+					},
+					date: {
+						type: "string",
+						field: "dateTime",
+					},
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string",
+					},
+					prop3: {
+						type: "string",
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							facets: `id_:id#:prop1#wubba_:prop3`,
+						},
+						sk: {
+							field: "sk",
+							facets: ["date", "prop2"],
+						},
+						collection: "testing"
+					},
+				},
+			};
+			let mallStore = new Entity(schema);
+			let putParams = mallStore
+				.put({
+					id: "IDENTIFIER",
+					date: "DATE",
+					prop1: "PROPERTY1",
+					prop2: "PROPERTY2",
+					prop3: "PROPERTY3"
+				})
+				.params();
+			expect(putParams).to.deep.equal({
+				Item: {
+					storeLocationId: "IDENTIFIER",
+					dateTime: "DATE",
+					prop1: "PROPERTY1",
+					prop2: "PROPERTY2",
+					prop3: "PROPERTY3",
+					pk: "id_identifier#property1#wubba_property3",
+					sk: "$testing#mallstores#date_date#prop2_property2",
 				},
 				TableName: "StoreDirectory",
 			});
