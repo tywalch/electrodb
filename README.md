@@ -15,17 +15,11 @@
 Turn this:
 ```javascript
 let MallStores  =  new Entity(model,  client);
-let mallId  =  "EastPointe";
-let stateDate = "2020-04-01";
-let endDate = "2020-07-01";
-let maxRent = "5000.00";
-let minRent = "2000.00";
-let promotion = "1000.00";
 let stores  =  MallStores.query
-	.leases({ mallId })
-	.between({ leaseEndDate:  stateDate }, { leaseEndDate:  endDate })
+	.leases({ mallId: "EastPointe" })
+	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
 	.filter(({rent, discount}) => `
-		${rent.between(minRent, maxRent)} AND ${discount.lte(promotion)}
+		${rent.between("2000.00", "5000.00")} AND ${discount.lte("1000.00")}
 	`)
 	.params();
 ```
