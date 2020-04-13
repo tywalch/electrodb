@@ -6,7 +6,7 @@ class Attribute {
 	constructor(definition = {}) {
 		this.name = definition.name;
 		this.field = definition.field || definition.name;
-		this.label = definition.label || definition.name;
+		this.label = definition.label || "";
 		this.readOnly = !!definition.readOnly;
 		this.required = !!definition.required;
 		this.cast = this._makeCast(definition.name, definition.cast);

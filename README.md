@@ -366,12 +366,19 @@ indexes: {
 }
 ```
 ### Facet Templates
-In a Facet Template, you provide a formatted template for ElectroDB to use when making keys. 
+In a Facet Template, you provide a formatted template for ElectroDB to use when making keys. Facet Templates allow for potential ElectroDB adoption on already established tables and records.
 
-The syntax to a Facet Template is simple using the following rules: 
-	1. Only alphanumeric, underscore, colons, and hash symbols are valid. the following regex is used to determine validity: `/^[A-Z1-9:#_]+$/gi`
-	2. Attributes are identified by a prefixed colon and the attributes name. For example, the syntax `:storeId`  will matches `storeId` attribute in the `model`
-	3. Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_:mallId#bid_:buildingId`. 
+Attributes are identified by a prefixed colon and the attributes name. For example, the syntax `:storeId`  will matches `storeId` attribute in the `model`. 
+
+Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_:mallId#bid_:buildingId`. 
+
+> ElectroDB will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit ElectroDBs ability to prevent leaking entities with some queries.
+
+Facet Templates have some "gotchas" to consider: 
+
+	1. Keys only allow for one instance of an attribute, the template `:prop1#:prop1` will be interpreted the same as `:prop1#`. 
+	2. ElectoDB will continue to always add a trailing delimiter to facets with keys are partially supplied. (More documentation coming on this soon)   
+	
 
 ```javascript
 attributes: {
@@ -412,8 +419,8 @@ indexes: {
 
 // Output:
 {
-	pk: '$mallstoredirectory_1#sid_storevalue',
-	sk: '$mallstores#mid_mallvalue#bid_buildingvalue#uid_unitvalue'
+	pk: 'sid_storevalue',
+	sk: 'mid_mallvalue#bid_buildingvalue#uid_unitvalue'
 }
 ```
 
