@@ -1019,25 +1019,71 @@ class Entity {
 		}
 	}
 
+	_getPrefixes({collection = "", customFacets = {}} = {}) {
+		/*
+			Collections will prefix the sort key so they can be queried with
+			a "begins_with" operator when crossing entities. It is also possible
+			that the user defined a custom key on either the PK or SK. In the case
+			of a customKey AND a collection, the collection is ignored to favor
+			the custom key. 
+		*/
+
+		let keys = {
+			pk: {
+				prefix: "",
+				isCustom: false
+			},
+			sk: {
+				prefix: "",
+				isCustom: false
+			}
+		};
+
+		if (collection) {
+			keys.pk.prefix = this.model.prefixes.pk
+			keys.sk.prefix = `$${collection}#${this.model.entity}`
+		} else {
+			keys.pk.prefix = this.model.prefixes.pk;
+			keys.sk.prefix = this.model.prefixes.sk;
+		}
+
+		if (customFacets.pk) {
+			keys.pk.prefix = "";
+			keys.pk.isCustom = customFacets.pk;
+		}
+
+		if (customFacets.sk) {
+			keys.sk.prefix = "";
+			keys.sk.isCustom = customFacets.sk;
+		}
+
+		return keys;
+	}
+
 	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
 		this._validateIndex(index);
 		let facets = this.model.facets.byIndex[index];
-		let pk = this._makeKey(this.model.prefixes.pk, facets.pk, pkFacets);
+		let prefixes = this._getPrefixes(facets);
+		let pk = this._makeKey(prefixes.pk.prefix, facets.pk, pkFacets, prefixes.pk);
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
-				sk.push(this._makeKey(this.model.prefixes.sk, facets.sk, skFacet));
+				sk.push(this._makeKey(prefixes.sk.prefix, facets.sk, skFacet, prefixes.sk));
 			}
 		}
 		return { pk, sk };
 	}
 
-	_makeKey(prefix = "", facets = [], supplied = {}) {
+	_makeKey(prefix = "", facets = [], supplied = {}, {isCustom} = {}) {
 		let key = prefix;
 		for (let i = 0; i < facets.length; i++) {
-			let facet = facets[i];
+			let facet = facets[i]; 
 			let { label, name } = this.model.schema.attributes[facet];
-			key = `${key}#${label || name}_`;
+			if (isCustom) {
+				key = `${key}${label}`;
+			} else {
+				key = `${key}#${label || name}_`;
+			}
 			if (supplied[name] !== undefined) {
 				key = `${key}${supplied[name]}`;
 			} else {
@@ -1099,11 +1145,6 @@ class Entity {
 	}
 
 	_parseComposedKey(key = "") {
-		if (!key.match(/^[A-Z1-9:#_]+$/gi)) {
-			throw new Error(
-				`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: ${key}`,
-			);
-		}
 		let facets = {};
 		let names = key.match(/:[A-Z1-9]+/gi);
 		if (!names) {
@@ -1116,23 +1157,26 @@ class Entity {
 			let name = names[i].replace(":", "");
 			let label = labels[i];
 			if (name !== "") {
-				facets[name] = label.replace(/#|_/gi, "");
+				facets[name] = label;
 			}
 		}
 		return facets;
 	}
 
 	_parseFacets(facets) {
-		if (Array.isArray(facets)) {
-			return {
-				facetLabels: {},
-				facetArray: facets,
-			};
-		} else {
+		let isCustom = !Array.isArray(facets);
+		if (isCustom) {
 			let facetLabels = this._parseComposedKey(facets);
 			return {
+				isCustom,
 				facetLabels,
 				facetArray: Object.keys(facetLabels),
+			};
+		} else {
+			return {
+				isCustom,
+				facetLabels: {},
+				facetArray: facets,
 			};
 		}
 	}
@@ -1145,7 +1189,7 @@ class Entity {
 			fromAccessPatternToIndex: {},
 			fromIndexToAccessPattern: {},
 		};
-
+		let collections = {};
 		let facets = {
 			byIndex: {},
 			byFacet: {},
@@ -1164,8 +1208,15 @@ class Entity {
 			let index = indexes[accessPattern];
 			let indexName = index.index || "";
 			let hasSk = !!index.sk;
+			let inCollection = !!index.collection;
+			let customFacets = {
+				pk: false,
+				sk: false
+			}
 			indexHasSortKeys[indexName] = hasSk;
-			let { facetArray, facetLabels } = this._parseFacets(index.pk.facets);
+			let parsedPKFacets = this._parseFacets(index.pk.facets);
+			let { facetArray, facetLabels } = parsedPKFacets;
+			customFacets.pk = parsedPKFacets.isCustom;
 			facets.labels = Object.assign({}, facets.labels, facetLabels);
 			let pk = {
 				accessPattern,
@@ -1178,7 +1229,9 @@ class Entity {
 			let sk = {};
 
 			if (hasSk) {
-				let { facetArray, facetLabels } = this._parseFacets(index.sk.facets);
+				let parseSKFacets = this._parseFacets(index.sk.facets);
+				let { facetArray, facetLabels } = parseSKFacets;
+				customFacets.sk = parseSKFacets.isCustom;
 				facets.labels = Object.assign({}, facets.labels, facetLabels);
 				sk = {
 					facetLabels,
@@ -1191,10 +1244,16 @@ class Entity {
 				facets.fields.push(sk.field);
 			}
 
+			if (inCollection) {
+				collections[index.collection] = index.collection;
+			}
+
 			let definition = {
 				pk,
 				sk,
+				customFacets,
 				index: indexName,
+				collection: index.collection
 			};
 
 			let attributes = [
@@ -1229,9 +1288,11 @@ class Entity {
 			facets.fields.push(pk.field);
 
 			facets.byIndex[indexName] = {
+				customFacets,
 				pk: pk.facets,
 				sk: sk.facets,
 				all: attributes,
+				collection: index.collection,
 			};
 
 			attributes.forEach((facet, j) =>
@@ -1245,6 +1306,7 @@ class Entity {
 			indexes: normalized,
 			indexField: indexFieldTranslation,
 			indexAccessPattern: indexAccessPatternTransaction,
+			collections: Object.keys(collections)
 		};
 	}
 
@@ -1272,6 +1334,7 @@ class Entity {
 			facets,
 			indexes,
 			indexField,
+			collections,
 			indexHasSortKeys,
 			indexAccessPattern,
 		} = this._normalizeIndexes(model.indexes);
@@ -1287,6 +1350,7 @@ class Entity {
 			indexes,
 			filters,
 			prefixes,
+			collections,
 			lookup: {
 				indexHasSortKeys,
 			},
@@ -1299,16 +1363,6 @@ class Entity {
 		};
 	}
 }
-
-// class AccessPattern {
-// 	constructor(name = "", definition = {}) {
-// 		this._validateIndex(definition);
-// 		this.name = name;
-// 		this.index = definition.index;
-// 	}
-
-// 	_validateIndex() {}
-// }
 
 module.exports = {
 	Entity,
