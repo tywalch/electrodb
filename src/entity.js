@@ -3,240 +3,7 @@ const { Schema } = require("./schema");
 const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const validations = require("./validations");
-
-let clauses = {
-	index: {
-		action(entity, state = {}, facets = {}) {
-			// todo: maybe all key info is passed on the subsequent query identifiers?
-			// todo: look for article/list of all dynamodb query limitations
-			return state;
-		},
-		children: ["get", "delete", "update", "query", "put", "scan"],
-	},
-	scan: {
-		action(entity, state) {
-			state.query.method = MethodTypes.scan;
-			return state;
-		},
-		children: ["params", "go"],
-	},
-	get: {
-		action(entity, state = {}, facets = {}) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			state.query.method = MethodTypes.get;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					facets,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-			}
-			return state;
-		},
-		children: ["params", "go"],
-	},
-	delete: {
-		action(entity, state = {}, facets = {}) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			state.query.method = MethodTypes.delete;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					facets,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-			}
-			return state;
-		},
-		children: ["params", "go"],
-	},
-	put: {
-		action(entity, state = {}, payload = {}) {
-			let record = entity.model.schema.checkCreate({ ...payload });
-			state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
-			state.query.method = MethodTypes.put;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					record,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-			}
-
-			state.query.put.data = Object.assign({}, record);
-			return state;
-		},
-		children: ["params", "go"],
-	},
-	update: {
-		action(entity, state = {}, facets = {}) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			state.query.method = MethodTypes.update;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					facets,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-			}
-			return state;
-		},
-		children: ["set"],
-	},
-	set: {
-		action(entity, state = {}, data) {
-			let record = entity.model.schema.checkUpdate({ ...data });
-			state.query.update.set = Object.assign(
-				{},
-				state.query.update.set,
-				record,
-			);
-			return state;
-		},
-		children: ["set", "go", "params"],
-	},
-	query: {
-		action(entity, state = {}, facets = {}) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
-			state.query.method = MethodTypes.query;
-			state.query.type = QueryTypes.begins;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
-		},
-		children: ["between", "gte", "gt", "lte", "lt", "params", "go"],
-	},
-	between: {
-		action(entity, state = {}, startingFacets = {}, endingFacets = {}) {
-			entity._expectFacets(
-				startingFacets,
-				Object.keys(startingFacets),
-				`"between" facets`,
-			);
-			entity._expectFacets(
-				endingFacets,
-				Object.keys(endingFacets),
-				`"and" facets`,
-			);
-			state.query.type = QueryTypes.between;
-			let queryEndingFacets = entity._buildQueryFacets(
-				endingFacets,
-				state.query.facets.sk,
-			);
-			let queryStartingFacets = entity._buildQueryFacets(
-				startingFacets,
-				state.query.facets.sk,
-			);
-			state.query.keys.sk.push({
-				type: QueryTypes.and,
-				facets: queryEndingFacets,
-			});
-			state.query.keys.sk.push({
-				type: QueryTypes.between,
-				facets: queryStartingFacets,
-			});
-			return state;
-		},
-		children: ["go", "params"],
-	},
-	gt: {
-		action(entity, state = {}, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
-			state.query.type = QueryTypes.gt;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
-		},
-		children: ["go", "params"],
-	},
-	gte: {
-		action(entity, state = {}, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"gte" facets`);
-			state.query.type = QueryTypes.gte;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
-		},
-		children: ["go", "params"],
-	},
-	lt: {
-		action(entity, state = {}, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"lt" facets`);
-			state.query.type = QueryTypes.lt;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
-		},
-		children: ["go", "params"],
-	},
-	lte: {
-		action(entity, state = {}, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"lte" facets`);
-			state.query.type = QueryTypes.lte;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
-		},
-		children: ["go", "params"],
-	},
-	params: {
-		action(entity, state = {}, options) {
-			if (state.query.method === MethodTypes.query) {
-				return entity._queryParams(state.query, options);
-			} else {
-				return entity._params(state.query, options);
-			}
-		},
-		children: [],
-	},
-	go: {
-		action(entity, state = {}, options) {
-			if (entity.client === undefined) {
-				throw new Error("No client defined on model");
-			}
-			let params = {};
-			if (state.query.method === MethodTypes.query) {
-				params = entity._queryParams(state.query, options);
-			} else {
-				params = entity._params(state.query, options);
-			}
-			return entity.go(state.query.method, params, options);
-		},
-		children: [],
-	},
-};
+const {clauses} = require("./clauses");
 
 const utilities = {
 	structureFacets: function(
@@ -270,7 +37,8 @@ class Entity {
 			FilterTypes,
 		);
 		this.query = {};
-		let clausesWithFilters = this._injectFiltersIntoClauses(
+		
+		let clausesWithFilters = this._filterBuilder.injectFilterClauses(
 			clauses,
 			this.model.filters,
 		);
@@ -291,38 +59,12 @@ class Entity {
 		}
 	}
 
-	_injectFiltersIntoClauses(clauses = {}, filters = {}) {
-		let injected = { ...clauses };
-		let filterParents = Object.entries(injected)
-			.filter(clause => {
-				let [name, { children }] = clause;
-				return children.includes("go");
-			})
-			.map(([name]) => name);
-		let modelFilters = Object.keys(filters);
-		let filterChildren = [];
-		for (let [name, filter] of Object.entries(filters)) {
-			filterChildren.push(name);
-			injected[name] = {
-				action: this._filterBuilder.buildClause(filter),
-				children: ["params", "go", "filter", ...modelFilters],
-			};
-		}
-		filterChildren.push("filter");
-		injected["filter"] = {
-			action: (entity, state, fn) => {
-				return this._filterBuilder.buildClause(fn)(entity, state);
-			},
-			children: ["params", "go", "filter", ...modelFilters],
-		};
-		for (let parent of filterParents) {
-			injected[parent] = { ...injected[parent] };
-			injected[parent].children = [
-				...filterChildren,
-				...injected[parent].children,
-			];
-		}
-		return injected;
+	collection(collection = "", clauses = {}, facets = {}) {
+		let index = this.model.indexes.byCollection[collection];
+		return this._makeChain(index, clauses, clauses.index).collection(
+			collection,
+			facets,
+		);
 	}
 
 	_validateModel(model = {}) {
@@ -366,7 +108,7 @@ class Entity {
 		return current;
 	}
 
-	_makeChain(index = "", clauses, rootClause) {
+	_makeChain(index = "", clauses, rootClause, options = {}) {
 		let facets = this.model.facets.byIndex[index];
 		let state = {
 			query: {
@@ -386,13 +128,13 @@ class Entity {
 				},
 				filter: {},
 			},
+			collectionOnly: !!options.collectionOnly,
 			hasSortKey: this.model.lookup.indexHasSortKeys[index],
-			indexComplete: false,
 		};
 		return this._chain(state, clauses, rootClause);
 	}
 
-	_cleanseRetrievedData(item = {}, options = {}) {
+	cleanseRetrievedData(item = {}, options = {}) {
 		let { includeKeys } = options;
 		let data = {};
 		let names = this.model.schema.translationForRetrieval;
@@ -405,6 +147,43 @@ class Entity {
 			}
 		}
 		return data;
+	}
+
+	formatResponse(response, config = {}) {
+		let stackTrace = new Error();
+		try {
+			if (config.raw) {
+				return response;
+			}
+
+			let data = {};
+			if (method === "put") {
+				data = this.cleanseRetrievedData(params.Item, config);
+			} else if (response.Item) {
+				data = this.cleanseRetrievedData(response.Item);
+			} else if (response.Items) {
+				data = response.Items.map(item =>
+					this.cleanseRetrievedData(item, config),
+				);
+			}
+
+			let appliedGets;
+			if (Array.isArray(data)) {
+				appliedGets = data.map(item =>
+					this.model.schema.applyAttributeGetters(item),
+				);
+			} else {
+				appliedGets = this.model.schema.applyAttributeGetters(data);
+			}
+			return appliedGets;
+		} catch (err) {
+			if (config.originalErr) {
+				throw (err);
+			} else {
+				stackTrace.message = err.message;
+				throw stackTrace;
+			}
+		}
 	}
 
 	async go(method, params = {}, options = {}) {
@@ -422,32 +201,8 @@ class Entity {
 
 		let stackTrace = new Error();
 		try {
-			let response = await this.client[method](params).promise();
-			if (config.raw) {
-				return response;
-			}
-
-			let data = {};
-			if (method === "put") {
-				data = this._cleanseRetrievedData(params.Item, config);
-			} else if (response.Item) {
-				data = this._cleanseRetrievedData(response.Item);
-			} else if (response.Items) {
-				data = response.Items.map(item =>
-					this._cleanseRetrievedData(item, config),
-				);
-			}
-
-			let appliedGets;
-			if (Array.isArray(data)) {
-				appliedGets = data.map(item =>
-					this.model.schema.applyAttributeGetters(item),
-				);
-			} else {
-				appliedGets = this.model.schema.applyAttributeGetters(data);
-			}
-			// let appliedGets = this.model.schema.applyAttributeGetters(data);
-			return appliedGets;
+			let response = await this.client[method](params).promise()
+			return this.formatResponse(response, config);
 		} catch (err) {
 			if (config.originalErr) {
 				return Promise.reject(err);
@@ -559,13 +314,13 @@ class Entity {
 
 	_makePutParams({ data } = {}, pk, sk) {
 		let setAttributes = this.model.schema.applyAttributeSetters(data);
-
 		let { updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
 		let transatedFields = this.model.schema.translateToFields(setAttributes);
 		let params = {
 			Item: {
 				...transatedFields,
 				...updatedKeys,
+				__edb_e__: this.model.entity
 			},
 			TableName: this.model.table,
 		};
@@ -673,7 +428,7 @@ class Entity {
 		return expressions;
 	}
 
-	_queryParams(chainState) {
+	_queryParams(chainState = {}, options = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
 			chainState.keys.sk,
 		);
@@ -689,6 +444,13 @@ class Entity {
 					chainState.filter,
 					pk,
 					...sk,
+				);
+			case QueryTypes.collection:
+				return this._makeBeginsWithQueryParams(
+					chainState.index,
+					chainState.filter,
+					pk,
+					this._getCollectionSk(chainState.collection),
 				);
 			case QueryTypes.between:
 				return this._makeBetweenQueryParams(
@@ -1019,6 +781,14 @@ class Entity {
 		}
 	}
 
+	_getCollectionSk(collection = "") {
+		if (typeof collection && collection.length) {
+			return `$${collection}`
+		} else {
+			return "";
+		}
+	}
+
 	_getPrefixes({collection = "", customFacets = {}} = {}) {
 		/*
 			Collections will prefix the sort key so they can be queried with
@@ -1199,6 +969,7 @@ class Entity {
 			fields: [],
 			attributes: [],
 			labels: {},
+			byCollection: {}
 		};
 
 		let accessPatterns = Object.keys(indexes);
@@ -1209,6 +980,7 @@ class Entity {
 			let indexName = index.index || "";
 			let hasSk = !!index.sk;
 			let inCollection = !!index.collection;
+			let collection = index.collection || "";
 			let customFacets = {
 				pk: false,
 				sk: false
@@ -1244,17 +1016,23 @@ class Entity {
 				facets.fields.push(sk.field);
 			}
 
-			if (inCollection) {
-				collections[index.collection] = index.collection;
-			}
-
 			let definition = {
 				pk,
 				sk,
+				collection,
 				customFacets,
 				index: indexName,
-				collection: index.collection
+				
 			};
+
+			if (inCollection) {
+				if (collections[collection] !== undefined) {
+					throw new Error(`Duplicate collection, "${collection}" is defined across multiple indexes "${collections[collection]}" and "${accessPattern}". Collections must be unique names across indexes for an Entity.`);
+				} else {
+					collections[collection] = accessPattern;
+				}
+				facets.byCollection[collection] = definition;
+			}
 
 			let attributes = [
 				...pk.facets.map(name => ({

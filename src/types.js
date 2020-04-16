@@ -4,14 +4,15 @@ const KeyTypes = {
 };
 
 const QueryTypes = {
-	begins: "begins",
-	between: "between",
 	and: "and",
 	gte: "gte",
 	gt: "gt",
 	lte: "lte",
 	lt: "lt",
 	eq: "eq",
+	begins: "begins",
+	between: "between",
+	collection: "collection"
 };
 
 const MethodTypes = {

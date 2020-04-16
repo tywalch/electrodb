@@ -1121,7 +1121,7 @@ describe("Entity", () => {
 					location,
 				)}) OR ${leaseEnd.between(beginning, end)}`;
 			}
-			let injected = MallStores._injectFiltersIntoClauses(clauses, {
+			let injected = MallStores._filterBuilder.injectFilterClauses(clauses, {
 				rentsLeaseEndFilter,
 			});
 			let injectedChildren = Object.values(injected).filter(

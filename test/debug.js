@@ -7,6 +7,37 @@ const client = new DynamoDB.DocumentClient({
 	region: "us-east-1",
 });
 
+let modelOne = {
+    attributes: {
+        id: {
+            type: "string",
+            field: "storeLocationId",
+        },
+        date: {
+            type: "string",
+            field: "dateTime",
+        },
+        prop1: {
+            type: "string",
+        },
+        prop2: {
+            type: "string",
+        },
+    },
+    indexes: {
+        record: {
+            pk: {
+                field: "pk",
+                facets: `id_:id:prop1`,
+            },
+            sk: {
+                field: "sk",
+                facets: `:date:prop2:id:prop2`,
+            },
+        },
+    }
+}
+
 describe("Custom keys", () => {
     it("Should default labels to facet attribute names in facet template (string)", () => {
         const schema = {

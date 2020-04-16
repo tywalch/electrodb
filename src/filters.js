@@ -16,7 +16,7 @@ let FilterTypes = {
 		template: function eq(name, value) {
 			return `${name} = ${value}`;
 		},
-		strict: true,
+		strict: false,
 	},
 	gt: {
 		template: function gt(name, value) {
@@ -181,6 +181,40 @@ class FilterFactory {
 			);
 			return state;
 		};
+	}
+
+	injectFilterClauses(clauses = {}, filters = {}) {
+		let injected = { ...clauses };
+		let filterParents = Object.entries(injected)
+			.filter(clause => {
+				let [name, { children }] = clause;
+				return children.includes("go");
+			})
+			.map(([name]) => name);
+		let modelFilters = Object.keys(filters);
+		let filterChildren = [];
+		for (let [name, filter] of Object.entries(filters)) {
+			filterChildren.push(name);
+			injected[name] = {
+				action: this.buildClause(filter),
+				children: ["params", "go", "filter", ...modelFilters],
+			};
+		}
+		filterChildren.push("filter");
+		injected["filter"] = {
+			action: (entity, state, fn) => {
+				return this.buildClause(fn)(entity, state);
+			},
+			children: ["params", "go", "filter", ...modelFilters],
+		};
+		for (let parent of filterParents) {
+			injected[parent] = { ...injected[parent] };
+			injected[parent].children = [
+				...filterChildren,
+				...injected[parent].children,
+			];
+		}
+		return injected;
 	}
 }
 
