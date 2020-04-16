@@ -9,7 +9,7 @@ const client = new DynamoDB.DocumentClient({
 function sleep(ms) {
 	return new Promise((resolve) => {
 		setTimeout(resolve, ms);
-	})
+	});
 }
 let model = {
 	service: "BugBeater",
@@ -59,7 +59,7 @@ let model = {
 		leaseEnd: {
 			type: "string",
 			required: true,
-			validate: date =>
+			validate: (date) =>
 				moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
 		},
 		rent: {
@@ -202,14 +202,12 @@ describe("Entity", async () => {
 				);
 			}
 			stores = await Promise.all(stores);
-			expect(stores)
-				.to.be.an("array")
-				.and.have.length(10);
+			expect(stores).to.be.an("array").and.have.length(10);
 
 			let mallOne = malls[0];
 			let mallOneIds = stores
-				.filter(store => store.mall === mallOne)
-				.map(store => store.id);
+				.filter((store) => store.mall === mallOne)
+				.map((store) => store.id);
 
 			let mallOneStores = await MallStores.query
 				.units({
@@ -217,14 +215,12 @@ describe("Entity", async () => {
 				})
 				.go();
 
-			let mallOneMatches = mallOneStores.every(store =>
+			let mallOneMatches = mallOneStores.every((store) =>
 				mallOneIds.includes(store.id),
 			);
 
 			expect(mallOneMatches);
-			expect(mallOneStores)
-				.to.be.an("array")
-				.and.have.length(5);
+			expect(mallOneStores).to.be.an("array").and.have.length(5);
 
 			let first = stores[0];
 			let firstStore = await MallStores.get({
@@ -237,7 +233,7 @@ describe("Entity", async () => {
 				.categories({ category, mall: mallOne })
 				.gt({ building: "BuildingB" })
 				.go();
-			let buildingsAfterBStores = stores.filter(store => {
+			let buildingsAfterBStores = stores.filter((store) => {
 				return (
 					store.mall === mallOne &&
 					store.building !== "BuildingA" &&
@@ -251,7 +247,7 @@ describe("Entity", async () => {
 				.between({ building: "BuildingB" }, { building: "BuildingH" })
 				.go();
 
-			let buildingsBetweenBHStores = stores.filter(store => {
+			let buildingsBetweenBHStores = stores.filter((store) => {
 				return (
 					store.mall === mallOne &&
 					store.building !== "BuildingA" &&
@@ -304,7 +300,7 @@ describe("Entity", async () => {
 								return `${prop1} SET`;
 							}
 						},
-						get: prop1 => `${prop1} GET`,
+						get: (prop1) => `${prop1} GET`,
 					},
 					prop2: {
 						type: "string",
@@ -380,8 +376,8 @@ describe("Entity", async () => {
 					someValue: {
 						type: "string",
 						required: true,
-						set: val => val + " wham",
-						get: val => val + " bam",
+						set: (val) => val + " wham",
+						get: (val) => val + " bam",
 					},
 				},
 				indexes: {
@@ -408,6 +404,7 @@ describe("Entity", async () => {
 			let getRecord = await db.get({ id, date }).go({ raw: true });
 			expect(getRecord).to.deep.equal({
 				Item: {
+					__edb_e__: entity,
 					id,
 					date,
 					someValue: someValue + " wham",
@@ -424,6 +421,7 @@ describe("Entity", async () => {
 			expect(queryRecord).to.deep.equal({
 				Items: [
 					{
+						__edb_e__: entity,
 						id,
 						date,
 						someValue: someValue + " wham",
@@ -478,7 +476,7 @@ describe("Entity", async () => {
 
 			stores = await Promise.all(stores);
 			let max = "50";
-			let filteredStores = stores.filter(store => {
+			let filteredStores = stores.filter((store) => {
 				return store.mall === mall && store.rent <= max;
 			});
 
@@ -535,11 +533,11 @@ describe("Entity", async () => {
 			let record = await db.put({ date, property }).go();
 			let found = await db.query
 				.record({ date })
-				.filter(attr => attr.property.eq(property))
+				.filter((attr) => attr.property.eq(property))
 				.go();
 			let foundParams = db.query
 				.record({ date })
-				.filter(attr => attr.property.eq(property))
+				.filter((attr) => attr.property.eq(property))
 				.params();
 			expect(foundParams.ExpressionAttributeNames["#property"]).to.equal(
 				"propertyVal",
@@ -550,7 +548,6 @@ describe("Entity", async () => {
 				.and.to.have.deep.members([record]);
 		});
 		it("Should allow for multiple filters", async () => {
-			
 			let entity = uuidv4();
 			let id = uuidv4();
 			let db = new Entity(
@@ -596,10 +593,11 @@ describe("Entity", async () => {
 				}),
 			);
 			let expectedMembers = records.filter(
-				record => record.color !== "green" && record.property !== "A",
+				(record) => record.color !== "green" && record.property !== "A",
 			);
 			// sleep gives time for eventual consistency
-			let found = await db.query.record({id})
+			let found = await db.query
+				.record({ id })
 				.filter(({ property }) => property.gt("A"))
 				.filter(
 					({ color, id }) => `

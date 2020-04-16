@@ -3,10 +3,10 @@ const { Schema } = require("./schema");
 const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const validations = require("./validations");
-const {clauses} = require("./clauses");
+const { clauses } = require("./clauses");
 
 const utilities = {
-	structureFacets: function(
+	structureFacets: function (
 		structure,
 		{ index, type, name } = {},
 		i,
@@ -37,7 +37,7 @@ class Entity {
 			FilterTypes,
 		);
 		this.query = {};
-		
+
 		let clausesWithFilters = this._filterBuilder.injectFilterClauses(
 			clauses,
 			this.model.filters,
@@ -60,7 +60,9 @@ class Entity {
 	}
 
 	collection(collection = "", clauses = {}, facets = {}) {
-		let index = this.model.indexes.byCollection[collection];
+		let index = this.model.translations.collections.fromCollectionToIndex[
+			collection
+		];
 		return this._makeChain(index, clauses, clauses.index).collection(
 			collection,
 			facets,
@@ -153,23 +155,26 @@ class Entity {
 		let stackTrace = new Error();
 		try {
 			if (config.raw) {
-				return response;
+				if (response.TableName) {
+					// a VERY hacky way to deal with PUTs
+					return {};
+				} else {
+					return response;
+				}
 			}
 
 			let data = {};
-			if (method === "put") {
-				data = this.cleanseRetrievedData(params.Item, config);
-			} else if (response.Item) {
+			if (response.Item) {
 				data = this.cleanseRetrievedData(response.Item);
 			} else if (response.Items) {
-				data = response.Items.map(item =>
+				data = response.Items.map((item) =>
 					this.cleanseRetrievedData(item, config),
 				);
 			}
 
 			let appliedGets;
 			if (Array.isArray(data)) {
-				appliedGets = data.map(item =>
+				appliedGets = data.map((item) =>
 					this.model.schema.applyAttributeGetters(item),
 				);
 			} else {
@@ -178,7 +183,7 @@ class Entity {
 			return appliedGets;
 		} catch (err) {
 			if (config.originalErr) {
-				throw (err);
+				throw err;
 			} else {
 				stackTrace.message = err.message;
 				throw stackTrace;
@@ -201,8 +206,13 @@ class Entity {
 
 		let stackTrace = new Error();
 		try {
-			let response = await this.client[method](params).promise()
-			return this.formatResponse(response, config);
+			let response = await this.client[method](params).promise();
+			if (method === "put") {
+				// a VERY hacky way to deal with PUTs
+				return this.formatResponse(params, config);
+			} else {
+				return this.formatResponse(response, config);
+			}
 		} catch (err) {
 			if (config.originalErr) {
 				return Promise.reject(err);
@@ -320,7 +330,7 @@ class Entity {
 			Item: {
 				...transatedFields,
 				...updatedKeys,
-				__edb_e__: this.model.entity
+				__edb_e__: this.model.entity,
 			},
 			TableName: this.model.table,
 		};
@@ -390,7 +400,7 @@ class Entity {
 
 		if (require.length) {
 			let props = Object.keys(item);
-			let missing = require.filter(prop => !props.includes(prop));
+			let missing = require.filter((prop) => !props.includes(prop));
 			if (!missing) {
 				throw new Error(`Item is missing attributes: ${missing.join(", ")}`);
 			}
@@ -593,11 +603,11 @@ class Entity {
 		if (isIncomplete) {
 			throw new Error(
 				`Incomplete facets: Without the facets ${incomplete
-					.filter(val => val !== undefined)
+					.filter((val) => val !== undefined)
 					.join(
 						", ",
 					)} the following access patterns ${incompleteAccessPatterns
-					.filter(val => val !== undefined)
+					.filter((val) => val !== undefined)
 					.join(", ")}cannot be updated.`,
 			);
 		}
@@ -674,7 +684,7 @@ class Entity {
 						impact.missing = [
 							...impact.missing,
 							...pk.filter(
-								attr =>
+								(attr) =>
 									!impacted[KeyTypes.pk].includes(attr) &&
 									!includedFacets.includes(attr),
 							),
@@ -684,7 +694,7 @@ class Entity {
 						impact.missing = [
 							...impact.missing,
 							...sk.filter(
-								attr =>
+								(attr) =>
 									!impacted[KeyTypes.sk].includes(attr) &&
 									!includedFacets.includes(attr),
 							),
@@ -752,7 +762,7 @@ class Entity {
 	}
 
 	_findProperties(obj = {}, properties = []) {
-		return properties.map(name => [name, obj[name]]);
+		return properties.map((name) => [name, obj[name]]);
 	}
 
 	_expectProperties(obj = {}, properties = []) {
@@ -783,13 +793,13 @@ class Entity {
 
 	_getCollectionSk(collection = "") {
 		if (typeof collection && collection.length) {
-			return `$${collection}`
+			return `$${collection}`.toLowerCase();
 		} else {
 			return "";
 		}
 	}
 
-	_getPrefixes({collection = "", customFacets = {}} = {}) {
+	_getPrefixes({ collection = "", customFacets = {} } = {}) {
 		/*
 			Collections will prefix the sort key so they can be queried with
 			a "begins_with" operator when crossing entities. It is also possible
@@ -801,17 +811,17 @@ class Entity {
 		let keys = {
 			pk: {
 				prefix: "",
-				isCustom: false
+				isCustom: false,
 			},
 			sk: {
 				prefix: "",
-				isCustom: false
-			}
+				isCustom: false,
+			},
 		};
 
 		if (collection) {
-			keys.pk.prefix = this.model.prefixes.pk
-			keys.sk.prefix = `$${collection}#${this.model.entity}`
+			keys.pk.prefix = this.model.prefixes.pk;
+			keys.sk.prefix = `$${collection}#${this.model.entity}`;
 		} else {
 			keys.pk.prefix = this.model.prefixes.pk;
 			keys.sk.prefix = this.model.prefixes.sk;
@@ -834,20 +844,27 @@ class Entity {
 		this._validateIndex(index);
 		let facets = this.model.facets.byIndex[index];
 		let prefixes = this._getPrefixes(facets);
-		let pk = this._makeKey(prefixes.pk.prefix, facets.pk, pkFacets, prefixes.pk);
+		let pk = this._makeKey(
+			prefixes.pk.prefix,
+			facets.pk,
+			pkFacets,
+			prefixes.pk,
+		);
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
-				sk.push(this._makeKey(prefixes.sk.prefix, facets.sk, skFacet, prefixes.sk));
+				sk.push(
+					this._makeKey(prefixes.sk.prefix, facets.sk, skFacet, prefixes.sk),
+				);
 			}
 		}
 		return { pk, sk };
 	}
 
-	_makeKey(prefix = "", facets = [], supplied = {}, {isCustom} = {}) {
+	_makeKey(prefix = "", facets = [], supplied = {}, { isCustom } = {}) {
 		let key = prefix;
 		for (let i = 0; i < facets.length; i++) {
-			let facet = facets[i]; 
+			let facet = facets[i];
 			let { label, name } = this.model.schema.attributes[facet];
 			if (isCustom) {
 				key = `${key}${label}`;
@@ -959,6 +976,10 @@ class Entity {
 			fromAccessPatternToIndex: {},
 			fromIndexToAccessPattern: {},
 		};
+		let collectionIndexTranslation = {
+			fromCollectionToIndex: {},
+			fromIndexToCollection: {},
+		};
 		let collections = {};
 		let facets = {
 			byIndex: {},
@@ -969,8 +990,8 @@ class Entity {
 			fields: [],
 			attributes: [],
 			labels: {},
-			byCollection: {}
 		};
+		let seenIndexes = {};
 
 		let accessPatterns = Object.keys(indexes);
 
@@ -978,13 +999,21 @@ class Entity {
 			let accessPattern = accessPatterns[i];
 			let index = indexes[accessPattern];
 			let indexName = index.index || "";
+			if (seenIndexes[indexName] !== undefined) {
+				throw new Error(
+					`Duplicate index defined in model: ${accessPattern} (${
+						indexName || "PRIMARY INDEX"
+					})`,
+				);
+			}
+			seenIndexes[indexName] = indexName;
 			let hasSk = !!index.sk;
 			let inCollection = !!index.collection;
 			let collection = index.collection || "";
 			let customFacets = {
 				pk: false,
-				sk: false
-			}
+				sk: false,
+			};
 			indexHasSortKeys[indexName] = hasSk;
 			let parsedPKFacets = this._parseFacets(index.pk.facets);
 			let { facetArray, facetLabels } = parsedPKFacets;
@@ -1022,25 +1051,31 @@ class Entity {
 				collection,
 				customFacets,
 				index: indexName,
-				
 			};
 
 			if (inCollection) {
 				if (collections[collection] !== undefined) {
-					throw new Error(`Duplicate collection, "${collection}" is defined across multiple indexes "${collections[collection]}" and "${accessPattern}". Collections must be unique names across indexes for an Entity.`);
+					throw new Error(
+						`Duplicate collection, "${collection}" is defined across multiple indexes "${collections[collection]}" and "${accessPattern}". Collections must be unique names across indexes for an Entity.`,
+					);
 				} else {
 					collections[collection] = accessPattern;
 				}
-				facets.byCollection[collection] = definition;
+				collectionIndexTranslation.fromCollectionToIndex[
+					collection
+				] = indexName;
+				collectionIndexTranslation.fromIndexToCollection[
+					indexName
+				] = collection;
 			}
 
 			let attributes = [
-				...pk.facets.map(name => ({
+				...pk.facets.map((name) => ({
 					name,
 					index: indexName,
 					type: KeyTypes.pk,
 				})),
-				...(sk.facets || []).map(name => ({
+				...(sk.facets || []).map((name) => ({
 					name,
 					index: indexName,
 					type: KeyTypes.sk,
@@ -1084,7 +1119,8 @@ class Entity {
 			indexes: normalized,
 			indexField: indexFieldTranslation,
 			indexAccessPattern: indexAccessPatternTransaction,
-			collections: Object.keys(collections)
+			indexCollection: collectionIndexTranslation,
+			collections: Object.keys(collections),
 		};
 	}
 
@@ -1115,6 +1151,7 @@ class Entity {
 			collections,
 			indexHasSortKeys,
 			indexAccessPattern,
+			indexCollection,
 		} = this._normalizeIndexes(model.indexes);
 		let schema = new Schema(model.attributes, facets);
 		let filters = this._normalizeFilters(model.filters);
@@ -1135,6 +1172,7 @@ class Entity {
 			translations: {
 				keys: indexField,
 				indexes: indexAccessPattern,
+				collections: indexCollection,
 			},
 
 			original: model,
