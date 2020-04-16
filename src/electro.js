@@ -11,7 +11,9 @@ class Electro {
 		};
 		this.client = config.client;
 		this.entities = {};
+		this.find = {};
 		this._entityCollections = {};
+		this.collections = {};
 	}
 
 	import(name = "", model = {}) {
@@ -22,20 +24,18 @@ class Electro {
 		this.entities[name] = new Entity(model, { client: this.client });
 		for (let collection of this.entities[name].model.collections) {
 			this._addCollectionEntity(collection, name, this.entities[name]);
+			this.collections[collection] = (...facets) => {
+				let { entities, attributes } = this._entityCollections[collection];
+				return this._makeCollectionChain(
+					collection,
+					attributes,
+					clauses,
+					Object.values(entities)[0],
+					...facets,
+				);
+			};
 		}
-		this.collections = new Proxy(this._entityCollections, {
-			get: (target, name) => {
-				let { entities, keys, attributes } = target[name];
-				return (...facets) =>
-					this._makeCollectionChain(
-						name,
-						attributes,
-						clauses,
-						Object.values(entities)[0],
-						...facets,
-					);
-			},
-		});
+		this.find = { ...this.entities, ...this.collections };
 	}
 
 	_makeCollectionChain(
@@ -131,8 +131,8 @@ class Electro {
 					`Attribute provided "${name}" with Table Field "${detail.field}" does not match established Table Field ${provided.field}`,
 				);
 			}
-			return [!!results.invalid.length, results];
 		}
+		return [!!results.invalid.length, results];
 	}
 
 	_processEntityAttributes(definition = {}, providedAttributes = {}) {

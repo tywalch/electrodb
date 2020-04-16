@@ -416,3 +416,5 @@ describe("Put and query", async () => {
 		expect(collectionG).to.have.deep.members([recordTwo]);
 	}).timeout(10000);
 });
+
+// database.find.collectionA({}).go();
