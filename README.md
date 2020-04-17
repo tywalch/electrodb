@@ -14,8 +14,7 @@
 
 Turn this:
 ```javascript
-let MallStores  =  new Entity(model,  client);
-let stores  =  MallStores.query
+MallStores.query
 	.leases({ mallId: "EastPointe" })
 	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
 	.filter(({rent, discount}) => `
