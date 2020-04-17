@@ -65,11 +65,12 @@ class Electro {
 
 	cleanseRetrievedData(collection = "", data = {}, config = {}) {
 		data.Items = data.Items || [];
-		let results = [];
+		let results = {};
 		for (let record of data.Items) {
 			let entity = record.__edb_e__;
 			if (entity) {
-				results.push(
+				results[entity] = results[entity] || [];
+				results[entity].push(
 					this._entityCollections[collection].entities[
 						entity
 					].cleanseRetrievedData(record, config),
