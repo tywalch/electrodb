@@ -2,10 +2,10 @@ const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
 const { FilterFactory, FilterTypes } = require("./filters");
 
-class Electro {
-	constructor(config = {}) {
+class Service {
+	constructor(name = "", config = {}) {
 		this.service = {
-			name: config.service,
+			name,
 			table: config.table,
 			version: config.version,
 		};
@@ -208,4 +208,4 @@ class Electro {
 	}
 }
 
-module.exports = { Electro };
+module.exports = { Service };

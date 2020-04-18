@@ -1,5 +1,5 @@
 const { Entity, clauses } = require("../src/entity");
-const { Electro } = require("../src/electro");
+const { Service } = require("../src/service");
 const { expect } = require("chai");
 const moment = require("moment");
 const uuidV4 = require("uuid").v4;
@@ -251,11 +251,10 @@ let modelThree = {
 	},
 };
 
-let database = new Electro({
+let database = new Service("electrotest", {
 	client,
 	version: "1",
 	table: "electro",
-	service: "electrotest",
 });
 
 database.import("entityOne", modelOne);
