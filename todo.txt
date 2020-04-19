@@ -13,3 +13,9 @@ tests:
     - test for bad "isValid" attribute result
 features: 
   - find method
+
+collections
+  - add custom column to flag collections?
+  - index by collection on entity
+
+- TEST FOR MISSING PRIMARY INDEX;

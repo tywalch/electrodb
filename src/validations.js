@@ -1,11 +1,11 @@
 const Validator = require("jsonschema").Validator;
-Validator.prototype.customFormats.isFunction = function(input) {
+Validator.prototype.customFormats.isFunction = function (input) {
 	return typeof input === "function";
 };
-Validator.prototype.customFormats.isFunctionOrString = function(input) {
+Validator.prototype.customFormats.isFunctionOrString = function (input) {
 	return typeof input === "function" || typeof input === "string";
 };
-Validator.prototype.customFormats.isFunctionOrRegexp = function(input) {
+Validator.prototype.customFormats.isFunctionOrRegexp = function (input) {
 	return typeof input === "function" || input instanceof RegExp;
 };
 
@@ -88,7 +88,6 @@ const Index = {
 				},
 				facets: {
 					type: ["array", "string"],
-					minItems: 1,
 					required: true,
 					items: {
 						type: "string",
@@ -160,7 +159,7 @@ function validateModel(model = {}) {
 	if (errors.length) {
 		throw new Error(
 			errors
-				.map(err => {
+				.map((err) => {
 					let message = `${err.property}`;
 					switch (err.argument) {
 						case "isFunction":
