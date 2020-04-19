@@ -12,7 +12,7 @@
 - **Single Table Entity Segregation**: Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
 - **Simple Sort Key Condition Querying**: Write efficient sort key queries by easily building compose keys.
 - **Simple Filter Composition**: Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
-- **Easily Query Across Entity**: Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
+- **Easily Query Across Entities**: Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
 
 Turn this:
 ```javascript
