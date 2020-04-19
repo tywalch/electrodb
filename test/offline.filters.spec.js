@@ -163,22 +163,22 @@ describe("Filter", () => {
 				},
 			});
 		});
-		it("Should validate the attributes passed when strict", () => {
-			function byCategory(attr, { category }) {
-				return attr.category.eq(category);
-			}
-			let filter = new FilterFactory(
-				MallStores.model.schema.attributes,
-				FilterTypes,
-			);
-			let clause = filter.buildClause(byCategory);
-			let category = "BAD_CATEGORY";
-			let results = () =>
-				clause(MallStores, { query: { filter: {} } }, { category });
-			expect(results).to.throw(
-				"Value not found in set of acceptable values: food/coffee, food/meal, clothing, electronics, department, misc",
-			);
-		});
+		// it("Should validate the attributes passed when strict", () => {
+		// 	function byCategory(attr, { category }) {
+		// 		return attr.category.eq(category);
+		// 	}
+		// 	let filter = new FilterFactory(
+		// 		MallStores.model.schema.attributes,
+		// 		FilterTypes,
+		// 	);
+		// 	let clause = filter.buildClause(byCategory);
+		// 	let category = "BAD_CATEGORY";
+		// 	let results = () =>
+		// 		clause(MallStores, { query: { filter: {} } }, { category });
+		// 	expect(results).to.throw(
+		// 		"Value not found in set of acceptable values: food/coffee, food/meal, clothing, electronics, department, misc",
+		// 	);
+		// });
 		it("Shouldnt validate the attributes passed when not strict", () => {
 			function byCategory(attr, { category }) {
 				return attr.category.contains(category);
