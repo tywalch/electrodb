@@ -28,9 +28,9 @@ const utilities = {
 };
 
 class Entity {
-	constructor(model = {}, { client } = {}) {
+	constructor(model = {}, config = {}) {
 		this._validateModel(model);
-		this.client = client;
+		this.client = config.client;
 		this.model = this._parseModel(model);
 		this._filterBuilder = new FilterFactory(
 			this.model.schema.attributes,
@@ -58,6 +58,31 @@ class Entity {
 			};
 		}
 	}
+
+	// _rearrangeModel(model = {}, config = {}) {
+	// 	model.client = model.client || {};
+	// 	model.service = model.service || {};
+
+	// 	if (model.table) {
+	// 		console.log(`Warning: Defining the "table" directly on the model will be depricated in version 1.0. Please see the README for additional direction.`)
+	// 		model.client.table = model.table;
+	// 	}
+
+	// 	if (config.client) {
+	// 		console.log(`Warning: Defining the "version" directly on the model will be depricated in version 1.0. Please see the README for additional direction.`)
+	// 		model.client.docClient = config.client;
+	// 	}
+
+	// 	if (model.service) {
+	// 		console.log(`Warning: Defining the "service" directly on the model will be depricated in version 1.0. Please see the README for additional direction.`)
+	// 		model.service.name = model.service;
+	// 	}
+
+	// 	if (model.version) {
+	// 		console.log(`Warning: Defining the "version" directly on the model will be depricated in version 1.0. Please see the README for additional direction.`)
+	// 		model.service.version = model.version;
+	// 	}
+	// }
 
 	collection(collection = "", clauses = {}, facets = {}) {
 		let index = this.model.translations.collections.fromCollectionToIndex[
@@ -1045,12 +1070,17 @@ class Entity {
 				facets.fields.push(sk.field);
 			}
 
+			// if (inCollection) {
+			// 	collections[index.collection] = index.collection;
+			// }
+
 			let definition = {
 				pk,
 				sk,
 				collection,
 				customFacets,
 				index: indexName,
+				collection: index.collection,
 			};
 
 			if (inCollection) {

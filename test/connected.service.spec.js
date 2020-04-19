@@ -9,6 +9,7 @@ const client = new DynamoDB.DocumentClient({
 });
 
 let modelOne = {
+	entity: "entityOne",
 	attributes: {
 		prop1: {
 			type: "string",
@@ -90,6 +91,7 @@ let modelOne = {
 };
 
 let modelTwo = {
+	entity: "entityTwo",
 	attributes: {
 		prop1: {
 			type: "string",
@@ -171,6 +173,7 @@ let modelTwo = {
 };
 
 let modelThree = {
+	entity: "entityThree",
 	attributes: {
 		prop1: {
 			type: "string",
@@ -251,15 +254,18 @@ let modelThree = {
 	},
 };
 
-let database = new Service("electrotest", {
-	client,
-	version: "1",
-	table: "electro",
-});
+let database = new Service(
+	{
+		version: "1",
+		table: "electro",
+		service: "electrotest",
+	},
+	{ client },
+);
 
-database.import("entityOne", modelOne);
-database.import("entityTwo", modelTwo);
-database.import("entityThree", modelThree);
+database.join(modelOne);
+database.join(modelTwo);
+database.join(modelThree);
 
 describe("Put and query", async () => {
 	it("Should add three records and retrieve correct records based on collections", async () => {
@@ -401,18 +407,64 @@ describe("Put and query", async () => {
 			getCollectionG,
 		]);
 
-		expect(collectionA).to.deep.equal([recordOne]);
+		expect(collectionA).to.deep.equal({ entityOne: [recordOne] });
 
-		expect(collectionB).to.have.deep.members([
-			recordOne,
-			recordTwo,
-			recordThree,
-		]);
-		expect(collectionC).to.have.deep.members([recordOne]);
-		expect(collectionD).to.have.deep.members([recordOne, recordThree]);
-		expect(collectionE).to.have.deep.members([recordTwo, recordThree]);
-		expect(collectionF).to.have.deep.members([recordTwo, recordThree]);
-		expect(collectionG).to.have.deep.members([recordTwo]);
+		expect(collectionB).to.deep.equal({
+			entityOne: [
+				{
+					prop8: "prop8-one",
+					prop9: "prop9-one",
+					prop4: "prop4-one",
+					prop5: "prop5",
+					prop6: "prop6-one",
+					prop7: "prop7",
+					prop1: "prop1",
+					prop2: "prop2-one",
+					prop3: "prop3",
+				},
+			],
+			entityThree: [
+				{
+					prop8: "prop8-three",
+					prop9: "prop9-three",
+					prop4: "prop4-three",
+					prop5: "prop5",
+					prop6: "prop6-three",
+					prop7: "prop7",
+					prop1: "prop1",
+					prop2: "prop2-three",
+					prop3: "prop3",
+				},
+			],
+			entityTwo: [
+				{
+					prop8: "prop8-two",
+					prop9: "prop9-two",
+					prop4: "prop4-two",
+					prop5: "prop5",
+					prop6: "prop6-two",
+					prop7: "prop7",
+					prop1: "prop1",
+					prop2: "prop2-two",
+					prop3: "prop3",
+				},
+			],
+		});
+
+		expect(collectionC).to.deep.equal({
+			entityOne: [recordOne],
+		});
+		expect(collectionD).to.deep.equal({
+			entityOne: [recordOne],
+			entityThree: [recordThree],
+		});
+		expect(collectionE).to.deep.equal({
+			entityTwo: [recordTwo],
+			entityThree: [recordThree],
+		});
+		expect(collectionG).to.deep.equal({
+			entityTwo: [recordTwo],
+		});
 	}).timeout(10000);
 });
 

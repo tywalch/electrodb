@@ -17,3 +17,5 @@ features:
 collections
   - add custom column to flag collections?
   - index by collection on entity
+
+- TEST FOR MISSING PRIMARY INDEX;

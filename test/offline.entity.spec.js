@@ -52,7 +52,7 @@ let schema = {
 		leaseEnd: {
 			type: "string",
 			required: true,
-			validate: date =>
+			validate: (date) =>
 				moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
 		},
 		rent: {
@@ -66,7 +66,7 @@ let schema = {
 		},
 	},
 	filters: {
-		rentsLeaseEndFilter: function(
+		rentsLeaseEndFilter: function (
 			attr,
 			{ lowRent, beginning, end, location } = {},
 		) {
@@ -172,42 +172,49 @@ describe("Entity", () => {
 				attributes: {
 					regexp: {
 						type: "string",
-						validate: /^\d{4}-\d{2}-\d{2}$/gi
-					}
+						validate: /^\d{4}-\d{2}-\d{2}$/gi,
+					},
 				},
 				indexes: {
 					test: {
 						pk: {
 							field: "test",
-							facets: ["regexp"]
-						}
-					}
-				}
+							facets: ["regexp"],
+						},
+					},
+				},
 			});
-			expect(() => Test.put({regexp: "1533-15-44"}).params()).to.not.throw();
-			expect(() => Test.put({regexp: "1533-1a-44"}).params()).to.throw(`Invalid value for attribute "regexp": Failed user defined regex.`)
+			expect(() => Test.put({ regexp: "1533-15-44" }).params()).to.not.throw();
+			expect(() => Test.put({ regexp: "1533-1a-44" }).params()).to.throw(
+				`Invalid value for attribute "regexp": Failed user defined regex.`,
+			);
 		});
 		it("Should not allow for an invalid schema type", () => {
-			expect(() => new Entity({
-				service: "MallStoreDirectory",
-				entity: "MallStores",
-				table: "StoreDirectory",
-				version: "1",
-				attributes: {
-					regexp: {
-						type: "raccoon",
-					}
-				},
-				indexes: {
-					test: {
-						pk: {
-							field: "test",
-							facets: ["regexp"]
-						}
-					}
-				}
-			})).to.throw(`Invalid "type" property for attribute: "regexp". Acceptable types include string, number, boolean, enum`)
-		})
+			expect(
+				() =>
+					new Entity({
+						service: "MallStoreDirectory",
+						entity: "MallStores",
+						table: "StoreDirectory",
+						version: "1",
+						attributes: {
+							regexp: {
+								type: "raccoon",
+							},
+						},
+						indexes: {
+							test: {
+								pk: {
+									field: "test",
+									facets: ["regexp"],
+								},
+							},
+						},
+					}),
+			).to.throw(
+				`Invalid "type" property for attribute: "regexp". Acceptable types include string, number, boolean, enum`,
+			);
+		});
 		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", () => {
 			let id = uuidV4();
 			let rent = "0.00";
@@ -431,6 +438,7 @@ describe("Entity", () => {
 
 			expect(put).to.deep.equal({
 				Item: {
+					__edb_e__: "MallStores",
 					storeLocationId: put.Item.storeLocationId,
 					mall,
 					storeId: store,
@@ -725,6 +733,7 @@ describe("Entity", () => {
 				.params();
 			expect(putParams).to.deep.equal({
 				Item: {
+					__edb_e__: "MallStores",
 					storeLocationId: "IDENTIFIER",
 					dateTime: "DATE",
 					prop1: "PROPERTY1",
@@ -735,9 +744,9 @@ describe("Entity", () => {
 				TableName: "StoreDirectory",
 			});
 		});
-		
+
 		/* This test was removed because facet templates was refactored to remove all electrodb opinions. */
-		// 
+		//
 		// it("Should throw on invalid characters in facet template (string)", () => {
 		// 	const schema = {
 		// 		service: "MallStoreDirectory",
@@ -824,6 +833,7 @@ describe("Entity", () => {
 				.params();
 			expect(putParams).to.deep.equal({
 				Item: {
+					__edb_e__: "MallStores",
 					storeLocationId: "IDENTIFIER",
 					dateTime: "DATE",
 					prop1: "PROPERTY1",
@@ -857,7 +867,7 @@ describe("Entity", () => {
 					},
 					prop3: {
 						type: "string",
-					}
+					},
 				},
 				indexes: {
 					record: {
@@ -869,7 +879,7 @@ describe("Entity", () => {
 							field: "sk",
 							facets: ["date", "prop2"],
 						},
-						collection: "testing"
+						collection: "testing",
 					},
 				},
 			};
@@ -880,11 +890,12 @@ describe("Entity", () => {
 					date: "DATE",
 					prop1: "PROPERTY1",
 					prop2: "PROPERTY2",
-					prop3: "PROPERTY3"
+					prop3: "PROPERTY3",
 				})
 				.params();
 			expect(putParams).to.deep.equal({
 				Item: {
+					__edb_e__: "MallStores",
 					storeLocationId: "IDENTIFIER",
 					dateTime: "DATE",
 					prop1: "PROPERTY1",
@@ -1065,7 +1076,7 @@ describe("Entity", () => {
 		it("Should find all, pk, and sk matches", () => {
 			let index = schema.indexes.units.index;
 			let facets = MallStores.model.facets.byIndex[index];
-			let all = facets.all.map(facet => facet.name);
+			let all = facets.all.map((facet) => facet.name);
 			let allMatches = MallStores._expectFacets(
 				{ store, mall, building, unit },
 				all,
@@ -1085,7 +1096,7 @@ describe("Entity", () => {
 		it("Should find missing properties from supplied keys", () => {
 			let index = schema.indexes.units.index;
 			let facets = MallStores.model.facets.byIndex[index];
-			let all = facets.all.map(facet => facet.name);
+			let all = facets.all.map((facet) => facet.name);
 			let allMatches = () => MallStores._expectFacets({ store }, all);
 			let pkMatches = () =>
 				MallStores._expectFacets(

@@ -3,12 +3,13 @@ const { clauses } = require("./clauses");
 const { FilterFactory, FilterTypes } = require("./filters");
 
 class Service {
-	constructor(name = "", config = {}) {
+	constructor(service = {}, config = {}) {
 		this.service = {
-			name,
-			table: config.table,
-			version: config.version,
+			name: service.service,
+			table: service.table,
+			version: service.version,
 		};
+		this.config = config;
 		this.client = config.client;
 		this.entities = {};
 		this.find = {};
@@ -16,12 +17,13 @@ class Service {
 		this.collections = {};
 	}
 
-	import(name = "", model = {}) {
-		model.entity = name;
+	join(model = {}, config = {}) {
+		let name = model.entity;
 		model.service = this.service.name;
 		model.table = this.service.table;
 		model.version = this.service.version;
-		this.entities[name] = new Entity(model, { client: this.client });
+		let options = { ...config, ...this.config };
+		this.entities[name] = new Entity(model, options);
 		for (let collection of this.entities[name].model.collections) {
 			this._addCollectionEntity(collection, name, this.entities[name]);
 			this.collections[collection] = (...facets) => {
