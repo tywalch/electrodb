@@ -155,11 +155,17 @@ In ***ElectroDB*** an `Entity` is represents a single business object. For examp
 
 Require or import `Entity` from `electrodb`:    
 ```javascript  
-const {Entity, Service} = require("electrodb");
+const {Entity} = require("electrodb");
 ```
 
 # Services
 In ***ElectroDB*** a `Service` represents a collection of Entities and also allows you to build queries span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries `join` multiple Entities.
+
+Require or import `Service` from `electrodb`:    
+```javascript  
+const {Service} = require("electrodb");
+```
+
 
 ## Model 
 
