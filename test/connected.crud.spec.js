@@ -1,3 +1,4 @@
+process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity } = require("../src/entity");
 const { expect } = require("chai");
 const uuidv4 = require("uuid").v4;

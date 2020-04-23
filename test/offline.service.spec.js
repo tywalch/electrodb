@@ -1,13 +1,5 @@
-process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
-const { Entity, clauses } = require("../src/entity");
 const { Service } = require("../src/service");
 const { expect } = require("chai");
-const moment = require("moment");
-const uuidV4 = require("uuid").v4;
-const DynamoDB = require("aws-sdk/clients/dynamodb");
-const client = new DynamoDB.DocumentClient({
-	region: "us-east-1",
-});
 
 let modelOne = {
 	entity: "entityOne",
@@ -255,14 +247,11 @@ let modelThree = {
 	},
 };
 
-let database = new Service(
-	{
-		version: "1",
-		table: "electro",
-		service: "electrotest",
-	},
-	{ client },
-);
+let database = new Service({
+	version: "1",
+	table: "electro",
+	service: "electrotest",
+});
 
 database.join(modelOne);
 database.join(modelTwo);
@@ -281,7 +270,6 @@ describe("Put and query", async () => {
 			prop8: "prop8-one",
 			prop9: "prop9-one",
 		};
-		let addOne = database.entities.entityOne.put(recordOne).go();
 		let paramsOne = database.entities.entityOne.put(recordOne).params();
 		expect(paramsOne).to.deep.equal({
 			Item: {
@@ -317,7 +305,6 @@ describe("Put and query", async () => {
 			prop8: "prop8-two",
 			prop9: "prop9-two",
 		};
-		let addTwo = database.entities.entityTwo.put(recordTwo).go();
 		let paramsTwo = database.entities.entityTwo.put(recordTwo).params();
 		expect(paramsTwo).to.deep.equal({
 			Item: {
@@ -353,7 +340,6 @@ describe("Put and query", async () => {
 			prop8: "prop8-three",
 			prop9: "prop9-three",
 		};
-		let addThree = database.entities.entityThree.put(recordThree).go();
 		let paramsThree = database.entities.entityThree.put(recordThree).params();
 		expect(paramsThree).to.deep.equal({
 			Item: {
@@ -377,94 +363,6 @@ describe("Put and query", async () => {
 				__edb_e__: "entityThree",
 			},
 			TableName: "electro",
-		});
-		await Promise.all([addOne, addTwo, addThree]);
-		let prop1 = "prop1";
-		let prop3 = "prop3";
-		let prop5 = "prop5";
-		let prop7 = "prop7";
-		let getCollectionA = database.collections.collectionA({ prop1 }).go();
-		let getCollectionB = database.collections.collectionB({ prop3 }).go();
-		let getCollectionC = database.collections.collectionC({ prop5 }).go();
-		let getCollectionD = database.collections.collectionD({ prop7 }).go();
-		let getCollectionE = database.collections.collectionE({ prop1 }).go();
-		let getCollectionF = database.collections.collectionF({ prop5 }).go();
-		let getCollectionG = database.collections.collectionG({ prop7 }).go();
-		let [
-			collectionA,
-			collectionB,
-			collectionC,
-			collectionD,
-			collectionE,
-			collectionF,
-			collectionG,
-		] = await Promise.all([
-			getCollectionA,
-			getCollectionB,
-			getCollectionC,
-			getCollectionD,
-			getCollectionE,
-			getCollectionF,
-			getCollectionG,
-		]);
-
-		expect(collectionA).to.deep.equal({ entityOne: [recordOne] });
-
-		expect(collectionB).to.deep.equal({
-			entityOne: [
-				{
-					prop8: "prop8-one",
-					prop9: "prop9-one",
-					prop4: "prop4-one",
-					prop5: "prop5",
-					prop6: "prop6-one",
-					prop7: "prop7",
-					prop1: "prop1",
-					prop2: "prop2-one",
-					prop3: "prop3",
-				},
-			],
-			entityThree: [
-				{
-					prop8: "prop8-three",
-					prop9: "prop9-three",
-					prop4: "prop4-three",
-					prop5: "prop5",
-					prop6: "prop6-three",
-					prop7: "prop7",
-					prop1: "prop1",
-					prop2: "prop2-three",
-					prop3: "prop3",
-				},
-			],
-			entityTwo: [
-				{
-					prop8: "prop8-two",
-					prop9: "prop9-two",
-					prop4: "prop4-two",
-					prop5: "prop5",
-					prop6: "prop6-two",
-					prop7: "prop7",
-					prop1: "prop1",
-					prop2: "prop2-two",
-					prop3: "prop3",
-				},
-			],
-		});
-
-		expect(collectionC).to.deep.equal({
-			entityOne: [recordOne],
-		});
-		expect(collectionD).to.deep.equal({
-			entityOne: [recordOne],
-			entityThree: [recordThree],
-		});
-		expect(collectionE).to.deep.equal({
-			entityTwo: [recordTwo],
-			entityThree: [recordThree],
-		});
-		expect(collectionG).to.deep.equal({
-			entityTwo: [recordTwo],
 		});
 	}).timeout(10000);
 });
