@@ -1,6 +1,5 @@
-const { KeyTypes } = require("./types");
+const { KeyTypes, CastTypes } = require("./types");
 const AttributeTypes = ["string", "number", "boolean", "enum"];
-const CastTypes = ["string", "number"];
 
 class Attribute {
 	constructor(definition = {}) {
@@ -24,7 +23,7 @@ class Attribute {
 		if (typeof get === "function") {
 			return get;
 		} else if (get === undefined) {
-			return attr => attr;
+			return (attr) => attr;
 		} else {
 			throw new Error(
 				`Invalid "get" property for attribure ${name}. Please ensure value is a function or undefined.`,
@@ -36,7 +35,7 @@ class Attribute {
 		if (typeof set === "function") {
 			return set;
 		} else if (set === undefined) {
-			return attr => attr;
+			return (attr) => attr;
 		} else {
 			throw new Error(
 				`Invalid "set" property for attribure ${name}. Please ensure value is a function or undefined.`,
@@ -52,7 +51,7 @@ class Attribute {
 				)}`,
 			);
 		} else if (cast === "string") {
-			return val => {
+			return (val) => {
 				if (val === undefined) {
 					throw new Error(
 						`Attribute ${name} is undefined and cannot be cast to type ${cast}`,
@@ -64,7 +63,7 @@ class Attribute {
 				}
 			};
 		} else if (cast === "number") {
-			return val => {
+			return (val) => {
 				if (val === undefined) {
 					throw new Error(
 						`Attribute ${name} is undefined and cannot be cast to type ${cast}`,
@@ -83,24 +82,24 @@ class Attribute {
 				}
 			};
 		} else {
-			return val => val;
+			return (val) => val;
 		}
 	}
 
 	_makeValidate(definition) {
 		if (typeof definition === "function") {
-			return val => {
+			return (val) => {
 				let reason = definition(val);
 				return [!reason, reason || ""];
 			};
 		} else if (definition instanceof RegExp) {
-			return val => {
+			return (val) => {
 				let isValid = definition.test(val);
 				let reason = isValid ? "" : "Failed user defined regex";
 				return [isValid, reason];
 			};
 		} else {
-			return val => [true, ""];
+			return (val) => [true, ""];
 		}
 	}
 
@@ -212,7 +211,7 @@ class Schema {
 			if (attribute.field && facets.fields.includes(attribute.field)) {
 				continue;
 			}
-			let isKey = !!facets.byIndex[""].all.find(facet => facet.name === name);
+			let isKey = !!facets.byIndex[""].all.find((facet) => facet.name === name);
 			let definition = {
 				name,
 				label: facets.labels[name] || attribute.label,
@@ -247,7 +246,7 @@ class Schema {
 			.filter(({ name }) => {
 				return !normalized[name];
 			})
-			.map(facet => `"${facet.type}: ${facet.name}"`);
+			.map((facet) => `"${facet.type}: ${facet.name}"`);
 		if (missingFacetAttributes.length) {
 			throw new Error(
 				`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(
@@ -257,7 +256,7 @@ class Schema {
 		}
 		if (invalidProperties.length) {
 			let message = invalidProperties.map(
-				prop =>
+				(prop) =>
 					`Schema Validation Error: Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`,
 			);
 			throw new Error(message);
@@ -269,14 +268,6 @@ class Schema {
 				attributes: normalized,
 			};
 		}
-	}
-
-	getValidate(payload = {}) {
-		let record = {};
-		for (let [name, value] of Object.entries(payload)) {
-			record[name] = this.attributes[name].getValidate(value);
-		}
-		return record;
 	}
 
 	applyAttributeGetters(payload = {}) {
@@ -341,12 +332,13 @@ class Schema {
 
 	getReadOnly() {
 		return Object.values(this.attributes)
-			.filter(attribute => attribute.readOnly)
-			.map(attribute => attribute.name);
+			.filter((attribute) => attribute.readOnly)
+			.map((attribute) => attribute.name);
 	}
 }
 
 module.exports = {
 	Schema,
 	Attribute,
+	CastTypes,
 };

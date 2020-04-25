@@ -100,13 +100,6 @@ class FilterFactory {
 							setName(attrName, attribute.field);
 							let attrValues = [];
 							for (let value of values) {
-								if (strict) {
-									let [isValid, errMessage] = attribute.isValid(value);
-									if (!isValid) {
-										throw new Error(errMessage);
-									}
-								}
-
 								let valueCount = getValueCount(name);
 								let attrValue = `:${name}${valueCount}`;
 								if (template.length > 1) {
@@ -115,13 +108,7 @@ class FilterFactory {
 								}
 							}
 							let expression = template(attrName, ...attrValues);
-							if (typeof expression !== "string") {
-								throw new Error(
-									"Invalid filter response. Expected result to be of type string",
-								);
-							} else {
 								return expression.trim();
-							}
 						};
 					},
 				});
@@ -175,6 +162,9 @@ class FilterFactory {
 				getValueCount,
 			);
 			let expression = filterFn(attributes, ...params);
+			if (typeof expression !== "string") {
+				throw new Error("Invalid filter response. Expected result to be of type string");
+			}
 			state.query.filter.FilterExpression = this._concatFilterExpression(
 				state.query.filter.FilterExpression,
 				expression,

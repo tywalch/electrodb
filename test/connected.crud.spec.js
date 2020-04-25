@@ -275,6 +275,94 @@ describe("Entity", async () => {
 		}).timeout(20000);
 	});
 
+	describe("Delete records", async () => {
+		it("Should create then delete a record", async () => {
+			let record = new Entity(
+				{
+					service: "testservice",
+					entity: "testentity",
+					table: "electro",
+					version: "1",
+					attributes: {
+						prop1: {
+							type: "string",
+						},
+						prop2: {
+							type: "string",
+						},
+					},
+					indexes: {
+						main: {
+							pk: {
+								field: "pk",
+								facets: ["prop1"],
+							},
+							sk: {
+								field: "sk",
+								facets: ["prop2"],
+							},
+						},
+					},
+				},
+				{ client },
+			);
+			let prop1 = uuidv4();
+			let prop2 = uuidv4();
+			await record.put({ prop1, prop2 }).go();
+			let recordExists = await record.get({ prop1, prop2 }).go();
+			await record.delete({ prop1, prop2 }).go();
+			await sleep(150);
+			let recordNoLongerExists = await record.get({ prop1, prop2 }).go();
+			expect(!!Object.keys(recordExists).length).to.be.true;
+			expect(!!Object.keys(recordNoLongerExists).length).to.be.false;
+		});
+	});
+
+	// describe("scan", async () => {
+	// 	it ("Should scan for created records", async () => {
+	// 		let entity = uuidv4();
+	// 		let db = new Entity({
+	// 			service: "testing",
+	// 			entity: entity,
+	// 			table: "electro",
+	// 			version: "1",
+	// 			attributes: {
+	// 				id: {
+	// 					type: "string"
+	// 				},
+	// 				bb: {
+	// 					type: "string"
+	// 				}
+	// 			},
+	// 			indexes: {
+	// 				main: {
+	// 					pk: {
+	// 						field: "pk",
+	// 						facets: ["id"]
+	// 					},
+	// 					sk: {
+	// 						field: "sk",
+	// 						facets: ["id"]
+	// 					}
+	// 				}
+	// 			}
+	// 		}, {client});
+	// 		let puts = [];
+	// 		for (let i = 0; i < 5; i++) {
+	// 			console.log("putz", db.put({id: `${i}`, bb: `${i}`}).params());
+	// 			puts.push(db.put({id: `${i}`, bb: `${i}`}).go({}));
+	// 		}
+	// 		await Promise.all(puts);
+	// 		await sleep(250);
+	// 		let recordparams = db.scan.filter(({id}) => id.gte("3")).params();
+	// 		let records = await db.scan.filter(({id}) => id.gte("3")).go();
+	// 		if (!records.length) {
+	// 			console.log("ENTITYz", recordparams);
+	// 		}
+	// 		expect(records).to.be.an("array").and.to.have.lengthOf(3);
+	// 	})
+	// })
+
 	describe("Getters/Setters", async () => {
 		let db = new Entity(
 			{
@@ -433,6 +521,15 @@ describe("Entity", async () => {
 				Count: 1,
 				ScannedCount: 1,
 			});
+			let recordWithKeys = await db.get({id, date}).go({includeKeys: true});
+			expect(recordWithKeys).to.deep.equal({
+				id,
+				date,
+				someValue: "ABDEF wham bam",
+				__edb_e__: entity,
+				sk: `$${entity}#id_${id}`.toLowerCase(),
+				pk: `$testing_1#date_${date}`.toLowerCase(),
+			})
 		}).timeout(10000);
 	});
 	describe("Filters", async () => {
