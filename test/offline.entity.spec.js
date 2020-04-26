@@ -163,6 +163,35 @@ describe("Entity", () => {
 				"Value not found in set of acceptable values: food/coffee, food/meal, clothing, electronics, department, misc",
 			);
 		});
+		it("should recognize when an attribute's field property is duplicated", () => {
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					duplicateFieldName: {
+						type: "string",
+						field: "id",
+					},
+				},
+				indexes: {
+					main: {
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						},
+					},
+				},
+			};
+			expect(() => new Entity(schema)).to.throw(
+				`Schema Validation Error: Attribute "duplicateFieldName" property "field". Received: "id", Expected: "Unique field property, already used by attribute id"`,
+			);
+		});
 		it("Should validate regex", () => {
 			let Test = new Entity({
 				service: "MallStoreDirectory",
@@ -371,6 +400,24 @@ describe("Entity", () => {
 				"rentsLeaseEndFilter",
 			);
 		});
+		it("Should make scan parameters", () => {
+			let scan = MallStores.scan.filter(({store}) => store.eq("Starblix")).params();
+			expect(scan).to.deep.equal({
+				"ExpressionAttributeNames": {
+					"#pk": "pk",
+					"#store": "storeId"
+				},
+				"ExpressionAttributeValues": {
+					":pk": "$mallstoredirectory_1#id_",
+					":store1": "Starblix"
+				},
+				"FilterExpression": "(begins_with(#pk, :pk) AND #store = :store1",
+				"TableName": "StoreDirectory"
+			})
+		})
+		it("Should check if filter returns string", () => {
+			expect(() => MallStores.scan.filter(() => 1234)).to.throw("Invalid filter response. Expected result to be of type string");
+		})
 		it("Should create parameters for a given chain", () => {
 			let mall = "EastPointe";
 			let store = "LatteLarrys";

@@ -8,7 +8,7 @@ const { clauses } = require("./clauses");
 const utilities = {
 	structureFacets: function (
 		structure,
-		{ index, type, name } = {},
+		{ index, type, name } /* istanbul ignore next */ = {},
 		i,
 		attributes,
 		indexSlot,
@@ -28,7 +28,7 @@ const utilities = {
 };
 
 class Entity {
-	constructor(model = {}, config = {}) {
+	constructor(model /* istanbul ignore next */ = {}, config /* istanbul ignore next */ = {}) {
 		this._validateModel(model);
 		this.client = config.client;
 		this.model = this._parseModel(model);
@@ -42,12 +42,12 @@ class Entity {
 			clauses,
 			this.model.filters,
 		);
-		this.find = (facets = {}) => {
-			let index = this._findBestIndexKeyMatch(facets);
-			return this._makeChain(index, clausesWithFilters, clauses.index).query(
-				facets,
-			);
-		};
+		// this.find = (facets = {}) => {
+		// 	let index = this._findBestIndexKeyMatch(facets);
+		// 	return this._makeChain(index, clausesWithFilters, clauses.index).query(
+		// 		facets,
+		// 	);
+		// };
 		this.scan = this._makeChain("", clausesWithFilters, clauses.index).scan();
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
@@ -59,32 +59,7 @@ class Entity {
 		}
 	}
 
-	// _rearrangeModel(model = {}, config = {}) {
-	// 	model.client = model.client || {};
-	// 	model.service = model.service || {};
-
-	// 	if (model.table) {
-	// 		console.log(`Warning: Defining the "table" directly on the model will be depricated in version 1.0. Please see the README for additional direction.`)
-	// 		model.client.table = model.table;
-	// 	}
-
-	// 	if (config.client) {
-	// 		console.log(`Warning: Defining the "version" directly on the model will be depricated in version 1.0. Please see the README for additional direction.`)
-	// 		model.client.docClient = config.client;
-	// 	}
-
-	// 	if (model.service) {
-	// 		console.log(`Warning: Defining the "service" directly on the model will be depricated in version 1.0. Please see the README for additional direction.`)
-	// 		model.service.name = model.service;
-	// 	}
-
-	// 	if (model.version) {
-	// 		console.log(`Warning: Defining the "version" directly on the model will be depricated in version 1.0. Please see the README for additional direction.`)
-	// 		model.service.version = model.version;
-	// 	}
-	// }
-
-	collection(collection = "", clauses = {}, facets = {}) {
+	collection(collection /* istanbul ignore next */ = "", clauses /* istanbul ignore next */ = {}, facets /* istanbul ignore next */ = {}) {
 		let index = this.model.translations.collections.fromCollectionToIndex[
 			collection
 		];
@@ -190,7 +165,7 @@ class Entity {
 
 			let data = {};
 			if (response.Item) {
-				data = this.cleanseRetrievedData(response.Item);
+				data = this.cleanseRetrievedData(response.Item, config);
 			} else if (response.Items) {
 				data = response.Items.map((item) =>
 					this.cleanseRetrievedData(item, config),
@@ -287,6 +262,7 @@ class Entity {
 		// let _makeKey
 		// let { pk, sk } = this._makeIndexKeys();
 		let indexBase = "";
+		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		let facets = this.model.facets.byIndex[indexBase];
 		let keys = this._makeParameterKey(
 			indexBase,
@@ -304,8 +280,11 @@ class Entity {
 				filter.ExpressionAttributeValues,
 				keyExpressions.ExpressionAttributeValues,
 			),
-			FilterExpression: `(begins_with(#pk, :pk) AND begins_with(#sk, :sk))`,
+			FilterExpression: `(begins_with(#pk, :pk)`,
 		};
+		if (hasSortKey) {
+			params.FilterExpression = `${params.FilterExpression} AND begins_with(#sk, :sk))`;
+		}
 		if (filter.FilterExpression) {
 			params.FilterExpression = `${params.FilterExpression} AND ${filter.FilterExpression}`;
 		}
