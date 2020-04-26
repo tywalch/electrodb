@@ -77,8 +77,6 @@ class Service {
 						entity
 					].cleanseRetrievedData(record, config),
 				);
-			} else {
-				results.push(record);
 			}
 		}
 		return results;

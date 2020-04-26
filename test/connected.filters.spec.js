@@ -69,7 +69,6 @@ describe("General", async () => {
 			}
 		}));
 	})
-	
 	it("Should filter 'eq'", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})

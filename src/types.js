@@ -12,7 +12,7 @@ const QueryTypes = {
 	eq: "eq",
 	begins: "begins",
 	between: "between",
-	collection: "collection"
+	collection: "collection",
 };
 
 const MethodTypes = {
@@ -32,9 +32,12 @@ const Comparisons = {
 	lt: "<",
 };
 
+const CastTypes = ["string", "number"];
+
 module.exports = {
 	KeyTypes,
 	QueryTypes,
 	MethodTypes,
+	CastTypes,
 	Comparisons,
 };
