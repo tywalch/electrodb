@@ -27,24 +27,24 @@ MallStores.query
 Into This:
 ```javascript
 {
-  "IndexName": idx2',
-  TableName: 'electro',
-  ExpressionAttributeNames: {
-    '#rent': 'rent',
-    '#discount': 'discount',
-    '#pk': 'idx2pk',
-    '#sk1': 'idx2sk'
+  "IndexName": "idx2",
+  "TableName": "electro",
+  "ExpressionAttributeNames": {
+    "#rent": "rent",
+    "#discount": "discount",
+		"#pk": "idx2pk",
+    "#sk1": "idx2sk"
   },
-  ExpressionAttributeValues: {
-    ':rent1': '2000.00',
-    ':rent2': '5000.00',
-    ':discount1': '1000.00',
-    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
-    ':sk1': '$mallstore#leaseenddate_2020-04-01#rent_',
-    ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
+  "ExpressionAttributeValues": {
+    ":rent1": "2000.00",
+    ":rent2": "5000.00",
+    ":discount1": "1000.00",
+    ":pk": "$mallstoredirectory_1#mallid_eastpointe",
+    ":sk1": "$mallstore#leaseenddate_2020-04-01#rent_",
+    ":sk2": "$mallstore#leaseenddate_2020-07-01#rent_"
   },
-  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
+  "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+  "FilterExpression": "(#rent between :rent1 and :rent2) AND #discount <= :discount1"
 }
 ```
 Table of Contents
