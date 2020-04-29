@@ -202,7 +202,7 @@ const EmployeesModel = {
 			required: true,
 		},
 		team: {
-			type: ["development", "marketing", "finance", "product"],
+			type: ["development", "marketing", "finance", "product", "cool cats and kittens"],
 			required: true,
 		},
 		salary: {
