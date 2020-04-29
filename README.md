@@ -187,30 +187,38 @@ const EmployeesModel = {
 		},
 		firstName: {
 			type: "string",
+			required: true,
 		},
 		lastName: {
 			type: "string",
+			required: true,
 		},
 		office: {
 			type: "string",
+			required: true,
 		},
 		title: {
 			type: "string",
+			required: true,
 		},
 		team: {
 			type: ["development", "marketing", "finance", "product"],
+			required: true,
 		},
 		salary: {
 			type: "string",
+			required: true,
 		},
 		manager: {
 			type: "string",
 		},
 		dateHired: {
 			type: "string",
+			validate: /^\d{4}-\d{2}-\d{2}$/gi
 		},
 		birthday: {
 			type: "string",
+			validate: /^\d{4}-\d{2}-\d{2}$/gi
 		},
 	},
 	indexes: {
