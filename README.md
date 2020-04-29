@@ -1401,7 +1401,7 @@ const TasksModel = {
 	},
 };
 
-const OfficesModel = new Entity({
+const OfficesModel = {
 	entity: "offices",
 	version: "1",
 	table: "electro",
@@ -1450,7 +1450,7 @@ const OfficesModel = new Entity({
 			},
 		},
 	},
-});
+};
 ```
 Join models on a new `Service` called `EmployeeApp`
 ```javascript
