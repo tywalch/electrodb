@@ -18,14 +18,14 @@ let clauses = {
 			state.query.type = QueryTypes.collection;
 			return state;
 		},
-		children: ["params", "go"],
+		children: ["params", "go", "page"],
 	},
 	scan: {
 		action(entity, state) {
 			state.query.method = MethodTypes.scan;
 			return state;
 		},
-		children: ["params", "go"],
+		children: ["params", "go", "page"],
 	},
 	get: {
 		action(entity, state, facets = {}) {
@@ -44,7 +44,7 @@ let clauses = {
 			}
 			return state;
 		},
-		children: ["params", "go"],
+		children: ["params", "go", "page"],
 	},
 	delete: {
 		action(entity, state, facets = {}) {
@@ -63,7 +63,7 @@ let clauses = {
 			}
 			return state;
 		},
-		children: ["params", "go"],
+		children: ["params", "go", "page"],
 	},
 	put: {
 		action(entity, state, payload = {}) {
@@ -85,7 +85,7 @@ let clauses = {
 			state.query.put.data = Object.assign({}, record);
 			return state;
 		},
-		children: ["params", "go"],
+		children: ["params", "go", "page"],
 	},
 	update: {
 		action(entity, state, facets = {}) {
@@ -131,7 +131,7 @@ let clauses = {
 			});
 			return state;
 		},
-		children: ["between", "gte", "gt", "lte", "lt", "params", "go"],
+		children: ["between", "gte", "gt", "lte", "lt", "params", "go", "page"],
 	},
 	between: {
 		action(entity, state, startingFacets = {}, endingFacets = {}) {
@@ -219,7 +219,7 @@ let clauses = {
 		children: ["go", "params"],
 	},
 	params: {
-		action(entity, state, options) {
+		action(entity, state, options = {}) {
 			if (state.query.method === MethodTypes.query) {
 				return entity._queryParams(state.query, options);
 			} else {
@@ -229,7 +229,7 @@ let clauses = {
 		children: [],
 	},
 	go: {
-		action(entity, state, options) {
+		action(entity, state, options = {}) {
 			if (entity.client === undefined) {
 				throw new Error("No client defined on model");
 			}
@@ -242,6 +242,22 @@ let clauses = {
 			return entity.go(state.query.method, params, options);
 		},
 		children: [],
+	},
+	page: {
+		action(entity, state, page = "", options = {}) {
+			options.page = page;
+			if (entity.client === undefined) {
+				throw new Error("No client defined on model");
+			}
+			let params = {};
+			if (state.query.method === MethodTypes.query) {
+				params = entity._queryParams(state.query, options);
+			} else {
+				params = entity._params(state.query, options);
+			}
+			return entity.go(state.query.method, params, options);
+		},
+		children: []
 	},
 };
 
