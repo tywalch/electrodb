@@ -367,4 +367,273 @@ describe("Put and query", async () => {
 	}).timeout(10000);
 });
 
+
+describe("Misconfiguration exceptions", () => {
+	it("Should require collections to be set on the same index", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		}
+		let entityTwo = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionB",
+				},
+				index2: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionA",
+					index: "different-index-than-entity-one",
+				}
+			}
+		}
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+		database.join(entityOne);
+		expect(() => database.join(entityTwo)).to.throw(`Index provided "different-index-than-entity-one" does not match established index: [Main Table Index]`);
+		// expect(() => database.join(entityTwo)).to.throw("You cant do that");
+	});
+	it("Should validate the PK facets match on all added schemas", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		}
+		let entityTwo = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop4"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop1", "prop5"],
+					},
+					collection: "collectionA",
+				},
+			}
+		}
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+		database.join(entityOne);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key Facets provided "prop4" do not match established facets "prop1"`);
+	});
+	it("Should validate the PK field matches on all added schemas", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		}
+		let entityTwo = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pkz",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionA",
+				},
+			}
+		}
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+		database.join(entityOne);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key Field provided "pkz" for index "" does not match established field "pk"`);
+	});
+	it("Should validate the attributes with matching names have matching fields on all added schemas", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		}
+		let entityTwo = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+					field: "notProp1"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionA",
+				},
+			}
+		}
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+		database.join(entityOne);
+		expect(() => database.join(entityTwo)).to.throw(`Attribute provided "prop1" with Table Field "notProp1" does not match established Table Field "prop1"`);
+	});
+})
 // database.find.collectionA({}).go();

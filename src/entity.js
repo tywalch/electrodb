@@ -1121,6 +1121,10 @@ class Entity {
 				utilities.structureFacets(facets, facet, j, attributes, i),
 			);
 		}
+		
+		if (facets.byIndex[""] === undefined) {
+			throw new Error("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index");
+		}
 
 		return {
 			facets,
