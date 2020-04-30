@@ -98,12 +98,12 @@ class Service {
 		}
 		if (!indexMatch) {
 			collectionDifferences.push(
-				`Index provided "${providedIndex.index}" does not match established index ${definition.index}`,
+				`Index provided "${providedIndex.index}" does not match established index: ${definition.index || "[Main Table Index]"}`,
 			);
 		}
 		if (!pkFieldMatch) {
 			collectionDifferences.push(
-				`Partition Key Field provided "${providedIndex.pk.field}" for index "${providedIndex.index}" does not match established field ${definition.field}`,
+				`Partition Key Field provided "${providedIndex.pk.field}" for index "${providedIndex.index}" does not match established field "${definition.pk.field}"`,
 			);
 		}
 		if (!pkFacetLengthMatch || !pkFacetContentMatch) {
@@ -129,7 +129,7 @@ class Service {
 				results.additions[name] = detail;
 			} else if (defined.field !== detail.field) {
 				results.invalid.push(
-					`Attribute provided "${name}" with Table Field "${detail.field}" does not match established Table Field ${provided.field}`,
+					`Attribute provided "${name}" with Table Field "${detail.field}" does not match established Table Field "${defined.field}"`,
 				);
 			}
 		}
