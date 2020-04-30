@@ -163,6 +163,39 @@ describe("Entity", () => {
 				"Value not found in set of acceptable values: food/coffee, food/meal, clothing, electronics, department, misc",
 			);
 		});
+		it("Should identify a missing definiton for the table's main index", () => {
+			expect(() => new Entity({
+				service: "test",
+				entity: "entityOne",
+				table: "test",
+				version: "1",
+				attributes: {
+					prop1: {
+						type: "string",
+					},
+					prop4: {
+						type: "string"
+					},
+					prop5: {
+						type: "string"
+					}
+				},
+				indexes: {
+					index1: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop4", "prop5"],
+						},
+						collection: "collectionA",
+						index: "different-index-than-entity-one",
+					}
+				}
+			})).to.throw("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index")
+		});
 		it("should recognize when an attribute's field property is duplicated", () => {
 			let schema = {
 				service: "MallStoreDirectory",
