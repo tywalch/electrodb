@@ -227,4 +227,18 @@ describe("General", async () => {
 			"Sheep",
 		]);
 	})
+	it("Should allow for name and value filter values", async () => {
+		let animals = await FilterTests.query
+			.farm({pen})
+			.filter(({animal}) => `
+				${animal.name()} = ${animal.value("Pig")}
+			`)
+			.go();
+			console.log("animals", animals);
+			expect(animals)
+				.to.be.an("array")
+				.and.have.length(1);
+			expect(animals.map(pen => pen.animal))
+				.to.have.members(["Pig"]);
+	})
 })

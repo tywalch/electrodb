@@ -78,6 +78,18 @@ let FilterTypes = {
 		},
 		strict: false
 	},
+	value: {
+		template: function(name, value) {
+			return value;
+		},
+		strict: false
+	},
+	name: {
+		template: function(name) {
+			return name;
+		},
+		strict: false
+	}
 };
 
 class FilterFactory {

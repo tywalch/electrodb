@@ -762,6 +762,8 @@ operator | example | result
 `contains` | `rent.contains(maxRent)` | `contains(#rent = :rent1)`
 `notContains` | `rent.notContains(maxRent)` | `not contains(#rent = :rent1)`
 `between` | `rent.between(minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
+`name` | `rent.name()` | `#rent`
+`value` | `rent.value(maxRent)` | `:rent1`
 
 This functionality allows you to write the remaining logic of your `FilterExpression` with ease. Add complex nested `and`/`or` conditions or other `FilterExpression` logic while ElectroDB handles the  `ExpressionAttributeNames` and `ExpressionAttributeValues`.
 
