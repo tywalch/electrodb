@@ -27,24 +27,24 @@ MallStores.query
 Into This:
 ```javascript
 {
-  "IndexName": idx2',
-  TableName: 'electro',
-  ExpressionAttributeNames: {
-    '#rent': 'rent',
-    '#discount': 'discount',
-    '#pk': 'idx2pk',
-    '#sk1': 'idx2sk'
+  "IndexName": "idx2",
+  "TableName": "electro",
+  "ExpressionAttributeNames": {
+    "#rent": "rent",
+    "#discount": "discount",
+		"#pk": "idx2pk",
+    "#sk1": "idx2sk"
   },
-  ExpressionAttributeValues: {
-    ':rent1': '2000.00',
-    ':rent2': '5000.00',
-    ':discount1': '1000.00',
-    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
-    ':sk1': '$mallstore#leaseenddate_2020-04-01#rent_',
-    ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
+  "ExpressionAttributeValues": {
+    ":rent1": "2000.00",
+    ":rent2": "5000.00",
+    ":discount1": "1000.00",
+    ":pk": "$mallstoredirectory_1#mallid_eastpointe",
+    ":sk1": "$mallstore#leaseenddate_2020-04-01#rent_",
+    ":sk2": "$mallstore#leaseenddate_2020-07-01#rent_"
   },
-  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
+  "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+  "FilterExpression": "(#rent between :rent1 and :rent2) AND #discount <= :discount1"
 }
 ```
 Table of Contents
@@ -187,30 +187,38 @@ const EmployeesModel = {
 		},
 		firstName: {
 			type: "string",
+			required: true,
 		},
 		lastName: {
 			type: "string",
+			required: true,
 		},
 		office: {
 			type: "string",
+			required: true,
 		},
 		title: {
 			type: "string",
+			required: true,
 		},
 		team: {
-			type: ["development", "marketing", "finance", "product"],
+			type: ["development", "marketing", "finance", "product", "cool cats and kittens"],
+			required: true,
 		},
 		salary: {
 			type: "string",
+			required: true,
 		},
 		manager: {
 			type: "string",
 		},
 		dateHired: {
 			type: "string",
+			validate: /^\d{4}-\d{2}-\d{2}$/gi
 		},
 		birthday: {
 			type: "string",
+			validate: /^\d{4}-\d{2}-\d{2}$/gi
 		},
 	},
 	indexes: {
@@ -754,6 +762,8 @@ operator | example | result
 `contains` | `rent.contains(maxRent)` | `contains(#rent = :rent1)`
 `notContains` | `rent.notContains(maxRent)` | `not contains(#rent = :rent1)`
 `between` | `rent.between(minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
+`name` | `rent.name()` | `#rent`
+`value` | `rent.value(maxRent)` | `:rent1`
 
 This functionality allows you to write the remaining logic of your `FilterExpression` with ease. Add complex nested `and`/`or` conditions or other `FilterExpression` logic while ElectroDB handles the  `ExpressionAttributeNames` and `ExpressionAttributeValues`.
 
@@ -1393,7 +1403,7 @@ const TasksModel = {
 	},
 };
 
-const OfficesModel = new Entity({
+const OfficesModel = {
 	entity: "offices",
 	version: "1",
 	table: "electro",
@@ -1442,7 +1452,7 @@ const OfficesModel = new Entity({
 			},
 		},
 	},
-});
+};
 ```
 Join models on a new `Service` called `EmployeeApp`
 ```javascript
