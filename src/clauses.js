@@ -2,14 +2,17 @@ const { QueryTypes, MethodTypes } = require("./types");
 
 let clauses = {
 	index: {
+		name: "index",
 		// action(entity, state, facets = {}) {
 		// 	// todo: maybe all key info is passed on the subsequent query identifiers?
 		// 	// todo: look for article/list of all dynamodb query limitations
 		// 	// return state;
 		// },
 		children: ["get", "delete", "update", "query", "put", "scan", "collection"],
+		
 	},
 	collection: {
+		name: "collection",
 		action(entity, state, collection /* istanbul ignore next */ = "", facets /* istanbul ignore next */ = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
@@ -21,6 +24,7 @@ let clauses = {
 		children: ["params", "go", "page"],
 	},
 	scan: {
+		name: "scan",
 		action(entity, state) {
 			state.query.method = MethodTypes.scan;
 			return state;
@@ -28,6 +32,7 @@ let clauses = {
 		children: ["params", "go", "page"],
 	},
 	get: {
+		name: "get",
 		action(entity, state, facets = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			state.query.method = MethodTypes.get;
@@ -44,9 +49,10 @@ let clauses = {
 			}
 			return state;
 		},
-		children: ["params", "go", "page"],
+		children: ["params", "go"],
 	},
 	delete: {
+		name: "delete",
 		action(entity, state, facets = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			state.query.method = MethodTypes.delete;
@@ -63,9 +69,10 @@ let clauses = {
 			}
 			return state;
 		},
-		children: ["params", "go", "page"],
+		children: ["params", "go"],
 	},
 	put: {
+		name: "put",
 		action(entity, state, payload = {}) {
 			let record = entity.model.schema.checkCreate({ ...payload });
 			state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
@@ -85,9 +92,10 @@ let clauses = {
 			state.query.put.data = Object.assign({}, record);
 			return state;
 		},
-		children: ["params", "go", "page"],
+		children: ["params", "go"],
 	},
 	update: {
+		name: "update",
 		action(entity, state, facets = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			state.query.method = MethodTypes.update;
@@ -107,6 +115,7 @@ let clauses = {
 		children: ["set"],
 	},
 	set: {
+		name: "set",
 		action(entity, state, data) {
 			let record = entity.model.schema.checkUpdate({ ...data });
 			state.query.update.set = Object.assign(
@@ -119,6 +128,7 @@ let clauses = {
 		children: ["set", "go", "params"],
 	},
 	query: {
+		name: "query",
 		action(entity, state, facets = {}, options = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
@@ -134,6 +144,7 @@ let clauses = {
 		children: ["between", "gte", "gt", "lte", "lt", "params", "go", "page"],
 	},
 	between: {
+		name: "between",
 		action(entity, state, startingFacets = {}, endingFacets = {}) {
 			entity._expectFacets(
 				startingFacets,
@@ -164,9 +175,10 @@ let clauses = {
 			});
 			return state;
 		},
-		children: ["go", "params"],
+		children: ["go", "params", "page"],
 	},
 	gt: {
+		name: "gt",
 		action(entity, state, facets = {}) {
 			entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
 			state.query.type = QueryTypes.gt;
@@ -177,9 +189,10 @@ let clauses = {
 			});
 			return state;
 		},
-		children: ["go", "params"],
+		children: ["go", "params", "page"],
 	},
 	gte: {
+		name: "gte",
 		action(entity, state, facets = {}) {
 			entity._expectFacets(facets, Object.keys(facets), `"gte" facets`);
 			state.query.type = QueryTypes.gte;
@@ -190,9 +203,10 @@ let clauses = {
 			});
 			return state;
 		},
-		children: ["go", "params"],
+		children: ["go", "params", "page"],
 	},
 	lt: {
+		name: "lt",
 		action(entity, state, facets = {}) {
 			entity._expectFacets(facets, Object.keys(facets), `"lt" facets`);
 			state.query.type = QueryTypes.lt;
@@ -203,9 +217,10 @@ let clauses = {
 			});
 			return state;
 		},
-		children: ["go", "params"],
+		children: ["go", "params", "page"],
 	},
 	lte: {
+		name: "lte",
 		action(entity, state, facets = {}) {
 			entity._expectFacets(facets, Object.keys(facets), `"lte" facets`);
 			state.query.type = QueryTypes.lte;
@@ -216,9 +231,10 @@ let clauses = {
 			});
 			return state;
 		},
-		children: ["go", "params"],
+		children: ["go", "params", "page"],
 	},
 	params: {
+		name: "params",
 		action(entity, state, options = {}) {
 			if (state.query.method === MethodTypes.query) {
 				return entity._queryParams(state.query, options);
@@ -229,6 +245,7 @@ let clauses = {
 		children: [],
 	},
 	go: {
+		name: "go",
 		action(entity, state, options = {}) {
 			if (entity.client === undefined) {
 				throw new Error("No client defined on model");
@@ -244,6 +261,7 @@ let clauses = {
 		children: [],
 	},
 	page: {
+		name: "page",
 		action(entity, state, page = "", options = {}) {
 			options.page = page;
 			if (entity.client === undefined) {

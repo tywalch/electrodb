@@ -234,7 +234,6 @@ describe("General", async () => {
 				${animal.name()} = ${animal.value("Pig")}
 			`)
 			.go();
-			console.log("animals", animals);
 			expect(animals)
 				.to.be.an("array")
 				.and.have.length(1);

@@ -192,7 +192,6 @@ class Entity {
 			} else {
 				appliedGets = this.model.schema.applyAttributeGetters(data);
 			}
-			console.log("CONFIG.PAGE", typeof config.page, response.LastEvaluatedKey);
 			if (typeof config.page === "string") {
 				let nextPage = response.LastEvaluatedKey || "";
 				return [nextPage, appliedGets]
