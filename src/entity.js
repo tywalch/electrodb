@@ -8,7 +8,7 @@ const { clauses } = require("./clauses");
 const utilities = {
 	structureFacets: function (
 		structure,
-		{ index, type, name } /* istanbul ignore next */ = {},
+		{ index, type, name } = {},
 		i,
 		attributes,
 		indexSlot,
@@ -40,7 +40,7 @@ const utilities = {
 };
 
 class Entity {
-	constructor(model /* istanbul ignore next */ = {}, config /* istanbul ignore next */ = {}) {
+	constructor(model = {}, config = {}) {
 		this._validateModel(model);
 		this.client = config.client;
 		this.model = this._parseModel(model);
@@ -71,7 +71,7 @@ class Entity {
 		}
 	}
 
-	collection(collection /* istanbul ignore next */ = "", clauses /* istanbul ignore next */ = {}, facets /* istanbul ignore next */ = {}) {
+	collection(collection = "", clauses = {}, facets = {}) {
 		let index = this.model.translations.collections.fromCollectionToIndex[
 			collection
 		];
@@ -166,37 +166,42 @@ class Entity {
 	formatResponse(response, config = {}) {
 		let stackTrace = new Error();
 		try {
+			let results;
+
 			if (config.raw) {
 				if (response.TableName) {
 					// a VERY hacky way to deal with PUTs
-					return {};
+					results = {};
 				} else {
-					return response;
+					results = response;
+				}
+			} else {
+
+				let data = {};
+				if (response.Item) {
+					data = this.cleanseRetrievedData(response.Item, config);
+				} else if (response.Items) {
+					data = response.Items.map((item) =>
+						this.cleanseRetrievedData(item, config),
+					);
+				}
+
+				if (Array.isArray(data)) {
+					results = data.map((item) =>
+						this.model.schema.applyAttributeGetters(item),
+					);
+				} else {
+					results = this.model.schema.applyAttributeGetters(data);
 				}
 			}
 
-			let data = {};
-			if (response.Item) {
-				data = this.cleanseRetrievedData(response.Item, config);
-			} else if (response.Items) {
-				data = response.Items.map((item) =>
-					this.cleanseRetrievedData(item, config),
-				);
+			if (config.pager) {
+				let nextPage = response.LastEvaluatedKey || null;
+				results = [nextPage, results];
 			}
 
-			let appliedGets;
-			if (Array.isArray(data)) {
-				appliedGets = data.map((item) =>
-					this.model.schema.applyAttributeGetters(item),
-				);
-			} else {
-				appliedGets = this.model.schema.applyAttributeGetters(data);
-			}
-			if (typeof config.page === "string") {
-				let nextPage = response.LastEvaluatedKey || "";
-				return [nextPage, appliedGets]
-			}
-			return appliedGets;
+			return results;
+
 		} catch (err) {
 			if (config.originalErr) {
 				throw err;
@@ -215,7 +220,8 @@ class Entity {
 			originalErr: options.originalErr,
 			raw: options.raw,
 			params: options.params || {},
-			page: options.page
+			page: options.page,
+			pager: !!options.pager
 		};
 		let parameters = Object.assign({}, params);
 		for (let [name, value] of Object.entries(config.params)) {
@@ -513,7 +519,8 @@ class Entity {
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
-		if (typeof options.page === "string" && options.page.length) {
+		// if (typeof options.page === "string" && options.page.length) {
+		if (Object.keys(options.page || {}).length) {
 			parameters.ExclusiveStartKey = options.page;
 		}
 		return parameters;

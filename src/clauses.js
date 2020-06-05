@@ -262,8 +262,9 @@ let clauses = {
 	},
 	page: {
 		name: "page",
-		action(entity, state, page = "", options = {}) {
+		action(entity, state, page = null, options = {}) {
 			options.page = page;
+			options.pager = true;
 			if (entity.client === undefined) {
 				throw new Error("No client defined on model");
 			}
