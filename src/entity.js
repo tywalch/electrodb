@@ -8,7 +8,7 @@ const { clauses } = require("./clauses");
 const utilities = {
 	structureFacets: function (
 		structure,
-		{ index, type, name } /* istanbul ignore next */ = {},
+		{ index, type, name } = {},
 		i,
 		attributes,
 		indexSlot,
@@ -25,10 +25,22 @@ const utilities = {
 		structure.bySlot[i] = structure.bySlot[i] || [];
 		structure.bySlot[i][indexSlot] = facet;
 	},
+	safeParse(str = "") {
+		try {
+			if (typeof str === "string") {
+				
+			}
+		} catch(err) {
+
+		}
+	},
+	safeStringify() {
+
+	}
 };
 
 class Entity {
-	constructor(model /* istanbul ignore next */ = {}, config /* istanbul ignore next */ = {}) {
+	constructor(model = {}, config = {}) {
 		this._validateModel(model);
 		this.client = config.client;
 		this.model = this._parseModel(model);
@@ -59,7 +71,7 @@ class Entity {
 		}
 	}
 
-	collection(collection /* istanbul ignore next */ = "", clauses /* istanbul ignore next */ = {}, facets /* istanbul ignore next */ = {}) {
+	collection(collection = "", clauses = {}, facets = {}) {
 		let index = this.model.translations.collections.fromCollectionToIndex[
 			collection
 		];
@@ -154,33 +166,42 @@ class Entity {
 	formatResponse(response, config = {}) {
 		let stackTrace = new Error();
 		try {
+			let results;
+
 			if (config.raw) {
 				if (response.TableName) {
 					// a VERY hacky way to deal with PUTs
-					return {};
+					results = {};
 				} else {
-					return response;
+					results = response;
+				}
+			} else {
+
+				let data = {};
+				if (response.Item) {
+					data = this.cleanseRetrievedData(response.Item, config);
+				} else if (response.Items) {
+					data = response.Items.map((item) =>
+						this.cleanseRetrievedData(item, config),
+					);
+				}
+
+				if (Array.isArray(data)) {
+					results = data.map((item) =>
+						this.model.schema.applyAttributeGetters(item),
+					);
+				} else {
+					results = this.model.schema.applyAttributeGetters(data);
 				}
 			}
 
-			let data = {};
-			if (response.Item) {
-				data = this.cleanseRetrievedData(response.Item, config);
-			} else if (response.Items) {
-				data = response.Items.map((item) =>
-					this.cleanseRetrievedData(item, config),
-				);
+			if (config.pager) {
+				let nextPage = response.LastEvaluatedKey || null;
+				results = [nextPage, results];
 			}
 
-			let appliedGets;
-			if (Array.isArray(data)) {
-				appliedGets = data.map((item) =>
-					this.model.schema.applyAttributeGetters(item),
-				);
-			} else {
-				appliedGets = this.model.schema.applyAttributeGetters(data);
-			}
-			return appliedGets;
+			return results;
+
 		} catch (err) {
 			if (config.originalErr) {
 				throw err;
@@ -191,25 +212,31 @@ class Entity {
 		}
 	}
 
+	
+
 	async go(method, params = {}, options = {}) {
 		let config = {
 			includeKeys: options.includeKeys,
 			originalErr: options.originalErr,
 			raw: options.raw,
 			params: options.params || {},
+			page: options.page,
+			pager: !!options.pager
 		};
+		let parameters = Object.assign({}, params);
 		for (let [name, value] of Object.entries(config.params)) {
 			if (value !== undefined) {
-				params[name] = value;
+				parameters[name] = value;
 			}
 		}
+		
 
 		let stackTrace = new Error();
 		try {
-			let response = await this.client[method](params).promise();
+			let response = await this.client[method](parameters).promise();
 			if (method === "put") {
 				// a VERY hacky way to deal with PUTs
-				return this.formatResponse(params, config);
+				return this.formatResponse(parameters, config);
 			} else {
 				return this.formatResponse(response, config);
 			}
@@ -451,42 +478,52 @@ class Entity {
 			chainState.keys.pk,
 			...conlidatedQueryFacets,
 		);
+		let parameters = {};
 		switch (chainState.type) {
 			case QueryTypes.begins:
-				return this._makeBeginsWithQueryParams(
+				parameters = this._makeBeginsWithQueryParams(
 					chainState.index,
 					chainState.filter,
 					pk,
 					...sk,
 				);
+				break;
 			case QueryTypes.collection:
-				return this._makeBeginsWithQueryParams(
+				parameters = this._makeBeginsWithQueryParams(
 					chainState.index,
 					chainState.filter,
 					pk,
 					this._getCollectionSk(chainState.collection),
 				);
+				break;
 			case QueryTypes.between:
-				return this._makeBetweenQueryParams(
+				parameters = this._makeBetweenQueryParams(
 					chainState.index,
 					chainState.filter,
 					pk,
 					...sk,
 				);
+				break;
 			case QueryTypes.gte:
 			case QueryTypes.gt:
 			case QueryTypes.lte:
 			case QueryTypes.lt:
-				return this._makeComparisonQueryParams(
+				parameters = this._makeComparisonQueryParams(
 					chainState.index,
 					chainState.type,
 					chainState.filter,
 					pk,
 					...sk,
 				);
+				break;
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
+		// if (typeof options.page === "string" && options.page.length) {
+		if (Object.keys(options.page || {}).length) {
+			parameters.ExclusiveStartKey = options.page;
+		}
+		return parameters;
 	}
 
 	_makeBetweenQueryParams(index = "", filter = {}, pk = {}, ...sk) {

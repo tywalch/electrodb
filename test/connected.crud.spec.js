@@ -7,14 +7,16 @@ const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({
 	region: "us-east-1",
 });
+const SERVICE = "BugBeater";
+const ENTITY = "TEST_ENTITY"
 function sleep(ms) {
 	return new Promise((resolve) => {
 		setTimeout(resolve, ms);
 	});
 }
 let model = {
-	service: "BugBeater",
-	entity: "test",
+	service: SERVICE,
+	entity: ENTITY,
 	table: "electro",
 	version: "1",
 	attributes: {
@@ -279,8 +281,8 @@ describe("Entity", async () => {
 		it("Should create then delete a record", async () => {
 			let record = new Entity(
 				{
-					service: "testservice",
-					entity: "testentity",
+					service: SERVICE,
+					entity: ENTITY,
 					table: "electro",
 					version: "1",
 					attributes: {
@@ -366,7 +368,7 @@ describe("Entity", async () => {
 	describe("Getters/Setters", async () => {
 		let db = new Entity(
 			{
-				service: "testing",
+				service: SERVICE,
 				entity: uuidv4(),
 				table: "electro",
 				version: "1",
@@ -451,7 +453,7 @@ describe("Entity", async () => {
 		let entity = uuidv4();
 		let db = new Entity(
 			{
-				service: "testing",
+				service: SERVICE,
 				entity: entity,
 				table: "electro",
 				version: "1",
@@ -498,7 +500,7 @@ describe("Entity", async () => {
 					date,
 					someValue: someValue + " wham",
 					sk: `$${entity}#id_${id}`.toLowerCase(),
-					pk: `$testing_1#date_${date}`.toLowerCase(),
+					pk: `$${SERVICE}_1#date_${date}`.toLowerCase(),
 				},
 			});
 			let updateRecord = await db
@@ -515,7 +517,7 @@ describe("Entity", async () => {
 						date,
 						someValue: someValue + " wham",
 						sk: `$${entity}#id_${id}`.toLowerCase(),
-						pk: `$testing_1#date_${date}`.toLowerCase(),
+						pk: `$${SERVICE}_1#date_${date}`.toLowerCase(),
 					},
 				],
 				Count: 1,
@@ -528,7 +530,7 @@ describe("Entity", async () => {
 				someValue: "ABDEF wham bam",
 				__edb_e__: entity,
 				sk: `$${entity}#id_${id}`.toLowerCase(),
-				pk: `$testing_1#date_${date}`.toLowerCase(),
+				pk: `$${SERVICE}_1#date_${date}`.toLowerCase(),
 			})
 		}).timeout(10000);
 	});
@@ -591,7 +593,7 @@ describe("Entity", async () => {
 		it("Should filter with the correct field name", async () => {
 			let db = new Entity(
 				{
-					service: "testing",
+					service: SERVICE,
 					entity: uuidv4(),
 					table: "electro",
 					version: "1",
@@ -650,7 +652,7 @@ describe("Entity", async () => {
 			let id = uuidv4();
 			let db = new Entity(
 				{
-					service: "testing",
+					service: SERVICE,
 					entity: entity,
 					table: "electro",
 					version: "1",
@@ -711,4 +713,26 @@ describe("Entity", async () => {
 				.and.to.have.deep.members(expectedMembers);
 		});
 	});
+	describe("Pagination", async () => {
+		it("Should return a pk and sk that match the last record in the result set, and should be able to be passed in for more results", async () => {
+			// THIS IS A FOOLISH TEST: IT ONLY FULLY WORKS WHEN THE TABLE USED FOR TESTING IS FULL OF RECORDS. THIS WILL HAVE TO DO UNTIL I HAVE TIME TO FIGURE OUT A PROPER WAY MOCK DDB.
+			let MallStores = new Entity(model, { client });
+			let results = await MallStores.scan.page(null, {raw: true});
+			expect(results).to.be.an("array").and.have.length(2);
+			// Scan may not return records, dont force a bad test then
+			let [index, stores] = results;
+			if (stores.length) {
+				expect(index).to.have.a.property('pk').and.to.have.a.property('sk');
+				expect(stores.Items).to.be.an("array")
+				expect(stores.Items[0]).to.have.a.property('pk').and.to.have.a.property('sk');
+				let [nextIndex, nextStores] = await MallStores.scan.page(index);
+				expect(stores).to.be.an("array").and.have.length(2);
+				expect(nextIndex).to.not.deep.equal(index);
+				expect(nextStores).to.be.an("array");
+				if (nextStores.length) {
+					expect(nextStores[0]).to.not.have.a.property('pk').and.to.not.have.a.property('sk');
+				}
+			}
+		}).timeout(10000);
+	})
 });

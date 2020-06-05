@@ -402,6 +402,7 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
+				"page",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitGt = MallStores.query.units({ mall }).gt({ building });
@@ -409,6 +410,7 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
+				"page",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitsGte = MallStores.query.units({ mall }).gte({ building });
@@ -416,6 +418,7 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
+				"page",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitsLte = MallStores.query.units({ mall }).lte({ building });
@@ -423,6 +426,7 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
+				"page",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitsLt = MallStores.query.units({ mall }).lt({ building });
@@ -430,6 +434,7 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
+				"page",
 				"rentsLeaseEndFilter",
 			);
 		});
