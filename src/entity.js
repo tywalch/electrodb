@@ -212,7 +212,26 @@ class Entity {
 		}
 	}
 
-	
+	_applyParameterOptions(params = {}, options = {}) {
+		let config = {
+			includeKeys: options.includeKeys,
+			originalErr: options.originalErr,
+			raw: options.raw,
+			params: options.params || {},
+			page: options.page,
+			pager: !!options.pager
+		};
+		let parameters = Object.assign({}, params);
+		for (let customParameter of Object.keys(config.params)) {
+			if (config.params[customParameter] !== undefined) {
+				parameters[customParameter] = config.params[customParameter];
+			}
+		}
+		if (Object.keys(config.page || {}).length) {
+			parameters.ExclusiveStartKey = config.page;
+		}
+		return parameters;
+	}
 
 	async go(method, params = {}, options = {}) {
 		let config = {
@@ -224,12 +243,6 @@ class Entity {
 			pager: !!options.pager
 		};
 		let parameters = Object.assign({}, params);
-		for (let [name, value] of Object.entries(config.params)) {
-			if (value !== undefined) {
-				parameters[name] = value;
-			}
-		}
-		
 
 		let stackTrace = new Error();
 		try {
@@ -250,26 +263,31 @@ class Entity {
 		}
 	}
 
-	_params({ keys = {}, method = "", put = {}, update = {}, filter = {} } = {}) {
+	_params({ keys = {}, method = "", put = {}, update = {}, filter = {} } = {}, options = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
-
+		let params = {}
 		switch (method) {
 			case MethodTypes.get:
 			case MethodTypes.delete:
-				return this._makeSimpleIndexParams(keys.pk, ...conlidatedQueryFacets);
+				params = this._makeSimpleIndexParams(keys.pk, ...conlidatedQueryFacets);
+				break;
 			case MethodTypes.put:
-				return this._makePutParams(put, keys.pk, ...keys.sk);
+				params = this._makePutParams(put, keys.pk, ...keys.sk);
+				break;
 			case MethodTypes.update:
-				return this._makeUpdateParams(
+				params = this._makeUpdateParams(
 					update,
 					keys.pk,
 					...conlidatedQueryFacets,
 				);
+				break;
 			case MethodTypes.scan:
-				return this._makeScanParam(filter);
+				params = this._makeScanParam(filter);
+				break;
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
+		return this._applyParameterOptions(params, options);
 	}
 
 	_makeParameterKey(index, pk, sk) {
@@ -519,11 +537,7 @@ class Entity {
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
-		// if (typeof options.page === "string" && options.page.length) {
-		if (Object.keys(options.page || {}).length) {
-			parameters.ExclusiveStartKey = options.page;
-		}
-		return parameters;
+		return this._applyParameterOptions(parameters, options);
 	}
 
 	_makeBetweenQueryParams(index = "", filter = {}, pk = {}, ...sk) {
