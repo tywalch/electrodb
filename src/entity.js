@@ -8,7 +8,7 @@ const { clauses } = require("./clauses");
 const utilities = {
 	structureFacets: function (
 		structure,
-		{ index, type, name } = {},
+		{ index, type, name },
 		i,
 		attributes,
 		indexSlot,
@@ -24,23 +24,11 @@ const utilities = {
 		structure.byFacet[name][i].push(facet);
 		structure.bySlot[i] = structure.bySlot[i] || [];
 		structure.bySlot[i][indexSlot] = facet;
-	},
-	safeParse(str = "") {
-		try {
-			if (typeof str === "string") {
-				
-			}
-		} catch(err) {
-
-		}
-	},
-	safeStringify() {
-
 	}
 };
 
 class Entity {
-	constructor(model = {}, config = {}) {
+	constructor(model, config = {}) {
 		this._validateModel(model);
 		this.client = config.client;
 		this.model = this._parseModel(model);
@@ -48,26 +36,46 @@ class Entity {
 			this.model.schema.attributes,
 			FilterTypes,
 		);
-		this.query = {};
-
-		let clausesWithFilters = this._filterBuilder.injectFilterClauses(
+		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(
 			clauses,
 			this.model.filters,
 		);
-		// this.find = (facets = {}) => {
-		// 	let index = this._findBestIndexKeyMatch(facets);
-		// 	return this._makeChain(index, clausesWithFilters, clauses.index).query(
-		// 		facets,
-		// 	);
-		// };
-		this.scan = this._makeChain("", clausesWithFilters, clauses.index).scan();
+		this.scan = this._makeChain("", this._clausesWithFilters, clauses.index).scan();
+		this.query = {};
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
 			this.query[accessPattern] = (...values) => {
-				return this._makeChain(index, clausesWithFilters, clauses.index).query(
+				return this._makeChain(index, this._clausesWithFilters, clauses.index).query(
 					...values,
 				);
 			};
+		}
+	}
+
+	find(facets = {}) {
+		let match = this._findBestIndexKeyMatch(facets);
+		if (match.shouldScan) {
+			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
+				let eqFilters = []; 
+				for (let facet of Object.keys(facets)) {
+					if (attr[facet]) {
+						eqFilters.push(attr[facet].eq(facets[facet]));
+					}
+				}
+				return eqFilters.join(" AND");
+			})
+		} else {
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(
+				facets,
+			).filter(attr => {
+				let eqFilters = []; 
+				for (let facet of Object.keys(facets)) {
+					if (attr[facet]) {
+						eqFilters.push(attr[facet].eq(facets[facet]));
+					}
+				}
+				return eqFilters.join(" AND");
+			});
 		}
 	}
 
@@ -81,7 +89,7 @@ class Entity {
 		);
 	}
 
-	_validateModel(model = {}) {
+	_validateModel(model) {
 		return validations.model(model);
 	}
 
@@ -100,12 +108,32 @@ class Entity {
 		return this._makeChain(index, clauses, clauses.index).put(attributes);
 	}
 
+	create(attributes = {}) {
+		let index = "";
+		let options = {
+			params: {
+				ConditionExpression: this._makeCreateConditions(index)
+			}
+		}
+		return this._makeChain(index, clauses, clauses.index, options).create(attributes);
+	}
+
 	update(facets = {}) {
 		let index = "";
 		return this._makeChain(index, clauses, clauses.index).update(facets);
 	}
 
-	_chain(state = {}, clauses, clause = {}) {
+	patch(facets = {}) {
+		let index = "";
+		let options = {
+			params: {
+				ConditionExpression: this._makePatchConditions(index)
+			}
+		}
+		return this._makeChain(index, clauses, clauses.index, options).patch(facets);
+	}
+
+	_chain(state, clauses, clause) {
 		let current = {};
 		for (let child of clause.children) {
 			current[child] = (...args) => {
@@ -141,8 +169,8 @@ class Entity {
 					sk: [],
 				},
 				filter: {},
+				options,
 			},
-			collectionOnly: !!options.collectionOnly,
 			hasSortKey: this.model.lookup.indexHasSortKeys[index],
 		};
 		return this._chain(state, clauses, rootClause);
@@ -212,24 +240,38 @@ class Entity {
 		}
 	}
 
-	_applyParameterOptions(params = {}, options = {}) {
+	_applyParameterOptions(params, ...options) {
 		let config = {
-			includeKeys: options.includeKeys,
-			originalErr: options.originalErr,
-			raw: options.raw,
-			params: options.params || {},
-			page: options.page,
-			pager: !!options.pager
+			includeKeys: false,
+			originalErr: false,
+			raw: false,
+			params: {},
+			page: {},
+			pager: false
 		};
+
+		config = options.reduce((config, option) => {
+			if (option.includeKeys) config.includeKeys = true;
+			if (option.originalErr) config.originalErr = true;
+			if (option.raw) config.raw = true;
+			if (option.pager) config.pager = true;
+			config.page = Object.assign({}, config.page, option.page);
+			config.params = Object.assign({}, config.params, option.params);
+			return config;
+		}, config);
+
 		let parameters = Object.assign({}, params);
+
 		for (let customParameter of Object.keys(config.params)) {
 			if (config.params[customParameter] !== undefined) {
 				parameters[customParameter] = config.params[customParameter];
 			}
 		}
+
 		if (Object.keys(config.page || {}).length) {
 			parameters.ExclusiveStartKey = config.page;
 		}
+		
 		return parameters;
 	}
 
@@ -247,7 +289,7 @@ class Entity {
 		let stackTrace = new Error();
 		try {
 			let response = await this.client[method](parameters).promise();
-			if (method === "put") {
+			if (method === "put" || method === "create") {
 				// a VERY hacky way to deal with PUTs
 				return this.formatResponse(parameters, config);
 			} else {
@@ -263,18 +305,43 @@ class Entity {
 		}
 	}
 
-	_params({ keys = {}, method = "", put = {}, update = {}, filter = {} } = {}, options = {}) {
+	_makeCreateConditions(index) {
+		let filter = [`attribute_not_exists(pk)`]
+		if (this.model.lookup.indexHasSortKeys[index]) {
+			filter.push(`attribute_not_exists(sk)`);
+		}
+		return filter.join(" AND ");
+	}
+
+	_makePatchConditions(index) {
+		let filter = [`attribute_exists(pk)`]
+		if (this.model.lookup.indexHasSortKeys[index]) {
+			filter.push(`attribute_exists(sk)`);
+		}
+		return filter.join(" AND ");
+	}
+
+	_params({ keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} }, config = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
-		let params = {}
+		let params = {};
 		switch (method) {
 			case MethodTypes.get:
 			case MethodTypes.delete:
 				params = this._makeSimpleIndexParams(keys.pk, ...conlidatedQueryFacets);
 				break;
 			case MethodTypes.put:
+			case MethodTypes.create:
 				params = this._makePutParams(put, keys.pk, ...keys.sk);
 				break;
 			case MethodTypes.update:
+			case MethodTypes.patch:
+				params = this._makeUpdateParams(
+					update,
+					keys.pk,
+					...conlidatedQueryFacets,
+				);
+				break;
+			case MethodTypes.patch: 
 				params = this._makeUpdateParams(
 					update,
 					keys.pk,
@@ -287,7 +354,7 @@ class Entity {
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
-		return this._applyParameterOptions(params, options);
+		return this._applyParameterOptions(params, options, config);
 	}
 
 	_makeParameterKey(index, pk, sk) {
@@ -304,8 +371,6 @@ class Entity {
 	}
 
 	_makeScanParam(filter = {}) {
-		// let _makeKey
-		// let { pk, sk } = this._makeIndexKeys();
 		let indexBase = "";
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		let facets = this.model.facets.byIndex[indexBase];
@@ -386,7 +451,7 @@ class Entity {
 		return params;
 	}
 
-	_updateExpressionBuilder(data = {}) {
+	_updateExpressionBuilder(data) {
 		let skip = [
 			...this.model.schema.getReadOnly(),
 			...this.model.facets.fields,
@@ -394,7 +459,7 @@ class Entity {
 		return this._expressionAttributeBuilder(data, { skip });
 	}
 
-	_queryKeyExpressionAttributeBuilder(index = "", pk, ...sks) {
+	_queryKeyExpressionAttributeBuilder(index, pk, ...sks) {
 		let translate = { ...this.model.translations.keys[index] };
 		let restrict = ["pk"];
 		let keys = { pk };
@@ -540,7 +605,7 @@ class Entity {
 		return this._applyParameterOptions(parameters, options);
 	}
 
-	_makeBetweenQueryParams(index = "", filter = {}, pk = {}, ...sk) {
+	_makeBetweenQueryParams(index, filter, pk, ...sk) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
 			index,
 			pk,
@@ -568,7 +633,7 @@ class Entity {
 		return params;
 	}
 
-	_makeBeginsWithQueryParams(index = "", filter = {}, pk = {}, sk = {}) {
+	_makeBeginsWithQueryParams(index, filter, pk, sk) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
 			index,
 			pk,
@@ -646,7 +711,7 @@ class Entity {
 		return params;
 	}
 
-	_expectIndexFacets(attributes = {}, facets = {}) {
+	_expectIndexFacets(attributes, facets) {
 		let [isIncomplete, { incomplete, complete }] = this._getIndexImpact(
 			attributes,
 			facets,
@@ -669,7 +734,7 @@ class Entity {
 		return complete;
 	}
 
-	_makeKeysFromAttributes(indexes, attributes = {}) {
+	_makeKeysFromAttributes(indexes, attributes) {
 		let indexKeys = {};
 		for (let index of indexes) {
 			indexKeys[index] = this._makeIndexKeys(index, attributes, attributes);
@@ -677,7 +742,7 @@ class Entity {
 		return indexKeys;
 	}
 
-	_getUpdatedKeys(pk = {}, sk = {}, set = {}) {
+	_getUpdatedKeys(pk, sk, set) {
 		let updateIndex = "";
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
@@ -816,11 +881,11 @@ class Entity {
 		}
 	}
 
-	_findProperties(obj = {}, properties = []) {
+	_findProperties(obj, properties) {
 		return properties.map((name) => [name, obj[name]]);
 	}
 
-	_expectProperties(obj = {}, properties = []) {
+	_expectProperties(obj, properties) {
 		let missing = [];
 		let matching = {};
 		this._findProperties(obj, properties).forEach(([name, value]) => {
@@ -833,20 +898,20 @@ class Entity {
 		return [!!missing.length, missing, matching];
 	}
 
-	_makeKeyPrefixes(service = "", entity = "", version = "1") {
+	_makeKeyPrefixes(service, entity, version = "1") {
 		return {
 			pk: `$${service}_${version}`,
 			sk: `$${entity}`,
 		};
 	}
 
-	_validateIndex(index = "") {
+	_validateIndex(index) {
 		if (!this.model.facets.byIndex[index]) {
 			throw new Error(`Invalid index: ${index}`);
 		}
 	}
 
-	_getCollectionSk(collection = "") {
+	_getCollectionSk(collection) {
 		if (typeof collection && collection.length) {
 			return `$${collection}`.toLowerCase();
 		} else {
@@ -935,10 +1000,10 @@ class Entity {
 		return key.toLowerCase();
 	}
 
-	_findBestIndexKeyMatch(attributes = {}) {
+	_findBestIndexKeyMatch(attributes) {
 		let candidates = this.model.facets.bySlot.map((val, i) => i);
 		let facets = this.model.facets.bySlot;
-		let match = "";
+		let match;
 		let keys = {};
 		for (let i = 0; i < facets.length; i++) {
 			let currentMatches = [];
@@ -972,7 +1037,6 @@ class Entity {
 					break;
 				}
 			} else if (i === 0) {
-				match = "";
 				break;
 			} else {
 				match =
@@ -983,6 +1047,7 @@ class Entity {
 		return {
 			keys: keys[match] || [],
 			index: match || "",
+			shouldScan: match === undefined
 		};
 	}
 
@@ -1023,7 +1088,7 @@ class Entity {
 		}
 	}
 
-	_normalizeIndexes(indexes = {}) {
+	_normalizeIndexes(indexes) {
 		let normalized = {};
 		let indexFieldTranslation = {};
 		let indexHasSortKeys = {};
@@ -1205,7 +1270,7 @@ class Entity {
 		return normalized;
 	}
 
-	_parseModel(model = {}) {
+	_parseModel(model) {
 		let { service, entity, table, version = "1" } = model;
 		let prefixes = this._makeKeyPrefixes(service, entity, version);
 		let {

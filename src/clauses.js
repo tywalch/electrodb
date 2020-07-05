@@ -8,7 +8,7 @@ let clauses = {
 		// 	// todo: look for article/list of all dynamodb query limitations
 		// 	// return state;
 		// },
-		children: ["get", "delete", "update", "query", "put", "scan", "collection"],
+		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch"],
 		
 	},
 	collection: {
@@ -93,6 +93,48 @@ let clauses = {
 			return state;
 		},
 		children: ["params", "go"],
+	},
+	create: {
+		name: "create",
+		action(entity, state, payload = {}) {
+			let record = entity.model.schema.checkCreate({ ...payload });
+			state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
+			state.query.method = MethodTypes.put;
+			state.query.type = QueryTypes.eq;
+			if (state.hasSortKey) {
+				let queryFacets = entity._buildQueryFacets(
+					record,
+					state.query.facets.sk,
+				);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+			}
+			state.query.put.data = Object.assign({}, record);
+			return state;
+		},
+		children: ["params", "go"],
+	},
+	patch: {
+		name: "patch",
+		action(entity, state, facets) {
+			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+			state.query.method = MethodTypes.update;
+			state.query.type = QueryTypes.eq;
+			if (state.hasSortKey) {
+				let queryFacets = entity._buildQueryFacets(
+					facets,
+					state.query.facets.sk,
+				);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+			}
+			return state;
+		},
+		children: ["set"],
 	},
 	update: {
 		name: "update",

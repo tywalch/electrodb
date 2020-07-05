@@ -142,9 +142,9 @@ class FilterFactory {
 			if (existingNeedsParens) {
 				existingExpression = `(${existingExpression})`;
 			}
-			if (newNeedsParens) {
-				newExpression = `(${newExpression})`;
-			}
+			// if (newNeedsParens) {
+			// 	newExpression = `(${newExpression})`;
+			// }
 			return `${existingExpression} AND ${newExpression}`;
 		} else {
 			return newExpression;
@@ -199,7 +199,7 @@ class FilterFactory {
 			filterChildren.push(name);
 			injected[name] = {
 				action: this.buildClause(filter),
-				children: ["params", "go", "filter", ...modelFilters],
+				children: ["params", "go", "page", "filter", ...modelFilters],
 			};
 		}
 		filterChildren.push("filter");
@@ -207,7 +207,7 @@ class FilterFactory {
 			action: (entity, state, fn) => {
 				return this.buildClause(fn)(entity, state);
 			},
-			children: ["params", "go", "filter", ...modelFilters],
+			children: ["params", "go", "page", "filter", ...modelFilters],
 		};
 		for (let parent of filterParents) {
 			injected[parent] = { ...injected[parent] };

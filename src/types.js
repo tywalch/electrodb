@@ -23,6 +23,8 @@ const MethodTypes = {
 	update: "update",
 	delete: "delete",
 	scan: "scan",
+	patch: "patch",
+	create: "create"
 };
 
 const Comparisons = {
