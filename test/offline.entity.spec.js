@@ -1083,6 +1083,19 @@ describe("Entity", () => {
 		let leaseEnd = "123";
 		it("Should match on the primary index", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
+			let params = MallStores.find({id}).params();
+			console.log("params", params);
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk', '#sk1': 'sk1' },
+				ExpressionAttributeValues: {
+					':id1': '123',
+					':pk': '$mallstoredirectory_1#id_123',
+					':sk1': undefined
+				},
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				FilterExpression: '#id = :id1'
+			})
 			expect(keys).to.be.deep.equal([{ name: "id", type: "pk" }]);
 			expect(index).to.be.equal("");
 		});
@@ -1092,6 +1105,8 @@ describe("Entity", () => {
 				building,
 				unit,
 			});
+			let params = MallStores.find({mall, building, unit}).params();
+			console.log("Params2", params);
 			expect(keys).to.be.deep.equal([
 				{ name: "mall", type: "pk" },
 				{ name: "building", type: "sk" },

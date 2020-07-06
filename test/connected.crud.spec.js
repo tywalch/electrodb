@@ -275,7 +275,73 @@ describe("Entity", async () => {
 			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
+		
+		it("Should not create a overwrite existing record", async () => {
+			let id = uuidv4();
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let sector = "A1";
+			let category = "food/coffee";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let building = "BuildingZ";
+			let unit = "G1";
+			let record = {
+				id,
+				mall,
+				store,
+				sector,
+				category,
+				leaseEnd,
+				rent,
+				building,
+				unit
+			};
+			let recordOne = await MallStores.create(record).go();
+			expect(recordOne).to.deep.equal(record);
+			let recordTwo = null;
+			try {
+				recordTwo = await MallStores.create(record).go();
+			} catch(err) {
+				expect(err.message).to.be.equal("The conditional request failed");
+			}
+			expect(recordTwo).to.be.null
+		});
+
+		it("Should only update a record if it already exists", async () => {
+			let id = uuidv4();
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let sector = "A1";
+			let category = "food/coffee";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let building = "BuildingZ";
+			let unit = "G1";
+			let record = {
+				id,
+				mall,
+				store,
+				sector,
+				category,
+				leaseEnd,
+				rent,
+				building,
+				unit
+			};
+			let recordOne = await MallStores.create(record).go();
+			expect(recordOne).to.deep.equal(record);
+			let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go();
+			let patchResultsTwo = null;
+			try {
+				patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
+			} catch(err) {
+				expect(err.message).to.be.equal("The conditional request failed");
+			}
+			expect(patchResultsTwo).to.be.null
+		})
 	});
+
 
 	describe("Delete records", async () => {
 		it("Should create then delete a record", async () => {

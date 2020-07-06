@@ -78,11 +78,14 @@ class Entity {
 			});
 		}
 	}
-
+	
 	collection(collection = "", clauses = {}, facets = {}) {
 		let index = this.model.translations.collections.fromCollectionToIndex[
 			collection
 		];
+		if (index === undefined) {
+			throw new Error(`Invalid collection: ${collection}`);
+		}
 		return this._makeChain(index, clauses, clauses.index).collection(
 			collection,
 			facets,
@@ -92,7 +95,7 @@ class Entity {
 	_validateModel(model) {
 		return validations.model(model);
 	}
-
+	
 	get(facets = {}) {
 		let index = "";
 		return this._makeChain(index, clauses, clauses.index).get(facets);
@@ -149,7 +152,7 @@ class Entity {
 		}
 		return current;
 	}
-
+	/* istanbul ignore next */
 	_makeChain(index = "", clauses, rootClause, options = {}) {
 		let facets = this.model.facets.byIndex[index];
 		let state = {
@@ -271,7 +274,7 @@ class Entity {
 		if (Object.keys(config.page || {}).length) {
 			parameters.ExclusiveStartKey = config.page;
 		}
-		
+
 		return parameters;
 	}
 
@@ -320,7 +323,7 @@ class Entity {
 		}
 		return filter.join(" AND ");
 	}
-
+	/* istanbul ignore next */
 	_params({ keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} }, config = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
@@ -351,6 +354,7 @@ class Entity {
 			case MethodTypes.scan:
 				params = this._makeScanParam(filter);
 				break;
+			/* istanbul ignore next */
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
@@ -369,7 +373,8 @@ class Entity {
 		}
 		return key;
 	}
-
+	
+	/* istanbul ignore next */
 	_makeScanParam(filter = {}) {
 		let indexBase = "";
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
@@ -412,6 +417,7 @@ class Entity {
 		return params;
 	}
 
+	/* istanbul ignore next */
 	_makeUpdateParams({ set } = {}, pk = {}, sk = {}) {
 		let setAttributes = this.model.schema.applyAttributeSetters(set);
 		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
@@ -436,6 +442,7 @@ class Entity {
 		return params;
 	}
 
+	/* istanbul ignore next */
 	_makePutParams({ data } = {}, pk, sk) {
 		let setAttributes = this.model.schema.applyAttributeSetters(data);
 		let { updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
@@ -486,11 +493,8 @@ class Entity {
 		};
 	}
 
-	_expressionAttributeBuilder(
-		item = {},
-		options = {},
-		{ noDuplicateNames } = {},
-	) {
+	/* istanbul ignore next */
+	_expressionAttributeBuilder(item = {}, options = {}, {noDuplicateNames} = {}) {
 		let {
 			require = [],
 			reject = [],
@@ -551,7 +555,8 @@ class Entity {
 		)}`;
 		return expressions;
 	}
-
+	
+	/* istanbul ignore next */
 	_queryParams(chainState = {}, options = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
 			chainState.keys.sk,
@@ -669,14 +674,9 @@ class Entity {
 		}
 		return merged;
 	}
-
-	_makeComparisonQueryParams(
-		index = "",
-		comparison = "",
-		filter = {},
-		pk = {},
-		sk = {},
-	) {
+	
+	/* istanbul ignore next */
+	_makeComparisonQueryParams(index = "", comparison = "", filter = {}, pk = {}, sk = {}) {
 		let operator = Comparisons[comparison];
 		if (!operator) {
 			throw new Error(
@@ -775,7 +775,8 @@ class Entity {
 		}
 		return { indexKey, updatedKeys };
 	}
-
+	
+	/* istanbul ignore next */
 	_getIndexImpact(attributes = {}, included = {}) {
 		let includedFacets = Object.keys(included);
 		let impactedIndexes = {};
@@ -864,7 +865,8 @@ class Entity {
 		);
 		return { ...queryFacets };
 	}
-
+	
+	/* istanbul ignore next */
 	_expectFacets(obj = {}, properties = [], type = "key facets") {
 		let [incompletePk, missing, matching] = this._expectProperties(
 			obj,
@@ -918,7 +920,8 @@ class Entity {
 			return "";
 		}
 	}
-
+	
+	/* istanbul ignore next */
 	_getPrefixes({ collection = "", customFacets = {} } = {}) {
 		/*
 			Collections will prefix the sort key so they can be queried with
@@ -959,7 +962,8 @@ class Entity {
 
 		return keys;
 	}
-
+	
+	/* istanbul ignore next */
 	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
 		this._validateIndex(index);
 		let facets = this.model.facets.byIndex[index];
@@ -981,6 +985,7 @@ class Entity {
 		return { pk, sk };
 	}
 
+	/* istanbul ignore next */
 	_makeKey(prefix = "", facets = [], supplied = {}, { isCustom } = {}) {
 		let key = prefix;
 		for (let i = 0; i < facets.length; i++) {
@@ -1050,7 +1055,8 @@ class Entity {
 			shouldScan: match === undefined
 		};
 	}
-
+	
+	/* istanbul ignore next */
 	_parseComposedKey(key = "") {
 		let facets = {};
 		let names = key.match(/:[A-Z1-9]+/gi);
@@ -1252,7 +1258,7 @@ class Entity {
 			collections: Object.keys(collections),
 		};
 	}
-
+	
 	_normalizeFilters(filters = {}) {
 		let normalized = {};
 		let invalidFilterNames = ["go", "params", "filter"];
