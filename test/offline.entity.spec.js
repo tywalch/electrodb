@@ -1083,6 +1083,18 @@ describe("Entity", () => {
 		let leaseEnd = "123";
 		it("Should match on the primary index", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
+			let params = MallStores.find({id}).params();
+			console.log("params", params);
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk'},
+				ExpressionAttributeValues: {
+					':id1': '123',
+					':pk': '$mallstoredirectory_1#id_123',
+				},
+				KeyConditionExpression: '#pk = :pk',
+				FilterExpression: '#id = :id1'
+			});
 			expect(keys).to.be.deep.equal([{ name: "id", type: "pk" }]);
 			expect(index).to.be.equal("");
 		});
@@ -1091,6 +1103,27 @@ describe("Entity", () => {
 				mall,
 				building,
 				unit,
+			});
+			let params = MallStores.find({mall, building, unit}).params();
+			expect(params).to.be.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: {
+					'#mall': 'mall',
+					'#building': 'buildingId',
+					'#unit': 'unitId',
+					'#pk': 'gsi1pk',
+					'#sk1': 'gsi1sk'
+				},
+				ExpressionAttributeValues: {
+					':mall1': '123',
+					':building1': '123',
+					':unit1': '123',
+					':pk': '$mallstoredirectory_1#mall_123',
+					':sk1': '$mallstores#building_123#unit_123#store_'
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
+				FilterExpression: '#mall = :mall1 AND#building = :building1 AND#unit = :unit1'
 			});
 			expect(keys).to.be.deep.equal([
 				{ name: "mall", type: "pk" },

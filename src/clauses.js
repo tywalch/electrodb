@@ -8,12 +8,13 @@ let clauses = {
 		// 	// todo: look for article/list of all dynamodb query limitations
 		// 	// return state;
 		// },
-		children: ["get", "delete", "update", "query", "put", "scan", "collection"],
+		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch"],
 		
 	},
 	collection: {
 		name: "collection",
-		action(entity, state, collection /* istanbul ignore next */ = "", facets /* istanbul ignore next */ = {}) {
+		/* istanbul ignore next */ 
+		action(entity, state, collection = "", facets /* istanbul ignore next */ = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
 			state.query.collection = collection;
@@ -33,6 +34,7 @@ let clauses = {
 	},
 	get: {
 		name: "get",
+		/* istanbul ignore next */
 		action(entity, state, facets = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			state.query.method = MethodTypes.get;
@@ -53,6 +55,7 @@ let clauses = {
 	},
 	delete: {
 		name: "delete",
+		/* istanbul ignore next */
 		action(entity, state, facets = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			state.query.method = MethodTypes.delete;
@@ -73,7 +76,8 @@ let clauses = {
 	},
 	put: {
 		name: "put",
-		action(entity, state, payload = {}) {
+		/* istanbul ignore next */
+		action(entity, state, payload) {
 			let record = entity.model.schema.checkCreate({ ...payload });
 			state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
 			state.query.method = MethodTypes.put;
@@ -94,9 +98,51 @@ let clauses = {
 		},
 		children: ["params", "go"],
 	},
+	create: {
+		name: "create",
+		action(entity, state, payload) {
+			let record = entity.model.schema.checkCreate({ ...payload });
+			state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
+			state.query.method = MethodTypes.put;
+			state.query.type = QueryTypes.eq;
+			if (state.hasSortKey) {
+				let queryFacets = entity._buildQueryFacets(
+					record,
+					state.query.facets.sk,
+				);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+			}
+			state.query.put.data = Object.assign({}, record);
+			return state;
+		},
+		children: ["params", "go"],
+	},
+	patch: {
+		name: "patch",
+		action(entity, state, facets) {
+			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+			state.query.method = MethodTypes.update;
+			state.query.type = QueryTypes.eq;
+			if (state.hasSortKey) {
+				let queryFacets = entity._buildQueryFacets(
+					facets,
+					state.query.facets.sk,
+				);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+			}
+			return state;
+		},
+		children: ["set"],
+	},
 	update: {
 		name: "update",
-		action(entity, state, facets = {}) {
+		action(entity, state, facets) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			state.query.method = MethodTypes.update;
 			state.query.type = QueryTypes.eq;
@@ -129,16 +175,18 @@ let clauses = {
 	},
 	query: {
 		name: "query",
-		action(entity, state, facets = {}, options = {}) {
+		action(entity, state, facets, options = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
 			state.query.method = MethodTypes.query;
 			state.query.type = QueryTypes.begins;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
+			if (state.query.facets.sk) {
+				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+			}
 			return state;
 		},
 		children: ["between", "gte", "gt", "lte", "lt", "params", "go", "page"],

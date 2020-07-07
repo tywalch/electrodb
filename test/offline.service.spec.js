@@ -508,6 +508,71 @@ describe("Misconfiguration exceptions", () => {
 		database.join(entityOne);
 		expect(() => database.join(entityTwo)).to.throw(`Partition Key Facets provided "prop4" do not match established facets "prop1"`);
 	});
+	it("Should validate that attributes with the same have the same field also listed", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+					field: "abc"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		}
+		let entityTwo = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+					field: "def"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop1", "prop5"],
+					},
+					collection: "collectionA",
+				},
+			}
+		}
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+		database.join(entityOne);
+		expect(() => database.join(entityTwo)).to.throw(`Attribute provided "prop1" with Table Field "def" does not match established Table Field "abc"`);
+	});
 	it("Should validate the PK field matches on all added schemas", () => {
 		let entityOne = {
 			entity: "entityOne",
