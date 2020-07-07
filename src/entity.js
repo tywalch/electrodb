@@ -470,6 +470,7 @@ class Entity {
 		let translate = { ...this.model.translations.keys[index] };
 		let restrict = ["pk"];
 		let keys = { pk };
+		sks = sks.filter(sk => sk !== undefined);
 		for (let i = 0; i < sks.length; i++) {
 			let id = `sk${i + 1}`;
 			keys[id] = sks[i];
@@ -482,14 +483,8 @@ class Entity {
 		});
 
 		return {
-			ExpressionAttributeNames: Object.assign(
-				{},
-				keyExpressions.ExpressionAttributeNames,
-			),
-			ExpressionAttributeValues: Object.assign(
-				{},
-				keyExpressions.ExpressionAttributeValues,
-			),
+			ExpressionAttributeNames: Object.assign({}, keyExpressions.ExpressionAttributeNames),
+			ExpressionAttributeValues: Object.assign({}, keyExpressions.ExpressionAttributeValues),
 		};
 	}
 
@@ -639,22 +634,16 @@ class Entity {
 	}
 
 	_makeBeginsWithQueryParams(index, filter, pk, sk) {
-		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
-			index,
-			pk,
-			sk,
-		);
+		let keyExpressions = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
+		let KeyConditionExpression = "#pk = :pk";
+		if (this.model.lookup.indexHasSortKeys[index]) {
+			KeyConditionExpression = `${KeyConditionExpression} and begins_with(#sk1, :sk1)`;
+		}
 		let params = {
+			KeyConditionExpression,
 			TableName: this.model.table,
-			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
-				keyExpressions.ExpressionAttributeNames,
-			),
-			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
-				keyExpressions.ExpressionAttributeValues,
-			),
-			KeyConditionExpression: `#pk = :pk and begins_with(#sk1, :sk1)`,
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.ExpressionAttributeNames, keyExpressions.ExpressionAttributeNames),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.ExpressionAttributeValues, keyExpressions.ExpressionAttributeValues),
 		};
 		if (index) {
 			params["IndexName"] = index;
