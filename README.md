@@ -10,9 +10,11 @@
 - **Attribute Schema Enforcement**: Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
 - **Easily Compose Hierarchical Access Patterns**: Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
 - **Single Table Entity Segregation**: Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
-- **Simple Sort Key Condition Querying**: Write efficient sort key queries by easily building compose keys.
-- **Simple Filter Composition**: Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
+- **Simplified Sort Key Condition Querying**: Write efficient sort key queries by easily building compose keys.
+- **Simplified Filter Composition**: Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
 - **Easily Query Across Entities**: Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
+- **Automatic Index Selection**: Use `find` method to dynamically and effeciently query based on defined sort key structures. 
+- **Simplified Pagination API** Use `.page()` to easily iterate through multiquery result sets.  
 
 Turn this:
 ```javascript
@@ -50,6 +52,7 @@ Into This:
 Table of Contents
 =================
 - [ElectroDB](#electrodb)
+  
   * [Features](#features)
 - [Table of Contents](#table-of-contents)
 - [Installation](#installation)
@@ -57,8 +60,9 @@ Table of Contents
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
+  
   * [Model](#model)
-    + [Model Properties:](#model-properties-)
+    + [Model Properties:](#model-properties)
     + [Service Properties](#service-properties)
     + [Model/Service Options](#model-service-options)
   * [Attributes](#attributes)
@@ -69,60 +73,65 @@ Table of Contents
   * [Collections](#collections)
   * [Filters](#filters)
     + [Defined on the model](#defined-on-the-model)
-    + [Defined via "Filter" method after query operators](#defined-via--filter--method-after-query-operators)
+    + [Defined via "Filter" method after query operators](#defined-via-filter-method-after-query-operators)
     + [Multiple Filters](#multiple-filters)
 - [Building Queries](#building-queries)
+    
     + [Sort Key Operations](#sort-key-operations)
     + [Using facets to make hierarchical keys](#using-facets-to-make-hierarchical-keys)
-      - [Shopping Mall Stores](#shopping-mall-stores)
+    - [Shopping Mall Stores](#shopping-mall-stores)
   * [Query Chains](#query-chains)
-    + [`Get` Method](#-get--method)
-    + [`Delete` Method](#-delete--method)
-    + [`Put` Record](#-put--record)
-    + [`Update` Record](#-update--record)
-    + [`Scan` Records](#-scan--records)
-    + [`Query` Records](#-query--records)
+    + [`Get` Method](#get-method)
+    + [`Delete` Method](#delete-method)
+    + [`Put` Record](#put-record)
+    + [`Update` Record](#update-record)
+    + [`Scan` Records](#scan-records)
+    + [`Patch` Records](#patch-records)
+    + [`Create` Records](#create-records)
+    + [`Find` Records](#find-records)
+    + [`Query` Records](#query-records)
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
-  * [Execute Query `.go() and .params()`](#execute-query--go---and-params---)
-    + [`.params()`](#-params---)
-    + [`.go()`](#-go---)
+  * [Execute Query `.go(), .params(), .page()`](#execute-query-go-params-page)
+    + [`.params()`](#params)
+    + [`.go()`](#go)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
 - [Examples](#examples)
+  
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
     + [Entities](#entities-1)
     + [`Query` Records](#-query--records-1)
-      - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee--requirement--1---employee-app-requirements-)
-      - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office--requirement--2---employee-app-requirements-)
-      - [Tasks for a given employee](#tasks-for-a-given-employee--requirement--3---employee-app-requirements-)
-      - [Tasks for a given project](#tasks-for-a-given-project--requirement--4---employee-app-requirements-)
-      - [Find office locations](#find-office-locations--requirement--5---employee-app-requirements-)
-      - [Find employee salaries and titles](#find-employee-salaries-and-titles--requirement--6---employee-app-requirements-)
-      - [Find employee birthday/anniversary](#find-employee-birthday-anniversary--requirement--7---employee-app-requirements-)
-      - [Find direct reports](#find-direct-reports--requirement--8---employee-app-requirements-)
+      - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee-requirement-1-employee-app-requirements)
+      - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office-requirement-2-employee-app-requirements)
+      - [Tasks for a given employee](#tasks-for-a-given-employee-requirement-3-employee-app-requirements)
+      - [Tasks for a given project](#tasks-for-a-given-project-requirement-4-employee-app-requirements)
+      - [Find office locations](#find-office-locations-requirement-5-employee-app-requirements)
+      - [Find employee salaries and titles](#find-employee-salaries-and-titles-requirement-6-employee-app-requirements)
+      - [Find employee birthday/anniversary](#find-employee-birthday-anniversary-requirement-7-employee-app-requirements)
+      - [Find direct reports](#find-direct-reports-requirement-8-employee-app-requirements)
   * [Shopping Mall Property Management App](#shopping-mall-property-management-app)
     + [Shopping Mall Requirements](#shopping-mall-requirements)
     + [Access Patterns are accessible on the StoreLocation](#access-patterns-are-accessible-on-the-storelocation)
-    + [`PUT` Record](#-put--record)
-      - [Add a new Store to the Mall](#add-a-new-store-to-the-mall-)
-    + [`UPDATE` Record](#-update--record)
-      - [Change the Store's Lease Date](#change-the-store-s-lease-date-)
-    + [`GET` Record](#-get--record)
+    + [`PUT` Record](#put-record)
+      - [Add a new Store to the Mall](#add-a-new-store-to-the-mall)
+    + [`UPDATE` Record](#update-record)
+      - [Change the Store's Lease Date](#change-the-store-s-lease-date)
+    + [`GET` Record](#get-record)
       - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
-    + [`DELETE` Record](#-delete--record)
+    + [`DELETE` Record](#delete-record)
       - [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
-    + [`Query` Records](#-query--records-2)
-      - [All Stores in a particular mall](#all-stores-in-a-particular-mall---requirement--1---shopping-mall-requirements--)
-      - [All Stores in a particular mall building](#all-stores-in-a-particular-mall-building---requirement--1---shopping-mall-requirements--)
-      - [What store is located in unit "B47"?)](#what-store-is-located-in-unit--b47-----requirement--1---shopping-mall-requirements--)
-      - [Stores by Category at Mall](#stores-by-category-at-mall---requirement--2---shopping-mall-requirements--)
-      - [Stores by upcoming lease](#stores-by-upcoming-lease---requirement--3---shopping-mall-requirements--)
-      - [Stores will renewals for Q4](#stores-will-renewals-for-q4---requirement--3---shopping-mall-requirements--)
-      - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year----requirement--3---shopping-mall-requirements--)
-      - [All Latte Larry's in a particular mall building](#all-latte-larry-s-in-a-particular-mall-building--crazy-for-any-store-except-a-coffee-shop-)
-- [Coming Soon:](#coming-soon-)
+    + [`Query` Records](#query-records-2)
+      - [All Stores in a particular mall](#all-stores-in-a-particular-mall-requirement-1-shopping-mall-requirements)
+      - [All Stores in a particular mall building](#all-stores-in-a-particular-mall-building-requirement-1-shopping-mall-requirements)
+      - [What store is located in unit "B47"?)](#what-store-is-located-in-unit-b47-requirement-1-shopping-mall-requirements-)
+      - [Stores by Category at Mall](#stores-by-category-at-mall-requirement-2-shopping-mall-requirements-)
+      - [Stores by upcoming lease](#stores-by-upcoming-lease-requirement-3-shopping-mall-requirements-)
+      - [Stores will renewals for Q4](#stores-will-renewals-for-q4-requirement)
+      - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year-requirement-3-shopping-mall-requirements-)
+      - [All Latte Larry's in a particular mall building](#all-latte-larry-s-in-a-particular-mall-building--crazy-for-any-store-except-a-coffee-shop)
+- [Coming Soon:](#coming-soon)
 
 
 # Installation    
@@ -951,6 +960,14 @@ await StoreLocations.get({
 	buildingId: "BuildingA1", 
 	unitId: "B47"
 }).go();
+
+// {
+//   Key: {
+//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
+//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
+//   },
+//   TableName: 'StoreDirectory'
+// }
 ```
 ### `Delete` Method
 Provide all facets in an object to the `delete` method to delete a record.
@@ -962,6 +979,14 @@ await StoreLocations.delete({
 	buildingId: "BuildingA1", 
 	unitId: "B47"
 }).go();
+
+// {
+//   Key: {
+//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
+//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
+//   },
+//   TableName: 'StoreDirectory'
+// }
 ```
 
 ### `Put` Record
@@ -973,9 +998,31 @@ let store = {
 	buildingId: "BuildingA1",
 	unitId: "B47",
 	category: "food/coffee",
-	leaseEndDate: "2020-03-22"
-}
+	leaseEndDate: "2020-03-22",
+  rent: "1500.00"
+};
+
 await StoreLocations.put(store).go();
+
+// {
+//   Item: {
+//     mallId: 'EastPointe',
+//     storeId: 'LatteLarrys',
+//     buildingId: 'BuildingA1',
+//     unitId: 'B47',
+//     category: 'food/coffee',
+//     leaseEndDate: '2020-03-22',
+//     rent: '1500.00',
+//     discount: '0.00',
+//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
+//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47',
+//     idx1pk: '$mallstoredirectory_1#mallid_eastpointe',
+//     idx1sk: '$mallstore#buildingid_buildinga1#unitid_b47#storeid_lattelarrys',
+//     idx2pk: '$mallstore#leaseenddate_2020-03-22#storeid_lattelarrys#buildingid_buildinga1#unitid_b47',
+//     __edb_e__: 'MallStore'
+//   },
+//   TableName: 'StoreDirectory'
+// }
 ```
 
 ### `Update` Record
@@ -989,10 +1036,22 @@ let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 let unitId = "B47";
 let category = "food/meal";
+
 await StoreLocations
 	.update({storeId, mallId, buildingId, unitId})
 	.set({category})
 	.go();
+
+// {
+//   UpdateExpression: 'SET #category = :category',
+//   ExpressionAttributeNames: { '#category': 'category' },
+//   ExpressionAttributeValues: { ':category': 'food/meal' },
+//   TableName: 'StoreDirectory',
+//   Key: {
+//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
+//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
+//   }
+// }
 ```
 
 ### `Scan` Records
@@ -1008,6 +1067,131 @@ await StoreLocations.scan
 		${leaseEndDate.between("2020-03", "2020-04")}
 	`)
 	.go();
+
+// {
+//   TableName: 'StoreDirectory',
+//   ExpressionAttributeNames: {
+//     '#category': 'category',
+//     '#leaseEndDate': 'leaseEndDate',
+//     '#pk': 'pk',
+//     '#sk': 'sk'
+//   },
+//   ExpressionAttributeValues: {
+//     ':category1': 'food/coffee',
+//     ':category2': 'spite store',
+//     ':leaseEndDate1': '2020-03',
+//     ':leaseEndDate2': '2020-04',
+//     ':pk': '$mallstoredirectory_1#storeid_',
+//     ':sk': '$mallstore#mallid_'
+//   },
+//   FilterExpression: '(begins_with(#pk, :pk) AND begins_with(#sk, :sk)) AND (#category = :category1 OR #category = :category2) AND (#leaseEndDate between :leaseEndDate1 and :leaseEndDate2)'
+// }
+```
+
+### `Patch` Records
+
+In DynamoDB, `update` operations by default will insert a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not inserted when updating. 
+
+```javascript
+let storeId = "LatteLarrys";
+let mallId = "EastPointe";
+let buildingId = "BuildingA1";
+let unitId = "B47";
+let category = "food/meal";
+
+await StoreLocations
+	.patch({storeId, mallId, buildingId, unitId})
+	.set({category})
+  .go()
+
+// {
+//   UpdateExpression: 'SET #category = :category',
+//   ExpressionAttributeNames: { '#category': 'category' },
+//   ExpressionAttributeValues: { ':category': 'food/meal' },
+//   TableName: 'StoreDirectory',
+//   Key: {
+//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
+//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
+//   },
+//   ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+// }
+```
+
+### `Create` Records
+
+In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwriten when inserting new records into the table. 
+
+```javascript
+let store = {
+	storeId: "LatteLarrys",
+	mallId: "EastPointe",
+	buildingId: "BuildingA1",
+	unitId: "B47",
+	category: "food/coffee",
+	leaseEndDate: "2020-03-22",
+  rent: "1500.00"
+};
+
+await StoreLocations.create(store).go();
+
+// {
+//   Item: {
+//     mallId: 'EastPointe',
+//     storeId: 'LatteLarrys',
+//     buildingId: 'BuildingA1',
+//     unitId: 'B47',
+//     category: 'food/coffee',
+//     leaseEndDate: '2020-03-22',
+//     rent: '1500.00',
+//     discount: '0.00',
+//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
+//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47',
+//     idx1pk: '$mallstoredirectory_1#mallid_eastpointe',
+//     idx1sk: '$mallstore#buildingid_buildinga1#unitid_b47#storeid_lattelarrys',
+//     idx2pk: '$mallstore#leaseenddate_2020-03-22#storeid_lattelarrys#buildingid_buildinga1#unitid_b47',
+//     __edb_e__: 'MallStore'
+//   },
+//   TableName: 'StoreDirectory',
+//   ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+// }
+```
+
+### `Find` Records
+
+DynamoDB offers three methods to find records: `get`, `query`, and `scan`. In **_ElectroDB_**, there is a fourth type: `find`. Unlike `get` and `query`, the `find` method does not require you to provide keys, but under the covers it will leverage the attributes provided to find the best index to query on. Provide the `find` method will all properties known to match a record and **_ElectroDB_** will generate the most performant query it can to locate the results. This can be helpful with highly dynamic querying needs. If an index cannot be satisfied with the attributes provided, `scan` will be used as a last resort.
+
+```javascript
+let match = await StoreLocations.find({
+	mallId: "EastPointe",
+	buildingId: "BuildingA1",
+	leaseEndDate: "2020-03-22",
+  rent: "1500.00"
+}).go()
+
+// {
+//   KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+//   TableName: 'StoreDirectory',
+//   ExpressionAttributeNames: {
+//     '#mallId': 'mallId',
+//     '#buildingId': 'buildingId',
+//     '#leaseEndDate': 'leaseEndDate',
+//     '#storeId': 'storeId',
+//     '#rent': 'rent',
+//     '#pk': 'idx2pk',
+//     '#sk1': 'idx2pk'
+//   },
+//   ExpressionAttributeValues: {
+//     ':mallId1': 'EastPointe',
+//     ':buildingId1': 'BuildingA1',
+//     ':leaseEndDate1': '2020-03-22',
+//     ':storeId1': "LatteLarry's",
+//     ':rent1': '1500.00',
+//     ':pk': '$mallstoredirectory_1#mallid_eastpointe',
+//     ':sk1': "$mallstore#leaseenddate_2020-03-22#storeid_lattelarry's#buildingid_buildinga1#unitid_"
+//   },
+//   IndexName: 'idx2',
+//   FilterExpression: '#mallId = :mallId1 AND#buildingId = :buildingId1 AND#leaseEndDate = :leaseEndDate1 AND#storeId = :storeId1 AND#rent = :rent1'
+// }
 ```
 
 ### `Query` Records
@@ -1048,7 +1232,7 @@ After invoking the **Access Pattern** with the required **Partition Key** **Face
 
 ## Collection Chains
 Collections allow you to query across Entities. To use them you need to `join` your Models onto a `Service` instance.
-  
+
 > Using the TaskApp Models defined in [Models](#model), these models share a `collection` called `assignments` on the index `gsi3pk-gsi3sk-index`
 ```javascript
 let TaskApp =  new Service({
@@ -1098,7 +1282,7 @@ TaskApp.collections
 ```
 
 
-## Execute Query `.go() and .params()` 
+## Execute Query `.go(), .params(), .page()` 
 Lastly, all query chains end with either a `.go()` or a `.params()` method invocation. These will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
@@ -1151,7 +1335,56 @@ let stores  =  MallStores.query
 
 ```
 
+### `.page()`
+
+The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. The first element is the "page", the `ExclusiveStartKey` as returned directly from DynamoDB. The second element is the query results. When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. 
+
+> For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
+
+```javascript
+let [page, stores] = await MallStores.query
+				.leases({ mallId })
+				.page();
+
+let [pageTwo, moreStores] = await MallStores.query
+				.leases({ mallId })
+				.page(page, {});
+
+// page:
+// { 
+//   pk: '$bugbeater_1#sector_49a6a7df-a10c-4ad7-9aae-9bed4e2e6cbb',
+//   sk: '$test_entity#id_55f21028-b2b3-4eae-b248-a2407a2bfdc6'
+// }
+
+// stores
+// [{
+//   mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
+//   leaseEnd: '2020-01-20',
+//   sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
+//   store: 'MNO',
+//   unit: 'B5',
+//   id: 'e0705325-d735-4fe4-906e-74091a551a04',
+//   building: 'BuildingE',
+//   category: 'food/coffee',
+//   rent: '0.00'
+// },
+// {
+//   mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
+//   leaseEnd: '2020-01-20',
+//   sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
+//   store: 'ZYX',
+//   unit: 'B9',
+//   id: 'f201a1d3-2126-46a2-aec9-758ade8ab2ab',
+//   building: 'BuildingI',
+//   category: 'food/coffee',
+//   rent: '0.00'
+// }]
+```
+
+
+
 ## Query Examples
+
 Below are _all_ chain possibilities available, given the `MallStore` model. 
 
 ```javascript
@@ -1841,6 +2074,5 @@ let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
 # Coming Soon:
-- `.page()` finish method (like `.params()` and `.go()`) to allow for easier pagination of results
 - Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
