@@ -338,6 +338,7 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
+			case MethodTypes.patch: 
 				params = this._makeUpdateParams(
 					update,
 					keys.pk,
