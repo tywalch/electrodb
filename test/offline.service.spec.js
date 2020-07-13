@@ -700,5 +700,121 @@ describe("Misconfiguration exceptions", () => {
 		database.join(entityOne);
 		expect(() => database.join(entityTwo)).to.throw(`Attribute provided "prop1" with Table Field "notProp1" does not match established Table Field "prop1"`);
 	});
+	it("Should build the correct pk and sk when the table's pk/sk are part of a collection", async () => {
+		let modelOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string",
+				},
+				prop3: {
+					type: "string",
+				},
+				prop4: {
+					type: "string",
+				},
+				prop5: {
+					type: "string",
+				},
+				prop6: {
+					type: "string",
+				},
+				prop7: {
+					type: "string",
+				},
+				prop8: {
+					type: "string",
+				},
+				prop9: {
+					type: "string",
+				},
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				},
+				index2: {
+					pk: {
+						field: "gsi1pk",
+						facets: ["prop3"],
+					},
+					sk: {
+						field: "gsi1sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionB",
+					index: "gsi1pk-gsi1sk-index",
+				},
+				index3: {
+					pk: {
+						field: "gsi2pk",
+						facets: ["prop5"],
+					},
+					sk: {
+						field: "gsi2sk",
+						facets: ["prop6", "prop7"],
+					},
+					collection: "collectionC",
+					index: "gsi2pk-gsi2sk-index",
+				},
+				index4: {
+					pk: {
+						field: "gsi3pk",
+						facets: ["prop7"],
+					},
+					sk: {
+						field: "gsi3sk",
+						facets: ["prop8", "prop9"],
+					},
+					collection: "collectionD",
+					index: "gsi3pk-gsi3sk-index",
+				},
+			},
+		};
+		let database = new Service({version: "1", table: "electro", service: "electrotest"});
+		database.join(modelOne);
+
+		let prop1 = "prop1";
+		let prop2 = "prop2";
+		let prop3 = "prop3";
+		let prop4 = "prop4";
+		let prop5 = "prop5";
+		let prop6 = "prop6";
+		let prop7 = "prop7";
+		let prop8 = "prop8";
+		let prop9 = "prop9";
+
+		let query = database.entities.entityOne.query.index1({prop1, prop2, prop3}).params();
+		let scan = database.entities.entityOne.scan.params();
+		let get = database.entities.entityOne.get({prop1, prop2, prop3}).params();
+		let destroy = database.entities.entityOne.delete({prop1, prop2, prop3}).params();
+		let update = database.entities.entityOne.update({prop1, prop2, prop3}).set({prop4, prop5, prop6, prop7, prop8, prop9}).params();
+		
+		function testKeys(pk, sk) {
+			if (!pk.startsWith("$electrotest_1#prop1_")) {
+				throw new Error("Invalid PK");
+			}
+			if (!sk.startsWith("$collectiona#entityone#prop2")) {
+				throw new Error("Invalid SK");
+			}
+		}
+
+		testKeys(query.ExpressionAttributeValues[":pk"], query.ExpressionAttributeValues[":sk1"]);
+		testKeys(scan.ExpressionAttributeValues[":pk"], scan.ExpressionAttributeValues[":sk"]);
+		testKeys(get.Key.pk, get.Key.sk);
+		testKeys(destroy.Key.pk, destroy.Key.sk);
+		testKeys(update.Key.pk, update.Key.sk);
+	});
 })
 // database.find.collectionA({}).go();

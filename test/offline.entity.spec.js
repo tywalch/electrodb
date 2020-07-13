@@ -1084,7 +1084,6 @@ describe("Entity", () => {
 		it("Should match on the primary index", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
 			let params = MallStores.find({id}).params();
-			console.log("params", params);
 			expect(params).to.be.deep.equal({
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk'},

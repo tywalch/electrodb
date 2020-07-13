@@ -338,12 +338,6 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
-				params = this._makeUpdateParams(
-					update,
-					keys.pk,
-					...conlidatedQueryFacets,
-				);
-				break;
 			case MethodTypes.patch: 
 				params = this._makeUpdateParams(
 					update,
@@ -379,11 +373,13 @@ class Entity {
 		let indexBase = "";
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		let facets = this.model.facets.byIndex[indexBase];
+		let {pk, sk} = this._makeIndexKeys(indexBase);
 		let keys = this._makeParameterKey(
 			indexBase,
-			this._makeKey(this.model.prefixes.pk, facets.pk),
-			this._makeKey(this.model.prefixes.sk, facets.sk),
+			pk,
+			...sk
 		);
+
 		let keyExpressions = this._expressionAttributeBuilder(keys);
 		let params = {
 			TableName: this.model.table,
@@ -410,10 +406,8 @@ class Entity {
 		let index = "";
 		let keys = this._makeIndexKeys(index, partition, sort);
 		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
-		let params = {
-			Key,
-			TableName: this.model.table,
-		};
+		let TableName = this.model.table;
+		let params = {Key, TableName};
 		return params;
 	}
 
@@ -955,6 +949,9 @@ class Entity {
 	/* istanbul ignore next */
 	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
 		this._validateIndex(index);
+		if (!skFacets.length) {
+			skFacets.push({});
+		}
 		let facets = this.model.facets.byIndex[index];
 		let prefixes = this._getPrefixes(facets);
 		let pk = this._makeKey(
