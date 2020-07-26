@@ -905,7 +905,7 @@ class Entity {
 	}
 	
 	/* istanbul ignore next */
-	_getPrefixes({ collection = "", customFacets = {} } = {}) {
+	_getPrefixes({ collection = "", customFacets = {}, sk } = {}) {
 		/*
 			Collections will prefix the sort key so they can be queried with
 			a "begins_with" operator when crossing entities. It is also possible
@@ -933,6 +933,10 @@ class Entity {
 			keys.sk.prefix = this.model.prefixes.sk;
 		}
 
+		if (sk === undefined) {
+			keys.pk.prefix += keys.sk.prefix;	
+		}
+
 		if (customFacets.pk) {
 			keys.pk.prefix = "";
 			keys.pk.isCustom = customFacets.pk;
@@ -954,6 +958,7 @@ class Entity {
 		}
 		let facets = this.model.facets.byIndex[index];
 		let prefixes = this._getPrefixes(facets);
+		// let sk = [];
 		let pk = this._makeKey(
 			prefixes.pk.prefix,
 			facets.pk,
@@ -1121,6 +1126,9 @@ class Entity {
 			seenIndexes[indexName] = indexName;
 			let hasSk = !!index.sk;
 			let inCollection = !!index.collection;
+			if (!hasSk && inCollection) {
+				throw new Error(`Invalid index definition: Access pattern, ${accessPattern} ${indexName || "(PRIMARY INDEX)"}, contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
+			}
 			let collection = index.collection || "";
 			let customFacets = {
 				pk: false,

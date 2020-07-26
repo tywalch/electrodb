@@ -289,6 +289,38 @@ describe("Entity", () => {
 				MallStores.update({ id }).set({ rent, category, mall }),
 			).to.not.throw();
 		});
+		it("Should prevent an index without an SK to have a `collection` property defined", () => {
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					}
+				},
+				filters: {},
+				indexes: {
+					store: {
+						collection: "abcdef",
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						}
+					}
+				}
+			};
+			
+			let error = "Invalid index definition: Access pattern, store (PRIMARY INDEX), contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.";
+			expect(() => new Entity(schema)).to.throw(error);
+		})
 		it("Should identify impacted indexes from attributes", () => {
 			let id = uuidV4();
 			let rent = "0.00";
@@ -446,7 +478,7 @@ describe("Entity", () => {
 					"#store": "storeId"
 				},
 				"ExpressionAttributeValues": {
-					":pk": "$mallstoredirectory_1#id_",
+					":pk": "$mallstoredirectory_1$mallstores#id_",
 					":store1": "Starblix"
 				},
 				"FilterExpression": "(begins_with(#pk, :pk) AND #store = :store1",
@@ -472,13 +504,13 @@ describe("Entity", () => {
 			let get = MallStores.get({ id }).params();
 			expect(get).to.be.deep.equal({
 				TableName: "StoreDirectory",
-				Key: { pk: `$mallstoredirectory_1#id_${id}` },
+				Key: { pk: `$mallstoredirectory_1$mallstores#id_${id}` },
 			});
 
 			let del = MallStores.delete({ id }).params();
 			expect(del).to.be.deep.equal({
 				TableName: "StoreDirectory",
-				Key: { pk: `$mallstoredirectory_1#id_${id}` },
+				Key: { pk: `$mallstoredirectory_1$mallstores#id_${id}` },
 			});
 
 			let update = MallStores.update({ id })
@@ -507,7 +539,7 @@ describe("Entity", () => {
 				},
 				TableName: "StoreDirectory",
 				Key: {
-					pk: `$mallstoredirectory_1#id_${id}`,
+					pk: `$mallstoredirectory_1$mallstores#id_${id}`,
 				},
 			});
 
@@ -532,7 +564,7 @@ describe("Entity", () => {
 					category,
 					leaseEnd,
 					rent,
-					pk: `$mallstoredirectory_1#id_${put.Item.storeLocationId}`,
+					pk: `$mallstoredirectory_1$mallstores#id_${put.Item.storeLocationId}`,
 					gsi1pk: `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					gsi1sk: `$MallStores#building_${building}#unit_${unit}#store_${store}`.toLowerCase(),
 					gsi2pk: `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
@@ -747,6 +779,166 @@ describe("Entity", () => {
 					"$MallStores#category_coffee#building_BuildingA#unit_".toLowerCase(),
 				);
 		});
+		it("Should overload a PK with Entity details for entity scoping when an index lacks an SK", () => {
+			let MallStores = new Entity(schema);
+			let id = "12345"
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let building = "BuildingA";
+			let category = "food/coffee";
+			let unit = "B54";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let getParams = MallStores.get({id}).params();
+			let updateParams = MallStores.update({id}).set({rent}).params();
+			let patchParams = MallStores.patch({id}).set({rent}).params();
+			let putParams = MallStores.put({id, mall, store, building, unit, category, leaseEnd, rent}).params();
+			let createParams = MallStores.create({id, mall, store, building, unit, category, leaseEnd, rent}).params();
+			let scanParams = MallStores.scan.filter(attr => attr.id.eq(id)).params();
+			let queryParams = MallStores.query.store({id}).params();
+			let findParams = MallStores.find({id}).params();
+			const PK = "$mallstoredirectory_1$mallstores#id_12345";
+			expect(getParams.Key.pk).to.equal(PK);
+			expect(getParams.Key.sk).to.be.undefined;
+			expect(updateParams.Key.pk).to.equal(PK);
+			expect(updateParams.Key.sk).to.be.undefined;
+			expect(patchParams.Key.pk).to.equal(PK);
+			expect(patchParams.Key.sk).to.be.undefined;
+			expect(putParams.Item.pk).to.equal(PK);
+			expect(putParams.Item.sk).to.be.undefined;
+			expect(createParams.Item.pk).to.equal(PK);
+			expect(createParams.Item.sk).to.be.undefined;
+			expect(queryParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(queryParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
+			expect(scanParams.ExpressionAttributeValues[":pk"]).to.equal(PK.replace(id, ""));
+			expect(scanParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
+			expect(findParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(findParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
+		});
+		it("Should create the correct key structure when a table has a PK and an SK", () => {
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					store: {
+						type: "string",
+						required: true,
+						field: "storeId",
+					},
+					building: {
+						type: "string",
+						required: true,
+						field: "buildingId",
+					},
+					unit: {
+						type: "string",
+						required: true,
+						field: "unitId",
+					},
+					category: {
+						type: [
+							"food/coffee",
+							"food/meal",
+							"clothing",
+							"electronics",
+							"department",
+							"misc",
+						],
+						required: true,
+					},
+					leaseEnd: {
+						type: "string",
+						required: true,
+					},
+					rent: {
+						type: "string",
+						required: false,
+						default: "0.00",
+					},
+					adjustments: {
+						type: "string",
+						required: false,
+					},
+				},
+				filters: {},
+				indexes: {
+					store: {
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["mall"]
+						}
+					},
+					units: {
+						index: "gsi1pk-gsi1sk-index",
+						pk: {
+							field: "gsi1pk",
+							facets: ["mall"],
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["building", "unit", "store"],
+						},
+					}
+				},
+			};
+			
+			let MallStores = new Entity(schema);
+			let id = "12345"
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let building = "BuildingA";
+			let category = "food/coffee";
+			let unit = "B54";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let getParams = MallStores.get({id, mall}).params();
+			let updateParams = MallStores.update({id, mall}).set({rent}).params();
+			let patchParams = MallStores.patch({id, mall}).set({rent}).params();
+			let putParams = MallStores.put({id, mall, store, building, unit, category, leaseEnd, rent}).params();
+			let createParams = MallStores.create({id, mall, store, building, unit, category, leaseEnd, rent}).params();
+			let scanParams = MallStores.scan.filter(attr => attr.id.eq(id)).params();
+			let queryParams = MallStores.query.store({id, mall}).params();
+			let findParams = MallStores.find({id, mall}).params();
+			let partialQueryParams = MallStores.query.store({id}).params();
+			let partialFindParams = MallStores.find({id}).params();
+			const PK = "$mallstoredirectory_1#id_12345";
+			const SK = "$mallstores#mall_eastpointe";
+			expect(getParams.Key.pk).to.equal(PK);
+			expect(getParams.Key.sk).to.equal(SK);
+			expect(updateParams.Key.pk).to.equal(PK);
+			expect(updateParams.Key.sk).to.equal(SK);
+			expect(patchParams.Key.pk).to.equal(PK);
+			expect(patchParams.Key.sk).to.equal(SK);
+			expect(putParams.Item.pk).to.equal(PK);
+			expect(putParams.Item.sk).to.equal(SK);
+			expect(createParams.Item.pk).to.equal(PK);
+			expect(createParams.Item.sk).to.equal(SK);
+			expect(queryParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(queryParams.ExpressionAttributeValues[":sk1"]).to.equal(SK);
+			expect(scanParams.ExpressionAttributeValues[":pk"]).to.equal(PK.replace(id.toLowerCase(), ""));
+			expect(scanParams.ExpressionAttributeValues[":sk"]).to.equal(SK.replace(mall.toLowerCase(), ""))
+			expect(findParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(findParams.ExpressionAttributeValues[":sk1"]).to.equal(SK);
+			expect(partialQueryParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(partialQueryParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
+			expect(partialFindParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(partialFindParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
+		});
 		it("Should return the approprate pk and multiple sks when given multiple", () => {
 			let index = schema.indexes.shops.index;
 			let { pk, sk } = MallStores._makeIndexKeys(
@@ -829,6 +1021,220 @@ describe("Entity", () => {
 				TableName: "StoreDirectory",
 			});
 		});
+		it("Create operation should include correct conditions to prevent overwriting existing record", () => {
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					store: {
+						type: "string",
+						required: true,
+						field: "storeId",
+					},
+					building: {
+						type: "string",
+						required: true,
+						field: "buildingId",
+					},
+					unit: {
+						type: "string",
+						required: true,
+						field: "unitId",
+					},
+					category: {
+						type: [
+							"food/coffee",
+							"food/meal",
+							"clothing",
+							"electronics",
+							"department",
+							"misc",
+						],
+						required: true,
+					},
+					leaseEnd: {
+						type: "string",
+						required: true,
+					},
+					rent: {
+						type: "string",
+						required: false,
+						default: "0.00",
+					},
+					adjustments: {
+						type: "string",
+						required: false,
+					},
+				},
+				filters: {},
+				indexes: {
+					store: {
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["mall"]
+						}
+					},
+					units: {
+						index: "gsi1pk-gsi1sk-index",
+						pk: {
+							field: "gsi1pk",
+							facets: ["mall"],
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["building", "unit", "store"],
+						},
+					}
+				},
+			};
+			let MallStores = new Entity(schema);
+			let id = "12345";
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let building = "BuildingA";
+			let category = "food/coffee";
+			let unit = "B54";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let createParams = MallStores.create({id, mall, store, building, unit, category, leaseEnd, rent}).params();
+			expect(createParams).to.deep.equal({
+				Item: {
+					id: '12345',
+					mall: 'EastPointe',
+					storeId: 'LatteLarrys',
+					buildingId: 'BuildingA',
+					unitId: 'B54',
+					category: 'food/coffee',
+					leaseEnd: '2020-01-20',
+					rent: '0.00',
+					pk: '$mallstoredirectory_1#id_12345',
+					sk: '$mallstores#mall_eastpointe',
+					gsi1pk: '$mallstoredirectory_1#mall_eastpointe',
+					gsi1sk: '$mallstores#building_buildinga#unit_b54#store_lattelarrys',
+					__edb_e__: 'MallStores'
+				},
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+			});
+		})
+		it("Patch operation should include correct conditions to prevent insert record when trying to update existing", () => {
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					store: {
+						type: "string",
+						required: true,
+						field: "storeId",
+					},
+					building: {
+						type: "string",
+						required: true,
+						field: "buildingId",
+					},
+					unit: {
+						type: "string",
+						required: true,
+						field: "unitId",
+					},
+					category: {
+						type: [
+							"food/coffee",
+							"food/meal",
+							"clothing",
+							"electronics",
+							"department",
+							"misc",
+						],
+						required: true,
+					},
+					leaseEnd: {
+						type: "string",
+						required: true,
+					},
+					rent: {
+						type: "string",
+						required: false,
+						default: "0.00",
+					},
+					adjustments: {
+						type: "string",
+						required: false,
+					},
+				},
+				filters: {},
+				indexes: {
+					store: {
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["mall"]
+						}
+					},
+					units: {
+						index: "gsi1pk-gsi1sk-index",
+						pk: {
+							field: "gsi1pk",
+							facets: ["mall"],
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["building", "unit", "store"],
+						},
+					}
+				},
+			};
+			let MallStores = new Entity(schema);
+			let id = "12345";
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let building = "BuildingA";
+			let category = "food/coffee";
+			let unit = "B54";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let patchParams = MallStores.patch({id, mall}).set({rent}).params();
+			expect(patchParams).to.deep.equal({
+				UpdateExpression: 'SET #rent = :rent',
+				ExpressionAttributeNames: { '#rent': 'rent' },
+				ExpressionAttributeValues: { ':rent': '0.00' },
+				TableName: 'StoreDirectory',
+				Key: {
+					pk: '$mallstoredirectory_1#id_12345',
+					sk: '$mallstores#mall_eastpointe'
+				},
+				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+			})
+		})
 
 		/* This test was removed because facet templates was refactored to remove all electrodb opinions. */
 		//
@@ -1089,7 +1495,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk'},
 				ExpressionAttributeValues: {
 					':id1': '123',
-					':pk': '$mallstoredirectory_1#id_123',
+					':pk': '$mallstoredirectory_1$mallstores#id_123',
 				},
 				KeyConditionExpression: '#pk = :pk',
 				FilterExpression: '#id = :id1'
