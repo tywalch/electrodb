@@ -13,7 +13,7 @@ let v = new Validator();
 
 const Attribute = {
 	id: "/Attribute",
-	type: "object",
+	type: ["object", "string", "array"],
 	required: ["type"],
 	properties: {
 		type: {

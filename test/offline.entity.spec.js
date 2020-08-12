@@ -1437,6 +1437,93 @@ describe("Entity", () => {
 				`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: dbsfhdfhsdshfshf`,
 			);
 		});
+		it("Should accept attributes with string values and interpret them as the attribute's `type`", () => {
+			const tests = [
+				{
+					success: true,
+					output: {
+						types: {
+							prop1: "string",
+							prop2: "number",
+							prop3: "boolean",
+							prop4: "enum"
+						},
+						enumArray: {
+							prop4: ["val1", "val2", "val3"]
+						}
+					},
+					input: {
+						model: {
+							service: "MallStoreDirectory",
+							entity: "MallStores",
+							table: "StoreDirectory",
+							version: "1",
+							attributes: {
+								prop1: "string",
+								prop2: "number",
+								prop3: "boolean",
+								prop4: ["val1", "val2", "val3"]
+							},
+							indexes: {
+								record: {
+									pk: {
+										field: "pk",
+										facets: ["prop1"],
+									},
+									sk: {
+										field: "sk",
+										facets: ["prop2"],
+									},
+								},
+							},
+						}
+					}
+				},{
+					success: false,
+					output: {
+						err: `Invalid "type" property for attribute: "prop1". Acceptable types include string, number, boolean, enum`
+					},
+					input: {
+						model: {
+							service: "MallStoreDirectory",
+							entity: "MallStores",
+							table: "StoreDirectory",
+							version: "1",
+							attributes: {
+								prop1: "invalid_value",
+								prop2: "number",
+								prop3: "boolean"
+							},
+							indexes: {
+								record: {
+									pk: {
+										field: "pk",
+										facets: ["prop1"],
+									},
+									sk: {
+										field: "sk",
+										facets: ["prop2"],
+									},
+								},
+							},
+						}
+					}
+				}
+			]
+			
+			for (let test of tests) {
+				if (test.success) {
+					let entity = new Entity(test.input.model);
+					expect(entity.model.schema.attributes.prop1.type).to.equal(test.output.types.prop1)
+					expect(entity.model.schema.attributes.prop2.type).to.equal(test.output.types.prop2)
+					expect(entity.model.schema.attributes.prop3.type).to.equal(test.output.types.prop3)
+					expect(entity.model.schema.attributes.prop4.type).to.equal(test.output.types.prop4)
+					expect(entity.model.schema.attributes.prop4.enumArray).to.deep.equal(test.output.enumArray.prop4);
+				} else {
+					expect(() => new Entity(test.input.model)).to.throw(test.output.err)
+				}
+			}
+		});
 		it("Should throw when defined facets are not in attributes: facet template and facet array", () => {
 			const schema = {
 				service: "MallStoreDirectory",

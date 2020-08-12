@@ -205,6 +205,11 @@ class Schema {
 
 		for (let name in attributes) {
 			let attribute = attributes[name];
+			if (typeof attribute === "string" || Array.isArray(attribute)) {
+				attribute = {
+					type: attribute
+				};
+			}
 			if (facets.fields.includes(name)) {
 				continue;
 			}
