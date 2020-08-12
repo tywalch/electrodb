@@ -1,4 +1,3 @@
-
 # ElectroDB  
 
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb.png?raw=true)
@@ -49,20 +48,16 @@ Into This:
   "FilterExpression": "(#rent between :rent1 and :rent2) AND #discount <= :discount1"
 }
 ```
-Table of Contents
-=================
+
 - [ElectroDB](#electrodb)
-  
   * [Features](#features)
-- [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
-  
   * [Model](#model)
-    + [Model Properties:](#model-properties)
+    + [Model Properties:](#model-properties-)
     + [Service Properties](#service-properties)
     + [Model/Service Options](#model-service-options)
   * [Attributes](#attributes)
@@ -73,66 +68,64 @@ Table of Contents
   * [Collections](#collections)
   * [Filters](#filters)
     + [Defined on the model](#defined-on-the-model)
-    + [Defined via "Filter" method after query operators](#defined-via-filter-method-after-query-operators)
+    + [Defined via "Filter" method after query operators](#defined-via--filter--method-after-query-operators)
     + [Multiple Filters](#multiple-filters)
 - [Building Queries](#building-queries)
-    
     + [Sort Key Operations](#sort-key-operations)
     + [Using facets to make hierarchical keys](#using-facets-to-make-hierarchical-keys)
-    - [Shopping Mall Stores](#shopping-mall-stores)
+      - [Shopping Mall Stores](#shopping-mall-stores)
   * [Query Chains](#query-chains)
-    + [`Get` Method](#get-method)
-    + [`Delete` Method](#delete-method)
-    + [`Put` Record](#put-record)
-    + [`Update` Record](#update-record)
-    + [`Scan` Records](#scan-records)
-    + [`Patch` Records](#patch-records)
-    + [`Create` Records](#create-records)
-    + [`Find` Records](#find-records)
-    + [`Query` Records](#query-records)
+    + [Get Method](#get-method)
+    + [Delete Method](#delete-method)
+    + [Put Record](#put-record)
+    + [Update Record](#update-record)
+    + [Scan Records](#scan-records)
+    + [Patch Records](#patch-records)
+    + [Create Records](#create-records)
+    + [Find Records](#find-records)
+    + [`Query` Records](#-query--records)
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
-  * [Execute Query `.go(), .params(), .page()`](#execute-query-go-params-page)
-    + [`.params()`](#params)
-    + [`.go()`](#go)
+  * [Execute Query .go(), .params(), .page()](#execute-query-go----params----page--)
+    + [`.params()`](#-params---)
+    + [`.go()`](#-go---)
+    + [`.page()`](#-page---)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
 - [Examples](#examples)
-  
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
     + [Entities](#entities-1)
     + [`Query` Records](#-query--records-1)
-      - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee-requirement-1-employee-app-requirements)
-      - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office-requirement-2-employee-app-requirements)
-      - [Tasks for a given employee](#tasks-for-a-given-employee-requirement-3-employee-app-requirements)
-      - [Tasks for a given project](#tasks-for-a-given-project-requirement-4-employee-app-requirements)
-      - [Find office locations](#find-office-locations-requirement-5-employee-app-requirements)
-      - [Find employee salaries and titles](#find-employee-salaries-and-titles-requirement-6-employee-app-requirements)
-      - [Find employee birthday/anniversary](#find-employee-birthday-anniversary-requirement-7-employee-app-requirements)
-      - [Find direct reports](#find-direct-reports-requirement-8-employee-app-requirements)
+      - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee)
+      - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office)
+      - [Tasks for a given employee](#tasks-for-a-given-employee)
+      - [Tasks for a given project](#tasks-for-a-given-project)
+      - [Find office locations](#find-office-locations)
+      - [Find employee salaries and titles](#find-employee-salaries-and-titles)
+      - [Find employee birthday/anniversary](#find-employee-birthday-anniversary)
+      - [Find direct reports](#find-direct-reports)
   * [Shopping Mall Property Management App](#shopping-mall-property-management-app)
     + [Shopping Mall Requirements](#shopping-mall-requirements)
     + [Access Patterns are accessible on the StoreLocation](#access-patterns-are-accessible-on-the-storelocation)
-    + [`PUT` Record](#put-record)
-      - [Add a new Store to the Mall](#add-a-new-store-to-the-mall)
-    + [`UPDATE` Record](#update-record)
-      - [Change the Store's Lease Date](#change-the-store-s-lease-date)
-    + [`GET` Record](#get-record)
+    + [PUT Record](#put-record)
+      - [Add a new Store to the Mall:](#add-a-new-store-to-the-mall-)
+    + [UPDATE Record](#update-record)
+      - [Change the Store's Lease Date:](#change-the-store-s-lease-date-)
+    + [GET Record](#get-record)
       - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
-    + [`DELETE` Record](#delete-record)
+    + [DELETE Record](#delete-record)
       - [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
-    + [`Query` Records](#query-records-2)
-      - [All Stores in a particular mall](#all-stores-in-a-particular-mall-requirement-1-shopping-mall-requirements)
-      - [All Stores in a particular mall building](#all-stores-in-a-particular-mall-building-requirement-1-shopping-mall-requirements)
-      - [What store is located in unit "B47"?)](#what-store-is-located-in-unit-b47-requirement-1-shopping-mall-requirements-)
-      - [Stores by Category at Mall](#stores-by-category-at-mall-requirement-2-shopping-mall-requirements-)
-      - [Stores by upcoming lease](#stores-by-upcoming-lease-requirement-3-shopping-mall-requirements-)
-      - [Stores will renewals for Q4](#stores-will-renewals-for-q4-requirement)
-      - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year-requirement-3-shopping-mall-requirements-)
-      - [All Latte Larry's in a particular mall building](#all-latte-larry-s-in-a-particular-mall-building--crazy-for-any-store-except-a-coffee-shop)
-- [Coming Soon:](#coming-soon)
-
+    + [Query Records](#query-records)
+      - [All Stores in a particular mall](#all-stores-in-a-particular-mall)
+      - [All Stores in a particular mall building](#all-stores-in-a-particular-mall-building)
+      - [What store is located in unit "B47"?](#what-store-is-located-in-unit--b47--)
+      - [Stores by Category at Mall](#stores-by-category-at-mall)
+      - [Stores by upcoming lease](#stores-by-upcoming-lease)
+      - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
+      - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
+      - [All Latte Larry's in a particular mall building](#all-latte-larry-s-in-a-particular-mall-building)
+- [Coming Soon:](#coming-soon-)
 
 # Installation    
 
@@ -170,11 +163,10 @@ const {Entity} = require("electrodb");
 # Services
 In ***ElectroDB*** a `Service` represents a collection of Entities and also allows you to build queries span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries `join` multiple Entities.
 
-Require or import `Service` from `electrodb`:    
+Require `electrodb`:    
 ```javascript  
 const {Service} = require("electrodb");
 ```
-
 
 ## Model 
 
@@ -418,13 +410,23 @@ Optional second parameter
 > **Pro-Tip:**
 > Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. 
 
+#### Simple Syntax
+Assign just the `type` of the attribute directly to the attribute name. Currently supported options are "string", "number", "boolean", and an array of strings representing a fixed set of possible values.
+```typescript
+attributes: {
+	<AttributeName>: "string"|"number"|"boolean"|string[]
+}
+```
+
+#### Expanded Syntax
+Use the expanded syntax build out more robust attribute options.
 ```typescript
 attributes: {
 	<AttributeName>: {
 		"type": string|string[],
 		"required"?: boolean,
 		"default"?: value|() => value
-		"validate"?: RegExp|() => string|undefined
+		"validate"?: RegExp|() => void|string
 		"field"?: string
 		"readOnly"?: boolean
 		"label"?: string
@@ -440,7 +442,7 @@ attributes: {
 | `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, or an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`. |
 `required` | `boolean` | no | Whether or not the value is required when creating a new record. |  
 `default` | `value`, `() => value` | no | Either the default value itself or a synchronous function that returns the desired value. |  
-`validate` | `RegExp`, `() => string?` | no | Either regexp or a synchronous function. When supplying a function, a return type of a non-zero length string signifies a failure. This string will be used in the resulting error as the "reason" for the validation failure. eg. returning `"Did not pass test"` will throw an error with a message of `Invalid value for attribute "my_attr": Did not pass test.` | 
+`validate` | `RegExp`, `() => void|string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
 `field` | `string` | no | The name of the attribute as it exists dynamo, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
 `readOnly` | `boolean` | no | Prevents update of the property after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are by read-only by default.
 `label` | `string` | no | Used in index composition to prefix key facets. By default, the `AttributeName` is used as the label.
@@ -951,7 +953,7 @@ Queries in ***ElectroDB*** are built around the **Access Patterns** defined in t
 
 The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all facets described in the Entities' primary `PK` and `SK`.  
 
-### `Get` Method
+### Get Method
 Provide all facets in an object to the `get` method
 ```javascript
 await StoreLocations.get({
@@ -969,7 +971,7 @@ await StoreLocations.get({
 //   TableName: 'StoreDirectory'
 // }
 ```
-### `Delete` Method
+### Delete Method
 Provide all facets in an object to the `delete` method to delete a record.
 
 ```javascript
@@ -989,7 +991,7 @@ await StoreLocations.delete({
 // }
 ```
 
-### `Put` Record
+### Put Record
 Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
 ```javascript
 let store = {
@@ -1025,7 +1027,7 @@ await StoreLocations.put(store).go();
 // }
 ```
 
-### `Update` Record
+### Update Record
 To update a record, pass all facets to the update method and then pass `set` attributes that need to be updated. 
 
 *Note: If your update includes changes to an attribute that is also a facet for a global secondary index, you must provide all facets for that index.*
@@ -1054,7 +1056,7 @@ await StoreLocations
 // }
 ```
 
-### `Scan` Records
+### Scan Records
 When scanning for rows, you can use filters the same as you would any query. For more detial on filters, see the [Filters](#filters) section.
 
 *Note: `Scan` functionality will be scoped to your Entity. This means your results will only include records that match the Entity defined in the model.*
@@ -1088,7 +1090,7 @@ await StoreLocations.scan
 // }
 ```
 
-### `Patch` Records
+### Patch Records
 
 In DynamoDB, `update` operations by default will insert a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not inserted when updating. 
 
@@ -1117,7 +1119,7 @@ await StoreLocations
 // }
 ```
 
-### `Create` Records
+### Create Records
 
 In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwriten when inserting new records into the table. 
 
@@ -1156,7 +1158,7 @@ await StoreLocations.create(store).go();
 // }
 ```
 
-### `Find` Records
+### Find Records
 
 DynamoDB offers three methods to find records: `get`, `query`, and `scan`. In **_ElectroDB_**, there is a fourth type: `find`. Unlike `get` and `query`, the `find` method does not require you to provide keys, but under the covers it will leverage the attributes provided to find the best index to query on. Provide the `find` method will all properties known to match a record and **_ElectroDB_** will generate the most performant query it can to locate the results. This can be helpful with highly dynamic querying needs. If an index cannot be satisfied with the attributes provided, `scan` will be used as a last resort.
 
@@ -1282,7 +1284,7 @@ TaskApp.collections
 ```
 
 
-## Execute Query `.go(), .params(), .page()` 
+## Execute Query .go(), .params(), .page() 
 Lastly, all query chains end with either a `.go()` or a `.params()` method invocation. These will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
@@ -1708,7 +1710,8 @@ EmployeeApp.join(TasksModel); // EmployeeApp.entities.tasks
 EmployeeApp.join(OfficesModel); // EmployeeApp.entities.tasks
 ```
 ### `Query` Records
-#### All tasks and employee information for a given employee [Requirement #1](#employee-app-requirements)
+#### All tasks and employee information for a given employee 
+Fulfilling [Requirement #1](#employee-app-requirements).
 
 ```javascript
 EmployeeApp.collections.assignements({employee: "CBaskin"}).go();
@@ -1742,7 +1745,8 @@ Returns the following:
 }
 ```
 
-#### Find all employees and office details for a given office [Requirement #2](#employee-app-requirements)
+#### Find all employees and office details for a given office 
+Fulfilling [Requirement #2](#employee-app-requirements).
 ```javascript
 EmployeeApp.collections.workplaces({office: "big cat rescue"}).go()
 ```
@@ -1773,7 +1777,8 @@ Returns the following:
 }
 ```
 
-#### Tasks for a given employee [Requirement #3](#employee-app-requirements)
+#### Tasks for a given employee 
+Fulfilling [Requirement #3](#employee-app-requirements).
 
 ```javascript
 EmployeeApp.entities.tasks.query.assigned({employee: "cbaskin"}).go();
@@ -1794,7 +1799,8 @@ Returns the following:
 	}
 ]
 ```
-#### Tasks for a given project [Requirement #4](#employee-app-requirements)
+#### Tasks for a given project 
+Fulfilling [Requirement #4](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.tasks.query.project({project: "Murder Carol"}).go();
 ```
@@ -1810,7 +1816,8 @@ Returns the following:
 ];
 ```
 
-#### Find office locations [Requirement #5](#employee-app-requirements)
+#### Find office locations 
+Fulfilling [Requirement #5](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.office.locations({country: "usa", state: "florida"}).go()
 ```
@@ -1828,7 +1835,8 @@ Returns the following:
 ]
 ```
 
-#### Find employee salaries and titles [Requirement #6](#employee-app-requirements)
+#### Find employee salaries and titles 
+Fulfilling [Requirement #6](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.employees
 	.roles({title: "animal wrangler"})
@@ -1853,7 +1861,8 @@ Returns the following:
 ]
 ```
 
-#### Find employee birthday/anniversary [Requirement #7](#employee-app-requirements)
+#### Find employee birthday/anniversary 
+Fulfilling [Requirement #7](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.employees
 	.workplaces({office: "gw zoo"})
@@ -1877,7 +1886,8 @@ Returns the following:
 	}
 ]
 ```
-#### Find direct reports [Requirement #8](#employee-app-requirements)
+#### Find direct reports 
+Fulfilling [Requirement #8](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.employees
 	.reports({manager: "jlowe"})
@@ -1919,7 +1929,7 @@ const MallStore = new Entity(model, {client});
 
 ### Access Patterns are accessible on the StoreLocation 
 
-### `PUT` Record
+### PUT Record
 #### Add a new Store to the Mall:
 ```javascript
 await MallStore.create({
@@ -1946,7 +1956,7 @@ Returns the following:
 }
 ```
 ---
-### `UPDATE` Record
+### UPDATE Record
 #### Change the Store's Lease Date:
 >When updating a record, you must include all **Facets** associated with the table's *primary* **PK** and **SK**.
 ```javascript
@@ -1965,7 +1975,7 @@ Returns the following:
 }
 ```
 
-### `GET` Record
+### GET Record
 #### Retrieve a specific Store in a Mall
 >When retrieving a specific record, you must include all **Facets** associated with the table's *primary* **PK** and **SK**.
 ```javascript
@@ -1989,7 +1999,7 @@ Returns the following:
 }
 ```
 
-### `DELETE` Record
+### DELETE Record
 #### Remove a Store location from the Mall
 >When removing a specific record, you must include all **Facets** associated with the table's *primary* **PK** and **SK**.
 ```javascript
@@ -2005,52 +2015,59 @@ Returns the following:
 {}
 ```
 
-### `Query` Records
+### Query Records
 
-####  All Stores in a particular mall ([Requirement #1](#shopping-mall-requirements))
+####  All Stores in a particular mall 
+Fulfilling [Requirement #1](#shopping-mall-requirements).
 ```javascript
 
 let mallId = "EastPointe";
 let stores = await StoreLocations.malls({mallId}).query().go();
 ```
-#### All Stores in a particular mall building ([Requirement #1](#shopping-mall-requirements))
+#### All Stores in a particular mall building 
+Fulfilling [Requirement #1](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 let stores = await StoreLocations.malls({mallId}).query({buildingId}).go();
 ```
 
-#### What store is located in unit "B47"? ([Requirement #1](#shopping-mall-requirements))
+#### What store is located in unit "B47"? 
+Fulfilling [Requirement #1](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 let unitId = "B47";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, unitId}).go();
 ```
-#### Stores by Category at Mall ([Requirement #2](#shopping-mall-requirements)) 
+#### Stores by Category at Mall 
+Fulfilling [Requirement #2](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let category = "food/coffee";
 let stores = await StoreLocations.malls({mallId}).byCategory(category).go();
 ```
-#### Stores by upcoming lease ([Requirement #3](#shopping-mall-requirements))  
+#### Stores by upcoming lease 
+Fulfilling [Requirement #3](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let q2StartDate = "2020-04-01";
 let stores = await StoreLocations.leases({mallId}).lt({leaseEndDate: q2StateDate}).go();
 ```
-#### Stores will renewals for Q4 ([Requirement #3](#shopping-mall-requirements))  
+#### Stores will renewals for Q4 
+Fulfilling [Requirement #3](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let q4StartDate = "2020-10-01";
-let q4EndDate = "2020-12-31";
+let q4EndDate = "2020-12-31";Yes
 let stores = await StoreLocations.leases(mallId)
     .between (
       {leaseEndDate: q4StartDate}, 
       {leaseEndDate: q4EndDate})
     .go();
 ```
-#### Spite-stores with release renewals this year  ([Requirement #3](#shopping-mall-requirements))  
+#### Spite-stores with release renewals this year  
+Fulfilling [Requirement #3](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let yearStarDate = "2020-01-01";
@@ -2064,7 +2081,7 @@ let stores = await StoreLocations.leases(mallId)
     .go();
 ```
 
-#### All Latte Larry's in a particular mall building (crazy for any store except a coffee shop)
+#### All Latte Larry's in a particular mall building
 ```javascript
 
 let mallId = "EastPointe";
@@ -2076,3 +2093,6 @@ let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).g
 # Coming Soon:
 - Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
+- ConditionalExpressions for create/update/delete
+- Append/Add/Subtract/Remove updates capabilities
+- Complex attributes (list, map, set
