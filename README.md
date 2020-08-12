@@ -1,4 +1,5 @@
 # ElectroDB  
+[![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master)
 
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb.png?raw=true)
 ***ElectroDB*** is a dynamodb library to ease the use of having multiple entities and complex hierarchical relationships in a single dynamodb table. 
