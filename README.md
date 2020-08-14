@@ -15,7 +15,7 @@
 - **Simplified Sort Key Condition Querying**: Write efficient sort key queries by easily building compose keys.
 - **Simplified Filter Composition**: Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
 - **Easily Query Across Entities**: Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
-- **Automatic Index Selection**: Use `find` method to dynamically and effeciently query based on defined sort key structures. 
+- **Automatic Index Selection**: Use `.find()` method to dynamically and effeciently query based on defined sort key structures. 
 - **Simplified Pagination API** Use `.page()` to easily iterate through multiquery result sets.  
 
 Turn this:
