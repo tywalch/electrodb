@@ -787,16 +787,18 @@ describe("Entity", async () => {
 			expect(results).to.be.an("array").and.have.length(2);
 			// Scan may not return records, dont force a bad test then
 			let [index, stores] = results;
-			if (stores.length) {
-				expect(index).to.have.a.property('pk').and.to.have.a.property('sk');
+			if (stores && stores.Items.length) {
+				expect(index).to.have.a.property('pk');
+				expect(index).to.have.a.property('sk')
 				expect(stores.Items).to.be.an("array")
-				expect(stores.Items[0]).to.have.a.property('pk').and.to.have.a.property('sk');
+				expect(stores.Items[0]).to.have.a.property('pk')
+				expect(stores.Items[0]).to.have.a.property('sk');
 				let [nextIndex, nextStores] = await MallStores.scan.page(index);
-				expect(stores).to.be.an("array").and.have.length(2);
 				expect(nextIndex).to.not.deep.equal(index);
 				expect(nextStores).to.be.an("array");
 				if (nextStores.length) {
-					expect(nextStores[0]).to.not.have.a.property('pk').and.to.not.have.a.property('sk');
+					expect(nextStores[0]).to.not.have.a.property('pk')
+					expect(nextStores[0]).to.not.have.a.property('sk');
 				}
 			}
 		}).timeout(10000);

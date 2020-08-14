@@ -225,9 +225,10 @@ class Entity {
 					results = this.model.schema.applyAttributeGetters(data);
 				}
 			}
+			
 
 			if (config.pager) {
-				let nextPage = response.LastEvaluatedKey || null;
+				let nextPage = this._formatReturnPager(response.LastEvaluatedKey || null);
 				results = [nextPage, results];
 			}
 
@@ -243,6 +244,62 @@ class Entity {
 		}
 	}
 
+	_regexpEscape(string) {
+		return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	_deconstructKeys(keyType, key) {
+		let index = "";
+		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+		let {prefix} = this.model.prefixes[index][keyType];
+		let {facets} = this.model.indexes[accessPattern][keyType];
+		let names = [];
+		let pattern = `^${this._regexpEscape(prefix)}`;
+		for (let facet of facets) {
+			let { label, name } = this.model.schema.attributes[facet];
+			pattern += `#${this._regexpEscape(label)}_(.+)`;
+			names.push(name);
+		}
+		pattern += "$";
+		
+		let regex = RegExp(pattern);
+		let match = key.match(regex);
+		let results = {}
+		if (!match) {
+			results[keyType] = key
+		} else {
+			for (let i = 0; i < names.length; i++) {
+				results[names[i]] = match[i+1];
+			}
+		}
+		return results;
+	}
+
+	_formatReturnPager(item) {
+		return item;
+		if (item === null || typeof item !== "object" || Object.keys(item).length === 0) {
+			return item;
+		}
+		let pager = {};
+		for (let {name} of this.model.facets.byIndex[""].all) {
+			pager[name] = item[name];
+		}
+		return pager;
+	}
+
+	_formatSuppliedPager(item) {
+		return item;
+		if (typeof item !== "object" || Object.keys(item).length === 0) {
+			return item;
+		}
+		// let expectedFacets = this.model.facets.byIndex[""].all.map(facet => facet.name);
+		let pk = this._expectFacets(item, this.model.facets.byIndex[""].pk)
+		let sk = this._expectFacets(item, this.model.facets.byIndex[""].sk)
+		let index = "";
+		let keys = this._makeIndexKeys(index, pk, sk);
+		return this._makeParameterKey(index, keys.pk, ...keys.sk);
+	}
+	
 	_applyParameterOptions(params, ...options) {
 		let config = {
 			includeKeys: false,
@@ -272,7 +329,7 @@ class Entity {
 		}
 
 		if (Object.keys(config.page || {}).length) {
-			parameters.ExclusiveStartKey = config.page;
+			parameters.ExclusiveStartKey = this._formatSuppliedPager(config.page);
 		}
 
 		return parameters;
@@ -883,11 +940,50 @@ class Entity {
 		return [!!missing.length, missing, matching];
 	}
 
-	_makeKeyPrefixes(service, entity, version = "1") {
-		return {
-			pk: `$${service}_${version}`,
-			sk: `$${entity}`,
-		};
+	_makeKeyPrefixes(service, entity, version = "1", tableIndex) {
+		/*
+			Collections will prefix the sort key so they can be queried with
+			a "begins_with" operator when crossing entities. It is also possible
+			that the user defined a custom key on either the PK or SK. In the case
+			of a customKey AND a collection, the collection is ignored to favor
+			the custom key. 
+		*/
+
+		let keys = {
+			pk: {
+				prefix: "",
+				isCustom: tableIndex.customFacets.pk
+			},
+			sk: {
+				prefix: "",
+				isCustom: tableIndex.customFacets.sk
+			}
+		}
+
+		let pk = `$${service}_${version}`;
+		let sk = "";
+
+		// If the index is in a collections, prepend the sk;
+		if (tableIndex.collection) {
+			sk = `$${tableIndex.collection}#${entity}`
+		} else {
+			sk = `$${entity}`
+		}
+
+		// If no sk, append the sk properties to the pk
+		if (Object.keys(tableIndex.sk).length === 0) {
+			pk += sk;
+		}
+
+		// If keys arent custom, set the prefixes
+		if (!keys.pk.isCustom) {
+			keys.pk.prefix = pk.toLowerCase();
+		}
+		if (!keys.sk.isCustom) {
+			keys.sk.prefix = sk.toLowerCase();
+		}
+
+		return keys;
 	}
 
 	_validateIndex(index) {
@@ -957,7 +1053,10 @@ class Entity {
 			skFacets.push({});
 		}
 		let facets = this.model.facets.byIndex[index];
-		let prefixes = this._getPrefixes(facets);
+		let prefixes = this.model.prefixes[index];
+		if (!prefixes) {
+			throw new Error(`Invalid index: ${index}`);
+		}
 		// let sk = [];
 		let pk = this._makeKey(
 			prefixes.pk.prefix,
@@ -1138,7 +1237,9 @@ class Entity {
 			let parsedPKFacets = this._parseFacets(index.pk.facets);
 			let { facetArray, facetLabels } = parsedPKFacets;
 			customFacets.pk = parsedPKFacets.isCustom;
+			// labels can be set via the attribute definiton or as part of the facetTemplate. 
 			facets.labels = Object.assign({}, facets.labels, facetLabels);
+			
 			let pk = {
 				accessPattern,
 				facetLabels,
@@ -1270,9 +1371,18 @@ class Entity {
 		return normalized;
 	}
 
+	_normalizePrefixes(service, entity, version, indexes) {
+		let prefixes = {};
+		for (let accessPattern of Object.keys(indexes)) {
+			let item = indexes[accessPattern];
+			prefixes[item.index] = this._makeKeyPrefixes(service, entity, version, item);
+		}
+		return prefixes;
+	}
+
 	_parseModel(model) {
 		let { service, entity, table, version = "1" } = model;
-		let prefixes = this._makeKeyPrefixes(service, entity, version);
+		
 		let {
 			facets,
 			indexes,
@@ -1284,6 +1394,7 @@ class Entity {
 		} = this._normalizeIndexes(model.indexes);
 		let schema = new Schema(model.attributes, facets);
 		let filters = this._normalizeFilters(model.filters);
+		let prefixes = this._normalizePrefixes(service, entity, version, indexes);
 		return {
 			service,
 			version,
