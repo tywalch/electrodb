@@ -92,16 +92,16 @@ Into This:
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
   * [Execute Query go, params, page](#execute-query-go--params--page)
-    + [.params](#params)
-    + [Go](#go)
-    + [Page](#page)
+    + [.params()](#params--)
+    + [.go()](#go--)
+    + [.page()](#page--)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
 - [Examples](#examples)
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
     + [Entities](#entities-1)
-    + [`Query` Records](#-query--records)
+    + [Query Records](#query-records-1)
       - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee)
       - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office)
       - [Tasks for a given employee](#tasks-for-a-given-employee)
@@ -121,7 +121,7 @@ Into This:
       - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
     + [DELETE Record](#delete-record)
       - [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
-    + [Query Records](#query-records-1)
+    + [Query Records](#query-records-2)
       - [All Stores in a particular mall](#all-stores-in-a-particular-mall)
       - [All Stores in a particular mall building](#all-stores-in-a-particular-mall-building)
       - [Find the store located in unit B47](#find-the-store-located-in-unit-b47)
@@ -1294,7 +1294,7 @@ Lastly, all query chains end with either a `.go()` or a `.params()` method invoc
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
 
-### .params
+### .params()
 The `params` method _ends_ a query chain, and synchronously formats your query into an object ready for the DynamoDB docClient. 
 
 > For more information on the options available in the `config` object, checkout the section [Query Options](#query-options).
@@ -1325,7 +1325,7 @@ let stores = MallStores.query
 }
 ```
 
-### Go
+### .go()
 The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. 
 
 > For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
@@ -1342,7 +1342,7 @@ let stores  =  MallStores.query
 
 ```
 
-### Page
+### .page()
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. The first element is the "page", the `ExclusiveStartKey` as returned directly from DynamoDB. The second element is the query results. When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. 
 
@@ -1674,7 +1674,7 @@ EmployeeApp.join(EmployeesModel); // EmployeeApp.entities.employees
 EmployeeApp.join(TasksModel); // EmployeeApp.entities.tasks
 EmployeeApp.join(OfficesModel); // EmployeeApp.entities.tasks
 ```
-### `Query` Records
+### Query Records
 #### All tasks and employee information for a given employee 
 Fulfilling [Requirement #1](#employee-app-requirements).
 
@@ -2055,9 +2055,9 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
-# Coming Soon:
+# Coming Soon
 - Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
 - ConditionalExpressions for create/update/delete
 - Append/Add/Subtract/Remove updates capabilities
-- Complex attributes (list, map, set
+- Complex attributes (list, map, set)
