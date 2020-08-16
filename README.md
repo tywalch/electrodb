@@ -52,8 +52,11 @@ Into This:
 }
 ```
 
+## Table of Contents
+
 - [ElectroDB](#electrodb)
   * [Features](#features)
+  * [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Entities and Services](#entities-and-services)
