@@ -5,28 +5,6 @@ const { FilterFactory, FilterTypes } = require("./filters");
 const validations = require("./validations");
 const { clauses } = require("./clauses");
 
-const utilities = {
-	structureFacets: function (
-		structure,
-		{ index, type, name },
-		i,
-		attributes,
-		indexSlot,
-	) {
-		let next = attributes[i + 1] !== undefined ? attributes[i + 1].name : "";
-		let facet = { index, name, type, next };
-		structure.byAttr[name] = structure.byAttr[name] || [];
-		structure.byAttr[name].push(facet);
-		structure.byType[type] = structure.byType[type] || [];
-		structure.byType[type].push(facet);
-		structure.byFacet[name] = structure.byFacet[name] || [];
-		structure.byFacet[name][i] = structure.byFacet[name][i] || [];
-		structure.byFacet[name][i].push(facet);
-		structure.bySlot[i] = structure.bySlot[i] || [];
-		structure.bySlot[i][indexSlot] = facet;
-	}
-};
-
 class Entity {
 	constructor(model, config = {}) {
 		this._validateModel(model);
@@ -50,6 +28,7 @@ class Entity {
 				);
 			};
 		}
+		this.modelAttributeIdentifier = "__edb_e_"
 	}
 
 	find(facets = {}) {
@@ -249,24 +228,33 @@ class Entity {
 	}
 
 	_deconstructKeys(keyType, key) {
+		if (typeof key !== "string" || key.length === 0) {
+			return null;
+		}
 		let index = "";
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
-		let {prefix} = this.model.prefixes[index][keyType];
+		let {prefix, isCustom} = this.model.prefixes[index][keyType];
 		let {facets} = this.model.indexes[accessPattern][keyType];
 		let names = [];
 		let pattern = `^${this._regexpEscape(prefix)}`;
 		for (let facet of facets) {
 			let { label, name } = this.model.schema.attributes[facet];
-			pattern += `#${this._regexpEscape(label)}_(.+)`;
+			if (isCustom) {
+				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
+			} else {
+				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
+			}
+			
 			names.push(name);
 		}
 		pattern += "$";
 		
 		let regex = RegExp(pattern);
+		
 		let match = key.match(regex);
 		let results = {}
 		if (!match) {
-			results[keyType] = key
+			throw new Error("Entity keys do not match model");
 		} else {
 			for (let i = 0; i < names.length; i++) {
 				results[names[i]] = match[i+1];
@@ -276,23 +264,25 @@ class Entity {
 	}
 
 	_formatReturnPager(item) {
-		return item;
 		if (item === null || typeof item !== "object" || Object.keys(item).length === 0) {
 			return item;
 		}
-		let pager = {};
-		for (let {name} of this.model.facets.byIndex[""].all) {
-			pager[name] = item[name];
+		let index = ""
+		let pkName = this.model.translations.keys[index].pk;
+		let skName = this.model.translations.keys[index].sk;
+		let pkFacets = this._deconstructKeys(KeyTypes.pk, item[pkName]);
+		let skFacets = this._deconstructKeys(KeyTypes.sk, item[skName]);
+		let pager = {...pkFacets};
+		if (skFacets && Object.keys(skFacets).length) {
+			pager = {...skFacets, ...pkFacets};
 		}
 		return pager;
 	}
 
 	_formatSuppliedPager(item) {
-		return item;
 		if (typeof item !== "object" || Object.keys(item).length === 0) {
 			return item;
 		}
-		// let expectedFacets = this.model.facets.byIndex[""].all.map(facet => facet.name);
 		let pk = this._expectFacets(item, this.model.facets.byIndex[""].pk)
 		let sk = this._expectFacets(item, this.model.facets.byIndex[""].sk)
 		let index = "";
@@ -442,7 +432,7 @@ class Entity {
 			TableName: this.model.table,
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.ExpressionAttributeNames,
-				keyExpressions.ExpressionAttributeNames,
+				keyExpressions.ExpressionAttributeNames
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
 				filter.ExpressionAttributeValues,
@@ -450,6 +440,9 @@ class Entity {
 			),
 			FilterExpression: `(begins_with(#pk, :pk)`,
 		};
+		params.ExpressionAttributeNames["#" + this.modelAttributeIdentifier] = this.modelAttributeIdentifier;
+		params.ExpressionAttributeValues[":" + this.modelAttributeIdentifier] = this.model.entity;
+		params.FilterExpression = `${params.FilterExpression} AND #${this.modelAttributeIdentifier} = :${this.modelAttributeIdentifier}`
 		if (hasSortKey) {
 			params.FilterExpression = `${params.FilterExpression} AND begins_with(#sk, :sk))`;
 		}
@@ -502,7 +495,7 @@ class Entity {
 			Item: {
 				...transatedFields,
 				...updatedKeys,
-				__edb_e__: this.model.entity,
+				[this.modelAttributeIdentifier]: this.model.entity,
 			},
 			TableName: this.model.table,
 		};
@@ -1057,7 +1050,6 @@ class Entity {
 		if (!prefixes) {
 			throw new Error(`Invalid index: ${index}`);
 		}
-		// let sk = [];
 		let pk = this._makeKey(
 			prefixes.pk.prefix,
 			facets.pk,
@@ -1082,9 +1074,9 @@ class Entity {
 			let facet = facets[i];
 			let { label, name } = this.model.schema.attributes[facet];
 			if (isCustom) {
-				key = `${key}${label}`;
+				key = `${key}${label === undefined ? "" : label}`;
 			} else {
-				key = `${key}#${label || name}_`;
+				key = `${key}#${label === undefined ? name : label}_`;
 			}
 			if (supplied[name] !== undefined) {
 				key = `${key}${supplied[name]}`;
@@ -1247,13 +1239,14 @@ class Entity {
 				type: KeyTypes.pk,
 				field: index.pk.field || "",
 				facets: [...facetArray],
+				isCustom: parsedPKFacets.isCustom
 			};
 			let sk = {};
-
+			let parsedSKFacets = {}
 			if (hasSk) {
-				let parseSKFacets = this._parseFacets(index.sk.facets);
-				let { facetArray, facetLabels } = parseSKFacets;
-				customFacets.sk = parseSKFacets.isCustom;
+				parsedSKFacets = this._parseFacets(index.sk.facets);
+				let { facetArray, facetLabels } = parsedSKFacets;
+				customFacets.sk = parsedSKFacets.isCustom;
 				facets.labels = Object.assign({}, facets.labels, facetLabels);
 				sk = {
 					facetLabels,
@@ -1262,13 +1255,10 @@ class Entity {
 					type: KeyTypes.sk,
 					field: index.sk.field || "",
 					facets: [...facetArray],
+					isCustom: parsedSKFacets.isCustom
 				};
 				facets.fields.push(sk.field);
 			}
-
-			// if (inCollection) {
-			// 	collections[index.collection] = index.collection;
-			// }
 
 			let definition = {
 				pk,
@@ -1333,16 +1323,27 @@ class Entity {
 				all: attributes,
 				collection: index.collection,
 			};
-
-			attributes.forEach((facet, j) =>
-				utilities.structureFacets(facets, facet, j, attributes, i),
-			);
+			
+			
+			attributes.forEach(({index, type, name}, j) => {
+				let next = attributes[j + 1] !== undefined ? attributes[j + 1].name : "";
+				let facet = { index, name, type, next };
+				facets.byAttr[name] = facets.byAttr[name] || [];
+				facets.byAttr[name].push(facet);
+				facets.byType[type] = facets.byType[type] || [];
+				facets.byType[type].push(facet);
+				facets.byFacet[name] = facets.byFacet[name] || [];
+				facets.byFacet[name][j] = facets.byFacet[name][j] || [];
+				facets.byFacet[name][j].push(facet);
+				facets.bySlot[j] = facets.bySlot[j] || [];
+				facets.bySlot[j][i] = facet;
+			});
 		}
 		
 		if (facets.byIndex[""] === undefined) {
 			throw new Error("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index");
 		}
-
+		
 		return {
 			facets,
 			indexHasSortKeys,
