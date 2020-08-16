@@ -60,10 +60,12 @@ Into This:
 - [Entities](#entities)
 - [Services](#services)
   * [Model](#model)
-    + [Model Properties:](#model-properties-)
+    + [Model Properties](#model-properties)
     + [Service Properties](#service-properties)
     + [Model/Service Options](#model-service-options)
   * [Attributes](#attributes)
+      - [Simple Syntax](#simple-syntax)
+      - [Expanded Syntax](#expanded-syntax)
   * [Indexes](#indexes)
   * [Facets](#facets)
     + [Facet Arrays](#facet-arrays)
@@ -71,7 +73,7 @@ Into This:
   * [Collections](#collections)
   * [Filters](#filters)
     + [Defined on the model](#defined-on-the-model)
-    + [Defined via "Filter" method after query operators](#defined-via--filter--method-after-query-operators)
+    + [Defined via Filter method after query operators](#defined-via-filter-method-after-query-operators)
     + [Multiple Filters](#multiple-filters)
 - [Building Queries](#building-queries)
     + [Sort Key Operations](#sort-key-operations)
@@ -86,20 +88,20 @@ Into This:
     + [Patch Records](#patch-records)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
-    + [`Query` Records](#-query--records)
+    + [Query Records](#query-records)
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
-  * [Execute Query .go(), .params(), .page()](#execute-query-go----params----page--)
-    + [`.params()`](#-params---)
-    + [`.go()`](#-go---)
-    + [`.page()`](#-page---)
+  * [Execute Query go, params, page](#execute-query-go--params--page)
+    + [.params](#params)
+    + [Go](#go)
+    + [Page](#page)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
 - [Examples](#examples)
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
     + [Entities](#entities-1)
-    + [`Query` Records](#-query--records-1)
+    + [`Query` Records](#-query--records)
       - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee)
       - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office)
       - [Tasks for a given employee](#tasks-for-a-given-employee)
@@ -119,16 +121,16 @@ Into This:
       - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
     + [DELETE Record](#delete-record)
       - [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
-    + [Query Records](#query-records)
+    + [Query Records](#query-records-1)
       - [All Stores in a particular mall](#all-stores-in-a-particular-mall)
       - [All Stores in a particular mall building](#all-stores-in-a-particular-mall-building)
-      - [What store is located in unit "B47"?](#what-store-is-located-in-unit--b47--)
+      - [Find the store located in unit B47](#find-the-store-located-in-unit-b47)
       - [Stores by Category at Mall](#stores-by-category-at-mall)
       - [Stores by upcoming lease](#stores-by-upcoming-lease)
       - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
       - [All Latte Larry's in a particular mall building](#all-latte-larry-s-in-a-particular-mall-building)
-- [Coming Soon:](#coming-soon-)
+- [Coming Soon](#coming-soon)
 
 # Installation    
 
@@ -381,7 +383,7 @@ let TaskApp = new Service({
 TaskApp.join(EmployeesModel); // TaskApp.entities.employees
 TaskApp.join(TasksModel); // TaskApp.entities.tasks
 ```
-### Model Properties:
+### Model Properties
 
 | Property | Description |
 | ----------- | ----------- |
@@ -724,7 +726,7 @@ let stores  =  MallStores.query
   FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
 }
 ```
-### Defined via "Filter" method after query operators 
+### Defined via Filter method after query operators 
 ```javascript
 let MallStores  =  new Entity("MallStores", model);
 let maxRent = "5000.00";
@@ -1199,7 +1201,7 @@ let match = await StoreLocations.find({
 // }
 ```
 
-### `Query` Records
+### Query Records
 
 > Examples in this section using the `MallStore` schema defined [above](#shopping-mall-stores). 
 
@@ -1287,12 +1289,12 @@ TaskApp.collections
 ```
 
 
-## Execute Query .go(), .params(), .page() 
+## Execute Query go, params, page
 Lastly, all query chains end with either a `.go()` or a `.params()` method invocation. These will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
 
-### `.params()`
+### .params
 The `params` method _ends_ a query chain, and synchronously formats your query into an object ready for the DynamoDB docClient. 
 
 > For more information on the options available in the `config` object, checkout the section [Query Options](#query-options).
@@ -1323,7 +1325,7 @@ let stores = MallStores.query
 }
 ```
 
-### `.go()`
+### Go
 The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. 
 
 > For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
@@ -1340,7 +1342,7 @@ let stores  =  MallStores.query
 
 ```
 
-### `.page()`
+### Page
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. The first element is the "page", the `ExclusiveStartKey` as returned directly from DynamoDB. The second element is the query results. When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. 
 
@@ -1474,36 +1476,16 @@ const EmployeesModel = {
 	service: "taskapp",
 	table: "projectmanagement",
 	attributes: {
-		employee: {
-			type: "string",
-		},
-		firstName: {
-			type: "string",
-		},
-		lastName: {
-			type: "string",
-		},
-		office: {
-			type: "string",
-		},
-		title: {
-			type: "string",
-		},
-		team: {
-			type: ["development", "marketing", "finance", "product"],
-		},
-		salary: {
-			type: "string",
-		},
-		manager: {
-			type: "string",
-		},
-		dateHired: {
-			type: "string",
-		},
-		birthday: {
-			type: "string",
-		},
+		employee: "string",
+		firstName: "string",
+		lastName: "string",
+		office: "string",
+		title: "string",
+		team: ["development", "marketing", "finance", "product"],
+		salary: "string",
+		manager: "string",
+		dateHired: "string",
+		birthday: "string",
 	},
 	indexes: {
 		employee: {
@@ -1591,18 +1573,10 @@ const TasksModel = {
 	service: "taskapp",
 	table: "projectmanagement",
 	attributes: {
-		task: {
-			type: "string",
-		},
-		project: {
-			type: "string",
-		},
-		employee: {
-			type: "string",
-		},
-		description: {
-			type: "string",
-		},
+		task: "string",
+		project: "string",
+		employee: "string",
+		description: "string",
 	},
 	indexes: {
 		task: {
@@ -1647,24 +1621,12 @@ const OfficesModel = {
 	table: "electro",
 	service: "electrotest",
 	attributes: {
-		office: {
-			type: "string",
-		},
-		country: {
-			type: "string",
-		},
-		state: {
-			type: "string",
-		},
-		city: {
-			type: "string",
-		},
-		zip: {
-			type: "string",
-		},
-		address: {
-			type: "string",
-		},
+		office: "string",
+		country: "string",
+		state: "string",
+		city: "string",
+		zip: "string",
+		address: "string",
 	},
 	indexes: {
 		locations: {
@@ -2035,7 +1997,7 @@ let buildingId = "BuildingA1";
 let stores = await StoreLocations.malls({mallId}).query({buildingId}).go();
 ```
 
-#### What store is located in unit "B47"? 
+#### Find the store located in unit B47 
 Fulfilling [Requirement #1](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
