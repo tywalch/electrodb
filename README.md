@@ -91,7 +91,7 @@ Into This:
     + [Query Records](#query-records)
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
-  * [Execute Query go, params, page](#execute-query-go--params--page)
+  * [Execute Queries](#execute-queries)
     + [Params](#params)
     + [Go](#go)
     + [Page](#page)
@@ -108,15 +108,15 @@ Into This:
       - [Tasks for a given project](#tasks-for-a-given-project)
       - [Find office locations](#find-office-locations)
       - [Find employee salaries and titles](#find-employee-salaries-and-titles)
-      - [Find employee birthday/anniversary](#find-employee-birthday-anniversary)
+      - [Find employee birthdays or anniversaries](#find-employee-birthdays-or-anniversaries)
       - [Find direct reports](#find-direct-reports)
   * [Shopping Mall Property Management App](#shopping-mall-property-management-app)
     + [Shopping Mall Requirements](#shopping-mall-requirements)
     + [Access Patterns are accessible on the StoreLocation](#access-patterns-are-accessible-on-the-storelocation)
     + [PUT Record](#put-record)
-      - [Add a new Store to the Mall:](#add-a-new-store-to-the-mall-)
+      - [Add a new Store to the Mall](#add-a-new-store-to-the-mall)
     + [UPDATE Record](#update-record)
-      - [Change the Store's Lease Date:](#change-the-store-s-lease-date-)
+      - [Change the Store's Lease Date](#change-the-store-s-lease-date)
     + [GET Record](#get-record)
       - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
     + [DELETE Record](#delete-record)
@@ -129,7 +129,7 @@ Into This:
       - [Stores by upcoming lease](#stores-by-upcoming-lease)
       - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
-      - [All Latte Larry's in a particular mall building](#all-latte-larry-s-in-a-particular-mall-building)
+      - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
 - [Coming Soon](#coming-soon)
 
 # Installation    
@@ -1289,7 +1289,7 @@ TaskApp.collections
 ```
 
 
-## Execute Query go, params, page
+## Execute Queries
 Lastly, all query chains end with either a `.go()` or a `.params()` method invocation. These will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
@@ -1826,7 +1826,7 @@ Returns the following:
 ]
 ```
 
-#### Find employee birthday/anniversary 
+#### Find employee birthdays or anniversaries
 Fulfilling [Requirement #7](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.employees
@@ -1895,7 +1895,7 @@ const MallStore = new Entity(model, {client});
 ### Access Patterns are accessible on the StoreLocation 
 
 ### PUT Record
-#### Add a new Store to the Mall:
+#### Add a new Store to the Mall
 ```javascript
 await MallStore.create({
 	mallId: "EastPointe",
@@ -1922,7 +1922,7 @@ Returns the following:
 ```
 ---
 ### UPDATE Record
-#### Change the Store's Lease Date:
+#### Change the Store's Lease Date
 >When updating a record, you must include all **Facets** associated with the table's *primary* **PK** and **SK**.
 ```javascript
 let storeId = "LatteLarrys";
@@ -2046,7 +2046,7 @@ let stores = await StoreLocations.leases(mallId)
     .go();
 ```
 
-#### All Latte Larry's in a particular mall building
+#### All Latte Larrys in a particular mall building
 ```javascript
 
 let mallId = "EastPointe";
