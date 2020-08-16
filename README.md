@@ -92,7 +92,7 @@ Into This:
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
   * [Execute Query go, params, page](#execute-query-go--params--page)
-    + [.params()](#params--)
+    + [.params()](#-params--)
     + [.go()](#go--)
     + [.page()](#page--)
   * [Query Examples](#query-examples)
