@@ -92,9 +92,9 @@ Into This:
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
   * [Execute Query go, params, page](#execute-query-go--params--page)
-    + [.params()](#-params--)
-    + [.go()](#go--)
-    + [.page()](#page--)
+    + [Params](#params)
+    + [Go](#go)
+    + [Page](#page)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
 - [Examples](#examples)
@@ -1294,7 +1294,7 @@ Lastly, all query chains end with either a `.go()` or a `.params()` method invoc
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
 
-### .params()
+### Params
 The `params` method _ends_ a query chain, and synchronously formats your query into an object ready for the DynamoDB docClient. 
 
 > For more information on the options available in the `config` object, checkout the section [Query Options](#query-options).
@@ -1325,7 +1325,7 @@ let stores = MallStores.query
 }
 ```
 
-### .go()
+### Go
 The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. 
 
 > For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
@@ -1342,7 +1342,7 @@ let stores  =  MallStores.query
 
 ```
 
-### .page()
+### Page
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. The first element is the "page", the `ExclusiveStartKey` as returned directly from DynamoDB. The second element is the query results. When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. 
 
