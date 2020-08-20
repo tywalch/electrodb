@@ -142,9 +142,6 @@ class FilterFactory {
 			if (existingNeedsParens) {
 				existingExpression = `(${existingExpression})`;
 			}
-			// if (newNeedsParens) {
-			// 	newExpression = `(${newExpression})`;
-			// }
 			return `${existingExpression} AND ${newExpression}`;
 		} else {
 			return newExpression;

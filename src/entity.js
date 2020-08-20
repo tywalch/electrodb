@@ -2,6 +2,7 @@
 const { Schema } = require("./schema");
 const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
+const { WhereFactory } = require("./where");
 const validations = require("./validations");
 const { clauses } = require("./clauses");
 
@@ -36,10 +37,16 @@ class Entity {
 			this.model.schema.attributes,
 			FilterTypes,
 		);
+		this._whereBuilder = new WhereFactory(
+			this.model.schema.attributes,
+			FilterTypes
+		)
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(
 			clauses,
 			this.model.filters,
 		);
+		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
+
 		this.scan = this._makeChain("", this._clausesWithFilters, clauses.index).scan();
 		this.query = {};
 		for (let accessPattern in this.model.indexes) {
