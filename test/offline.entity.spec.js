@@ -510,9 +510,7 @@ describe("Entity", () => {
 							},
 						},
 					}),
-			).to.throw(
-				`Invalid "type" property for attribute: "regexp". Acceptable types include string, number, boolean, enum`,
-			);
+			).to.throw(`Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a facet of the the following indexes: Table Index`);
 		});
 		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", () => {
 			let id = uuidV4();
@@ -1718,7 +1716,7 @@ describe("Entity", () => {
 				},{
 					success: false,
 					output: {
-						err: `Invalid "type" property for attribute: "prop1". Acceptable types include string, number, boolean, enum`
+						err: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "prop1" is defined as being type "invalid_value" but is a facet of the the following indexes: Table Index`
 					},
 					input: {
 						model: {

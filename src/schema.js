@@ -283,7 +283,7 @@ class Schema {
 		if (missingFacetAttributes.length) {
 			throw new Error(
 				`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(
-					"\r\n",
+					", ",
 				)}`,
 			);
 		}
