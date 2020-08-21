@@ -2060,6 +2060,7 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
+
 # Coming Soon
 - Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
