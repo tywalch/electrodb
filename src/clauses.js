@@ -138,7 +138,7 @@ let clauses = {
 			}
 			return state;
 		},
-		children: ["set"],
+		children: ["set", "append", "remove", "add", "subtract", ],
 	},
 	update: {
 		name: "update",
@@ -158,7 +158,7 @@ let clauses = {
 			}
 			return state;
 		},
-		children: ["set"],
+		children: ["set", "append", "remove", "add", "subtract"],
 	},
 	set: {
 		name: "set",
@@ -172,6 +172,39 @@ let clauses = {
 			return state;
 		},
 		children: ["set", "go", "params"],
+	},
+	append: {
+		name: "append",
+		action(entity, state, data = {}) {
+			let attributes = {}
+			let payload = {};
+			for (let path of Object.keys(data)) {
+				let parsed = entity.model.schema.parseAttributePath(path);
+				
+			}
+		}, 
+		children: ["set", "append", "remove", "add", "subtract", "go", "params"]
+	},
+	remove: {
+		name: "remove",
+		action(entity, state, data) {
+
+		}, 
+		children: ["set", "append", "remove", "add", "subtract", "go", "params"]
+	},
+	add: {
+		name: "add",
+		action(entity, state, data) {
+
+		}, 
+		children: ["set", "append", "remove", "add", "subtract", "go", "params"]
+	},
+	subtract: {
+		name: "subtract",
+		action(entity, state, data) {
+
+		}, 
+		children: ["set", "append", "remove", "add", "subtract", "go", "params"]
 	},
 	query: {
 		name: "query",

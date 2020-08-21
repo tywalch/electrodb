@@ -1,5 +1,5 @@
-const { KeyTypes, CastTypes } = require("./types");
-const AttributeTypes = ["string", "number", "boolean", "enum"];
+const { KeyTypes, CastTypes, AttributeTypes } = require("./types");
+const AttributeTypeNames = Object.keys(AttributeTypes);
 
 class Attribute {
 	constructor(definition = {}) {
@@ -120,9 +120,9 @@ class Attribute {
 		} else {
 			type = definition || "string";
 		}
-		if (!AttributeTypes.includes(type)) {
+		if (!AttributeTypeNames.includes(type)) {
 			throw new Error(
-				`Invalid "type" property for attribute: "${name}". Acceptable types include ${AttributeTypes.join(
+				`Invalid "type" property for attribute: "${name}". Acceptable types include ${AttributeTypeNames.join(
 					", ",
 				)}`,
 			);
@@ -273,6 +273,49 @@ class Schema {
 				attributes: normalized,
 			};
 		}
+	}
+	
+	_getPartDetail(part = "") {
+		let detail = {
+				expression: "",
+				name: "",
+				value: "",
+		};
+		if (part.includes("[")) {
+				if (!part.match(/\[\d\]/gi)) {
+						throw new Error(`Invalid path: Part "${part}" has bracket containing non-numeric characters.`);
+				}
+				let [name] = part.match(/.*(?=\[)/gi);
+				detail.name = `#${name}`;
+				detail.value = name;
+		} else {
+				detail.name = `#${part}`;
+				detail.value = part;
+		}
+		detail.expression = `#${part}`;
+		return detail;
+	}
+
+	parseAttributePath(path = "") {
+		if (typeof path !== "string" || !path.length) {
+      throw new Error("Invalid path: Path must be a string with a non-zero length");
+		}
+		let parts = path.split(/\./gi);
+		let attr = this._getPartDetail(parts[0]);
+		let target = this._getPartDetail(parts[parts.length-1]).value;
+		if (this.attributes[attr.value] === undefined) {
+			throw new Error(`Invalid path: Target attribute "${attr.value}" does not exist in model`);
+		} else if (attr.expression.includes("[") && this.attributes[attr.value].type !== AttributeTypes.list) {
+			throw new Error(`Invalid path: Target attribute "${attr.value}" is not of type "${AttributeTypes.list}"`);
+		}
+		let names = {};
+		let expressions = [];
+		for (let part of parts) {
+				let detail = this._getPartDetail(part);
+				names[detail.name] = detail.value;
+				expressions.push(detail.expression);
+		}
+		return {path, names, target, attr: attr.value, expression: expressions.join(".")};
 	}
 
 	applyAttributeGetters(payload = {}) {

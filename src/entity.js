@@ -163,6 +163,10 @@ class Entity {
 				facets: { ...facets },
 				update: {
 					set: {},
+					append: {},
+					remove: {},
+					add: {},
+					subtract: {}
 				},
 				put: {
 					data: {},
