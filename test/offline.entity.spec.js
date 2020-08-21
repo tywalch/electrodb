@@ -4,7 +4,7 @@ const moment = require("moment");
 const uuidV4 = require("uuid/v4");
 
 /*
-	todo: add check for untilized SKs to then be converted to filters  
+	todo: add check for untilized SKs to then be converted to filters
 */
 
 let schema = {
@@ -196,6 +196,243 @@ describe("Entity", () => {
 				}
 			})).to.throw("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index")
 		});
+		it("Should validate an attribute's type when evaluating a facet. Supported facet types should be a string, number, boolean, or enum", () => {
+			let tests = [
+				{
+					input: "string",
+					fail: false
+				},{
+					input: "number",
+					fail: false
+				},{
+					input: "boolean",
+					fail: false
+				},{
+					input: ["option1", "option2", "option3"],
+					fail: false
+				},{
+					input: "set",
+					fail: true,
+					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "set" but is a facet of the the following indexes: Table Index`
+				},{
+					input: "list",
+					fail: true,
+					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "list" but is a facet of the the following indexes: Table Index`
+				},{
+					input: "map",
+					fail: true,
+					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "map" but is a facet of the the following indexes: Table Index`
+				},{
+					input: "any",
+					fail: true,
+					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "any" but is a facet of the the following indexes: Table Index`
+				}
+			];
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					}
+				},
+				indexes: {
+					main: {
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						},
+					},
+				},
+			};
+
+			for (let test of tests) {
+				schema.attributes.id.type = test.input;
+				if (test.fail) {
+					expect(() => new Entity(schema)).to.throw(test.message);
+				} else {
+					expect(() => new Entity(schema)).to.not.throw();
+				}
+			}
+		});
+		it("Should validate an attribute's defined type when evaluating a field for saving.", () => {
+			let tests = [
+				{
+					input: {
+						type: "string",
+						value: "abc"
+					},
+					fail: false
+				},{
+					input: {
+						type: "number",
+						value: 123
+					},
+					fail: false
+				},{
+					input: {
+						type: "boolean",
+						value: true
+					},
+					fail: false
+				},{
+					input: {
+						type: ["option1", "option2", "option3"],
+						value: "option1"
+					},
+					fail: false
+				},{
+					input: {
+						type: "any",
+						value: "abc"
+					},
+					fail: false,
+				},{
+					input: {
+						type: "any",
+						value: 456
+					},
+					fail: false,
+				},{
+					input: {
+						type: "any",
+						value: true
+					},
+					fail: false,
+				},{
+					input: {
+						type: "any",
+						value: ["yes", "no", "maybe"]
+					},
+					fail: false
+				},{
+					input: {
+						type: "any",
+						value: {"prop1": "val1", "prop2": "val2"}
+					},
+					fail: false
+				},{
+					input: {
+						type: "set",
+						value: ["yes", "no", "maybe"]
+					},
+					fail: false
+				},{
+					input: {
+						type: "set",
+						value: new Set(["yes", "no", "maybe"])
+					},
+					fail: false
+				},{
+					input: {
+						type: "list",
+						value: ["yes", "no", "maybe"]
+					},
+					fail: false
+				},{
+					input: {
+						type: "map",
+						value: {"prop1": "val1", "prop2": "val2"}
+					},
+					fail: false
+				},{
+					input: {
+						type: "map",
+						value: new Map(Object.entries({"prop1": "val1", "prop2": "val2"}))
+					},
+					fail: false
+				},{
+					input: {
+						type: "string",
+						value: 462
+					},
+					fail: true,
+					message: `Invalid value for attribute "data": Received value of type "number", expected value of type "string".`
+				}, {
+					input: {
+						type: "number",
+						value: true
+					},
+					fail: true,
+					message: `Invalid value for attribute "data": Received value of type "boolean", expected value of type "number".`
+				},{
+					input: {
+						type: "boolean",
+						value: "yes"
+					},
+					fail: true,
+					message: `Invalid value for attribute "data": Received value of type "string", expected value of type "boolean".`
+				},{
+					input: {
+						type: ["option1", "option2", "option3"],
+						value: "option4"
+					},
+					fail: true,
+					message: `Invalid value for attribute "data": Value not found in set of acceptable values: option1, option2, option3.`
+				},{
+					input: {
+						type: "map",
+						value: new Set(["yes", "no", "maybe"])
+					},
+					fail: true,
+					message: `Invalid value for attribute "data": Expected value to be an Object to fulfill attribute type "map".`
+				},{
+					input: {
+						type: "list",
+						value: new Set(["yes", "no", "maybe"])
+					},
+					fail: true,
+					message: `Invalid value for attribute "data": Expected value to be an Array to fulfill attribute type "list".`
+				},{
+					input: {
+						type: "set",
+						value: {"prop1": "val1", "prop2": "val2"}
+					},
+					fail: true,
+					message: `Invalid value for attribute "data": Expected value to be an Array or javascript Set to fulfill attribute type "set".`
+				},
+			];
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					data: {
+						type: "string",
+						field: "data"
+					}
+				},
+				indexes: {
+					main: {
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						},
+					},
+				},
+			};
+
+			for (let test of tests) {
+				schema.attributes.data.type = test.input.type;
+				let id = "abcdefg";
+				let data = test.input.value;
+				let entity = new Entity(schema);
+				if (test.fail) {
+					expect(() => entity.put({id, data}).params()).to.throw(test.message);
+				} else {
+
+					expect(() => entity.put({id, data}).params()).to.not.throw();
+				}
+			}
+		});
 		it("should recognize when an attribute's field property is duplicated", () => {
 			let schema = {
 				service: "MallStoreDirectory",
@@ -273,9 +510,7 @@ describe("Entity", () => {
 							},
 						},
 					}),
-			).to.throw(
-				`Invalid "type" property for attribute: "regexp". Acceptable types include string, number, boolean, enum`,
-			);
+			).to.throw(`Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a facet of the the following indexes: Table Index`);
 		});
 		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", () => {
 			let id = uuidV4();
@@ -317,10 +552,10 @@ describe("Entity", () => {
 					}
 				}
 			};
-			
+
 			let error = "Invalid index definition: Access pattern, store (PRIMARY INDEX), contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.";
 			expect(() => new Entity(schema)).to.throw(error);
-		})
+		});
 		it("Should identify impacted indexes from attributes", () => {
 			let id = uuidV4();
 			let rent = "0.00";
@@ -896,7 +1131,7 @@ describe("Entity", () => {
 					}
 				},
 			};
-			
+
 			let MallStores = new Entity(schema);
 			let id = "12345"
 			let mall = "EastPointe";
@@ -1481,7 +1716,7 @@ describe("Entity", () => {
 				},{
 					success: false,
 					output: {
-						err: `Invalid "type" property for attribute: "prop1". Acceptable types include string, number, boolean, enum`
+						err: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "prop1" is defined as being type "invalid_value" but is a facet of the the following indexes: Table Index`
 					},
 					input: {
 						model: {
@@ -1510,7 +1745,7 @@ describe("Entity", () => {
 					}
 				}
 			]
-			
+
 			for (let test of tests) {
 				if (test.success) {
 					let entity = new Entity(test.input.model);

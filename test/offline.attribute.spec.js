@@ -90,8 +90,6 @@ describe("Attribute types", () => {
 		});
 		let [isValid, err] = attribute.isValid(123);
 		expect(isValid).to.be.false;
-		expect(err).to.be.equal(
-			"Received value of type number, expected value of type string",
-		);
+		expect(err).to.be.equal(`Received value of type "number", expected value of type "string"`,);
 	});
 });
