@@ -9,11 +9,11 @@ let clauses = {
 		// 	// return state;
 		// },
 		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch"],
-		
+
 	},
 	collection: {
 		name: "collection",
-		/* istanbul ignore next */ 
+		/* istanbul ignore next */
 		action(entity, state, collection = "", facets /* istanbul ignore next */ = {}) {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
@@ -173,39 +173,39 @@ let clauses = {
 		},
 		children: ["set", "go", "params"],
 	},
-	append: {
-		name: "append",
-		action(entity, state, data = {}) {
-			let attributes = {}
-			let payload = {};
-			for (let path of Object.keys(data)) {
-				let parsed = entity.model.schema.parseAttributePath(path);
-				
-			}
-		}, 
-		children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	},
-	remove: {
-		name: "remove",
-		action(entity, state, data) {
-
-		}, 
-		children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	},
-	add: {
-		name: "add",
-		action(entity, state, data) {
-
-		}, 
-		children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	},
-	subtract: {
-		name: "subtract",
-		action(entity, state, data) {
-
-		}, 
-		children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	},
+	// append: {
+	// 	name: "append",
+	// 	action(entity, state, data = {}) {
+	// 		let attributes = {}
+	// 		let payload = {};
+	// 		for (let path of Object.keys(data)) {
+	// 			let parsed = entity.model.schema.parseAttributePath(path);
+	//
+	// 		}
+	// 	},
+	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
+	// },
+	// remove: {
+	// 	name: "remove",
+	// 	action(entity, state, data) {
+	//
+	// 	},
+	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
+	// },
+	// add: {
+	// 	name: "add",
+	// 	action(entity, state, data) {
+	//
+	// 	},
+	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
+	// },
+	// subtract: {
+	// 	name: "subtract",
+	// 	action(entity, state, data) {
+	//
+	// 	},
+	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
+	// },
 	query: {
 		name: "query",
 		action(entity, state, facets, options = {}) {

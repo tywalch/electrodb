@@ -56,7 +56,7 @@ class Entity {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
 			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
-				let eqFilters = []; 
+				let eqFilters = [];
 				for (let facet of Object.keys(facets)) {
 					if (attr[facet]) {
 						eqFilters.push(attr[facet].eq(facets[facet]));
@@ -68,7 +68,7 @@ class Entity {
 			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(
 				facets,
 			).filter(attr => {
-				let eqFilters = []; 
+				let eqFilters = [];
 				for (let facet of Object.keys(facets)) {
 					if (attr[facet]) {
 						eqFilters.push(attr[facet].eq(facets[facet]));
@@ -78,7 +78,7 @@ class Entity {
 			});
 		}
 	}
-	
+
 	collection(collection = "", clauses = {}, facets = {}) {
 		let index = this.model.translations.collections.fromCollectionToIndex[
 			collection
@@ -95,7 +95,7 @@ class Entity {
 	_validateModel(model) {
 		return validations.model(model);
 	}
-	
+
 	get(facets = {}) {
 		let index = "";
 		return this._makeChain(index, clauses, clauses.index).get(facets);
@@ -342,7 +342,7 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
-			case MethodTypes.patch: 
+			case MethodTypes.patch:
 				params = this._makeUpdateParams(
 					update,
 					keys.pk,
@@ -371,7 +371,7 @@ class Entity {
 		}
 		return key;
 	}
-	
+
 	/* istanbul ignore next */
 	_makeScanParam(filter = {}) {
 		let indexBase = "";
@@ -548,7 +548,7 @@ class Entity {
 		)}`;
 		return expressions;
 	}
-	
+
 	/* istanbul ignore next */
 	_queryParams(chainState = {}, options = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
@@ -661,7 +661,7 @@ class Entity {
 		}
 		return merged;
 	}
-	
+
 	/* istanbul ignore next */
 	_makeComparisonQueryParams(index = "", comparison = "", filter = {}, pk = {}, sk = {}) {
 		let operator = Comparisons[comparison];
@@ -762,7 +762,7 @@ class Entity {
 		}
 		return { indexKey, updatedKeys };
 	}
-	
+
 	/* istanbul ignore next */
 	_getIndexImpact(attributes = {}, included = {}) {
 		let includedFacets = Object.keys(included);
@@ -852,7 +852,7 @@ class Entity {
 		);
 		return { ...queryFacets };
 	}
-	
+
 	/* istanbul ignore next */
 	_expectFacets(obj = {}, properties = [], type = "key facets") {
 		let [incompletePk, missing, matching] = this._expectProperties(
@@ -907,7 +907,7 @@ class Entity {
 			return "";
 		}
 	}
-	
+
 	/* istanbul ignore next */
 	_getPrefixes({ collection = "", customFacets = {}, sk } = {}) {
 		/*
@@ -915,7 +915,7 @@ class Entity {
 			a "begins_with" operator when crossing entities. It is also possible
 			that the user defined a custom key on either the PK or SK. In the case
 			of a customKey AND a collection, the collection is ignored to favor
-			the custom key. 
+			the custom key.
 		*/
 
 		let keys = {
@@ -938,7 +938,7 @@ class Entity {
 		}
 
 		if (sk === undefined) {
-			keys.pk.prefix += keys.sk.prefix;	
+			keys.pk.prefix += keys.sk.prefix;
 		}
 
 		if (customFacets.pk) {
@@ -953,7 +953,7 @@ class Entity {
 
 		return keys;
 	}
-	
+
 	/* istanbul ignore next */
 	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
 		this._validateIndex(index);
@@ -1050,7 +1050,7 @@ class Entity {
 			shouldScan: match === undefined
 		};
 	}
-	
+
 	/* istanbul ignore next */
 	_parseComposedKey(key = "") {
 		let facets = {};
@@ -1169,17 +1169,12 @@ class Entity {
 				facets.fields.push(sk.field);
 			}
 
-			// if (inCollection) {
-			// 	collections[index.collection] = index.collection;
-			// }
-
 			let definition = {
 				pk,
 				sk,
 				collection,
 				customFacets,
 				index: indexName,
-				collection: index.collection,
 			};
 
 			if (inCollection) {
@@ -1241,7 +1236,7 @@ class Entity {
 				utilities.structureFacets(facets, facet, j, attributes, i),
 			);
 		}
-		
+
 		if (facets.byIndex[""] === undefined) {
 			throw new Error("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index");
 		}
@@ -1256,7 +1251,7 @@ class Entity {
 			collections: Object.keys(collections),
 		};
 	}
-	
+
 	_normalizeFilters(filters = {}) {
 		let normalized = {};
 		let invalidFilterNames = ["go", "params", "filter"];
@@ -1307,7 +1302,6 @@ class Entity {
 				indexes: indexAccessPattern,
 				collections: indexCollection,
 			},
-
 			original: model,
 		};
 	}

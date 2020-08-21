@@ -1,6 +1,6 @@
 const { KeyTypes, CastTypes, AttributeTypes } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
-
+const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 class Attribute {
 	constructor(definition = {}) {
 		this.name = definition.name;
@@ -50,7 +50,7 @@ class Attribute {
 					", ",
 				)}`,
 			);
-		} else if (cast === "string") {
+		} else if (cast === AttributeTypes.string) {
 			return (val) => {
 				if (val === undefined) {
 					throw new Error(
@@ -59,10 +59,10 @@ class Attribute {
 				} else if (typeof val === "string") {
 					return val;
 				} else {
-					return String(val);
+					return JSON.stringify(val);
 				}
 			};
-		} else if (cast === "number") {
+		} else if (cast === AttributeTypes.number) {
 			return (val) => {
 				if (val === undefined) {
 					throw new Error(
@@ -115,7 +115,7 @@ class Attribute {
 		let type = "";
 		let enumArray = [];
 		if (Array.isArray(definition)) {
-			type = "enum";
+			type = AttributeTypes.enum;
 			enumArray = [...definition];
 		} else {
 			type = definition || "string";
@@ -133,23 +133,48 @@ class Attribute {
 	_isType(value) {
 		if (value === undefined) {
 			return [!this.required, this.required ? "Value is required" : ""];
-		} else if (this.type === "enum") {
-			let isIncluded = this.enumArray.includes(value);
-			let reason = isIncluded
-				? ""
-				: `Value not found in set of acceptable values: ${this.enumArray.join(
-						", ",
-				  )}`;
-			return [isIncluded, reason];
-		} else {
-			let isTyped = typeof value === this.type;
-			let reason = isTyped
-				? ""
-				: `Received value of type ${typeof value}, expected value of type ${
-						this.type
-				  }`;
-			return [isTyped, reason];
 		}
+		let isTyped = false;
+		let reason = "";
+		switch (this.type) {
+			case AttributeTypes.enum:
+				isTyped = this.enumArray.includes(value);
+				if (!isTyped) {
+					reason = `Value not found in set of acceptable values: ${this.enumArray.join(", ")}`;
+				}
+				break;
+			case AttributeTypes.any:
+				isTyped = true;
+				break;
+			case AttributeTypes.map:
+				isTyped = value.constructor.name === "Object" || value.constructor.name === "Map";
+				if (!isTyped) {
+					reason = `Expected value to be an Object to fulfill attribute type "${this.type}"`
+				}
+				break;
+			case AttributeTypes.set:
+				isTyped = Array.isArray(value) || value.constructor.name === "Set";
+				if (!isTyped) {
+					reason = `Expected value to be an Array or javascript Set to fulfill attribute type "${this.type}"`
+				}
+				break;
+			case AttributeTypes.list:
+				isTyped = Array.isArray(value);
+				if (!isTyped) {
+					reason = `Expected value to be an Array to fulfill attribute type "${this.type}"`
+				}
+				break;
+			case AttributeTypes.string:
+			case AttributeTypes.number:
+			case AttributeTypes.boolean:
+			default:
+				isTyped = typeof value === this.type;
+				if (!isTyped) {
+					reason = `Received value of type "${typeof value}", expected value of type "${this.type}"`;
+				}
+				break;
+		}
+		return [isTyped, reason];
 	}
 
 	isValid(value) {
@@ -202,10 +227,9 @@ class Schema {
 		let enums = {};
 		let translationForTable = {};
 		let translationForRetrieval = {};
-
 		for (let name in attributes) {
 			let attribute = attributes[name];
-			if (typeof attribute === "string" || Array.isArray(attribute)) {
+			if (typeof attribute === AttributeTypes.string || Array.isArray(attribute)) {
 				attribute = {
 					type: attribute
 				};
@@ -231,6 +255,10 @@ class Schema {
 				get: attribute.get,
 				set: attribute.set,
 			};
+			if (facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
+				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
+				throw new Error(`Invalid facet definition: Facets must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a facet of the the following indexes: ${assignedIndexes.join(", ")}`);
+			}
 			if (usedAttrs[definition.field] || usedAttrs[name]) {
 				invalidProperties.push({
 					name,
@@ -255,7 +283,7 @@ class Schema {
 		if (missingFacetAttributes.length) {
 			throw new Error(
 				`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(
-					", ",
+					"\r\n",
 				)}`,
 			);
 		}
@@ -274,7 +302,7 @@ class Schema {
 			};
 		}
 	}
-	
+
 	_getPartDetail(part = "") {
 		let detail = {
 				expression: "",

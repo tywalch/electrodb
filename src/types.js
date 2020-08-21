@@ -37,14 +37,15 @@ const Comparisons = {
 const CastTypes = ["string", "number"];
 
 const AttributeTypes = {
-	string: "string", 
-	number: "number", 
-	boolean: "boolean", 
-	enum: "enum", 
-	map: "map", 
-	set: "set", 
-	list: "list"
-}
+	string: "string",
+	number: "number",
+	boolean: "boolean",
+	enum: "enum",
+	map: "map",
+	set: "set",
+	list: "list",
+	any: "any",
+};
 
 module.exports = {
 	KeyTypes,
