@@ -419,10 +419,10 @@ Optional second parameter
 > Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. 
 
 #### Simple Syntax
-Assign just the `type` of the attribute directly to the attribute name. Currently supported options are "string", "number", "boolean", and an array of strings representing a fixed set of possible values.
+Assign just the `type` of the attribute directly to the attribute name. Currently supported options are "string", "number", "boolean", an array of strings representing a fixed set of possible values, or "any" which disables value type checking on that attribute.
 ```typescript
 attributes: {
-	<AttributeName>: "string"|"number"|"boolean"|string[]
+	<AttributeName>: "string"|"number"|"boolean"|"any"|string[]
 }
 ```
 
@@ -447,7 +447,7 @@ attributes: {
 
 | Property | Type | Required | Description |
 | -------- | :--: | :--: | ----------- |
-| `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, or an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`. |
+| `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
 `required` | `boolean` | no | Whether or not the value is required when creating a new record. |  
 `default` | `value`, `() => value` | no | Either the default value itself or a synchronous function that returns the desired value. |  
 `validate` | `RegExp`, `() => void|string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
@@ -492,7 +492,9 @@ indexes: {
 `collection` | `string` | no | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality). 
 
 ## Facets 
-A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or an **Sort Key** key, which define an `index`. 
+A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or an **Sort Key** key, which define an `index`.
+
+> Note: Only attributes with a type of `"string"`, `"number"`, or `"boolean"` can be used as a facet 
 
 There are two ways to provide facets:
 1. As a [Facet Array](#facet-arrays)
