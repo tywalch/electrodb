@@ -393,7 +393,13 @@ describe("Entity", () => {
 					},
 					fail: true,
 					message: `Invalid value for attribute "data": Expected value to be an Array or javascript Set to fulfill attribute type "set".`
-				},
+				},{
+			    input: {
+			      type: "invalid_type"
+          },
+          fail: true,
+          message: `Invalid "type" property for attribute: "data". Acceptable types include string, number, boolean, enum, map, set, list, any`
+        }
 			];
 			let schema = {
 				service: "MallStoreDirectory",
@@ -424,12 +430,18 @@ describe("Entity", () => {
 				schema.attributes.data.type = test.input.type;
 				let id = "abcdefg";
 				let data = test.input.value;
-				let entity = new Entity(schema);
+
 				if (test.fail) {
-					expect(() => entity.put({id, data}).params()).to.throw(test.message);
+					expect(() => {
+            let entity = new Entity(schema);
+					  entity.put({id, data}).params()
+          }).to.throw(test.message);
 				} else {
 
-					expect(() => entity.put({id, data}).params()).to.not.throw();
+					expect(() => {
+            let entity = new Entity(schema);
+					  entity.put({id, data}).params()
+          }).to.not.throw();
 				}
 			}
 		});
