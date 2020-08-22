@@ -1821,6 +1821,22 @@ describe("Entity", () => {
 		let category = "123";
 		let unit = "123";
 		let leaseEnd = "123";
+		it("Should decide to scan", () => {
+			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
+			let params = MallStores.find({leaseEnd}).params();
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
+				ExpressionAttributeValues: {
+					':leaseEnd1': '123',
+					':pk': '$mallstoredirectory_1$mallstores#id_'
+				},
+				FilterExpression: '(begins_with(#pk, :pk) AND #leaseEnd = :leaseEnd1'
+			});
+			expect(shouldScan).to.be.true;
+			expect(keys).to.be.deep.equal([]);
+			expect(index).to.be.equal("");
+		});
 		it("Should match on the primary index", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
 			let params = MallStores.find({id}).params();
