@@ -1,5 +1,4 @@
 # ElectroDB  
-[![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master)
 [![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
 ![npm bundle size](https://img.shields.io/bundlephobia/min/electrodb)
 
