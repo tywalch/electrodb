@@ -1397,13 +1397,33 @@ let [pageTwo, moreStores] = await MallStores.query
 
 ## Query Examples
 
-Below are _all_ chain possibilities available, given the `MallStore` model. 
+Below are _all_ chain possibilities available. 
+
+Assume an index named `leases` defined as: 
+```
+leases: {
+	index: "gsi1pk-gsi1sk-index",
+	pk: {
+		field: "pk",
+		facets: ["mallId"]
+	},
+	sk: {
+		field: "sk",
+		facets: ["leaseEndDate", "rent"]
+	}
+}
+```
+And the following model defined filters:
+```
+filters: {
+	byCategory: ({category}, name) => category.eq(name),
+	rentDiscount: (attributes, discount, max, min) => {
+		return `${attributes.discount.lte(discount)} AND ${attributes.rent.between(max, min)}`
+	}
+}  
+``` 
 
 ```javascript
-// leases  
-// pk: ["mallId"]  
-// sk: ["buildingId", "unitId", "storeId"]
-
 let mallId = "EastPointe";
 
 // begins_with
@@ -1427,6 +1447,13 @@ let discount = "500.00";
 let maxRent = "2000.00";
 let minRent = "5000.00";
 
+// inline filter
+MallStore.query
+  .leases({mallId, leaseEndDate: june})
+  .filter(attr => attr.storeId.eq("LatteLarrys"))
+  .go();
+
+// model defined filters
 MallStore.query
   .leases({mallId, leaseEndDate: june})
   .rentDiscount(discount, maxRent, minRent)
@@ -1439,6 +1466,7 @@ MallStore.query
     {leaseEndDate: july})
   .byCategory("food/coffee")
   .go();
+  
 ```
 
 ## Query Options
