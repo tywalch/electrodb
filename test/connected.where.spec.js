@@ -236,6 +236,10 @@ describe("General", async () => {
 				${name(animal)} = ${value(animal, "Pig")}
 			`)
 			.go();
+			console.log("WHERE", WhereTests.query
+			.farm({pen})
+			.where(({animal, dangerous}, {value, name, between}) => `${name(animal)} = ${value(animal, "Pig")} AND ${between(dangerous, "2020-09-25", "2020-09-28")}`)
+			.params())
 			expect(animals)
 				.to.be.an("array")
 				.and.have.length(1);
@@ -271,9 +275,7 @@ describe("General", async () => {
 		expect(after.dangerous).to.be.true;
 		let doesExist = await WhereTests.update(penRow)
 			.set({dangerous: true})
-			.where(({animal, dangerous}, {value, name, notExists}) => `
-				${name(animal)} = ${value(animal, penRow.animal)} AND ${notExists(dangerous)}
-			`)
+			.where(({animal, dangerous}, {value, name, notExists}) => `${name(animal)} = ${value(animal, penRow.animal)} AND ${notExists(dangerous)}`)
 			.go()
 			.then(() => false)
 			.catch(() => true);
