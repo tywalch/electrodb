@@ -661,9 +661,11 @@ describe("Entity", () => {
 			let get = MallStores.get({ id });
 			expect(get).to.have.keys("go", "params");
 			let del = MallStores.delete({ id });
-			expect(del).to.have.keys("go", "params");
+			expect(del).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let update = MallStores.update({ id }).set({ rent, category });
-			expect(update).to.have.keys("go", "params", "set");
+			expect(update).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter");
+			let patch = MallStores.patch({ id }).set({ rent, category });
+			expect(patch).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter");
 			let put = MallStores.put({
 				store,
 				mall,
@@ -673,11 +675,22 @@ describe("Entity", () => {
 				leaseEnd,
 				unit,
 			});
-			expect(put).to.have.keys("go", "params");
+			expect(put).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
+			let create = MallStores.create({
+				store,
+				mall,
+				building,
+				rent,
+				category,
+				leaseEnd,
+				unit,
+			});
+			expect(create).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let queryUnitsBetween = MallStores.query
 				.units({ mall })
 				.between({ building: buildingOne }, { building: buildingTwo });
 			expect(queryUnitsBetween).to.have.keys(
+				"where",
 				"filter",
 				"go",
 				"params",
@@ -686,6 +699,7 @@ describe("Entity", () => {
 			);
 			let queryUnitGt = MallStores.query.units({ mall }).gt({ building });
 			expect(queryUnitGt).to.have.keys(
+				"where",
 				"filter",
 				"go",
 				"params",
@@ -694,6 +708,7 @@ describe("Entity", () => {
 			);
 			let queryUnitsGte = MallStores.query.units({ mall }).gte({ building });
 			expect(queryUnitsGte).to.have.keys(
+				"where",
 				"filter",
 				"go",
 				"params",
@@ -702,6 +717,7 @@ describe("Entity", () => {
 			);
 			let queryUnitsLte = MallStores.query.units({ mall }).lte({ building });
 			expect(queryUnitsLte).to.have.keys(
+				"where",
 				"filter",
 				"go",
 				"params",
@@ -710,6 +726,21 @@ describe("Entity", () => {
 			);
 			let queryUnitsLt = MallStores.query.units({ mall }).lt({ building });
 			expect(queryUnitsLt).to.have.keys(
+				"where",
+				"filter",
+				"go",
+				"params",
+				"page",
+				"rentsLeaseEndFilter",
+			);
+			let find = MallStores.query.units({ mall });
+			expect(find).to.have.keys(
+				"between",
+				"gt",
+				"gte",
+				"lt",
+				"lte",
+				"where",
 				"filter",
 				"go",
 				"params",

@@ -47,6 +47,11 @@ const AttributeTypes = {
 	any: "any",
 };
 
+const ExpressionTypes = {
+	ConditionExpression: "ConditionExpression",
+	FilterExpression: "FilterExpression"
+}
+
 module.exports = {
 	KeyTypes,
 	QueryTypes,
@@ -54,4 +59,5 @@ module.exports = {
 	CastTypes,
 	Comparisons,
 	AttributeTypes,
+	ExpressionTypes,
 };
