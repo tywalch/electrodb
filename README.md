@@ -839,7 +839,7 @@ let stores = MallStores.query
 
 ## Where 
 
-> The `where()` method is an improvement on the `filter()` method. Unlike `filter`, `where` will be compadible with upcoming features related to complex types.
+> The `where()` method is an improvement on the `filter()` method. Unlike `filter`, `where` will be compatible with upcoming features related to complex types.
 
 Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/put/create/delete action. 
 
