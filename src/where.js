@@ -1,4 +1,5 @@
 const __is_clause__ = Symbol("IsWhereClause");
+const {MethodTypes, ExpressionTypes} = require("./types");
 
 function attributeProxy(path, attr, setName) {
   return new Proxy(() => ({path, attr}), {
@@ -42,12 +43,15 @@ class WhereFactory {
       Object.defineProperty(operations, type, {
         get: () => {
           return (property, ...values) => {
+						if (property === undefined) {
+							throw new Error(`Invalid/Unknown property passed in where clause passed to operation: '${type}'`);
+						}
             if (property.__is_clause__ === __is_clause__) {
               let {path, attr} = property();
               let attrValues = [];
               for (let value of values) {
 								let valueCount = getValueCount(attr);
-								let attrValue = `:${attr}${valueCount}`;
+								let attrValue = `:${attr}_w${valueCount}`;
 								if (template.length > 1) {
 									setValue(attrValue, value);
 									attrValues.push(attrValue);
@@ -59,7 +63,6 @@ class WhereFactory {
               // todo: parse string
             } else {
               // todo: proper error logging.
-              console.log("PROPERTY", property());
               throw new Error("INVALID PROPERTY")
             }
           }
@@ -82,9 +85,23 @@ class WhereFactory {
 			return newExpression;
 		}
 	}
+
+	getExpressionType(methodType) {
+		switch (methodType) {
+			case MethodTypes.put:
+			case MethodTypes.create:
+			case MethodTypes.update:
+			case MethodTypes.patch:
+			case MethodTypes.delete:
+				return ExpressionTypes.ConditionExpression
+			default:
+				return ExpressionTypes.FilterExpression
+		}
+	}
   
   buildClause(filterFn) {
 		return (entity, state, ...params) => {
+			let expressionType = this.getExpressionType(state.query.method);
 			state.query.filter.ExpressionAttributeNames = state.query.filter.ExpressionAttributeNames || {};
 			state.query.filter.ExpressionAttributeValues = state.query.filter.ExpressionAttributeValues || {};
 			state.query.filter.valueCount = state.query.filter.valueCount || {};
@@ -102,8 +119,8 @@ class WhereFactory {
 			if (typeof expression !== "string") {
 				throw new Error("Invalid filter response. Expected result to be of type string");
 			}
-			state.query.filter.FilterExpression = this._concatFilterExpression(
-				state.query.filter.FilterExpression,
+			state.query.filter[expressionType] = this._concatFilterExpression(
+				state.query.filter[expressionType],
 				expression,
 			);
 			return state;

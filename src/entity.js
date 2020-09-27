@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
+const { KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const validations = require("./validations");
@@ -93,7 +93,7 @@ class Entity {
 		if (index === undefined) {
 			throw new Error(`Invalid collection: ${collection}`);
 		}
-		return this._makeChain(index, clauses, clauses.index).collection(
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).collection(
 			collection,
 			facets,
 		);
@@ -110,12 +110,12 @@ class Entity {
 
 	delete(facets = {}) {
 		let index = "";
-		return this._makeChain(index, clauses, clauses.index).delete(facets);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).delete(facets);
 	}
 
 	put(attributes = {}) {
 		let index = "";
-		return this._makeChain(index, clauses, clauses.index).put(attributes);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).put(attributes);
 	}
 
 	create(attributes = {}) {
@@ -125,12 +125,12 @@ class Entity {
 				ConditionExpression: this._makeCreateConditions(index)
 			}
 		}
-		return this._makeChain(index, clauses, clauses.index, options).create(attributes);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).create(attributes);
 	}
 
 	update(facets = {}) {
 		let index = "";
-		return this._makeChain(index, clauses, clauses.index).update(facets);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).update(facets);
 	}
 
 	patch(facets = {}) {
@@ -140,7 +140,7 @@ class Entity {
 				ConditionExpression: this._makePatchConditions(index)
 			}
 		}
-		return this._makeChain(index, clauses, clauses.index, options).patch(facets);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
 	}
 
 	_chain(state, clauses, clause) {
@@ -299,7 +299,6 @@ class Entity {
 			pager: !!options.pager
 		};
 		let parameters = Object.assign({}, params);
-
 		let stackTrace = new Error();
 		try {
 			let response = await this.client[method](parameters).promise();
@@ -334,6 +333,25 @@ class Entity {
 		}
 		return filter.join(" AND ");
 	}
+
+	_applyParameterExpressionTypes(params, filter) {
+		if (typeof filter[ExpressionTypes.ConditionExpression] === "string" && filter[ExpressionTypes.ConditionExpression].length > 0) {
+			if (typeof params[ExpressionTypes.ConditionExpression] === "string" && params[ExpressionTypes.ConditionExpression].length > 0) {
+				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${filter[ExpressionTypes.ConditionExpression]}`
+			} else {
+				params[ExpressionTypes.ConditionExpression] = filter[ExpressionTypes.ConditionExpression];
+			}
+			if (Object.keys(filter.ExpressionAttributeNames).length > 0) {
+				params.ExpressionAttributeNames = params.ExpressionAttributeNames || {};
+				params.ExpressionAttributeNames = Object.assign({}, filter.ExpressionAttributeNames, params.ExpressionAttributeNames);
+			}
+			if (Object.keys(filter.ExpressionAttributeValues).length > 0) {
+				params.ExpressionAttributeValues = params.ExpressionAttributeValues || {};
+				params.ExpressionAttributeValues = Object.assign({}, filter.ExpressionAttributeValues, params.ExpressionAttributeValues);
+			}
+		}
+		return params;
+	}
 	/* istanbul ignore next */
 	_params({ keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} }, config = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
@@ -363,7 +381,8 @@ class Entity {
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
-		return this._applyParameterOptions(params, options, config);
+		params = this._applyParameterOptions(params, options, config);
+		return this._applyParameterExpressionTypes(params, filter);
 	}
 
 	_makeParameterKey(index, pk, sk) {
