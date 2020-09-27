@@ -1,16 +1,3 @@
-let queryChildren = [
-	"eq",
-	"gt",
-	"lt",
-	"gte",
-	"lte",
-	"between",
-	"begins",
-	"exists",
-	"notExists",
-	"contains",
-	"notContains",
-];
 let FilterTypes = {
 	eq: {
 		template: function eq(name, value) {
