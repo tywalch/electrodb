@@ -31,6 +31,6 @@
     "uuid": "^7.0.1"
   },
   "dependencies": {
-    "jsonschema": "1.2.5"
+    "jsonschema": "1.2.7"
   }
 }
