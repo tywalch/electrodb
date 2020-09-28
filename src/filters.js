@@ -1,16 +1,5 @@
-let queryChildren = [
-	"eq",
-	"gt",
-	"lt",
-	"gte",
-	"lte",
-	"between",
-	"begins",
-	"exists",
-	"notExists",
-	"contains",
-	"notContains",
-];
+const {MethodTypes, ExpressionTypes} = require("./types");
+
 let FilterTypes = {
 	eq: {
 		template: function eq(name, value) {
@@ -100,6 +89,19 @@ class FilterFactory {
 		};
 	}
 
+	getExpressionType(methodType) {
+		switch (methodType) {
+			case MethodTypes.put:
+			case MethodTypes.create:
+			case MethodTypes.update:
+			case MethodTypes.patch:
+			case MethodTypes.delete:
+				return ExpressionTypes.ConditionExpression
+			default:
+				return ExpressionTypes.FilterExpression
+		}
+	}
+
 	_buildFilterAttributes(setName, setValue, getValueCount) {
 		let attributes = {};
 		for (let [name, attribute] of Object.entries(this.attributes)) {
@@ -142,9 +144,6 @@ class FilterFactory {
 			if (existingNeedsParens) {
 				existingExpression = `(${existingExpression})`;
 			}
-			// if (newNeedsParens) {
-			// 	newExpression = `(${newExpression})`;
-			// }
 			return `${existingExpression} AND ${newExpression}`;
 		} else {
 			return newExpression;
@@ -153,6 +152,7 @@ class FilterFactory {
 
 	buildClause(filterFn) {
 		return (entity, state, ...params) => {
+			let expressionType = this.getExpressionType(state.query.method);
 			state.query.filter.ExpressionAttributeNames =
 				state.query.filter.ExpressionAttributeNames || {};
 			state.query.filter.ExpressionAttributeValues =
@@ -177,8 +177,8 @@ class FilterFactory {
 			if (typeof expression !== "string") {
 				throw new Error("Invalid filter response. Expected result to be of type string");
 			}
-			state.query.filter.FilterExpression = this._concatFilterExpression(
-				state.query.filter.FilterExpression,
+			state.query.filter[expressionType] = this._concatFilterExpression(
+				state.query.filter[expressionType],
 				expression,
 			);
 			return state;

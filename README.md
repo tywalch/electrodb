@@ -1,4 +1,7 @@
 # ElectroDB  
+[![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
+[![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
+![npm bundle size](https://img.shields.io/bundlephobia/min/electrodb)
 
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb.png?raw=true)
 ***ElectroDB*** is a dynamodb library to ease the use of having multiple entities and complex hierarchical relationships in a single dynamodb table. 
@@ -12,7 +15,7 @@
 - **Simplified Sort Key Condition Querying**: Write efficient sort key queries by easily building compose keys.
 - **Simplified Filter Composition**: Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
 - **Easily Query Across Entities**: Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
-- **Automatic Index Selection**: Use `find` method to dynamically and effeciently query based on defined sort key structures. 
+- **Automatic Index Selection**: Use `.find()` method to dynamically and effeciently query based on defined sort key structures. 
 - **Simplified Pagination API** Use `.page()` to easily iterate through multiquery result sets.  
 
 Turn this:
@@ -49,18 +52,23 @@ Into This:
 }
 ```
 
+## Table of Contents
+
 - [ElectroDB](#electrodb)
   * [Features](#features)
+  * [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
   * [Model](#model)
-    + [Model Properties:](#model-properties-)
+    + [Model Properties](#model-properties)
     + [Service Properties](#service-properties)
     + [Model/Service Options](#model-service-options)
   * [Attributes](#attributes)
+      - [Simple Syntax](#simple-syntax)
+      - [Expanded Syntax](#expanded-syntax)
   * [Indexes](#indexes)
   * [Facets](#facets)
     + [Facet Arrays](#facet-arrays)
@@ -68,8 +76,13 @@ Into This:
   * [Collections](#collections)
   * [Filters](#filters)
     + [Defined on the model](#defined-on-the-model)
-    + [Defined via "Filter" method after query operators](#defined-via--filter--method-after-query-operators)
+    + [Defined via Filter method after query operators](#defined-via-filter-method-after-query-operators)
     + [Multiple Filters](#multiple-filters)
+  * [Where](#where)
+    + [FilterExpressions](#filterexpressions)
+    + [ConditionExpressions](#conditionexpressions)
+    + [Attributes and Operations](#attributes-and-operations)
+    + [Multiple Where Clauses](#multiple-where-clauses)
 - [Building Queries](#building-queries)
     + [Sort Key Operations](#sort-key-operations)
     + [Using facets to make hierarchical keys](#using-facets-to-make-hierarchical-keys)
@@ -83,49 +96,49 @@ Into This:
     + [Patch Records](#patch-records)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
-    + [`Query` Records](#-query--records)
+    + [Query Records](#query-records)
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
-  * [Execute Query .go(), .params(), .page()](#execute-query-go----params----page--)
-    + [`.params()`](#-params---)
-    + [`.go()`](#-go---)
-    + [`.page()`](#-page---)
+  * [Execute Queries](#execute-queries)
+    + [Params](#params)
+    + [Go](#go)
+    + [Page](#page)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
 - [Examples](#examples)
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
     + [Entities](#entities-1)
-    + [`Query` Records](#-query--records-1)
+    + [Query Records](#query-records-1)
       - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee)
       - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office)
       - [Tasks for a given employee](#tasks-for-a-given-employee)
       - [Tasks for a given project](#tasks-for-a-given-project)
       - [Find office locations](#find-office-locations)
       - [Find employee salaries and titles](#find-employee-salaries-and-titles)
-      - [Find employee birthday/anniversary](#find-employee-birthday-anniversary)
+      - [Find employee birthdays or anniversaries](#find-employee-birthdays-or-anniversaries)
       - [Find direct reports](#find-direct-reports)
   * [Shopping Mall Property Management App](#shopping-mall-property-management-app)
     + [Shopping Mall Requirements](#shopping-mall-requirements)
     + [Access Patterns are accessible on the StoreLocation](#access-patterns-are-accessible-on-the-storelocation)
     + [PUT Record](#put-record)
-      - [Add a new Store to the Mall:](#add-a-new-store-to-the-mall-)
+      - [Add a new Store to the Mall](#add-a-new-store-to-the-mall)
     + [UPDATE Record](#update-record)
-      - [Change the Store's Lease Date:](#change-the-store-s-lease-date-)
+      - [Change the Store's Lease Date](#change-the-store-s-lease-date)
     + [GET Record](#get-record)
       - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
     + [DELETE Record](#delete-record)
       - [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
-    + [Query Records](#query-records)
+    + [Query Records](#query-records-2)
       - [All Stores in a particular mall](#all-stores-in-a-particular-mall)
       - [All Stores in a particular mall building](#all-stores-in-a-particular-mall-building)
-      - [What store is located in unit "B47"?](#what-store-is-located-in-unit--b47--)
+      - [Find the store located in unit B47](#find-the-store-located-in-unit-b47)
       - [Stores by Category at Mall](#stores-by-category-at-mall)
       - [Stores by upcoming lease](#stores-by-upcoming-lease)
       - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
-      - [All Latte Larry's in a particular mall building](#all-latte-larry-s-in-a-particular-mall-building)
-- [Coming Soon:](#coming-soon-)
+      - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
+- [Coming Soon](#coming-soon)
 
 # Installation    
 
@@ -137,7 +150,7 @@ npm install electrodb --save
 
 
 # Usage
-Require or import `Entity` or `Service` from `electrodb`:    
+Require `Entity` and/or `Service` from `electrodb`:    
 ```javascript  
 const {Entity, Service} = require("electrodb");
 ```
@@ -378,7 +391,7 @@ let TaskApp = new Service({
 TaskApp.join(EmployeesModel); // TaskApp.entities.employees
 TaskApp.join(TasksModel); // TaskApp.entities.tasks
 ```
-### Model Properties:
+### Model Properties
 
 | Property | Description |
 | ----------- | ----------- |
@@ -411,10 +424,10 @@ Optional second parameter
 > Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. 
 
 #### Simple Syntax
-Assign just the `type` of the attribute directly to the attribute name. Currently supported options are "string", "number", "boolean", and an array of strings representing a fixed set of possible values.
+Assign just the `type` of the attribute directly to the attribute name. Currently supported options are "string", "number", "boolean", an array of strings representing a fixed set of possible values, or "any" which disables value type checking on that attribute.
 ```typescript
 attributes: {
-	<AttributeName>: "string"|"number"|"boolean"|string[]
+	<AttributeName>: "string"|"number"|"boolean"|"any"|string[]
 }
 ```
 
@@ -426,7 +439,7 @@ attributes: {
 		"type": string|string[],
 		"required"?: boolean,
 		"default"?: value|() => value
-		"validate"?: RegExp|() => void|string
+		"validate"?: RegExp|(value: any) => void|string
 		"field"?: string
 		"readOnly"?: boolean
 		"label"?: string
@@ -439,10 +452,10 @@ attributes: {
 
 | Property | Type | Required | Description |
 | -------- | :--: | :--: | ----------- |
-| `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, or an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`. |
+| `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
 `required` | `boolean` | no | Whether or not the value is required when creating a new record. |  
 `default` | `value`, `() => value` | no | Either the default value itself or a synchronous function that returns the desired value. |  
-`validate` | `RegExp`, `() => void|string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
+`validate` | `RegExp`, `(value: any) => void|string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
 `field` | `string` | no | The name of the attribute as it exists dynamo, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
 `readOnly` | `boolean` | no | Prevents update of the property after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are by read-only by default.
 `label` | `string` | no | Used in index composition to prefix key facets. By default, the `AttributeName` is used as the label.
@@ -484,7 +497,9 @@ indexes: {
 `collection` | `string` | no | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality). 
 
 ## Facets 
-A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or an **Sort Key** key, which define an `index`. 
+A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or an **Sort Key** key, which define an `index`.
+
+> Note: Only attributes with a type of `"string"`, `"number"`, or `"boolean"` can be used as a facet 
 
 There are two ways to provide facets:
 1. As a [Facet Array](#facet-arrays)
@@ -647,6 +662,9 @@ TaskApp.collections.assignments({employee: "JExotic"}).params();
 ```
 
 ## Filters 
+
+> Filters are no longer the preferred way to add FilterExpressions. Checkout the [Where](#where) section to find out about how to apply FilterExpressions and ConditionExpressions
+
 Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further. By adding Filters to your model, you can extend your queries with custom filters. Below is the traditional way you would add a filter to Dynamo's DocumentClient directly along side how you would accomplish the same using a Filter function.
 
 ```javascript
@@ -721,7 +739,7 @@ let stores  =  MallStores.query
   FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
 }
 ```
-### Defined via "Filter" method after query operators 
+### Defined via Filter method after query operators 
 ```javascript
 let MallStores  =  new Entity("MallStores", model);
 let maxRent = "5000.00";
@@ -791,6 +809,157 @@ let stores = MallStores.query
 	`)
 	.filter(({ category }) => `
 		${category.eq("food/coffee")}
+	`)
+	.params();
+
+// Results
+{
+  TableName: 'StoreDirectory',
+  ExpressionAttributeNames: {
+    '#rent': 'rent',
+    '#discount': 'discount',
+    '#category': 'category',
+    '#pk': 'idx2pk',
+    '#sk1': 'idx2sk'
+  },
+  ExpressionAttributeValues: {
+    ':rent1': '2000.00',
+    ':rent2': '5000.00',
+    ':discount1': '1000.00',
+    ':category1': 'food/coffee',
+    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
+    ':sk1': '$mallstore#leaseenddate_2020-04-01#storeid_',
+    ':sk2': '$mallstore#leaseenddate_2020-07-01#storeid_'
+  },
+  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
+  IndexName: 'idx2',
+  FilterExpression: '(#rent between :rent1 and :rent2) AND (#discount = :discount1 AND #category = :category1)'
+}
+```
+
+## Where 
+
+> The `where()` method is an improvement on the `filter()` method. Unlike `filter`, `where` will be compatible with upcoming features related to complex types.
+
+Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/put/create/delete action. 
+
+### FilterExpressions
+
+Below is the traditional way you would add a `FilterExpression` to Dynamo's DocumentClient directly along side how you would accomplish the same using the `where` method.
+
+```javascript
+{
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  TableName: 'zoodirectory',
+  ExpressionAttributeNames: {
+    '#animal': 'animal',
+    '#lastFed': 'lastFed',
+    '#pk': 'pk',
+    '#sk1': 'sk'
+  },
+  ExpressionAttributeValues: {
+    ':animal_w1': 'Warthog',
+    ':lastFed_w1': '2020-09-25',
+    ':lastFed_w2': '2020-09-28',
+    ':pk': '$zoodirectory_1#habitat_africa',
+    ':sk1': '$exibits#enclosure_'
+  },
+  FilterExpression: '#animal = :animal_w1 AND (#lastFed between :lastFed_w1 and :lastFed_w2)'
+}
+```
+
+```javascript
+animals.query
+		.farm({habitat: "Africa"})
+		.where(({animal, dangerous}, {value, name, between}) => `
+			${name(animal)} = ${value(animal, "Warthog")} AND ${between(dangerous, "2020-09-25", "2020-09-28")}
+		`)
+		.params()
+```
+
+### ConditionExpressions
+
+Below is the traditional way you would add a `ConditionExpression` to Dynamo's DocumentClient directly along side how you would accomplish the same using the `where` method.
+
+```javascript
+{
+  UpdateExpression: 'SET #dangerous = :dangerous',
+  ExpressionAttributeNames: { '#animal': 'animal', '#dangerous': 'dangerous' },
+  ExpressionAttributeValues: {
+    ':animal_w1': 'Zebra',
+    ':dangerous_w1': false,
+    ':dangerous': true
+  },
+  TableName: 'zoodirectory',
+  Key: {
+    pk: '$zoodirectory_1#habitat_africa',
+    sk: '$exibits#enclosure_5b'
+  },
+  ConditionExpression: '#animal = :animal_w1 AND #dangerous = :dangerous_w1'
+}
+```
+
+```javascript
+animals.update({habitat: "Africa", enclosure: "5b"})
+		.set({dangerous: true})
+		.where(({animal, dangerous}, {value, name, eq}) => `
+			${name(animal)} = ${value(animal, "Zebra")} AND ${eq(dangerous)}
+		`)
+		.params())
+```
+
+
+### Attributes and Operations
+
+Where functions allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions:
+
+```javascript
+// A single filter operation
+animals.update({habitat: "Africa", enclosure: "5b"})
+	.set({keeper: "Joe Exotic"})
+	.where((attr, op) => op.eq(attr.dangerous, true))
+	.params());
+
+// Multiple conditions
+animals.update({habitat: "Africa", enclosure: "5b"})
+	.set({keeper: "Joe Exotic"})
+	.where((attr, op) => `
+		${op.eq(attr.dangerous, true)} AND ${op.contains(attr.diet, "meat")}
+	`)
+	.params());
+```
+
+The `attributes` object contains every Attribute defined in the Entity's Model. The `operations` object contains the following methods: 
+
+operator | example | result
+| ----------- | ----------- | ----------- |  
+`gte` | `gte(rent, value)` | `#rent >= :rent1`
+`gt` | `gt(rent, maxRent)` | `#rent > :rent1`
+`lte` | `lte(rent, maxRent)` | `#rent <= :rent1`
+`lt` | `lt(rent, maxRent)` | `#rent < :rent1`
+`eq` | `eq(rent, maxRent)` | `#rent = :rent1`
+`begins` | `begins(rent, maxRent)` | `begins_with(#rent, :rent1)`
+`exists` | `exists(rent)` | `attribute_exists(#rent)`
+`notExists` | `notExists(rent)` | `attribute_not_exists(#rent)`
+`contains` | `contains(rent, maxRent)` | `contains(#rent = :rent1)`
+`notContains` | `notContains(rent, maxRent)` | `not contains(#rent = :rent1)`
+`between` | `between(rent, minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
+`name` | `name(rent)` | `#rent`
+`value` | `value(rent, maxRent)` | `:rent1`
+
+### Multiple Where Clauses
+It is possible to include chain multiple where clauses. The resulting FilterExpressions (or ConditionExpressions) are concatinated with an implicit `AND` operator.
+
+```javascript
+let MallStores = new Entity("MallStores", model);
+let stores = MallStores.query
+	.leases({ mallId: "EastPointe" })
+	.between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
+	.where(({ rent, discount }, {between, eq}) => `
+		${between(rent, "2000.00", "5000.00")} AND ${eq(discount, "1000.00")}
+	`)
+	.where(({ category }, {eq}) => `
+		${eq(category, "food/coffee")}
 	`)
 	.params();
 
@@ -1196,7 +1365,7 @@ let match = await StoreLocations.find({
 // }
 ```
 
-### `Query` Records
+### Query Records
 
 > Examples in this section using the `MallStore` schema defined [above](#shopping-mall-stores). 
 
@@ -1284,12 +1453,12 @@ TaskApp.collections
 ```
 
 
-## Execute Query .go(), .params(), .page() 
+## Execute Queries
 Lastly, all query chains end with either a `.go()` or a `.params()` method invocation. These will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
 
-### `.params()`
+### Params
 The `params` method _ends_ a query chain, and synchronously formats your query into an object ready for the DynamoDB docClient. 
 
 > For more information on the options available in the `config` object, checkout the section [Query Options](#query-options).
@@ -1320,7 +1489,7 @@ let stores = MallStores.query
 }
 ```
 
-### `.go()`
+### Go
 The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. 
 
 > For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
@@ -1337,7 +1506,7 @@ let stores  =  MallStores.query
 
 ```
 
-### `.page()`
+### Page
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. The first element is the "page", the `ExclusiveStartKey` as returned directly from DynamoDB. The second element is the query results. When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. 
 
@@ -1387,13 +1556,33 @@ let [pageTwo, moreStores] = await MallStores.query
 
 ## Query Examples
 
-Below are _all_ chain possibilities available, given the `MallStore` model. 
+Below are _all_ chain possibilities available. 
+
+Assume an index named `leases` defined as: 
+```
+leases: {
+	index: "gsi1pk-gsi1sk-index",
+	pk: {
+		field: "pk",
+		facets: ["mallId"]
+	},
+	sk: {
+		field: "sk",
+		facets: ["leaseEndDate", "rent"]
+	}
+}
+```
+And the following model defined filters:
+```
+filters: {
+	byCategory: ({category}, name) => category.eq(name),
+	rentDiscount: (attributes, discount, max, min) => {
+		return `${attributes.discount.lte(discount)} AND ${attributes.rent.between(max, min)}`
+	}
+}  
+``` 
 
 ```javascript
-// leases  
-// pk: ["mallId"]  
-// sk: ["buildingId", "unitId", "storeId"]
-
 let mallId = "EastPointe";
 
 // begins_with
@@ -1417,6 +1606,13 @@ let discount = "500.00";
 let maxRent = "2000.00";
 let minRent = "5000.00";
 
+// inline filter
+MallStore.query
+  .leases({mallId, leaseEndDate: june})
+  .filter(attr => attr.storeId.eq("LatteLarrys"))
+  .go();
+
+// model defined filters
 MallStore.query
   .leases({mallId, leaseEndDate: june})
   .rentDiscount(discount, maxRent, minRent)
@@ -1429,6 +1625,7 @@ MallStore.query
     {leaseEndDate: july})
   .byCategory("food/coffee")
   .go();
+  
 ```
 
 ## Query Options
@@ -1471,36 +1668,16 @@ const EmployeesModel = {
 	service: "taskapp",
 	table: "projectmanagement",
 	attributes: {
-		employee: {
-			type: "string",
-		},
-		firstName: {
-			type: "string",
-		},
-		lastName: {
-			type: "string",
-		},
-		office: {
-			type: "string",
-		},
-		title: {
-			type: "string",
-		},
-		team: {
-			type: ["development", "marketing", "finance", "product"],
-		},
-		salary: {
-			type: "string",
-		},
-		manager: {
-			type: "string",
-		},
-		dateHired: {
-			type: "string",
-		},
-		birthday: {
-			type: "string",
-		},
+		employee: "string",
+		firstName: "string",
+		lastName: "string",
+		office: "string",
+		title: "string",
+		team: ["development", "marketing", "finance", "product"],
+		salary: "string",
+		manager: "string",
+		dateHired: "string",
+		birthday: "string",
 	},
 	indexes: {
 		employee: {
@@ -1588,18 +1765,10 @@ const TasksModel = {
 	service: "taskapp",
 	table: "projectmanagement",
 	attributes: {
-		task: {
-			type: "string",
-		},
-		project: {
-			type: "string",
-		},
-		employee: {
-			type: "string",
-		},
-		description: {
-			type: "string",
-		},
+		task: "string",
+		project: "string",
+		employee: "string",
+		description: "string",
 	},
 	indexes: {
 		task: {
@@ -1644,24 +1813,12 @@ const OfficesModel = {
 	table: "electro",
 	service: "electrotest",
 	attributes: {
-		office: {
-			type: "string",
-		},
-		country: {
-			type: "string",
-		},
-		state: {
-			type: "string",
-		},
-		city: {
-			type: "string",
-		},
-		zip: {
-			type: "string",
-		},
-		address: {
-			type: "string",
-		},
+		office: "string",
+		country: "string",
+		state: "string",
+		city: "string",
+		zip: "string",
+		address: "string",
 	},
 	indexes: {
 		locations: {
@@ -1709,7 +1866,7 @@ EmployeeApp.join(EmployeesModel); // EmployeeApp.entities.employees
 EmployeeApp.join(TasksModel); // EmployeeApp.entities.tasks
 EmployeeApp.join(OfficesModel); // EmployeeApp.entities.tasks
 ```
-### `Query` Records
+### Query Records
 #### All tasks and employee information for a given employee 
 Fulfilling [Requirement #1](#employee-app-requirements).
 
@@ -1861,7 +2018,7 @@ Returns the following:
 ]
 ```
 
-#### Find employee birthday/anniversary 
+#### Find employee birthdays or anniversaries
 Fulfilling [Requirement #7](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.employees
@@ -1930,7 +2087,7 @@ const MallStore = new Entity(model, {client});
 ### Access Patterns are accessible on the StoreLocation 
 
 ### PUT Record
-#### Add a new Store to the Mall:
+#### Add a new Store to the Mall
 ```javascript
 await MallStore.create({
 	mallId: "EastPointe",
@@ -1957,7 +2114,7 @@ Returns the following:
 ```
 ---
 ### UPDATE Record
-#### Change the Store's Lease Date:
+#### Change the Store's Lease Date
 >When updating a record, you must include all **Facets** associated with the table's *primary* **PK** and **SK**.
 ```javascript
 let storeId = "LatteLarrys";
@@ -2032,7 +2189,7 @@ let buildingId = "BuildingA1";
 let stores = await StoreLocations.malls({mallId}).query({buildingId}).go();
 ```
 
-#### What store is located in unit "B47"? 
+#### Find the store located in unit B47 
 Fulfilling [Requirement #1](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
@@ -2081,7 +2238,7 @@ let stores = await StoreLocations.leases(mallId)
     .go();
 ```
 
-#### All Latte Larry's in a particular mall building
+#### All Latte Larrys in a particular mall building
 ```javascript
 
 let mallId = "EastPointe";
@@ -2090,9 +2247,10 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
-# Coming Soon:
+
+# Coming Soon
 - Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
 - ConditionalExpressions for create/update/delete
 - Append/Add/Subtract/Remove updates capabilities
-- Complex attributes (list, map, set
+- Complex attributes (list, map, set)

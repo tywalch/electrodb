@@ -1,7 +1,8 @@
 "use strict";
 const { Schema } = require("./schema");
-const { KeyTypes, QueryTypes, MethodTypes, Comparisons } = require("./types");
+const { KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
+const { WhereFactory } = require("./where");
 const validations = require("./validations");
 const { clauses } = require("./clauses");
 
@@ -14,10 +15,16 @@ class Entity {
 			this.model.schema.attributes,
 			FilterTypes,
 		);
+		this._whereBuilder = new WhereFactory(
+			this.model.schema.attributes,
+			FilterTypes
+		)
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(
 			clauses,
 			this.model.filters,
 		);
+		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
+
 		this.scan = this._makeChain("", this._clausesWithFilters, clauses.index).scan();
 		this.query = {};
 		for (let accessPattern in this.model.indexes) {
@@ -35,7 +42,7 @@ class Entity {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
 			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
-				let eqFilters = []; 
+				let eqFilters = [];
 				for (let facet of Object.keys(facets)) {
 					if (attr[facet]) {
 						eqFilters.push(attr[facet].eq(facets[facet]));
@@ -47,7 +54,7 @@ class Entity {
 			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(
 				facets,
 			).filter(attr => {
-				let eqFilters = []; 
+				let eqFilters = [];
 				for (let facet of Object.keys(facets)) {
 					if (attr[facet]) {
 						eqFilters.push(attr[facet].eq(facets[facet]));
@@ -57,7 +64,7 @@ class Entity {
 			});
 		}
 	}
-	
+
 	collection(collection = "", clauses = {}, facets = {}) {
 		let index = this.model.translations.collections.fromCollectionToIndex[
 			collection
@@ -65,7 +72,7 @@ class Entity {
 		if (index === undefined) {
 			throw new Error(`Invalid collection: ${collection}`);
 		}
-		return this._makeChain(index, clauses, clauses.index).collection(
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).collection(
 			collection,
 			facets,
 		);
@@ -74,7 +81,7 @@ class Entity {
 	_validateModel(model) {
 		return validations.model(model);
 	}
-	
+
 	get(facets = {}) {
 		let index = "";
 		return this._makeChain(index, clauses, clauses.index).get(facets);
@@ -82,12 +89,12 @@ class Entity {
 
 	delete(facets = {}) {
 		let index = "";
-		return this._makeChain(index, clauses, clauses.index).delete(facets);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).delete(facets);
 	}
 
 	put(attributes = {}) {
 		let index = "";
-		return this._makeChain(index, clauses, clauses.index).put(attributes);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).put(attributes);
 	}
 
 	create(attributes = {}) {
@@ -97,12 +104,12 @@ class Entity {
 				ConditionExpression: this._makeCreateConditions(index)
 			}
 		}
-		return this._makeChain(index, clauses, clauses.index, options).create(attributes);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).create(attributes);
 	}
 
 	update(facets = {}) {
 		let index = "";
-		return this._makeChain(index, clauses, clauses.index).update(facets);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).update(facets);
 	}
 
 	patch(facets = {}) {
@@ -112,7 +119,7 @@ class Entity {
 				ConditionExpression: this._makePatchConditions(index)
 			}
 		}
-		return this._makeChain(index, clauses, clauses.index, options).patch(facets);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
 	}
 
 	_chain(state, clauses, clause) {
@@ -142,6 +149,10 @@ class Entity {
 				facets: { ...facets },
 				update: {
 					set: {},
+					append: {},
+					remove: {},
+					add: {},
+					subtract: {}
 				},
 				put: {
 					data: {},
@@ -335,7 +346,6 @@ class Entity {
 			pager: !!options.pager
 		};
 		let parameters = Object.assign({}, params);
-
 		let stackTrace = new Error();
 		try {
 			let response = await this.client[method](parameters).promise();
@@ -370,6 +380,25 @@ class Entity {
 		}
 		return filter.join(" AND ");
 	}
+
+	_applyParameterExpressionTypes(params, filter) {
+		if (typeof filter[ExpressionTypes.ConditionExpression] === "string" && filter[ExpressionTypes.ConditionExpression].length > 0) {
+			if (typeof params[ExpressionTypes.ConditionExpression] === "string" && params[ExpressionTypes.ConditionExpression].length > 0) {
+				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${filter[ExpressionTypes.ConditionExpression]}`
+			} else {
+				params[ExpressionTypes.ConditionExpression] = filter[ExpressionTypes.ConditionExpression];
+			}
+			if (Object.keys(filter.ExpressionAttributeNames).length > 0) {
+				params.ExpressionAttributeNames = params.ExpressionAttributeNames || {};
+				params.ExpressionAttributeNames = Object.assign({}, filter.ExpressionAttributeNames, params.ExpressionAttributeNames);
+			}
+			if (Object.keys(filter.ExpressionAttributeValues).length > 0) {
+				params.ExpressionAttributeValues = params.ExpressionAttributeValues || {};
+				params.ExpressionAttributeValues = Object.assign({}, filter.ExpressionAttributeValues, params.ExpressionAttributeValues);
+			}
+		}
+		return params;
+	}
 	/* istanbul ignore next */
 	_params({ keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} }, config = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
@@ -385,7 +414,7 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
-			case MethodTypes.patch: 
+			case MethodTypes.patch:
 				params = this._makeUpdateParams(
 					update,
 					keys.pk,
@@ -399,7 +428,8 @@ class Entity {
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
-		return this._applyParameterOptions(params, options, config);
+		params = this._applyParameterOptions(params, options, config);
+		return this._applyParameterExpressionTypes(params, filter);
 	}
 
 	_makeParameterKey(index, pk, sk) {
@@ -414,7 +444,7 @@ class Entity {
 		}
 		return key;
 	}
-	
+
 	/* istanbul ignore next */
 	_makeScanParam(filter = {}) {
 		let indexBase = "";
@@ -594,7 +624,7 @@ class Entity {
 		)}`;
 		return expressions;
 	}
-	
+
 	/* istanbul ignore next */
 	_queryParams(chainState = {}, options = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
@@ -707,7 +737,7 @@ class Entity {
 		}
 		return merged;
 	}
-	
+
 	/* istanbul ignore next */
 	_makeComparisonQueryParams(index = "", comparison = "", filter = {}, pk = {}, sk = {}) {
 		let operator = Comparisons[comparison];
@@ -808,7 +838,7 @@ class Entity {
 		}
 		return { indexKey, updatedKeys };
 	}
-	
+
 	/* istanbul ignore next */
 	_getIndexImpact(attributes = {}, included = {}) {
 		let includedFacets = Object.keys(included);
@@ -898,7 +928,7 @@ class Entity {
 		);
 		return { ...queryFacets };
 	}
-	
+
 	/* istanbul ignore next */
 	_expectFacets(obj = {}, properties = [], type = "key facets") {
 		let [incompletePk, missing, matching] = this._expectProperties(
@@ -992,7 +1022,7 @@ class Entity {
 			return "";
 		}
 	}
-	
+
 	/* istanbul ignore next */
 	_getPrefixes({ collection = "", customFacets = {}, sk } = {}) {
 		/*
@@ -1000,7 +1030,7 @@ class Entity {
 			a "begins_with" operator when crossing entities. It is also possible
 			that the user defined a custom key on either the PK or SK. In the case
 			of a customKey AND a collection, the collection is ignored to favor
-			the custom key. 
+			the custom key.
 		*/
 
 		let keys = {
@@ -1023,7 +1053,7 @@ class Entity {
 		}
 
 		if (sk === undefined) {
-			keys.pk.prefix += keys.sk.prefix;	
+			keys.pk.prefix += keys.sk.prefix;
 		}
 
 		if (customFacets.pk) {
@@ -1038,7 +1068,7 @@ class Entity {
 
 		return keys;
 	}
-	
+
 	/* istanbul ignore next */
 	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
 		this._validateIndex(index);
@@ -1137,7 +1167,7 @@ class Entity {
 			shouldScan: match === undefined
 		};
 	}
-	
+
 	/* istanbul ignore next */
 	_parseComposedKey(key = "") {
 		let facets = {};
@@ -1266,7 +1296,6 @@ class Entity {
 				collection,
 				customFacets,
 				index: indexName,
-				collection: index.collection,
 			};
 
 			if (inCollection) {
@@ -1339,7 +1368,7 @@ class Entity {
 				facets.bySlot[j][i] = facet;
 			});
 		}
-		
+
 		if (facets.byIndex[""] === undefined) {
 			throw new Error("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index");
 		}
@@ -1354,7 +1383,7 @@ class Entity {
 			collections: Object.keys(collections),
 		};
 	}
-	
+
 	_normalizeFilters(filters = {}) {
 		let normalized = {};
 		let invalidFilterNames = ["go", "params", "filter"];
@@ -1415,7 +1444,6 @@ class Entity {
 				indexes: indexAccessPattern,
 				collections: indexCollection,
 			},
-
 			original: model,
 		};
 	}

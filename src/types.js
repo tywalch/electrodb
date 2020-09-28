@@ -36,10 +36,28 @@ const Comparisons = {
 
 const CastTypes = ["string", "number"];
 
+const AttributeTypes = {
+	string: "string",
+	number: "number",
+	boolean: "boolean",
+	enum: "enum",
+	map: "map",
+	set: "set",
+	list: "list",
+	any: "any",
+};
+
+const ExpressionTypes = {
+	ConditionExpression: "ConditionExpression",
+	FilterExpression: "FilterExpression"
+}
+
 module.exports = {
 	KeyTypes,
 	QueryTypes,
 	MethodTypes,
 	CastTypes,
 	Comparisons,
+	AttributeTypes,
+	ExpressionTypes,
 };

@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "0.9.11",
+  "version": "0.9.13",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
@@ -31,6 +31,6 @@
     "uuid": "^7.0.1"
   },
   "dependencies": {
-    "jsonschema": "1.2.5"
+    "jsonschema": "1.2.7"
   }
 }
