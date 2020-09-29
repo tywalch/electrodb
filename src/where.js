@@ -59,11 +59,11 @@ class WhereFactory {
 							}
               let expression = template(path, ...attrValues);
               return expression.trim();
-            } else if (typeof property === "string") {
-              // todo: parse string
+            // } else if (typeof property === "string") {
+            //   // todo: parse string
             } else {
               // todo: proper error logging.
-              throw new Error("INVALID PROPERTY")
+              throw new Error(`Invalid Attribute in where clause passed to operation '${type}'. Use injected attributes only.`);
             }
           }
         }
@@ -117,7 +117,7 @@ class WhereFactory {
       let operations = this._buildOperations(setName, setValue, getValueCount);
 			let expression = filterFn(attributes, operations, ...params);
 			if (typeof expression !== "string") {
-				throw new Error("Invalid filter response. Expected result to be of type string");
+				throw new Error("Invalid response from where clause callback. Expected return result to be of type string");
 			}
 			state.query.filter[expressionType] = this._concatFilterExpression(
 				state.query.filter[expressionType],

@@ -35,7 +35,7 @@ class Entity {
 				);
 			};
 		}
-		this.modelAttributeIdentifier = "__edb_e_"
+		this.modelAttributeIdentifier = "__edb_e__"
 	}
 
 	find(facets = {}) {
@@ -184,7 +184,7 @@ class Entity {
 		return data;
 	}
 
-	formatResponse(response, config = {}) {
+	formatResponse(index, response, config = {}) {
 		let stackTrace = new Error();
 		try {
 			let results;
@@ -218,7 +218,10 @@ class Entity {
 			
 
 			if (config.pager) {
-				let nextPage = this._formatReturnPager(response.LastEvaluatedKey || null);
+				let nextPage = response.LastEvaluatedKey || null;
+				if (!config.raw && !config.lastEvaluatedKeyRaw) {
+					nextPage = this._formatReturnPager(index, nextPage, results[results.length - 1]);
+				}
 				results = [nextPage, results];
 			}
 
@@ -238,11 +241,11 @@ class Entity {
 		return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	}
 
-	_deconstructKeys(keyType, key) {
+	_deconstructKeys(index, keyType, key, backupFacets = {}) {
 		if (typeof key !== "string" || key.length === 0) {
 			return null;
 		}
-		let index = "";
+		// let index = "";
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
 		let {prefix, isCustom} = this.model.prefixes[index][keyType];
 		let {facets} = this.model.indexes[accessPattern][keyType];
@@ -255,17 +258,24 @@ class Entity {
 			} else {
 				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
 			}
-			
 			names.push(name);
 		}
 		pattern += "$";
-		
 		let regex = RegExp(pattern);
-		
 		let match = key.match(regex);
 		let results = {}
 		if (!match) {
-			throw new Error("Entity keys do not match model");
+			if (Object.keys(backupFacets || {}).length === 0) {
+				// this can occur when a scan is performed but returns no results given the current filters or record timing
+				return {};
+			}
+			for (let facet of facets) {
+				if (backupFacets[facet] === undefined) {
+					throw new Error("Warning: LastEvaluatedKey contains entity that does not match the entity used to query. Use {lastEvaulatedKeyRaw: true} option.");
+				} else {
+					results[facet] = backupFacets[facet];
+				}
+			}
 		} else {
 			for (let i = 0; i < names.length; i++) {
 				results[names[i]] = match[i+1];
@@ -274,31 +284,56 @@ class Entity {
 		return results;
 	}
 
-	_formatReturnPager(item) {
-		if (item === null || typeof item !== "object" || Object.keys(item).length === 0) {
-			return item;
-		}
-		let index = ""
+	_deconstructIndex(index = "", lastEvaluated, lastReturned) {
 		let pkName = this.model.translations.keys[index].pk;
 		let skName = this.model.translations.keys[index].sk;
-		let pkFacets = this._deconstructKeys(KeyTypes.pk, item[pkName]);
-		let skFacets = this._deconstructKeys(KeyTypes.sk, item[skName]);
-		let pager = {...pkFacets};
+		let pkFacets = this._deconstructKeys(index, KeyTypes.pk, lastEvaluated[pkName], lastReturned);
+		let skFacets = this._deconstructKeys(index, KeyTypes.sk, lastEvaluated[skName], lastReturned);
+		let facets = {...pkFacets};
 		if (skFacets && Object.keys(skFacets).length) {
-			pager = {...skFacets, ...pkFacets};
+			facets = {...skFacets, ...pkFacets};
 		}
+		return facets;
+	}
+
+	_formatReturnPager(index = "", lastEvaluated, lastReturned) {
+		if (lastEvaluated === null || typeof lastEvaluated !== "object" || Object.keys(lastEvaluated).length === 0) {
+			return lastEvaluated;
+		}
+		
+		let pager = this._deconstructIndex(index, lastEvaluated, lastReturned);
+		let tableIndex = "";
+		// lastEvaluatedKeys from query calls include the index pk/sk as well as the table index's pk/sk
+		if (index !== tableIndex) {
+			pager = {...pager, ...this._deconstructIndex(tableIndex, lastEvaluated, lastReturned)};	
+		}
+		
+		if (Object.keys(pager).length === 0) {
+			// In this case no suitable record could be found be the deconstructed pager. 
+			// This can be valid in cases where a scan is performed but returns no results.
+			return null;
+		}
+
 		return pager;
 	}
 
-	_formatSuppliedPager(item) {
+	_constructPagerIndex(index = "", item) {
+		let pk = this._expectFacets(item, this.model.facets.byIndex[index].pk)
+		let sk = this._expectFacets(item, this.model.facets.byIndex[index].sk)
+		let keys = this._makeIndexKeys(index, pk, sk);
+		return this._makeParameterKey(index, keys.pk, ...keys.sk);
+	}
+
+	_formatSuppliedPager(index = "", item) {
 		if (typeof item !== "object" || Object.keys(item).length === 0) {
 			return item;
 		}
-		let pk = this._expectFacets(item, this.model.facets.byIndex[""].pk)
-		let sk = this._expectFacets(item, this.model.facets.byIndex[""].sk)
-		let index = "";
-		let keys = this._makeIndexKeys(index, pk, sk);
-		return this._makeParameterKey(index, keys.pk, ...keys.sk);
+		let tableIndex = "";
+		let pager = this._constructPagerIndex(index, item);
+		if (index !== tableIndex) {
+			pager = {...pager, ...this._constructPagerIndex(tableIndex, item)}
+		}
+		return pager
 	}
 	
 	_applyParameterOptions(params, ...options) {
@@ -316,6 +351,7 @@ class Entity {
 			if (option.originalErr) config.originalErr = true;
 			if (option.raw) config.raw = true;
 			if (option.pager) config.pager = true;
+			if (option.lastEvaluatedKeyRaw === true) config.lastEvaluatedKeyRaw = true;
 			config.page = Object.assign({}, config.page, option.page);
 			config.params = Object.assign({}, config.params, option.params);
 			return config;
@@ -330,7 +366,11 @@ class Entity {
 		}
 
 		if (Object.keys(config.page || {}).length) {
-			parameters.ExclusiveStartKey = this._formatSuppliedPager(config.page);
+			if (config.raw || config.lastEvaluatedKeyRaw) {
+				parameters.ExclusiveStartKey = config.page;
+			} else {
+				parameters.ExclusiveStartKey = this._formatSuppliedPager(params.IndexName, config.page);
+			}
 		}
 
 		return parameters;
@@ -343,7 +383,8 @@ class Entity {
 			raw: options.raw,
 			params: options.params || {},
 			page: options.page,
-			pager: !!options.pager
+			pager: !!options.pager,
+			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw
 		};
 		let parameters = Object.assign({}, params);
 		let stackTrace = new Error();
@@ -351,9 +392,9 @@ class Entity {
 			let response = await this.client[method](parameters).promise();
 			if (method === "put" || method === "create") {
 				// a VERY hacky way to deal with PUTs
-				return this.formatResponse(parameters, config);
+				return this.formatResponse(parameters.IndexName, parameters, config);
 			} else {
-				return this.formatResponse(response, config);
+				return this.formatResponse(parameters.IndexName, response, config);
 			}
 		} catch (err) {
 			if (config.originalErr) {
@@ -449,7 +490,7 @@ class Entity {
 	_makeScanParam(filter = {}) {
 		let indexBase = "";
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
-		let facets = this.model.facets.byIndex[indexBase];
+		// let facets = this.model.facets.byIndex[indexBase];
 		let {pk, sk} = this._makeIndexKeys(indexBase);
 		let keys = this._makeParameterKey(
 			indexBase,
@@ -785,11 +826,11 @@ class Entity {
 		);
 		if (isIncomplete) {
 			throw new Error(
-				`Incomplete facets: Without the facets ${incomplete
+				`Incomplete facets: Without the facets '${incomplete
 					.filter((val) => val !== undefined)
 					.join(
 						", ",
-					)} the following access patterns ${incompleteAccessPatterns
+					)}' the following access patterns ${incompleteAccessPatterns
 					.filter((val) => val !== undefined)
 					.join(", ")}cannot be updated.`,
 			);
