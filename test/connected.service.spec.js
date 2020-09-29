@@ -1,3 +1,4 @@
+const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity, clauses } = require("../src/entity");
 const { Service } = require("../src/service");
@@ -269,6 +270,7 @@ database.join(modelTwo);
 database.join(modelThree);
 
 describe("Put and query", async () => {
+	before(async () => sleep(1000))
 	it("Should add three records and retrieve correct records based on collections", async () => {
 		let recordOne = {
 			prop1: "prop1",

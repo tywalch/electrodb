@@ -1,3 +1,5 @@
+const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity } = require("../src/entity");
 const { expect } = require("chai");
@@ -9,11 +11,6 @@ const client = new DynamoDB.DocumentClient({
 });
 const SERVICE = "BugBeater";
 const ENTITY = "TEST_ENTITY"
-function sleep(ms) {
-	return new Promise((resolve) => {
-		setTimeout(resolve, ms);
-	});
-}
 let model = {
 	service: SERVICE,
 	entity: ENTITY,
@@ -139,6 +136,7 @@ let model = {
 };
 
 describe("Entity", async () => {
+	before(async () => sleep(1000))
 	let MallStores = new Entity(model, { client });
 	describe("Simple crud", async () => {
 		let mall = "EastPointe";

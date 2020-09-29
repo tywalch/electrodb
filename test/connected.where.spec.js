@@ -1,3 +1,4 @@
+const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity, clauses } = require("../src/entity");
 const { expect } = require("chai");
@@ -10,6 +11,7 @@ const client = new DynamoDB.DocumentClient({
 
 
 describe("General", async () => {
+	before(async () => sleep(1000))
 	let WhereTests = new Entity({
 		service: "tests",
 		entity: "filters",
