@@ -1,3 +1,5 @@
+const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity } = require("../src/entity");
 const { expect } = require("chai");
@@ -9,11 +11,6 @@ const client = new DynamoDB.DocumentClient({
 });
 const SERVICE = "BugBeater";
 const ENTITY = "TEST_ENTITY"
-function sleep(ms) {
-	return new Promise((resolve) => {
-		setTimeout(resolve, ms);
-	});
-}
 let model = {
 	service: SERVICE,
 	entity: ENTITY,
@@ -139,6 +136,7 @@ let model = {
 };
 
 describe("Entity", async () => {
+	before(async () => sleep(1000))
 	let MallStores = new Entity(model, { client });
 	describe("Simple crud", async () => {
 		let mall = "EastPointe";
@@ -339,7 +337,27 @@ describe("Entity", async () => {
 				expect(err.message).to.be.equal("The conditional request failed");
 			}
 			expect(patchResultsTwo).to.be.null
-		})
+		});
+
+		it("Should pass back the original dynamodb error when originalErr is set to true", async () => {
+			let id = uuidv4();
+			let sector = "A1";
+
+			let [electroSuccess, electroErr] = await MallStores.get({sector, id})
+				.go({params: {TableName: "blahblah"}})
+				.then(() => [true, null])
+				.catch(err => [false, err]);
+			
+			let [originalSuccess, originalErr] = await MallStores.get({sector, id})
+				.go({originalErr: true, params: {TableName: "blahblah"}})
+				.then(() => [true, null])
+				.catch(err => [false, err]);
+			
+			expect(electroSuccess).to.be.false;
+			expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
+			expect(originalSuccess).to.be.false;
+			expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
+		});
 	});
 
 
@@ -385,51 +403,6 @@ describe("Entity", async () => {
 			expect(!!Object.keys(recordNoLongerExists).length).to.be.false;
 		});
 	});
-
-	// describe("scan", async () => {
-	// 	it ("Should scan for created records", async () => {
-	// 		let entity = uuidv4();
-	// 		let db = new Entity({
-	// 			service: "testing",
-	// 			entity: entity,
-	// 			table: "electro",
-	// 			version: "1",
-	// 			attributes: {
-	// 				id: {
-	// 					type: "string"
-	// 				},
-	// 				bb: {
-	// 					type: "string"
-	// 				}
-	// 			},
-	// 			indexes: {
-	// 				main: {
-	// 					pk: {
-	// 						field: "pk",
-	// 						facets: ["id"]
-	// 					},
-	// 					sk: {
-	// 						field: "sk",
-	// 						facets: ["id"]
-	// 					}
-	// 				}
-	// 			}
-	// 		}, {client});
-	// 		let puts = [];
-	// 		for (let i = 0; i < 5; i++) {
-	// 			console.log("putz", db.put({id: `${i}`, bb: `${i}`}).params());
-	// 			puts.push(db.put({id: `${i}`, bb: `${i}`}).go({}));
-	// 		}
-	// 		await Promise.all(puts);
-	// 		await sleep(250);
-	// 		let recordparams = db.scan.filter(({id}) => id.gte("3")).params();
-	// 		let records = await db.scan.filter(({id}) => id.gte("3")).go();
-	// 		if (!records.length) {
-	// 			console.log("ENTITYz", recordparams);
-	// 		}
-	// 		expect(records).to.be.an("array").and.to.have.lengthOf(3);
-	// 	})
-	// })
 
 	describe("Getters/Setters", async () => {
 		let db = new Entity(
@@ -787,16 +760,18 @@ describe("Entity", async () => {
 			expect(results).to.be.an("array").and.have.length(2);
 			// Scan may not return records, dont force a bad test then
 			let [index, stores] = results;
-			if (stores.length) {
-				expect(index).to.have.a.property('pk').and.to.have.a.property('sk');
+			if (stores && stores.Items.length) {
+				expect(index).to.have.a.property('pk');
+				expect(index).to.have.a.property('sk')
 				expect(stores.Items).to.be.an("array")
-				expect(stores.Items[0]).to.have.a.property('pk').and.to.have.a.property('sk');
-				let [nextIndex, nextStores] = await MallStores.scan.page(index);
-				expect(stores).to.be.an("array").and.have.length(2);
+				expect(stores.Items[0]).to.have.a.property('pk')
+				expect(stores.Items[0]).to.have.a.property('sk');
+				let [nextIndex, nextStores] = await MallStores.scan.page(index, {raw: true});
 				expect(nextIndex).to.not.deep.equal(index);
-				expect(nextStores).to.be.an("array");
-				if (nextStores.length) {
-					expect(nextStores[0]).to.not.have.a.property('pk').and.to.not.have.a.property('sk');
+				expect(nextStores.Items).to.be.an("array");
+				if (nextStores.Items.length) {
+					expect(nextStores.Items[0]).to.have.a.property('pk');
+					expect(nextStores.Items[0]).to.have.a.property('sk');
 				}
 			}
 		}).timeout(10000);

@@ -752,14 +752,16 @@ describe("Entity", () => {
 			let scan = MallStores.scan.filter(({store}) => store.eq("Starblix")).params();
 			expect(scan).to.deep.equal({
 				"ExpressionAttributeNames": {
+					"#__edb_e__": "__edb_e__",
 					"#pk": "pk",
 					"#store": "storeId"
 				},
 				"ExpressionAttributeValues": {
+					":__edb_e__": "MallStores",
 					":pk": "$mallstoredirectory_1$mallstores#id_",
 					":store1": "Starblix"
 				},
-				"FilterExpression": "(begins_with(#pk, :pk) AND #store = :store1",
+				"FilterExpression": "(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #store = :store1",
 				"TableName": "StoreDirectory"
 			})
 		})
@@ -1857,12 +1859,13 @@ describe("Entity", () => {
 			let params = MallStores.find({leaseEnd}).params();
 			expect(params).to.be.deep.equal({
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
+				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
 				ExpressionAttributeValues: {
+					":__edb_e__": "MallStores",
 					':leaseEnd1': '123',
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: '(begins_with(#pk, :pk) AND #leaseEnd = :leaseEnd1'
+				FilterExpression: "(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #leaseEnd = :leaseEnd1"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
@@ -1879,7 +1882,7 @@ describe("Entity", () => {
 					':pk': '$mallstoredirectory_1$mallstores#id_123',
 				},
 				KeyConditionExpression: '#pk = :pk',
-				FilterExpression: '#id = :id1'
+				FilterExpression: "#id = :id1"
 			});
 			expect(keys).to.be.deep.equal([{ name: "id", type: "pk" }]);
 			expect(index).to.be.equal("");

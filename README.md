@@ -1508,9 +1508,17 @@ let stores  =  MallStores.query
 
 ### Page
 
-The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. The first element is the "page", the `ExclusiveStartKey` as returned directly from DynamoDB. The second element is the query results. When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. 
+> As of September 29th 2020 the `.page()` now returns the facets that make up the `ExclusiveStartKey` instead of the `ExclusiveStartKey` itself. To get back only the `ExclusiveStartKey`, add the flag `exclusiveStartKeyRaw` to your query options. If you treated this value opaquely no changes are needed, or if you used the `raw` flag. 
 
-> For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
+The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. 
+
+The first element is the "page", this object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
+
+> Note: It is highly recommended to use the `exclusiveStartKeyRaw` flag when using `.page()` in conjunction with scans. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+
+The second element is the results of the query, exactly as it would be returned through a `query` operation.
+
+> Note: When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
 
 ```javascript
 let [page, stores] = await MallStores.query
@@ -1523,8 +1531,10 @@ let [pageTwo, moreStores] = await MallStores.query
 
 // page:
 // { 
-//   pk: '$bugbeater_1#sector_49a6a7df-a10c-4ad7-9aae-9bed4e2e6cbb',
-//   sk: '$test_entity#id_55f21028-b2b3-4eae-b248-a2407a2bfdc6'
+//   storeId: "LatteLarrys", 
+//   mallId: "EastPointe", 
+//   buildingId: "BuildingA1", 
+//   unitId: "B47"
 // }
 
 // stores
@@ -1551,8 +1561,6 @@ let [pageTwo, moreStores] = await MallStores.query
 //   rent: '0.00'
 // }]
 ```
-
-
 
 ## Query Examples
 
