@@ -342,13 +342,22 @@ describe("Entity", async () => {
 		it("Should pass back the original dynamodb error when originalErr is set to true", async () => {
 			let id = uuidv4();
 			let sector = "A1";
-			let [success, err] = await MallStores.get({sector, id})
-					.go({originalErr: true, params: {TableName: "blahblah"}})
-					.then(() => [true, null])
-					.catch(err => [false, err]);
-			expect(success).to.be.false;
-			expect(err.message).to.be.equal("Requested resource not found")
-		})
+
+			let [electroSuccess, electroErr] = await MallStores.get({sector, id})
+				.go({params: {TableName: "blahblah"}})
+				.then(() => [true, null])
+				.catch(err => [false, err]);
+			
+			let [originalSuccess, originalErr] = await MallStores.get({sector, id})
+				.go({originalErr: true, params: {TableName: "blahblah"}})
+				.then(() => [true, null])
+				.catch(err => [false, err]);
+			
+			expect(electroSuccess).to.be.false;
+			expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
+			expect(originalSuccess).to.be.false;
+			expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
+		});
 	});
 
 
