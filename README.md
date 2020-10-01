@@ -50,7 +50,7 @@ Into This:
   "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
   "FilterExpression": "(#rent between :rent1 and :rent2) AND #discount <= :discount1"
 }
-```
+``` 
 
 ## Table of Contents
 
