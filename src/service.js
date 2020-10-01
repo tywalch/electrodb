@@ -1,5 +1,6 @@
 const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
+const { ElectroInstance } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 
 class Service {
@@ -15,6 +16,7 @@ class Service {
 		this.find = {};
 		this._entityCollections = {};
 		this.collections = {};
+		this._instance = ElectroInstance.service;
 	}
 
 	join(model = {}, config = {}) {
@@ -38,6 +40,7 @@ class Service {
 			};
 		}
 		this.find = { ...this.entities, ...this.collections };
+		return this;
 	}
 
 	_makeCollectionChain(
