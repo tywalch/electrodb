@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes } = require("./types");
+const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const validations = require("./validations");
@@ -36,6 +36,7 @@ class Entity {
 			};
 		}
 		this.modelAttributeIdentifier = "__edb_e__"
+		this._instance = ElectroInstance.entity;
 	}
 
 	find(facets = {}) {

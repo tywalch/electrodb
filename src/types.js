@@ -52,6 +52,11 @@ const ExpressionTypes = {
 	FilterExpression: "FilterExpression"
 }
 
+const ElectroInstance = {
+	entity: Symbol("entity"),
+	service: Symbol("service")
+}
+
 module.exports = {
 	KeyTypes,
 	QueryTypes,
@@ -60,4 +65,5 @@ module.exports = {
 	Comparisons,
 	AttributeTypes,
 	ExpressionTypes,
+	ElectroInstance,
 };

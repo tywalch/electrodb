@@ -50,7 +50,7 @@ Into This:
   "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
   "FilterExpression": "(#rent between :rent1 and :rent2) AND #discount <= :discount1"
 }
-```
+``` 
 
 ## Table of Contents
 
@@ -388,8 +388,9 @@ let TaskApp = new Service({
 	},
 	{ client },
 );
-TaskApp.join(EmployeesModel); // TaskApp.entities.employees
-TaskApp.join(TasksModel); // TaskApp.entities.tasks
+TaskApp
+	.join(EmployeesModel) // TaskApp.entities.employees
+	.join(TasksModel);    // TaskApp.entities.tasks
 ```
 ### Model Properties
 
@@ -646,8 +647,9 @@ let TaskApp =  new  Service({
 	service:  "TaskApp", 
 	table:  "projectmanagement"
 },  { client }); 
-TaskApp.join(EmployeesModel);  // TaskApp.entities.employees
-TaskApp.join(TasksModel);  // TaskApp.entities.tasks
+TaskApp
+	.join(EmployeesModel) // TaskApp.entities.employees
+	.join(TasksModel);    // TaskApp.entities.tasks
 
 TaskApp.collections.assignments({employee: "JExotic"}).params();
 
@@ -1411,8 +1413,9 @@ let TaskApp =  new Service({
 	service:  "TaskApp", 
 	table:  "projectmanagement"
 },  { client }); 
-TaskApp.join(EmployeesModel);  // TaskApp.entities.employees
-TaskApp.join(TasksModel);  // TaskApp.entities.tasks
+TaskApp
+	.join(EmployeesModel) // TaskApp.entities.employees
+	.join(TasksModel);    // TaskApp.entities.tasks
 ```
 Available on your Service are two objects: `entites` and `collections`.  Entities available on `entities` have the same capabilities as they would if created individually. When a Model added to a Service with `join` however, its Collections are automatically added and validated with the other Models joined to that Service. These Collections are available on `collections`.
 
@@ -1870,9 +1873,10 @@ let EmployeeApp = new Service(
 	{ client },
 );
 
-EmployeeApp.join(EmployeesModel); // EmployeeApp.entities.employees
-EmployeeApp.join(TasksModel); // EmployeeApp.entities.tasks
-EmployeeApp.join(OfficesModel); // EmployeeApp.entities.tasks
+EmployeeApp
+	.join(EmployeesModel) // EmployeeApp.entities.employees
+	.join(TasksModel)     // EmployeeApp.entities.tasks
+	.join(OfficesModel);  // EmployeeApp.entities.tasks
 ```
 ### Query Records
 #### All tasks and employee information for a given employee 
