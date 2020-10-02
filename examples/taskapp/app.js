@@ -12,7 +12,9 @@ class TaskAppExample extends Service {
     }
     let table = makeTabler(this.service.table, this.client.options);
     let exists = await table.exists().catch(err => console.log(err) || true);
-    if (!exists) {
+    if (exists) {
+      console.log("Table already exists! if you would like to recreate it, use `dropTable` first.");
+    } else {
       return table.create().then(() => console.log("Table created!")).catch(console.log);
     }
   }
@@ -26,7 +28,8 @@ class TaskAppExample extends Service {
    * @param {number} employees the number of employee records to create
    * @param {number} tasks the number of task records create
    */
-  async loadTable(employees = 1, tasks = 1) {
+  
+  async loadTable({employees = 1, tasks = 1} = {}) {
     if (this.client === undefined) {
       throw new Error("Operation requires DynamoDB DocumentClient. Please include a DynamoDB DocumentClient on class instantiation.")
     }

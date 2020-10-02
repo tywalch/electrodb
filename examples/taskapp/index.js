@@ -2,42 +2,57 @@ const moment = require("moment");
 const TaskAppExample = require("./app");
 const {EmployeesModel, TasksModel, OfficesModel} = require("./models");
 const DynamoDB = require("aws-sdk/clients/dynamodb");
-const client = new DynamoDB.DocumentClient({region: "us-east-1", endpoint: "http://localhost:8000"});
+
 
 /**
- * Create a new instance of the TaskAppExample (A class that extends Service, allowing you create and load the table with Task/Employee/Office data)
- */
+ * It is recomended that you use the dynamodb-local docker image for this example. For more
+ * information on how to download visit: https://hub.docker.com/r/amazon/dynamodb-local
+ * 
+ * If you intend on running this example against your own aws account, modify the config to
+ * account for the needs of your account. This includes *removing* the `endpoint` property,
+ * which is used when connecting to the local docker dynamo instance described above.  
+**/
+const client = new DynamoDB.DocumentClient({region: "us-east-1", endpoint: "http://localhost:8000"});
+
+
+/**
+ * Create a new instance of the TaskAppExample (A class that extends Service, allowing you 
+ * to create and load the table with Task/Employee/Office data).
+**/
 const taskr = new TaskAppExample({
   version: "1",
   service: "EmployeeApp",
   table: "electro",
 }, {client});
 
+
 /**
  * Join in the Employees, Tasks, and Offices models
- */
+**/
 taskr
   .join(EmployeesModel)
   .join(TasksModel)
   .join(OfficesModel);
 
+
 /**
  * Uncomment the relevent lines to create a table, then load it, optionally delete, and finally query.
- * For more examples checkout the README
- */
-
+ * For more examples checkout the README.
+**/
 // Make table:
-// taskr.makeTable();
+taskr.makeTable();
 
 // Load table:
-// taskr.loadTable(100, 200);
+// taskr.loadTable({employees: 100, tasks: 200});
 
 // Drop table:
 // taskr.dropTable()
 
 // Query table:
-(async function query() {
+// query(taskr)
 
+async function query(taskr) {
+  
   // Use Collections to query across entities.
   // Find office and staff information for the "Scranton Branch"
   let scranton = await taskr.collections.workplaces({office: "Scranton Branch"}).go();
@@ -80,5 +95,5 @@ taskr
   console.log("Employees hired between two and five years ago:", recentHires, "\r\n");
   
   // Explore the models in `./models` and the README for more queries to try!
-})()
+}
 
