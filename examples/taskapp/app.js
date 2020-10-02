@@ -26,6 +26,7 @@ class TaskAppExample extends Service {
    * @param {number} employees the number of employee records to create
    * @param {number} tasks the number of task records create
    */
+  
   async loadTable({employees = 1, tasks = 1} = {}) {
     if (this.client === undefined) {
       throw new Error("Operation requires DynamoDB DocumentClient. Please include a DynamoDB DocumentClient on class instantiation.")
