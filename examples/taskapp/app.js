@@ -12,7 +12,9 @@ class TaskAppExample extends Service {
     }
     let table = makeTabler(this.service.table, this.client.options);
     let exists = await table.exists().catch(err => console.log(err) || true);
-    if (!exists) {
+    if (exists) {
+      console.log("Table already exists! if you would like to recreate it, use `dropTable` first.");
+    } else {
       return table.create().then(() => console.log("Table created!")).catch(console.log);
     }
   }
