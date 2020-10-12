@@ -1,7 +1,7 @@
 # ElectroDB  
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
-[![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) ![Travis (.org)](https://img.shields.io/travis/tywalch/electrodb)
-![npm bundle size](https://img.shields.io/bundlephobia/min/electrodb)
+[![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) 
+![npm bundle size](https://img.shields.io/bundlephobia/min/electrodb) ![Travis (.org)](https://img.shields.io/travis/tywalch/electrodb)
 
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb.png?raw=true)
 ***ElectroDB*** is a dynamodb library to ease the use of having multiple entities and complex hierarchical relationships in a single dynamodb table. 
