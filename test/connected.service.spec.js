@@ -269,8 +269,8 @@ database.join(modelOne);
 database.join(modelTwo);
 database.join(modelThree);
 
-describe("Put and query", async () => {
-	before(async () => sleep(1000))
+describe("Service Connected", async () => {
+	before(async () => sleep(1000));
 	it("Should add three records and retrieve correct records based on collections", async () => {
 		let recordOne = {
 			prop1: "prop1",

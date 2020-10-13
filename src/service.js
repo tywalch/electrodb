@@ -14,7 +14,7 @@ class Service {
 		this.client = config.client;
 		this.entities = {};
 		this.find = {};
-		this._entityCollections = {};
+		this.collectionSchema = {};
 		this.collections = {};
 		this._instance = ElectroInstance.service;
 	}
@@ -29,27 +29,15 @@ class Service {
 		for (let collection of this.entities[name].model.collections) {
 			this._addCollectionEntity(collection, name, this.entities[name]);
 			this.collections[collection] = (...facets) => {
-				let { entities, attributes } = this._entityCollections[collection];
-				return this._makeCollectionChain(
-					collection,
-					attributes,
-					clauses,
-					Object.values(entities)[0],
-					...facets,
-				);
+				let { entities, attributes } = this.collectionSchema[collection];
+				return this._makeCollectionChain(collection, attributes, clauses, Object.values(entities)[0], ...facets);
 			};
 		}
 		this.find = { ...this.entities, ...this.collections };
 		return this;
 	}
 
-	_makeCollectionChain(
-		name = "",
-		attributes = {},
-		clauses = {},
-		entity = {},
-		facets = {},
-	) {
+	_makeCollectionChain(name = "", attributes = {}, clauses = {}, entity = {}, facets = {}) {
 		let filterBuilder = new FilterFactory(attributes, FilterTypes);
 		clauses = filterBuilder.injectFilterClauses(clauses);
 		return new Proxy(entity.collection(name, clauses, facets), {
@@ -75,11 +63,7 @@ class Service {
 			let entity = record.__edb_e__;
 			if (entity) {
 				results[entity] = results[entity] || [];
-				results[entity].push(
-					this._entityCollections[collection].entities[
-						entity
-					].cleanseRetrievedData(record, config),
-				);
+				results[entity].push(this.collectionSchema[collection].entities[entity].cleanseRetrievedData(record, config));
 			}
 		}
 		return results;
@@ -88,13 +72,11 @@ class Service {
 	_validateCollectionDefinition(definition = {}, providedIndex = {}) {
 		let indexMatch = definition.index === providedIndex.index;
 		let pkFieldMatch = definition.pk.field === providedIndex.pk.field;
-		let pkFacetLengthMatch =
-			definition.pk.facets.length === providedIndex.pk.facets.length;
+		let pkFacetLengthMatch = definition.pk.facets.length === providedIndex.pk.facets.length;
 		let pkFacetContentMatch;
 		let collectionDifferences = [];
 		for (let i = 0; i < definition.pk.facets.length; i++) {
-			pkFacetContentMatch =
-				definition.pk.facets[i] === providedIndex.pk.facets[i];
+			pkFacetContentMatch = definition.pk.facets[i] === providedIndex.pk.facets[i];
 			if (!pkFacetContentMatch) {
 				break;
 			}
@@ -140,10 +122,7 @@ class Service {
 	}
 
 	_processEntityAttributes(definition = {}, providedAttributes = {}) {
-		let [
-			attributesAreIncompatible,
-			attributeResults,
-		] = this._compareEntityAttributes(definition, providedAttributes);
+		let [attributesAreIncompatible, attributeResults] = this._compareEntityAttributes(definition, providedAttributes);
 		if (attributesAreIncompatible) {
 			throw new Error(attributeResults.invalid.join(", "));
 		} else {
@@ -155,9 +134,8 @@ class Service {
 	}
 
 	_processEntityKeys(definition = {}, providedIndex = {}) {
-		let initialDefinition = {};
 		if (!Object.keys(definition).length) {
-			initialDefinition = {
+			definition = {
 				index: providedIndex.index || "",
 				pk: {
 					field: providedIndex.pk.field,
@@ -168,16 +146,12 @@ class Service {
 					facets: providedIndex.sk.facets,
 				},
 			};
-		} else {
-			let [
-				invalidDefinition,
-				invalidIndexMessages,
-			] = this._validateCollectionDefinition(definition, providedIndex);
+		}
+			let [invalidDefinition, invalidIndexMessages] = this._validateCollectionDefinition(definition, providedIndex);
 			if (invalidDefinition) {
 				throw new Error(invalidIndexMessages.join(", "));
 			}
-		}
-		return initialDefinition;
+		return definition;
 	}
 
 	_getEntityIndexFromCollectionName(collection, entity) {
@@ -191,24 +165,14 @@ class Service {
 			collection,
 			entity,
 		);
-		this._entityCollections[collection] = this._entityCollections[
-			collection
-		] || {
+		this.collectionSchema[collection] = this.collectionSchema[collection] || {
 			entities: {},
 			keys: {},
 			attributes: {},
 		};
-		this._entityCollections[collection].keys = this._processEntityKeys(
-			this._entityCollections[collection].keys,
-			providedIndex,
-		);
-		this._entityCollections[
-			collection
-		].attributes = this._processEntityAttributes(
-			this._entityCollections[collection].attributes,
-			entity.model.schema.attributes,
-		);
-		this._entityCollections[collection].entities[name] = entity;
+		this.collectionSchema[collection].keys = this._processEntityKeys(this.collectionSchema[collection].keys, providedIndex);
+		this.collectionSchema[collection].attributes = this._processEntityAttributes(this.collectionSchema[collection].attributes, entity.model.schema.attributes);
+		this.collectionSchema[collection].entities[name] = entity;
 	}
 }
 
