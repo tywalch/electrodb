@@ -1,0 +1,10 @@
+node_modules
+*.log
+*.tgz
+.nyc_output
+.vscode
+examples
+coverage
+assets
+test
+*.md
