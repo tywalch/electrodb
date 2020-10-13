@@ -257,7 +257,93 @@ database.join(modelOne);
 database.join(modelTwo);
 database.join(modelThree);
 
-describe("Put and query", async () => {
+describe("Service Offline", async () => {
+	it("Should require all PK values", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1", "prop7"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let entityTwo = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1", "prop7"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop5", "prop4"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+
+		database
+			.join(entityOne)
+			.join(entityTwo);
+
+		expect(() => database.collections.collectionA({prop1: "abc",}).params()).to.throw("Incomplete or invalid key facets supplied. Missing properties: prop7");
+		expect(database.collections.collectionA({prop1: "abc", prop7: "def", prop2: "hij"}).params()).to.deep.equal({
+			KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+			TableName: 'electro',
+			ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+			ExpressionAttributeValues: {
+				':pk': '$electrotest_1#prop1_abc#prop7_def',
+				':sk1': '$collectiona'
+			}
+		});
+	});
+
 	it("Should add three records and retrieve correct records based on collections", async () => {
 		let recordOne = {
 			prop1: "prop1",
@@ -800,7 +886,7 @@ describe("Misconfiguration exceptions", () => {
 		let get = database.entities.entityOne.get({prop1, prop2, prop3}).params();
 		let destroy = database.entities.entityOne.delete({prop1, prop2, prop3}).params();
 		let update = database.entities.entityOne.update({prop1, prop2, prop3}).set({prop4, prop5, prop6, prop7, prop8, prop9}).params();
-		
+
 		function testKeys(pk, sk) {
 			if (!pk.startsWith("$electrotest_1#prop1_")) {
 				throw new Error("Invalid PK");
