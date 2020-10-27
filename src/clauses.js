@@ -337,7 +337,7 @@ let clauses = {
 			} else {
 				params = entity._params(state.query, options);
 			}
-			return entity.go(state.query.method, params, options);
+			return entity.go(state.query.method, params, options)
 		},
 		children: [],
 	},

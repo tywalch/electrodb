@@ -10,7 +10,7 @@ const client = new DynamoDB.DocumentClient({
 	region: "us-east-1",
 });
 const SERVICE = "BugBeater";
-const ENTITY = "TEST_ENTITY"
+const ENTITY = "TEST_ENTITY";
 let model = {
 	service: SERVICE,
 	entity: ENTITY,
@@ -273,7 +273,7 @@ describe("Entity", async () => {
 			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
-		
+
 		it("Should not create a overwrite existing record", async () => {
 			let id = uuidv4();
 			let mall = "EastPointe";
@@ -347,12 +347,12 @@ describe("Entity", async () => {
 				.go({params: {TableName: "blahblah"}})
 				.then(() => [true, null])
 				.catch(err => [false, err]);
-			
+
 			let [originalSuccess, originalErr] = await MallStores.get({sector, id})
 				.go({originalErr: true, params: {TableName: "blahblah"}})
 				.then(() => [true, null])
 				.catch(err => [false, err]);
-			
+
 			expect(electroSuccess).to.be.false;
 			expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
 			expect(originalSuccess).to.be.false;
@@ -535,6 +535,7 @@ describe("Entity", async () => {
 			expect(getRecord).to.deep.equal({
 				Item: {
 					__edb_e__: entity,
+					__edb_v__: "1",
 					id,
 					date,
 					someValue: someValue + " wham",
@@ -552,6 +553,7 @@ describe("Entity", async () => {
 				Items: [
 					{
 						__edb_e__: entity,
+						__edb_v__: "1",
 						id,
 						date,
 						someValue: someValue + " wham",
@@ -568,6 +570,7 @@ describe("Entity", async () => {
 				date,
 				someValue: "ABDEF wham bam",
 				__edb_e__: entity,
+				__edb_v__: "1",
 				sk: `$${entity}#id_${id}`.toLowerCase(),
 				pk: `$${SERVICE}_1#date_${date}`.toLowerCase(),
 			})

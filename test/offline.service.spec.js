@@ -330,14 +330,101 @@ describe("Service Offline", async () => {
 
 		database
 			.join(entityOne)
+
+		expect(() => database.join(entityTwo)).to.throw(`Entity with name ${"entityOne"} has already been joined to this service`);
+	});
+	it("Should require all PK values", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1", "prop7"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let entityTwo = {
+			entity: "entityTwo",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1", "prop7"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop5", "prop4"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+
+		database
+			.join(entityOne)
 			.join(entityTwo);
 
 		expect(() => database.collections.collectionA({prop1: "abc",}).params()).to.throw("Incomplete or invalid key facets supplied. Missing properties: prop7");
 		expect(database.collections.collectionA({prop1: "abc", prop7: "def", prop2: "hij"}).params()).to.deep.equal({
 			KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+			FilterExpression: "(#__edb_e___entityOne = :__edb_e___entityOne AND #__edb_v___entityOne = :__edb_v___entityOne) OR (#__edb_e___entityTwo = :__edb_e___entityTwo AND #__edb_v___entityTwo = :__edb_v___entityTwo)",
 			TableName: 'electro',
-			ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+			ExpressionAttributeNames: {
+				"#__edb_e___entityOne": "__edb_e__",
+				"#__edb_v___entityOne": "__edb_v__",
+				"#__edb_e___entityTwo": "__edb_e__",
+				"#__edb_v___entityTwo": "__edb_v__",
+				"#pk": "pk",
+				"#sk1": "sk"
+			},
 			ExpressionAttributeValues: {
+				":__edb_e___entityOne": "entityOne",
+				":__edb_v___entityOne": "1",
+				":__edb_e___entityTwo": "entityTwo",
+				":__edb_v___entityTwo": "1",
 				':pk': '$electrotest_1#prop1_abc#prop7_def',
 				':sk1': '$collectiona'
 			}
@@ -377,6 +464,7 @@ describe("Service Offline", async () => {
 				gsi3pk: "$electrotest_1#prop7_prop7",
 				gsi3sk: "$collectiond#entityone#prop8_prop8-one#prop9_prop9-one",
 				__edb_e__: "entityOne",
+				__edb_v__: "1",
 			},
 			TableName: "electro",
 		});
@@ -412,6 +500,7 @@ describe("Service Offline", async () => {
 				gsi3pk: "$electrotest_1#prop7_prop7",
 				gsi3sk: "$collectiong#entitytwo#prop8_prop8-two#prop9_prop9-two",
 				__edb_e__: "entityTwo",
+				__edb_v__: "1",
 			},
 			TableName: "electro",
 		});
@@ -447,6 +536,7 @@ describe("Service Offline", async () => {
 				gsi3pk: "$electrotest_1#prop7_prop7",
 				gsi3sk: "$collectiond#entitythree#prop8_prop8-three#prop9_prop9-three",
 				__edb_e__: "entityThree",
+				__edb_v__: "1",
 			},
 			TableName: "electro",
 		});
@@ -482,9 +572,9 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				}
 			}
-		}
+		};
 		let entityTwo = {
-			entity: "entityOne",
+			entity: "entityTwo",
 			attributes: {
 				prop1: {
 					type: "string",
@@ -521,7 +611,7 @@ describe("Misconfiguration exceptions", () => {
 					index: "different-index-than-entity-one",
 				}
 			}
-		}
+		};
 		let database = new Service({
 			version: "1",
 			table: "electro",
@@ -558,9 +648,9 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				}
 			}
-		}
+		};
 		let entityTwo = {
-			entity: "entityOne",
+			entity: "entityTwo",
 			attributes: {
 				prop1: {
 					type: "string",
@@ -585,7 +675,7 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				},
 			}
-		}
+		};
 		let database = new Service({
 			version: "1",
 			table: "electro",
@@ -622,9 +712,9 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				}
 			}
-		}
+		};
 		let entityTwo = {
-			entity: "entityOne",
+			entity: "entityTwo",
 			attributes: {
 				prop1: {
 					type: "string",
@@ -650,7 +740,7 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				},
 			}
-		}
+		};
 		let database = new Service({
 			version: "1",
 			table: "electro",
@@ -686,9 +776,9 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				}
 			}
-		}
+		};
 		let entityTwo = {
-			entity: "entityOne",
+			entity: "entityTwo",
 			attributes: {
 				prop1: {
 					type: "string",
@@ -713,7 +803,7 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				},
 			}
-		}
+		};
 		let database = new Service({
 			version: "1",
 			table: "electro",
@@ -749,9 +839,9 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				}
 			}
-		}
+		};
 		let entityTwo = {
-			entity: "entityOne",
+			entity: "entityTwo",
 			attributes: {
 				prop1: {
 					type: "string",
@@ -777,7 +867,7 @@ describe("Misconfiguration exceptions", () => {
 					collection: "collectionA",
 				},
 			}
-		}
+		};
 		let database = new Service({
 			version: "1",
 			table: "electro",
@@ -786,6 +876,44 @@ describe("Misconfiguration exceptions", () => {
 		database.join(entityOne);
 		expect(() => database.join(entityTwo)).to.throw(`Attribute provided "prop1" with Table Field "notProp1" does not match established Table Field "prop1"`);
 	});
+	it("Should disallow for 'v1' construction with 'beta' entities", () => {
+		let database = new Service("electrotest", {table: "electro_test"});
+		expect(() => database.join(modelOne)).to.throw("Invalid instance: Valid instances to join include Models and Entity instances. Additionally, all models must be in the same format (v1 vs beta). Review https://github.com/tywalch/electrodb#version-v1-migration for more detail.");
+	});
+	// it("Should allow for 'v1' construction with 'beta' entities", () => {
+	// 	let database = new Service("electrotest", {table: "electro_test"});
+	// 	database
+	// 		.join(modelOne)
+	// 		.join(modelTwo)
+	// 		.join(modelThree);
+	// 	let params = database.collections.collectionB({prop3: "abc"}).params();
+	// 	expect(params).to.deep.equal({
+	// 		KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+	// 		TableName: 'electro_test',
+	// 		ExpressionAttributeNames: {
+	// 			'#pk': 'gsi1pk',
+	// 			'#sk1': 'gsi1sk',
+	// 			'#__edb_e___entityOne': '__edb_e__',
+	// 			'#__edb_v___entityOne': '__edb_v__',
+	// 			'#__edb_e___entityTwo': '__edb_e__',
+	// 			'#__edb_v___entityTwo': '__edb_v__',
+	// 			'#__edb_e___entityThree': '__edb_e__',
+	// 			'#__edb_v___entityThree': '__edb_v__'
+	// 		},
+	// 		ExpressionAttributeValues: {
+	// 			':pk': '$electrotest_1#prop3_abc',
+	// 			':sk1': '$collectionb',
+	// 			':__edb_e___entityOne': 'entityOne',
+	// 			':__edb_v___entityOne': '1',
+	// 			':__edb_e___entityTwo': 'entityTwo',
+	// 			':__edb_v___entityTwo': '1',
+	// 			':__edb_e___entityThree': 'entityThree',
+	// 			':__edb_v___entityThree': '1'
+	// 		},
+	// 		IndexName: 'gsi1pk-gsi1sk-index',
+	// 		FilterExpression: '(#__edb_e___entityOne = :__edb_e___entityOne AND #__edb_v___entityOne = :__edb_v___entityOne) OR (#__edb_e___entityTwo = :__edb_e___entityTwo AND #__edb_v___entityTwo = :__edb_v___entityTwo) OR (#__edb_e___entityThree = :__edb_e___entityThree AND #__edb_v___entityThree = :__edb_v___entityThree)'
+	// 	});
+	// });
 	it("Should build the correct pk and sk when the table's pk/sk are part of a collection", async () => {
 		let modelOne = {
 			entity: "entityOne",
@@ -886,6 +1014,7 @@ describe("Misconfiguration exceptions", () => {
 		let get = database.entities.entityOne.get({prop1, prop2, prop3}).params();
 		let destroy = database.entities.entityOne.delete({prop1, prop2, prop3}).params();
 		let update = database.entities.entityOne.update({prop1, prop2, prop3}).set({prop4, prop5, prop6, prop7, prop8, prop9}).params();
+		let collection = database.collections.collectionD({prop7, prop8, prop9}).params();
 
 		function testKeys(pk, sk) {
 			if (!pk.startsWith("$electrotest_1#prop1_")) {
@@ -896,11 +1025,12 @@ describe("Misconfiguration exceptions", () => {
 			}
 		}
 
+		expect(collection.FilterExpression).to.equal("(#__edb_e___entityOne = :__edb_e___entityOne AND #__edb_v___entityOne = :__edb_v___entityOne)");
 		testKeys(query.ExpressionAttributeValues[":pk"], query.ExpressionAttributeValues[":sk1"]);
 		testKeys(scan.ExpressionAttributeValues[":pk"], scan.ExpressionAttributeValues[":sk"]);
 		testKeys(get.Key.pk, get.Key.sk);
 		testKeys(destroy.Key.pk, destroy.Key.sk);
 		testKeys(update.Key.pk, update.Key.sk);
 	});
-})
+});
 // database.find.collectionA({}).go();

@@ -1,15 +1,32 @@
 const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
-const { ElectroInstance } = require("./types");
+const { ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
+const { getInstanceType, getModelVersion, applyBetaModelOverrides } = require("./util");
+const v = require("./validations");
 
 class Service {
-	constructor(service = {}, config = {}) {
-		this.service = {
-			name: service.service,
-			table: service.table,
-			version: service.version,
-		};
+	constructor(service = "", config = {}) {
+		this.service = {};
+		/** start beta/v1 condition **/
+		this._modelOverrides = {};
+		this._modelVersion = ModelVersions.v1;
+		if (v.isObjectHasLength(service)) {
+			this._modelVersion = ModelVersions.beta;
+			this._modelOverrides = {
+				table: service.table,
+				service: service.service,
+				version: service.version,
+			};
+		} else if (v.isStringHasLength(service)) {
+			this._modelVersion = ModelVersions.v1;
+			this.service.name = service;
+			this.service.table = config.table;
+			this._modelOverrides.table = config.table;
+		} else {
+			throw new Error(`Invalid service name: ${JSON.stringify(service)}. Service name must have length greater than zero`);
+		}
+		/** end beta/v1 condition **/
 		this.config = config;
 		this.client = config.client;
 		this.entities = {};
@@ -19,28 +36,65 @@ class Service {
 		this._instance = ElectroInstance.service;
 	}
 
-	join(model = {}, config = {}) {
-		let name = model.entity;
-		model.service = this.service.name;
-		model.table = this.service.table;
-		model.version = this.service.version;
+	join(instance = {}, config = {}) {
 		let options = { ...config, ...this.config };
-		this.entities[name] = new Entity(model, options);
+		let entity = {};
+		let type = getInstanceType(instance);
+		/** start beta/v1 condition **/
+		let modelVersion = getModelVersion(instance);
+		/** end beta/v1 condition **/
+
+		switch(type) {
+			case ElectroInstanceTypes.model:
+				entity = new Entity(instance, options);
+				break;
+			case ElectroInstanceTypes.entity:
+				entity = instance;
+				break;
+			default:
+				/** start beta/v1 condition **/
+				if (modelVersion !== this._modelVersion) {
+					throw new Error("Invalid instance: Valid instances to join include Models and Entity instances. Additionally, all models must be in the same format (v1 vs beta). Review https://github.com/tywalch/electrodb#version-v1-migration for more detail.");
+				} else if (modelVersion === ModelVersions.beta) {
+					instance = applyBetaModelOverrides(instance, this._modelOverrides);
+				} else {
+					throw new Error(`Invalid instance: Valid instances to join include Models and Entity instances.`);
+				}
+				entity = new Entity(instance, options);
+				/** end beta/v1 condition **/
+				break;
+		}
+
+		let name = entity.model.entity;
+
+		if (this.service.name !== this.service.name) {
+			throw new Error(``)
+		}
+
+		if (this.service.table) {
+			entity.table = this.service.table;
+		}
+
+		if (this.service.version) {
+			entity.model.version = this.service.version;
+		}
+
+		this.entities[name] = entity;
 		for (let collection of this.entities[name].model.collections) {
 			this._addCollectionEntity(collection, name, this.entities[name]);
 			this.collections[collection] = (...facets) => {
-				let { entities, attributes } = this.collectionSchema[collection];
-				return this._makeCollectionChain(collection, attributes, clauses, Object.values(entities)[0], ...facets);
+				let { entities, attributes, identifiers } = this.collectionSchema[collection];
+				return this._makeCollectionChain(collection, attributes, clauses, identifiers, Object.values(entities)[0], ...facets);
 			};
 		}
 		this.find = { ...this.entities, ...this.collections };
 		return this;
 	}
 
-	_makeCollectionChain(name = "", attributes = {}, clauses = {}, entity = {}, facets = {}) {
+	_makeCollectionChain(name = "", attributes = {}, clauses = {}, identifiers = {}, entity = {}, facets = {}) {
 		let filterBuilder = new FilterFactory(attributes, FilterTypes);
 		clauses = filterBuilder.injectFilterClauses(clauses);
-		return new Proxy(entity.collection(name, clauses, facets), {
+		return new Proxy(entity.collection(name, clauses, facets, identifiers), {
 			get: (target, prop) => {
 				if (prop === "go") {
 					return (options = {}) => {
@@ -169,10 +223,33 @@ class Service {
 			entities: {},
 			keys: {},
 			attributes: {},
+			identifiers: {
+				names: {},
+				values: {},
+				expression: ""
+			}
 		};
+		if (this.collectionSchema[collection].entities[name] !== undefined) {
+			throw new Error(`Entity with name ${name} has already been joined to this service.`);
+		}
 		this.collectionSchema[collection].keys = this._processEntityKeys(this.collectionSchema[collection].keys, providedIndex);
 		this.collectionSchema[collection].attributes = this._processEntityAttributes(this.collectionSchema[collection].attributes, entity.model.schema.attributes);
 		this.collectionSchema[collection].entities[name] = entity;
+		this.collectionSchema[collection].identifiers = this._processEntityIdentifiers(this.collectionSchema[collection].identifiers, entity.getIdentifierExpressions());
+	}
+
+	_processEntityIdentifiers(existing = {}, {names, values, expression} = {}) {
+		let identifiers = {};
+		if (names) {
+			identifiers.names = Object.assign({}, existing.names, names);
+		}
+		if (values) {
+			identifiers.values = Object.assign({}, existing.values, values);
+		}
+		if (expression) {
+			identifiers.expression = [existing.expression, expression].filter(Boolean).join(" OR ");
+		}
+		return identifiers;
 	}
 }
 

@@ -271,6 +271,11 @@ database.join(modelThree);
 
 describe("Service Connected", async () => {
 	before(async () => sleep(1000));
+	// it("Should have correct filter expression", async () => {
+	// 	let prop3 = "prop3";
+	// 	let collectionB = await database.collections.collectionB({ prop3 }).go();
+	// 	console.log(collectionB);
+	// });
 	it("Should add three records and retrieve correct records based on collections", async () => {
 		let recordOne = {
 			prop1: "prop1",
@@ -305,6 +310,7 @@ describe("Service Connected", async () => {
 				gsi3pk: "$electrotest_1#prop7_prop7",
 				gsi3sk: "$collectiond#entityone#prop8_prop8-one#prop9_prop9-one",
 				__edb_e__: "entityOne",
+				__edb_v__: "1",
 			},
 			TableName: "electro",
 		});
@@ -341,6 +347,7 @@ describe("Service Connected", async () => {
 				gsi3pk: "$electrotest_1#prop7_prop7",
 				gsi3sk: "$collectiong#entitytwo#prop8_prop8-two#prop9_prop9-two",
 				__edb_e__: "entityTwo",
+				__edb_v__: "1",
 			},
 			TableName: "electro",
 		});
@@ -377,6 +384,7 @@ describe("Service Connected", async () => {
 				gsi3pk: "$electrotest_1#prop7_prop7",
 				gsi3sk: "$collectiond#entitythree#prop8_prop8-three#prop9_prop9-three",
 				__edb_e__: "entityThree",
+				__edb_v__: "1",
 			},
 			TableName: "electro",
 		});
@@ -471,4 +479,4 @@ describe("Service Connected", async () => {
 	}).timeout(10000);
 });
 
-// database.find.collectionA({}).go();
+// todo: v1 service tests
