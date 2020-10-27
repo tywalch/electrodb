@@ -1,47 +1,33 @@
-const makeLoader = require("./loader");
-const makeTabler = require("./table");
-const {Service} = require("../../");
+process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
+const { Service } = require("../../");
+const DynamoDB = require("aws-sdk/clients/dynamodb");
+const {EmployeesModel, TasksModel, OfficesModel} = require("./models");
 
-class TaskAppExample extends Service {
-  /**
-   * makeTable generates a new table 
-   */
-  async makeTable() {
-    if (this.client === undefined) {
-      throw new Error("Operation requires DynamoDB DocumentClient. Please include a DynamoDB DocumentClient on class instantiation.")
-    }
-    let table = makeTabler(this.service.table, this.client.options);
-    let exists = await table.exists().catch(err => console.log(err) || true);
-    if (exists) {
-      console.log("Table already exists! if you would like to recreate it, use `dropTable` first.");
-    } else {
-      return table.create().then(() => console.log("Table created!")).catch(console.log);
-    }
-  }
+/**
+ * It is recomended that you use the dynamodb-local docker image for this example. For more
+ * information on how to download visit: https://hub.docker.com/r/amazon/dynamodb-local
+ *
+ * If you intend on running this example against your own aws account, modify the config
+ * to match your account. This includes *removing* the `endpoint` property, which is used
+ * when connecting to the local docker dynamo instance described above.
+ **/
+const client = new DynamoDB.DocumentClient({endpoint: "http://localhost:8000", region: "us-east-1"});
+const table = "electro";
 
-  async dropTable() {
-    let tabler = makeTabler(this.service.table, this.client.options);
-    return tabler.drop().then(() => console.log("Table dropped!")).catch(console.log);
-  }
-  /**
-   * loadTable loads the TaskApp Service with records. Requires DynamoDB DocumentClient and uses the models as theyre defined in this example
-   * @param {number} employees the number of employee records to create
-   * @param {number} tasks the number of task records create
-   */
-  
-  async loadTable({employees = 1, tasks = 1} = {}) {
-    if (this.client === undefined) {
-      throw new Error("Operation requires DynamoDB DocumentClient. Please include a DynamoDB DocumentClient on class instantiation.")
-    }
-    if (typeof employees !== "number" || employees < 0) {
-      throw new Error("Please include a number of employees to load that is greater than 0");
-    }
-    if (typeof tasks !== "number" || tasks < 0) {
-      throw new Error("Please include a number of employees to load that is greater than 0");
-    }
-    let loader = makeLoader(this);
-    return loader.load(employees, tasks).then(() => console.log("Table loaded!")).catch(console.log);
-  }
-}
+/**
+ * Create a new Service instance
+ **/
+const EmployeeApp = new Service("EmployeeApp", { client, table });
 
-module.exports = TaskAppExample;
+/**
+ * Join in the Employees, Tasks, and Offices models
+ **/
+EmployeeApp
+  .join(EmployeesModel)
+  .join(TasksModel)
+  .join(OfficesModel);
+
+/**
+ * Made typedef file using `electrocli`
+ */
+module.exports = EmployeeApp;

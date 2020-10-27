@@ -1,11 +1,12 @@
-const uuid = require("uuid").v4
+const uuid = require("uuid").v4;
 const moment = require("moment");
 
 const EmployeesModel = {
-	entity: "employees",
-	version: "1",
-	service: "taskapp",
-	table: "projectmanagement",
+	model: {
+		entity: "employees",
+		version: "1",
+		service: "taskapp",
+	},
 	attributes: {
 		employee: {
 			type: "string",
@@ -136,10 +137,11 @@ const EmployeesModel = {
 };
 
 const TasksModel = {
-	entity: "tasks",
-	version: "1",
-	service: "taskapp",
-	table: "projectmanagement",
+	model: {
+		entity: "tasks",
+		version: "1",
+		service: "taskapp",
+	},
 	attributes: {
 		task: {
 			type: "string",
@@ -213,10 +215,11 @@ const TasksModel = {
 };
 
 const OfficesModel = {
-	entity: "offices",
-	version: "1",
-	table: "electro",
-	service: "electrotest",
+	model: {
+		entity: "offices",
+		version: "1",
+		service: "electrotest",
+	},
 	attributes: {
 		office: {
 			type: "string",
