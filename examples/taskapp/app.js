@@ -17,7 +17,7 @@ const table = "electro";
 /**
  * Create a new Service instance
  **/
-const EmployeeApp = new Service("EmployeeApp", { client, table });
+const EmployeeApp = new Service("taskapp", { client, table });
 
 /**
  * Join in the Employees, Tasks, and Offices models

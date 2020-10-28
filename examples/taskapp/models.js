@@ -218,7 +218,7 @@ const OfficesModel = {
 	model: {
 		entity: "offices",
 		version: "1",
-		service: "electrotest",
+		service: "taskapp",
 	},
 	attributes: {
 		office: {
