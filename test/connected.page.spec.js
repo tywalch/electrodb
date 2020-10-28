@@ -80,12 +80,12 @@ class Tasks extends Entity {
     this.name = model.entity
     this.loaded = [];
   }
-  
+
 
   getRandomNumber(min, max) {
     return Math.floor(Math.random() * (max - min) ) + min;
   }
-  
+
   generateRandomComments() {
     let comments = [];
     for (let i = 0; i < this.getRandomNumber(2, 6); i++) {
@@ -190,9 +190,9 @@ Tasks.projects =[
   "552-77",
   "636-33",
   "360-56"
-]
+];
 
-Tasks.types = ["story", "defect", "epic"]
+Tasks.types = ["story", "defect", "epic"];
 
 Tasks.points = [1, 2, 3, 5, 8, 13, 21, 50, 100];
 
@@ -206,7 +206,7 @@ describe("Page", async () => {
     this.timeout(10000);
     await tasks.load(total);
     await sleep(1000)
-  })
+  });
 
   it("Should paginate through all records", async () => {
     let tests = [
@@ -234,7 +234,7 @@ describe("Page", async () => {
           pageKeys: ["task", "project", "employee"]
         },
       }
-    ]
+    ];
 
     for (let test of tests) {
       let query;
@@ -251,7 +251,7 @@ describe("Page", async () => {
         query = () => tasks.query[test.input.index](test.input.facets).page();
         loaded = tasks.filterLoaded(test.input.facets);
       }
-      
+
       let results = await tasks.paginate(2, total, query, testPage);
       expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
     }
@@ -267,7 +267,7 @@ describe("Page", async () => {
           page: {task: "1234", project: undefined}
         },
         output: {
-          error: "Incomplete or invalid key facets supplied. Missing properties: project"
+          error: "Incomplete or invalid key facets supplied. Missing properties: project - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
         },
       }, {
         type: "query",
@@ -277,7 +277,7 @@ describe("Page", async () => {
           page: {task: "1234", project: "anc"}
         },
         output: {
-          error: "Incomplete or invalid key facets supplied. Missing properties: employee"
+          error: "Incomplete or invalid key facets supplied. Missing properties: employee - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
         },
       }, {
         type: "scan",
@@ -285,7 +285,7 @@ describe("Page", async () => {
           page: {task: "1234", project: undefined}
         },
         output: {
-          error: "Incomplete or invalid key facets supplied. Missing properties: project, employee"
+          error: "Incomplete or invalid key facets supplied. Missing properties: project, employee - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
         },
       }
     ];

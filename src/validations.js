@@ -1,3 +1,5 @@
+const e = require("./errors");
+
 const Validator = require("jsonschema").Validator;
 Validator.prototype.customFormats.isFunction = function (input) {
 	return typeof input === "function";
@@ -200,7 +202,7 @@ function validateModel(model = {}) {
 	/** end/v1 condition **/
 		let errors = v.validate(model, "/Modelv1").errors;
 		if (errors.length) {
-			throw new Error(
+			throw new e.ElectroError(e.ErrorCodes.InvalidModel,
 				errors
 					.map((err) => {
 						let message = `${err.property}`;

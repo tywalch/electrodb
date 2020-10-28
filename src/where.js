@@ -1,5 +1,6 @@
 const __is_clause__ = Symbol("IsWhereClause");
 const {MethodTypes, ExpressionTypes} = require("./types");
+const e = require("./errors");
 
 function attributeProxy(path, attr, setName) {
   return new Proxy(() => ({path, attr}), {
@@ -31,7 +32,7 @@ class WhereFactory {
           setName(path, name);
           return attributeProxy(path, name, setName);
         }
-      }) 
+      })
     }
     return attributes;
   }
@@ -44,7 +45,7 @@ class WhereFactory {
         get: () => {
           return (property, ...values) => {
 						if (property === undefined) {
-							throw new Error(`Invalid/Unknown property passed in where clause passed to operation: '${type}'`);
+							throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid/Unknown property passed in where clause passed to operation: '${type}'`);
 						}
             if (property.__is_clause__ === __is_clause__) {
               let {path, attr} = property();
@@ -62,14 +63,13 @@ class WhereFactory {
             // } else if (typeof property === "string") {
             //   // todo: parse string
             } else {
-              // todo: proper error logging.
-              throw new Error(`Invalid Attribute in where clause passed to operation '${type}'. Use injected attributes only.`);
+              throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid Attribute in where clause passed to operation '${type}'. Use injected attributes only.`);
             }
           }
         }
       })
     }
-    return operations; 
+    return operations;
   }
 
   _concatFilterExpression(existingExpression = "", newExpression = "") {
@@ -98,7 +98,7 @@ class WhereFactory {
 				return ExpressionTypes.FilterExpression
 		}
 	}
-  
+
   buildClause(filterFn) {
 		return (entity, state, ...params) => {
 			let expressionType = this.getExpressionType(state.query.method);
@@ -117,7 +117,7 @@ class WhereFactory {
       let operations = this._buildOperations(setName, setValue, getValueCount);
 			let expression = filterFn(attributes, operations, ...params);
 			if (typeof expression !== "string") {
-				throw new Error("Invalid response from where clause callback. Expected return result to be of type string");
+				throw new e.ElectroError(e.ErrorCodes.InvalidWhere, "Invalid response from where clause callback. Expected return result to be of type string");
 			}
 			state.query.filter[expressionType] = this._concatFilterExpression(
 				state.query.filter[expressionType],
@@ -126,7 +126,7 @@ class WhereFactory {
 			return state;
 		};
   }
-  
+
   injectWhereClauses(clauses = {}, filters = {}) {
 		let injected = { ...clauses };
 		let filterParents = Object.entries(injected)

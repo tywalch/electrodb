@@ -9,7 +9,7 @@ describe("constructor", () => {
 			get: "INCORRECT_TYPE",
 		};
 		expect(() => new Attribute(attribute)).to.throw(
-			`Invalid "get" property for attribure ${attribute.name}. Please ensure value is a function or undefined.`,
+			`Invalid "get" property for attribute ${attribute.name}. Please ensure value is a function or undefined. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition`,
 		);
 	});
 	it("Should validate 'set' property type", () => {
@@ -19,7 +19,7 @@ describe("constructor", () => {
 			set: "INCORRECT_TYPE",
 		};
 		expect(() => new Attribute(attribute)).to.throw(
-			`Invalid "set" property for attribure ${attribute.name}. Please ensure value is a function or undefined.`,
+			`Invalid "set" property for attribute ${attribute.name}. Please ensure value is a function or undefined. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition`,
 		);
 	});
 });

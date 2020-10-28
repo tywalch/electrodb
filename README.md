@@ -62,6 +62,7 @@ Into This:
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
+  * [Join](#join) 
   * [Model](#model)
     + [Model Properties](#model-properties)
     + [Service Properties](#service-properties)
@@ -70,6 +71,8 @@ Into This:
       - [Simple Syntax](#simple-syntax)
       - [Expanded Syntax](#expanded-syntax)
   * [Indexes](#indexes)
+      - [Indexes Without Sort Keys](#indexes-without-sort-keys)
+      - [Indexes With Sort Keys](#indexes-with-sort-keys)
   * [Facets](#facets)
     + [Facet Arrays](#facet-arrays)
     + [Facet Templates](#facet-templates)
@@ -181,6 +184,42 @@ Require `electrodb`:
 ```javascript  
 const {Service} = require("electrodb");
 ```
+
+## Join 
+Create individual (Entities)[#entities] with the (Models)[#models] or `join` them via a Service. 
+
+```javascript
+// Independent Models
+let table = "my_table_name";
+let employees = new Entity(EmployeesModel, { client, table });
+let tasks = new Entity(TasksModel, { client, table });
+```
+
+```javascript
+// Joining Entity instances to a Service
+let TaskApp = new Service("TaskApp", { client, table });
+TaskApp
+	.join(employees) // available at TaskApp.entities.employees
+	.join(tasks);    // available at TaskApp.entities.tasks
+```
+
+```javascript
+// Joining models to a Service
+let TaskApp = new Service("TaskApp", { client, table });
+TaskApp
+	.join(EmployeesModel) // available at TaskApp.entities.employees
+	.join(TasksModel);    // available at TaskApp.entities.tasks
+```
+ 
+When joining a Model/Entity to a Service a number of validations are done to ensure that Entity conforms to expectations collectively established by all joined Entities.
+
+- (Entity)[#entities] names must be unique across a Service
+- (Collection)[#collections] names must be unique accross a Service
+- The (name of the Service in the Model)[#model-properties] must match the Name defined on the (Service)[#service] instance
+- Joined instances must be type (Model)[#model] or (Entity)[#entities].
+- If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching (attribute options)[#attributes].   
+- All primary and global secondary indexes must have the same name field names and be written to assume SortKeys exist/don't exist in the same manor. See (Indexes)[#indexes]  
+- All models conform to the same model format. If your model was made pre-electrodb version 0.9.19 see section (Version 1 Migration)[#version-1-migration] 
 
 ## Model 
 
@@ -375,54 +414,24 @@ const TasksModel = {
 	},
 };
 ```
-### Join 
-Create individual Entities with the Models or `join` them via a Service: 
-```javascript
-// Independent Models
-let table = "my_table_name";
-let employees = new Entity(EmployeesModel, { client, table });
-let tasks = new Entity(TasksModel, { client, table });
-```
 
-```javascript
-// Joining Entity instances to a Service
-let TaskApp = new Service("TaskApp", { client, table });
-TaskApp
-	.join(employees) // available at TaskApp.entities.employees
-	.join(tasks);    // available at TaskApp.entities.tasks
-```
-
-```javascript
-// Joining models to a Service
-let TaskApp = new Service("TaskApp", { client, table });
-TaskApp
-	.join(EmployeesModel) // available at TaskApp.entities.employees
-	.join(TasksModel);    // available at TaskApp.entities.tasks
-```
 ### Model Properties
 
 | Property | Description |
 | ----------- | ----------- |
-| service  | Name of the application using the entity, used to namespace all entities |
-entity | Name of the entity that the schema represents |  
-table | Name of the dynamodb table in aws |  
-version | (optional) The version number of the schema, used to namespace keys |  
-attributes | An object containing each attribute that makes up the schema |  
-indexes | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
-filters | An object containing user defined filter template functions.
-
-### Service Properties
-| Property | Description |
-| ----------- | ----------- |
-| service  | Name of the service, used to namespace all joined entities, will override the model definition. |
-table | Name of the dynamodb table in aws, will override the model definition. | 
-version | (optional) The version number of the schema, used to namespace keys, will override the model definition. |
+| model.service  | Name of the application using the entity, used to namespace all entities
+| model.entity   | Name of the entity that the schema represents 
+| model.version  | (optional) The version number of the schema, used to namespace keys    
+| attributes     | An object containing each attribute that makes up the schema  
+| indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
+| filters        | An object containing user defined filter template functions.
 
 
-### Model/Service Options
+### Model Service Options
 Optional second parameter
 | Property | Description |
 | ----------- | ----------- |
+| table | Name of the dynamodb table in aws
 | client  | (optional) A docClient instance for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.  
 
 ## Attributes
@@ -471,6 +480,16 @@ attributes: {
 `set` | `(attribute, schema) => value` | no | A synchronous callback allowing you apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put 
 `get` | `(attribute, schema) => value` | no | A synchronous callback allowing you apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database. 
 
+#### Attribute Validation
+The `validation` property allows for many different function/type signatures. Here the different combinations *ElectroDB* supports:
+| signature | behavior |
+| --------- | -------- |
+| `Regexp`  | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute |
+| `(value: T) => string`  | If a string with length is returned from `validate` it will be considered the _reason_ an the value is invalid. It will generate an error message with this reason. |
+| `(value: T) => boolean` | If a boolean is returned, true or truthy values will signify than a value is invalid while false or falsey will be considered valid |
+| `(value: T) => void`    | A void/undefined return will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |  
+  
+
 ## Indexes
 The `indexes` object requires at least the definition of the table's natural **Partition Key** and (if applicable) **Sort Key**.
 
@@ -503,6 +522,46 @@ indexes: {
 `sk.field` | `string` | yes | The name of the attribute as it exists dynamo, if named differently in the schema attributes. |  
 `index` | `string` | no | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index. |
 `collection` | `string` | no | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality). 
+
+### Indexes Without Sort Keys
+When using indexes without Sort Keys, that should be expressed to ElectroDB as an index without an `sk` property at all. Indexes without an `sk` cannot have a collection, see (Collections)[[#collections] for more detail. 
+
+> Note: It is generally recommended to have Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesnt _need_ an additional property to define a unique record, having an `sk` with no facets still opens the door to many more query opportunities like (collections)[#collections].
+
+```javascript
+// ElectroDB interprets as index *not having* an SK.
+{
+  indexes: {
+    myIndex: {
+      pk: {
+        field: "pk",
+        facets: ["id"]
+      }
+    }
+  }
+}
+```
+
+### Indexes With Sort Keys
+When using indexes with Sort Keys, that should be expressed to ElectroDB as an index an `sk` property. If you don't wish to use the `sk` in your model, but it does exist on the table, simply use an empty for the `facets` property. This is still useful as it opens the door to many more query opportunities like (collections)[#collections].
+
+```javascript
+// ElectroDB interprets as index *having* SK, but this model doesnt attach any facets to it.
+{
+  indexes: {
+    myIndex: {
+      pk: {
+        field: "pk",
+        facets: ["id"]
+      },
+      sk: {
+        field: "sk",
+        facets: []
+      }
+    }
+  }
+}
+```  
 
 ## Facets 
 A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or an **Sort Key** key, which define an `index`.
@@ -643,7 +702,7 @@ indexes: {
 ## Collections
 A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If you background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities. 
 
-Collections are defined on an Index, and the name of the collection should represent what the query would return as a pseudo `Entity`.
+Collections are defined on an Index, and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally Collection names must be unique across a `Service`.
 
 > **Note**: `collection` should be unique to a single common index across entities. 
 
@@ -695,6 +754,7 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 }
 ```
 ### Defined on the model
+Filters can defined on the model and used in your query chain.  
 
 ```javascript
 /**
@@ -745,6 +805,8 @@ let stores  =  MallStores.query
 }
 ```
 ### Defined via Filter method after query operators 
+The easiest way to use filters is to use them inline in your query chain.
+
 ```javascript
 let StoreLocations  =  new Entity(model, {table: "StoreDirectory"});
 let maxRent = "5000.00";
@@ -1517,9 +1579,11 @@ let stores = MallStores.query
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. 
 
-The first element is the "page", this object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
+The first element for Entity queries is the "page", this object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
 
-> Note: It is highly recommended to use the `exclusiveStartKeyRaw` flag when using `.page()` in conjunction with scans. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+The first element for Collection queries is the `ExclusiveStartKey` as it was returned by DynamoDB.
+
+> Note: It is *highly recommended* to use the `lastEvaluatedKeyRaw` flag when using `.page()` in conjunction with scans. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
 
 The second element is the results of the query, exactly as it would be returned through a `query` operation.
 
@@ -1659,7 +1723,228 @@ let options = {
 | raw  | Returns query results as they were returned by the docClient.  
 | includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. 
 | originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
-| lastEvaluatedKeyRaw | Used in 
+| lastEvaluatedKeyRaw | Used in `.pages()`calls to override ElectroDBs default behaviour to break apart LastEvaluatedKeys into facets. See more in the (Pages)[#pages] section.
+
+# Errors:
+| Error Code | Description |
+| :--------: | ----------- | 
+| 1000s | Configuration Errors |
+| 2000s | Invalid Queries      |
+| 3000s | User Defined Errors  |
+| 4000s | DynamoDB Errors      |
+| 5000s | Unexpected Errors    |
+
+### No Client Defined On Model
+*Code: 1001*
+
+*Why this occurred:*
+If a DynamoDB DocClient is not passed to the constructor of an Entity or Service (`client`), ElectroDB will be unable to query DynamoDB. This error will only appear when a query(using `go()`) is made because ElectroDB is still useful without a DocClient through the use of it's `params()` method.
+
+*What to do about it:*
+For an Entity be sure to pass the DocClient as the second param to the constructor:
+```javascript
+new Entity(schema, {client})
+```
+For a Service, the client is passed the same way, as the second param to the constructor:
+```javascript
+new Service("", {client});
+```
+
+### Invalid Identifier
+*Code: 1002*
+
+*Why this occurred:*
+You tried to modify the entity identifier on an Entity.
+   
+*What to do about it:*
+Make sure the you spelled the identifier correctly or that you actually passed a replacement.
+
+### Invalid Key Facet Template
+*Code: 1003*
+
+*Why this occurred:*
+You are trying to use the custom Key Facet Template and the format you passed is invalid. 
+   
+*What to do about it:*
+Checkout the section on [Facet Templates]("#facet-templates") and verify your template conforms to the rules detailed there.
+
+### Duplicate Indexes
+*Code: 1004*
+
+*Why this occurred:*
+Your model contains duplicate indexes. This could be because you accidentally included an index twice or even forgot to add an index name on a secondary index, which would be interpreted as "duplicate" to the Table's Primary index.
+   
+*What to do about it:*
+Double check your indexes as theyre defined on the model for duplicate indexes. The error should specify which index has been duplicated.
+```javascript
+{
+  indexes: {
+    index1: {
+      index: "idx1", // <-- duplicate "idx1"
+      pk: {},
+      sk: {}
+    },
+    index2: {
+      index: "idx1", // <-- duplicate "idx1"
+      pk: {},
+      sk: {}
+    }
+  }
+}
+```
+
+### Collection Without An SK
+*Code: 1005*
+
+*Why this occurred:*
+You have added a `collection` to an index that does not have an SK. Because Collections are used to help query across entities via the Sort Key, not having a Sort Key on an index defeats the purpose of a Collection.  
+   
+*What to do about it:*
+If your index _does_ have an sk but youre unsure of how to inform electro without setting facets to the SK, add the SK object to the index and use an empty array for Facets:
+```javascript
+// ElectroDB interprets as index *not having* an SK.
+{
+  indexes: {
+    myIndex: {
+      pk: {
+        field: "pk",
+        facets: ["id"]
+      }
+    }
+  }
+}
+
+// ElectroDB interprets as index *having* SK, but this model doesnt attach any facets to it.
+{
+  indexes: {
+    myIndex: {
+      pk: {
+        field: "pk",
+        facets: ["id"]
+      },
+      sk: {
+        field: "sk",
+        facets: []
+      }
+    }
+  }
+}
+```  
+
+### Duplicate Collections
+*Code: 1006*
+
+*Why this occurred:*
+You have assigned the same collection name to multiple indexes. This is not allowed because collection names must be unique. 
+   
+*What to do about it:*
+Determine a new naming scheme
+
+### Missing Primary Index
+*Code: 1007*
+
+*Why this occurred:*
+DynamoDB requires the definition of at least one Primary Index on the table. In Electro this is defined as an Index _without_ an `index` property. Each model needs at least one, and the facets used for this index must ensure each composite represents a unique record. 
+   
+*What to do about it:*
+Identify the index youre using as the Primary Index and ensure it _does not_ have an index property on it's definition.
+```javascript
+// ElectroDB interprets as the Primary Index because it lacks an `index` property.
+{
+  indexes: {
+    myIndex: {
+      pk: {
+        field: "pk",
+        facets: ["org"]
+      },
+      sk: {
+        field: "sk",
+        facets: ["id"]
+      }
+    }
+  }
+}
+
+// ElectroDB interprets as a Global Secondary Index because it has an `index` property.
+{
+  indexes: {
+    myIndex: {
+      index: "gsi1"
+      pk: {
+        field: "gsipk1",
+        facets: ["org"]
+      },
+      sk: {
+        field: "gsisk1",
+        facets: ["id"]
+      }
+    }
+  }
+}
+``` 
+
+### Invalid Attribute Definition
+*Code: 1008*
+
+*Why this occurred:*
+Some attribute on your model has an invalid configuration.   
+   
+*What to do about it:*
+Use the error to identify which column needs to examined, double check the properties on that attribute. Checkout the section on (Attributes)[#attributes] for more information on how they are structured.
+
+### Invalid Model
+*Code: 1009*
+
+*Why this occurred:*
+Some properties on your model are missing or invalid.  
+   
+*What to do about it:*
+Checkout the section on (Models)[#model] to verify your model against what is expected.  
+
+### Invalid Options
+*Code: 1010*
+
+*Why this occurred:*
+Some properties on your options object are missing or invalid.  
+   
+*What to do about it:*
+Checkout the section on (Model/Service Options)[#model-service-options] to verify your model against what is expected. 
+
+### Missing Facets
+*Code: 2002*
+
+*Why this occurred:*
+The current request is missing some facets to complete the query based on the model definition. Facets are used to create the Partition and Sort keys. In DynamoDB Partition keys cannot be partially included, and Sort Keys can be partially include they must be at least passed in the order they are defined on the model.   
+   
+*What to do about it:*
+The error should describe the missing facets, ensure those facets are included in the query or update the model to reflect the needs of the access pattern.
+
+### Invalid Last Evaluated Key
+*Code: 4002*
+
+*Why this occurred:*
+_Likely_ you were were calling `.page()` on a `scan`. If you werent please make an issue and include as much detail about your query as possible.
+   
+*What to do about it:*
+It is highly recommended to use the exclusiveStartKeyRaw flag when using .page() in conjunction with scans. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+```javascript
+// example
+model.scan.page({exclusiveStartKeyRaw: true});
+```
+
+### aws-error
+*Code: 4001*
+
+*Why this occurred:*
+DynamoDB didnt like something about your query.
+   
+*What to do about it:*
+By default electrodb tries to keep the stack trace close to your code, ideally this can help you identify what might be going on. A tip to help with troubleshooting: use `.params()` to get insight into how your query is being converted to DocClient params.
+
+ 
+
+### Unknown Error
+
 # Examples
 
 ## Employee App
@@ -2334,10 +2619,7 @@ new Service({
 new Service("service_name", {client, table});
 ```
 
-
 # Coming Soon
-- Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
-- ConditionalExpressions for create/update/delete
 - Append/Add/Subtract/Remove updates capabilities
 - Complex attributes (list, map, set)

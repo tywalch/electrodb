@@ -1,3 +1,4 @@
+const e = require("./errors");
 const {MethodTypes, ExpressionTypes} = require("./types");
 
 let FilterTypes = {
@@ -175,7 +176,7 @@ class FilterFactory {
 			);
 			let expression = filterFn(attributes, ...params);
 			if (typeof expression !== "string") {
-				throw new Error("Invalid filter response. Expected result to be of type string");
+				throw new e.ElectroError(e.ErrorCodes.InvalidFilter, "Invalid filter response. Expected result to be of type string");
 			}
 			state.query.filter[expressionType] = this._concatFilterExpression(
 				state.query.filter[expressionType],
