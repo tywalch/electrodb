@@ -2267,14 +2267,14 @@ It became clear when I added the concept of a Service that the "version" paradig
 To address this change, I decide it would be best to change the structure for defining a model, which is then used as heuristic to determine where to place the version in the key (PK or SK). This has the benefit of not breaking existing models, but does increase some complexity in the underlying code.
 
 > In the old scheme, version came after the service name (see `^`). 
-> ```
+```
 pk: $mallstoredirectory_1#mall_eastpointe
                         ^
 sk: $mallstores#building_buildinga#store_lattelarrys
 ```
 
 > In the new scheme, version comes after the entity name (see `^`).
-> ```
+```
 pk: $mallstoredirectory#mall_eastpointe
 sk: $mallstores_1#building_buildinga#store_lattelarrys
                 ^
