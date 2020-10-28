@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "0.9.21",
+  "version": "0.9.22",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/tywalch/electrodb.git"
   },
-  "author": "",
+  "author": "Tyler W. Walch",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/tywalch/electrodb/issues"
@@ -30,6 +30,12 @@
     "nyc": "^15.0.0",
     "uuid": "^7.0.1"
   },
+  "keywords": [
+    "electrodb",
+    "dynamo",
+    "dynamodb",
+    "aws"
+  ],
   "dependencies": {
     "jsonschema": "1.2.7"
   }
