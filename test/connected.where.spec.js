@@ -11,7 +11,7 @@ const client = new DynamoDB.DocumentClient({
 
 
 describe("General", async () => {
-	before(async () => sleep(1000))
+	before(async () => sleep(1000));
 	let WhereTests = new Entity({
 		service: "tests",
 		entity: "filters",
@@ -30,7 +30,7 @@ describe("General", async () => {
 			},
 			animal: {
 				type: "string",
-				required: true		
+				required: true
 			},
 			dangerous: {
 				type: "boolean"
@@ -80,7 +80,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({animal}, op) => op.eq(animal, "Cow"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(1)
@@ -90,7 +90,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({animal}, {gt}) => gt(animal, "Dog"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(4);
@@ -105,7 +105,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({animal}, {lt}) => lt(animal, "Pig"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(4);
@@ -120,7 +120,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where((attr, op) => op.gte(attr.animal, "Dog"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
@@ -136,7 +136,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({animal}, {lte}) => lte(animal, "Pig"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
@@ -152,7 +152,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({animal}, {between}) => between(animal, "Dog", "Rooster"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(3);
@@ -166,7 +166,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({animal}, {begins}) => begins(animal, "Sh"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(2);
@@ -179,7 +179,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({dangerous}, {exists}) => exists(dangerous))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(1);
@@ -191,7 +191,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({dangerous}, {notExists}) => notExists(dangerous))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(7);
@@ -209,7 +209,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({animal}, op) => op.contains(animal, "Chick"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(2);
@@ -222,7 +222,7 @@ describe("General", async () => {
 		let animals = await WhereTests.query
 			.farm({pen})
 			.where(({animal}, {notContains}) => notContains(animal, "o"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
@@ -257,7 +257,7 @@ describe("General", async () => {
 				.go();
 			throw new Error("Should have thrown")
 		} catch(err) {
-			expect(err.message).to.equal("The conditional request failed");
+			expect(err.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
 		}
 	});
 	it("Should update an animal which does exist", async () => {
@@ -312,7 +312,7 @@ describe("General", async () => {
 			.go()
 			.then(data => data)
 			.catch(err => err);
-		expect(wontMatch.message).to.be.equal("The conditional request failed");
+		expect(wontMatch.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
 	});
 	it("Should not allow unknown values from being used in a where clause", () => {
 		let penRow = penRows[2];
@@ -368,17 +368,17 @@ describe("General", async () => {
 	});
 
 	it("Should not allow random values to passed to where operations", () => {
-		let query = () => WhereTests.query.farm({pen}).where((attr, op) => op.eq({}, "invalid")).params(); 
+		let query = () => WhereTests.query.farm({pen}).where((attr, op) => op.eq({}, "invalid")).params();
 		expect(query).to.throw(`Invalid Attribute in where clause passed to operation 'eq'. Use injected attributes only.`);
 	});
 
 	it("Must validate the response of a where clause callback is a string", () => {
-		let query = () => WhereTests.query.farm({pen}).where((attr, op) => null).params(); 
+		let query = () => WhereTests.query.farm({pen}).where((attr, op) => null).params();
 		expect(query).to.throw("Invalid response from where clause callback. Expected return result to be of type string");
 	});
 
 	it("Where clause should be able to be used more than once, which will cause an implicit 'and'", () => {
-		let params = WhereTests.query.farm({pen}).where(({animal}, {eq}) => eq(animal, "Chicken")).where(({dangerous}, {eq}) => eq(dangerous, true)).params(); 
+		let params = WhereTests.query.farm({pen}).where(({animal}, {eq}) => eq(animal, "Chicken")).where(({dangerous}, {eq}) => eq(dangerous, true)).params();
 		expect(params).to.deep.equal({
 			KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 			TableName: 'electro',

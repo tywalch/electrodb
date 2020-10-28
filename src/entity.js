@@ -6,6 +6,7 @@ const { WhereFactory } = require("./where");
 const { clauses } = require("./clauses");
 const validations = require("./validations");
 const utilities = require("./util");
+const e = require("./errors");
 
 class Entity {
 	constructor(model, config = {}) {
@@ -37,12 +38,12 @@ class Entity {
 
 	setIdentifier(type = "", identifier = "") {
 		if (!this.identifiers[type]) {
-			throw new Error(`Invalid identifier type: ${type}. Valid indentifiers include ${Object.keys(this.identifiers[type]).join(", ")}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: ${type}. Valid indentifiers include ${Object.keys(this.identifiers[type]).join(", ")}`);
 		}
 		if (typeof identifier === "string" && identifier.length > 0) {
 			this.identifiers[type] = identifier;
 		} else {
-			throw new Error(`Invalid Identifier. Value must be string with length greater than zero.`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid Identifier. Value must be string with length greater than zero.`);
 		}
 	}
 
@@ -79,7 +80,8 @@ class Entity {
 				names: expressions.names || {},
 				values: expressions.values|| {},
 				expression: expressions.expression || ""
-			}
+			},
+			lastEvaluatedKeyRaw: true,
 		};
 		let index = this.model.translations.collections.fromCollectionToIndex[
 			collection
@@ -101,6 +103,7 @@ class Entity {
 		let index = "";
 		return this._makeChain(index, clauses, clauses.index).get(facets);
 	}
+
 
 	delete(facets = {}) {
 		let index = "";
@@ -286,7 +289,7 @@ class Entity {
 			}
 			for (let facet of facets) {
 				if (backupFacets[facet] === undefined) {
-					throw new Error("Warning: LastEvaluatedKey contains entity that does not match the entity used to query. Use {lastEvaulatedKeyRaw: true} option.");
+					throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, "LastEvaluatedKey contains entity that does not match the entity used to query. Use {lastEvaulatedKeyRaw: true} option.");
 				} else {
 					results[facet] = backupFacets[facet];
 				}
@@ -402,9 +405,12 @@ class Entity {
 			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw
 		};
 		let parameters = Object.assign({}, params);
-		let stackTrace = new Error();
+		let stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		try {
-			let response = await this.client[method](parameters).promise();
+			let response = await this.client[method](parameters).promise().catch(err => {
+				err.__isAWSError = true;
+				throw err;
+			});
 			if (method === "put" || method === "create") {
 				// a VERY hacky way to deal with PUTs
 				return this.formatResponse(parameters.IndexName, parameters, config);
@@ -415,8 +421,15 @@ class Entity {
 			if (config.originalErr) {
 				return Promise.reject(err);
 			} else {
-				stackTrace.message = err.message;
-				return Promise.reject(stackTrace);
+				if (err.__isAWSError) {
+					stackTrace.message = new e.ElectroError(e.ErrorCodes.AWSError, err.message).message;
+					return Promise.reject(stackTrace);
+				} else if (err.isElectroError) {
+					return Promise.reject(err);
+				} else {
+					stackTrace.message = new e.ElectroError(e.ErrorCodes.UnknownError, err.message).message;
+					return Promise.reject(stackTrace);
+				}
 			}
 		}
 	}
@@ -658,7 +671,7 @@ class Entity {
 			let props = Object.keys(item);
 			let missing = require.filter((prop) => !props.includes(prop));
 			if (!missing) {
-				throw new Error(`Item is missing attributes: ${missing.join(", ")}`);
+				throw new e.ElectroError(e.ErrorCodes.MissingAttribute, `Item is missing attributes: ${missing.join(", ")}`);
 			}
 		}
 
@@ -667,9 +680,7 @@ class Entity {
 				throw new Error(`Invalid attribute ${prop}`);
 			}
 			if (restrict.length && !restrict.includes(prop)) {
-				throw new Error(
-					`${prop} is not a valid attribute: ${restrict.join(", ")}`,
-				);
+				throw new Error(`${prop} is not a valid attribute: ${restrict.join(", ")}`);
 			}
 			if (prop === undefined || skip.includes(prop)) {
 				continue;
@@ -819,11 +830,7 @@ class Entity {
 	_makeComparisonQueryParams(index = "", comparison = "", filter = {}, pk = {}, sk = {}) {
 		let operator = Comparisons[comparison];
 		if (!operator) {
-			throw new Error(
-				`Unexpected comparison operator "${comparison}", expected ${Object.values(
-					Comparisons,
-				).join(", ")}`,
-			);
+			throw new Error(`Unexpected comparison operator "${comparison}", expected ${Object.values(Comparisons,).join(", ")}`);
 		}
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
 			index,
@@ -861,12 +868,10 @@ class Entity {
 				this.model.translations.indexes.fromIndexToAccessPattern[index],
 		);
 		if (isIncomplete) {
-			throw new Error(
+			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets,
 				`Incomplete facets: Without the facets '${incomplete
 					.filter((val) => val !== undefined)
-					.join(
-						", ",
-					)}' the following access patterns ${incompleteAccessPatterns
+					.join(", ")}' the following access patterns ${incompleteAccessPatterns
 					.filter((val) => val !== undefined)
 					.join(", ")}cannot be updated.`,
 			);
@@ -1013,11 +1018,7 @@ class Entity {
 			properties,
 		);
 		if (incompletePk) {
-			throw new Error(
-				`Incomplete or invalid ${type} supplied. Missing properties: ${missing.join(
-					", ",
-				)}`,
-			);
+			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets, `Incomplete or invalid ${type} supplied. Missing properties: ${missing.join(", ")}`);
 		} else {
 			return matching;
 		}
@@ -1258,9 +1259,7 @@ class Entity {
 		let facets = {};
 		let names = key.match(/:[A-Z1-9]+/gi);
 		if (!names) {
-			throw new Error(
-				`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: ${key}`,
-			);
+			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: ${key}`);
 		}
 		let labels = key.split(/:[A-Z1-9]+/gi);
 		for (let i = 0; i < names.length; i++) {
@@ -1323,17 +1322,13 @@ class Entity {
 			let index = indexes[accessPattern];
 			let indexName = index.index || "";
 			if (seenIndexes[indexName] !== undefined) {
-				throw new Error(
-					`Duplicate index defined in model: ${accessPattern} (${
-						indexName || "PRIMARY INDEX"
-					})`,
-				);
+				throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model: ${accessPattern} ${indexName || "(PRIMARY INDEX)"}`);
 			}
 			seenIndexes[indexName] = indexName;
 			let hasSk = !!index.sk;
 			let inCollection = !!index.collection;
 			if (!hasSk && inCollection) {
-				throw new Error(`Invalid index definition: Access pattern, ${accessPattern} ${indexName || "(PRIMARY INDEX)"}, contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
+				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid index definition: Access pattern, ${accessPattern} ${indexName || "(PRIMARY INDEX)"}, contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
 			}
 			let collection = index.collection || "";
 			let customFacets = {
@@ -1385,9 +1380,7 @@ class Entity {
 
 			if (inCollection) {
 				if (collections[collection] !== undefined) {
-					throw new Error(
-						`Duplicate collection, "${collection}" is defined across multiple indexes "${collections[collection]}" and "${accessPattern}". Collections must be unique names across indexes for an Entity.`,
-					);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateCollections, `Duplicate collection, "${collection}" is defined across multiple indexes "${collections[collection]}" and "${accessPattern}". Collections must be unique names across indexes for an Entity.`,);
 				} else {
 					collections[collection] = accessPattern;
 				}
@@ -1455,7 +1448,7 @@ class Entity {
 		}
 
 		if (facets.byIndex[""] === undefined) {
-			throw new Error("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index");
+			throw new e.ElectroError(e.ErrorCodes.MissingPrimaryIndex, "Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index");
 		}
 
 		return {
@@ -1471,13 +1464,11 @@ class Entity {
 
 	_normalizeFilters(filters = {}) {
 		let normalized = {};
-		let invalidFilterNames = ["go", "params", "filter"];
+		let invalidFilterNames = ["go", "params", "filter", "where", "set"];
 
 		for (let [name, fn] of Object.entries(filters)) {
 			if (invalidFilterNames.includes(name)) {
-				throw new Error(
-					`Invalid filter name. Filter cannot be named "go", "params", or "filter"`,
-				);
+				throw new e.ElectroError(e.ErrorCodes.InvalidFilter, `Invalid filter name: ${name}. Filter cannot be named ${invalidFilterNames.map(name => `"${name}"`).join(", ")}`);
 			} else {
 				normalized[name] = fn;
 			}
@@ -1515,8 +1506,8 @@ class Entity {
 			default:
 				throw new Error("Invalid model");
 		}
-		if(typeof table !== "string" || table.length === 0) {
-			throw new Error(`config.table must be string`);
+		if (typeof table !== "string" || table.length === 0) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConfig, `config.table must be string`);
 		}
 		/** end beta/v1 condition **/
 

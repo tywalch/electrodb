@@ -1,4 +1,5 @@
 const { QueryTypes, MethodTypes } = require("./types");
+const e = require("./errors");
 
 let clauses = {
 	index: {
@@ -329,7 +330,7 @@ let clauses = {
 		name: "go",
 		action(entity, state, options = {}) {
 			if (entity.client === undefined) {
-				throw new Error("No client defined on model");
+				throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 			}
 			let params = {};
 			if (state.query.method === MethodTypes.query) {
@@ -347,7 +348,7 @@ let clauses = {
 			options.page = page;
 			options.pager = true;
 			if (entity.client === undefined) {
-				throw new Error("No client defined on model");
+				throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 			}
 			let params = {};
 			if (state.query.method === MethodTypes.query) {

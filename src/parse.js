@@ -27,10 +27,10 @@ function parse(path = "") {
   let attr = getPartDetail(parts[0]).value;
   let target = getPartDetail(parts[parts.length-1]);
   if (target.expression.includes("[")) {
-    
+
   }
   let names = {};
-  let expressions = []
+  let expressions = [];
   for (let part of parts) {
       let detail = getPartDetail(part);
       names[detail.name] = detail.value;
@@ -40,6 +40,6 @@ function parse(path = "") {
 }
 
 module.exports = {
-  parse, 
+  parse,
   getPartDetail
 };

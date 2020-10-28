@@ -301,7 +301,7 @@ describe("Entity", async () => {
 			try {
 				recordTwo = await MallStores.create(record).go();
 			} catch(err) {
-				expect(err.message).to.be.equal("The conditional request failed");
+				expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
 			}
 			expect(recordTwo).to.be.null
 		});
@@ -334,7 +334,7 @@ describe("Entity", async () => {
 			try {
 				patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
 			} catch(err) {
-				expect(err.message).to.be.equal("The conditional request failed");
+				expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
 			}
 			expect(patchResultsTwo).to.be.null
 		});
@@ -355,6 +355,7 @@ describe("Entity", async () => {
 
 			expect(electroSuccess).to.be.false;
 			expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
+			expect(electroErr.message).to.be.equal("Requested resource not found - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error")
 			expect(originalSuccess).to.be.false;
 			expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
 		});

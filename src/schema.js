@@ -1,6 +1,8 @@
 const { KeyTypes, CastTypes, AttributeTypes } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
+const e = require("./errors");
+
 class Attribute {
 	constructor(definition = {}) {
 		this.name = definition.name;
@@ -25,9 +27,7 @@ class Attribute {
 		} else if (get === undefined) {
 			return (attr) => attr;
 		} else {
-			throw new Error(
-				`Invalid "get" property for attribure ${name}. Please ensure value is a function or undefined.`,
-			);
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "get" property for attribute ${name}. Please ensure value is a function or undefined.`);
 		}
 	}
 
@@ -37,25 +37,19 @@ class Attribute {
 		} else if (set === undefined) {
 			return (attr) => attr;
 		} else {
-			throw new Error(
-				`Invalid "set" property for attribure ${name}. Please ensure value is a function or undefined.`,
-			);
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "set" property for attribute ${name}. Please ensure value is a function or undefined.`);
 		}
 	}
 
 	_makeCast(name, cast) {
 		if (cast !== undefined && !CastTypes.includes(cast)) {
-			throw new Error(
-				`Invalid "cast" property for attribute: "${name}". Acceptable types include ${CastTypes.join(
-					", ",
-				)}`,
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "cast" property for attribute: "${name}". Acceptable types include ${CastTypes.join(", ",)}`,
 			);
 		} else if (cast === AttributeTypes.string) {
 			return (val) => {
 				if (val === undefined) {
-					throw new Error(
-						`Attribute ${name} is undefined and cannot be cast to type ${cast}`,
-					);
+					// todo: #electroerror
+					throw new Error(`Attribute ${name} is undefined and cannot be cast to type ${cast}`);
 				} else if (typeof val === "string") {
 					return val;
 				} else {
@@ -65,17 +59,15 @@ class Attribute {
 		} else if (cast === AttributeTypes.number) {
 			return (val) => {
 				if (val === undefined) {
-					throw new Error(
-						`Attribute ${name} is undefined and cannot be cast to type ${cast}`,
-					);
+					// todo: #electroerror
+					throw new Error(`Attribute ${name} is undefined and cannot be cast to type ${cast}`);
 				} else if (typeof val === "number") {
 					return val;
 				} else {
 					let results = Number(val);
 					if (isNaN(results)) {
-						throw new Error(
-							`Attribute ${name} cannot be cast to type ${cast}. Doing so results in NaN`,
-						);
+						// todo: #electroerror
+						throw new Error(`Attribute ${name} cannot be cast to type ${cast}. Doing so results in NaN`);
 					} else {
 						return results;
 					}
@@ -121,11 +113,7 @@ class Attribute {
 			type = definition || "string";
 		}
 		if (!AttributeTypeNames.includes(type)) {
-			throw new Error(
-				`Invalid "type" property for attribute: "${name}". Acceptable types include ${AttributeTypeNames.join(
-					", ",
-				)}`,
-			);
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "type" property for attribute: "${name}". Acceptable types include ${AttributeTypeNames.join(", ")}`);
 		}
 		return { type, enumArray };
 	}
@@ -200,9 +188,8 @@ class Attribute {
 		value = this.val(value);
 		let [isValid, validationError] = this.isValid(value);
 		if (!isValid) {
-			throw new Error(
-				`Invalid value for attribute "${this.name}": ${validationError}.`,
-			);
+			// todo: #electroerror
+			throw new Error(`Invalid value for attribute "${this.name}": ${validationError}.`);
 		}
 		return value;
 	}
@@ -257,7 +244,7 @@ class Schema {
 			};
 			if (facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
 				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
-				throw new Error(`Invalid facet definition: Facets must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a facet of the the following indexes: ${assignedIndexes.join(", ")}`);
+				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid facet definition: Facets must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a facet of the the following indexes: ${assignedIndexes.join(", ")}`);
 			}
 			if (usedAttrs[definition.field] || usedAttrs[name]) {
 				invalidProperties.push({
@@ -281,18 +268,11 @@ class Schema {
 			})
 			.map((facet) => `"${facet.type}: ${facet.name}"`);
 		if (missingFacetAttributes.length) {
-			throw new Error(
-				`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(
-					", ",
-				)}`,
-			);
+			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(", ")}`);
 		}
 		if (invalidProperties.length) {
-			let message = invalidProperties.map(
-				(prop) =>
-					`Schema Validation Error: Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`,
-			);
-			throw new Error(message);
+			let message = invalidProperties.map((prop) => `Schema Validation Error: Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, message);
 		} else {
 			return {
 				enums,
@@ -396,9 +376,8 @@ class Schema {
 			let value = payload[attribute.name];
 			if (value === undefined) continue;
 			if (attribute.readOnly) {
-				throw new Error(
-					`Attribute ${attribute.name} is Read-Only and cannot be updated`,
-				);
+				// todo: #electroerror
+				throw new Error(`Attribute ${attribute.name} is Read-Only and cannot be updated`);
 			} else {
 				record[attribute.name] = attribute.getValidate(value);
 			}

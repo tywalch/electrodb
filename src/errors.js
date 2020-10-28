@@ -5,22 +5,154 @@
 // 4000 - DynamoDB Errors
 // 5000 - Unexpected Errors
 
+function getHelpLink(section) {
+  section = section || "unknown-error-5001";
+  return `https://github.com/tywalch/electrodb#${section}`;
+}
+
+const ErrorCode = Symbol("error-code");
+
 const ErrorCodes = {
-  NoClientDefined: 1001,
+  NoClientDefined: {
+    code: 1001,
+    section: "no-client-defined-on-model",
+    name: "NoClientDefined",
+    sym: ErrorCode,
+  },
+  InvalidIdentifier: {
+    code: 1002,
+    section: "invalid-identifier",
+    name: "InvalidIdentifier",
+    sym: ErrorCode,
+  },
+  InvalidKeyFacetTemplate: {
+    code: 1003,
+    section: "invalid-key-facet-template",
+    name: "InvalidKeyFacetTemplate",
+    sym: ErrorCode,
+  },
+  DuplicateIndexes: {
+    code: 1004,
+    section: "duplicate-indexes",
+    name: "DuplicateIndexes",
+    sym: ErrorCode,
+  },
+  CollectionNoSK: {
+    code: 1005,
+    section: "collection-without-an-sk",
+    name: "CollectionNoSK",
+    sym: ErrorCode,
+  },
+  DuplicateCollections: {
+    code: 1006,
+    section: "duplicate-collections",
+    name: "DuplicateCollections",
+    sym: ErrorCode,
+  },
+  MissingPrimaryIndex: {
+    code: 1007,
+    section: "missing-primary-index",
+    name: "MissingPrimaryIndex",
+    sym: ErrorCode,
+  },
+  InvalidAttributeDefinition: {
+    code: 1008,
+    section: "invalid-attribute-definition",
+    name: "InvalidAttributeDefinition",
+    sym: ErrorCode,
+  },
+  InvalidModel: {
+    code: 1009,
+    section: "invalid-model",
+    name: "InvalidModel",
+    sym: ErrorCode
+  },
+  InvalidOptions: {
+    code: 1010,
+    section: "invalid-options",
+    name: "InvalidOptions",
+    sym: ErrorCode
+  },
+  InvalidFilter: {
+    code: 1011,
+    section: "filters",
+    name: "InvalidFilter",
+    sym: ErrorCode
+  },
+  InvalidWhere: {
+    code: 1012,
+    section: "where",
+    name: "InvalidWhere",
+    sym: ErrorCode
+  },
+  InvalidJoin: {
+    code: 1013,
+    section: "join",
+    name: "InvalidJoin",
+    sym: ErrorCode
+  },
+  MissingAttribute: {
+    code: 2001,
+    section: "missing-attribute",
+    name: "MissingAttribute",
+    sym: ErrorCode,
+  },
+  IncompleteFacets: {
+    code: 2002,
+    section: "incomplete-facets",
+    name: "IncompleteFacets",
+    sym: ErrorCode,
+  },
+  InvalidAttribute: {
+    code: 3001,
+    section: "invalid-attribute",
+    name: "InvalidAttribute",
+    sym: ErrorCode
+  },
+  AWSError: {
+    code: 4001,
+    section: "aws-error",
+    name: "AWSError",
+    sym: ErrorCode,
+  },
+  LastEvaluatedKey: {
+    code: 4002,
+    section: "invalid-last-evaluated-key",
+    name: "LastEvaluatedKey",
+    sym: ErrorCode,
+  },
+  UnknownError: {
+    code: 5001,
+    section: "unknown-error",
+    name: "UnknownError",
+    sym: ErrorCode,
+  },
+  GeneralError: {
+    code: 5002,
+    section: "",
+    name: "GeneralError",
+    sym: ErrorCode
+  },
 };
 
 class ElectroError extends Error {
-  constructor(code = 'bar', ...params) {
-    super(...params);
+  constructor(err, message) {
+    super(message);
+    let detail = ErrorCodes.UnknownError;
+    if (err && err.sym === ErrorCode) {
+      detail = err
+    }
+    this.message = `${message} - For more detail on this error reference: ${getHelpLink(detail.section)}`;
 
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ElectroError);
     }
 
     this.name = 'ElectroError';
-
-    this.code = code;
-    this.date = new Date()
+    this.ref = err;
+    this.code = detail.code;
+    this.date = new Date();
+    this.isElectroError = true;
   }
 }
 

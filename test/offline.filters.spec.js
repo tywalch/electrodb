@@ -173,7 +173,7 @@ describe("Filter", () => {
 			);
 			let clause = filter.buildClause(byCategory);
 			let category = "food";
-				
+
 			let containsFood = clause(MallStores, { query: { filter: {} } }, { category });
 			expect(containsFood).to.deep.equal({
 				query: {
@@ -211,15 +211,15 @@ describe("Filter", () => {
 			};
 			schema.filters = { go: () => "" };
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid filter name. Filter cannot be named "go", "params", or "filter"`,
+				`Invalid filter name: go. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://github.com/tywalch/electrodb#filters`,
 			);
 			schema.filters = { params: () => "" };
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid filter name. Filter cannot be named "go", "params", or "filter"`,
+				`Invalid filter name: params. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://github.com/tywalch/electrodb#filters`,
 			);
 			schema.filters = { filter: () => "" };
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid filter name. Filter cannot be named "go", "params", or "filter"`,
+				`Invalid filter name: filter. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://github.com/tywalch/electrodb#filters`,
 			);
 		});
 	});
