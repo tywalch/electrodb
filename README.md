@@ -2266,22 +2266,23 @@ It became clear when I added the concept of a Service that the "version" paradig
 
 To address this change, I decide it would be best to change the structure for defining a model, which is then used as heuristic to determine where to place the version in the key (PK or SK). This has the benefit of not breaking existing models, but does increase some complexity in the underlying code.
 
-> In the old scheme, version came after the service name (see `^`). 
+Additionally a change was made to the Service class. New Services would take a string of the service name instead of an object as before.
+
+In the *old* scheme, version came after the service name (see `^`). 
 ```
 pk: $mallstoredirectory_1#mall_eastpointe
                         ^
 sk: $mallstores#building_buildinga#store_lattelarrys
+
 ```
 
-> In the new scheme, version comes after the entity name (see `^`).
+In the *new* scheme, version comes after the entity name (see `^`).
 ```
 pk: $mallstoredirectory#mall_eastpointe
+
 sk: $mallstores_1#building_buildinga#store_lattelarrys
                 ^
 ``` 
-
-
-Additionally a change was made to the Service class. New Services would take a string of the service name instead of an object as before.
 
 In practice the change looks like this for use of `Entity`:
 
@@ -2291,7 +2292,7 @@ const {Entity} = require("electrodb");
 const client = new DynamoDB.DocumentClient();
 const table = "dynamodb_table_name";
 
-// old way:
+// old way
 let old_schema = {
   entity: "model_name",
   service: "service_name",
