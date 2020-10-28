@@ -138,6 +138,7 @@ Into This:
       - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
+- [Version 1.0 Migration](#version-1-migration)
 - [Coming Soon](#coming-soon)
 
 # Installation    
@@ -2257,7 +2258,7 @@ let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ``` 
 
-# Version 1.0 Migration
+# Version 1 Migration
 This section is to detail any breaking changes made on the journey to a stable 1.0 product. 
 
 ## New schema format/breaking key format change
@@ -2266,14 +2267,14 @@ It became clear when I added the concept of a Service that the "version" paradig
 To address this change, I decide it would be best to change the structure for defining a model, which is then used as heuristic to determine where to place the version in the key (PK or SK). This has the benefit of not breaking existing models, but does increase some complexity in the underlying code.
 
 > In the old scheme, version came after the service name (see `^`). 
-```
+> ```
 pk: $mallstoredirectory_1#mall_eastpointe
                         ^
 sk: $mallstores#building_buildinga#store_lattelarrys
 ```
 
 > In the new scheme, version comes after the entity name (see `^`).
-```
+> ```
 pk: $mallstoredirectory#mall_eastpointe
 sk: $mallstores_1#building_buildinga#store_lattelarrys
                 ^
