@@ -2624,3 +2624,5 @@ new Service("service_name", {client, table});
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
 - Append/Add/Subtract/Remove updates capabilities
 - Complex attributes (list, map, set)
+- Data migration capabilities
+- TypeScript type definition generation
