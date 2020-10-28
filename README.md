@@ -1580,9 +1580,9 @@ let stores = MallStores.query
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. 
 
-The first element for Entity queries is the "page", this object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
+The first element for (Entity)[#entity] page query is the "page": an object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
 
-The first element for Collection queries is the `ExclusiveStartKey` as it was returned by DynamoDB.
+The first element for (Collection)[#collections] page query is the `ExclusiveStartKey` as it was returned by the DynamoDB client.
 
 > Note: It is *highly recommended* to use the `lastEvaluatedKeyRaw` flag when using `.page()` in conjunction with scans. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
 
