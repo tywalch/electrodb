@@ -101,7 +101,46 @@ const Index = {
 	},
 };
 
-const Model = {
+const Modelv1= {
+	type: "object",
+	required: true,
+	properties: {
+		model: {
+			type: "object",
+			required: true,
+			properties: {
+				entity: {
+					type: "string",
+					required: true
+				},
+				version: {
+					type: "string",
+					required: true
+				},
+				service: {
+					type: "string",
+					required: true
+				}
+			}
+		},
+		attributes: {
+			type: "object",
+			patternProperties: {
+				["."]: { $ref: "/Attribute" },
+			},
+		},
+		indexes: {
+			type: "object",
+			minProperties: 1,
+			patternProperties: {
+				["."]: { $ref: "/Index" },
+			},
+		},
+		filters: { $ref: "/Filters" },
+	},
+};
+
+const ModelBeta = {
 	type: "object",
 	required: true,
 	properties: {
@@ -115,7 +154,6 @@ const Model = {
 		},
 		table: {
 			type: "string",
-			required: true,
 		},
 		version: {
 			type: "string",
@@ -152,31 +190,65 @@ const Filters = {
 v.addSchema(Attribute, "/Attribute");
 v.addSchema(Index, "/Index");
 v.addSchema(Filters, "/Filters");
-v.addSchema(Model, "/Model");
+v.addSchema(ModelBeta, "/ModelBeta");
+v.addSchema(Modelv1, "/Modelv1");
 
 function validateModel(model = {}) {
-	let errors = v.validate(model, "/Model").errors;
-	if (errors.length) {
-		throw new Error(
-			errors
-				.map((err) => {
-					let message = `${err.property}`;
-					switch (err.argument) {
-						case "isFunction":
-							return `${message} must be a function`;
-						case "isFunctionOrString":
-							return `${message} must be either a function or string`;
-						case "isFunctionOrRegexp":
-							return `${message} must be either a function or Regexp`;
-						default:
-							return `${message} ${err.message}`;
-					}
-				})
-				.join(", "),
-		);
+	/** start beta/v1 condition **/
+	let betaErrors = v.validate(model, "/ModelBeta").errors;
+	if (betaErrors.length) {
+	/** end/v1 condition **/
+		let errors = v.validate(model, "/Modelv1").errors;
+		if (errors.length) {
+			throw new Error(
+				errors
+					.map((err) => {
+						let message = `${err.property}`;
+						switch (err.argument) {
+							case "isFunction":
+								return `${message} must be a function`;
+							case "isFunctionOrString":
+								return `${message} must be either a function or string`;
+							case "isFunctionOrRegexp":
+								return `${message} must be either a function or Regexp`;
+							default:
+								return `${message} ${err.message}`;
+						}
+					})
+					.join(", "),
+			);
+		}
 	}
+}
+
+function testModel(model) {
+	let isModel = false;
+	let error = "";
+	try {
+		validateModel(model);
+		isModel = true;
+	} catch(err) {
+		error = err.message;
+	}
+	return [isModel, error];
+}
+
+function isStringHasLength(str) {
+	return typeof str === "string" && str.length > 0;
+}
+
+function isObjectHasLength(obj) {
+	return typeof obj === "object" && Object.keys(obj).length > 0;
+}
+
+function isArrayHasLength(arr) {
+	return Array.isArray(arr) && arr.length > 0;
 }
 
 module.exports = {
 	model: validateModel,
+	testModel,
+	isArrayHasLength,
+	isStringHasLength,
+	isObjectHasLength,
 };

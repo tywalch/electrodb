@@ -1,42 +1,49 @@
 "use strict";
 const { Schema } = require("./schema");
-const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes } = require("./types");
+const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
-const validations = require("./validations");
 const { clauses } = require("./clauses");
+const validations = require("./validations");
+const utilities = require("./util");
 
 class Entity {
 	constructor(model, config = {}) {
 		this._validateModel(model);
 		this.client = config.client;
-		this.model = this._parseModel(model);
-		this._filterBuilder = new FilterFactory(
-			this.model.schema.attributes,
-			FilterTypes,
-		);
-		this._whereBuilder = new WhereFactory(
-			this.model.schema.attributes,
-			FilterTypes
-		)
-		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(
-			clauses,
-			this.model.filters,
-		);
+		this.model = this._parseModel(model, config);
+		/** start beta/v1 condition **/
+		this.model.table = config.table || model.table;
+		/** end beta/v1 condition **/
+		this._filterBuilder = new FilterFactory(this.model.schema.attributes, FilterTypes);
+		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterTypes);
+		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(clauses, this.model.filters);
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
-
 		this.scan = this._makeChain("", this._clausesWithFilters, clauses.index).scan();
 		this.query = {};
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
 			this.query[accessPattern] = (...values) => {
-				return this._makeChain(index, this._clausesWithFilters, clauses.index).query(
-					...values,
-				);
+				return this._makeChain(index, this._clausesWithFilters, clauses.index).query(...values);
 			};
 		}
-		this.modelAttributeIdentifier = "__edb_e__"
+		config.identifiers = config.identifiers || {};
+		this.identifiers = {
+			entity: config.identifiers.entity || "__edb_e__",
+			version: config.identifiers.version || "__edb_v__",
+		};
 		this._instance = ElectroInstance.entity;
+	}
+
+	setIdentifier(type = "", identifier = "") {
+		if (!this.identifiers[type]) {
+			throw new Error(`Invalid identifier type: ${type}. Valid indentifiers include ${Object.keys(this.identifiers[type]).join(", ")}`);
+		}
+		if (typeof identifier === "string" && identifier.length > 0) {
+			this.identifiers[type] = identifier;
+		} else {
+			throw new Error(`Invalid Identifier. Value must be string with length greater than zero.`);
+		}
 	}
 
 	find(facets = {}) {
@@ -66,16 +73,23 @@ class Entity {
 		}
 	}
 
-	collection(collection = "", clauses = {}, facets = {}) {
+	collection(collection = "", clauses = {}, facets = {}, expressions = {}) {
+		let options = {
+			expressions: {
+				names: expressions.names || {},
+				values: expressions.values|| {},
+				expression: expressions.expression || ""
+			}
+		};
 		let index = this.model.translations.collections.fromCollectionToIndex[
 			collection
 		];
 		if (index === undefined) {
 			throw new Error(`Invalid collection: ${collection}`);
 		}
-		return this._makeChain(index, this._clausesWithFilters, clauses.index).collection(
+		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).collection(
 			collection,
-			facets,
+			facets
 		);
 	}
 
@@ -104,7 +118,7 @@ class Entity {
 			params: {
 				ConditionExpression: this._makeCreateConditions(index)
 			}
-		}
+		};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).create(attributes);
 	}
 
@@ -119,7 +133,7 @@ class Entity {
 			params: {
 				ConditionExpression: this._makePatchConditions(index)
 			}
-		}
+		};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
 	}
 
@@ -216,7 +230,7 @@ class Entity {
 					results = this.model.schema.applyAttributeGetters(data);
 				}
 			}
-			
+
 
 			if (config.pager) {
 				let nextPage = response.LastEvaluatedKey || null;
@@ -264,7 +278,7 @@ class Entity {
 		pattern += "$";
 		let regex = RegExp(pattern);
 		let match = key.match(regex);
-		let results = {}
+		let results = {};
 		if (!match) {
 			if (Object.keys(backupFacets || {}).length === 0) {
 				// this can occur when a scan is performed but returns no results given the current filters or record timing
@@ -301,16 +315,16 @@ class Entity {
 		if (lastEvaluated === null || typeof lastEvaluated !== "object" || Object.keys(lastEvaluated).length === 0) {
 			return lastEvaluated;
 		}
-		
+
 		let pager = this._deconstructIndex(index, lastEvaluated, lastReturned);
 		let tableIndex = "";
 		// lastEvaluatedKeys from query calls include the index pk/sk as well as the table index's pk/sk
 		if (index !== tableIndex) {
-			pager = {...pager, ...this._deconstructIndex(tableIndex, lastEvaluated, lastReturned)};	
+			pager = {...pager, ...this._deconstructIndex(tableIndex, lastEvaluated, lastReturned)};
 		}
-		
+
 		if (Object.keys(pager).length === 0) {
-			// In this case no suitable record could be found be the deconstructed pager. 
+			// In this case no suitable record could be found be the deconstructed pager.
 			// This can be valid in cases where a scan is performed but returns no results.
 			return null;
 		}
@@ -319,8 +333,8 @@ class Entity {
 	}
 
 	_constructPagerIndex(index = "", item) {
-		let pk = this._expectFacets(item, this.model.facets.byIndex[index].pk)
-		let sk = this._expectFacets(item, this.model.facets.byIndex[index].sk)
+		let pk = this._expectFacets(item, this.model.facets.byIndex[index].pk);
+		let sk = this._expectFacets(item, this.model.facets.byIndex[index].sk);
 		let keys = this._makeIndexKeys(index, pk, sk);
 		return this._makeParameterKey(index, keys.pk, ...keys.sk);
 	}
@@ -336,7 +350,7 @@ class Entity {
 		}
 		return pager
 	}
-	
+
 	_applyParameterOptions(params, ...options) {
 		let config = {
 			includeKeys: false,
@@ -408,7 +422,7 @@ class Entity {
 	}
 
 	_makeCreateConditions(index) {
-		let filter = [`attribute_not_exists(pk)`]
+		let filter = [`attribute_not_exists(pk)`];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			filter.push(`attribute_not_exists(sk)`);
 		}
@@ -416,7 +430,7 @@ class Entity {
 	}
 
 	_makePatchConditions(index) {
-		let filter = [`attribute_exists(pk)`]
+		let filter = [`attribute_exists(pk)`];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			filter.push(`attribute_exists(sk)`);
 		}
@@ -456,7 +470,6 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
-			case MethodTypes.patch:
 				params = this._makeUpdateParams(
 					update,
 					keys.pk,
@@ -487,6 +500,20 @@ class Entity {
 		return key;
 	}
 
+	getIdentifierExpressions() {
+		return {
+			names: {
+				[`#${this.identifiers.entity}_${this.model.entity}`]: this.identifiers.entity,
+				[`#${this.identifiers.version}_${this.model.entity}`]: this.identifiers.version,
+			},
+			values: {
+				[`:${this.identifiers.entity}_${this.model.entity}`]: this.model.entity,
+				[`:${this.identifiers.version}_${this.model.entity}`]: this.model.version,
+			},
+			expression: `(#${this.identifiers.entity}_${this.model.entity} = :${this.identifiers.entity}_${this.model.entity} AND #${this.identifiers.version}_${this.model.entity} = :${this.identifiers.version}_${this.model.entity})`
+		}
+	}
+
 	/* istanbul ignore next */
 	_makeScanParam(filter = {}) {
 		let indexBase = "";
@@ -512,9 +539,11 @@ class Entity {
 			),
 			FilterExpression: `(begins_with(#pk, :pk)`,
 		};
-		params.ExpressionAttributeNames["#" + this.modelAttributeIdentifier] = this.modelAttributeIdentifier;
-		params.ExpressionAttributeValues[":" + this.modelAttributeIdentifier] = this.model.entity;
-		params.FilterExpression = `${params.FilterExpression} AND #${this.modelAttributeIdentifier} = :${this.modelAttributeIdentifier}`
+		params.ExpressionAttributeNames["#" + this.identifiers.entity] = this.identifiers.entity;
+		params.ExpressionAttributeNames["#" + this.identifiers.version] = this.identifiers.version;
+		params.ExpressionAttributeValues[":" + this.identifiers.entity] = this.model.entity;
+		params.ExpressionAttributeValues[":" + this.identifiers.version] = this.model.version;
+		params.FilterExpression = `${params.FilterExpression} AND #${this.identifiers.entity} = :${this.identifiers.entity} AND #${this.identifiers.version} = :${this.identifiers.version}`;
 		if (hasSortKey) {
 			params.FilterExpression = `${params.FilterExpression} AND begins_with(#sk, :sk))`;
 		}
@@ -529,8 +558,7 @@ class Entity {
 		let keys = this._makeIndexKeys(index, partition, sort);
 		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
 		let TableName = this.model.table;
-		let params = {Key, TableName};
-		return params;
+		return {Key, TableName};
 	}
 
 	/* istanbul ignore next */
@@ -548,14 +576,13 @@ class Entity {
 			ExpressionAttributeValues,
 		} = this._updateExpressionBuilder(item);
 
-		let params = {
+		return {
 			UpdateExpression,
 			ExpressionAttributeNames,
 			ExpressionAttributeValues,
 			TableName: this.model.table,
 			Key: indexKey,
 		};
-		return params;
 	}
 
 	/* istanbul ignore next */
@@ -563,15 +590,15 @@ class Entity {
 		let setAttributes = this.model.schema.applyAttributeSetters(data);
 		let { updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
 		let transatedFields = this.model.schema.translateToFields(setAttributes);
-		let params = {
+		return {
 			Item: {
 				...transatedFields,
 				...updatedKeys,
-				[this.modelAttributeIdentifier]: this.model.entity,
+				[this.identifiers.entity]: this.model.entity,
+				[this.identifiers.version]: this.model.version,
 			},
 			TableName: this.model.table,
 		};
-		return params;
 	}
 
 	_updateExpressionBuilder(data) {
@@ -605,7 +632,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_expressionAttributeBuilder(item = {}, options = {}, {noDuplicateNames} = {}) {
+	_expressionAttributeBuilder(item = {}, options = {}) {
 		let {
 			require = [],
 			reject = [],
@@ -681,6 +708,7 @@ class Entity {
 		switch (chainState.type) {
 			case QueryTypes.begins:
 				parameters = this._makeBeginsWithQueryParams(
+					chainState.options,
 					chainState.index,
 					chainState.filter,
 					pk,
@@ -689,6 +717,7 @@ class Entity {
 				break;
 			case QueryTypes.collection:
 				parameters = this._makeBeginsWithQueryParams(
+					chainState.options,
 					chainState.index,
 					chainState.filter,
 					pk,
@@ -749,23 +778,29 @@ class Entity {
 		return params;
 	}
 
-	_makeBeginsWithQueryParams(index, filter, pk, sk) {
+	_makeBeginsWithQueryParams(options, index, filter, pk, sk) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
 		let KeyConditionExpression = "#pk = :pk";
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			KeyConditionExpression = `${KeyConditionExpression} and begins_with(#sk1, :sk1)`;
 		}
+		let customExpressions = {
+			names: (options.expressions && options.expressions.names) || {},
+			values: (options.expressions && options.expressions.values) || {},
+			expression: (options.expressions && options.expressions.expression) || ""
+		};
 		let params = {
 			KeyConditionExpression,
 			TableName: this.model.table,
-			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.ExpressionAttributeNames, keyExpressions.ExpressionAttributeNames),
-			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.ExpressionAttributeValues, keyExpressions.ExpressionAttributeValues),
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.ExpressionAttributeNames, keyExpressions.ExpressionAttributeNames, customExpressions.names),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.ExpressionAttributeValues, keyExpressions.ExpressionAttributeValues, customExpressions.values),
 		};
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = filter.FilterExpression;
+		let expressions = [customExpressions.expression, filter.FilterExpression].filter(Boolean).join(" AND ");
+		if (expressions.length) {
+			params.FilterExpression = expressions;
 		}
 		return params;
 	}
@@ -1005,13 +1040,13 @@ class Entity {
 		return [!!missing.length, missing, matching];
 	}
 
-	_makeKeyPrefixes(service, entity, version = "1", tableIndex) {
+	_makeKeyPrefixes(service, entity, version = "1", tableIndex, modelVersion) {
 		/*
 			Collections will prefix the sort key so they can be queried with
 			a "begins_with" operator when crossing entities. It is also possible
 			that the user defined a custom key on either the PK or SK. In the case
 			of a customKey AND a collection, the collection is ignored to favor
-			the custom key. 
+			the custom key.
 		*/
 
 		let keys = {
@@ -1023,9 +1058,9 @@ class Entity {
 				prefix: "",
 				isCustom: tableIndex.customFacets.sk
 			}
-		}
+		};
 
-		let pk = `$${service}_${version}`;
+		let pk = `$${service}`;
 		let sk = "";
 
 		// If the index is in a collections, prepend the sk;
@@ -1034,6 +1069,14 @@ class Entity {
 		} else {
 			sk = `$${entity}`
 		}
+
+		/** start beta/v1 condition **/
+		if (modelVersion === ModelVersions.v1) {
+			sk = `${sk}_${version}`;
+		} else {
+			pk = `${pk}_${version}`;
+		}
+		/** end beta/v1 condition **/
 
 		// If no sk, append the sk properties to the pk
 		if (Object.keys(tableIndex.sk).length === 0) {
@@ -1066,50 +1109,50 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_getPrefixes({ collection = "", customFacets = {}, sk } = {}) {
-		/*
-			Collections will prefix the sort key so they can be queried with
-			a "begins_with" operator when crossing entities. It is also possible
-			that the user defined a custom key on either the PK or SK. In the case
-			of a customKey AND a collection, the collection is ignored to favor
-			the custom key.
-		*/
-
-		let keys = {
-			pk: {
-				prefix: "",
-				isCustom: false,
-			},
-			sk: {
-				prefix: "",
-				isCustom: false,
-			},
-		};
-
-		if (collection) {
-			keys.pk.prefix = this.model.prefixes.pk;
-			keys.sk.prefix = `$${collection}#${this.model.entity}`;
-		} else {
-			keys.pk.prefix = this.model.prefixes.pk;
-			keys.sk.prefix = this.model.prefixes.sk;
-		}
-
-		if (sk === undefined) {
-			keys.pk.prefix += keys.sk.prefix;
-		}
-
-		if (customFacets.pk) {
-			keys.pk.prefix = "";
-			keys.pk.isCustom = customFacets.pk;
-		}
-
-		if (customFacets.sk) {
-			keys.sk.prefix = "";
-			keys.sk.isCustom = customFacets.sk;
-		}
-
-		return keys;
-	}
+	// _getPrefixes({ collection = "", customFacets = {}, sk } = {}) {
+	// 	/*
+	// 		Collections will prefix the sort key so they can be queried with
+	// 		a "begins_with" operator when crossing entities. It is also possible
+	// 		that the user defined a custom key on either the PK or SK. In the case
+	// 		of a customKey AND a collection, the collection is ignored to favor
+	// 		the custom key.
+	// 	*/
+	//
+	// 	let keys = {
+	// 		pk: {
+	// 			prefix: "",
+	// 			isCustom: false,
+	// 		},
+	// 		sk: {
+	// 			prefix: "",
+	// 			isCustom: false,
+	// 		},
+	// 	};
+	//
+	// 	if (collection) {
+	// 		keys.pk.prefix = this.model.prefixes.pk;
+	// 		keys.sk.prefix = `$${collection}#${this.model.entity}`;
+	// 	} else {
+	// 		keys.pk.prefix = this.model.prefixes.pk;
+	// 		keys.sk.prefix = this.model.prefixes.sk;
+	// 	}
+	//
+	// 	if (sk === undefined) {
+	// 		keys.pk.prefix += keys.sk.prefix;
+	// 	}
+	//
+	// 	if (customFacets.pk) {
+	// 		keys.pk.prefix = "";
+	// 		keys.pk.isCustom = customFacets.pk;
+	// 	}
+	//
+	// 	if (customFacets.sk) {
+	// 		keys.sk.prefix = "";
+	// 		keys.sk.isCustom = customFacets.sk;
+	// 	}
+	//
+	// 	return keys;
+	// }
 
 	/* istanbul ignore next */
 	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
@@ -1301,9 +1344,9 @@ class Entity {
 			let parsedPKFacets = this._parseFacets(index.pk.facets);
 			let { facetArray, facetLabels } = parsedPKFacets;
 			customFacets.pk = parsedPKFacets.isCustom;
-			// labels can be set via the attribute definiton or as part of the facetTemplate. 
+			// labels can be set via the attribute definiton or as part of the facetTemplate.
 			facets.labels = Object.assign({}, facets.labels, facetLabels);
-			
+
 			let pk = {
 				accessPattern,
 				facetLabels,
@@ -1314,7 +1357,7 @@ class Entity {
 				isCustom: parsedPKFacets.isCustom
 			};
 			let sk = {};
-			let parsedSKFacets = {}
+			let parsedSKFacets = {};
 			if (hasSk) {
 				parsedSKFacets = this._parseFacets(index.sk.facets);
 				let { facetArray, facetLabels } = parsedSKFacets;
@@ -1394,8 +1437,8 @@ class Entity {
 				all: attributes,
 				collection: index.collection,
 			};
-			
-			
+
+
 			attributes.forEach(({index, type, name}, j) => {
 				let next = attributes[j + 1] !== undefined ? attributes[j + 1].name : "";
 				let facet = { index, name, type, next };
@@ -1414,7 +1457,7 @@ class Entity {
 		if (facets.byIndex[""] === undefined) {
 			throw new Error("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index");
 		}
-		
+
 		return {
 			facets,
 			indexHasSortKeys,
@@ -1443,18 +1486,40 @@ class Entity {
 		return normalized;
 	}
 
-	_normalizePrefixes(service, entity, version, indexes) {
+	_normalizePrefixes(service, entity, version, indexes, modelVersion) {
 		let prefixes = {};
 		for (let accessPattern of Object.keys(indexes)) {
 			let item = indexes[accessPattern];
-			prefixes[item.index] = this._makeKeyPrefixes(service, entity, version, item);
+			prefixes[item.index] = this._makeKeyPrefixes(service, entity, version, item, modelVersion);
 		}
 		return prefixes;
 	}
 
-	_parseModel(model) {
-		let { service, entity, table, version = "1" } = model;
-		
+	_parseModel(model, config = {}) {
+		/** start beta/v1 condition **/
+		let modelVersion = utilities.getModelVersion(model);
+		let service, entity, version, table;
+		switch(modelVersion) {
+			case ModelVersions.beta:
+				service = model.service;
+				entity = model.entity;
+				version = model.version;
+				table = config.table || model.table;
+				break;
+			case ModelVersions.v1:
+				service = model.model && model.model.service;
+				entity = model.model && model.model.entity;
+				version = model.model && model.model.version;
+				table = config.table || model.table;
+				break;
+			default:
+				throw new Error("Invalid model");
+		}
+		if(typeof table !== "string" || table.length === 0) {
+			throw new Error(`config.table must be string`);
+		}
+		/** end beta/v1 condition **/
+
 		let {
 			facets,
 			indexes,
@@ -1466,8 +1531,9 @@ class Entity {
 		} = this._normalizeIndexes(model.indexes);
 		let schema = new Schema(model.attributes, facets);
 		let filters = this._normalizeFilters(model.filters);
-		let prefixes = this._normalizePrefixes(service, entity, version, indexes);
+		let prefixes = this._normalizePrefixes(service, entity, version, indexes, modelVersion);
 		return {
+			modelVersion,
 			service,
 			version,
 			entity,

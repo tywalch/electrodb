@@ -753,15 +753,17 @@ describe("Entity", () => {
 			expect(scan).to.deep.equal({
 				"ExpressionAttributeNames": {
 					"#__edb_e__": "__edb_e__",
+					"#__edb_v__": "__edb_v__",
 					"#pk": "pk",
 					"#store": "storeId"
 				},
 				"ExpressionAttributeValues": {
 					":__edb_e__": "MallStores",
+					":__edb_v__": "1",
 					":pk": "$mallstoredirectory_1$mallstores#id_",
 					":store1": "Starblix"
 				},
-				"FilterExpression": "(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #store = :store1",
+				"FilterExpression": "(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #store = :store1",
 				"TableName": "StoreDirectory"
 			})
 		})
@@ -836,6 +838,7 @@ describe("Entity", () => {
 			expect(put).to.deep.equal({
 				Item: {
 					__edb_e__: "MallStores",
+					__edb_v__: "1",
 					storeLocationId: put.Item.storeLocationId,
 					mall,
 					storeId: store,
@@ -1291,6 +1294,7 @@ describe("Entity", () => {
 			expect(putParams).to.deep.equal({
 				Item: {
 					__edb_e__: "MallStores",
+					__edb_v__: "1",
 					storeLocationId: "IDENTIFIER",
 					dateTime: "DATE",
 					prop1: "PROPERTY1",
@@ -1406,7 +1410,8 @@ describe("Entity", () => {
 					sk: '$mallstores#mall_eastpointe',
 					gsi1pk: '$mallstoredirectory_1#mall_eastpointe',
 					gsi1sk: '$mallstores#building_buildinga#unit_b54#store_lattelarrys',
-					__edb_e__: 'MallStores'
+					__edb_e__: 'MallStores',
+					__edb_v__: "1",
 				},
 				TableName: 'StoreDirectory',
 				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
@@ -1514,7 +1519,7 @@ describe("Entity", () => {
 				},
 				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
 			})
-		})
+		});
 
 		/* This test was removed because facet templates was refactored to remove all electrodb opinions. */
 		//
@@ -1605,6 +1610,7 @@ describe("Entity", () => {
 			expect(putParams).to.deep.equal({
 				Item: {
 					__edb_e__: "MallStores",
+					__edb_v__: "1",
 					storeLocationId: "IDENTIFIER",
 					dateTime: "DATE",
 					prop1: "PROPERTY1",
@@ -1667,6 +1673,7 @@ describe("Entity", () => {
 			expect(putParams).to.deep.equal({
 				Item: {
 					__edb_e__: "MallStores",
+					__edb_v__: "1",
 					storeLocationId: "IDENTIFIER",
 					dateTime: "DATE",
 					prop1: "PROPERTY1",
@@ -1859,13 +1866,14 @@ describe("Entity", () => {
 			let params = MallStores.find({leaseEnd}).params();
 			expect(params).to.be.deep.equal({
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
+				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
 				ExpressionAttributeValues: {
 					":__edb_e__": "MallStores",
+					":__edb_v__": "1",
 					':leaseEnd1': '123',
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: "(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #leaseEnd = :leaseEnd1"
+				FilterExpression: "(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd1"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
@@ -2206,4 +2214,1178 @@ describe("Entity", () => {
 			});
 		});
 	});
+	describe("table definition", () => {
+		it("should allow the table to be defined on the model", () => {
+			let model = {
+				service: "myservice",
+				entity: "myentity",
+				table: "electro",
+				version: "1",
+				attributes: {
+					id: "string",
+					org: "string",
+					type: "string"
+				},
+				indexes: {
+					thing: {
+						collection: "things",
+						pk: {
+							field: "pk",
+							facets: ["type", "org"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"]
+						}
+					}
+				}
+			};
+			let facets = {type: "abc", org: "def", id: "hij"};
+			let entity = new Entity(model);
+			let params = entity.get(facets).params();
+			expect(params.TableName).to.equal("electro");
+		});
+		it("should allow the table to be defined on the config", () => {
+			let model = {
+				model: {
+					service: "myservice",
+					entity: "myentity",
+					version: "1",
+				},
+				attributes: {
+					id: "string",
+					org: "string",
+					type: "string"
+				},
+				indexes: {
+					thing: {
+						collection: "things",
+						pk: {
+							field: "pk",
+							facets: ["type", "org"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"]
+						}
+					}
+				}
+			};
+			let table = "electro";
+			let facets = {type: "abc", org: "def", id: "hij"};
+			let entity = new Entity(model, {table});
+			let params = entity.get(facets).params();
+			expect(params.TableName).to.equal(table);
+		});
+		it("should not allow the table to be undefined", () => {
+			let model = {
+				service: "myservice",
+				entity: "myentity",
+				version: "1",
+				attributes: {
+					id: "string",
+					org: "string",
+					type: "string"
+				},
+				indexes: {
+					thing: {
+						collection: "things",
+						pk: {
+							field: "pk",
+							facets: ["type", "org"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"]
+						}
+					}
+				}
+			};
+			expect(() => new Entity(model)).to.throw("config.table must be string");
+		});
+	});
+	describe("key prefixes", () => {
+		describe("beta", () => {
+			const base = JSON.stringify({
+				service: "myservice",
+				entity: "myentity",
+				table: "electro",
+				version: "1",
+				attributes: {
+					id: "string",
+					org: "string",
+					type: "string"
+				},
+				indexes: {
+					thing: {
+						collection: "things",
+						pk: {
+							field: "pk",
+							facets: ["type", "org"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"]
+						}
+					}
+				}
+			});
+			let facets = {type: "abc", org: "def", id: "hij"};
+			describe("collections", () => {
+				it("should add a collection name to the sk", () => {
+					let model = JSON.parse(base);
+					let entity = new Entity(model);
+					let params = entity.get(facets).params();
+					expect(params).to.deep.equal({
+						Key: { pk: '$myservice_1#type_abc#org_def', sk: '$things#myentity#id_hij' },
+						TableName: 'electro'
+					});
+				});
+				it("throw when a collection is added to an index without an SK", () => {
+					let model = JSON.parse(base);
+					delete model.indexes.thing.sk;
+					expect(() => new Entity(model)).to.throw("Invalid index definition: Access pattern, thing (PRIMARY INDEX), contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.");
+				});
+				it("should ignore collection when sk is custom", () => {
+					let model = JSON.parse(base);
+					model.indexes.thing.pk.facets = `$blablah#t_:type#o_:org`;
+					let entity = new Entity(model);
+					let params = entity.get(facets).params();
+					expect(params).to.deep.equal({
+						Key: { pk: '$blablah#t_abc#o_def', sk: '$things#myentity#id_hij' },
+						TableName: 'electro'
+					});
+				});
+			});
+			describe("no sk", () => {
+				it("it should make an entity specific pk when there is no sk", () => {
+					let model = JSON.parse(base);
+					delete model.indexes.thing.sk;
+					delete model.indexes.thing.collection;
+					let entity = new Entity(model);
+					let params = entity.get(facets).params();
+					expect(params).to.deep.equal({
+						Key: { pk: '$myservice_1$myentity#type_abc#org_def' },
+						TableName: 'electro'
+					});
+				})
+			})
+		});
+		describe("v1", () => {
+			const base = JSON.stringify({
+				table: "electro",
+				model: {
+					service: "myservice",
+					entity: "myentity",
+					version: "1",
+				},
+				attributes: {
+					id: "string",
+					org: "string",
+					type: "string"
+				},
+				indexes: {
+					thing: {
+						collection: "things",
+						pk: {
+							field: "pk",
+							facets: ["type", "org"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"]
+						}
+					}
+				}
+			});
+			let facets = {type: "abc", org: "def", id: "hij"};
+			describe("collections", () => {
+				it("should add a collection name to the sk", () => {
+					let model = JSON.parse(base);
+					let entity = new Entity(model);
+					let params = entity.get(facets).params();
+					expect(params).to.deep.equal({
+						Key: { pk: '$myservice#type_abc#org_def', sk: '$things#myentity_1#id_hij' },
+						TableName: 'electro'
+					});
+				});
+				it("throw when a collection is added to an index without an SK", () => {
+					let model = JSON.parse(base);
+					delete model.indexes.thing.sk;
+					expect(() => new Entity(model)).to.throw("Invalid index definition: Access pattern, thing (PRIMARY INDEX), contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.");
+				});
+				it("should ignore collection when sk is custom", () => {
+					let model = JSON.parse(base);
+					model.indexes.thing.pk.facets = `$blablah#t_:type#o_:org`;
+					let entity = new Entity(model);
+					let params = entity.get(facets).params();
+					expect(params).to.deep.equal({
+						Key: { pk: '$blablah#t_abc#o_def', sk: '$things#myentity_1#id_hij' },
+						TableName: 'electro'
+					});
+				});
+			});
+			describe("no sk", () => {
+				it("it should make an entity specific pk when there is no sk", () => {
+					let model = JSON.parse(base);
+					delete model.indexes.thing.sk;
+					delete model.indexes.thing.collection;
+					let entity = new Entity(model);
+					let params = entity.get(facets).params();
+					expect(params).to.deep.equal({
+						Key: { pk: '$myservice$myentity_1#type_abc#org_def' },
+						TableName: 'electro'
+					});
+				})
+			})
+		});
+	});
+	describe("Custom Identifiers", () => {
+		const schema = {
+			model: {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				version: "1",
+			},
+			table: "StoreDirectory",
+			attributes: {
+				id: {
+					type: "string",
+					default: () => uuidV4(),
+					field: "storeLocationId",
+				},
+				mall: {
+					type: "string",
+					required: true,
+					field: "mall",
+				},
+				store: {
+					type: "string",
+					required: true,
+					field: "storeId",
+				},
+				building: {
+					type: "string",
+					required: true,
+					field: "buildingId",
+				},
+				unit: {
+					type: "string",
+					required: true,
+					field: "unitId",
+				},
+			},
+			indexes: {
+				store: {
+					pk: {
+						field: "pk",
+						facets: ["id"],
+					},
+					sk: {
+						field: "sk",
+						facets: []
+					}
+				},
+				units: {
+					index: "gsi1pk-gsi1sk-index",
+					pk: {
+						field: "gsi1pk",
+						facets: ["mall"],
+					},
+					sk: {
+						field: "gsi1sk",
+						facets: ["building", "store"],
+					},
+				},
+			}
+		};
+
+		const id = "123-456-789";
+		const mall = "EastPointe";
+		const store = "LatteLarrys";
+		const building = "BuildingA";
+		const unit = "A1";
+
+		const tests = [
+			{
+				description: "default identifiers",
+				custom: false,
+				input: {},
+				output: {
+					Item: {
+						storeLocationId: '123-456-789',
+						mall: 'EastPointe',
+						storeId: 'LatteLarrys',
+						buildingId: 'BuildingA',
+						unitId: 'A1',
+						pk: '$mallstoredirectory#id_123-456-789',
+						sk: '$mallstores_1',
+						gsi1pk: '$mallstoredirectory#mall_eastpointe',
+						gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+						__edb_e__: 'MallStores',
+						__edb_v__: '1'
+					},
+					TableName: 'test'
+				}
+			},
+			{
+				description: "custom version identifier",
+				custom: true,
+				input: {type: "version", value: "custom_version"},
+				output: {
+					Item: {
+						storeLocationId: '123-456-789',
+						mall: 'EastPointe',
+						storeId: 'LatteLarrys',
+						buildingId: 'BuildingA',
+						unitId: 'A1',
+						pk: '$mallstoredirectory#id_123-456-789',
+						sk: '$mallstores_1',
+						gsi1pk: '$mallstoredirectory#mall_eastpointe',
+						gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+						__edb_e__: 'MallStores',
+						custom_version: '1'
+					},
+					TableName: 'test'
+				}
+			},
+			{
+				description: "custom entity identifier",
+				custom: true,
+				input: {type: "entity", value: "custom_entity"},
+				output: {
+					Item: {
+						storeLocationId: '123-456-789',
+						mall: 'EastPointe',
+						storeId: 'LatteLarrys',
+						buildingId: 'BuildingA',
+						unitId: 'A1',
+						pk: '$mallstoredirectory#id_123-456-789',
+						sk: '$mallstores_1',
+						gsi1pk: '$mallstoredirectory#mall_eastpointe',
+						gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+						custom_entity: 'MallStores',
+						__edb_v__: '1'
+					},
+					TableName: 'test'
+				}
+			},
+		];
+		for (let test of tests) {
+			it(test.description, () => {
+				let entity = new Entity(schema, {table: "test"});
+				if (test.custom) {
+					entity.setIdentifier(test.input.type, test.input.value);
+				}
+				let params = entity.put({id, mall, store, building, unit}).params();
+				expect(params).to.deep.equal(test.output);
+			})
+		}
+
+	});
+	describe("v1 and beta models", () => {
+			let id = "123-456-789";
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let building = "BuildingA";
+			let unit = "A1";
+			let tests = [
+				{
+					description: "No SK, beta model",
+					queries: [
+						{
+							type: "get",
+							input: {id},
+							output: {
+								Key: {
+									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "put",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory_1$mallstores#id_123-456-789',
+									gsi1pk: "$mallstoredirectory_1$mallstores#mall_eastpointe",
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "create",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory_1$mallstores#id_123-456-789',
+									gsi1pk: "$mallstoredirectory_1$mallstores#mall_eastpointe",
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory',
+								ConditionExpression: 'attribute_not_exists(pk)'
+							}
+						},
+						{
+							type: "update",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
+								}
+							}
+
+						},
+						{
+							type: "patch",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								ConditionExpression: "attribute_exists(pk)",
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
+								}
+							}
+						},
+						{
+							type: "query",
+							index: "units",
+							input: {mall, building, store},
+							output: {
+								KeyConditionExpression: '#pk = :pk',
+								TableName: 'StoreDirectory',
+								ExpressionAttributeNames: { '#pk': 'gsi1pk' },
+								ExpressionAttributeValues: {
+									":pk": "$mallstoredirectory_1$mallstores#mall_eastpointe"
+								},
+								IndexName: 'gsi1pk-gsi1sk-index'
+							}
+						},
+					],
+					schema: {
+						service: "MallStoreDirectory",
+						entity: "MallStores",
+						table: "StoreDirectory",
+						version: "1",
+						attributes: {
+							id: {
+								type: "string",
+								default: () => uuidV4(),
+								field: "storeLocationId",
+							},
+							mall: {
+								type: "string",
+								required: true,
+								field: "mall",
+							},
+							store: {
+								type: "string",
+								required: true,
+								field: "storeId",
+							},
+							building: {
+								type: "string",
+								required: true,
+								field: "buildingId",
+							},
+							unit: {
+								type: "string",
+								required: true,
+								field: "unitId",
+							},
+						},
+						indexes: {
+							store: {
+								pk: {
+									field: "pk",
+									facets: ["id"],
+								},
+							},
+							units: {
+								index: "gsi1pk-gsi1sk-index",
+								pk: {
+									field: "gsi1pk",
+									facets: ["mall"],
+								}
+							},
+						}
+					}
+				},
+				{
+					description: "Has SK, beta model",
+					queries: [
+						{
+							type: "get",
+							input: {id},
+							output: {
+								Key: {
+									pk: '$mallstoredirectory_1#id_123-456-789',
+									sk: '$mallstores'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "put",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory_1#id_123-456-789',
+									sk: '$mallstores',
+									gsi1pk: '$mallstoredirectory_1#mall_eastpointe',
+									gsi1sk: '$mallstores#building_buildinga#store_lattelarrys',
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "create",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory_1#id_123-456-789',
+									sk: '$mallstores',
+									gsi1pk: '$mallstoredirectory_1#mall_eastpointe',
+									gsi1sk: '$mallstores#building_buildinga#store_lattelarrys',
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory',
+								ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+							}
+						},
+						{
+							type: "update",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory_1#id_123-456-789',
+									sk: '$mallstores'
+								}
+							}
+						},
+						{
+							type: "patch",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory_1#id_123-456-789',
+									sk: '$mallstores'
+								}
+							}
+						},
+						{
+							type: "query",
+							index: "units",
+							input: {mall, building, store},
+							output: {
+								KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+								TableName: 'StoreDirectory',
+								ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+								ExpressionAttributeValues: {
+									':pk': '$mallstoredirectory_1#mall_eastpointe',
+									':sk1': '$mallstores#building_buildinga#store_lattelarrys'
+								},
+								IndexName: 'gsi1pk-gsi1sk-index'
+							}
+						},
+					],
+					schema: {
+						service: "MallStoreDirectory",
+						entity: "MallStores",
+						table: "StoreDirectory",
+						version: "1",
+						attributes: {
+							id: {
+								type: "string",
+								default: () => uuidV4(),
+								field: "storeLocationId",
+							},
+							mall: {
+								type: "string",
+								required: true,
+								field: "mall",
+							},
+							store: {
+								type: "string",
+								required: true,
+								field: "storeId",
+							},
+							building: {
+								type: "string",
+								required: true,
+								field: "buildingId",
+							},
+							unit: {
+								type: "string",
+								required: true,
+								field: "unitId",
+							},
+						},
+						indexes: {
+							store: {
+								pk: {
+									field: "pk",
+									facets: ["id"],
+								},
+								sk: {
+									field: "sk",
+									facets: []
+								}
+							},
+							units: {
+								index: "gsi1pk-gsi1sk-index",
+								pk: {
+									field: "gsi1pk",
+									facets: ["mall"],
+								},
+								sk: {
+									field: "gsi1sk",
+									facets: ["building", "store"],
+								},
+							},
+						}
+					}
+				},
+				{
+					description: "No SK, v1 model",
+					queries: [
+						{
+							type: "get",
+							input: {id},
+							output: {
+								Key: {
+									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "put",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory$mallstores_1#id_123-456-789',
+									gsi1pk: '$mallstoredirectory#mall_eastpointe',
+									gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "create",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory$mallstores_1#id_123-456-789',
+									gsi1pk: '$mallstoredirectory#mall_eastpointe',
+									gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory',
+								ConditionExpression: 'attribute_not_exists(pk)'
+							}
+						},
+						{
+							type: "update",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
+								}
+							}
+						},
+						{
+							type: "patch",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								ConditionExpression: "attribute_exists(pk)",
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
+								}
+							}
+						},
+						{
+							type: "query",
+							index: "units",
+							input: {mall, building, store},
+							output: {
+								KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+								TableName: 'StoreDirectory',
+								ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+								ExpressionAttributeValues: {
+									':pk': '$mallstoredirectory#mall_eastpointe',
+									':sk1': '$mallstores_1#building_buildinga#store_lattelarrys'
+								},
+								IndexName: 'gsi1pk-gsi1sk-index'
+							}
+						},
+					],
+					schema: {
+						model: {
+							service: "MallStoreDirectory",
+							entity: "MallStores",
+							version: "1",
+						},
+						table: "StoreDirectory",
+						attributes: {
+							id: {
+								type: "string",
+								default: () => uuidV4(),
+								field: "storeLocationId",
+							},
+							mall: {
+								type: "string",
+								required: true,
+								field: "mall",
+							},
+							store: {
+								type: "string",
+								required: true,
+								field: "storeId",
+							},
+							building: {
+								type: "string",
+								required: true,
+								field: "buildingId",
+							},
+							unit: {
+								type: "string",
+								required: true,
+								field: "unitId",
+							},
+						},
+						indexes: {
+							store: {
+								pk: {
+									field: "pk",
+									facets: ["id"],
+								},
+							},
+							units: {
+								index: "gsi1pk-gsi1sk-index",
+								pk: {
+									field: "gsi1pk",
+									facets: ["mall"],
+								},
+								sk: {
+									field: "gsi1sk",
+									facets: ["building", "store"],
+								},
+							},
+						}
+					}
+				},
+				{
+					description: "Has SK, v1 model",
+					queries: [
+						{
+							type: "get",
+							input: {id},
+							output: {
+								Key: {
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$mallstores_1'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "put",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$mallstores_1',
+									gsi1pk: '$mallstoredirectory#mall_eastpointe',
+									gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "create",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$mallstores_1',
+									gsi1pk: '$mallstoredirectory#mall_eastpointe',
+									gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory',
+								ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+							}
+						},
+						{
+							type: "update",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$mallstores_1'
+								}
+							}
+						},
+						{
+							type: "patch",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$mallstores_1'
+								}
+							}
+						},
+						{
+							type: "query",
+							index: "units",
+							input: {mall, building, store},
+							output: {
+								KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+								TableName: 'StoreDirectory',
+								ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+								ExpressionAttributeValues: {
+									':pk': '$mallstoredirectory#mall_eastpointe',
+									':sk1': '$mallstores_1#building_buildinga#store_lattelarrys'
+								},
+								IndexName: 'gsi1pk-gsi1sk-index'
+							}
+						},
+					],
+					schema: {
+						model: {
+							service: "MallStoreDirectory",
+							entity: "MallStores",
+							version: "1",
+						},
+						table: "StoreDirectory",
+						attributes: {
+							id: {
+								type: "string",
+								default: () => uuidV4(),
+								field: "storeLocationId",
+							},
+							mall: {
+								type: "string",
+								required: true,
+								field: "mall",
+							},
+							store: {
+								type: "string",
+								required: true,
+								field: "storeId",
+							},
+							building: {
+								type: "string",
+								required: true,
+								field: "buildingId",
+							},
+							unit: {
+								type: "string",
+								required: true,
+								field: "unitId",
+							},
+						},
+						indexes: {
+							store: {
+								pk: {
+									field: "pk",
+									facets: ["id"],
+								},
+								sk: {
+									field: "sk",
+									facets: []
+								}
+							},
+							units: {
+								index: "gsi1pk-gsi1sk-index",
+								pk: {
+									field: "gsi1pk",
+									facets: ["mall"],
+								},
+								sk: {
+									field: "gsi1sk",
+									facets: ["building", "store"],
+								},
+							},
+						}
+					}
+				},
+				{
+					description: "Has SK, v1 model, Collection",
+					queries: [
+						{
+							type: "get",
+							input: {id},
+							output: {
+								Key: {
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$collection_name#mallstores_1'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "put",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$collection_name#mallstores_1',
+									gsi1pk: '$mallstoredirectory#mall_eastpointe',
+									gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory'
+							}
+						},
+						{
+							type: "create",
+							input: {id, mall, store, building, unit},
+							output: {
+								Item: {
+									storeLocationId: '123-456-789',
+									mall: 'EastPointe',
+									storeId: 'LatteLarrys',
+									buildingId: 'BuildingA',
+									unitId: 'A1',
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$collection_name#mallstores_1',
+									gsi1pk: '$mallstoredirectory#mall_eastpointe',
+									gsi1sk: '$mallstores_1#building_buildinga#store_lattelarrys',
+									__edb_e__: 'MallStores',
+									__edb_v__: '1'
+								},
+								TableName: 'StoreDirectory',
+								ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+							}
+						},
+						{
+							type: "update",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$collection_name#mallstores_1'
+								}
+							}
+						},
+						{
+							type: "patch",
+							input: {id},
+							set: {unit: "abc"},
+							output: {
+								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
+								UpdateExpression: 'SET #unitId = :unitId',
+								ExpressionAttributeNames: { '#unitId': 'unitId' },
+								ExpressionAttributeValues: { ':unitId': 'abc' },
+								TableName: 'StoreDirectory',
+								Key: {
+									pk: '$mallstoredirectory#id_123-456-789',
+									sk: '$collection_name#mallstores_1'
+								}
+							}
+						},
+						{
+							type: "query",
+							index: "units",
+							input: {mall, building, store},
+							output: {
+								KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+								TableName: 'StoreDirectory',
+								ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+								ExpressionAttributeValues: {
+									':pk': '$mallstoredirectory#mall_eastpointe',
+									':sk1': '$mallstores_1#building_buildinga#store_lattelarrys'
+								},
+								IndexName: 'gsi1pk-gsi1sk-index'
+							}
+						},
+					],
+					schema: {
+						model: {
+							service: "MallStoreDirectory",
+							entity: "MallStores",
+							version: "1",
+						},
+						table: "StoreDirectory",
+						attributes: {
+							id: {
+								type: "string",
+								default: () => uuidV4(),
+								field: "storeLocationId",
+							},
+							mall: {
+								type: "string",
+								required: true,
+								field: "mall",
+							},
+							store: {
+								type: "string",
+								required: true,
+								field: "storeId",
+							},
+							building: {
+								type: "string",
+								required: true,
+								field: "buildingId",
+							},
+							unit: {
+								type: "string",
+								required: true,
+								field: "unitId",
+							},
+						},
+						indexes: {
+							store: {
+								collection: "collection_name",
+								pk: {
+									field: "pk",
+									facets: ["id"],
+								},
+								sk: {
+									field: "sk",
+									facets: []
+								}
+							},
+							units: {
+								index: "gsi1pk-gsi1sk-index",
+								pk: {
+									field: "gsi1pk",
+									facets: ["mall"],
+								},
+								sk: {
+									field: "gsi1sk",
+									facets: ["building", "store"],
+								},
+							},
+						}
+					}
+				}
+			];
+			for (let test of tests) {
+				describe(test.description, () => {
+				let db = new Entity(test.schema);
+					for (let query of test.queries) {
+						it(`Should create params for a ${query.type}`, () => {
+							let params;
+							if (query.type === "query") {
+								params = db.query[query.index](query.input).params();
+							} else if (query.type === "update" || query.type === "patch") {
+								params = db[query.type](query.input).set(query.set).params();
+							} else {
+								params = db[query.type](query.input).params()
+							}
+							expect(params).to.deep.equal(query.output);
+						})
+					}
+				});
+			}
+	})
 });

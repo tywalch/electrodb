@@ -50,12 +50,25 @@ const AttributeTypes = {
 const ExpressionTypes = {
 	ConditionExpression: "ConditionExpression",
 	FilterExpression: "FilterExpression"
-}
+};
 
 const ElectroInstance = {
 	entity: Symbol("entity"),
-	service: Symbol("service")
-}
+	service: Symbol("service"),
+	electro: Symbol("electro"),
+};
+
+const ElectroInstanceTypes = {
+	electro: "electro",
+	service: "service",
+	entity: "entity",
+	model: "model"
+};
+
+const ModelVersions = {
+	beta: "beta",
+	v1: "v1"
+};
 
 module.exports = {
 	KeyTypes,
@@ -63,7 +76,9 @@ module.exports = {
 	MethodTypes,
 	CastTypes,
 	Comparisons,
+	ModelVersions,
 	AttributeTypes,
 	ExpressionTypes,
 	ElectroInstance,
+	ElectroInstanceTypes,
 };

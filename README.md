@@ -20,7 +20,7 @@
 
 Turn this:
 ```javascript
-MallStores.query
+StoreLocations.query
 	.leases({ mallId: "EastPointe" })
 	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
 	.filter(({rent, discount}) => `
@@ -186,14 +186,15 @@ const {Service} = require("electrodb");
 Create an Entity's schema. In the below example.
 
 ```javascript
-const  DynamoDB  =  require("aws-sdk/clients/dynamodb");
+const DynamoDB = require("aws-sdk/clients/dynamodb");
 const {Entity, Service} = require("electrodb");
 const client = new DynamoDB.DocumentClient();
 const EmployeesModel = {
-	entity: "employees",
-	version: "1",
-	service: "taskapp",
-	table: "projectmanagement",
+    model: {
+      entity: "employees",
+      version: "1",
+      service: "taskapp",
+    },
 	attributes: {
 		employee: {
 			type: "string",
@@ -316,10 +317,11 @@ const EmployeesModel = {
 };
 
 const TasksModel = {
-	entity: "tasks",
-	version: "1",
-	service: "taskapp",
-	table: "projectmanagement",
+	model: {
+      entity: "tasks",
+      version: "1",
+      service: "taskapp",
+	},
 	attributes: {
 		task: {
 			type: "string",
@@ -372,25 +374,29 @@ const TasksModel = {
 	},
 };
 ```
+### Join 
 Create individual Entities with the Models or `join` them via a Service: 
 ```javascript
 // Independent Models
-let employees = new Entity(EmployeesModel, { client });
-let tasks = new Entity(TasksModel, { client });
+let table = "my_table_name";
+let employees = new Entity(EmployeesModel, { client, table });
+let tasks = new Entity(TasksModel, { client, table });
 ```
 
 ```javascript
-// Joined via a Service
-let TaskApp = new Service({
-		version: "1",
-		service: "TaskApp",
-		table: "projectmanagement",
-	},
-	{ client },
-);
+// Joining Entity instances to a Service
+let TaskApp = new Service("TaskApp", { client, table });
 TaskApp
-	.join(EmployeesModel) // TaskApp.entities.employees
-	.join(TasksModel);    // TaskApp.entities.tasks
+	.join(employees) // available at TaskApp.entities.employees
+	.join(tasks);    // available at TaskApp.entities.tasks
+```
+
+```javascript
+// Joining models to a Service
+let TaskApp = new Service("TaskApp", { client, table });
+TaskApp
+	.join(EmployeesModel) // available at TaskApp.entities.employees
+	.join(TasksModel);    // available at TaskApp.entities.tasks
 ```
 ### Model Properties
 
@@ -642,11 +648,7 @@ Collections are defined on an Index, and the name of the collection should repre
 
 Using the TaskApp Models defined in [Models](#model), these models share a `collection` called `assignments` on the index `gsi3pk-gsi3sk-index`
 ```javascript
-let TaskApp =  new  Service({
-	version:  "1", 
-	service:  "TaskApp", 
-	table:  "projectmanagement"
-},  { client }); 
+let TaskApp =  new  Service("projectmanagement", { client, table: "projectmanagement" }); 
 TaskApp
 	.join(EmployeesModel) // TaskApp.entities.employees
 	.join(TasksModel);    // TaskApp.entities.tasks
@@ -672,7 +674,7 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 ```javascript
 {
   IndexName: 'idx2',
-  TableName: 'electro',
+  TableName: 'StoreDirectory',
   ExpressionAttributeNames: {
     '#rent': 'rent',
     '#discount': 'discount',
@@ -709,7 +711,7 @@ filters: {
 }
 
 
-let MallStores  =  new Entity("MallStores", model);
+let StoreLocations  =  new Entity(model, {table: "StoreDirectory"});
 let maxRent = "5000.00";
 let minRent = "2000.00";
 let promotion = "1000.00";
@@ -722,7 +724,7 @@ let stores  =  MallStores.query
 // Results
 {
   IndexName: 'idx2',
-  TableName: 'electro',
+  TableName: 'StoreDirectory',
   ExpressionAttributeNames: {
     '#rent': 'rent',
     '#discount': 'discount',
@@ -743,11 +745,11 @@ let stores  =  MallStores.query
 ```
 ### Defined via Filter method after query operators 
 ```javascript
-let MallStores  =  new Entity("MallStores", model);
+let StoreLocations  =  new Entity(model, {table: "StoreDirectory"});
 let maxRent = "5000.00";
 let minRent = "2000.00";
 let promotion = "1000.00";
-let stores  =  MallStores.query
+let stores  =  StoreLocations.query
 	.leases({ mallId: "EastPointe" })
 	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
 	.filter(({rent, discount}) => `
@@ -758,7 +760,7 @@ let stores  =  MallStores.query
 // Results
 {
   IndexName: 'idx2',
-  TableName: 'electro',
+  TableName: 'StoreDirectory',
   ExpressionAttributeNames: {
     '#rent': 'rent',
     '#discount': 'discount',
@@ -802,7 +804,7 @@ This functionality allows you to write the remaining logic of your `FilterExpres
 It is possible to include chain multiple filters. The resulting FilterExpressions are concatinated with an implicit `AND` operator.
 
 ```javascript
-let MallStores = new Entity("MallStores", model);
+let MallStores = new Entity(model, {table: "StoreDirectory"});
 let stores = MallStores.query
 	.leases({ mallId: "EastPointe" })
 	.between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
@@ -953,7 +955,7 @@ operator | example | result
 It is possible to include chain multiple where clauses. The resulting FilterExpressions (or ConditionExpressions) are concatinated with an implicit `AND` operator.
 
 ```javascript
-let MallStores = new Entity("MallStores", model);
+let MallStores = new Entity(model, {table: "StoreDirectory"});
 let stores = MallStores.query
 	.leases({ mallId: "EastPointe" })
 	.between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
@@ -1014,11 +1016,12 @@ For example, let's say you have a `MallStore` Entity that represents Store Locat
 
 #### Shopping Mall Stores
 ```javascript
-let model = {  
-	service: "MallStoreDirectory",  
-	entity: "MallStore",  
-	table: "StoreDirectory",  
-	version: "1",  
+let schema = {  
+    model: {
+      service: "MallStoreDirectory",  
+      entity: "MallStore",
+      version: "1",    
+    },  
 	attributes: {  
 		mallId: {  
 			type: "string",  
@@ -1105,13 +1108,14 @@ let model = {
 		}
 	}  
 };
+const StoreLocations = new Entity(schema, {table: "StoreDirectory"});
 ```
 
 Each record represents one Store location. All Stores are located in Malls we manage. 
 
-To satisfy requirements for searching based on location, you could use the following keys: Each `MallStore` record would have a **Partition Key**  with the store's `storeId`. This key alone is not enough to identify a particular store. To solve this, compose a **Sort Key** for the store's location attribute ordered hierarchically (mall/building/unit): `["mallId", "buildingId", "unitId"]`. 
+To satisfy requirements for searching based on location, you could use the following keys: Each `StoreLocations` record would have a **Partition Key**  with the store's `storeId`. This key alone is not enough to identify a particular store. To solve this, compose a **Sort Key** for the store's location attribute ordered hierarchically (mall/building/unit): `["mallId", "buildingId", "unitId"]`. 
 
-The `MallStore` entity above, using just the `stores` **Index** alone enables four **Access Patterns**:
+The `StoreLocations` entity above, using just the `stores` **Index** alone enables four **Access Patterns**:
 1. All `LatteLarrys` locations in all *Malls*
 2. All `LatteLarrys` locations in one *Mall*
 3. All `LatteLarrys` locations inside a specific *Mall*
@@ -1120,7 +1124,7 @@ The `MallStore` entity above, using just the `stores` **Index** alone enables fo
 ## Query Chains
 Queries in ***ElectroDB*** are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Facets** to create performant lookups. To accomplish this, ***ElectroDB*** offers a predictable chainable API.
 
-> Examples in this section using the `MallStore` schema defined [above](#shopping-mall-stores). 
+> Examples in this section using the `StoreLocations` schema defined [above](#shopping-mall-stores). 
 
 The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all facets described in the Entities' primary `PK` and `SK`.  
 
@@ -1374,7 +1378,7 @@ let match = await StoreLocations.find({
 All queries start from the Access Pattern defined in the schema. 
 
 ```javascript
-const MallStore = new Entity(schema); 
+const MallStore = new Entity(schema, {table: "StoreDirectory"}); 
 // Each Access Pattern is available on the Entity instance
 // MallStore.query.stores()
 // MallStore.query.malls()
@@ -1383,7 +1387,7 @@ const MallStore = new Entity(schema);
 #### Partition Key Facets
 All queries require (*at minimum*) the **Facets** included in its defined **Partition Key**. They can be supplied in the order they are composed or in a single object when invoking the **Access Pattern**.
 ```javascript
-const MallStore = new Entity(schema);
+const MallStore = new Entity(schema, {table: "StoreDirectory"});
 //	stores
 //	pk: ["storeId"]
 //	sk: ["mallId", "buildingId", "unitId"]
@@ -1408,11 +1412,8 @@ Collections allow you to query across Entities. To use them you need to `join` y
 
 > Using the TaskApp Models defined in [Models](#model), these models share a `collection` called `assignments` on the index `gsi3pk-gsi3sk-index`
 ```javascript
-let TaskApp =  new Service({
-	version:  "1", 
-	service:  "TaskApp", 
-	table:  "projectmanagement"
-},  { client }); 
+let table = "projectmanagement";
+let TaskApp =  new Service("projectmanagement",  { client, table }); 
 TaskApp
 	.join(EmployeesModel) // TaskApp.entities.employees
 	.join(TasksModel);    // TaskApp.entities.tasks
@@ -1499,13 +1500,13 @@ The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with t
 
 ```javascript
 let config = {};
-let stores  =  MallStores.query
-				.leases({ mallId })
-				.between(
-					{ leaseEndDate:  "2020-06-01" }, 
-					{ leaseEndDate:  "2020-07-31" })
-				.filter(({rent}) => rent.lte("5000.00"))
-				.go(config);
+let stores = MallStores.query
+              .leases({ mallId })
+              .between(
+                { leaseEndDate:  "2020-06-01" }, 
+                { leaseEndDate:  "2020-07-31" })
+			  .filter(({rent}) => rent.lte("5000.00"))
+              .go(config);
 
 ```
 
@@ -1644,10 +1645,11 @@ By default **ElectroDB** enables you to work with records as the names and prope
 
 ```typescript
 let options = {
-	params: [object],
-	raw: [boolean],
-	includeKeys: [boolean],
-	originalErr: [boolean],
+	params?: object,
+	raw?: boolean,
+	includeKeys?: boolean,
+	originalErr?: boolean,
+	lastEvaluatedKeyRaw?: boolean
 };
 ```
 | Option | Description |  
@@ -1656,6 +1658,7 @@ let options = {
 | raw  | Returns query results as they were returned by the docClient.  
 | includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. 
 | originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
+| lastEvaluatedKeyRaw | Used in 
 # Examples
 
 ## Employee App
@@ -1674,10 +1677,11 @@ For an example, lets look at the needs of application used to manage Employees. 
 ### Entities
 ```javascript
 const EmployeesModel = {
-	entity: "employees",
-	version: "1",
-	service: "taskapp",
-	table: "projectmanagement",
+	model: {
+	  entity: "employees",
+      version: "1",
+      service: "taskapp",  
+	},
 	attributes: {
 		employee: "string",
 		firstName: "string",
@@ -1771,10 +1775,11 @@ const EmployeesModel = {
 };
 
 const TasksModel = {
-	entity: "tasks",
-	version: "1",
-	service: "taskapp",
-	table: "projectmanagement",
+	model: {
+		entity: "tasks",
+    	version: "1",
+    	service: "taskapp",  
+	}, 
 	attributes: {
 		task: "string",
 		project: "string",
@@ -1819,10 +1824,11 @@ const TasksModel = {
 };
 
 const OfficesModel = {
-	entity: "offices",
-	version: "1",
-	table: "electro",
-	service: "electrotest",
+	model: {
+  		entity: "offices",
+      	version: "1",
+      	service: "taskapp",  
+  	}, 
 	attributes: {
 		office: "string",
 		country: "string",
@@ -1860,18 +1866,10 @@ const OfficesModel = {
 Join models on a new `Service` called `EmployeeApp`
 ```javascript
 const DynamoDB = require("aws-sdk/clients/dynamodb");
-const client = new DynamoDB.DocumentClient({
-	region: "us-east-1",
-});
+const client = new DynamoDB.DocumentClient({region: "us-east-1"});
 const { Service } = require("electrodb");
-let EmployeeApp = new Service(
-	{
-		version: "1",
-		service: "EmployeeApp",
-		table: "projectmanagement",
-	},
-	{ client },
-);
+const table = "projectmanagement";
+const EmployeeApp = new Service("EmployeeApp", { client, table });
 
 EmployeeApp
 	.join(EmployeesModel) // EmployeeApp.entities.employees
@@ -2088,12 +2086,12 @@ For an example, lets look at the needs of application used to manage Shopping Ma
 2. As a Helpdesk Employee I need to locate related stores in Mall locations by Store Category.
 3. As a Property Manager I need to identify upcoming leases in need of renewal.
 
-Create a new Entity using the `MallStore` schema defined [above](#shopping-mall-stores) 
+Create a new Entity using the `StoreLocations` schema defined [above](#shopping-mall-stores) 
 
 ```javascript
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient();
-const MallStore = new Entity(model, {client});
+const StoreLocations = new Entity(model, {client, table: "StoreLocations"});
 ```
 
 ### Access Patterns are accessible on the StoreLocation 
@@ -2101,7 +2099,7 @@ const MallStore = new Entity(model, {client});
 ### PUT Record
 #### Add a new Store to the Mall
 ```javascript
-await MallStore.create({
+await StoreLocations.create({
 	mallId: "EastPointe",
 	storeId: "LatteLarrys",
 	buildingId: "BuildingA1",
@@ -2228,7 +2226,7 @@ Fulfilling [Requirement #3](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let q4StartDate = "2020-10-01";
-let q4EndDate = "2020-12-31";Yes
+let q4EndDate = "2020-12-31";
 let stores = await StoreLocations.leases(mallId)
     .between (
       {leaseEndDate: q4StartDate}, 
@@ -2252,13 +2250,88 @@ let stores = await StoreLocations.leases(mallId)
 
 #### All Latte Larrys in a particular mall building
 ```javascript
-
 let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
+``` 
+
+# Version 1.0 Migration
+This section is to detail any breaking changes made on the journey to a stable 1.0 product. 
+
+## New schema format/breaking key format change
+It became clear when I added the concept of a Service that the "version" paradigm of having the version in the PK wasnt going to work. This is because collection queries use the same PK for all entities and this would prevent some entities in a Service to change versions without impacting the service as a whole. The better more is the place the version in the SK _after_ the entity name so that all version of an entity can be queried. This will work nicely into the migration feature I have planned that will help migrate between model versions.  
+
+To address this change, I decide it would be best to change the structure for defining a model, which is then used as heuristic to determine where to place the version in the key (PK or SK). This has the benefit of not breaking existing models, but does increase some complexity in the underlying code.
+
+> In the old scheme, version came after the service name (see `^`). 
 ```
+pk: $mallstoredirectory_1#mall_eastpointe
+                        ^
+sk: $mallstores#building_buildinga#store_lattelarrys
+```
+
+> In the new scheme, version comes after the entity name (see `^`).
+```
+pk: $mallstoredirectory#mall_eastpointe
+sk: $mallstores_1#building_buildinga#store_lattelarrys
+                ^
+``` 
+
+
+Additionally a change was made to the Service class. New Services would take a string of the service name instead of an object as before.
+
+In practice the change looks like this for use of `Entity`:
+
+```javascript
+const  DynamoDB  =  require("aws-sdk/clients/dynamodb");
+const {Entity} = require("electrodb");
+const client = new DynamoDB.DocumentClient();
+const table = "dynamodb_table_name";
+
+// old way:
+let old_schema = {
+  entity: "model_name",
+  service: "service_name",
+  version: "1",
+  table: table,
+  attributes: {},
+  indexes: {}
+};
+new Entity(old_schema, {client});
+
+// new way
+let new_schema = {
+  model: {
+    entity: "model_name",
+    service: "service_name",
+    version: "1",
+  },
+  attributes: {},
+  indexes: {}
+};
+new Entity(new_schema, {client, table});
+```    
+  
+And changes to usage of `Service` would look like this:
+```javascript
+const  DynamoDB  =  require("aws-sdk/clients/dynamodb");
+const {Service} = require("electrodb");
+const client = new DynamoDB.DocumentClient();
+const table = "dynamodb_table_name";
+
+// old way
+new Service({
+  service: "service_name",
+  version: "1",
+  table: table,
+}, {client});
+
+// new way
+new Service("service_name", {client, table});
+```
+
 
 # Coming Soon
 - Additional query options like `limit`, `pages`, `attributes`, `sort` and more for easier querying.
