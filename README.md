@@ -230,11 +230,11 @@ const DynamoDB = require("aws-sdk/clients/dynamodb");
 const {Entity, Service} = require("electrodb");
 const client = new DynamoDB.DocumentClient();
 const EmployeesModel = {
-    model: {
-      entity: "employees",
-      version: "1",
-      service: "taskapp",
-    },
+	model: {
+		entity: "employees",
+		version: "1",
+		service: "taskapp",
+	},
 	attributes: {
 		employee: {
 			type: "string",
@@ -358,9 +358,9 @@ const EmployeesModel = {
 
 const TasksModel = {
 	model: {
-      entity: "tasks",
-      version: "1",
-      service: "taskapp",
+		entity: "tasks",
+		version: "1",
+		service: "taskapp",
 	},
 	attributes: {
 		task: {
@@ -1075,7 +1075,7 @@ Forming a composite **Partition Key** and **Sort Key** is a critical step in pla
 ### Using facets to make hierarchical keys
 Carefully considering your **Facet** order will allow ***ElectroDB** to express hierarchical relationships and unlock more available **Access Patterns** for your application. 
 
-For example, let's say you have a `MallStore` Entity that represents Store Locations inside Malls:
+For example, let's say you have a `StoreLocations` Entity that represents Store Locations inside Malls:
 
 #### Shopping Mall Stores
 ```javascript
@@ -1475,8 +1475,9 @@ Collections allow you to query across Entities. To use them you need to `join` y
 
 > Using the TaskApp Models defined in [Models](#model), these models share a `collection` called `assignments` on the index `gsi3pk-gsi3sk-index`
 ```javascript
-let table = "projectmanagement";
-let TaskApp =  new Service("projectmanagement",  { client, table }); 
+const table = "projectmanagement";
+const TaskApp = new Service("projectmanagement",  { client, table }); 
+
 TaskApp
 	.join(EmployeesModel) // TaskApp.entities.employees
 	.join(TasksModel);    // TaskApp.entities.tasks
@@ -1564,12 +1565,12 @@ The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with t
 ```javascript
 let config = {};
 let stores = MallStores.query
-              .leases({ mallId })
-              .between(
-                { leaseEndDate:  "2020-06-01" }, 
-                { leaseEndDate:  "2020-07-31" })
-			  .filter(({rent}) => rent.lte("5000.00"))
-              .go(config);
+	.leases({ mallId })
+	.between(
+		{ leaseEndDate:  "2020-06-01" }, 
+		{ leaseEndDate:  "2020-07-31" })
+	.filter(({rent}) => rent.lte("5000.00"))
+	.go(config);
 
 ```
 
@@ -1591,12 +1592,12 @@ The second element is the results of the query, exactly as it would be returned 
 
 ```javascript
 let [page, stores] = await MallStores.query
-				.leases({ mallId })
-				.page();
+	.leases({ mallId })
+	.page();
 
 let [pageTwo, moreStores] = await MallStores.query
-				.leases({ mallId })
-				.page(page, {});
+	.leases({ mallId })
+	.page(page, {});
 
 // page:
 // { 
