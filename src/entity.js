@@ -501,14 +501,12 @@ class Entity {
 	}
 
 	_makeParameterKey(index, pk, sk) {
-		let name = this.model.translations.indexes.fromIndexToAccessPattern[index];
 		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
-		let accessPattern = this.model.indexes[name];
 		let key = {
-			[accessPattern.pk.field]: pk,
+			pk: pk,
 		};
 		if (hasSortKey && sk !== undefined) {
-			key[accessPattern.sk.field] = sk;
+			key.sk = sk;
 		}
 		return key;
 	}
@@ -1167,16 +1165,16 @@ class Entity {
 			throw new Error(`Invalid index: ${index}`);
 		}
 		let pk = this._makeKey(
-			prefixes.pk.prefix,
+			prefixes.pk,
 			facets.pk,
 			pkFacets,
-			prefixes.pk,
+			this.model.facets.labels[index]
 		);
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
 				sk.push(
-					this._makeKey(prefixes.sk.prefix, facets.sk, skFacet, prefixes.sk),
+					this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index]),
 				);
 			}
 		}
@@ -1184,15 +1182,15 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeKey(prefix = "", facets = [], supplied = {}, { isCustom } = {}) {
+	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = {}) {
 		let key = prefix;
 		for (let i = 0; i < facets.length; i++) {
 			let facet = facets[i];
-			let { label, name } = this.model.schema.attributes[facet];
+			let { name } = this.model.schema.attributes[facet];
 			if (isCustom) {
-				key = `${key}${label === undefined ? "" : label}`;
+				key = `${key}${labels[facet] === undefined ? "" : labels[facet]}`;
 			} else {
-				key = `${key}#${label === undefined ? name : label}_`;
+				key = `${key}#${labels[facet] === undefined ? name : labels[facet]}_`;
 			}
 			if (supplied[name] !== undefined) {
 				key = `${key}${supplied[name]}`;
@@ -1340,7 +1338,7 @@ class Entity {
 			let { facetArray, facetLabels } = parsedPKFacets;
 			customFacets.pk = parsedPKFacets.isCustom;
 			// labels can be set via the attribute definiton or as part of the facetTemplate.
-			facets.labels = Object.assign({}, facets.labels, facetLabels);
+			facets.labels[indexName] = Object.assign({}, facets.labels[indexName] || {}, facetLabels);
 
 			let pk = {
 				accessPattern,
@@ -1357,7 +1355,7 @@ class Entity {
 				parsedSKFacets = this._parseFacets(index.sk.facets);
 				let { facetArray, facetLabels } = parsedSKFacets;
 				customFacets.sk = parsedSKFacets.isCustom;
-				facets.labels = Object.assign({}, facets.labels, facetLabels);
+        facets.labels[indexName] = Object.assign({}, facets.labels[indexName] || {}, facetLabels);
 				sk = {
 					facetLabels,
 					accessPattern,
