@@ -73,6 +73,7 @@ Into This:
   * [Attributes](#attributes)
       - [Simple Syntax](#simple-syntax)
       - [Expanded Syntax](#expanded-syntax)
+      - [Attribute Validation](#attribute-validation)
   * [Indexes](#indexes)
       - [Indexes Without Sort Keys](#indexes-without-sort-keys)
       - [Indexes With Sort Keys](#indexes-with-sort-keys)
