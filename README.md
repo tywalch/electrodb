@@ -9,14 +9,15 @@
 *This library is a work in progress, please submit issues/feedback or reach out on twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
 
 ## Features  
-- **Attribute Schema Enforcement**: Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
-- **Easily Compose Hierarchical Access Patterns**: Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
-- **Single Table Entity Segregation**: Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
-- **Simplified Sort Key Condition Querying**: Write efficient sort key queries by easily building compose keys.
-- **Simplified Filter Composition**: Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
-- **Easily Query Across Entities**: Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
-- **Automatic Index Selection**: Use `.find()` method to dynamically and effeciently query based on defined sort key structures. 
-- **Simplified Pagination API** Use `.page()` to easily iterate through multiquery result sets.  
+- [**Attribute Schema Enforcement**](#attributes): Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
+- [**Easily Compose Hierarchical Access Patterns**](#facets): Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
+- [**Single Table Entity Segregation**](#mode): Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
+- [**Simplified Sort Key Condition Querying**](#building-queries]: Write efficient sort key queries by easily building compose keys.
+- [**Simplified Filter Composition**](#where): Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
+- [**Easily Query Across Entities**](#collections): Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
+- [**Automatic Index Selection**](#find): Use `.find()` method to dynamically and effeciently query based on defined sort key structures. 
+- [**Simplified Pagination API**](#page) Use `.page()` to easily iterate through multiquery result sets.
+- **Generate Type Defintions** _Coming Soon_ The ability to generate TypeScript `.d.ts` based on your model.
 
 Turn this:
 ```javascript
@@ -215,13 +216,13 @@ TaskApp
  
 When joining a Model/Entity to a Service a number of validations are done to ensure that Entity conforms to expectations collectively established by all joined Entities.
 
-- (Entity)[#entities] names must be unique across a Service
-- (Collection)[#collections] names must be unique accross a Service
-- The (name of the Service in the Model)[#model-properties] must match the Name defined on the (Service)[#service] instance
-- Joined instances must be type (Model)[#model] or (Entity)[#entities].
-- If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching (attribute options)[#attributes].   
-- All primary and global secondary indexes must have the same name field names and be written to assume SortKeys exist/don't exist in the same manor. See (Indexes)[#indexes]  
-- All models conform to the same model format. If your model was made pre-electrodb version 0.9.19 see section (Version 1 Migration)[#version-1-migration] 
+- [Entity](#entities) names must be unique across a Service
+- [Collection](#collections) names must be unique accross a Service
+- The [name of the Service in the Model](#model-properties) must match the Name defined on the [Service](#service) instance
+- Joined instances must be type [Model](#model) or [Entity](#entities).
+- If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching [attribute options](#attributes).   
+- All primary and global secondary indexes must have the same name field names and be written to assume SortKeys exist/don't exist in the same manor. See [Indexes](#indexes)
+- All models conform to the same model format. If your model was made pre-electrodb version 0.9.19 see section [Version 1 Migration](#version-1-migration) 
 
 ## Model 
 
