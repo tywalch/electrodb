@@ -9,15 +9,15 @@
 *This library is a work in progress, please submit issues/feedback or reach out on twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
 
 ## Features  
-- [**Attribute Schema Enforcement**](#attributes): Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
-- [**Easily Compose Hierarchical Access Patterns**](#facets): Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
-- [**Single Table Entity Segregation**](#model): Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
-- [**Simplified Sort Key Condition Querying**](#building-queries): Write efficient sort key queries by easily building compose keys.
-- [**Simplified Filter Composition**](#where): Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
-- [**Easily Query Across Entities**](#collections): Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
-- [**Automatic Index Selection**](#find-records): Use `.find()` method to dynamically and effeciently query based on defined sort key structures. 
-- [**Simplified Pagination API**](#page) Use `.page()` to easily iterate through multiquery result sets.
-- **Generate Type Defintions** _Coming Soon_ The ability to generate TypeScript `.d.ts` based on your model.
+- [**Attribute Schema Enforcement**](#attributes) - Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
+- [**Easily Compose Hierarchical Access Patterns**](#facets) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
+- [**Single Table Entity Segregation**](#model) - Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
+- [**Simplified Sort Key Condition Querying**](#building-queries) - Write efficient sort key queries by easily building compose keys.
+- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
+- [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
+- [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and effeciently query based on defined sort key structures. 
+- [**Simplified Pagination API**](#page) - Use `.page()` to easily iterate through multiquery result sets.
+- **Generate Type Defintions** - _Coming Soon_ The ability to generate TypeScript `.d.ts` based on your model.
 
 Turn this:
 ```javascript
