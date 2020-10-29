@@ -20,35 +20,37 @@
 
 Turn this:
 ```javascript
-StoreLocations.query
-	.leases({ mallId: "EastPointe" })
-	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
-	.filter(({rent, discount}) => `
-		${rent.between("2000.00", "5000.00")} AND ${discount.lte("1000.00")}
+Employees.query
+	.coworkers({ office: "Scranton Branch", team: "marketing" })
+	.where(({salary, title}, {between, contains}) => `
+		${between(salary, "120000.00", "140000.00")} AND ${contains(title, "junior")}
 	`)
 	.params();
 ```
 Into This:
 ```javascript
 {
-  "IndexName": "idx2",
-  "TableName": "electro",
-  "ExpressionAttributeNames": {
-    "#rent": "rent",
-    "#discount": "discount",
-		"#pk": "idx2pk",
-    "#sk1": "idx2sk"
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  TableName: 'staff',
+  ExpressionAttributeNames: {
+    '#office': 'office',
+    '#team': 'team',
+    '#salary': 'salary',
+    '#title': 'title',
+    '#pk': 'gsi1pk',
+    '#sk1': 'gsi1sk'
   },
-  "ExpressionAttributeValues": {
-    ":rent1": "2000.00",
-    ":rent2": "5000.00",
-    ":discount1": "1000.00",
-    ":pk": "$mallstoredirectory_1#mallid_eastpointe",
-    ":sk1": "$mallstore#leaseenddate_2020-04-01#rent_",
-    ":sk2": "$mallstore#leaseenddate_2020-07-01#rent_"
+  ExpressionAttributeValues: {
+    ':office1': 'Scranton Branch',
+    ':team1': 'marketing',
+    ':salary_w1': '120000.00',
+    ':salary_w2': '140000.00',
+    ':title_w1': 'junior',
+    ':pk': '$taskapp#office_scranton branch',
+    ':sk1': '$workplaces#employees_1#team_marketing#title_'
   },
-  "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
-  "FilterExpression": "(#rent between :rent1 and :rent2) AND #discount <= :discount1"
+  IndexName: 'gsi1pk-gsi1sk-index',
+  FilterExpression: '(#office = :office1 AND#team = :team1) AND (#salary between :salary_w1 and :salary_w2) AND contains(#title, :title_w1)'
 }
 ``` 
 
