@@ -136,7 +136,7 @@ let model = {
 };
 
 describe("Entity", async () => {
-	before(async () => sleep(1000))
+	before(async () => sleep(1000));
 	let MallStores = new Entity(model, { client });
 	describe("Simple crud", async () => {
 		let mall = "EastPointe";
@@ -779,5 +779,229 @@ describe("Entity", async () => {
 				}
 			}
 		}).timeout(10000);
+	});
+	describe("template and facets arrays", async () => {
+		it("Should resolve facet labels at an index level", async () => {
+			const SERVICE = "facettest";
+			const ENTITY = uuidv4();
+			let model = {
+				service: SERVICE,
+				entity: ENTITY,
+				table: "electro",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "storeLocationId",
+					},
+					sector: {
+						type: "string",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mallId",
+					},
+					store: {
+						type: "string",
+						required: true,
+						field: "storeId",
+					},
+					building: {
+						type: "string",
+						required: true,
+						field: "buildingId",
+					},
+					unit: {
+						type: "string",
+						required: true,
+						field: "unitId",
+					},
+					category: {
+						type: [
+							"food/coffee",
+							"food/meal",
+							"clothing",
+							"electronics",
+							"department",
+							"misc",
+						],
+						required: true,
+					},
+					leaseEnd: {
+						type: "string",
+						required: true,
+						validate: (date) => moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
+					},
+					rent: {
+						type: "string",
+						required: false,
+						default: "0.00",
+					},
+					adjustments: {
+						type: "string",
+						required: false,
+					},
+				},
+				indexes: {
+					store: {
+						pk: {
+							field: "pk",
+							facets: ["sector"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"],
+						},
+					},
+					units: {
+						index: "gsi1pk-gsi1sk-index",
+						pk: {
+							field: "gsi1pk",
+							facets: "mallz_:mall",
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: "b_:building#u_:unit#s_:store",
+						},
+					},
+					leases: {
+						index: "gsi2pk-gsi2sk-index",
+						pk: {
+							field: "gsi2pk",
+							facets: "m_:mall",
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: "l_:leaseEnd#s_:store#b_:building#u_:unit",
+						},
+					},
+					categories: {
+						index: "gsi3pk-gsi3sk-index",
+						pk: {
+							field: "gsi3pk",
+							facets: ["mall"],
+						},
+						sk: {
+							field: "gsi3sk",
+							facets: ["category", "building", "unit", "store"],
+						},
+					},
+					shops: {
+						index: "gsi4pk-gsi4sk-index",
+						pk: {
+							field: "gsi4pk",
+							facets: ["store"],
+						},
+						sk: {
+							field: "gsi4sk",
+							facets: ["mall", "building", "unit"],
+						},
+					},
+				},
+				filters: {
+					maxRent({ rent }, max) {
+						return rent.lte(max);
+					},
+				},
+			};
+			let MallStores = new Entity(model, { client });
+			let id = uuidv4();
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let sector = "A1";
+			let category = "food/coffee";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let building = "BuildingZ";
+			let unit = "G1";
+			let getParams = MallStores.get({sector, id}).params();
+			let unitParams = MallStores.query.units({mall, building, unit}).params();
+			let leasesParams = MallStores.query.leases({mall, leaseEnd, store}).params();
+			let shopParams = MallStores.query.shops({mall, building, store}).params();
+			let createParams = MallStores.create({sector, store, mall, rent, category, leaseEnd, unit, building, id}).params();
+			expect(getParams).to.deep.equal({
+				Key: {
+					pk: '$facettest_1#sector_a1',
+					sk: `$${ENTITY}#id_${id}`
+				},
+				TableName: 'electro'
+			});
+			expect(unitParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1#s_' },
+				IndexName: 'gsi1pk-gsi1sk-index'
+			});
+			expect(leasesParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+				ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys#b_' },
+				IndexName: 'gsi2pk-gsi2sk-index'
+			});
+			expect(shopParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi4pk', '#sk1': 'gsi4sk' },
+				ExpressionAttributeValues: {
+					':pk': '$facettest_1#store_lattelarrys',
+					':sk1': `$${ENTITY}#mall_eastpointe#building_buildingz#unit_`
+				},
+				IndexName: 'gsi4pk-gsi4sk-index'
+			});
+			expect(createParams).to.deep.equal({
+				Item: {
+					storeLocationId: id,
+					sector: 'A1',
+					mallId: 'EastPointe',
+					storeId: 'LatteLarrys',
+					buildingId: 'BuildingZ',
+					unitId: 'G1',
+					category: 'food/coffee',
+					leaseEnd: '2020-01-20',
+					rent: '0.00',
+					pk: '$facettest_1#sector_a1',
+					sk: `$${ENTITY}#id_${id}`,
+					gsi1pk: 'mallz_eastpointe',
+					gsi1sk: 'b_buildingz#u_g1#s_lattelarrys',
+					gsi2pk: 'm_eastpointe',
+					gsi2sk: 'l_2020-01-20#s_lattelarrys#b_buildingz#u_g1',
+					gsi3pk: '$facettest_1#mall_eastpointe',
+					gsi3sk: `$${ENTITY}#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys`,
+					gsi4pk: '$facettest_1#store_lattelarrys',
+					gsi4sk: `$${ENTITY}#mall_eastpointe#building_buildingz#unit_g1`,
+					__edb_e__: ENTITY,
+					__edb_v__: '1'
+				},
+				TableName: 'electro',
+				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+			});
+			let createRecord = await MallStores.create({sector, store, mall, rent, category, leaseEnd, unit, building, id}).go();
+			expect(createRecord).to.deep.equal({
+				id,
+				sector: 'A1',
+				mall: 'EastPointe',
+				store: 'LatteLarrys',
+				building: 'BuildingZ',
+				unit: 'G1',
+				category: 'food/coffee',
+				leaseEnd: '2020-01-20',
+				rent: '0.00'
+			});
+			await sleep(1500);
+
+			let unitRecord = await MallStores.query.units({mall, building, unit}).go();
+			let leasesRecord = await MallStores.query.leases({mall, leaseEnd, store}).go();
+			let shopRecord = await MallStores.query.shops({mall, building, store}).go();
+			expect(unitRecord.find(record => record.id === id)).to.not.be.undefined;
+			expect(leasesRecord.find(record => record.id === id)).to.not.be.undefined;
+			expect(shopRecord.find(record => record.id === id)).to.not.be.undefined;
+			// console.log("createRecord", createRecord);
+			// console.log("unitRecord", unitRecord);
+			// console.log("leasesRecord", leasesRecord);
+			// console.log("shopRecord", shopRecord);
+		})
 	})
 });
