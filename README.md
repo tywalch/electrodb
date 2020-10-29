@@ -23,7 +23,7 @@ Turn this:
 Employees.query
 	.coworkers({ office: "Scranton Branch", team: "marketing" })
 	.where(({salary, title}, {between, contains}) => `
-		${between(salary, "120000.00", "140000.00")} AND ${contains(title, "junior")}
+		${between(salary, "120000", "140000")} AND ${contains(title, "junior")}
 	`)
 	.params();
 ```
@@ -43,8 +43,8 @@ Into This:
   ExpressionAttributeValues: {
     ':office1': 'Scranton Branch',
     ':team1': 'marketing',
-    ':salary_w1': '120000.00',
-    ':salary_w2': '140000.00',
+    ':salary_w1': '120000',
+    ':salary_w2': '140000',
     ':title_w1': 'junior',
     ':pk': '$taskapp#office_scranton branch',
     ':sk1': '$workplaces#employees_1#team_marketing#title_'
