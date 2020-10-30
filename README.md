@@ -17,6 +17,7 @@
 - [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
 - [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and effeciently query based on defined sort key structures. 
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily iterate through multiquery result sets.
+- [**Use With Your Existing Solution**](#facet-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Facet Templates to leverage your existing key structures.
 - **Generate Type Defintions** - _Coming Soon_: The ability to generate TypeScript `.d.ts` based on your model.
 
 Turn this:
