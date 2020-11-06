@@ -7,6 +7,7 @@ const uuidV4 = require("uuid").v4;
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({
 	region: "us-east-1",
+	endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 
 

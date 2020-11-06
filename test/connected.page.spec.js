@@ -2,7 +2,10 @@ const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const AWS = require("aws-sdk");
 const { expect } = require("chai");
-AWS.config.update({ region: "us-east-1"});
+AWS.config.update({
+  region: "us-east-1",
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
+});
 const client = new AWS.DynamoDB.DocumentClient();
 const uuid = require("uuid").v4;
 const {Entity} = require("../src/entity");

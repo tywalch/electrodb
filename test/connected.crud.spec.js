@@ -8,6 +8,7 @@ const moment = require("moment");
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({
 	region: "us-east-1",
+	endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 const SERVICE = "BugBeater";
 const ENTITY = "TEST_ENTITY";
@@ -355,7 +356,10 @@ describe("Entity", async () => {
 
 			expect(electroSuccess).to.be.false;
 			expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
-			expect(electroErr.message).to.be.equal("Requested resource not found - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error")
+			expect([
+				"Requested resource not found - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error",
+				"Cannot do operations on a non-existent table - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error"
+			].includes(electroErr.message)).to.be.true;
 			expect(originalSuccess).to.be.false;
 			expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
 		});
