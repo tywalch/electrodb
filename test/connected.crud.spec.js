@@ -1002,10 +1002,6 @@ describe("Entity", async () => {
 			expect(unitRecord.find(record => record.id === id)).to.not.be.undefined;
 			expect(leasesRecord.find(record => record.id === id)).to.not.be.undefined;
 			expect(shopRecord.find(record => record.id === id)).to.not.be.undefined;
-			// console.log("createRecord", createRecord);
-			// console.log("unitRecord", unitRecord);
-			// console.log("leasesRecord", leasesRecord);
-			// console.log("shopRecord", shopRecord);
 		})
 	})
 });

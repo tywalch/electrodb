@@ -125,6 +125,9 @@ const Modelv1= {
 				}
 			}
 		},
+		table: {
+			type: "string",
+		},
 		attributes: {
 			type: "object",
 			patternProperties: {
@@ -140,6 +143,7 @@ const Modelv1= {
 		},
 		filters: { $ref: "/Filters" },
 	},
+	required: ["model", "attributes"]
 };
 
 const ModelBeta = {
@@ -175,6 +179,7 @@ const ModelBeta = {
 		},
 		filters: { $ref: "/Filters" },
 	},
+	required: ["attributes", "indexes"]
 };
 
 const Filters = {

@@ -272,11 +272,6 @@ database.join(modelThree);
 
 describe("Service Connected", async () => {
 	before(async () => sleep(1000));
-	// it("Should have correct filter expression", async () => {
-	// 	let prop3 = "prop3";
-	// 	let collectionB = await database.collections.collectionB({ prop3 }).go();
-	// 	console.log(collectionB);
-	// });
 	it("Should add three records and retrieve correct records based on collections", async () => {
 		let recordOne = {
 			prop1: "prop1",

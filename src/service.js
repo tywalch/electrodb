@@ -47,7 +47,6 @@ class Service {
 		/** start beta/v1 condition **/
 		let modelVersion = getModelVersion(instance);
 		/** end beta/v1 condition **/
-
 		switch(type) {
 			case ElectroInstanceTypes.model:
 				entity = new Entity(instance, options);

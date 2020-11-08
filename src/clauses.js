@@ -1,6 +1,17 @@
 const { QueryTypes, MethodTypes } = require("./types");
 const e = require("./errors");
 
+function batchAction(action, type, entity, state, payload) {
+	state.query.method = type;
+
+	for (let facets of payload) {
+		let batchState = action(entity, state.batch.create(), facets);
+		state.batch.push(batchState);
+	}
+
+	return state;
+}
+
 let clauses = {
 	index: {
 		name: "index",
@@ -9,8 +20,7 @@ let clauses = {
 		// 	// todo: look for article/list of all dynamodb query limitations
 		// 	// return state;
 		// },
-		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch"],
-
+		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch", "batchPut", "batchDelete"],
 	},
 	collection: {
 		name: "collection",
@@ -52,6 +62,11 @@ let clauses = {
 			}
 			return state;
 		},
+		children: ["params", "go"],
+	},
+	batchDelete: {
+		name: "batchDelete",
+		action: (entity, state, payload) => batchAction(clauses.delete.action, MethodTypes.batchWrite, entity, state, payload),
 		children: ["params", "go"],
 	},
 	delete: {
@@ -97,6 +112,11 @@ let clauses = {
 			state.query.put.data = Object.assign({}, record);
 			return state;
 		},
+		children: ["params", "go"],
+	},
+	batchPut: {
+		name: "batchPut",
+		action: (entity, state, payload) => batchAction(clauses.put.action, MethodTypes.batchWrite, entity, state, payload),
 		children: ["params", "go"],
 	},
 	create: {
@@ -319,9 +339,11 @@ let clauses = {
 		name: "params",
 		action(entity, state, options = {}) {
 			if (state.query.method === MethodTypes.query) {
-				return entity._queryParams(state.query, options);
+				return entity._queryParams(state, options);
+			} else if(state.query.method === MethodTypes.batchWrite) {
+				return entity._batchWriteParams(state, options);
 			} else {
-				return entity._params(state.query, options);
+				return entity._params(state, options);
 			}
 		},
 		children: [],
@@ -332,12 +354,7 @@ let clauses = {
 			if (entity.client === undefined) {
 				throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 			}
-			let params = {};
-			if (state.query.method === MethodTypes.query) {
-				params = entity._queryParams(state.query, options);
-			} else {
-				params = entity._params(state.query, options);
-			}
+			let params = clauses.params.action(entity, state, options);
 			return entity.go(state.query.method, params, options)
 		},
 		children: [],
@@ -350,18 +367,51 @@ let clauses = {
 			if (entity.client === undefined) {
 				throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 			}
-			let params = {};
-			if (state.query.method === MethodTypes.query) {
-				params = entity._queryParams(state.query, options);
-			} else {
-				params = entity._params(state.query, options);
-			}
+			let params = clauses.params.action(entity, state, options);
 			return entity.go(state.query.method, params, options);
 		},
 		children: []
 	},
 };
 
+function initChainState(index, facets = {}, hasSortKey, options) {
+	return {
+		query: {
+			index: index,
+			type: "",
+			method: "",
+			facets: { ...facets },
+			update: {
+				set: {},
+				append: {},
+				remove: {},
+				add: {},
+				subtract: {}
+			},
+			put: {
+				data: {},
+			},
+			keys: {
+				pk: {},
+				sk: [],
+			},
+			filter: {},
+			options,
+		},
+		batch: {
+			items: [],
+			create() {
+				return initChainState(index, facets, hasSortKey, options);
+			},
+			push(state) {
+				this.items.push(state);
+			}
+		},
+		hasSortKey: hasSortKey,
+	};
+}
+
 module.exports = {
 	clauses,
+	initChainState
 };

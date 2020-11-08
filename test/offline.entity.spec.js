@@ -2579,10 +2579,109 @@ describe("Entity", () => {
 				}
 				let params = entity.put({id, mall, store, building, unit}).params();
 				expect(params).to.deep.equal(test.output);
-			})
+			});
 		}
-
+		it("Should not allow setIdentifier to be used on identifiers that dont exist", () => {
+			let entity = new Entity(schema, {table: "test"});
+			expect(() => entity.setIdentifier("doesnt_exist")).to.throw("Invalid identifier type: doesnt_exist. Valid indentifiers include entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier");
+		});
 	});
+	describe("Misconfiguration", () => {
+		it("Should check for duplicate indexes", () => {
+			let schema = {
+				model: {
+					entity: "MyEntity",
+					service: "MyService",
+					version: "1"
+				},
+				table: "MyTable",
+				attributes: {
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string"
+					},
+					prop3: {
+						type: "string"
+					}
+				},
+				indexes: {
+					index1: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2", "prop3"],
+						},
+					},
+					index2: {
+						pk: {
+							field: "pk",
+							facets: ["prop3"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2", "prop1"],
+						},
+					}
+				}
+			};
+			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model: index2 (PRIMARY INDEX) - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
+		})
+		it("Should check for index and collection name overlap", () => {
+			let schema = {
+				model: {
+					entity: "MyEntity",
+					service: "MyService",
+					version: "1"
+				},
+				table: "MyTable",
+				attributes: {
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string"
+					},
+					prop3: {
+						type: "string"
+					}
+				},
+				indexes: {
+					index1: {
+						collection: "collectionA",
+						pk: {
+							field: "pk",
+							facets: ["prop1"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2", "prop3"],
+						},
+					},
+					index2: {
+						index: "gsi1",
+						collection: "collectionA",
+						pk: {
+							field: "pk",
+							facets: ["prop3"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2", "prop1"],
+						},
+					}
+				}
+			};
+			expect(() => new Entity(schema)).to.throw(`Duplicate collection, "collectionA" is defined across multiple indexes "index1" and "index2". Collections must be unique names across indexes for an Entity. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-collections`)
+		})
+		it("should require a valid schema", () => {
+			expect(() => new Entity()).to.throw(`instance requires property "model", instance requires property "attributes", instance.model is required - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model`);
+		})
+	})
 	describe("v1 and beta models", () => {
 			let id = "123-456-789";
 			let mall = "EastPointe";

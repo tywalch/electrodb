@@ -1,4 +1,5 @@
 const { Service } = require("../src/service");
+const { Entity } = require("../src/entity");
 const { expect } = require("chai");
 
 let modelOne = {
@@ -258,6 +259,131 @@ database.join(modelTwo);
 database.join(modelThree);
 
 describe("Service Offline", async () => {
+	it("Should not allow a service to be created without a name", () => {
+		expect(() => new Service()).to.throw(`Invalid service name: "". Service name must have length greater than zero - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
+	});
+	it("Should not allow a join to be performed on an object other than an Entity or Model", () => {
+		let service = new Service("MyService");
+		expect(() => service.join({model: {entity: "beep-boop"}})).to.throw(`Invalid instance: Valid instances to join include Models and Entity instances. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
+	});
+	it("Should not allow a join to be performed on an empty object", () => {
+		let service = new Service("MyService");
+		expect(() => service.join({})).to.throw(`Invalid instance: Valid instances to join include Models and Entity instances. Additionally, all models must be in the same format (v1 vs beta). Review https://github.com/tywalch/electrodb#version-v1-migration for more detail. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
+	});
+	it("Should allow joining already initiated entities", () => {
+		let schema = {
+			model: {
+				entity: "MyEntity",
+				service: "MyService",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string",
+					field: "abc"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let service = new Service("MyService", {table: "MyTable"});
+		let entity = new Entity(schema, {table: "MyTable"});
+		// service.join(entity);
+		expect(() => service.join(entity)).to.not.throw();
+		expect(service.entities).to.have.property("MyEntity");
+	});
+	it("Should not allow joining a model with a different service name", () => {
+		let schema = {
+			model: {
+				entity: "MyEntity",
+				service: "MyOtherService",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string",
+					field: "abc"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let service = new Service("MyService", {table: "MyTable"});
+		let entity = new Entity(schema, {table: "MyTable"});
+		expect(() => service.join(entity)).to.throw("Service name defined on joined instance, MyOtherService, does not match the name of this Service: MyService. Verify or update the service name on the Entity/Model to match the name defined on this service.");
+	});
+	it("Should allow joining a v1 style model", () => {
+		let schema = {
+			model: {
+				entity: "MyEntity",
+				service: "MyService",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string",
+					field: "abc"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let service = new Service("MyService", {table: "MyTable"});
+		// service.join(entity);
+		expect(() => service.join(schema)).to.not.throw();
+		expect(service.entities).to.have.property("MyEntity");
+	});
 	it("Should require all PK values", () => {
 		let entityOne = {
 			entity: "entityOne",
@@ -545,6 +671,95 @@ describe("Service Offline", async () => {
 
 
 describe("Misconfiguration exceptions", () => {
+	it("Should should not allow joined entities to have the same collection name across different indexes", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				},
+				index2: {
+					index: "gis1",
+					pk: {
+						field: "pk",
+						facets: ["prop3"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop1"],
+					},
+				}
+			},
+		};
+		let entityTwo = {
+			entity: "entityTwo",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop3: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop4", "prop5"],
+					},
+				},
+				index2: {
+					index: "gis1",
+					collection: "collectionA",
+					pk: {
+						field: "pk",
+						facets: ["prop3"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop4", "prop5"],
+					},
+				}
+			}
+		};
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+		database.join(entityOne);
+		expect(() => database.join(entityTwo)).to.throw(`Invalid entity index definitions. The following index definitions have already been defined on this model but with incompatible or conflicting properties: Index provided "gis1" does not match established index: [Main Table Index], Partition Key Facets provided "prop3" do not match established facets "prop1" - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		// expect(() => database.join(entityTwo)).to.throw("You cant do that");
+	});
 	it("Should require collections to be set on the same index", () => {
 		let entityOne = {
 			entity: "entityOne",
@@ -809,7 +1024,7 @@ describe("Misconfiguration exceptions", () => {
 			table: "electro",
 			service: "electrotest",
 		});
-		database.join(entityOne);
+		database.join(entityOne);		
 		expect(() => database.join(entityTwo)).to.throw(`Partition Key Field provided "pkz" for index "" does not match established field "pk"`);
 	});
 	it("Should validate the attributes with matching names have matching fields on all added schemas", () => {

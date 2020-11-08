@@ -1,31 +1,30 @@
 const v = require("./validations");
-const types = require("./types");
+const t = require("./types");
 
 function getInstanceType(instance = {}) {
-  let [isModel] = v.testModel(instance);
-
+  let [isModel, errors] = v.testModel(instance);
   if (!instance || Object.keys(instance).length === 0) {
     return "";
   } else if (isModel) {
-    return types.ElectroInstanceTypes.model;
-  } else if (instance._instance === types.ElectroInstance.entity) {
-    return types.ElectroInstanceTypes.entity
-  } else if (instance._instance === types.ElectroInstance.service) {
-    return types.ElectroInstanceTypes.service
-  } else if (instance._instance === types.ElectroInstance.electro) {
-    return types.ElectroInstanceTypes.electro
+    return t.ElectroInstanceTypes.model;
+  } else if (instance._instance === t.ElectroInstance.entity) {
+    return t.ElectroInstanceTypes.entity;
+  } else if (instance._instance === t.ElectroInstance.service) {
+    return t.ElectroInstanceTypes.service;
+  } else if (instance._instance === t.ElectroInstance.electro) {
+    return t.ElectroInstanceTypes.electro;
   } else {
-    return ""
+    return "";
   }
 }
 
 function getModelVersion(model = {}) {
-  let nameOnRoot = model && typeof model.entity === "string" && model.entity.length > 0;
-  let nameInModelNamespace = model && model.model && typeof model.model.entity === "string" && model.model.entity.length > 0;
+  let nameOnRoot = model && v.isStringHasLength(model.entity);
+  let nameInModelNamespace = model && model.model && v.isStringHasLength(model.model.entity);
   if (nameInModelNamespace) {
-    return types.ModelVersions.v1
+    return t.ModelVersions.v1
   } else if (nameOnRoot) {
-    return types.ModelVersions.beta;
+    return t.ModelVersions.beta;
   } else {
     return "";
   }
@@ -33,7 +32,7 @@ function getModelVersion(model = {}) {
 
 function applyBetaModelOverrides(model = {}, {service = "", version = "", table = ""} = {}) {
   let type = getModelVersion(model);
-  if (type !== types.ModelVersions.beta) {
+  if (type !== t.ModelVersions.beta) {
     throw new Error("Invalid model");
   }
   let copy = JSON.parse(JSON.stringify(model));
