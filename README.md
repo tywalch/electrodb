@@ -1241,7 +1241,7 @@ await StoreLocations.delete({
 ### Batch Write Delete Records
 Provide all facets in an array of objects to the `delete` method to batch delete records.
 
-> Note: Performing a Batch Put will return an array of "unProcessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
+> Note: Performing a Batch Delete will return an array of "unProcessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
 
 ```javascript
 await StoreLocations.delete([
