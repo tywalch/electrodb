@@ -96,9 +96,11 @@ Into This:
     + [Using facets to make hierarchical keys](#using-facets-to-make-hierarchical-keys)
       - [Shopping Mall Stores](#shopping-mall-stores)
   * [Query Chains](#query-chains)
-    + [Get Method](#get-method)
-    + [Delete Method](#delete-method)
+    + [Get Record](#get-method)
+    + [Delete Record](#delete-method)
+		+ [Batch Write - Delete Records](#batch-write-delete-records)
     + [Put Record](#put-record)
+		+ [Batch Write - Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
     + [Scan Records](#scan-records)
     + [Patch Records](#patch-records)
@@ -1206,6 +1208,7 @@ await StoreLocations.get({
 	unitId: "B47"
 }).go();
 
+// Equivalent Params:
 // {
 //   Key: {
 //     pk: '$mallstoredirectory_1#storeid_lattelarrys',
@@ -1225,12 +1228,65 @@ await StoreLocations.delete({
 	unitId: "B47"
 }).go();
 
+// Equivalent Params:
 // {
 //   Key: {
 //     pk: '$mallstoredirectory_1#storeid_lattelarrys',
 //     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
 //   },
 //   TableName: 'StoreDirectory'
+// }
+```
+
+### Batch Write Delete Records
+Provide all facets in an array of objects to the `delete` method to batch delete records.
+
+> Note: Performing a Batch Put will return an array of "unProcessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
+
+```javascript
+await StoreLocations.delete([
+  {
+    id: "abc",
+    sector: "A1",
+  }, {
+    id: "def",
+    sector: "A1",
+  }, {
+    id: "hij",
+    sector: "A1",
+  }
+]).go();
+
+// Equivalent Params:
+// {
+// 	"RequestItems":{
+// 			"electro":[
+// 				{
+// 						"DeleteRequest":{
+// 							"Key":{
+// 									"pk":"$bugbeater#sector_a1",
+// 									"sk":"$test_entity_1#id_abc"
+// 							}
+// 						}
+// 				},
+// 				{
+// 						"DeleteRequest":{
+// 							"Key":{
+// 									"pk":"$bugbeater#sector_a1",
+// 									"sk":"$test_entity_1#id_def"
+// 							}
+// 						}
+// 				},
+// 				{
+// 						"DeleteRequest":{
+// 							"Key":{
+// 									"pk":"$bugbeater#sector_a1",
+// 									"sk":"$test_entity_1#id_hij"
+// 							}
+// 						}
+// 				}
+// 			]
+// 	}
 // }
 ```
 
@@ -1249,6 +1305,7 @@ let store = {
 
 await StoreLocations.put(store).go();
 
+// Equivalent Params:
 // {
 //   Item: {
 //     mallId: 'EastPointe',
@@ -1270,6 +1327,138 @@ await StoreLocations.put(store).go();
 // }
 ```
 
+### Batch Write Put Records
+Provide all *required* Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
+
+> Note: Performing a Batch Put will return an array of "unProcessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
+
+```javascript
+let stores = [
+  {
+    id: "abc",
+    mall: "WashingtonSquare",
+    store: "LatteLarrys",
+    sector: "A1",
+    category: "food/coffee",
+    leaseEnd: "2020-01-20",
+    rent: "0.00",
+    building: "BuildingZ",
+    unit: "G1",
+  }, {
+    id: "def",
+    mall: "WashingtonSquare",
+    store: "LatteLarrys",
+    sector: "A1",
+    category: "food/coffee",
+    leaseEnd: "2020-01-20",
+    rent: "0.00",
+    building: "BuildingZ",
+    unit: "G1",
+  }, {
+    id: "hij",
+    mall: "WashingtonSquare",
+    store: "LatteLarrys",
+    sector: "A1",
+    category: "food/coffee",
+    leaseEnd: "2020-01-20",
+    rent: "0.00",
+    building: "BuildingZ",
+    unit: "G1",
+  }
+];
+
+await StoreLocations.put(stores).go();
+
+// Equivalent Params:
+// {
+// 	"RequestItems":{
+// 			"electro":[
+// 				{
+// 						"PutRequest":{
+// 							"Item":{
+// 									"storeLocationId":"abc",
+// 									"sector":"A1",
+// 									"mallId":"WashingtonSquare",
+// 									"storeId":"LatteLarrys",
+// 									"buildingId":"BuildingZ",
+// 									"unitId":"G1",
+// 									"category":"food/coffee",
+// 									"leaseEnd":"2020-01-20",
+// 									"rent":"0.00",
+// 									"pk":"$bugbeater#sector_a1",
+// 									"sk":"$test_entity_1#id_abc",
+// 									"gsi1pk":"mall_washingtonsquare",
+// 									"gsi1sk":"b_buildingz#u_g1#s_lattelarrys",
+// 									"gsi2pk":"m_washingtonsquare",
+// 									"gsi2sk":"l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+// 									"gsi3pk":"$bugbeater#mall_washingtonsquare",
+// 									"gsi3sk":"$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+// 									"gsi4pk":"$bugbeater#store_lattelarrys",
+// 									"gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+// 									"__edb_e__":"TEST_ENTITY",
+// 									"__edb_v__":"1"
+// 							}
+// 						}
+// 				},
+// 				{
+// 						"PutRequest":{
+// 							"Item":{
+// 									"storeLocationId":"def",
+// 									"sector":"A1",
+// 									"mallId":"WashingtonSquare",
+// 									"storeId":"LatteLarrys",
+// 									"buildingId":"BuildingZ",
+// 									"unitId":"G1",
+// 									"category":"food/coffee",
+// 									"leaseEnd":"2020-01-20",
+// 									"rent":"0.00",
+// 									"pk":"$bugbeater#sector_a1",
+// 									"sk":"$test_entity_1#id_def",
+// 									"gsi1pk":"mall_washingtonsquare",
+// 									"gsi1sk":"b_buildingz#u_g1#s_lattelarrys",
+// 									"gsi2pk":"m_washingtonsquare",
+// 									"gsi2sk":"l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+// 									"gsi3pk":"$bugbeater#mall_washingtonsquare",
+// 									"gsi3sk":"$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+// 									"gsi4pk":"$bugbeater#store_lattelarrys",
+// 									"gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+// 									"__edb_e__":"TEST_ENTITY",
+// 									"__edb_v__":"1"
+// 							}
+// 						}
+// 				},
+// 				{
+// 						"PutRequest":{
+// 							"Item":{
+// 									"storeLocationId":"hij",
+// 									"sector":"A1",
+// 									"mallId":"WashingtonSquare",
+// 									"storeId":"LatteLarrys",
+// 									"buildingId":"BuildingZ",
+// 									"unitId":"G1",
+// 									"category":"food/coffee",
+// 									"leaseEnd":"2020-01-20",
+// 									"rent":"0.00",
+// 									"pk":"$bugbeater#sector_a1",
+// 									"sk":"$test_entity_1#id_hij",
+// 									"gsi1pk":"mall_washingtonsquare",
+// 									"gsi1sk":"b_buildingz#u_g1#s_lattelarrys",
+// 									"gsi2pk":"m_washingtonsquare",
+// 									"gsi2sk":"l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+// 									"gsi3pk":"$bugbeater#mall_washingtonsquare",
+// 									"gsi3sk":"$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+// 									"gsi4pk":"$bugbeater#store_lattelarrys",
+// 									"gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+// 									"__edb_e__":"TEST_ENTITY",
+// 									"__edb_v__":"1"
+// 							}
+// 						}
+// 				}
+// 			]
+// 	}
+// }
+```
+
 ### Update Record
 To update a record, pass all facets to the update method and then pass `set` attributes that need to be updated. 
 
@@ -1287,6 +1476,7 @@ await StoreLocations
 	.set({category})
 	.go();
 
+// Equivalent Params:
 // {
 //   UpdateExpression: 'SET #category = :category',
 //   ExpressionAttributeNames: { '#category': 'category' },
@@ -1313,6 +1503,7 @@ await StoreLocations.scan
 	`)
 	.go();
 
+// Equivalent Params:
 // {
 //   TableName: 'StoreDirectory',
 //   ExpressionAttributeNames: {
@@ -1349,6 +1540,7 @@ await StoreLocations
 	.set({category})
   .go()
 
+// Equivalent Params:
 // {
 //   UpdateExpression: 'SET #category = :category',
 //   ExpressionAttributeNames: { '#category': 'category' },
@@ -1379,6 +1571,7 @@ let store = {
 
 await StoreLocations.create(store).go();
 
+// Equivalent Params:
 // {
 //   Item: {
 //     mallId: 'EastPointe',
@@ -1413,6 +1606,7 @@ let match = await StoreLocations.find({
   rent: "1500.00"
 }).go()
 
+// Equivalent Params:
 // {
 //   KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 //   TableName: 'StoreDirectory',

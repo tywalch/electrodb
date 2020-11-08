@@ -6,7 +6,9 @@
   "scripts": {
     "test": "mocha ./test/offline**.spec.js",
     "test-all": "mocha ./test/**.spec.js",
-    "coverage": "nyc npm run test-all && nyc report --reporter=text-lcov | coveralls"
+    "test-all-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha ./test/**.spec.js",
+    "coverage": "nyc npm run test-all && nyc report --reporter=text-lcov | coveralls",
+    "coverage-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 nyc npm run test-all && nyc report --reporter=html"
   },
   "repository": {
     "type": "git",

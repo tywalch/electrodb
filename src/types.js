@@ -3,6 +3,11 @@ const KeyTypes = {
 	sk: "sk",
 };
 
+const BatchWriteTypes = {
+	batch: "batch",
+	concurrent: "concurrent"
+}
+
 const QueryTypes = {
 	and: "and",
 	gte: "gte",
@@ -24,7 +29,8 @@ const MethodTypes = {
 	delete: "delete",
 	scan: "scan",
 	patch: "patch",
-	create: "create"
+	create: "create",
+	batchWrite: "batchWrite"
 };
 
 const Comparisons = {

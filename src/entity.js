@@ -3,7 +3,7 @@ const { Schema } = require("./schema");
 const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
-const { clauses } = require("./clauses");
+const { clauses, initChainState } = require("./clauses");
 const validations = require("./validations");
 const utilities = require("./util");
 const e = require("./errors");
@@ -38,12 +38,9 @@ class Entity {
 
 	setIdentifier(type = "", identifier = "") {
 		if (!this.identifiers[type]) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: ${type}. Valid indentifiers include ${Object.keys(this.identifiers[type]).join(", ")}`);
-		}
-		if (typeof identifier === "string" && identifier.length > 0) {
-			this.identifiers[type] = identifier;
+			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: ${type}. Valid indentifiers include ${Object.keys(this.identifiers).join(", ")}`);
 		} else {
-			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid Identifier. Value must be string with length greater than zero.`);
+			this.identifiers[type] = identifier;
 		}
 	}
 
@@ -107,12 +104,20 @@ class Entity {
 
 	delete(facets = {}) {
 		let index = "";
-		return this._makeChain(index, this._clausesWithFilters, clauses.index).delete(facets);
+		if (Array.isArray(facets)) {
+			return this._makeChain(index, this._clausesWithFilters, clauses.index).batchDelete(facets);
+		} else {
+			return this._makeChain(index, this._clausesWithFilters, clauses.index).delete(facets);
+		}
 	}
 
 	put(attributes = {}) {
 		let index = "";
-		return this._makeChain(index, this._clausesWithFilters, clauses.index).put(attributes);
+		if (Array.isArray(attributes)) {
+			return this._makeChain(index, this._clausesWithFilters, clauses.index).batchPut(attributes);
+		} else {
+			return this._makeChain(index, this._clausesWithFilters, clauses.index).put(attributes);
+		}
 	}
 
 	create(attributes = {}) {
@@ -159,31 +164,7 @@ class Entity {
 	/* istanbul ignore next */
 	_makeChain(index = "", clauses, rootClause, options = {}) {
 		let facets = this.model.facets.byIndex[index];
-		let state = {
-			query: {
-				index: index,
-				type: "",
-				method: "",
-				facets: { ...facets },
-				update: {
-					set: {},
-					append: {},
-					remove: {},
-					add: {},
-					subtract: {}
-				},
-				put: {
-					data: {},
-				},
-				keys: {
-					pk: {},
-					sk: [],
-				},
-				filter: {},
-				options,
-			},
-			hasSortKey: this.model.lookup.indexHasSortKeys[index],
-		};
+		let state = initChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
 		return this._chain(state, clauses, rootClause);
 	}
 
@@ -200,6 +181,27 @@ class Entity {
 			}
 		}
 		return data;
+	}
+
+	formatBulkResponse(index, response = {}, config = {}) {
+		if (!response || !response.UnprocessedItems) {
+			return response;
+		}
+		let unProcessed = response.UnprocessedItems[this.model.table];
+		if (Array.isArray(unProcessed) && unProcessed.length) {
+			return unProcessed.map(request => {
+				if (request.PutRequest) {
+					return this.formatResponse(index, request.PutRequest, config);
+				} else if (request.DeleteRequest) {
+					return this._formatReturnPager(index, request.DeleteRequest.Key);
+				} else {
+					throw new Error("Unknown response format");
+				}
+			})
+		} else {
+			return []
+		}
+		
 	}
 
 	formatResponse(index, response, config = {}) {
@@ -263,7 +265,7 @@ class Entity {
 		if (typeof key !== "string" || key.length === 0) {
 			return null;
 		}
-		// let index = "";
+		
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
 		let {prefix, isCustom} = this.model.prefixes[index][keyType];
 		let {facets} = this.model.indexes[accessPattern][keyType];
@@ -411,11 +413,14 @@ class Entity {
 				err.__isAWSError = true;
 				throw err;
 			});
-			if (method === "put" || method === "create") {
-				// a VERY hacky way to deal with PUTs
-				return this.formatResponse(parameters.IndexName, parameters, config);
-			} else {
-				return this.formatResponse(parameters.IndexName, response, config);
+			switch (method) {
+				case MethodTypes.put:
+				case MethodTypes.create:
+					return this.formatResponse(parameters.IndexName, parameters, config);
+				case MethodTypes.batchWrite:
+					return this.formatBulkResponse(parameters.IndexName, response, config);
+				default:
+					return this.formatResponse(parameters.IndexName, response, config);
 			}
 		} catch (err) {
 			if (config.originalErr) {
@@ -469,7 +474,8 @@ class Entity {
 		return params;
 	}
 	/* istanbul ignore next */
-	_params({ keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} }, config = {}) {
+	_params(state, config = {}) {
+		let { keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} } = state.query;
 		let conlidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
@@ -498,6 +504,32 @@ class Entity {
 		}
 		params = this._applyParameterOptions(params, options, config);
 		return this._applyParameterExpressionTypes(params, filter);
+	}
+
+	_batchWriteParams(state, config = {}) {
+		let batch = [];
+		for (let itemState of state.batch.items) {
+			let method = itemState.query.method;
+			let params = this._params(itemState, config);
+			switch (method) {
+				case MethodTypes.put:
+					let {Item} = params;
+					batch.push({PutRequest: {Item}});
+					break;
+				case MethodTypes.delete:
+					let {Key} = params;
+					batch.push({DeleteRequest: {Key}});
+					break;
+				/* istanbul ignore next */
+				default:
+					throw new Error("Invalid method type");
+			}
+		}
+		return {
+			RequestItems: {
+				[this.model.table]: batch
+			}
+		}
 	}
 
 	_makeParameterKey(index, pk, sk) {
@@ -531,12 +563,7 @@ class Entity {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		// let facets = this.model.facets.byIndex[indexBase];
 		let {pk, sk} = this._makeIndexKeys(indexBase);
-		let keys = this._makeParameterKey(
-			indexBase,
-			pk,
-			...sk
-		);
-
+		let keys = this._makeParameterKey(indexBase, pk, ...sk);
 		let keyExpressions = this._expressionAttributeBuilder(keys);
 		let params = {
 			TableName: this.model.table,
@@ -577,10 +604,12 @@ class Entity {
 		let setAttributes = this.model.schema.applyAttributeSetters(set);
 		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
 		let transatedFields = this.model.schema.translateToFields(setAttributes);
+
 		let item = {
 			...transatedFields,
 			...updatedKeys,
 		};
+
 		let {
 			UpdateExpression,
 			ExpressionAttributeNames,
@@ -601,6 +630,7 @@ class Entity {
 		let setAttributes = this.model.schema.applyAttributeSetters(data);
 		let { updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
 		let transatedFields = this.model.schema.translateToFields(setAttributes);
+
 		return {
 			Item: {
 				...transatedFields,
@@ -704,39 +734,39 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_queryParams(chainState = {}, options = {}) {
+	_queryParams(state = {}, options = {}) {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
-			chainState.keys.sk,
+			state.query.keys.sk,
 		);
 		let { pk, sk } = this._makeIndexKeys(
-			chainState.index,
-			chainState.keys.pk,
+			state.query.index,
+			state.query.keys.pk,
 			...conlidatedQueryFacets,
 		);
 		let parameters = {};
-		switch (chainState.type) {
+		switch (state.query.type) {
 			case QueryTypes.begins:
 				parameters = this._makeBeginsWithQueryParams(
-					chainState.options,
-					chainState.index,
-					chainState.filter,
+					state.query.options,
+					state.query.index,
+					state.query.filter,
 					pk,
 					...sk,
 				);
 				break;
 			case QueryTypes.collection:
 				parameters = this._makeBeginsWithQueryParams(
-					chainState.options,
-					chainState.index,
-					chainState.filter,
+					state.query.options,
+					state.query.index,
+					state.query.filter,
 					pk,
-					this._getCollectionSk(chainState.collection),
+					this._getCollectionSk(state.query.collection),
 				);
 				break;
 			case QueryTypes.between:
 				parameters = this._makeBetweenQueryParams(
-					chainState.index,
-					chainState.filter,
+					state.query.index,
+					state.query.filter,
 					pk,
 					...sk,
 				);
@@ -746,9 +776,9 @@ class Entity {
 			case QueryTypes.lte:
 			case QueryTypes.lt:
 				parameters = this._makeComparisonQueryParams(
-					chainState.index,
-					chainState.type,
-					chainState.filter,
+					state.query.index,
+					state.query.type,
+					state.query.filter,
 					pk,
 					...sk,
 				);
@@ -861,10 +891,7 @@ class Entity {
 			attributes,
 			facets,
 		);
-		let incompleteAccessPatterns = incomplete.map(
-			({ index }) =>
-				this.model.translations.indexes.fromIndexToAccessPattern[index],
-		);
+		let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index]);
 		if (isIncomplete) {
 			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets,
 				`Incomplete facets: Without the facets '${incomplete
@@ -893,14 +920,13 @@ class Entity {
 			{ ...set },
 			{ ...keyAttributes },
 		);
+
 		// complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
 		if (!completeFacets.indexes.includes(updateIndex)) {
 			completeFacets.indexes.push(updateIndex);
 		}
-		let composedKeys = this._makeKeysFromAttributes(completeFacets.indexes, {
-			...keyAttributes,
-			...set,
-		});
+
+		let composedKeys = this._makeKeysFromAttributes(completeFacets.indexes, { ...keyAttributes, ...set });
 		let updatedKeys = {};
 		let indexKey = {};
 		for (let [index, keys] of Object.entries(composedKeys)) {
@@ -916,6 +942,7 @@ class Entity {
 				updatedKeys[sk] = keys.sk[0];
 			}
 		}
+
 		return { indexKey, updatedKeys };
 	}
 
@@ -935,6 +962,7 @@ class Entity {
 				});
 			}
 		}
+
 		let incomplete = Object.entries(this.model.facets.byIndex)
 			.map(([index, { pk, sk }]) => {
 				let impacted = impactedIndexes[index];
@@ -972,11 +1000,9 @@ class Entity {
 			})
 			.filter(({ missing }) => missing.length)
 			.reduce((result, { missing }) => [...result, ...missing], []);
+
 		let isIncomplete = !!incomplete.length;
-		let complete = {
-			facets,
-			indexes: completedIndexes,
-		};
+		let complete = {facets, indexes: completedIndexes};
 		return [isIncomplete, { incomplete, complete }];
 	}
 
@@ -1011,10 +1037,7 @@ class Entity {
 
 	/* istanbul ignore next */
 	_expectFacets(obj = {}, properties = [], type = "key facets") {
-		let [incompletePk, missing, matching] = this._expectProperties(
-			obj,
-			properties,
-		);
+		let [incompletePk, missing, matching] = this._expectProperties(obj, properties);
 		if (incompletePk) {
 			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets, `Incomplete or invalid ${type} supplied. Missing properties: ${missing.join(", ")}`);
 		} else {
@@ -1240,8 +1263,7 @@ class Entity {
 			} else if (i === 0) {
 				break;
 			} else {
-				match =
-					(candidates[0] !== undefined && facets[i][candidates[0]].index) || "";
+				match = (candidates[0] !== undefined && facets[i][candidates[0]].index) || "";
 				break;
 			}
 		}

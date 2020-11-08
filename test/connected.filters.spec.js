@@ -7,11 +7,11 @@ const uuidV4 = require("uuid").v4;
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({
 	region: "us-east-1",
+	endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 
-
 describe("General", async () => {
-	before(async () => sleep(1000))
+	before(async () => sleep(1000));
 	let FilterTests = new Entity({
 		service: "tests",
 		entity: "filters",
@@ -30,7 +30,7 @@ describe("General", async () => {
 			},
 			animal: {
 				type: "string",
-				required: true		
+				required: true
 			},
 			dangerous: {
 				type: "boolean"
@@ -75,7 +75,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.eq("Cow"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(1)
@@ -85,7 +85,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.gt("Dog"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(4);
@@ -100,7 +100,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.lt("Pig"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(4);
@@ -115,7 +115,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.gte("Dog"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
@@ -131,7 +131,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.lte("Pig"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
@@ -147,7 +147,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.between("Dog", "Rooster"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(3);
@@ -161,7 +161,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.begins("Sh"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(2);
@@ -174,7 +174,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({dangerous}) => dangerous.exists())
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(1);
@@ -186,7 +186,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({dangerous}) => dangerous.notExists())
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(7);
@@ -204,7 +204,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.contains("Chick"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(2);
@@ -217,7 +217,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.notContains("o"))
-			.go()	
+			.go()
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
