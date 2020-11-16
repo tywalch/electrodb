@@ -1654,17 +1654,79 @@ describe("Entity", () => {
 					}
 				},
 			};
+			let data = {
+				id: "IDENTIFIER",
+				date: "2020-11-16",
+				prop1: "PROPERTY1",
+				prop2: "PROPERTY2",
+				prop3: "PROPERTY3",
+				prop4: "PROPERTY4"
+			};
 			let mallStore = new Entity(schema);
 			let putParams = mallStore
-				.put({
-					id: "IDENTIFIER",
-					date: "2020-11-16",
-					prop1: "PROPERTY1",
-					prop2: "PROPERTY2",
-					prop3: "PROPERTY3",
-					prop4: "PROPERTY4",
-				})
+				.put(data)
 				.params();
+			let recordParams = mallStore.query.record(data).params();
+			let mixedFacetTemplatesParams = mallStore.query.mixedFacetTemplates(data).params();
+			let justTemplateParams = mallStore.query.justTemplate(data).params();
+			let moreMixedParams = mallStore.query.moreMixed(data).params();
+			let noSkFacetArrayParams = mallStore.query.noSkFacetArray(data).params();
+			let noSkFacetTemplateParams = mallStore.query.noSkFacetTemplate(data).params();
+			expect(recordParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1#i_identifier#prop1_property1',
+					':sk1': '$mallstores#d_2020-11-16#prop2_property2#p3_property3'
+				}
+			});
+			expect(mixedFacetTemplatesParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1#i_identifier#p3_property3',
+					':sk1': '2020-11-16#propzduce_property2'
+				},
+				IndexName: 'gsi1'
+			});
+			expect(justTemplateParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+				ExpressionAttributeValues: {
+					':pk': 'idz_identifier#property1#third_property3',
+					':sk1': '2020-11-16|property2'
+				},
+				IndexName: 'gsi2'
+			});
+			expect(moreMixedParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'gsi3pk', '#sk1': 'gsi3sk' },
+				ExpressionAttributeValues: {
+					':pk': '2020-11-16#p2_property2#propz3_property3',
+					':sk1': '$mallstores#prop1_property1#four_property4'
+				},
+				IndexName: 'gsi3'
+			});
+			expect(noSkFacetArrayParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'gsi4pk' },
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1$mallstores#d_2020-11-16#prop2_property2#p3_property3'
+				},
+				IndexName: 'gsi4'
+			});
+			expect(noSkFacetTemplateParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'gsi5pk' },
+				ExpressionAttributeValues: { ':pk': '2020-11-16#p2_property2#propz3_property3' },
+				IndexName: 'gsi5'
+			});
 			expect(putParams).to.deep.equal({
 				Item: {
 					__edb_e__: "MallStores",
@@ -1688,6 +1750,7 @@ describe("Entity", () => {
 				},
 				TableName: "StoreDirectory",
 			});
+
 		});
 		it("Should default labels to facet attribute names in facet template (string)", () => {
 			const schema = {
@@ -2757,7 +2820,7 @@ describe("Entity", () => {
 				}
 			};
 			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model: index2 (PRIMARY INDEX) - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
-		})
+		});
 		it("Should check for index and collection name overlap", () => {
 			let schema = {
 				model: {
