@@ -770,9 +770,9 @@ describe("Entity", async () => {
 			let [index, stores] = results;
 			if (stores && stores.Items.length) {
 				expect(index).to.have.a.property('pk');
-				expect(index).to.have.a.property('sk')
-				expect(stores.Items).to.be.an("array")
-				expect(stores.Items[0]).to.have.a.property('pk')
+				expect(index).to.have.a.property('sk');
+				expect(stores.Items).to.be.an("array");
+				expect(stores.Items[0]).to.have.a.property('pk');
 				expect(stores.Items[0]).to.have.a.property('sk');
 				let [nextIndex, nextStores] = await MallStores.scan.page(index, {raw: true});
 				expect(nextIndex).to.not.deep.equal(index);

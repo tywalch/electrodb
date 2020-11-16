@@ -37,7 +37,7 @@ class EmployeeAppLoader {
       points: EmployeeAppLoader.points[this.getRandomNumber(0, EmployeeAppLoader.points.length)],
       description: EmployeeAppLoader.sentences[this.getRandomNumber(0, EmployeeAppLoader.sentences.length)],
       comments: this.generateRandomComments(employees),
-      status: this.service.entities.tasks.model.schema.attributes.status.enumArray[this.getRandomNumber(0, this.service.entities.tasks.model.schema.attributes.status.enumArray.length)],
+      status: this.service.db.entities.tasks.model.schema.attributes.status.enumArray[this.getRandomNumber(0, this.service.db.entities.tasks.model.schema.attributes.status.enumArray.length)],
     }
   }
 
@@ -49,7 +49,7 @@ class EmployeeAppLoader {
       lastName: EmployeeAppLoader.lastNames[this.getRandomNumber(0, EmployeeAppLoader.lastNames.length)],
       office: offices[this.getRandomNumber(0, offices.length)].office,
       title: EmployeeAppLoader.titles[this.getRandomNumber(0, EmployeeAppLoader.titles.length)],
-      team: this.service.entities.employees.model.schema.attributes.team.enumArray[this.getRandomNumber(0, this.service.entities.employees.model.schema.attributes.team.enumArray.length)],
+      team: this.service.db.entities.employees.model.schema.attributes.team.enumArray[this.getRandomNumber(0, this.service.db.entities.employees.model.schema.attributes.team.enumArray.length)],
       salary: String(this.getRandomNumber(50000, 250000)),
       manager: manager ? manager.employee : manager,
       dateHired: moment.utc().subtract(this.getRandomNumber(100, 1000), "days").format("YYYY-MM-DD"),
@@ -95,7 +95,7 @@ class EmployeeAppLoader {
     for (let i = 0; i < n; i++) {
       let randomRecord = this.generateRandomTask(employees);
       this.tasks.push(randomRecord);
-      inserts.push(this.service.entities.tasks.put(randomRecord).go());
+      inserts.push(this.service.db.entities.tasks.put(randomRecord).go());
     }
     return Promise.all(inserts)
   }
@@ -105,7 +105,7 @@ class EmployeeAppLoader {
     for (let i = 0; i < n; i++) {
       let randomRecord = this.generateRandomEmployee(offices);
       this.employees.push(randomRecord);
-      inserts.push(this.service.entities.employees.put(randomRecord).go());
+      inserts.push(this.service.db.entities.employees.put(randomRecord).go());
     }
     return Promise.all(inserts)
   }
@@ -116,7 +116,7 @@ class EmployeeAppLoader {
       let city = EmployeeAppLoader.cities[i];
       let randomRecord = this.generateRandomOffice(city);
       this.offices.push(randomRecord);
-      inserts.push(this.service.entities.offices.put(randomRecord).go());
+      inserts.push(this.service.db.entities.offices.put(randomRecord).go());
     }
     return Promise.all(inserts)
   }

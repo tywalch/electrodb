@@ -2,6 +2,7 @@ const moment = require("moment");
 const taskr = require("./app");
 const TaskAppExampleLoader = require("./loader");
 /**
+ * ATTENTION READ FIRST:
  * It is recomended that you use the dynamodb-local docker image for this example. For more
  * information on how to download visit: https://hub.docker.com/r/amazon/dynamodb-local
  *
@@ -24,13 +25,13 @@ const loader = new TaskAppExampleLoader(taskr);
 // loader.makeTable();
 
 // Load table:
-// loader.loadTable({employees: 100, tasks: 200});
+// loader.loadTable({employees: 500, tasks: 600});
 
 // Drop table:
 // loader.dropTable()
 
 // Query table:
-query();
+// query();
 
 async function query() {
   // Use Collections to query across entities.

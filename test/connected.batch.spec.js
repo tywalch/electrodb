@@ -184,7 +184,7 @@ describe("BatchWrite", async () => {
     // verify existance
     let item = await MallStores.get(record1).go();
     expect(item).to.be.deep.equal(record1);
-  });
+  }).timeout(5000);
 
   it("should perform a batchDelete via array to delete method", async () => {
     let created = await MallStores.put([record1, record2, record3]).go();

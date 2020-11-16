@@ -1562,7 +1562,133 @@ describe("Entity", () => {
 		// 		`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: d_:date|p2_:prop2`,
 		// 	);
 		// });
-
+		it("Should allow for custom labels for facets", () => {
+			const schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "storeLocationId",
+						label: "i"
+					},
+					date: {
+						type: "string",
+						field: "dateTime",
+						label: "d"
+					},
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string",
+					},
+					prop3: {
+						type: "string",
+						label: "p3"
+					},
+					prop4: {
+						type: "string",
+						label: "four"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							facets: ["id", "prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["date", "prop2", "prop3"]
+						},
+					},
+					mixedFacetTemplates: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["id", "prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: `:date#p2_:prop2#propzduce_:prop2`,
+						},
+					},
+					justTemplate: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: `idz_:id#:prop1#third_:prop3`,
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: `:date|:prop2`
+						},
+					},
+					moreMixed: {
+						index: "gsi3",
+						pk: {
+							field: "gsi3pk",
+							facets: `:date#p2_:prop2#propz3_:prop3`,
+						},
+						sk: {
+							field: "gsi3sk",
+							facets: ["prop1", "prop4"]
+						},
+					},
+					noSkFacetArray: {
+						index: "gsi4",
+						pk: {
+							field: "gsi4pk",
+							facets: ["date", "prop2", "prop3"],
+						}
+					},
+					noSkFacetTemplate: {
+						index: "gsi5",
+						pk: {
+							field: "gsi5pk",
+							facets: `:date#p2_:prop2#propz3_:prop3`,
+						}
+					}
+				},
+			};
+			let mallStore = new Entity(schema);
+			let putParams = mallStore
+				.put({
+					id: "IDENTIFIER",
+					date: "2020-11-16",
+					prop1: "PROPERTY1",
+					prop2: "PROPERTY2",
+					prop3: "PROPERTY3",
+					prop4: "PROPERTY4",
+				})
+				.params();
+			expect(putParams).to.deep.equal({
+				Item: {
+					__edb_e__: "MallStores",
+					__edb_v__: "1",
+					storeLocationId: "IDENTIFIER",
+					dateTime: "2020-11-16",
+					prop1: "PROPERTY1",
+					prop2: "PROPERTY2",
+					prop3: "PROPERTY3",
+					prop4: "PROPERTY4",
+					pk: "$mallstoredirectory_1#i_identifier#prop1_property1",
+					sk: "$mallstores#d_2020-11-16#prop2_property2#p3_property3",
+					gsi1pk: "$mallstoredirectory_1#i_identifier#p3_property3",
+					gsi1sk: "2020-11-16#propzduce_property2",
+					gsi2pk: "idz_identifier#property1#third_property3",
+					gsi2sk: "2020-11-16|property2",
+					gsi3pk: "2020-11-16#p2_property2#propz3_property3",
+					gsi3sk: "$mallstores#prop1_property1#four_property4",
+					gsi4pk: "$mallstoredirectory_1$mallstores#d_2020-11-16#prop2_property2#p3_property3",
+					gsi5pk: "2020-11-16#p2_property2#propz3_property3",
+				},
+				TableName: "StoreDirectory",
+			});
+		});
 		it("Should default labels to facet attribute names in facet template (string)", () => {
 			const schema = {
 				service: "MallStoreDirectory",
@@ -1621,6 +1747,7 @@ describe("Entity", () => {
 				TableName: "StoreDirectory",
 			});
 		});
+
 		it("Should allow for mixed custom/composed facets, and adding collection prefixes when defined", () => {
 			const schema = {
 				service: "MallStoreDirectory",
@@ -2666,22 +2793,22 @@ describe("Entity", () => {
 						index: "gsi1",
 						collection: "collectionA",
 						pk: {
-							field: "pk",
+							field: "gsi1pk",
 							facets: ["prop3"],
 						},
 						sk: {
-							field: "sk",
+							field: "gsi1sk",
 							facets: ["prop2", "prop1"],
 						},
 					}
 				}
 			};
 			expect(() => new Entity(schema)).to.throw(`Duplicate collection, "collectionA" is defined across multiple indexes "index1" and "index2". Collections must be unique names across indexes for an Entity. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-collections`)
-		})
+		});
 		it("should require a valid schema", () => {
 			expect(() => new Entity()).to.throw(`instance requires property "model", instance requires property "attributes", instance.model is required - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model`);
 		})
-	})
+	});
 	describe("v1 and beta models", () => {
 			let id = "123-456-789";
 			let mall = "EastPointe";

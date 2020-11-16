@@ -276,12 +276,12 @@ export declare namespace employeesEntity {
         where: WhereRecords
     }
 
-    class employees {
+    export class employees {
         get: (key: employeeIndex) => {go: GoRecord<Item>};
-        delete: (key: employeeIndex) => {go: GoRecord<Item>};
+        delete: ((key: employeeIndex) => {go: GoRecord<Item>}) | ((key: employeeIndex[]) => {go: GoRecord<Item[]>});
         update: (key: employeeIndex) => {set: SetRecord};
         patch: (key: employeeIndex) => {set: SetRecord};
-        put: (record: Item) => {go: GoRecord<Item>};
+        put: ((record: Item) => {go: GoRecord<Item>}) | ((record: Item[]) => {go: GoRecord<Item[]>});
         create: (record: Item) => {go: GoRecord<Item>};
         find: (record: Partial<Item>) => RecordsActionOptions;
         setIdentifier: (type: "model" | "table", value: string) => void

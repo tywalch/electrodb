@@ -695,16 +695,17 @@ describe("Misconfiguration exceptions", () => {
 						field: "sk",
 						facets: ["prop2", "prop3"],
 					},
-					collection: "collectionA",
+
 				},
 				index2: {
-					index: "gis1",
+					index: "gis2",
+					collection: "collectionA",
 					pk: {
-						field: "pk",
+						field: "gsi1pk",
 						facets: ["prop3"],
 					},
 					sk: {
-						field: "sk",
+						field: "gsi1sk",
 						facets: ["prop2", "prop1"],
 					},
 				}
@@ -741,11 +742,11 @@ describe("Misconfiguration exceptions", () => {
 					index: "gis1",
 					collection: "collectionA",
 					pk: {
-						field: "pk",
+						field: "gsi1pk",
 						facets: ["prop3"],
 					},
 					sk: {
-						field: "sk",
+						field: "gsi1sk",
 						facets: ["prop4", "prop5"],
 					},
 				}
@@ -757,7 +758,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Invalid entity index definitions. The following index definitions have already been defined on this model but with incompatible or conflicting properties: Index provided "gis1" does not match established index: [Main Table Index], Partition Key Facets provided "prop3" do not match established facets "prop1" - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Invalid entity index definitions. The following index definitions have already been defined on this model but with incompatible or conflicting properties: Index provided "gis1" does not match established index: gis2 - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 		// expect(() => database.join(entityTwo)).to.throw("You cant do that");
 	});
 	it("Should require collections to be set on the same index", () => {
@@ -815,11 +816,11 @@ describe("Misconfiguration exceptions", () => {
 				},
 				index2: {
 					pk: {
-						field: "pk",
+						field: "pk2",
 						facets: ["prop1"],
 					},
 					sk: {
-						field: "sk",
+						field: "sk2",
 						facets: ["prop4", "prop5"],
 					},
 					collection: "collectionA",
@@ -950,7 +951,7 @@ describe("Misconfiguration exceptions", () => {
 					},
 					sk: {
 						field: "sk",
-						facets: ["prop1", "prop5"],
+						facets: ["prop4", "prop5"],
 					},
 					collection: "collectionA",
 				},
