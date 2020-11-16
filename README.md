@@ -2108,7 +2108,25 @@ Checkout the section on (Models)[#model] to verify your model against what is ex
 Some properties on your options object are missing or invalid.  
    
 *What to do about it:*
-Checkout the section on (Model/Service Options)[#model-service-options] to verify your model against what is expected. 
+Checkout the section on (Model/Service Options)[#model-service-options] to verify your model against what is expected.
+
+### Duplicate Index Fields
+*Code: 1014*
+
+*Why this occurred:*
+An Index in your model references the same field twice across indexes. The `field` property in the definition of an index is a mapping to the name of the field assigned to the the PK or SK of an index. 
+   
+*What to do about it:*
+This is likely a typo, if not double check the names of the fields you assigned to be the PK and SK of your index, these field names must be unique.
+
+### Duplicate Index Facets
+*Code: 1014*
+
+*Why this occurred:*
+Within one index you tried to use the same facet in both the PK and SK. A facet may only be used once within an index. With electrodb it is not uncommon to use the same value as both the PK and SK when when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not neccessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a facet, checkout (this seciton)[#collection-without-an-sk] for more information.
+   
+*What to do about it:*
+Determine how you can change your access pattern to not duplicate the facet. Remember that an empty array for an SK is valid.   
 
 ### Missing Facets
 *Code: 2002*

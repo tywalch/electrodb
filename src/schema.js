@@ -283,6 +283,17 @@ class Schema {
 		}
 	}
 
+	getLabels() {
+		let labels = {};
+		for (let name of Object.keys(this.attributes)) {
+			let label = this.attributes[name].label;
+			if (label !== undefined) {
+				labels[name] = label;
+			}
+		}
+		return labels;
+	};
+
 	// _getPartDetail(part = "") {
 	// 	let detail = {
 	// 			expression: "",

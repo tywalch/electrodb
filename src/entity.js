@@ -413,6 +413,7 @@ class Entity {
 				err.__isAWSError = true;
 				throw err;
 			});
+
 			switch (method) {
 				case MethodTypes.put:
 				case MethodTypes.create:
@@ -1334,6 +1335,7 @@ class Entity {
 			labels: {},
 		};
 		let seenIndexes = {};
+		let seenIndexFields = {};
 
 		let accessPatterns = Object.keys(indexes);
 
@@ -1357,6 +1359,7 @@ class Entity {
 			};
 			indexHasSortKeys[indexName] = hasSk;
 			let parsedPKFacets = this._parseFacets(index.pk.facets);
+
 			let { facetArray, facetLabels } = parsedPKFacets;
 			customFacets.pk = parsedPKFacets.isCustom;
 			// labels can be set via the attribute definiton or as part of the facetTemplate.
@@ -1388,6 +1391,29 @@ class Entity {
 					isCustom: parsedSKFacets.isCustom
 				};
 				facets.fields.push(sk.field);
+			}
+
+			if (seenIndexFields[pk.field] !== undefined) {
+				throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Partition Key (pk) on Access Pattern '${accessPattern}' references the field '${pk.field}' which is already referenced by the Access Pattern '${seenIndexFields[pk.field]}'. Fields used for indexes need to be unique to avoid conflicts.`);
+			} else {
+				seenIndexFields[pk.field] = accessPattern;
+			}
+
+			if (sk.field) {
+				if (sk.field === pk.field) {
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `The Access Pattern '${accessPattern}' references the field '${pk.field}' as the field name for both the PK and SK. Fields used for indexes need to be unique to avoid conflicts.`);
+				} else if (seenIndexFields[sk.field] !== undefined) {
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Sort Key (sk) on Access Pattern '${accessPattern}' references the field '${pk.field}' which is already referenced by the Access Pattern '${seenIndexFields[pk.field]}'. Fields used for indexes need to be unique to avoid conflicts.`);
+				}else {
+					seenIndexFields[sk.field] = accessPattern;
+				}
+			}
+
+			if (Array.isArray(sk.facets)) {
+				let duplicates = pk.facets.filter(facet => sk.facets.includes(facet));
+				if (duplicates.length !== 0) {
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFacets, `The Access Pattern '${accessPattern}' contains duplicate references the facet(s): ${duplicates.map(facet => `'${facet}'`).join(", ")}. Facet attributes can only be used once within an index. If this leaves the Sort Key (sk) without any facets simply set this to be an empty array.`);
+				}
 			}
 
 			let definition = {
@@ -1543,6 +1569,13 @@ class Entity {
 		let schema = new Schema(model.attributes, facets);
 		let filters = this._normalizeFilters(model.filters);
 		let prefixes = this._normalizePrefixes(service, entity, version, indexes, modelVersion);
+
+		// apply model defined labels
+		let modelLabels = schema.getLabels();
+		for (let indexName of Object.keys(facets.labels)) {
+			facets.labels[indexName] = Object.assign({}, modelLabels, facets.labels[indexName]);
+		}
+
 		return {
 			modelVersion,
 			service,

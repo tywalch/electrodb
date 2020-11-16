@@ -91,6 +91,18 @@ const ErrorCodes = {
     name: "InvalidJoin",
     sym: ErrorCode
   },
+  DuplicateIndexFields: {
+    code: 1014,
+    section: "duplicate-index-fields",
+    name: "DuplicateIndexField",
+    sym: ErrorCode,
+  },
+  DuplicateIndexFacets: {
+    code: 1015,
+    section: "duplicate-index-facets",
+    name: "DuplicateIndexFacets",
+    sym: ErrorCode,
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",
