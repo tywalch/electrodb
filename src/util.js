@@ -35,7 +35,7 @@ function applyBetaModelOverrides(model = {}, {service = "", version = "", table 
   if (type !== t.ModelVersions.beta) {
     throw new Error("Invalid model");
   }
-  let copy = JSON.parse(JSON.stringify(model));
+  let copy = Object.assign({}, model);
   if (v.isStringHasLength(service)) {
     copy.service = service;
   }
