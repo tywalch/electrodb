@@ -1,6 +1,7 @@
-const moment = require("moment");
-const taskr = require("./app");
-const Loader = require("./loader");
+import moment from "moment";
+import taskr from "../taskapp/app";
+import {employees} from "../taskapp/app";
+import Loader from "../taskapp/loader";
 /**
  * ATTENTION READ FIRST:
  * It is recomended that you use the dynamodb-local docker image for this example. For more
@@ -44,7 +45,6 @@ async function query() {
   let kanban = await taskr.collections.assignments({employee}).go();
   console.log(`Assignments for ${firstName} ${lastName}:`, kanban, "\r\n");
 
-
   // Use Entities to drill into specific entities.
   // Find Junior Developers making more than 100,000
   let title = "Junior Software Engineer";
@@ -52,9 +52,8 @@ async function query() {
   let developers = await taskr.entities.employees.query.roles({title}).gt({salary}).go();
   console.log("Junior Developers with a salary greater than $100,000:", developers, "\r\n");
 
-
   // Find all open tasks for a given project less than or equal to 13 points
-  let status = "open";
+  const status = "open";
   let project = "135-53";
   let tasks = await taskr.entities.tasks.query
     .statuses({status, project})
@@ -62,9 +61,8 @@ async function query() {
     .go();
   console.log("All open tasks for a given project less than or equal to 13 points:", tasks, "\r\n");
 
-
   // Find marketing team members who were hired in between two and five years ago:
-  let team = "marketing";
+  const team = "marketing";
   let twoYearsAgo = moment.utc().subtract(2, "years").format("YYYY-MM-DD");
   let fiveYearsAgo = moment.utc().subtract(5, "years").format("YYYY-MM-DD");
   let recentHires = await taskr.entities.employees.query
@@ -74,7 +72,5 @@ async function query() {
       { dateHired: twoYearsAgo }
     ).go();
   console.log("Employees hired between two and five years ago:", recentHires, "\r\n");
-
   // Explore the models in `./models` and the README for more queries to try!
 }
-

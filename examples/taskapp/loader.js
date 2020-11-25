@@ -17,13 +17,23 @@ class TaskAppExampleLoader {
     if (exists) {
       console.log("Table already exists! if you would like to recreate it, use `dropTable` first.");
     } else {
-      return table.create().then(() => console.log("Table created!")).catch(console.log);
+      return table.create()
+        .then(() => console.log("Table created!"))
+        .catch(err => {
+          console.log("Error creating table", err);
+          throw err;
+        });
     }
   }
 
   async dropTable() {
     let tabler = makeTabler(this.db.service.table, this.db.client.options);
-    return tabler.drop().then(() => console.log("Table dropped!")).catch(console.log);
+    return tabler.drop()
+      .then(() => console.log("Table dropped!"))
+      .catch(err => {
+        console.log("Error dropping table", err);
+        throw err;
+      });
   }
   /**
    * loadTable loads the TaskApp Service with records. Requires DynamoDB DocumentClient and uses the models as theyre defined in this example
@@ -42,7 +52,13 @@ class TaskAppExampleLoader {
       throw new Error("Please include a number of employees to load that is greater than 0");
     }
     let loader = makeLoader(this);
-    return loader.load(employees, tasks).then(() => console.log("Table loaded!")).catch(console.log);
+    
+    return loader.load(employees, tasks)
+      .then(() => console.log("Table loaded!"))
+      .catch(err => {
+        console.log("Error loading table", err);
+        throw err;
+      });
   }
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "electrodb-cli",
+  "name": "taskapp_typescript",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,10 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "2.713.0",
-    "commander": "5.1.0",
-    "electrodb": "0.9.32",
-    "moment": "^2.29.0",
-    "uuid": "^8.3.0"
+    "aws-sdk": "^2.798.0",
+    "electrodb": "^0.9.32",
+    "moment": "^2.29.1",
+    "uuid": "^8.3.1"
   }
 }
