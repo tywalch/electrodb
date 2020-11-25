@@ -169,15 +169,15 @@ const {Entity, Service} = require("electrodb");
 # Entities and Services
 > To see full examples of ***ElectroDB*** in action, go to the [Examples](#examples) section.
 
-`Entity` allows you to create separate and individual business objects in a *DynamoDB* table. When queried your results will not include other Entities that exist the same table. For more detail, read [Entities](#entities). 
+`Entity` allows you to create separate and individual business objects in a *DynamoDB* table. When queried, your results will not include other Entities that also exist the same table. This allows you to easily achieve single table design as recommended by AWS. For more detail, read [Entities](#entities). 
 
-`Service` allows you to build a relationships across Entities. A service imports Entity [Models](#model), builds individual Entities and builds [Collections](#collections) for cross Entity querying. For more detail, read [Services](#services).
+`Service` allows you to build a relationships across Entities. A service imports Entity [Models](#model), builds individual Entities, and creates [Collections](#collections) to allow cross Entity querying. For more detail, read [Services](#services).
 
-You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries `join` multiple Entities.
+You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, If you intend to make queries that `join` or span multiple Entities you will need to use a Service.
 
 # Entities  
 
-In ***ElectroDB*** an `Entity` is represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and another Entity might represent a the Task that the employee is assigned to. 
+In ***ElectroDB*** an `Entity` is represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and or a Task that the employee is assigned to. 
 
 Require or import `Entity` from `electrodb`:    
 ```javascript  
@@ -185,7 +185,7 @@ const {Entity} = require("electrodb");
 ```
 
 # Services
-In ***ElectroDB*** a `Service` represents a collection of Entities and also allows you to build queries span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries `join` multiple Entities.
+In ***ElectroDB*** a `Service` represents a collection of Entities and also allows you to build queries span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that `join` multiple Entities.
 
 Require `electrodb`:    
 ```javascript  
@@ -220,13 +220,13 @@ TaskApp
  
 When joining a Model/Entity to a Service a number of validations are done to ensure that Entity conforms to expectations collectively established by all joined Entities.
 
-- [Entity](#entities) names must be unique across a Service
-- [Collection](#collections) names must be unique accross a Service
-- The [name of the Service in the Model](#model-properties) must match the Name defined on the [Service](#service) instance
+- [Entity](#entities) names must be unique across a Service.
+- [Collection](#collections) names must be unique accross a Service.
+- The [name of the Service in the Model](#model-properties) must match the Name defined on the [Service](#service) instance.
 - Joined instances must be type [Model](#model) or [Entity](#entities).
 - If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching [attribute options](#attributes).   
-- All primary and global secondary indexes must have the same name field names and be written to assume SortKeys exist/don't exist in the same manor. See [Indexes](#indexes)
-- All models conform to the same model format. If your model was made pre-electrodb version 0.9.19 see section [Version 1 Migration](#version-1-migration) 
+- All primary and global secondary indexes must have the same name field names and be written to assume SortKeys exist/don't exist in the same manor. See [Indexes](#indexes).
+- All models conform to the same model format. If your model was made pre-electrodb version 0.9.19 see section [Version 1 Migration](#version-1-migration). 
 
 ## Model 
 
@@ -431,7 +431,7 @@ const TasksModel = {
 | model.version  | (optional) The version number of the schema, used to namespace keys    
 | attributes     | An object containing each attribute that makes up the schema  
 | indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
-| filters        | An object containing user defined filter template functions.
+| filters        | An object containing user defined filter template functions
 
 
 ### Model Service Options
@@ -439,13 +439,13 @@ Optional second parameter
 | Property | Description |
 | ----------- | ----------- |
 | table | Name of the dynamodb table in aws
-| client  | (optional) A docClient instance for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.  
+| client  | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.
 
 ## Attributes
-**Attributes** define an **Entity** record. The `propertyName` represents the value your code will use to represent an attribute. 
+**Attributes** define an **Entity** record. The `AttributeName` represents the value your code will use to represent an attribute. 
 
 > **Pro-Tip:**
-> Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. 
+> Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. For example, you may refer to an attribute as `organization` but want to save the attribute with a field name of `org` in DynamoDB. 
 
 #### Simple Syntax
 Assign just the `type` of the attribute directly to the attribute name. Currently supported options are "string", "number", "boolean", an array of strings representing a fixed set of possible values, or "any" which disables value type checking on that attribute.
@@ -500,11 +500,11 @@ The `validation` property allows for many different function/type signatures. He
 ## Indexes
 The `indexes` object requires at least the definition of the table's natural **Partition Key** and (if applicable) **Sort Key**.
 
-Indexes are defined, and later referenced by their `accessPatternName`. These defined via a `facets` array that is made up of attributes names as listed the model.
+Indexes are defined, and later referenced by their `AccessPatternName`. These defined via a `facets` array that is made up of attributes names as listed the model.
 
 ```typescript
 indexes: {
-	<accessPatternName>: {
+	<AccessPatternName>: {
 		"pk": {
 			"field": <string>
 			"facets": <AttributeName[]>
@@ -531,7 +531,7 @@ indexes: {
 `collection` | `string` | no | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality). 
 
 ### Indexes Without Sort Keys
-When using indexes without Sort Keys, that should be expressed to ElectroDB as an index without an `sk` property at all. Indexes without an `sk` cannot have a collection, see (Collections)[[#collections] for more detail. 
+When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see (Collections)[[#collections] for more detail. 
 
 > Note: It is generally recommended to have Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesnt _need_ an additional property to define a unique record, having an `sk` with no facets still opens the door to many more query opportunities like (collections)[#collections].
 
@@ -550,7 +550,7 @@ When using indexes without Sort Keys, that should be expressed to ElectroDB as a
 ```
 
 ### Indexes With Sort Keys
-When using indexes with Sort Keys, that should be expressed to ElectroDB as an index an `sk` property. If you don't wish to use the `sk` in your model, but it does exist on the table, simply use an empty for the `facets` property. This is still useful as it opens the door to many more query opportunities like (collections)[#collections].
+When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the `sk` in your model, but it does exist on the table, simply use an empty for the `facets` property. This is still useful as it opens the door to many more query opportunities like (collections)[#collections].
 
 ```javascript
 // ElectroDB interprets as index *having* SK, but this model doesnt attach any facets to it.
@@ -660,7 +660,6 @@ Convention for a composing a key use the `#` symbol to separate attributes, and 
 Facet Templates have some "gotchas" to consider: 
 	1. Keys only allow for one instance of an attribute, the template `:prop1#:prop1` will be interpreted the same as `:prop1#`. 
 	2. ElectoDB will continue to always add a trailing delimiter to facets with keys are partially supplied. (More documentation coming on this soon)   
-	
 
 ```javascript
 attributes: {
@@ -975,11 +974,11 @@ Below is the traditional way you would add a `ConditionExpression` to Dynamo's D
 
 ```javascript
 animals.update({habitat: "Africa", enclosure: "5b"})
-		.set({dangerous: true})
-		.where(({animal, dangerous}, {value, name, eq}) => `
-			${name(animal)} = ${value(animal, "Zebra")} AND ${eq(dangerous)}
-		`)
-		.params())
+	.set({dangerous: true})
+	.where(({animal, dangerous}, {value, name, eq}) => `
+		${name(animal)} = ${value(animal, "Zebra")} AND ${eq(dangerous)}
+	`)
+	.params())
 ```
 
 
@@ -1063,7 +1062,7 @@ let stores = MallStores.query
 ```
 
 # Building Queries
-Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is critical to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
+Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is crucial to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
 1. You must always supply the **Partition Key** in full for all queries to **DynamoDB**.
 2. You currently only have the following operators available on a **Sort Key**: `begins_with`, `between`, `>`, `>=`, `<`, `<=`, and `Equals`.
 3. To act on single record, you will need to know the full  **Partition Key** and **Sort Key** for that record.
@@ -1300,7 +1299,7 @@ let store = {
 	unitId: "B47",
 	category: "food/coffee",
 	leaseEndDate: "2020-03-22",
-  rent: "1500.00"
+	rent: "1500.00"
 };
 
 await StoreLocations.put(store).go();
@@ -1490,7 +1489,7 @@ await StoreLocations
 ```
 
 ### Scan Records
-When scanning for rows, you can use filters the same as you would any query. For more detial on filters, see the [Filters](#filters) section.
+When scanning for rows, you can use filters the same as you would any query. For more detial on filters, see the [Where](#where) section.
 
 *Note: `Scan` functionality will be scoped to your Entity. This means your results will only include records that match the Entity defined in the model.*
 ```javascript
