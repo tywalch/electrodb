@@ -1045,6 +1045,137 @@ describe("Entity", () => {
 					"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys".toLowerCase(),
 				);
 		});
+		it("Should identify when a facet cannot be made based on the data provided", () => {
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					stores: {
+						type: "number",
+					}
+				},
+				filters: {},
+				indexes: {
+					store: {
+						pk: {
+							field: "pk",
+							facets: ["id"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["mall", "stores"]
+						}
+					}
+				}
+			};
+			let MallStores = new Entity(schema);
+			let tests = [
+				{
+					happy: true,
+					input: {
+						id: "12345",
+						mall: "Washington Square",
+						stores: 1
+					},
+					output: {
+						Item: {
+							id: '12345',
+							mall: 'Washington Square',
+							stores: 1,
+							pk: '$mallstoredirectory_1#id_12345',
+							sk: '$mallstores#mall_washington square#stores_1',
+							__edb_e__: 'MallStores',
+							__edb_v__: '1'
+						},
+						TableName: 'StoreDirectory'
+					}
+				},
+				{
+					happy: true,
+					input: {
+						id: "12345",
+						mall: "Washington Square",
+						stores: 0
+					},
+					output: {
+						Item: {
+							id: '12345',
+							mall: 'Washington Square',
+							stores: 0,
+							pk: '$mallstoredirectory_1#id_12345',
+							sk: '$mallstores#mall_washington square#stores_0',
+							__edb_e__: 'MallStores',
+							__edb_v__: '1'
+						},
+						TableName: 'StoreDirectory'
+					}
+				},
+				{
+					happy: true,
+					input: {
+						id: "12345",
+						mall: "",
+						stores: 1
+					},
+					output: {
+						Item: {
+							id: '12345',
+							mall: '',
+							stores: 1,
+							pk: '$mallstoredirectory_1#id_12345',
+							sk: '$mallstores#mall_#stores_1',
+							__edb_e__: 'MallStores',
+							__edb_v__: '1'
+						},
+						TableName: 'StoreDirectory'
+					}
+				},
+				{
+					happy: false,
+					input: {
+						id: "12345",
+						mall: "Washington Square",
+						stores: undefined
+					},
+					output: "Incomplete facets: Without the facets 'stores' the following access patterns cannot be updated. - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+				},
+				{
+					happy: false,
+					input: {
+						id: "12345",
+						mall: "Washington Square",
+						stores: null
+					},
+					output: `Invalid value for attribute "stores": Received value of type "object", expected value of type "number"`
+				},
+				{
+					happy: false,
+					input: {
+						id: "12345",
+						mall
+					},
+					output: "Incomplete facets: Without the facets 'stores' the following access patterns cannot be updated. - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+				},
+			]
+			for (let test of tests) {
+				if (test.happy) {
+					expect(MallStores.put(test.input).params()).to.deep.equal(test.output);
+				} else {
+					expect(() => MallStores.put(test.input).params()).to.throw(test.output);
+				}
+			}
+		})
 		it("Should stop making a key early when there is a gap in the supplied facets", () => {
 			let index = schema.indexes.categories.index;
 			let { pk, sk } = MallStores._makeIndexKeys(

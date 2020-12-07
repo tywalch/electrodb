@@ -954,7 +954,7 @@ class Entity {
 		let completedIndexes = [];
 		let facets = {};
 		for (let [attribute, indexes] of Object.entries(this.model.facets.byAttr)) {
-			if (attributes[attribute]) {
+			if (attributes[attribute] !== undefined) {
 				facets[attribute] = attributes[attribute];
 				indexes.forEach(({ index, type }) => {
 					impactedIndexes[index] = impactedIndexes[index] || {};

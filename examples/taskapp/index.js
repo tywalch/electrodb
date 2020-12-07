@@ -31,7 +31,7 @@ const loader = new Loader(taskr);
 // loader.dropTable()
 
 // Query table:
-// query();
+query();
 
 async function query() {
   // Use Collections to query across entities.
