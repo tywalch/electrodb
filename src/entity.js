@@ -535,11 +535,14 @@ class Entity {
 
 	_makeParameterKey(index, pk, sk) {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
+		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+		let pkField = this.model.indexes[accessPattern].pk.field;
 		let key = {
-			pk: pk,
+			[pkField]: pk,
 		};
 		if (hasSortKey && sk !== undefined) {
-			key.sk = sk;
+			let skField = this.model.indexes[accessPattern].sk.field;
+			key[skField] = sk;
 		}
 		return key;
 	}

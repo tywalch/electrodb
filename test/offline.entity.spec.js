@@ -1175,7 +1175,171 @@ describe("Entity", () => {
 					expect(() => MallStores.put(test.input).params()).to.throw(test.output);
 				}
 			}
-		})
+		});
+		it("Should use the index field names as theyre specified on the model", () => {
+			let schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					stores: {
+						type: "number",
+					},
+					value: {
+						type: "string"
+					}
+				},
+				filters: {},
+				indexes: {
+					store: {
+						pk: {
+							field: "parition_key",
+							facets: ["id"],
+						},
+						sk: {
+							field: "sort_key",
+							facets: ["mall", "stores"]
+						}
+					},
+					other: {
+						index: "idx1",
+						pk: {
+							field: "parition_key_idx1",
+							facets: ["mall"],
+						},
+						sk: {
+							field: "sort_key_idx1",
+							facets: ["id", "stores"]
+						}
+					}
+				}
+			};
+			let MallStores = new Entity(schema);
+			let id = "abcd";
+			let mall = "defg";
+			let stores = 1;
+			let value = "ahssfh";
+			let getParams = MallStores.get({id, mall, stores}).params();
+			let deleteParams = MallStores.delete({id, mall, stores}).params();
+			let updateParams = MallStores.update({id, mall, stores}).set({value}).params();
+			let patchParams = MallStores.patch({id, mall, stores}).set({value}).params();
+			let createParams = MallStores.create({id, mall, stores, value}).params();
+			let putParams = MallStores.put({id, mall, stores, value}).params();
+			let query1 = MallStores.query.store({id, mall, stores}).params();
+			let query2 = MallStores.query.other({id, mall, stores}).params();
+			let scanParams = MallStores.scan.params();
+			expect(getParams).to.deep.equal({
+				Key: {
+					parition_key: '$mallstoredirectory_1#id_abcd',
+					sort_key: '$mallstores#mall_defg#stores_1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(deleteParams).to.deep.equal({
+				Key: {
+					parition_key: '$mallstoredirectory_1#id_abcd',
+					sort_key: '$mallstores#mall_defg#stores_1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(updateParams).to.deep.equal({
+				UpdateExpression: 'SET #value = :value',
+				ExpressionAttributeNames: { '#value': 'value' },
+				ExpressionAttributeValues: { ':value': 'ahssfh' },
+				TableName: 'StoreDirectory',
+				Key: {
+					parition_key: '$mallstoredirectory_1#id_abcd',
+					sort_key: '$mallstores#mall_defg#stores_1'
+				}
+			});
+			expect(patchParams).to.deep.equal({
+				UpdateExpression: 'SET #value = :value',
+				ExpressionAttributeNames: { '#value': 'value' },
+				ExpressionAttributeValues: { ':value': 'ahssfh' },
+				TableName: 'StoreDirectory',
+				Key: {
+					parition_key: '$mallstoredirectory_1#id_abcd',
+					sort_key: '$mallstores#mall_defg#stores_1'
+				},
+				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+			});
+			expect(createParams).to.deep.equal({
+				Item: {
+					id: 'abcd',
+					mall: 'defg',
+					stores: 1,
+					value: 'ahssfh',
+					parition_key: '$mallstoredirectory_1#id_abcd',
+					sort_key: '$mallstores#mall_defg#stores_1',
+					parition_key_idx1: '$mallstoredirectory_1#mall_defg',
+					sort_key_idx1: '$mallstores#id_abcd#stores_1',
+					__edb_e__: 'MallStores',
+					__edb_v__: '1'
+				},
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+			});
+			expect(putParams).to.deep.equal({
+				Item: {
+					id: 'abcd',
+					mall: 'defg',
+					stores: 1,
+					value: 'ahssfh',
+					parition_key: '$mallstoredirectory_1#id_abcd',
+					sort_key: '$mallstores#mall_defg#stores_1',
+					parition_key_idx1: '$mallstoredirectory_1#mall_defg',
+					sort_key_idx1: '$mallstores#id_abcd#stores_1',
+					__edb_e__: 'MallStores',
+					__edb_v__: '1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(query1).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'parition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1#id_abcd',
+					':sk1': '$mallstores#mall_defg#stores_1'
+				}
+			});
+			expect(query2).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'parition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1#mall_defg',
+					':sk1': '$mallstores#id_abcd#stores_1'
+				},
+				IndexName: 'idx1'
+			});
+			expect(scanParams).to.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: {
+					'#parition_key': 'parition_key',
+					'#sort_key': 'sort_key',
+					'#__edb_e__': '__edb_e__',
+					'#__edb_v__': '__edb_v__'
+				},
+				ExpressionAttributeValues: {
+					':parition_key': '$mallstoredirectory_1#id_',
+					':sort_key': '$mallstores#mall_',
+					':__edb_e__': 'MallStores',
+					':__edb_v__': '1'
+				},
+				FilterExpression: '(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk))'
+			});
+		});
 		it("Should stop making a key early when there is a gap in the supplied facets", () => {
 			let index = schema.indexes.categories.index;
 			let { pk, sk } = MallStores._makeIndexKeys(
