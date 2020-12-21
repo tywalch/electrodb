@@ -56,6 +56,8 @@ Into This:
 }
 ``` 
 
+> Try out the above example for yourself! https://runkit.com/tywalch/creating-and-querying-an-electrodb-service
+
 ## Table of Contents
 
 - [ElectroDB](#electrodb)
