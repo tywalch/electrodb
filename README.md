@@ -24,8 +24,8 @@ Turn this:
 ```javascript
 Employees.query
 	.coworkers({ office: "Scranton Branch", team: "marketing" })
-	.where(({salary, title}, {between, contains}) => `
-		${between(salary, "120000", "140000")} AND ${contains(title, "junior")}
+	.where(({ salary, title }, { between, contains }) => `
+		${ between(salary, "120000", "140000") } AND ${ contains(title, "junior") }
 	`)
 	.params();
 ```
