@@ -21,16 +21,16 @@
   },
   "homepage": "https://github.com/tywalch/electrodb#readme",
   "devDependencies": {
-    "aws-sdk": "^2.630.0",
-    "chai": "^4.2.0",
-    "coveralls": "^3.0.13",
-    "istanbul": "^0.4.5",
-    "jest": "^25.4.0",
+    "aws-sdk": "2.630.0",
+    "chai": "4.2.0",
+    "coveralls": "3.0.13",
+    "istanbul": "0.4.5",
+    "jest": "25.4.0",
     "mocha": "7.1.1",
-    "mocha-lcov-reporter": "^1.3.0",
-    "moment": "^2.24.0",
-    "nyc": "^15.0.0",
-    "uuid": "^7.0.1"
+    "mocha-lcov-reporter": "1.3.0",
+    "moment": "2.24.0",
+    "nyc": "15.0.0",
+    "uuid": "7.0.1"
   },
   "keywords": [
     "electrodb",
