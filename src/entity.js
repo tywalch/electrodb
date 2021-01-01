@@ -283,6 +283,10 @@ class Entity {
 		return this.config.table;
 	}
 
+	_setTableName(table) {
+		this.config.table = table;
+	}
+
 	_chain(state, clauses, clause) {
 		let current = {};
 		for (let child of clause.children) {

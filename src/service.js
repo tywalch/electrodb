@@ -110,6 +110,10 @@ class Service {
 		return this.service.table;
 	}
 
+	_setTableName(table) {
+		this.service.table = table;
+	}
+
 	_makeCollectionChain(name = "", attributes = {}, clauses = {}, identifiers = {}, entity = {}, facets = {}) {
 		let filterBuilder = new FilterFactory(attributes, FilterTypes);
 		clauses = filterBuilder.injectFilterClauses(clauses);
