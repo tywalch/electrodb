@@ -73,8 +73,8 @@ class Service {
 			throw new Error(`Service name defined on joined instance, ${entity.model.service}, does not match the name of this Service: ${this.service.name}. Verify or update the service name on the Entity/Model to match the name defined on this service.`);
 		}
 
-		if (this.service.table) {
-			entity.table = this.service.table;
+		if (this._getTableName()) {
+			entity.table = this._getTableName();
 		}
 
 		if (this.service.version) {
@@ -91,6 +91,23 @@ class Service {
 		}
 		this.find = { ...this.entities, ...this.collections };
 		return this;
+	}
+
+	cleanseRetrievedData(collection = "", data = {}, config = {}) {
+		data.Items = data.Items || [];
+		let results = {};
+		for (let record of data.Items) {
+			let entity = record.__edb_e__;
+			if (entity) {
+				results[entity] = results[entity] || [];
+				results[entity].push(this.collectionSchema[collection].entities[entity].cleanseRetrievedData(record, config));
+			}
+		}
+		return results;
+	}
+
+	_getTableName() {
+		return this.service.table;
 	}
 
 	_makeCollectionChain(name = "", attributes = {}, clauses = {}, identifiers = {}, entity = {}, facets = {}) {
@@ -110,19 +127,6 @@ class Service {
 				}
 			},
 		});
-	}
-
-	cleanseRetrievedData(collection = "", data = {}, config = {}) {
-		data.Items = data.Items || [];
-		let results = {};
-		for (let record of data.Items) {
-			let entity = record.__edb_e__;
-			if (entity) {
-				results[entity] = results[entity] || [];
-				results[entity].push(this.collectionSchema[collection].entities[entity].cleanseRetrievedData(record, config));
-			}
-		}
-		return results;
 	}
 
 	_validateCollectionDefinition(definition = {}, providedIndex = {}) {
