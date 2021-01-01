@@ -768,7 +768,7 @@ describe("Entity", async () => {
 			expect(results).to.be.an("array").and.have.length(2);
 			// Scan may not return records, dont force a bad test then
 			let [index, stores] = results;
-			if (stores && stores.Items.length) {
+			if (index && stores && stores.Items.length) {
 				expect(index).to.have.a.property('pk');
 				expect(index).to.have.a.property('sk');
 				expect(stores.Items).to.be.an("array");

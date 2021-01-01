@@ -6,7 +6,7 @@ if (endpoint !== undefined) {
   tablr.exists().then(exists => {
     if (!exists) {
       console.log("Making Table");
-      tablr.create().then(console.log).catch(err => {
+      tablr.create().catch(err => {
         console.log(err);
         process.exit(1);
       })

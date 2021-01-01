@@ -11,10 +11,11 @@ const e = require("./errors");
 class Entity {
 	constructor(model, config = {}) {
 		this._validateModel(model);
+		this.config = config;
 		this.client = config.client;
 		this.model = this._parseModel(model, config);
 		/** start beta/v1 condition **/
-		this.model.table = config.table || model.table;
+		this.config.table = config.table || model.table;
 		/** end beta/v1 condition **/
 		this._filterBuilder = new FilterFactory(this.model.schema.attributes, FilterTypes);
 		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterTypes);
@@ -28,10 +29,10 @@ class Entity {
 				return this._makeChain(index, this._clausesWithFilters, clauses.index).query(...values);
 			};
 		}
-		config.identifiers = config.identifiers || {};
+		this.config.identifiers = config.identifiers || {};
 		this.identifiers = {
-			entity: config.identifiers.entity || "__edb_e__",
-			version: config.identifiers.version || "__edb_v__",
+			entity: this.config.identifiers.entity || "__edb_e__",
+			version: this.config.identifiers.version || "__edb_v__",
 		};
 		this._instance = ElectroInstance.entity;
 	}
@@ -145,27 +146,47 @@ class Entity {
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
 	}
 
-	_chain(state, clauses, clause) {
-		let current = {};
-		for (let child of clause.children) {
-			current[child] = (...args) => {
-				state.prev = state.self;
-				state.self = child;
-				let results = clauses[child].action(this, state, ...args);
-				if (clauses[child].children.length) {
-					return this._chain(results, clauses, clauses[child]);
+	async go(method, params = {}, options = {}) {
+		let config = {
+			includeKeys: options.includeKeys,
+			originalErr: options.originalErr,
+			raw: options.raw,
+			params: options.params || {},
+			page: options.page,
+			pager: !!options.pager,
+			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw
+		};
+		let parameters = Object.assign({}, params);
+		let stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+		try {
+			let response = await this.client[method](parameters).promise().catch(err => {
+				err.__isAWSError = true;
+				throw err;
+			});
+			switch (method) {
+				case MethodTypes.put:
+				case MethodTypes.create:
+					return this.formatResponse(parameters.IndexName, parameters, config);
+				case MethodTypes.batchWrite:
+					return this.formatBulkResponse(parameters.IndexName, response, config);
+				default:
+					return this.formatResponse(parameters.IndexName, response, config);
+			}
+		} catch (err) {
+			if (config.originalErr) {
+				return Promise.reject(err);
+			} else {
+				if (err.__isAWSError) {
+					stackTrace.message = new e.ElectroError(e.ErrorCodes.AWSError, err.message).message;
+					return Promise.reject(stackTrace);
+				} else if (err.isElectroError) {
+					return Promise.reject(err);
 				} else {
-					return results;
+					stackTrace.message = new e.ElectroError(e.ErrorCodes.UnknownError, err.message).message;
+					return Promise.reject(stackTrace);
 				}
-			};
+			}
 		}
-		return current;
-	}
-	/* istanbul ignore next */
-	_makeChain(index = "", clauses, rootClause, options = {}) {
-		let facets = this.model.facets.byIndex[index];
-		let state = initChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
-		return this._chain(state, clauses, rootClause);
 	}
 
 	cleanseRetrievedData(item = {}, options = {}) {
@@ -187,7 +208,8 @@ class Entity {
 		if (!response || !response.UnprocessedItems) {
 			return response;
 		}
-		let unProcessed = response.UnprocessedItems[this.model.table];
+		let table = this._getTableName();
+		let unProcessed = response.UnprocessedItems[table];
 		if (Array.isArray(unProcessed) && unProcessed.length) {
 			return unProcessed.map(request => {
 				if (request.PutRequest) {
@@ -257,8 +279,35 @@ class Entity {
 		}
 	}
 
+	_getTableName() {
+		return this.config.table;
+	}
+
+	_chain(state, clauses, clause) {
+		let current = {};
+		for (let child of clause.children) {
+			current[child] = (...args) => {
+				state.prev = state.self;
+				state.self = child;
+				let results = clauses[child].action(this, state, ...args);
+				if (clauses[child].children.length) {
+					return this._chain(results, clauses, clauses[child]);
+				} else {
+					return results;
+				}
+			};
+		}
+		return current;
+	}
+	/* istanbul ignore next */
+	_makeChain(index = "", clauses, rootClause, options = {}) {
+		let facets = this.model.facets.byIndex[index];
+		let state = initChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
+		return this._chain(state, clauses, rootClause);
+	}
+
 	_regexpEscape(string) {
-		return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	}
 
 	_deconstructKeys(index, keyType, key, backupFacets = {}) {
@@ -271,8 +320,10 @@ class Entity {
 		let {facets} = this.model.indexes[accessPattern][keyType];
 		let names = [];
 		let pattern = `^${this._regexpEscape(prefix)}`;
+		let labels = this.model.facets.labels[index];
 		for (let facet of facets) {
-			let { label, name } = this.model.schema.attributes[facet];
+			let { name } = this.model.schema.attributes[facet];
+			let label = labels[facet];
 			if (isCustom) {
 				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
 			} else {
@@ -298,11 +349,13 @@ class Entity {
 			}
 		} else {
 			for (let i = 0; i < names.length; i++) {
-				results[names[i]] = match[i+1];
+				results[names[i]] = match[i+1]; 
 			}
 		}
 		return results;
 	}
+
+
 
 	_deconstructIndex(index = "", lastEvaluated, lastReturned) {
 		let pkName = this.model.translations.keys[index].pk;
@@ -320,15 +373,15 @@ class Entity {
 		if (lastEvaluated === null || typeof lastEvaluated !== "object" || Object.keys(lastEvaluated).length === 0) {
 			return lastEvaluated;
 		}
-
-		let pager = this._deconstructIndex(index, lastEvaluated, lastReturned);
 		let tableIndex = "";
+		let pager = this._deconstructIndex(index, lastEvaluated, lastReturned);
 		// lastEvaluatedKeys from query calls include the index pk/sk as well as the table index's pk/sk
 		if (index !== tableIndex) {
 			pager = {...pager, ...this._deconstructIndex(tableIndex, lastEvaluated, lastReturned)};
 		}
-
-		if (Object.keys(pager).length === 0) {
+		let pagerIsEmpty = Object.keys(pager).length === 0;
+		let pagerIsIncomplete = this.model.facets.byIndex[tableIndex].all.find(facet => pager[facet.name] === undefined);
+		if (pagerIsEmpty || pagerIsIncomplete) {
 			// In this case no suitable record could be found be the deconstructed pager.
 			// This can be valid in cases where a scan is performed but returns no results.
 			return null;
@@ -372,6 +425,8 @@ class Entity {
 			if (option.raw) config.raw = true;
 			if (option.pager) config.pager = true;
 			if (option.lastEvaluatedKeyRaw === true) config.lastEvaluatedKeyRaw = true;
+			if (option.limit) config.params.Limit = option.limit;
+			if (option.table) config.params.Limit = option.table;
 			config.page = Object.assign({}, config.page, option.page);
 			config.params = Object.assign({}, config.params, option.params);
 			return config;
@@ -394,50 +449,6 @@ class Entity {
 		}
 
 		return parameters;
-	}
-
-	async go(method, params = {}, options = {}) {
-		let config = {
-			includeKeys: options.includeKeys,
-			originalErr: options.originalErr,
-			raw: options.raw,
-			params: options.params || {},
-			page: options.page,
-			pager: !!options.pager,
-			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw
-		};
-		let parameters = Object.assign({}, params);
-		let stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
-		try {
-			let response = await this.client[method](parameters).promise().catch(err => {
-				err.__isAWSError = true;
-				throw err;
-			});
-
-			switch (method) {
-				case MethodTypes.put:
-				case MethodTypes.create:
-					return this.formatResponse(parameters.IndexName, parameters, config);
-				case MethodTypes.batchWrite:
-					return this.formatBulkResponse(parameters.IndexName, response, config);
-				default:
-					return this.formatResponse(parameters.IndexName, response, config);
-			}
-		} catch (err) {
-			if (config.originalErr) {
-				return Promise.reject(err);
-			} else {
-				if (err.__isAWSError) {
-					stackTrace.message = new e.ElectroError(e.ErrorCodes.AWSError, err.message).message;
-					return Promise.reject(stackTrace);
-				} else if (err.isElectroError) {
-					return Promise.reject(err);
-				} else {
-					stackTrace.message = new e.ElectroError(e.ErrorCodes.UnknownError, err.message).message;
-					return Promise.reject(stackTrace);
-				}
-			}
-		}
 	}
 
 	_makeCreateConditions(index) {
@@ -508,6 +519,7 @@ class Entity {
 	}
 
 	_batchWriteParams(state, config = {}) {
+		let table = this._getTableName();
 		let batch = [];
 		for (let itemState of state.batch.items) {
 			let method = itemState.query.method;
@@ -528,7 +540,7 @@ class Entity {
 		}
 		return {
 			RequestItems: {
-				[this.model.table]: batch
+				[table]: batch
 			}
 		}
 	}
@@ -570,7 +582,7 @@ class Entity {
 		let keys = this._makeParameterKey(indexBase, pk, ...sk);
 		let keyExpressions = this._expressionAttributeBuilder(keys);
 		let params = {
-			TableName: this.model.table,
+			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.ExpressionAttributeNames,
 				keyExpressions.ExpressionAttributeNames
@@ -599,7 +611,7 @@ class Entity {
 		let index = "";
 		let keys = this._makeIndexKeys(index, partition, sort);
 		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
-		let TableName = this.model.table;
+		let TableName = this._getTableName();
 		return {Key, TableName};
 	}
 
@@ -624,7 +636,7 @@ class Entity {
 			UpdateExpression,
 			ExpressionAttributeNames,
 			ExpressionAttributeValues,
-			TableName: this.model.table,
+			TableName: this._getTableName(),
 			Key: indexKey,
 		};
 	}
@@ -642,7 +654,7 @@ class Entity {
 				[this.identifiers.entity]: this.model.entity,
 				[this.identifiers.version]: this.model.version,
 			},
-			TableName: this.model.table,
+			TableName: this._getTableName(),
 		};
 	}
 
@@ -801,7 +813,7 @@ class Entity {
 		);
 		delete keyExpressions.ExpressionAttributeNames["#sk2"];
 		let params = {
-			TableName: this.model.table,
+			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.ExpressionAttributeNames,
 				keyExpressions.ExpressionAttributeNames,
@@ -834,7 +846,7 @@ class Entity {
 		};
 		let params = {
 			KeyConditionExpression,
-			TableName: this.model.table,
+			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.ExpressionAttributeNames, keyExpressions.ExpressionAttributeNames, customExpressions.names),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.ExpressionAttributeValues, keyExpressions.ExpressionAttributeValues, customExpressions.values),
 		};
@@ -870,7 +882,7 @@ class Entity {
 			sk,
 		);
 		let params = {
-			TableName: this.model.table,
+			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.ExpressionAttributeNames,
 				keyExpressions.ExpressionAttributeNames,
@@ -1133,52 +1145,6 @@ class Entity {
 			return "";
 		}
 	}
-
-	/* istanbul ignore next */
-	// _getPrefixes({ collection = "", customFacets = {}, sk } = {}) {
-	// 	/*
-	// 		Collections will prefix the sort key so they can be queried with
-	// 		a "begins_with" operator when crossing entities. It is also possible
-	// 		that the user defined a custom key on either the PK or SK. In the case
-	// 		of a customKey AND a collection, the collection is ignored to favor
-	// 		the custom key.
-	// 	*/
-	//
-	// 	let keys = {
-	// 		pk: {
-	// 			prefix: "",
-	// 			isCustom: false,
-	// 		},
-	// 		sk: {
-	// 			prefix: "",
-	// 			isCustom: false,
-	// 		},
-	// 	};
-	//
-	// 	if (collection) {
-	// 		keys.pk.prefix = this.model.prefixes.pk;
-	// 		keys.sk.prefix = `$${collection}#${this.model.entity}`;
-	// 	} else {
-	// 		keys.pk.prefix = this.model.prefixes.pk;
-	// 		keys.sk.prefix = this.model.prefixes.sk;
-	// 	}
-	//
-	// 	if (sk === undefined) {
-	// 		keys.pk.prefix += keys.sk.prefix;
-	// 	}
-	//
-	// 	if (customFacets.pk) {
-	// 		keys.pk.prefix = "";
-	// 		keys.pk.isCustom = customFacets.pk;
-	// 	}
-	//
-	// 	if (customFacets.sk) {
-	// 		keys.sk.prefix = "";
-	// 		keys.sk.isCustom = customFacets.sk;
-	// 	}
-	//
-	// 	return keys;
-	// }
 
 	/* istanbul ignore next */
 	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
@@ -1479,7 +1445,6 @@ class Entity {
 				all: attributes,
 				collection: index.collection,
 			};
-
 
 			attributes.forEach(({index, type, name}, j) => {
 				let next = attributes[j + 1] !== undefined ? attributes[j + 1].name : "";

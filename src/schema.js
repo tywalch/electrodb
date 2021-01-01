@@ -242,10 +242,12 @@ class Schema {
 				get: attribute.get,
 				set: attribute.set,
 			};
+			
 			if (facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
 				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
 				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid facet definition: Facets must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a facet of the the following indexes: ${assignedIndexes.join(", ")}`);
 			}
+			
 			if (usedAttrs[definition.field] || usedAttrs[name]) {
 				invalidProperties.push({
 					name,
@@ -258,6 +260,7 @@ class Schema {
 			} else {
 				usedAttrs[definition.field] = definition.name;
 			}
+			
 			translationForTable[definition.name] = definition.field;
 			translationForRetrieval[definition.field] = definition.name;
 			normalized[name] = new Attribute(definition);

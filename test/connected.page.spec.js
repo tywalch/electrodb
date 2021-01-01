@@ -1,14 +1,14 @@
-const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const AWS = require("aws-sdk");
-const { expect } = require("chai");
-AWS.config.update({
-  region: "us-east-1",
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
-});
-const client = new AWS.DynamoDB.DocumentClient();
 const uuid = require("uuid").v4;
+const {expect} = require("chai");
 const {Entity} = require("../src/entity");
+const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
+const region = "us-east-1";
+const isLocal = !!endpoint;
+AWS.config.update({region, endpoint});
+const client = new AWS.DynamoDB.DocumentClient();
+const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const TasksModel = {
   entity: uuid(),
@@ -154,7 +154,7 @@ class Tasks extends Entity {
       if (next === null) {
         break;
       }
-      var [next, tasks] = await query(limit, next).then(test);
+      var [next, tasks] = await query(next, limit).then(test);
       results = [...results, ...tasks];
     }
     return results
@@ -208,7 +208,7 @@ describe("Page", async () => {
   before(async function() {
     this.timeout(10000);
     await tasks.load(total);
-    await sleep(1000)
+    await sleep(1000);
   });
 
   it("Should paginate through all records", async () => {
@@ -238,23 +238,21 @@ describe("Page", async () => {
         },
       }
     ];
-
     for (let test of tests) {
       let query;
       let loaded;
       let testPage = (([page, tasks]) => {
-        if (page !== null) expect(page).to.have.keys(test.output.pageKeys);
+        if (page !== null) expect(page).to.include.keys(test.output.pageKeys);
         return [page, tasks];
       });
-
       if (test.type === "scan") {
-        query = () => tasks.scan.page();
+        query = (next, limit) => tasks.scan.page(next, {limit});
         loaded = tasks.loaded;
       } else {
-        query = () => tasks.query[test.input.index](test.input.facets).page();
+        query = (next, limit) => tasks.query[test.input.index](test.input.facets).page(next, {limit});
         loaded = tasks.filterLoaded(test.input.facets);
       }
-
+      
       let results = await tasks.paginate(2, total, query, testPage);
       expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
     }
@@ -311,7 +309,7 @@ describe("Page", async () => {
     let [page, items] = results;
     expect(items.Items).to.not.be.undefined
     expect(items.Items).to.be.an("array");
-    expect(page).to.be.an('object').that.has.all.keys('pk', 'sk');
+      expect(page).to.be.an('object').that.has.all.keys('pk', 'sk');
   }).timeout(10000);
 
   it("Should paginate and return normal results but the real lastEvaluated key as received via lastEvaluatedKeyRaw", async () => {
@@ -322,7 +320,7 @@ describe("Page", async () => {
     if (items[0]) {
       expect(items[0]).to.be.an('object').that.has.all.keys(...Object.keys(TasksModel.attributes));
     }
-    expect(page).to.be.an('object').that.has.all.keys('pk', 'sk');
+      expect(page).to.be.an('object').that.has.all.keys('pk', 'sk');
   }).timeout(10000);
 
   it("Should require a dynamodb client object to use the page method", () => {

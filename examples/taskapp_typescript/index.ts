@@ -35,6 +35,7 @@ const loader = new Loader(taskr);
 // query();
 
 async function query() {
+  taskr.entities.employees.model.facets.byIndex[""].all
   // Use Collections to query across entities.
   // Find office and staff information for the "Scranton Branch"
   let scranton = await taskr.collections.workplaces({office: "Scranton Branch"}).go();
