@@ -112,6 +112,9 @@ class Service {
 
 	_setTableName(table) {
 		this.service.table = table;
+		for (let entity of Object.values(this.entities)) {
+			entity._setTableName(table);
+		}
 	}
 
 	_makeCollectionChain(name = "", attributes = {}, clauses = {}, identifiers = {}, entity = {}, facets = {}) {
