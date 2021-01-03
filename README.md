@@ -4,7 +4,7 @@
 ![npm bundle size](https://img.shields.io/bundlephobia/min/electrodb) [![Build Status](https://travis-ci.org/tywalch/electrodb.svg?branch=master)](https://travis-ci.org/tywalch/electrodb)
 [![Runkit Demo](https://img.shields.io/badge/runkit-electrodb-db4792)](https://runkit.com/tywalch/creating-and-querying-an-electrodb-service)
 
-![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb.png?raw=true)
+![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb-drk.png?raw=true)
 ***ElectroDB*** is a dynamodb library to ease the use of having multiple entities and complex hierarchical relationships in a single dynamodb table. 
 
 *This library is a work in progress, please submit issues/feedback or reach out on twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
