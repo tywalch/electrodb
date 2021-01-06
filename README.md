@@ -1,3 +1,4 @@
+
 # ElectroDB  
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
 [![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) 
@@ -14,12 +15,14 @@
 - [**Easily Compose Hierarchical Access Patterns**](#facets) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
 - [**Single Table Entity Segregation**](#model) - Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
 - [**Simplified Sort Key Condition Querying**](#building-queries) - Write efficient sort key queries by easily building compose keys.
-- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for Dynamo queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
+- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
 - [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/peformant queries that return multiple entities in a single request.
 - [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and effeciently query based on defined sort key structures. 
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily iterate through multiquery result sets.
 - [**Use With Your Existing Solution**](#facet-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Facet Templates to leverage your existing key structures.
-- **Generate Type Defintions** - _Coming Soon_: The ability to generate TypeScript `.d.ts` based on your model.
+- [**Generate Type Defintions**](#electro-cli) - Generate **TypeScript** type definition files (`.d.ts`) based on your model.
+- [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
+- [**Dynamically HTTP Service for Entities**](#electro-cli) - stand up an HTTP Service to interact with your `Entities`, `Services`, `Models` for easier prototyping.
 
 Turn this:
 ```javascript
@@ -151,6 +154,8 @@ Into This:
       - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
+- [Electro CLI](#electro-cli)
+  * [TypeScript](#electro-cli)
 - [Version 1.0 Migration](#version-1-migration)
 - [Coming Soon](#coming-soon)
 
@@ -2762,6 +2767,18 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ``` 
+
+# Electro CLI
+> _NOTE: The ElectroCLI is currently in a beta phase and subject to change._
+
+Electro is a CLI utility toolbox for extending the functionality of **ElectroDB**. Current functionality of the CLI allows you to:
+
+1. Generate TypeScript type definition files for your `Entities` and `Services`.
+2. Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
+3. Dynamically stand up an HTTP Service to interact with your `Entities`, `Services`, `Models`.
+
+For usage and installation details you can learn more [here](https://github.com/tywalch/electrocli).
+
 
 # Version 1 Migration
 This section is to detail any breaking changes made on the journey to a stable 1.0 product. 
