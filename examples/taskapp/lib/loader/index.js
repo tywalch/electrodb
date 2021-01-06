@@ -1,5 +1,6 @@
 const makeLoader = require("./mock");
-const makeTabler = require("./table");
+const makeTabler = require("../table");
+const definition = require("../table/definition.json")
 
 class TaskAppExampleLoader {
   constructor(service) {
@@ -15,9 +16,9 @@ class TaskAppExampleLoader {
     let table = makeTabler(this.db.service.table, this.db.client.options);
     let exists = await table.exists().catch(err => console.log(err) || true);
     if (exists) {
-      console.log("Table already exists! if you would like to recreate it, use `dropTable` first.");
+      console.log("Table already exists!");
     } else {
-      return table.create()
+      return table.create(definition)
         .then(() => console.log("Table created!"))
         .catch(err => {
           console.log("Error creating table", err);

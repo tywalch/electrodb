@@ -1,0 +1,39 @@
+{
+	"model": {
+		"entity": "offices",
+		"version": "1",
+		"service": "taskapp"
+	},
+	"attributes": {
+		"office": "string",
+		"country": "string",
+		"state": "string",
+		"city": "string",
+		"zip": "string",
+		"address": "string"
+	},
+	"indexes": {
+		"locations": {
+			"pk": {
+				"field": "pk",
+				"facets": ["country", "state"]
+			},
+			"sk": {
+				"field": "sk",
+				"facets": ["city", "zip", "office"]
+			}
+		},
+		"office": {
+			"index": "gsi1pk-gsi1sk-index",
+			"collection": "workplaces",
+			"pk": {
+				"field": "gsi1pk",
+				"facets": ["office"]
+			},
+			"sk": {
+				"field": "gsi1sk",
+				"facets": []
+			}
+		}
+	}
+}

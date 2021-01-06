@@ -456,17 +456,26 @@ class Entity {
 	}
 
 	_makeCreateConditions(index) {
-		let filter = [`attribute_not_exists(pk)`];
-		if (this.model.lookup.indexHasSortKeys[index]) {
-			filter.push(`attribute_not_exists(sk)`);
+		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
+		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+		let pkField = this.model.indexes[accessPattern].pk.field;
+		let filter = [`attribute_not_exists(${pkField})`];
+		if (hasSortKey) {
+			let skField = this.model.indexes[accessPattern].sk.field;
+			filter.push(`attribute_not_exists(${skField})`);
 		}
 		return filter.join(" AND ");
 	}
 
 	_makePatchConditions(index) {
-		let filter = [`attribute_exists(pk)`];
-		if (this.model.lookup.indexHasSortKeys[index]) {
-			filter.push(`attribute_exists(sk)`);
+		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
+		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+		let pkField = this.model.indexes[accessPattern].pk.field;
+
+		let filter = [`attribute_exists(${pkField})`];
+		if (hasSortKey) {
+			let skField = this.model.indexes[accessPattern].sk.field;
+			filter.push(`attribute_exists(${skField})`);
 		}
 		return filter.join(" AND ");
 	}
@@ -581,6 +590,8 @@ class Entity {
 	_makeScanParam(filter = {}) {
 		let indexBase = "";
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
+		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
+		let pkField = this.model.indexes[accessPattern].pk.field;
 		// let facets = this.model.facets.byIndex[indexBase];
 		let {pk, sk} = this._makeIndexKeys(indexBase);
 		let keys = this._makeParameterKey(indexBase, pk, ...sk);
@@ -595,7 +606,7 @@ class Entity {
 				filter.ExpressionAttributeValues,
 				keyExpressions.ExpressionAttributeValues,
 			),
-			FilterExpression: `(begins_with(#pk, :pk)`,
+			FilterExpression: `begins_with(#${pkField}, :${pkField})`,
 		};
 		params.ExpressionAttributeNames["#" + this.identifiers.entity] = this.identifiers.entity;
 		params.ExpressionAttributeNames["#" + this.identifiers.version] = this.identifiers.version;
@@ -603,7 +614,8 @@ class Entity {
 		params.ExpressionAttributeValues[":" + this.identifiers.version] = this.model.version;
 		params.FilterExpression = `${params.FilterExpression} AND #${this.identifiers.entity} = :${this.identifiers.entity} AND #${this.identifiers.version} = :${this.identifiers.version}`;
 		if (hasSortKey) {
-			params.FilterExpression = `${params.FilterExpression} AND begins_with(#sk, :sk))`;
+			let skField = this.model.indexes[accessPattern].sk.field;
+			params.FilterExpression = `${params.FilterExpression} AND begins_with(#${skField}, :${skField})`;
 		}
 		if (filter.FilterExpression) {
 			params.FilterExpression = `${params.FilterExpression} AND ${filter.FilterExpression}`;

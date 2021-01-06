@@ -1,17 +1,288 @@
-const makeTable = require("../examples/taskapp/table.js");
-const region = "us-east-1";
+const makeTable = require("../examples/taskapp/lib/table");
+const definition = require("../examples/taskapp/lib/table/definition.json");
 const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
-if (endpoint !== undefined) {
-  let tablr = makeTable("electro", {region, endpoint});
-  tablr.exists().then(exists => {
-    if (!exists) {
-      console.log("Making Table");
-      tablr.create().catch(err => {
-        console.log(err);
-        process.exit(1);
-      })
-    } else {
-      console.log("Using Existing Table");
+const region = "us-east-1";
+
+async function create(endpoint, region, table, definition) {
+  try {
+    if (endpoint !== undefined) {
+      let tablr = makeTable(table, {region, endpoint});
+      let exists = await tablr.exists();
+      if (exists) {
+        await tablr.drop();
+      }
+      await tablr.create(definition);
     }
-  });
+  } catch(err) {
+    console.log(err);
+    process.exit(1);
+  }
 }
+
+create(endpoint, region, "electro", definition);
+create(endpoint, region, "electro_customkeys", {
+  "KeySchema":[
+      {
+          "AttributeName":"partition_key",
+          "KeyType":"HASH"
+      },
+      {
+          "AttributeName":"sort_key",
+          "KeyType":"RANGE"
+      }
+  ],
+  "AttributeDefinitions":[
+      {
+          "AttributeName":"partition_key",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"sort_key",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"partition_key_idx1",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"sort_key_idx1",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"partition_key_idx2",
+          "AttributeType":"S"
+      },
+      {
+        "AttributeName":"gsi3pk",
+        "AttributeType":"S"
+      },  
+      {
+        "AttributeName":"gsi3sk",
+        "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi4pk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi4sk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi5pk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi5sk",
+          "AttributeType":"S"
+      }
+  ],
+  "GlobalSecondaryIndexes":[
+      {
+          "IndexName":"idx1",
+          "KeySchema":[
+              {
+                  "AttributeName":"partition_key_idx1",
+                  "KeyType":"HASH"
+              },
+              {
+                  "AttributeName":"sort_key_idx1",
+                  "KeyType":"RANGE"
+              }
+          ],
+          "Projection":{
+              "ProjectionType":"ALL"
+          }
+      },
+      {
+          "IndexName":"idx2",
+          "KeySchema":[
+              {
+                  "AttributeName":"partition_key_idx2",
+                  "KeyType":"HASH"
+              }
+          ],
+          "Projection":{
+              "ProjectionType":"ALL"
+          }
+      },
+      {
+        "IndexName":"gsi3pk-gsi3sk-index",
+        "KeySchema":[
+            {
+                "AttributeName":"gsi3pk",
+                "KeyType":"HASH"
+            },
+            {
+                "AttributeName":"gsi3sk",
+                "KeyType":"RANGE"
+            }
+        ],
+        "Projection":{
+            "ProjectionType":"ALL"
+        }
+    },
+    {
+        "IndexName":"gsi4pk-gsi4sk-index",
+        "KeySchema":[
+            {
+                "AttributeName":"gsi4pk",
+                "KeyType":"HASH"
+            },
+            {
+                "AttributeName":"gsi4sk",
+                "KeyType":"RANGE"
+            }
+        ],
+        "Projection":{
+            "ProjectionType":"ALL"
+        }
+    },
+    {
+        "IndexName":"gsi5pk-gsi5sk-index",
+        "KeySchema":[
+            {
+                "AttributeName":"gsi5pk",
+                "KeyType":"HASH"
+            },
+            {
+                "AttributeName":"gsi5sk",
+                "KeyType":"RANGE"
+            }
+        ],
+        "Projection":{
+            "ProjectionType":"ALL"
+        }
+    }
+  ],
+  "BillingMode":"PAY_PER_REQUEST"
+});
+create(endpoint, region, "electro_nosort", {
+  "KeySchema":[
+      {
+          "AttributeName":"partition_key",
+          "KeyType":"HASH"
+      }
+  ],
+  "AttributeDefinitions":[
+      {
+          "AttributeName":"partition_key",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"partition_key_idx1",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"sort_key_idx1",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"partition_key_idx2",
+          "AttributeType":"S"
+      },
+      {
+        "AttributeName":"gsi3pk",
+        "AttributeType":"S"
+      },  
+      {
+        "AttributeName":"gsi3sk",
+        "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi4pk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi4sk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi5pk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi5sk",
+          "AttributeType":"S"
+      }
+  ],
+  "GlobalSecondaryIndexes":[
+      {
+          "IndexName":"idx1",
+          "KeySchema":[
+              {
+                  "AttributeName":"partition_key_idx1",
+                  "KeyType":"HASH"
+              },
+              {
+                  "AttributeName":"sort_key_idx1",
+                  "KeyType":"RANGE"
+              }
+          ],
+          "Projection":{
+              "ProjectionType":"ALL"
+          }
+      },
+      {
+          "IndexName":"idx2",
+          "KeySchema":[
+              {
+                  "AttributeName":"partition_key_idx2",
+                  "KeyType":"HASH"
+              }
+          ],
+          "Projection":{
+              "ProjectionType":"ALL"
+          }
+      },
+      {
+        "IndexName":"gsi3pk-gsi3sk-index",
+        "KeySchema":[
+            {
+                "AttributeName":"gsi3pk",
+                "KeyType":"HASH"
+            },
+            {
+                "AttributeName":"gsi3sk",
+                "KeyType":"RANGE"
+            }
+        ],
+        "Projection":{
+            "ProjectionType":"ALL"
+        }
+    },
+    {
+        "IndexName":"gsi4pk-gsi4sk-index",
+        "KeySchema":[
+            {
+                "AttributeName":"gsi4pk",
+                "KeyType":"HASH"
+            },
+            {
+                "AttributeName":"gsi4sk",
+                "KeyType":"RANGE"
+            }
+        ],
+        "Projection":{
+            "ProjectionType":"ALL"
+        }
+    },
+    {
+        "IndexName":"gsi5pk-gsi5sk-index",
+        "KeySchema":[
+            {
+                "AttributeName":"gsi5pk",
+                "KeyType":"HASH"
+            },
+            {
+                "AttributeName":"gsi5sk",
+                "KeyType":"RANGE"
+            }
+        ],
+        "Projection":{
+            "ProjectionType":"ALL"
+        }
+    }
+  ],
+  "BillingMode":"PAY_PER_REQUEST"
+})

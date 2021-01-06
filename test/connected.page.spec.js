@@ -309,7 +309,9 @@ describe("Page", async () => {
     let [page, items] = results;
     expect(items.Items).to.not.be.undefined
     expect(items.Items).to.be.an("array");
+    if (page) {
       expect(page).to.be.an('object').that.has.all.keys('pk', 'sk');
+    }
   }).timeout(10000);
 
   it("Should paginate and return normal results but the real lastEvaluated key as received via lastEvaluatedKeyRaw", async () => {
@@ -320,7 +322,9 @@ describe("Page", async () => {
     if (items[0]) {
       expect(items[0]).to.be.an('object').that.has.all.keys(...Object.keys(TasksModel.attributes));
     }
+    if (page) {
       expect(page).to.be.an('object').that.has.all.keys('pk', 'sk');
+    }
   }).timeout(10000);
 
   it("Should require a dynamodb client object to use the page method", () => {

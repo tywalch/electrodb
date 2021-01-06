@@ -3,7 +3,7 @@ const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity } = require("../src/entity");
 const { expect } = require("chai");
-const uuidv4 = require("uuid").v4;
+const uuid = require("uuid").v4;
 const moment = require("moment");
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({
@@ -20,7 +20,7 @@ let model = {
 	attributes: {
 		id: {
 			type: "string",
-			default: () => uuidv4(),
+			default: () => uuid(),
 			field: "storeLocationId",
 		},
 		sector: {
@@ -173,8 +173,8 @@ describe("Entity", async () => {
 			});
 		}).timeout(20000);
 		it("Should not collide with other keys", async () => {
-			let sector = uuidv4();
-			let malls = [uuidv4(), uuidv4()];
+			let sector = uuid();
+			let malls = [uuid(), uuid()];
 			let storeNames = [
 				"ABC",
 				"DEF",
@@ -276,7 +276,7 @@ describe("Entity", async () => {
 		}).timeout(20000);
 
 		it("Should not create a overwrite existing record", async () => {
-			let id = uuidv4();
+			let id = uuid();
 			let mall = "EastPointe";
 			let store = "LatteLarrys";
 			let sector = "A1";
@@ -308,7 +308,7 @@ describe("Entity", async () => {
 		});
 
 		it("Should only update a record if it already exists", async () => {
-			let id = uuidv4();
+			let id = uuid();
 			let mall = "EastPointe";
 			let store = "LatteLarrys";
 			let sector = "A1";
@@ -341,7 +341,7 @@ describe("Entity", async () => {
 		});
 
 		it("Should pass back the original dynamodb error when originalErr is set to true", async () => {
-			let id = uuidv4();
+			let id = uuid();
 			let sector = "A1";
 
 			let [electroSuccess, electroErr] = await MallStores.get({sector, id})
@@ -365,7 +365,475 @@ describe("Entity", async () => {
 		});
 	});
 
+	describe("Simple crud without sort key", async () => {
+		const MallStores = new Entity({
+			model: {
+				service: SERVICE,
+				entity: ENTITY,
+				version: "1",
+			},
+			attributes: {
+				id: {
+					type: "string",
+					default: () => uuid(),
+					field: "storeLocationId",
+				},
+				sector: {
+					type: "string",
+				},
+				mall: {
+					type: "string",
+					required: true,
+					field: "mallId",
+				},
+				store: {
+					type: "string",
+					required: true,
+					field: "storeId",
+				},
+				building: {
+					type: "string",
+					required: true,
+					field: "buildingId",
+				},
+				unit: {
+					type: "string",
+					required: true,
+					field: "unitId",
+				},
+				category: {
+					type: [
+						"food/coffee",
+						"food/meal",
+						"clothing",
+						"electronics",
+						"department",
+						"misc",
+					],
+					required: true,
+				},
+				leaseEnd: {
+					type: "string",
+					required: true,
+					validate: (date) =>
+						moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
+				},
+				rent: {
+					type: "string",
+					required: false,
+					default: "0.00",
+				},
+				adjustments: {
+					type: "string",
+					required: false,
+				},
+			},
+			indexes: {
+				store: {
+					pk: {
+						field: "partition_key",
+						facets: ["sector", "id"],
+					}
+				},
+				units: {
+					index: "idx1",
+					pk: {
+						field: "partition_key_idx1",
+						facets: ["mall"],
+					},
+					sk: {
+						field: "sort_key_idx1",
+						facets: ["building", "unit", "store"],
+					},
+				},
+				leases: {
+					index: "idx2",
+					pk: {
+						field: "partition_key_idx2",
+						facets: ["mall"],
+					}
+				},
+				categories: {
+					index: "gsi3pk-gsi3sk-index",
+					pk: {
+						field: "gsi3pk",
+						facets: ["mall"],
+					},
+					sk: {
+						field: "gsi3sk",
+						facets: ["category", "building", "unit", "store"],
+					},
+				},
+				shops: {
+					index: "gsi4pk-gsi4sk-index",
+					pk: {
+						field: "gsi4pk",
+						facets: ["store"],
+					},
+					sk: {
+						field: "gsi4sk",
+						facets: ["mall", "building", "unit"],
+					},
+				},
+			}
+		}, {client, table: "electro_nosort"});
+		let mall = "EastPointe";
+		let store = "LatteLarrys";
+		let sector = "A1";
+		let category = "food/coffee";
+		let leaseEnd = "2020-01-20";
+		let rent = "0.00";
+		let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		let building = "BuildingZ";
+		let unit = "G1";
+		it("Should return the created item", async () => {
+			let putOne = await MallStores.put({
+				sector,
+				store,
+				mall,
+				rent,
+				category,
+				leaseEnd,
+				unit,
+				building,
+			}).go();
+			expect(putOne).to.deep.equal({
+				id: putOne.id,
+				sector,
+				mall,
+				store,
+				building,
+				unit,
+				category,
+				leaseEnd,
+				rent,
+			});
+		}).timeout(20000);
+		it("Should not collide with other keys", async () => {
+			let sector = uuid();
+			let malls = [uuid(), uuid()];
+			let storeNames = [
+				"ABC",
+				"DEF",
+				"GHI",
+				"JKL",
+				"MNO",
+				"PQR",
+				"STU",
+				"WXY",
+				"ZYX",
+				"WUT",
+			];
+			let stores = [];
+			for (let i = 0; i < storeNames.length; i++) {
+				let mall = malls[i % 2];
+				stores.push(
+					MallStores.put({
+						sector,
+						mall,
+						rent,
+						category,
+						leaseEnd,
+						store: storeNames[i],
+						unit: `B${i + 1}`,
+						building: `Building${letters[i]}`,
+					}).go(),
+				);
+			}
+			stores = await Promise.all(stores);
+			expect(stores).to.be.an("array").and.have.length(10);
 
+			let mallOne = malls[0];
+			let mallOneIds = stores
+				.filter((store) => store.mall === mallOne)
+				.map((store) => store.id);
+
+			let mallOneStores = await MallStores.query
+				.units({
+					mall: mallOne,
+				})
+				.go();
+
+			let mallOneMatches = mallOneStores.every((store) =>
+				mallOneIds.includes(store.id),
+			);
+
+			expect(mallOneMatches);
+			expect(mallOneStores).to.be.an("array").and.have.length(5);
+
+			let first = stores[0];
+			let firstStore = await MallStores.get({
+				sector,
+				id: first.id,
+			}).go();
+			expect(firstStore).to.be.deep.equal(first);
+
+			let buildingsAfterB = await MallStores.query
+				.categories({ category, mall: mallOne })
+				.gt({ building: "BuildingB" })
+				.go();
+			let buildingsAfterBStores = stores.filter((store) => {
+				return (
+					store.mall === mallOne &&
+					store.building !== "BuildingA" &&
+					store.building !== "BuildingB"
+				);
+			});
+			expect(buildingsAfterB).to.deep.equal(buildingsAfterBStores);
+
+			let buildingsBetweenBH = await MallStores.query
+				.categories({ category, mall: mallOne })
+				.between({ building: "BuildingB" }, { building: "BuildingH" })
+				.go();
+
+			let buildingsBetweenBHStores = stores.filter((store) => {
+				return (
+					store.mall === mallOne &&
+					store.building !== "BuildingA" &&
+					store.building !== "BuildingI"
+				);
+			});
+			expect(buildingsBetweenBH)
+				.to.be.an("array")
+				.and.have.length(3)
+				.and.to.be.deep.equal(buildingsBetweenBHStores);
+
+			let secondStore = { sector, id: stores[1].id };
+			let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
+			let newRent = "5000.00";
+			expect(secondStoreBeforeUpdate.rent)
+				.to.equal(rent)
+				.and.to.not.equal(newRent);
+			let updatedStore = await MallStores.update(secondStore)
+				.set({ rent: newRent })
+				.go();
+			expect(updatedStore).to.deep.equal({});
+			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
+			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
+		}).timeout(20000);
+
+		it("Should not create a overwrite existing record", async () => {
+			let id = uuid();
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let sector = "A1";
+			let category = "food/coffee";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let building = "BuildingZ";
+			let unit = "G1";
+			let record = {
+				id,
+				mall,
+				store,
+				sector,
+				category,
+				leaseEnd,
+				rent,
+				building,
+				unit
+			};
+			let recordOne = await MallStores.create(record).go();
+			expect(recordOne).to.deep.equal(record);
+			let recordTwo = null;
+			try {
+				recordTwo = await MallStores.create(record).go();
+			} catch(err) {
+				expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+			}
+			expect(recordTwo).to.be.null
+		});
+
+		it("Should only update a record if it already exists", async () => {
+			let id = uuid();
+			let mall = "EastPointe";
+			let store = "LatteLarrys";
+			let sector = "A1";
+			let category = "food/coffee";
+			let leaseEnd = "2020-01-20";
+			let rent = "0.00";
+			let building = "BuildingZ";
+			let unit = "G1";
+			let record = {
+				id,
+				mall,
+				store,
+				sector,
+				category,
+				leaseEnd,
+				rent,
+				building,
+				unit
+			};
+			let recordOne = await MallStores.create(record).go();
+			expect(recordOne).to.deep.equal(record);
+			let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go();
+			let patchResultsTwo = null;
+			try {
+				patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
+			} catch(err) {
+				expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+			}
+			expect(patchResultsTwo).to.be.null
+		});
+
+		it("Should pass back the original dynamodb error when originalErr is set to true", async () => {
+			let id = uuid();
+			let sector = "A1";
+
+			let [electroSuccess, electroErr] = await MallStores.get({sector, id})
+				.go({params: {TableName: "blahblah"}})
+				.then(() => [true, null])
+				.catch(err => [false, err]);
+
+			let [originalSuccess, originalErr] = await MallStores.get({sector, id})
+				.go({originalErr: true, params: {TableName: "blahblah"}})
+				.then(() => [true, null])
+				.catch(err => [false, err]);
+
+			expect(electroSuccess).to.be.false;
+			expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
+			expect([
+				"Requested resource not found - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error",
+				"Cannot do operations on a non-existent table - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error"
+			].includes(electroErr.message)).to.be.true;
+			expect(originalSuccess).to.be.false;
+			expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
+		});
+	});
+
+	describe("Custom index fields", async () => {
+		it("Should use the index field names as theyre specified on the model", async () => {
+			let schema = {
+				model: {
+					service: "MallStoreDirectory",
+					entity: "MallStores",
+					version: "1",
+				},
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					stores: {
+						type: "number",
+					},
+					value: {
+						type: "string"
+					}
+				},
+				indexes: {
+					store: {
+						pk: {
+							field: "partition_key",
+							facets: ["id"],
+						},
+						sk: {
+							field: "sort_key",
+							facets: ["mall", "stores"]
+						}
+					},
+					other: {
+						index: "idx1",
+						pk: {
+							field: "partition_key_idx1",
+							facets: ["mall"],
+						},
+						sk: {
+							field: "sort_key_idx1",
+							facets: ["id", "stores"]
+						}
+					}
+				}
+			};
+			let MallStores = new Entity(schema, {client, table: "electro_customkeys"});
+			let id = uuid();
+			let mall = "defg";
+			let stores = 1;
+			let value = "ahssfh";
+			await MallStores.get({id, mall, stores}).go();
+			await MallStores.delete({id, mall, stores}).go();
+			await MallStores.update({id, mall, stores}).set({value}).go();
+			await MallStores.patch({id, mall, stores}).set({value}).go();
+			await MallStores.create({id: id + 1, mall, stores, value}).go();
+			await MallStores.put({id, mall, stores, value}).go();
+			await MallStores.query.store({id, mall, stores}).go();
+			await MallStores.query.other({id, mall, stores}).go();
+			await MallStores.scan.go();
+		});
+		it("Should use the index field names as theyre specified on the model when sort keys do not exist", async () => {
+			let schema = {
+				model: {
+					service: "MallStoreDirectory",
+					entity: "MallStores",
+					version: "1",
+				},
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					stores: {
+						type: "number",
+					},
+					value: {
+						type: "string"
+					}
+				},
+				indexes: {
+					store: {
+						pk: {
+							field: "partition_key",
+							facets: ["id", "mall", "stores"],
+						},
+					},
+					other: {
+						index: "idx1",
+						pk: {
+							field: "partition_key_idx1",
+							facets: ["mall"],
+						},
+						sk: {
+							field: "sort_key_idx1",
+							facets: ["id", "stores"]
+						}
+					},
+					noSortOther: {
+						index: "idx2",
+						pk: {
+							field: "partition_key_idx2",
+							facets: ["mall"],
+						}
+					},
+				}
+			};
+			let MallStores = new Entity(schema, {client, table: "electro_nosort"});
+			let id = uuid();
+			let mall = "defg";
+			let stores = 1;
+			let value = "ahssfh";
+			await MallStores.get({id, mall, stores}).go();
+			await MallStores.delete({id, mall, stores}).go();
+			await MallStores.update({id, mall, stores}).set({value}).go();
+			await MallStores.patch({id, mall, stores}).set({value}).go();
+			await MallStores.create({id: id + 1, mall, stores, value}).go();
+			await MallStores.put({id, mall, stores, value}).go();
+			await MallStores.query.store({id, mall, stores}).go();
+			await MallStores.query.other({id, mall, stores}).go();
+			await MallStores.query.noSortOther({mall}).go();
+			await MallStores.scan.go();
+		});
+	});
 	describe("Delete records", async () => {
 		it("Should create then delete a record", async () => {
 			let record = new Entity(
@@ -397,8 +865,8 @@ describe("Entity", async () => {
 				},
 				{ client },
 			);
-			let prop1 = uuidv4();
-			let prop2 = uuidv4();
+			let prop1 = uuid();
+			let prop2 = uuid();
 			await record.put({ prop1, prop2 }).go();
 			let recordExists = await record.get({ prop1, prop2 }).go();
 			await record.delete({ prop1, prop2 }).go();
@@ -413,13 +881,13 @@ describe("Entity", async () => {
 		let db = new Entity(
 			{
 				service: SERVICE,
-				entity: uuidv4(),
+				entity: uuid(),
 				table: "electro",
 				version: "1",
 				attributes: {
 					id: {
 						type: "string",
-						default: () => uuidv4(),
+						default: () => uuid(),
 					},
 					date: {
 						type: "string",
@@ -461,7 +929,7 @@ describe("Entity", async () => {
 
 		it("Should show getter/setter values on put", async () => {
 			let date = moment.utc().format();
-			let id = uuidv4();
+			let id = uuid();
 			let prop1 = "aaa";
 			let prop2 = "bbb";
 			let record = await db.put({ date, id, prop1, prop2 }).go();
@@ -494,7 +962,7 @@ describe("Entity", async () => {
 		}).timeout(20000);
 	});
 	describe("Query Options", async () => {
-		let entity = uuidv4();
+		let entity = uuid();
 		let db = new Entity(
 			{
 				service: SERVICE,
@@ -531,7 +999,7 @@ describe("Entity", async () => {
 			{ client },
 		);
 		it("Should return the originally returned results", async () => {
-			let id = uuidv4();
+			let id = uuid();
 			let date = moment.utc().format();
 			let someValue = "ABDEF";
 			let putRecord = await db.put({ id, date, someValue }).go({ raw: true });
@@ -587,8 +1055,8 @@ describe("Entity", async () => {
 			let category = "food/coffee";
 			let leaseEnd = "2020-01-20";
 			let building = "BuildingA";
-			let sector = uuidv4();
-			let malls = [uuidv4(), uuidv4()];
+			let sector = uuid();
+			let malls = [uuid(), uuid()];
 			let mall = malls[0];
 			let rent = "0";
 			let storeNames = [
@@ -641,13 +1109,13 @@ describe("Entity", async () => {
 			let db = new Entity(
 				{
 					service: SERVICE,
-					entity: uuidv4(),
+					entity: uuid(),
 					table: "electro",
 					version: "1",
 					attributes: {
 						id: {
 							type: "string",
-							default: () => uuidv4(),
+							default: () => uuid(),
 						},
 						date: {
 							type: "string",
@@ -695,8 +1163,8 @@ describe("Entity", async () => {
 				.and.to.have.deep.members([record]);
 		});
 		it("Should allow for multiple filters", async () => {
-			let entity = uuidv4();
-			let id = uuidv4();
+			let entity = uuid();
+			let id = uuid();
 			let db = new Entity(
 				{
 					service: SERVICE,
@@ -787,7 +1255,7 @@ describe("Entity", async () => {
 	describe("template and facets arrays", async () => {
 		it("Should resolve facet labels at an index level", async () => {
 			const SERVICE = "facettest";
-			const ENTITY = uuidv4();
+			const ENTITY = uuid();
 			let model = {
 				service: SERVICE,
 				entity: ENTITY,
@@ -910,7 +1378,7 @@ describe("Entity", async () => {
 				},
 			};
 			let MallStores = new Entity(model, { client });
-			let id = uuidv4();
+			let id = uuid();
 			let mall = "EastPointe";
 			let store = "LatteLarrys";
 			let sector = "A1";

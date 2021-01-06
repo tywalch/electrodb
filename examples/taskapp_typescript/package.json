@@ -13,5 +13,8 @@
     "electrodb": "^0.9.32",
     "moment": "^2.29.1",
     "uuid": "^8.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.0"
   }
 }

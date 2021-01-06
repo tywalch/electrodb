@@ -1,6 +1,7 @@
+import path from "path";
 import moment from "moment";
-import taskr from "../taskapp/app";
-import Loader from "../taskapp/loader";
+import taskr from "../../taskapp/src/taskr";
+import Loader from "../../taskapp/lib/loader";
 /**
  * ATTENTION READ FIRST:
  * It is recomended that you use the dynamodb-local docker image for this example. For more
@@ -11,29 +12,38 @@ import Loader from "../taskapp/loader";
  * which is used when connecting to the local docker dynamo instance described above.
 **/
 
-/**
- * Create a new instance of the TaskAppExample (Made for this example help create and load
- * the table with Task/Employee/Office data).
-**/
-const loader = new Loader(taskr);
+async function execute() {
+  /**
+   * Create a new instance of the TaskAppExample (Made for this example help create and load
+   * the table with Task/Employee/Office data).
+  **/
+  const loader = new Loader(taskr);
+  
+  /**
+   * Uncomment the relevent lines to create a table, then load it, optionally delete, and finally query.
+   * For more examples checkout the README.
+  **/
+  // Make table:
+  // await loader.makeTable();
 
-/**
- * Uncomment the relevent lines to create a table, then load it, optionally delete, and finally query.
- * For more examples checkout the README.
-**/
-// Make table:
-// loader.makeTable();
+  // Load table:
+  // await loader.loadTable({employees: 500, tasks: 600});
 
-// Load table:
-// loader.loadTable({employees: 500, tasks: 600});
+  // Drop table:
+  // await loader.dropTable()
 
-// Drop table:
-// loader.dropTable()
-
-// Query table:
-// query();
+  // Query table:
+  await query();
+}
 
 async function query() {
+  let records = await taskr.entities.employees.scan.go();
+  if (records.length === 0) {
+    console.log(`
+    Table is empty, be sure to load data into the table by uncommenting out 'loader.loadTable' in ${path.resolve(__dirname, "./index.js")}
+    `);
+    process.exit(1);
+  }
   // Use Collections to query across entities.
   // Find office and staff information for the "Scranton Branch"
   let scranton = await taskr.collections.workplaces({office: "Scranton Branch"}).go();

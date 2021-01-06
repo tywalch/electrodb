@@ -763,7 +763,7 @@ describe("Entity", () => {
 					":pk": "$mallstoredirectory_1$mallstores#id_",
 					":store1": "Starblix"
 				},
-				"FilterExpression": "(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #store = :store1",
+				"FilterExpression": "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #store = :store1",
 				"TableName": "StoreDirectory"
 			})
 		})
@@ -1271,7 +1271,7 @@ describe("Entity", () => {
 					parition_key: '$mallstoredirectory_1#id_abcd',
 					sort_key: '$mallstores#mall_defg#stores_1'
 				},
-				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
 			});
 			expect(createParams).to.deep.equal({
 				Item: {
@@ -1287,7 +1287,7 @@ describe("Entity", () => {
 					__edb_v__: '1'
 				},
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+				ConditionExpression: 'attribute_not_exists(parition_key) AND attribute_not_exists(sort_key)'
 			});
 			expect(putParams).to.deep.equal({
 				Item: {
@@ -1337,7 +1337,7 @@ describe("Entity", () => {
 					':__edb_e__': 'MallStores',
 					':__edb_v__': '1'
 				},
-				FilterExpression: '(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk))'
+				FilterExpression: 'begins_with(#parition_key, :parition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
 			});
 		});
 		it("Should stop making a key early when there is a gap in the supplied facets", () => {
@@ -2358,7 +2358,7 @@ describe("Entity", () => {
 					':leaseEnd1': '123',
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: "(begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd1"
+				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd1"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
