@@ -25,7 +25,9 @@
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
 - [**Dynamically HTTP Service for Entities**](#electro-cli) - stand up an HTTP Service to interact with your `Entities`, `Services`, `Models` for easier prototyping.
 
-Turn this:
+------------
+
+**Turn this**
 ```javascript
 StoreLocations.query
         .leases({storeId})
@@ -35,7 +37,7 @@ StoreLocations.query
         `)
         .params()
 ```
-Into This:
+**Into This**
 ```javascript
 {
     "TableName": "StoreDirectory",
@@ -57,7 +59,9 @@ Into This:
 }
 ``` 
 
-> Try out the above example for yourself! https://runkit.com/tywalch/electrodb-building-queries
+### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+
+------------
 
 ## Table of Contents
 
