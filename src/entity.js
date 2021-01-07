@@ -770,20 +770,23 @@ class Entity {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
 			state.query.keys.sk,
 		);
-		let { pk, sk } = this._makeIndexKeysWithoutTail(
-			state.query.index,
-			state.query.keys.pk,
-			...conlidatedQueryFacets,
-		);
+		let indexKeys;
+		if (state.query.type === QueryTypes.is) {
+			indexKeys = this._makeIndexKeys(state.query.index, state.query.keys.pk, ...conlidatedQueryFacets);
+		} else {
+			indexKeys = this._makeIndexKeysWithoutTail(state.query.index, state.query.keys.pk, ...conlidatedQueryFacets);
+		}
+
 		let parameters = {};
 		switch (state.query.type) {
+			case QueryTypes.is:
 			case QueryTypes.begins:
 				parameters = this._makeBeginsWithQueryParams(
 					state.query.options,
 					state.query.index,
 					state.query.filter,
-					pk,
-					...sk,
+					indexKeys.pk,
+					...indexKeys.sk,
 				);
 				break;
 			case QueryTypes.collection:
@@ -791,7 +794,7 @@ class Entity {
 					state.query.options,
 					state.query.index,
 					state.query.filter,
-					pk,
+					indexKeys.pk,
 					this._getCollectionSk(state.query.collection),
 				);
 				break;
@@ -799,8 +802,8 @@ class Entity {
 				parameters = this._makeBetweenQueryParams(
 					state.query.index,
 					state.query.filter,
-					pk,
-					...sk,
+					indexKeys.pk,
+					...indexKeys.sk,
 				);
 				break;
 			case QueryTypes.gte:
@@ -811,8 +814,8 @@ class Entity {
 					state.query.index,
 					state.query.type,
 					state.query.filter,
-					pk,
-					...sk,
+					indexKeys.pk,
+					...indexKeys.sk,
 				);
 				break;
 			default:

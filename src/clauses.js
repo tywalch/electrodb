@@ -233,7 +233,7 @@ let clauses = {
 			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
 			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
 			state.query.method = MethodTypes.query;
-			state.query.type = QueryTypes.begins;
+			state.query.type = QueryTypes.is;
 			if (state.query.facets.sk) {
 				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 				state.query.keys.sk.push({
@@ -243,7 +243,7 @@ let clauses = {
 			}
 			return state;
 		},
-		children: ["between", "gte", "gt", "lte", "lt", "params", "go", "page"],
+		children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go", "page"],
 	},
 	between: {
 		name: "between",
@@ -274,6 +274,20 @@ let clauses = {
 			state.query.keys.sk.push({
 				type: QueryTypes.between,
 				facets: queryStartingFacets,
+			});
+			return state;
+		},
+		children: ["go", "params", "page"],
+	},
+	begins: {
+		name: "begins",
+		action(entity, state, facets = {}) {
+			entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
+			state.query.type = QueryTypes.begins;
+			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+			state.query.keys.sk.push({
+				type: state.query.type,
+				facets: queryFacets,
 			});
 			return state;
 		},

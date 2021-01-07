@@ -736,6 +736,7 @@ describe("Entity", () => {
 			let find = MallStores.query.units({ mall });
 			expect(find).to.have.keys(
 				"between",
+				"begins",
 				"gt",
 				"gte",
 				"lt",
@@ -864,7 +865,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -877,7 +878,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -890,7 +891,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_${unit}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_${unit}#store_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -971,6 +972,22 @@ describe("Entity", () => {
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
 				KeyConditionExpression: "#pk = :pk and #sk1 > :sk1",
+			});
+
+			let queryBegins = MallStores.query
+				.units({ mall })
+				.begins({ building })
+				.params();
+
+			expect(queryBegins).to.deep.equal({
+				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
+				ExpressionAttributeValues: {
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}`.toLowerCase(),
+				},
+				IndexName: "gsi1pk-gsi1sk-index",
+				TableName: "StoreDirectory",
+				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 			});
 
 			let queryUnitsGte = MallStores.query
@@ -1513,9 +1530,9 @@ describe("Entity", () => {
 			expect(findParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(findParams.ExpressionAttributeValues[":sk1"]).to.equal(SK);
 			expect(partialQueryParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
-			expect(partialQueryParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(`#mall_${mall.toLowerCase()}`, ""));
+			expect(partialQueryParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
 			expect(partialFindParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
-			expect(partialFindParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(`#mall_${mall.toLowerCase()}`, ""));
+			expect(partialFindParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
 		});
 		it("Should return the approprate pk and multiple sks when given multiple", () => {
 			let index = schema.indexes.shops.index;
@@ -2421,7 +2438,7 @@ describe("Entity", () => {
 					':building1': '123',
 					':unit1': '123',
 					':pk': '$mallstoredirectory_1#mall_123',
-					':sk1': '$mallstores#building_123#unit_123'
+					':sk1': '$mallstores#building_123#unit_123#store_'
 				},
 				IndexName: 'gsi1pk-gsi1sk-index',
 				FilterExpression: '#mall = :mall1 AND#building = :building1 AND#unit = :unit1'
@@ -2602,7 +2619,7 @@ describe("Entity", () => {
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
-					":sk1": "$MallStores#building_BuildingA".toLowerCase(),
+					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
@@ -2637,7 +2654,7 @@ describe("Entity", () => {
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
-					":sk1": "$MallStores#building_BuildingA".toLowerCase(),
+					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
