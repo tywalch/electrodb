@@ -1,7 +1,7 @@
 const { model } = require("../src/validations");
 const { Entity } = require("../src/entity");
 const { expect } = require("chai");
-describe("invalid models", () => {
+describe("Model Validation", () => {
 	it("should throw on incorrect attribute signatures", () => {
 		let record = {
 			service: "testservice",

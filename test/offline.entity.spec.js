@@ -864,7 +864,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -877,7 +877,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -890,7 +890,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_${unit}#store_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_${unit}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -911,8 +911,8 @@ describe("Entity", () => {
 				},
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${buildingOne}#unit_B54#store_`.toLowerCase(),
-					":sk2": `$MallStores#building_${buildingTwo}#unit_B54#store_`.toLowerCase(),
+					":sk1": `$MallStores#building_${buildingOne}#unit_B54`.toLowerCase(),
+					":sk2": `$MallStores#building_${buildingTwo}#unit_B54`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -930,8 +930,8 @@ describe("Entity", () => {
 				},
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_${unitOne}#store_`.toLowerCase(),
-					":sk2": `$MallStores#building_${building}#unit_${unitTwo}#store_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_${unitOne}`.toLowerCase(),
+					":sk2": `$MallStores#building_${building}#unit_${unitTwo}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -949,8 +949,8 @@ describe("Entity", () => {
 				},
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
-					":sk2": `$MallStores#building_${building}#unit_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}`.toLowerCase(),
+					":sk2": `$MallStores#building_${building}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -966,7 +966,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -981,7 +981,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -996,7 +996,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -1011,7 +1011,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
 				ExpressionAttributeValues: {
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
@@ -1513,9 +1513,9 @@ describe("Entity", () => {
 			expect(findParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(findParams.ExpressionAttributeValues[":sk1"]).to.equal(SK);
 			expect(partialQueryParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
-			expect(partialQueryParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
+			expect(partialQueryParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(`#mall_${mall.toLowerCase()}`, ""));
 			expect(partialFindParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
-			expect(partialFindParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
+			expect(partialFindParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(`#mall_${mall.toLowerCase()}`, ""));
 		});
 		it("Should return the approprate pk and multiple sks when given multiple", () => {
 			let index = schema.indexes.shops.index;
@@ -1535,6 +1535,25 @@ describe("Entity", () => {
 					"$MallStores#mall_EastPointe#building_building1#unit_".toLowerCase(),
 					"$MallStores#mall_EastPointe#building_building5#unit_".toLowerCase(),
 				]);
+		});
+		it("Should return the approprate pk and multiple sks when given multiple without a tailing label", () => {
+			let index = schema.indexes.shops.index;
+			let { pk, sk } = MallStores._makeIndexKeysWithoutTail(
+				index,
+				{ store },
+				{ mall, building: "building1" },
+				{ mall, building: "building5" },
+			);
+			expect(pk).to.equal(
+				"$MallStoreDirectory_1#store_LatteLarrys".toLowerCase(),
+			);
+			expect(sk)
+				.to.be.an("array")
+				.and.have.length(2)
+				.and.to.have.members([
+				"$MallStores#mall_EastPointe#building_building1".toLowerCase(),
+				"$MallStores#mall_EastPointe#building_building5".toLowerCase(),
+			]);
 		});
 		it("Should throw on bad index", () => {
 			expect(() => MallStores._makeIndexKeys("bad_index")).to.throw(
@@ -2402,7 +2421,7 @@ describe("Entity", () => {
 					':building1': '123',
 					':unit1': '123',
 					':pk': '$mallstoredirectory_1#mall_123',
-					':sk1': '$mallstores#building_123#unit_123#store_'
+					':sk1': '$mallstores#building_123#unit_123'
 				},
 				IndexName: 'gsi1pk-gsi1sk-index',
 				FilterExpression: '#mall = :mall1 AND#building = :building1 AND#unit = :unit1'
@@ -2583,7 +2602,7 @@ describe("Entity", () => {
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
-					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
+					":sk1": "$MallStores#building_BuildingA".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
@@ -2618,7 +2637,7 @@ describe("Entity", () => {
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
-					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
+					":sk1": "$MallStores#building_BuildingA".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
@@ -2654,8 +2673,8 @@ describe("Entity", () => {
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
-					":sk1": "$MallStores#category_food/coffee#building_BuildingA#unit_".toLowerCase(),
-					":sk2": "$MallStores#category_food/coffee#building_BuildingF#unit_".toLowerCase(),
+					":sk1": "$MallStores#category_food/coffee#building_BuildingA".toLowerCase(),
+					":sk2": "$MallStores#category_food/coffee#building_BuildingF".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
 				FilterExpression:
@@ -2691,7 +2710,7 @@ describe("Entity", () => {
 					":leaseEnd1": "20200101",
 					":leaseEnd2": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
-					":sk1": "$MallStores#leaseEnd_20201231#store_".toLowerCase(),
+					":sk1": "$MallStores#leaseEnd_20201231".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
 				FilterExpression:

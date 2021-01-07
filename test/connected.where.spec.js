@@ -362,7 +362,7 @@ describe("General", async () => {
 			ExpressionAttributeValues: {
 				':complex_w1': -56.0344,
 				':pk': `$tests_1#pen_${pen}`,
-				':sk1': '$filters#row_'
+				':sk1': '$filters'
 			},
 			FilterExpression: '\n\t\t\t\t#complex[0].#coordinates.#y >= :complex_w1\n\t\t\t'
 		})
@@ -393,7 +393,7 @@ describe("General", async () => {
 				':animal_w1': 'Chicken',
 				':dangerous_w1': true,
 				':pk': `$tests_1#pen_${pen}`,
-				':sk1': '$filters#row_'
+				':sk1': '$filters'
 			},
 			FilterExpression: '(#animal = :animal_w1) AND #dangerous = :dangerous_w1'
 		});
