@@ -1,4 +1,5 @@
 
+
 # ElectroDB  
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
 [![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) 
@@ -26,37 +27,37 @@
 
 Turn this:
 ```javascript
-Employees.query
-	.coworkers({ office: "Scranton Branch", team: "marketing" })
-	.where(({ salary, title }, { between, contains }) => `
-		${ between(salary, "120000", "140000") } AND ${ contains(title, "junior") }
-	`)
-	.params();
+StoreLocations.query
+        .leases({storeId})
+        .gte({leaseEndDate: "2010"})
+        .where((attr, op) => `
+            ${op.eq(attr.cityId, "Atlanta1")} AND ${op.contains(attr.category, "food")}
+        `)
+        .params()
 ```
 Into This:
 ```javascript
 {
-  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
-  "TableName": "projectmanagement",
-  "ExpressionAttributeNames": {
-    "#salary": "salary",
-    "#title": "title",
-    "#pk": "gsi1pk",
-    "#sk1": "gsi1sk"
-  },
-  "ExpressionAttributeValues": {
-    ":salary_w1": "120000",
-    ":salary_w2": "140000",
-    ":title_w1": "junior",
-    ":pk": "$taskapp#office_scranton branch",
-    ":sk1": "$workplaces#employees_1#team_marketing"
-  },
-  "IndexName": "gsi1pk-gsi1sk-index",
-  "FilterExpression": "(#salary between :salary_w1 and :salary_w2) AND contains(#title, :title_w1)"
+    "TableName": "StoreDirectory",
+    "ExpressionAttributeNames": {
+        "#cityId": "cityId",
+        "#category": "category",
+        "#pk": "gis2pk",
+        "#sk1": "gsi2sk"
+    },
+    "ExpressionAttributeValues": {
+        ":cityId_w1": "Atlanta1",
+        ":category_w1": "food",
+        ":pk": "$mallstoredirectory#storeid_lattelarrys",
+        ":sk1": "$mallstore_1#leaseenddate_2010"
+    },
+    "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+    "IndexName": "gis2pk-gsi2sk-index",
+    "FilterExpression": "#cityId = :cityId_w1 AND contains(#category, :category_w1)"
 }
 ``` 
 
-> Try out the above example for yourself! https://runkit.com/tywalch/creating-and-querying-an-electrodb-service
+> Try out the above example for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ## Table of Contents
 
@@ -1066,24 +1067,15 @@ let stores = MallStores.query
 ```
 
 # Building Queries
+> For hands-on learners: the following example can be followed along with **and** executed on runkit: https://runkit.com/tywalch/electrodb-building-queries
+
 Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is crucial to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
 1. You must always supply the **Partition Key** in full for all queries to **DynamoDB**.
 2. You currently only have the following operators available on a **Sort Key**: `begins_with`, `between`, `>`, `>=`, `<`, `<=`, and `Equals`.
 3. To act on single record, you will need to know the full  **Partition Key** and **Sort Key** for that record.
 
-### Sort Key Operations 
-| operator | use case |
-| ---: | ----------- |
-| `begins_with` | Keys starting with a particular set of characters.
-| `between` | Keys between a specified range. |
-| `eq` | Keys equal to some value |
-| `gt` | Keys less than some value |
-| `gte` | Keys less than or equal to some value |
-| `lt` | Keys greater than some value |
-| `lte` | Keys greater than or equal to some value |
-
 ### Using facets to make hierarchical keys
-Carefully considering your **Facet** order will allow ***ElectroDB** to express hierarchical relationships and unlock more available **Access Patterns** for your application. 
+Carefully considering your **Facet** order will allow **ElectroDB** to express hierarchical relationships and unlock more available **Access Patterns** for your application. 
 
 For example, let's say you have a `StoreLocations` Entity that represents Store Locations inside Malls:
 
@@ -1095,7 +1087,11 @@ let schema = {
       entity: "MallStore",
       version: "1",    
     },  
-	attributes: {  
+	attributes: {
+		cityId: {
+			type: "string",
+			required: true,
+		}, 
 		mallId: {  
 			type: "string",  
 			required: true,  
@@ -1144,33 +1140,33 @@ let schema = {
 	    stores: {  
 			pk: {
 				field: "pk",
-				facets: ["storeId"]
+				facets: ["cityId", "mallId"]
 			}, 
 			sk: {
 				field: "sk",
-				facets: ["mallId", "buildingId", "unitId"]
+				facets: ["buildingId", "storeId"]
 			}  
 		},  
-		malls: {  
-			index: "idx1",  
+		units: {  
+			index: "gis1pk-gsi1sk-index",  
 			pk: {
-				field: "idx1pk",
+				field: "gis1pk",
 				facets: ["mallId"]
 			},  
 			sk: {
-				field: "idx1sk",
-				facets: ["buildingId", "unitId", "storeId"]
+				field: "gsi1sk",
+				facets: ["buildingId", "unitId"]
 			}  
 		},
 		leases: {
-			index: "idx2",
+			index: "gis2pk-gsi2sk-index",
 			pk: {
-				field: "idx2pk",
-				facets: ["mallId"]
+				field: "gis2pk",
+				facets: ["storeId"]
 			},  
 			sk: {
-				field: "idx2pk",
-				facets: ["leaseEndDate", "storeId", "buildingId", "unitId"]
+				field: "gsi2sk",
+				facets: ["leaseEndDate"]
 			}  
 		}
 	},
@@ -1183,6 +1179,84 @@ let schema = {
 };
 const StoreLocations = new Entity(schema, {table: "StoreDirectory"});
 ```
+
+### Query Records
+
+> Examples in this section using the `MallStore` schema defined [above](#shopping-mall-stores), and available for interacting with here: https://runkit.com/tywalch/electrodb-building-queries
+
+All queries start from the Access Pattern defined in the schema. 
+
+```javascript
+const MallStore = new Entity(schema, {table: "StoreDirectory"}); 
+// Each Access Pattern is available on the Entity instance
+// MallStore.query.stores()
+// MallStore.query.malls()
+```
+
+#### Partition Key Facets
+All queries require (*at minimum*) the **Facets** included in its defined **Partition Key**, and **Facets** you have from the start of the **Sort Key**. 
+> *Important: Facets must be supplied in the order they are composed when invoking the **Access Pattern*** 
+```javascript
+const MallStore = new Entity({
+	model: {
+		service: "mallmgmt"
+		entity: "store", 
+		version: "1"
+	},
+	attributes: {
+		cityId: "string"
+		mallId: "string",
+		storeId: "string",
+		buildingId: "string",
+		unitId: "string",
+		name: "string",
+		description: "string",
+		category: "string"
+	},
+	indexes: {
+		pk: {
+			field: "pk",
+			facets: ["cityId", "mallId"]
+		},
+		sk: {
+			field: "sk",
+			facets: ["storeId", "unitId"]
+		}
+	}
+}, {table: "StoreDirectory"});
+
+const cityId = "Atlanta1";
+const mallId = "EastPointe";
+const storeId = "LatteLarrys";
+const unitId = "B24";
+const buildingId = "F34";
+
+// Good: Includes at least the PK
+StoreLocations.query.stores({cityId, mallId});
+
+// Good: Includes at least the PK, and some of the SK
+StoreLocations.query.stores({cityId, mallId, buildingId});
+
+// Bad: No PK facets specified, will throw
+StoreLocations.query.stores();
+
+// Bad: Not All PK Facets included (cityId), will throw
+StoreLocations.query.stores({mallId});
+
+// Bad: Facets not included in order, will NOT throw but will ignore `storeId` 
+StoreLocations.query.stores({cityId, mallId, storeId});
+```
+
+### Sort Key Operations 
+| operator | use case |
+| ---: | ----------- |
+| `begins_with` | Keys starting with a particular set of characters.
+| `between` | Keys between a specified range. |
+| `eq` | Keys equal to some value |
+| `gt` | Keys less than some value |
+| `gte` | Keys less than or equal to some value |
+| `lt` | Keys greater than some value |
+| `lte` | Keys greater than or equal to some value |
 
 Each record represents one Store location. All Stores are located in Malls we manage. 
 
@@ -1197,137 +1271,145 @@ The `StoreLocations` entity above, using just the `stores` **Index** alone enabl
 ## Query Chains
 Queries in ***ElectroDB*** are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Facets** to create performant lookups. To accomplish this, ***ElectroDB*** offers a predictable chainable API.
 
-> Examples in this section using the `StoreLocations` schema defined [above](#shopping-mall-stores). 
+> Examples in this section using the `StoreLocations` schema defined [above](#shopping-mall-stores) and can be directly experiment with on runkit: https://runkit.com/tywalch/electrodb-building-queries 
 
 The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all facets described in the Entities' primary `PK` and `SK`.  
 
 ### Get Method
-Provide all facets in an object to the `get` method
+Provide all table index facets in an object to the `get` method
 ```javascript
 await StoreLocations.get({
 	storeId: "LatteLarrys", 
 	mallId: "EastPointe", 
-	buildingId: "BuildingA1", 
-	unitId: "B47"
+	buildingId: "F34", 
+	cityId: "Atlanta1"
 }).go();
 
 // Equivalent Params:
 // {
 //   Key: {
-//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
-//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
+//     pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+//     sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
 //   },
 //   TableName: 'StoreDirectory'
 // }
 ```
 ### Delete Method
-Provide all facets in an object to the `delete` method to delete a record.
+Provide all table index facets in an object to the `delete` method to delete a record.
 
 ```javascript
 await StoreLocations.delete({
 	storeId: "LatteLarrys", 
 	mallId: "EastPointe", 
-	buildingId: "BuildingA1", 
-	unitId: "B47"
+	buildingId: "F34", 
+	cityId: "Atlanta1"
 }).go();
 
 // Equivalent Params:
 // {
 //   Key: {
-//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
-//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
+//     pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+//     sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
 //   },
 //   TableName: 'StoreDirectory'
 // }
 ```
 
 ### Batch Write Delete Records
-Provide all facets in an array of objects to the `delete` method to batch delete records.
+Provide all table index facets in an array of objects to the `delete` method to batch delete records.
 
 > Note: Performing a Batch Delete will return an array of "unProcessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
 
 ```javascript
 await StoreLocations.delete([
-  {
-    id: "abc",
-    sector: "A1",
-  }, {
-    id: "def",
-    sector: "A1",
-  }, {
-    id: "hij",
-    sector: "A1",
-  }
+    {
+        storeId: "LatteLarrys", 
+        mallId: "EastPointe", 
+        buildingId: "F34", 
+        cityId: "LosAngeles1"
+    },
+    {
+        storeId: "MochaJoes", 
+        mallId: "EastPointe", 
+        buildingId: "F35", 
+        cityId: "LosAngeles1"
+    }
 ]).go();
 
 // Equivalent Params:
-// {
-// 	"RequestItems":{
-// 			"electro":[
-// 				{
-// 						"DeleteRequest":{
-// 							"Key":{
-// 									"pk":"$bugbeater#sector_a1",
-// 									"sk":"$test_entity_1#id_abc"
-// 							}
-// 						}
-// 				},
-// 				{
-// 						"DeleteRequest":{
-// 							"Key":{
-// 									"pk":"$bugbeater#sector_a1",
-// 									"sk":"$test_entity_1#id_def"
-// 							}
-// 						}
-// 				},
-// 				{
-// 						"DeleteRequest":{
-// 							"Key":{
-// 									"pk":"$bugbeater#sector_a1",
-// 									"sk":"$test_entity_1#id_hij"
-// 							}
-// 						}
-// 				}
-// 			]
-// 	}
-// }
+{
+  "RequestItems": {
+    "StoreDirectory": [
+      {
+        "DeleteRequest": {
+          "Key": {
+            "pk": "$mallstoredirectory#cityid_losangeles1#mallid_eastpointe",
+            "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+          }
+        }
+      },
+      {
+        "DeleteRequest": {
+          "Key": {
+            "pk": "$mallstoredirectory#cityid_losangeles1#mallid_eastpointe",
+            "sk": "$mallstore_1#buildingid_f35#storeid_mochajoes"
+          }
+        }
+      }
+    ]
+  }
+}
 ```
 
 ### Put Record
 Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
-```javascript
-let store = {
-	storeId: "LatteLarrys",
-	mallId: "EastPointe",
-	buildingId: "BuildingA1",
-	unitId: "B47",
-	category: "food/coffee",
-	leaseEndDate: "2020-03-22",
-	rent: "1500.00"
-};
 
-await StoreLocations.put(store).go();
+This example includes an optional conditional expression
+```javascript
+await StoreLocations
+  .put({
+      cityId: "Atlanta1",
+      storeId: "LatteLarrys",
+      mallId: "EastPointe",
+      buildingId: "BuildingA1",
+      unitId: "B47",
+      category: "food/coffee",
+      leaseEndDate: "2020-03-22",
+      rent: "4500.00"
+  })
+  .where((attr, op) => op.eq(attr.rent, "4500.00"))
+  .go()
 
 // Equivalent Params:
-// {
-//   Item: {
-//     mallId: 'EastPointe',
-//     storeId: 'LatteLarrys',
-//     buildingId: 'BuildingA1',
-//     unitId: 'B47',
-//     category: 'food/coffee',
-//     leaseEndDate: '2020-03-22',
-//     rent: '1500.00',
-//     discount: '0.00',
-//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
-//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47',
-//     idx1pk: '$mallstoredirectory_1#mallid_eastpointe',
-//     idx1sk: '$mallstore#buildingid_buildinga1#unitid_b47#storeid_lattelarrys',
-//     idx2pk: '$mallstore#leaseenddate_2020-03-22#storeid_lattelarrys#buildingid_buildinga1#unitid_b47',
-//     __edb_e__: 'MallStore'
-//   },
-//   TableName: 'StoreDirectory'
-// }
+{
+  "Item": {
+    "cityId": "Atlanta1",
+    "mallId": "EastPointe",
+    "storeId": "LatteLarrys",
+    "buildingId": "BuildingA1",
+    "unitId": "B47",
+    "category": "food/coffee",
+    "leaseEndDate": "2020-03-22",
+    "rent": "4500.00",
+    "discount": "0.00",
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys",
+    "gis1pk": "$mallstoredirectory#mallid_eastpointe",
+    "gsi1sk": "$mallstore_1#buildingid_buildinga1#unitid_b47",
+    "gis2pk": "$mallstoredirectory#storeid_lattelarrys",
+    "gsi2sk": "$mallstore_1#leaseenddate_2020-03-22",
+    "__edb_e__": "MallStore",
+    "__edb_v__": "1"
+  },
+  "TableName": "StoreDirectory",
+  "ConditionExpression": "#rent = :rent_w1",
+  "ExpressionAttributeNames": {
+    "#rent": "rent"
+  },
+  "ExpressionAttributeValues": {
+    ":rent_w1": "4500.00"
+  }
+}
 ```
 
 ### Batch Write Put Records
@@ -1336,160 +1418,113 @@ Provide all *required* Attributes as defined in the model to create records as a
 > Note: Performing a Batch Put will return an array of "unProcessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
 
 ```javascript
-let stores = [
-  {
-    id: "abc",
-    mall: "WashingtonSquare",
-    store: "LatteLarrys",
-    sector: "A1",
-    category: "food/coffee",
-    leaseEnd: "2020-01-20",
-    rent: "0.00",
-    building: "BuildingZ",
-    unit: "G1",
-  }, {
-    id: "def",
-    mall: "WashingtonSquare",
-    store: "LatteLarrys",
-    sector: "A1",
-    category: "food/coffee",
-    leaseEnd: "2020-01-20",
-    rent: "0.00",
-    building: "BuildingZ",
-    unit: "G1",
-  }, {
-    id: "hij",
-    mall: "WashingtonSquare",
-    store: "LatteLarrys",
-    sector: "A1",
-    category: "food/coffee",
-    leaseEnd: "2020-01-20",
-    rent: "0.00",
-    building: "BuildingZ",
-    unit: "G1",
-  }
-];
-
-await StoreLocations.put(stores).go();
+await StoreLocations.put([
+    {
+        cityId: "LosAngeles1",
+        storeId: "LatteLarrys",
+        mallId: "EastPointe",
+        buildingId: "F34",
+        unitId: "a1",
+        category: "food/coffee",
+        leaseEndDate: "2022-03-22",
+        rent: "4500.00"
+    },
+    {
+        cityId: "LosAngeles1",
+        storeId: "MochaJoes",
+        mallId: "EastPointe",
+        buildingId: "F35",
+        unitId: "a2",
+        category: "food/coffee",
+        leaseEndDate: "2021-01-22",
+        rent: "1500.00"
+    }
+]).go()
 
 // Equivalent Params:
-// {
-// 	"RequestItems":{
-// 			"electro":[
-// 				{
-// 						"PutRequest":{
-// 							"Item":{
-// 									"storeLocationId":"abc",
-// 									"sector":"A1",
-// 									"mallId":"WashingtonSquare",
-// 									"storeId":"LatteLarrys",
-// 									"buildingId":"BuildingZ",
-// 									"unitId":"G1",
-// 									"category":"food/coffee",
-// 									"leaseEnd":"2020-01-20",
-// 									"rent":"0.00",
-// 									"pk":"$bugbeater#sector_a1",
-// 									"sk":"$test_entity_1#id_abc",
-// 									"gsi1pk":"mall_washingtonsquare",
-// 									"gsi1sk":"b_buildingz#u_g1#s_lattelarrys",
-// 									"gsi2pk":"m_washingtonsquare",
-// 									"gsi2sk":"l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-// 									"gsi3pk":"$bugbeater#mall_washingtonsquare",
-// 									"gsi3sk":"$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
-// 									"gsi4pk":"$bugbeater#store_lattelarrys",
-// 									"gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
-// 									"__edb_e__":"TEST_ENTITY",
-// 									"__edb_v__":"1"
-// 							}
-// 						}
-// 				},
-// 				{
-// 						"PutRequest":{
-// 							"Item":{
-// 									"storeLocationId":"def",
-// 									"sector":"A1",
-// 									"mallId":"WashingtonSquare",
-// 									"storeId":"LatteLarrys",
-// 									"buildingId":"BuildingZ",
-// 									"unitId":"G1",
-// 									"category":"food/coffee",
-// 									"leaseEnd":"2020-01-20",
-// 									"rent":"0.00",
-// 									"pk":"$bugbeater#sector_a1",
-// 									"sk":"$test_entity_1#id_def",
-// 									"gsi1pk":"mall_washingtonsquare",
-// 									"gsi1sk":"b_buildingz#u_g1#s_lattelarrys",
-// 									"gsi2pk":"m_washingtonsquare",
-// 									"gsi2sk":"l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-// 									"gsi3pk":"$bugbeater#mall_washingtonsquare",
-// 									"gsi3sk":"$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
-// 									"gsi4pk":"$bugbeater#store_lattelarrys",
-// 									"gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
-// 									"__edb_e__":"TEST_ENTITY",
-// 									"__edb_v__":"1"
-// 							}
-// 						}
-// 				},
-// 				{
-// 						"PutRequest":{
-// 							"Item":{
-// 									"storeLocationId":"hij",
-// 									"sector":"A1",
-// 									"mallId":"WashingtonSquare",
-// 									"storeId":"LatteLarrys",
-// 									"buildingId":"BuildingZ",
-// 									"unitId":"G1",
-// 									"category":"food/coffee",
-// 									"leaseEnd":"2020-01-20",
-// 									"rent":"0.00",
-// 									"pk":"$bugbeater#sector_a1",
-// 									"sk":"$test_entity_1#id_hij",
-// 									"gsi1pk":"mall_washingtonsquare",
-// 									"gsi1sk":"b_buildingz#u_g1#s_lattelarrys",
-// 									"gsi2pk":"m_washingtonsquare",
-// 									"gsi2sk":"l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-// 									"gsi3pk":"$bugbeater#mall_washingtonsquare",
-// 									"gsi3sk":"$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
-// 									"gsi4pk":"$bugbeater#store_lattelarrys",
-// 									"gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
-// 									"__edb_e__":"TEST_ENTITY",
-// 									"__edb_v__":"1"
-// 							}
-// 						}
-// 				}
-// 			]
-// 	}
-// }
+{
+  "RequestItems": {
+    "StoreDirectory": [
+      {
+        "PutRequest": {
+          "Item": {
+            "cityId": "LosAngeles1",
+            "mallId": "EastPointe",
+            "storeId": "LatteLarrys",
+            "buildingId": "F34",
+            "unitId": "a1",
+            "category": "food/coffee",
+            "leaseEndDate": "2022-03-22",
+            "rent": "4500.00",
+            "discount": "0.00",
+            "pk": "$mallstoredirectory#cityid_losangeles1#mallid_eastpointe",
+            "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys",
+            "gis1pk": "$mallstoredirectory#mallid_eastpointe",
+            "gsi1sk": "$mallstore_1#buildingid_f34#unitid_a1",
+            "gis2pk": "$mallstoredirectory#storeid_lattelarrys",
+            "gsi2sk": "$mallstore_1#leaseenddate_2022-03-22",
+            "__edb_e__": "MallStore",
+            "__edb_v__": "1"
+          }
+        }
+      },
+      {
+        "PutRequest": {
+          "Item": {
+            "cityId": "LosAngeles1",
+            "mallId": "EastPointe",
+            "storeId": "MochaJoes",
+            "buildingId": "F35",
+            "unitId": "a2",
+            "category": "food/coffee",
+            "leaseEndDate": "2021-01-22",
+            "rent": "1500.00",
+            "discount": "0.00",
+            "pk": "$mallstoredirectory#cityid_losangeles1#mallid_eastpointe",
+            "sk": "$mallstore_1#buildingid_f35#storeid_mochajoes",
+            "gis1pk": "$mallstoredirectory#mallid_eastpointe",
+            "gsi1sk": "$mallstore_1#buildingid_f35#unitid_a2",
+            "gis2pk": "$mallstoredirectory#storeid_mochajoes",
+            "gsi2sk": "$mallstore_1#leaseenddate_2021-01-22",
+            "__edb_e__": "MallStore",
+            "__edb_v__": "1"
+          }
+        }
+      }
+    ]
+  }
+}
 ```
 
 ### Update Record
-To update a record, pass all facets to the update method and then pass `set` attributes that need to be updated. 
+To update a record, pass all facets to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
 
 *Note: If your update includes changes to an attribute that is also a facet for a global secondary index, you must provide all facets for that index.*
 
 ```javascript
-let storeId = "LatteLarrys";
-let mallId = "EastPointe";
-let buildingId = "BuildingA1";
-let unitId = "B47";
-let category = "food/meal";
-
 await StoreLocations
-	.update({storeId, mallId, buildingId, unitId})
-	.set({category})
-	.go();
+    .update({cityId, mallId, storeId, buildingId})
+    .set({category: "food/meal"})
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
 
 // Equivalent Params:
-// {
-//   UpdateExpression: 'SET #category = :category',
-//   ExpressionAttributeNames: { '#category': 'category' },
-//   ExpressionAttributeValues: { ':category': 'food/meal' },
-//   TableName: 'StoreDirectory',
-//   Key: {
-//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
-//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
-//   }
-// }
+{
+  "UpdateExpression": "SET #category = :category",
+  "ExpressionAttributeNames": {
+    "#category": "category"
+  },
+  "ExpressionAttributeValues": {
+    ":category_w1": "food/coffee",
+    ":category": "food/meal"
+  },
+  "TableName": "StoreDirectory",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category_w1"
+}
 ```
 
 ### Scan Records
@@ -1498,33 +1533,37 @@ When scanning for rows, you can use filters the same as you would any query. For
 *Note: `Scan` functionality will be scoped to your Entity. This means your results will only include records that match the Entity defined in the model.*
 ```javascript
 await StoreLocations.scan
-	.filter(({category}) => `
-		${category.eq("food/coffee")} OR ${category.eq("spite store")}  
-	`)
-	.filter(({leaseEndDate}) => `
-		${leaseEndDate.between("2020-03", "2020-04")}
-	`)
-	.go();
+    .where(({category}, {eq}) => `
+        ${eq(category, "food/coffee")} OR ${eq(category, "spite store")}  
+    `)
+    .where(({leaseEndDate}, {between}) => `
+        ${between(leaseEndDate, "2020-03", "2020-04")}
+    `)
+    .go()
 
 // Equivalent Params:
-// {
-//   TableName: 'StoreDirectory',
-//   ExpressionAttributeNames: {
-//     '#category': 'category',
-//     '#leaseEndDate': 'leaseEndDate',
-//     '#pk': 'pk',
-//     '#sk': 'sk'
-//   },
-//   ExpressionAttributeValues: {
-//     ':category1': 'food/coffee',
-//     ':category2': 'spite store',
-//     ':leaseEndDate1': '2020-03',
-//     ':leaseEndDate2': '2020-04',
-//     ':pk': '$mallstoredirectory_1#storeid_',
-//     ':sk': '$mallstore#mallid_'
-//   },
-//   FilterExpression: '(begins_with(#pk, :pk) AND begins_with(#sk, :sk)) AND (#category = :category1 OR #category = :category2) AND (#leaseEndDate between :leaseEndDate1 and :leaseEndDate2)'
-// }
+{
+  "TableName": "StoreDirectory",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#leaseEndDate": "leaseEndDate",
+    "#pk": "pk",
+    "#sk": "sk",
+    "#__edb_e__": "__edb_e__",
+    "#__edb_v__": "__edb_v__"
+  },
+  "ExpressionAttributeValues": {
+    ":category_w1": "food/coffee",
+    ":category_w2": "spite store",
+    ":leaseEndDate_w1": "2020-03",
+    ":leaseEndDate_w2": "2020-04",
+    ":pk": "$mallstoredirectory#cityid_",
+    ":sk": "$mallstore_1#buildingid_",
+    ":__edb_e__": "MallStore",
+    ":__edb_v__": "1"
+  },
+  "FilterExpression": "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND (#category = :category_w1 OR #category = :category_w2) AND (#leaseEndDate between :leaseEndDate_w1 and :leaseEndDate_w2)"
+}
 ```
 
 ### Patch Records
@@ -1532,29 +1571,29 @@ await StoreLocations.scan
 In DynamoDB, `update` operations by default will insert a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not inserted when updating. 
 
 ```javascript
-let storeId = "LatteLarrys";
-let mallId = "EastPointe";
-let buildingId = "BuildingA1";
-let unitId = "B47";
-let category = "food/meal";
-
 await StoreLocations
-	.patch({storeId, mallId, buildingId, unitId})
-	.set({category})
-  .go()
+    .patch({cityId, mallId, storeId, buildingId})
+    .set({category: "food/meal"})
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
 
 // Equivalent Params:
-// {
-//   UpdateExpression: 'SET #category = :category',
-//   ExpressionAttributeNames: { '#category': 'category' },
-//   ExpressionAttributeValues: { ':category': 'food/meal' },
-//   TableName: 'StoreDirectory',
-//   Key: {
-//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
-//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47'
-//   },
-//   ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
-// }
+{
+  "UpdateExpression": "SET #category = :category",
+  "ExpressionAttributeNames": {
+    "#category": "category"
+  },
+  "ExpressionAttributeValues": {
+    ":category_w1": "food/coffee",
+    ":category": "food/meal"
+  },
+  "TableName": "StoreDirectory",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk) AND #category = :category_w1"
+}
 ```
 
 ### Create Records
@@ -1562,39 +1601,50 @@ await StoreLocations
 In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwriten when inserting new records into the table. 
 
 ```javascript
-let store = {
-	storeId: "LatteLarrys",
-	mallId: "EastPointe",
-	buildingId: "BuildingA1",
-	unitId: "B47",
-	category: "food/coffee",
-	leaseEndDate: "2020-03-22",
-  rent: "1500.00"
-};
-
-await StoreLocations.create(store).go();
+await StoreLocations
+  .create({
+      cityId: "Atlanta1",
+      storeId: "LatteLarrys",
+      mallId: "EastPointe",
+      buildingId: "BuildingA1",
+      unitId: "B47",
+      category: "food/coffee",
+      leaseEndDate: "2020-03-22",
+      rent: "4500.00"
+  })
+  .where((attr, op) => op.eq(attr.rent, "4500.00"))
+  .go()
 
 // Equivalent Params:
-// {
-//   Item: {
-//     mallId: 'EastPointe',
-//     storeId: 'LatteLarrys',
-//     buildingId: 'BuildingA1',
-//     unitId: 'B47',
-//     category: 'food/coffee',
-//     leaseEndDate: '2020-03-22',
-//     rent: '1500.00',
-//     discount: '0.00',
-//     pk: '$mallstoredirectory_1#storeid_lattelarrys',
-//     sk: '$mallstore#mallid_eastpointe#buildingid_buildinga1#unitid_b47',
-//     idx1pk: '$mallstoredirectory_1#mallid_eastpointe',
-//     idx1sk: '$mallstore#buildingid_buildinga1#unitid_b47#storeid_lattelarrys',
-//     idx2pk: '$mallstore#leaseenddate_2020-03-22#storeid_lattelarrys#buildingid_buildinga1#unitid_b47',
-//     __edb_e__: 'MallStore'
-//   },
-//   TableName: 'StoreDirectory',
-//   ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
-// }
+{
+  "Item": {
+    "cityId": "Atlanta1",
+    "mallId": "EastPointe",
+    "storeId": "LatteLarrys",
+    "buildingId": "BuildingA1",
+    "unitId": "B47",
+    "category": "food/coffee",
+    "leaseEndDate": "2020-03-22",
+    "rent": "4500.00",
+    "discount": "0.00",
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys",
+    "gis1pk": "$mallstoredirectory#mallid_eastpointe",
+    "gsi1sk": "$mallstore_1#buildingid_buildinga1#unitid_b47",
+    "gis2pk": "$mallstoredirectory#storeid_lattelarrys",
+    "gsi2sk": "$mallstore_1#leaseenddate_2020-03-22",
+    "__edb_e__": "MallStore",
+    "__edb_v__": "1"
+  },
+  "TableName": "StoreDirectory",
+  "ConditionExpression": "attribute_not_exists(pk) AND attribute_not_exists(sk) AND #rent = :rent_w1",
+  "ExpressionAttributeNames": {
+    "#rent": "rent"
+  },
+  "ExpressionAttributeValues": {
+    ":rent_w1": "4500.00"
+  }
+}
 ```
 
 ### Find Records
@@ -1602,72 +1652,36 @@ await StoreLocations.create(store).go();
 DynamoDB offers three methods to find records: `get`, `query`, and `scan`. In **_ElectroDB_**, there is a fourth type: `find`. Unlike `get` and `query`, the `find` method does not require you to provide keys, but under the covers it will leverage the attributes provided to find the best index to query on. Provide the `find` method will all properties known to match a record and **_ElectroDB_** will generate the most performant query it can to locate the results. This can be helpful with highly dynamic querying needs. If an index cannot be satisfied with the attributes provided, `scan` will be used as a last resort.
 
 ```javascript
-let match = await StoreLocations.find({
-	mallId: "EastPointe",
-	buildingId: "BuildingA1",
-	leaseEndDate: "2020-03-22",
-  rent: "1500.00"
+await StoreLocations.find({
+    mallId: "EastPointe",
+    buildingId: "BuildingA1",
+    leaseEndDate: "2020-03-22",
+    rent: "1500.00"
 }).go()
 
 // Equivalent Params:
-// {
-//   KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
-//   TableName: 'StoreDirectory',
-//   ExpressionAttributeNames: {
-//     '#mallId': 'mallId',
-//     '#buildingId': 'buildingId',
-//     '#leaseEndDate': 'leaseEndDate',
-//     '#storeId': 'storeId',
-//     '#rent': 'rent',
-//     '#pk': 'idx2pk',
-//     '#sk1': 'idx2pk'
-//   },
-//   ExpressionAttributeValues: {
-//     ':mallId1': 'EastPointe',
-//     ':buildingId1': 'BuildingA1',
-//     ':leaseEndDate1': '2020-03-22',
-//     ':storeId1': "LatteLarry's",
-//     ':rent1': '1500.00',
-//     ':pk': '$mallstoredirectory_1#mallid_eastpointe',
-//     ':sk1': "$mallstore#leaseenddate_2020-03-22#storeid_lattelarry's#buildingid_buildinga1#unitid_"
-//   },
-//   IndexName: 'idx2',
-//   FilterExpression: '#mallId = :mallId1 AND#buildingId = :buildingId1 AND#leaseEndDate = :leaseEndDate1 AND#storeId = :storeId1 AND#rent = :rent1'
-// }
-```
-
-### Query Records
-
-> Examples in this section using the `MallStore` schema defined [above](#shopping-mall-stores). 
-
-All queries start from the Access Pattern defined in the schema. 
-
-```javascript
-const MallStore = new Entity(schema, {table: "StoreDirectory"}); 
-// Each Access Pattern is available on the Entity instance
-// MallStore.query.stores()
-// MallStore.query.malls()
-```
-
-#### Partition Key Facets
-All queries require (*at minimum*) the **Facets** included in its defined **Partition Key**. They can be supplied in the order they are composed or in a single object when invoking the **Access Pattern**.
-```javascript
-const MallStore = new Entity(schema, {table: "StoreDirectory"});
-//	stores
-//	pk: ["storeId"]
-//	sk: ["mallId", "buildingId", "unitId"]
-
-let storeId = "LatteLarrys";
-let mallId = "EastPointe";
-
-// Good: As an object
-MallStore.query.stores({storeId});
-
-// Bad: Facets missing, will throw
-MallStore.query.stores(); // err: Params passed to ENTITY method, must only include storeId
-
-// Bad: Facets not included, will throw
-MallStore.query.stores({mallId}); // err: Params passed to ENTITY method, must only include storeId
+{
+  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+  "TableName": "StoreDirectory",
+  "ExpressionAttributeNames": {
+    "#mallId": "mallId",
+    "#buildingId": "buildingId",
+    "#leaseEndDate": "leaseEndDate",
+    "#rent": "rent",
+    "#pk": "gis1pk",
+    "#sk1": "gsi1sk"
+  },
+  "ExpressionAttributeValues": {
+    ":mallId1": "EastPointe",
+    ":buildingId1": "BuildingA1",
+    ":leaseEndDate1": "2020-03-22",
+    ":rent1": "1500.00",
+    ":pk": "$mallstoredirectory#mallid_eastpointe",
+    ":sk1": "$mallstore_1#buildingid_buildinga1#unitid_"
+  },
+  "IndexName": "gis1pk-gsi1sk-index",
+  "FilterExpression": "#mallId = :mallId1 AND#buildingId = :buildingId1 AND#leaseEndDate = :leaseEndDate1 AND#rent = :rent1"
+}
 ```
 
 After invoking the **Access Pattern** with the required **Partition Key** **Facets**, you can now choose what **Sort Key Facets** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
@@ -1835,78 +1849,70 @@ let [pageTwo, moreStores] = await MallStores.query
 ```
 
 ## Query Examples
-
-Below are _all_ chain possibilities available. 
-
-Assume an index named `leases` defined as: 
-```
-leases: {
-	index: "gsi1pk-gsi1sk-index",
-	pk: {
-		field: "pk",
-		facets: ["mallId"]
-	},
-	sk: {
-		field: "sk",
-		facets: ["leaseEndDate", "rent"]
-	}
-}
-```
-And the following model defined filters:
-```
-filters: {
-	byCategory: ({category}, name) => category.eq(name),
-	rentDiscount: (attributes, discount, max, min) => {
-		return `${attributes.discount.lte(discount)} AND ${attributes.rent.between(max, min)}`
-	}
-}  
-``` 
+For a comprehensive and interactive guide to build queries please visit this runkit: https://runkit.com/tywalch/electrodb-building-queries.
 
 ```javascript
-let mallId = "EastPointe";
+const cityId = "Atlanta1";
+const mallId = "EastPointe";
+const storeId = "LatteLarrys";
+const unitId = "B24";
+const buildingId = "F34";
+const june = "2020-06";
+const july = "2020-07"; 
+const discount = "500.00";
+const maxRent = "2000.00";
+const minRent = "5000.00";
 
-// begins_with
-MallStore.query.leases({mallId}).go()
-MallStore.query.leases({mallId, leaseEndDate: "2020-03"}}).go();
-MallStore.query.leases({mallId, leaseEndDate: "2020-03-22", rent: "2000.00"}).go();
+// Lease Agreements by StoreId
+await StoreLocations.query.leases({storeId}).go()
 
-// gt, gte, lt, lte
-MallStore.query.leases({mallId}).gt({leaseEndDate}).go();
-MallStore.query.leases({mallId}).gte({leaseEndDate}).go();
-MallStore.query.leases({mallId}).lt({leaseEndDate}).go();
-MallStore.query.leases({mallId}).lte({leaseEndDate}).go();
+// Lease Agreement by StoreId for March 22nd 2020
+await StoreLocations.query.leases({storeId, leaseEndDate: "2020-03-22"}).go()
 
-// between
-MallStore.query.leases({mallId}).between({leaseEndDate: "2020-03"}, {leaseEndDate: "2020-04"}).go();
+// Lease agreements by StoreId for 2020
+await StoreLocations.query.leases({storeId}).begins({leaseEndDate: "2020"}).go()
 
-// filters -- applied after any of the sort key operators above 
-let june = "2020-06";
-let july = "2020-07"; 
-let discount = "500.00";
-let maxRent = "2000.00";
-let minRent = "5000.00";
+// Lease Agreements by StoreId after March 2020
+await StoreLocations.query.leases({storeId}).gt({leaseEndDate: "2020-03"}).go()
 
-// inline filter
-MallStore.query
-  .leases({mallId, leaseEndDate: june})
-  .filter(attr => attr.storeId.eq("LatteLarrys"))
-  .go();
+// Lease Agreements by StoreId after, and including, March 2020
+await StoreLocations.query.leases({storeId}).gte({leaseEndDate: "2020-03"}).go()
 
-// model defined filters
-MallStore.query
-  .leases({mallId, leaseEndDate: june})
-  .rentDiscount(discount, maxRent, minRent)
-  .go();
+// Lease Agreements by StoreId before 2021
+await StoreLocations.query.leases({storeId}).lt({leaseEndDate: "2021-01"}).go()
 
-MallStore.query
-  .leases({mallId})
-  .between(
-    {leaseEndDate: june}, 
-    {leaseEndDate: july})
-  .byCategory("food/coffee")
-  .go();
-  
-```
+// Lease Agreements by StoreId before Feburary 2021
+await StoreLocations.query.leases({storeId}).lte({leaseEndDate: "2021-02"}).go()
+
+// Lease Agreements by StoreId between 2010 and 2020
+await StoreLocations.query
+    .leases({storeId})
+    .between(
+        {leaseEndDate: "2010"}, 
+        {leaseEndDate: "2020"})
+    .go()
+
+// Lease Agreements by StoreId after, and including, 2010 in the city of Atlanta and category containing food
+await StoreLocations.query
+    .leases({storeId})
+    .gte({leaseEndDate: "2010"})
+    .where((attr, op) => `
+        ${op.eq(attr.cityId, "Atlanta1")} AND ${op.contains(attr.category, "food")}
+    `)
+    .go()
+    
+// Rents by City and Store who's rent discounts match a certain rent/discount criteria
+await StoreLocations.query
+    .units({mallId})
+    .begins({leaseEndDate: june})
+    .rentDiscount(discount, maxRent, minRent)
+    .go()
+
+// Stores by Mall matching a specific category
+await StoreLocations.query
+    .units({mallId})
+    .byCategory("food/coffee")
+    .go()```
 
 ## Query Options
 By default **ElectroDB** enables you to work with records as the names and properties defined in the model. Additionally, it removes the need to deal directly with the docClient parameters which can be complex for a team without as much experience with DynamoDB. The Query Options object can be passed to both the `.params()` and `.go()` methods when building you query. Below are the options available:
@@ -1914,19 +1920,21 @@ By default **ElectroDB** enables you to work with records as the names and prope
 ```typescript
 let options = {
 	params?: object,
+	table?: string,
 	raw?: boolean,
 	includeKeys?: boolean,
 	originalErr?: boolean,
-	lastEvaluatedKeyRaw?: boolean
+	lastEvaluatedKeyRaw?: boolean,
 };
 ```
 | Option | Description |  
 | ----------- | ----------- |  
-| params  | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
+| params  | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
+| table | Use a different table than the one defined in the model |
 | raw  | Returns query results as they were returned by the docClient.  
-| includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. 
-| originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
-| lastEvaluatedKeyRaw | Used in `.pages()`calls to override ElectroDBs default behaviour to break apart LastEvaluatedKeys into facets. See more in the (Pages)[#pages] section.
+| includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
+| originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
+| lastEvaluatedKeyRaw | Used in `.pages()`calls to override ElectroDBs default behaviour to break apart LastEvaluatedKeys into facets. See more in the (Pages)[#pages] section. |
 
 # Errors:
 | Error Code | Description |
