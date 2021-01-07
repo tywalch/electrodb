@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 
 module.exports = (TableName, awsConfig = {}) => {

@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "0.9.39",
+  "version": "0.9.40",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "test-all": "mocha ./test/**.spec.js",
     "test-all-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha ./test/**.spec.js",
     "coverage": "nyc npm run test-all && nyc report --reporter=text-lcov | coveralls",
-    "coverage-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 nyc npm run test-all && nyc report --reporter=html"
+    "coverage-coveralls-local": "nyc npm run test-all-local && nyc report --reporter=text-lcov | coveralls",
+    "coverage-html-local": "nyc npm run test-all-local && nyc report --reporter=html"
   },
   "repository": {
     "type": "git",

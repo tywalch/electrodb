@@ -770,7 +770,7 @@ class Entity {
 		let conlidatedQueryFacets = this._consolidateQueryFacets(
 			state.query.keys.sk,
 		);
-		let { pk, sk } = this._makeIndexKeys(
+		let { pk, sk } = this._makeIndexKeysWithoutTail(
 			state.query.index,
 			state.query.keys.pk,
 			...conlidatedQueryFacets,
@@ -1163,6 +1163,29 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
+	_makeIndexKeysWithoutTail(index = "", pkFacets = {}, ...skFacets) {
+		this._validateIndex(index);
+		if (!skFacets.length) {
+			skFacets.push({});
+		}
+		let facets = this.model.facets.byIndex[index];
+		let prefixes = this.model.prefixes[index];
+		if (!prefixes) {
+			throw new Error(`Invalid index: ${index}`);
+		}
+		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index], true);
+		let sk = [];
+		if (this.model.lookup.indexHasSortKeys[index]) {
+			for (let skFacet of skFacets) {
+				sk.push(
+					this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index], true),
+				);
+			}
+		}
+		return { pk, sk };
+	}
+
+	/* istanbul ignore next */
 	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
 		this._validateIndex(index);
 		if (!skFacets.length) {
@@ -1173,12 +1196,7 @@ class Entity {
 		if (!prefixes) {
 			throw new Error(`Invalid index: ${index}`);
 		}
-		let pk = this._makeKey(
-			prefixes.pk,
-			facets.pk,
-			pkFacets,
-			this.model.facets.labels[index]
-		);
+		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index]);
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
@@ -1191,11 +1209,14 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = {}) {
+	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = {}, excludeLabelTail) {
 		let key = prefix;
 		for (let i = 0; i < facets.length; i++) {
 			let facet = facets[i];
 			let { name } = this.model.schema.attributes[facet];
+			if (supplied[name] === undefined && excludeLabelTail) {
+				break;
+			}
 			if (isCustom) {
 				key = `${key}${labels[facet] === undefined ? "" : labels[facet]}`;
 			} else {

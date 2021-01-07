@@ -1,8 +1,11 @@
+/* istanbul ignore file */
 const makeTable = require("../examples/taskapp/lib/table");
 const definition = require("../examples/taskapp/lib/table/definition.json");
 const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
 const region = "us-east-1";
-
+if (endpoint) {
+    console.log("TESTING LOCALLY!");
+}
 async function create(endpoint, region, table, definition) {
   try {
     if (endpoint !== undefined) {
@@ -18,7 +21,7 @@ async function create(endpoint, region, table, definition) {
     process.exit(1);
   }
 }
-
+//
 create(endpoint, region, "electro", definition);
 create(endpoint, region, "electro_customkeys", {
   "KeySchema":[

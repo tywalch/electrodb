@@ -1403,14 +1403,14 @@ describe("Entity", async () => {
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'electro',
 				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
-				ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1#s_' },
+				ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1' },
 				IndexName: 'gsi1pk-gsi1sk-index'
 			});
 			expect(leasesParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'electro',
 				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
-				ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys#b_' },
+				ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys' },
 				IndexName: 'gsi2pk-gsi2sk-index'
 			});
 			expect(shopParams).to.deep.equal({
@@ -1419,7 +1419,7 @@ describe("Entity", async () => {
 				ExpressionAttributeNames: { '#pk': 'gsi4pk', '#sk1': 'gsi4sk' },
 				ExpressionAttributeValues: {
 					':pk': '$facettest_1#store_lattelarrys',
-					':sk1': `$${ENTITY}#mall_eastpointe#building_buildingz#unit_`
+					':sk1': `$${ENTITY}#mall_eastpointe#building_buildingz`
 				},
 				IndexName: 'gsi4pk-gsi4sk-index'
 			});
