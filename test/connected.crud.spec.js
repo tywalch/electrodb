@@ -702,6 +702,54 @@ describe("Entity", async () => {
 		});
 	});
 
+	describe("Tailing labels", async () => {
+		it("Should include tailing label if chained query methods are not used", async () => {
+			let labeler = new Entity({
+				model: {
+					service: "inventory",
+					entity: "items",
+					version: "1",
+				},
+				attributes: {
+					section: "string",
+					isle: "string",
+					name: "string",
+				},
+				indexes: {
+					locations: {
+						pk: {
+							field: "pk",
+							facets: ["section"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["isle", "name"]
+						}
+					}
+				}
+			}, {client, table: "electro"});
+			let section = "dairy";
+			let item1 = {
+				section,
+				isle: "A2",
+				name: "milk"
+			};
+			let item2 = {
+				section,
+				isle: "A23",
+				name: "eggs"
+			};
+			await labeler.put([item1, item2]).go();
+			await sleep(500);
+			let beginsWithIsle = await labeler.query.locations({section}).begins({isle: "A2"}).go();
+			let specificIsle = await labeler.query.locations({section, isle: "A2"}).go();
+			expect(beginsWithIsle).to.be.an("array").with.lengthOf(2);
+			expect(beginsWithIsle).to.be.deep.equal([item1, item2]);
+			expect(specificIsle).to.be.an("array").with.lengthOf(1);
+			expect(specificIsle).to.be.deep.equal([item1]);
+		})
+	});
+
 	describe("Custom index fields", async () => {
 		it("Should use the index field names as theyre specified on the model", async () => {
 			let schema = {
@@ -1403,14 +1451,14 @@ describe("Entity", async () => {
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'electro',
 				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
-				ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1' },
+				ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1#s_' },
 				IndexName: 'gsi1pk-gsi1sk-index'
 			});
 			expect(leasesParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'electro',
 				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
-				ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys' },
+				ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys#b_' },
 				IndexName: 'gsi2pk-gsi2sk-index'
 			});
 			expect(shopParams).to.deep.equal({
@@ -1419,7 +1467,7 @@ describe("Entity", async () => {
 				ExpressionAttributeNames: { '#pk': 'gsi4pk', '#sk1': 'gsi4sk' },
 				ExpressionAttributeValues: {
 					':pk': '$facettest_1#store_lattelarrys',
-					':sk1': `$${ENTITY}#mall_eastpointe#building_buildingz`
+					':sk1': `$${ENTITY}#mall_eastpointe#building_buildingz#unit_`
 				},
 				IndexName: 'gsi4pk-gsi4sk-index'
 			});

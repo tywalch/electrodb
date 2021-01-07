@@ -18,6 +18,7 @@ const QueryTypes = {
 	begins: "begins",
 	between: "between",
 	collection: "collection",
+	is: "is"
 };
 
 const MethodTypes = {
