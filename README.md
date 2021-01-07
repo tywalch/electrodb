@@ -36,27 +36,23 @@ Employees.query
 Into This:
 ```javascript
 {
-  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
-  TableName: 'staff',
-  ExpressionAttributeNames: {
-    '#office': 'office',
-    '#team': 'team',
-    '#salary': 'salary',
-    '#title': 'title',
-    '#pk': 'gsi1pk',
-    '#sk1': 'gsi1sk'
+  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+  "TableName": "projectmanagement",
+  "ExpressionAttributeNames": {
+    "#salary": "salary",
+    "#title": "title",
+    "#pk": "gsi1pk",
+    "#sk1": "gsi1sk"
   },
-  ExpressionAttributeValues: {
-    ':office1': 'Scranton Branch',
-    ':team1': 'marketing',
-    ':salary_w1': '120000',
-    ':salary_w2': '140000',
-    ':title_w1': 'junior',
-    ':pk': '$taskapp#office_scranton branch',
-    ':sk1': '$workplaces#employees_1#team_marketing#title_'
+  "ExpressionAttributeValues": {
+    ":salary_w1": "120000",
+    ":salary_w2": "140000",
+    ":title_w1": "junior",
+    ":pk": "$taskapp#office_scranton branch",
+    ":sk1": "$workplaces#employees_1#team_marketing"
   },
-  IndexName: 'gsi1pk-gsi1sk-index',
-  FilterExpression: '(#office = :office1 AND#team = :team1) AND (#salary between :salary_w1 and :salary_w2) AND contains(#title, :title_w1)'
+  "IndexName": "gsi1pk-gsi1sk-index",
+  "FilterExpression": "(#salary between :salary_w1 and :salary_w2) AND contains(#title, :title_w1)"
 }
 ``` 
 
