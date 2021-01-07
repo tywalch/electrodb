@@ -5,7 +5,7 @@ services:
 
 before_install:
   - docker pull amazon/dynamodb-local
-  - docker run -p 8000:8000 --name dynamodb amazon/dynamodb-local
+  - docker run -p 8000:8000 --name dynamodb -d amazon/dynamodb-local
   - docker ps -a
 
 node_js:
