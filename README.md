@@ -1,5 +1,3 @@
-
-
 # ElectroDB  
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
 [![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) 
@@ -10,6 +8,8 @@
 ***ElectroDB*** is a dynamodb library to ease the use of having multiple entities and complex hierarchical relationships in a single dynamodb table. 
 
 *This library is a work in progress, please submit issues/feedback or reach out on twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
+
+### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ## Features  
 - [**Attribute Schema Enforcement**](#attributes) - Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
@@ -58,8 +58,6 @@ StoreLocations.query
     "FilterExpression": "#cityId = :cityId_w1 AND contains(#category, :category_w1)"
 }
 ``` 
-
-### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ------------
 
