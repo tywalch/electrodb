@@ -1276,6 +1276,325 @@ describe("Entity", async () => {
 				.and.to.have.deep.members(expectedMembers);
 		});
 	});
+	describe("Updating Records", async () => {
+		const Dummy = new Entity({
+			model: {
+				entity: "dummy",
+				service: "test",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				},
+				prop6: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				},
+				prop8: {
+					type: "string"
+				},
+				prop9: {
+					type: "string"
+				},
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"]
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2"]
+					}
+				},
+				index2: {
+					index: "gsi1pk-gsi1sk-index",
+					pk: {
+						field: "gsi1pk",
+						facets: ["prop3"]
+					},
+					sk: {
+						field: "gsi1sk",
+						facets: ["prop4"]
+					}
+				},
+				index3: {
+					index: "gsi2pk-gsi2sk-index",
+					pk: {
+						field: "gsi2pk",
+						facets: ["prop5"]
+					},
+					sk: {
+						field: "gsi2sk",
+						facets: ["prop6", "prop7", "prop8"]
+					}
+				}
+			}
+		}, {table: "electro", client});
+
+		it("Should not allow the table PKs or SKs to be updated", async () => {
+			try {
+				await Dummy.update({prop1: "abc", prop2: "def"})
+					.set({prop9: "propz9", prop2: "propz6"})
+					.go()
+				throw null;
+			} catch(err) {
+				expect(err).to.not.be.null;
+				expect(err.message).to.equal("Attribute prop2 is Read-Only and cannot be updated");
+			}
+		});
+
+		it("Should not allow the table PKs or SKs to be patched", async () => {
+			try {
+				await Dummy.patch({prop1: "abc", prop2: "def"})
+					.set({prop9: "propz9", prop2: "propz6"})
+					.go()
+				throw null;
+			} catch(err) {
+				expect(err).to.not.be.null;
+				expect(err.message).to.equal("Attribute prop2 is Read-Only and cannot be updated");
+			}
+		});
+
+		it("Should not allow the gsis with partially complete PKs or SKs to be updated", async () => {
+			try {
+				await Dummy.update({prop1: "abc", prop2: "def"})
+					.set({prop9: "propz9", prop6: "propz6"})
+					.go()
+				throw null;
+			} catch(err) {
+				expect(err).to.not.be.null;
+				expect(err.message).to.equal("Incomplete facets: Without the facets 'prop7', 'prop8' the following access patterns cannot be updated: 'index3'  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets");
+			}
+		});
+
+		it("Should not allow the gsis with partially complete PKs or SKs to be patched", async () => {
+			try {
+				await Dummy.patch({prop1: "abc", prop2: "def"})
+					.set({prop9: "propz9", prop6: "propz6"})
+					.go()
+				throw null;
+			} catch(err) {
+				expect(err).to.not.be.null;
+				expect(err.message).to.equal("Incomplete facets: Without the facets 'prop7', 'prop8' the following access patterns cannot be updated: 'index3'  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets");
+			}
+		});
+
+		it("Should update only completed GSI pk keys", async () => {
+			let prop9 = uuid();
+			let prop5 = uuid();
+			let record = {
+				prop1: uuid(),
+				prop2: uuid(),
+				prop3: uuid(),
+				prop4: uuid(),
+				prop4: uuid(),
+				prop5: uuid(),
+				prop6: uuid(),
+				prop7: uuid(),
+				prop8: uuid(),
+				prop9: uuid(),
+			}
+			await Dummy.put(record).go();
+			await sleep(100);
+			let beforeUpdateQueryParams = Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
+			expect(beforeUpdateQueryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+				ExpressionAttributeValues: {
+					':pk': `$test#prop5_${record.prop5}`,
+					':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+				},
+				IndexName: 'gsi2pk-gsi2sk-index'
+			});
+			let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+			expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
+			await Dummy.update({prop1: record.prop1, prop2: record.prop2})
+				.set({prop9, prop5})
+				.go();
+			await sleep(100);
+			let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
+			expect(afterUpdateQueryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+				ExpressionAttributeValues: {
+					':pk': `$test#prop5_${prop5}`,
+					':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+				},
+				IndexName: 'gsi2pk-gsi2sk-index'
+			});
+			let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+			expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop5}]);
+		});
+
+		it("Should patch only completed GSI pk keys", async () => {
+			let prop9 = uuid();
+			let prop5 = uuid();
+			let record = {
+				prop1: uuid(),
+				prop2: uuid(),
+				prop3: uuid(),
+				prop4: uuid(),
+				prop4: uuid(),
+				prop5: uuid(),
+				prop6: uuid(),
+				prop7: uuid(),
+				prop8: uuid(),
+				prop9: uuid(),
+			}
+			await Dummy.put(record).go();
+			await sleep(100);
+			let beforeUpdateQueryParams = Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
+			expect(beforeUpdateQueryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+				ExpressionAttributeValues: {
+					':pk': `$test#prop5_${record.prop5}`,
+					':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+				},
+				IndexName: 'gsi2pk-gsi2sk-index'
+			});
+			let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+			expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
+			await Dummy.patch({prop1: record.prop1, prop2: record.prop2})
+				.set({prop9, prop5})
+				.go();
+			await sleep(100);
+			let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
+			expect(afterUpdateQueryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+				ExpressionAttributeValues: {
+					':pk': `$test#prop5_${prop5}`,
+					':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+				},
+				IndexName: 'gsi2pk-gsi2sk-index'
+			});
+			let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+			expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop5}]);
+		});
+
+		it("Should update only completed GSI sk keys", async () => {
+			let prop9 = uuid();
+			let prop4 = uuid();
+			let record = {
+				prop1: uuid(),
+				prop2: uuid(),
+				prop3: uuid(),
+				prop4: uuid(),
+				prop4: uuid(),
+				prop5: uuid(),
+				prop6: uuid(),
+				prop7: uuid(),
+				prop8: uuid(),
+				prop9: uuid(),
+			}
+			await Dummy.put(record).go();
+			await sleep(100);
+			let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
+			expect(beforeUpdateQueryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': `$test#prop3_${record.prop3}`,
+					':sk1': `$dummy_1#prop4_${record.prop4}`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index'
+			});
+			let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go();
+			expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
+			await Dummy.update({prop1: record.prop1, prop2: record.prop2})
+				.set({prop9, prop4})
+				.go();
+			await sleep(100);
+			let afterUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4}).params();
+			expect(afterUpdateQueryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': `$test#prop3_${record.prop3}`,
+					':sk1': `$dummy_1#prop4_${prop4}`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index'
+			});
+			let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go();
+			expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
+		});
+
+		it("Should patch only completed GSI sk keys", async () => {
+			let prop9 = uuid();
+			let prop4 = uuid();
+			let record = {
+				prop1: uuid(),
+				prop2: uuid(),
+				prop3: uuid(),
+				prop4: uuid(),
+				prop4: uuid(),
+				prop5: uuid(),
+				prop6: uuid(),
+				prop7: uuid(),
+				prop8: uuid(),
+				prop9: uuid(),
+			}
+			await Dummy.put(record).go();
+			await sleep(100);
+			let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
+			expect(beforeUpdateQueryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': `$test#prop3_${record.prop3}`,
+					':sk1': `$dummy_1#prop4_${record.prop4}`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index'
+			});
+			let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go();
+			expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
+			await Dummy.patch({prop1: record.prop1, prop2: record.prop2})
+				.set({prop9, prop4})
+				.go();
+			await sleep(100);
+			let afterUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4}).params();
+			expect(afterUpdateQueryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'electro',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': `$test#prop3_${record.prop3}`,
+					':sk1': `$dummy_1#prop4_${prop4}`
+				},
+				IndexName: 'gsi1pk-gsi1sk-index'
+			});
+			let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go();
+			expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
+		});
+	})
 	describe("Pagination", async () => {
 		it("Should return a pk and sk that match the last record in the result set, and should be able to be passed in for more results", async () => {
 			// THIS IS A FOOLISH TEST: IT ONLY FULLY WORKS WHEN THE TABLE USED FOR TESTING IS FULL OF RECORDS. THIS WILL HAVE TO DO UNTIL I HAVE TIME TO FIGURE OUT A PROPER WAY MOCK DDB.
