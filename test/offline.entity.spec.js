@@ -586,62 +586,159 @@ describe("Entity", () => {
 			);
 			let impact5 = MallStores._getIndexImpact(
 				{ rent, leaseEnd, category },
-				{ store, building, unit, store },
+				{ store, building, unit },
 			);
 			expect(impact1).to.deep.equal([
 				true,
 				{
-					incomplete: ["building", "unit", "store", "building", "unit"],
+					incomplete: [
+						{
+							"index": "gsi3pk-gsi3sk-index",
+			  				"missing": ["building", "unit", "store"]
+						},
+						{
+							"index": "gsi4pk-gsi4sk-index",
+							"missing": ["building", "unit"]
+						}
+					],
 					complete: {
 						facets: { mall, category },
 						indexes: ["gsi1pk-gsi1sk-index", "gsi2pk-gsi2sk-index"],
+						impactedIndexTypes: {
+							"gsi1pk-gsi1sk-index": {
+				  				"pk": "pk"
+							},
+							"gsi2pk-gsi2sk-index": {
+				  				"pk": "pk"
+							},
+							"gsi3pk-gsi3sk-index": {
+				  				"pk": "pk",
+				  				"sk": "sk"
+							},
+							"gsi4pk-gsi4sk-index": {
+				  				"sk": "sk"
+							}
+						}
 					},
 				},
 			]);
 			expect(impact2).to.deep.equal([
 				true,
 				{
-					incomplete: ["store", "building", "unit"],
-					complete: { facets: { leaseEnd }, indexes: [] },
-				},
+					"incomplete": [
+						{
+							"index": "gsi2pk-gsi2sk-index",
+							"missing": [
+								"store",
+								"building",
+								"unit"
+							]
+						}
+					],
+					"complete": {
+						"facets": {
+							"leaseEnd": leaseEnd
+						},
+						"indexes": [],
+						"impactedIndexTypes": {
+							"gsi2pk-gsi2sk-index": {
+								"sk": "sk"
+							}
+						}
+					}
+				}
 			]);
+
 			expect(impact3).to.deep.equal([
 				true,
 				{
-					incomplete: ["building", "unit"],
-					complete: {
-						facets: { mall },
-						indexes: [
+					"incomplete": [
+						{
+							"index": "gsi4pk-gsi4sk-index",
+							"missing": [
+								"building",
+								"unit"
+							]
+						}
+					],
+					"complete": {
+						"facets": {
+							"mall": mall
+						},
+						"indexes": [
 							"gsi1pk-gsi1sk-index",
 							"gsi2pk-gsi2sk-index",
-							"gsi3pk-gsi3sk-index",
+							"gsi3pk-gsi3sk-index"
 						],
-					},
-				},
+						"impactedIndexTypes": {
+							"gsi1pk-gsi1sk-index": {
+								"pk": "pk"
+							},
+							"gsi2pk-gsi2sk-index": {
+								"pk": "pk"
+							},
+							"gsi3pk-gsi3sk-index": {
+								"pk": "pk"
+							},
+							"gsi4pk-gsi4sk-index": {
+								"sk": "sk"
+							}
+						}
+					}
+				}
 			]);
+
 			expect(impact4).to.deep.equal([
 				false,
 				{
-					incomplete: [],
-					complete: {
-						facets: { mall: "EastPointe" },
-						indexes: [
+					"incomplete": [],
+					"complete": {
+						"facets": {
+							"mall": mall
+						},
+						"indexes": [
 							"gsi1pk-gsi1sk-index",
 							"gsi2pk-gsi2sk-index",
-							"gsi3pk-gsi3sk-index",
+							"gsi3pk-gsi3sk-index"
 						],
-					},
-				},
+						"impactedIndexTypes": {
+							"gsi1pk-gsi1sk-index": {
+								"pk": "pk"
+							},
+							"gsi2pk-gsi2sk-index": {
+								"pk": "pk"
+							},
+							"gsi3pk-gsi3sk-index": {
+								"pk": "pk"
+							},
+							"gsi4pk-gsi4sk-index": {
+								"sk": "sk"
+							}
+						}
+					}
+				}
 			]);
+
 			expect(impact5).to.deep.equal([
 				false,
 				{
-					incomplete: [],
-					complete: {
-						facets: { leaseEnd: "2020/04/27", category: "food/coffee" },
-						indexes: [],
-					},
-				},
+					"incomplete": [],
+					"complete": {
+						"facets": {
+							"leaseEnd": leaseEnd,
+							"category": category
+						},
+						"indexes": [],
+						"impactedIndexTypes": {
+							"gsi2pk-gsi2sk-index": {
+								"sk": "sk"
+							},
+							"gsi3pk-gsi3sk-index": {
+								"sk": "sk"
+							}
+						}
+					}
+				}
 			]);
 		});
 	});
@@ -801,7 +898,7 @@ describe("Entity", () => {
 				.params();
 			expect(update).to.deep.equal({
 				UpdateExpression:
-					"SET #mall = :mall, #storeId = :storeId, #buildingId = :buildingId, #unitId = :unitId, #category = :category, #leaseEnd = :leaseEnd, #rent = :rent",
+					"SET #mall = :mall, #storeId = :storeId, #buildingId = :buildingId, #unitId = :unitId, #category = :category, #leaseEnd = :leaseEnd, #rent = :rent, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk, #gsi2pk = :gsi2pk, #gsi2sk = :gsi2sk, #gsi3pk = :gsi3pk, #gsi3sk = :gsi3sk, #gsi4pk = :gsi4pk, #gsi4sk = :gsi4sk",
 				ExpressionAttributeNames: {
 					"#mall": "mall",
 					"#storeId": "storeId",
@@ -810,6 +907,14 @@ describe("Entity", () => {
 					"#category": "category",
 					"#leaseEnd": "leaseEnd",
 					"#rent": "rent",
+					"#gsi1pk": "gsi1pk",
+					"#gsi1sk": "gsi1sk",
+					"#gsi2pk": "gsi2pk",
+					"#gsi2sk": "gsi2sk",
+					"#gsi3pk": "gsi3pk",
+					"#gsi3sk": "gsi3sk",
+					"#gsi4pk": "gsi4pk",
+					"#gsi4sk": "gsi4sk",
 				},
 				ExpressionAttributeValues: {
 					":mall": mall,
@@ -819,6 +924,14 @@ describe("Entity", () => {
 					":category": category,
 					":leaseEnd": leaseEnd,
 					":rent": rent,
+					":gsi1pk": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi1sk": "$mallstores#building_buildinga#unit_b54#store_lattelarrys",
+					":gsi2pk": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi2sk": "$mallstores#leaseend_2020-01-20#store_lattelarrys#building_buildinga#unit_b54",
+					":gsi3pk": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi3sk": "$mallstores#category_food/coffee#building_buildinga#unit_b54#store_lattelarrys",
+					":gsi4pk": "$mallstoredirectory_1#store_lattelarrys",
+					":gsi4sk": "$mallstores#mall_eastpointe#building_buildinga#unit_b54",
 				},
 				TableName: "StoreDirectory",
 				Key: {
@@ -1165,7 +1278,7 @@ describe("Entity", () => {
 						mall: "Washington Square",
 						stores: undefined
 					},
-					output: "Incomplete facets: Without the facets 'stores' the following access patterns cannot be updated. - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+					output: "Without the facets 'stores' the following access patterns cannot be updated: 'store'  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
 				},
 				{
 					happy: false,
@@ -1182,7 +1295,7 @@ describe("Entity", () => {
 						id: "12345",
 						mall
 					},
-					output: "Incomplete facets: Without the facets 'stores' the following access patterns cannot be updated. - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+					output: "Without the facets 'stores' the following access patterns cannot be updated: 'store'  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
 				},
 			]
 			for (let test of tests) {

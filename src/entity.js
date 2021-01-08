@@ -635,10 +635,10 @@ class Entity {
 	_makeUpdateParams({ set } = {}, pk = {}, sk = {}) {
 		let setAttributes = this.model.schema.applyAttributeSetters(set);
 		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
-		let transatedFields = this.model.schema.translateToFields(setAttributes);
+		let translatedFields = this.model.schema.translateToFields(setAttributes);
 
 		let item = {
-			...transatedFields,
+			...translatedFields,
 			...updatedKeys,
 		};
 
@@ -660,12 +660,12 @@ class Entity {
 	/* istanbul ignore next */
 	_makePutParams({ data } = {}, pk, sk) {
 		let setAttributes = this.model.schema.applyAttributeSetters(data);
-		let { updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
-		let transatedFields = this.model.schema.translateToFields(setAttributes);
+		let { updatedKeys } = this._getPutKeys(pk, sk, setAttributes);
+		let translatedFields = this.model.schema.translateToFields(setAttributes);
 
 		return {
 			Item: {
-				...transatedFields,
+				...translatedFields,
 				...updatedKeys,
 				[this.identifiers.entity]: this.model.entity,
 				[this.identifiers.version]: this.model.version,
@@ -675,9 +675,12 @@ class Entity {
 	}
 
 	_updateExpressionBuilder(data) {
+		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[""]
 		let skip = [
 			...this.model.schema.getReadOnly(),
-			...this.model.facets.fields,
+			// ...this.model.facets.fields,
+			this.model.indexes[accessPattern].pk.field,
+			this.model.indexes[accessPattern].sk.field
 		];
 		return this._expressionAttributeBuilder(data, { skip });
 	}
@@ -926,14 +929,11 @@ class Entity {
 			attributes,
 			facets,
 		);
-		let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index]);
 		if (isIncomplete) {
+			let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index]);
+			let missingFacets = incomplete.reduce((result, { missing }) => [...result, ...missing], []);
 			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets,
-				`Incomplete facets: Without the facets '${incomplete
-					.filter((val) => val !== undefined)
-					.join(", ")}' the following access patterns ${incompleteAccessPatterns
-					.filter((val) => val !== undefined)
-					.join(", ")}cannot be updated.`,
+				`Incomplete facets: Without the facets ${missingFacets.map(val => `'${val}'`).join(", ")} the following access patterns cannot be updated: ${incompleteAccessPatterns.filter((val) => val !== undefined).map(val => `'${val}'`).join(", ")} `,
 			);
 		}
 		return complete;
@@ -941,13 +941,38 @@ class Entity {
 
 	_makeKeysFromAttributes(indexes, attributes) {
 		let indexKeys = {};
+		for (let [index, keyTypes] of Object.entries(indexes)) {
+			// let pkAttributes = keyTypes.pk ? attributes : {};
+			// let skAttributes = keyTypes.sk ? attributes : {};
+			// indexKeys[index] = this._makeIndexKeys(index, pkAttributes, skAttributes);
+			let keys = this._makeIndexKeys(index, attributes, attributes);
+			if (keyTypes.pk || keyTypes.sk) {
+				indexKeys[index] = {};
+			}
+
+			if (keyTypes.pk && keys.pk) {
+				indexKeys[index].pk = keys.pk
+			}
+
+			if (keyTypes.sk && keys.sk) {
+				indexKeys[index].sk = keys.sk
+			} else {
+				// at least return the same datatype (array)
+				indexKeys[index].sk = []
+			}
+		}
+		return indexKeys;
+	}
+
+	_makePutKeysFromAttributes(indexes, attributes) {
+		let indexKeys = {};
 		for (let index of indexes) {
 			indexKeys[index] = this._makeIndexKeys(index, attributes, attributes);
 		}
 		return indexKeys;
 	}
 
-	_getUpdatedKeys(pk, sk, set) {
+	_getPutKeys(pk, sk, set) {
 		let updateIndex = "";
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
@@ -961,7 +986,7 @@ class Entity {
 			completeFacets.indexes.push(updateIndex);
 		}
 
-		let composedKeys = this._makeKeysFromAttributes(completeFacets.indexes, { ...keyAttributes, ...set });
+		let composedKeys = this._makePutKeysFromAttributes(completeFacets.indexes, { ...keyAttributes, ...set });
 		let updatedKeys = {};
 		let indexKey = {};
 		for (let [index, keys] of Object.entries(composedKeys)) {
@@ -981,10 +1006,48 @@ class Entity {
 		return { indexKey, updatedKeys };
 	}
 
+	_getUpdatedKeys(pk, sk, set) {
+		let updateIndex = "";
+		let keyTranslations = this.model.translations.keys;
+		let keyAttributes = { ...sk, ...pk };
+		let completeFacets = this._expectIndexFacets(
+			{ ...set },
+			{ ...keyAttributes },
+		);
+
+		// complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
+		if (completeFacets.impactedIndexTypes[updateIndex] === undefined) {
+			completeFacets.impactedIndexTypes[updateIndex] = {
+				pk: "pk",
+				sk: "sk"
+			}
+		}
+
+		let composedKeys = this._makeKeysFromAttributes(completeFacets.impactedIndexTypes,{ ...keyAttributes, ...set });
+		let updatedKeys = {};
+		let indexKey = {};
+		for (let [index, keys] of Object.entries(composedKeys)) {
+			let { pk, sk } = keyTranslations[index];
+			if (index === updateIndex) {
+				indexKey[pk] = keys.pk;
+				if (sk) {
+					indexKey[sk] = keys.sk[0];
+				}
+			}
+			if (keys.pk) {
+				updatedKeys[pk] = keys.pk;
+			}
+			if (sk && keys.sk[0]) {
+				updatedKeys[sk] = keys.sk[0];
+			}
+		}
+		return { indexKey, updatedKeys };
+	}
 	/* istanbul ignore next */
 	_getIndexImpact(attributes = {}, included = {}) {
 		let includedFacets = Object.keys(included);
 		let impactedIndexes = {};
+		let impactedIndexTypes = {}
 		let completedIndexes = [];
 		let facets = {};
 		for (let [attribute, indexes] of Object.entries(this.model.facets.byAttr)) {
@@ -994,6 +1057,8 @@ class Entity {
 					impactedIndexes[index] = impactedIndexes[index] || {};
 					impactedIndexes[index][type] = impactedIndexes[index][type] || [];
 					impactedIndexes[index][type].push(attribute);
+					impactedIndexTypes[index] = impactedIndexTypes[index] || {};
+					impactedIndexTypes[index][type] = type;
 				});
 			}
 		}
@@ -1003,18 +1068,14 @@ class Entity {
 				let impacted = impactedIndexes[index];
 				let impact = { index, missing: [] };
 				if (impacted) {
-					let missingPk =
-						impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
-					let missingSk =
-						impacted[KeyTypes.sk] && impacted[KeyTypes.sk].length !== sk.length;
+					let missingPk = impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
+					let missingSk = impacted[KeyTypes.sk] && impacted[KeyTypes.sk].length !== sk.length;
 					if (missingPk) {
 						impact.missing = [
 							...impact.missing,
-							...pk.filter(
-								(attr) =>
-									!impacted[KeyTypes.pk].includes(attr) &&
-									!includedFacets.includes(attr),
-							),
+							...pk.filter((attr) => {
+								return !impacted[KeyTypes.pk].includes(attr) && !includedFacets.includes(attr)
+							}),
 						];
 					}
 					if (missingSk) {
@@ -1034,10 +1095,18 @@ class Entity {
 				return impact;
 			})
 			.filter(({ missing }) => missing.length)
-			.reduce((result, { missing }) => [...result, ...missing], []);
+			// .reduce((result, { missing }) => [...result, ...missing], []);
+
+		// let impactedKeyFields = [];
+		// for (let indexName of Object.keys(impactedIndexes)) {
+		// 	let keyFields = Object.keys(impactedIndexes[indexName])
+		// 		.map(keyType => this.model.translations.keys[indexName][keyType]);
+		// 	impactedKeyFields = [...impactedKeyFields, ...keyFields];
+		// }
+
 
 		let isIncomplete = !!incomplete.length;
-		let complete = {facets, indexes: completedIndexes};
+		let complete = {facets, indexes: completedIndexes, impactedIndexTypes};
 		return [isIncomplete, { incomplete, complete }];
 	}
 
