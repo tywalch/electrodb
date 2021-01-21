@@ -23,7 +23,7 @@
 - [**Use With Your Existing Solution**](#facet-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Facet Templates to leverage your existing key structures.
 - [**Generate Type Defintions**](#electro-cli) - Generate **TypeScript** type definition files (`.d.ts`) based on your model.
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
-- [**Dynamically HTTP Service for Entities**](#electro-cli) - stand up an HTTP Service to interact with your `Entities`, `Services`, `Models` for easier prototyping.
+- [**Stand Up HTTP Service for Entities**](#electro-cli) - stand up an HTTP Service to interact with your `Entities`, `Services`, `Models` for easier prototyping.
 
 ------------
 
