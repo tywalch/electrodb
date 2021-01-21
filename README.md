@@ -59,6 +59,8 @@ StoreLocations.query
 }
 ``` 
 
+### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+
 ------------
 
 ## Table of Contents
