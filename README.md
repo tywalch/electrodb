@@ -1,3 +1,4 @@
+
 # ElectroDB  
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
 [![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) 
@@ -113,6 +114,8 @@ StoreLocations.query
     + [Patch Records](#patch-records)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
+    + [Access Pattern Queries](#access-pattern-queries)
+	   - [Begins With Queries](#begins-with-queries)
     + [Query Records](#query-records)
       - [Partition Key Facets](#partition-key-facets)
   * [Collection Chains](#collection-chains)
@@ -1254,9 +1257,8 @@ StoreLocations.query.stores({cityId, mallId, storeId});
 ### Sort Key Operations 
 | operator | use case |
 | ---: | ----------- |
-| `begins_with` | Keys starting with a particular set of characters.
+| `begins` | Keys starting with a particular set of characters.
 | `between` | Keys between a specified range. |
-| `eq` | Keys equal to some value |
 | `gt` | Keys less than some value |
 | `gte` | Keys less than or equal to some value |
 | `lt` | Keys greater than some value |
@@ -1687,8 +1689,63 @@ await StoreLocations.find({
   "FilterExpression": "#mallId = :mallId1 AND#buildingId = :buildingId1 AND#leaseEndDate = :leaseEndDate1 AND#rent = :rent1"
 }
 ```
-
 After invoking the **Access Pattern** with the required **Partition Key** **Facets**, you can now choose what **Sort Key Facets** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
+
+### Access Pattern Queries
+When you define your [indexes](#indexes) in your model, you are defining the access patterns of your entity. The [facets](#facets) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
+
+Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this to multiply our available access patterns and use the Sort Key Operations: `begins`, `between`, `lt`, `lte`, `gt`, and `gte`. These queries are more performant and cost effective than filters. The costs associated with DynamoDB directly correlate to how effectively you leverage Sort Key Operations. 
+
+> For a comprehensive and interactive guide to build queries please visit this runkit: https://runkit.com/tywalch/electrodb-building-queries.
+
+#### Begins With Queries
+One important consideration when using Sort Key Operations to make is when to use and not to use "begins". 
+
+It is possible to supply partially supply Sort Key facets. While they do have to be in order, you can provide only some of the properties to ElectroDB. By default, when you supply a partial Sort Key in the Access Pattern method, ElectroDB will create a `beginsWith` query. The difference between doing that and using .begins() is that ElectroDB will post-pend the next facet's label onto the query.
+
+The difference is nuanced and makes better sense with an example, but the rule of thumb is that data passed to the Access Pattern method should represent values you know strictly equal the value you want.  
+
+The following examples will use the following Access Pattern definition for `units`:
+```json
+"units": {  
+    "index": "gis1pk-gsi1sk-index",  
+    "pk": {
+        "field": "gis1pk",
+        "facets": ["mallId"]
+    },  
+    "sk": {
+        "field": "gsi1sk",
+        "facets": ["buildingId", "unitId"]
+    }  
+}
+```
+An Access Pattern method is the method after query you use to query a particular accessType:
+```javascript
+// Example #1
+StoreLocations.query.units({mallId, buildingId}).go();
+// -----------------------^^^^^^^^^^^^^^^^^^^^^^
+```
+
+Data passed to the Access Pattern method is considered to be full, known, data. In the above example, we are saying we *know* the `mallId`, `buildingId` and `unitId`.  
+
+Alternatively, if you only know the start of a piece of data, use .begins():
+```javascript
+// Example #2
+StoreLocations.query.units({mallId}).begins({buildingId}).go();
+// ---------------------------------^^^^^^^^^^^^^^^^^^^^^
+```
+
+Data passed to the .begins() method is considered to be partial data. In the second example, we are saying we *know* the `mallId` and `buildingId`, but only know the beginning of `unitId`.
+
+For the above queries we see two different sort keys:
+1. `"$mallstore_1#buildingid_f34#unitid_"`
+2. `"$mallstore_1#buildingid_f34"`
+
+The first example shows how ElectroDB post-pends the label of the next facet (unitId) on the SortKey to ensure that buildings such as `"f340"` are not included in the query. This is useful to prevent common issues with multi-facet sort keys like accidental over-querying.
+
+The second example allows you to make queries that do include buildings such as `"f340"` or `"f3409"` or `"f340356346"`.
+
+For these reasons it is important to consider that Data passed to the Access Pattern method is considered to be full, known, data.
 
 ## Collection Chains
 Collections allow you to query across Entities. To use them you need to `join` your Models onto a `Service` instance.
@@ -1739,7 +1796,6 @@ TaskApp.collections
   FilterExpression: '\n\t\tattribute_not_exists(#project) OR contains(#project, :project1)\n\t'
 }
 ```
-
 
 ## Execute Queries
 Lastly, all query chains end with either a `.go()` or a `.params()` method invocation. These will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
@@ -2868,5 +2924,3 @@ new Service("service_name", {client, table});
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
 - Append/Add/Subtract/Remove updates capabilities
 - Complex attributes (list, map, set)
-- Data migration capabilities
-- TypeScript type definition generation
