@@ -1987,6 +1987,10 @@ let options = {
 	lastEvaluatedKeyRaw?: boolean,
 };
 ```
+
+## Query Options
+Query options can be added the `.params()`, `.go()` and `.page()` to change some of the queries behavior or add customer parameters to a query.  
+
 | Option | Description |  
 | ----------- | ----------- |  
 | params  | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
