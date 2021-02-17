@@ -330,11 +330,11 @@ export declare namespace Employees {
         lastEvaluatedKeyRaw?: boolean;
     };
     
-    export type GoRecord<T> = (options: GoOptions = {}) => Promise<T>;
+    export type GoRecord<T> = (options?: GoOptions) => Promise<T>;
 
-    export type PageRecord<T> = (page?: EmployeeIndex | null, options: GoOptions = {}) => Promise<[EmployeeIndexFacets | null, T]>;
+    export type PageRecord<T> = (page?: EmployeeIndex | null, options?: GoOptions) => Promise<[EmployeeIndexFacets | null, T]>;
 
-    export type ParamRecord = (options: GoOptions = {}) => object;
+    export type ParamRecord = (options?: GoOptions) => object;
 
     export type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
@@ -371,6 +371,7 @@ export declare namespace Employees {
         gte: (skFacets: T) => RecordsActionOptions<Item[]>;
         lt: (skFacets: T) => RecordsActionOptions<Item[]>;
         lte: (skFacets: T) => RecordsActionOptions<Item[]>;
+        begins: (skFacets: T) => RecordsActionOptions<Item[]>;
         go: GoRecord<Item[]>;
         params: ParamRecord;
         page: PageRecord<Item[]>;
@@ -661,11 +662,11 @@ export declare namespace Tasks {
         lastEvaluatedKeyRaw?: boolean;
     };
     
-    export type GoRecord<T> = (options: GoOptions = {}) => Promise<T>;
+    export type GoRecord<T> = (options?: GoOptions) => Promise<T>;
 
-    export type PageRecord<T> = (page?: TaskIndex | null, options: GoOptions = {}) => Promise<[TaskIndexFacets | null, T]>;
+    export type PageRecord<T> = (page?: TaskIndex | null, options?: GoOptions) => Promise<[TaskIndexFacets | null, T]>;
 
-    export type ParamRecord = (options: GoOptions = {}) => object;
+    export type ParamRecord = (options?: GoOptions) => object;
 
     export type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
@@ -702,6 +703,7 @@ export declare namespace Tasks {
         gte: (skFacets: T) => RecordsActionOptions<Item[]>;
         lt: (skFacets: T) => RecordsActionOptions<Item[]>;
         lte: (skFacets: T) => RecordsActionOptions<Item[]>;
+        begins: (skFacets: T) => RecordsActionOptions<Item[]>;
         go: GoRecord<Item[]>;
         params: ParamRecord;
         page: PageRecord<Item[]>;
@@ -925,11 +927,11 @@ export declare namespace Offices {
         lastEvaluatedKeyRaw?: boolean;
     };
     
-    export type GoRecord<T> = (options: GoOptions = {}) => Promise<T>;
+    export type GoRecord<T> = (options?: GoOptions) => Promise<T>;
 
-    export type PageRecord<T> = (page?: LocationsIndex | null, options: GoOptions = {}) => Promise<[LocationsIndexFacets | null, T]>;
+    export type PageRecord<T> = (page?: LocationsIndex | null, options?: GoOptions) => Promise<[LocationsIndexFacets | null, T]>;
 
-    export type ParamRecord = (options: GoOptions = {}) => object;
+    export type ParamRecord = (options?: GoOptions) => object;
 
     export type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
@@ -966,6 +968,7 @@ export declare namespace Offices {
         gte: (skFacets: T) => RecordsActionOptions<Item[]>;
         lt: (skFacets: T) => RecordsActionOptions<Item[]>;
         lte: (skFacets: T) => RecordsActionOptions<Item[]>;
+        begins: (skFacets: T) => RecordsActionOptions<Item[]>;
         go: GoRecord<Item[]>;
         params: ParamRecord;
         page: PageRecord<Item[]>;
@@ -1220,9 +1223,9 @@ export declare namespace WorkplacesCollection {
         lastEvaluatedKeyRaw?: boolean;
     };
     
-    type GoRecord<T> = (options: GoOptions = {}) => Promise<T>;
+    type GoRecord<T> = (options?: GoOptions) => Promise<T>;
 
-    type ParamRecord = (options: GoOptions = {}) => object;
+    type ParamRecord = (options?: GoOptions) => object;
 
     type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
@@ -1476,9 +1479,9 @@ export declare namespace AssignmentsCollection {
         lastEvaluatedKeyRaw?: boolean;
     };
     
-    type GoRecord<T> = (options: GoOptions = {}) => Promise<T>;
+    type GoRecord<T> = (options?: GoOptions) => Promise<T>;
 
-    type ParamRecord = (options: GoOptions = {}) => object;
+    type ParamRecord = (options?: GoOptions) => object;
 
     type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
