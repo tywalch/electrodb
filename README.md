@@ -1346,7 +1346,7 @@ The two-dimensional array returned by batch get most easily used when deconstruc
 
 The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as ElectroDB queries.
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the (query option)[#query-options] `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
 
 ### Delete Method
 Provide all Table Index facets in an object to the `delete` method to delete a record.
@@ -1415,7 +1415,7 @@ let unprocessed = await StoreLocations.delete([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the (query option)[#query-options] `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
 Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
@@ -1552,7 +1552,7 @@ let unprocessed = await StoreLocations.put([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the (query option)[#query-options] `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Update Record
 To update a record, pass all Table index facets to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
