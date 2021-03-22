@@ -99,7 +99,11 @@ class Entity {
 
 	get(facets = {}) {
 		let index = "";
-		return this._makeChain(index, clauses, clauses.index).get(facets);
+		if (Array.isArray(facets)) {
+			return this._makeChain(index, this._clausesWithFilters, clauses.index).batchGet(facets);
+		} else {
+			return this._makeChain(index, clauses, clauses.index).get(facets);
+		}
 	}
 
 
@@ -168,7 +172,9 @@ class Entity {
 				case MethodTypes.create:
 					return this.formatResponse(parameters.IndexName, parameters, config);
 				case MethodTypes.batchWrite:
-					return this.formatBulkResponse(parameters.IndexName, response, config);
+					return this.formatBulkWriteResponse(parameters.IndexName, response, config);
+				case MethodTypes.batchGet:
+					return this.formatBulkGetResponse(parameters.IndexName, response, config);
 				default:
 					return this.formatResponse(parameters.IndexName, response, config);
 			}
@@ -204,14 +210,14 @@ class Entity {
 		return data;
 	}
 
-	formatBulkResponse(index, response = {}, config = {}) {
+	formatBulkWriteResponse(index, response = {}, config = {}) {
 		if (!response || !response.UnprocessedItems) {
 			return response;
 		}
-		let table = this._getTableName();
-		let unProcessed = response.UnprocessedItems[table];
-		if (Array.isArray(unProcessed) && unProcessed.length) {
-			return unProcessed.map(request => {
+		let table = config.table || this._getTableName();
+		let unprocessed = response.UnprocessedItems[table];
+		if (Array.isArray(unprocessed) && unprocessed.length) {
+			return unprocessed.map(request => {
 				if (request.PutRequest) {
 					return this.formatResponse(index, request.PutRequest, config);
 				} else if (request.DeleteRequest) {
@@ -223,7 +229,39 @@ class Entity {
 		} else {
 			return []
 		}
-		
+	}
+
+	formatBulkGetResponse(index, response = {}, config = {}) {
+		let unprocessed = [];
+		let results = [];
+		let table = config.table || this._getTableName();
+		if (!response.UnprocessedKeys || !response.Responses) {
+			throw new Error("Unknown response format");
+		}
+
+		if (response.UnprocessedKeys[table] && response.UnprocessedKeys[table].Keys && Array.isArray(response.UnprocessedKeys[table].Keys)) {
+			for (let value of response.UnprocessedKeys[table].Keys) {
+				if (config && config.lastEvaluatedKeyRaw) {
+					unprocessed.push(value);
+				} else {
+					unprocessed.push(
+						this._formatReturnPager(index, value)
+					);
+				}
+			}
+		}
+
+		if (response.Responses[table] && Array.isArray(response.Responses[table])) {
+			for (let value of response.Responses[table]) {
+				results.push(
+					// Value is added as Item here because formatResponse expects a regular Item/Items response
+					// typically returned by Gets or Queries.
+					this.formatResponse(index, {Item: value}, config)
+				);
+			}
+		}
+
+		return [results, unprocessed];
 	}
 
 	formatResponse(index, response, config = {}) {
@@ -531,8 +569,30 @@ class Entity {
 		return this._applyParameterExpressionTypes(params, filter);
 	}
 
+	_batchGetParams(state, config = {}) {
+		let table = config.table || this._getTableName();
+		let userDefinedParams = config.params || {};
+		let keys = [];
+		for (let itemState of state.batch.items) {
+			let method = itemState.query.method;
+			let params = this._params(itemState, config);
+			if (method === MethodTypes.get) {
+				let {Key} = params;
+				keys.push(Key);
+			}
+		}
+		return {
+			RequestItems: {
+				[table]: {
+					...userDefinedParams,
+					Keys: keys
+				}
+			}
+		}
+	}
+
 	_batchWriteParams(state, config = {}) {
-		let table = this._getTableName();
+		let table = config.table || this._getTableName();
 		let batch = [];
 		for (let itemState of state.batch.items) {
 			let method = itemState.query.method;

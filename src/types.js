@@ -31,6 +31,7 @@ const MethodTypes = {
 	scan: "scan",
 	patch: "patch",
 	create: "create",
+	batchGet: "batchGet",
 	batchWrite: "batchWrite"
 };
 

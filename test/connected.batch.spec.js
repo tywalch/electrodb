@@ -219,4 +219,240 @@ describe("BatchWrite", async () => {
     expect(getRecord2).to.be.deep.equal(record2);
     expect(getRecord3).to.be.an("object").that.is.empty;
   }).timeout(5000);
-})
+});
+
+describe("BatchGet", async () => {
+  it("Should consistently create then get a record in batch", async () => {
+    let created = await MallStores.put(record1).go({params: {ConsistentRead: true}});
+    expect(created).to.deep.equal(record1);
+    let record = await MallStores.get(record1).go({params: {ConsistentRead: true}});
+    expect(record).to.deep.equal(record1);
+    let records = await MallStores.get([record1]).go({params: {ConsistentRead: true}});
+    expect(records).to.be.an("array").with.length(2);
+    expect(records[0]).to.be.an("array").with.length(1);
+    expect(records[1]).to.be.an("array").with.length(0);
+    expect(records[0][0]).to.be.deep.equal(record1);
+  });
+  it("Should parse returned unprocessed keys", async () => {
+    let response = {
+      "Responses": {
+        "electro": [
+          {
+            "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+            "mall": "WashingtonSquare",
+            "leaseEnd": "2020-01-20",
+            "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+            "__edb_e__": "TEST_ENTITY",
+            "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
+            "sector": "A1",
+            "store": "LatteLarrys",
+            "unit": "G1",
+            "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            "__edb_v__": "1",
+            "building":"BuildingZ",
+            "category":"food/coffee",
+            "rent":"0.00",
+            "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            "gsi3pk":"$bugbeater#mall_washingtonsquare",
+            "pk":"$bugbeater#sector_a1",
+            "gsi4pk":"$bugbeater#store_lattelarrys",
+            "gsi1pk":"mall_washingtonsquare",
+            "gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+            "gsi2pk":"m_washingtonsquare"
+          }
+        ]
+      },
+      "UnprocessedKeys": {
+        "electro": {
+          "Keys": [
+            {
+              "pk": "$bugbeater#sector_a1",
+              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
+            },
+            {
+              "pk": "$bugbeater#sector_b1",
+              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6"
+            }
+          ]
+        }
+      }
+    }
+    let results = MallStores.formatBulkGetResponse(undefined, response, {});
+    expect(results).to.be.an("array").with.length(2);
+    expect(results[0]).to.be.an("array").with.length(1);
+    expect(results[1]).to.be.an("array").with.length(2);
+    expect(results[0][0]).to.be.deep.equal({
+      "mall":"WashingtonSquare",
+      "leaseEnd":"2020-01-20",
+      "sector":"A1",
+      "store":"LatteLarrys",
+      "unit":"G1",
+      "id":"9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+      "building":"BuildingZ",
+      "category":"food/coffee",
+      "rent":"0.00"
+    });
+    expect(results[1]).to.deep.equal([
+      {
+        "id":"868f6d45-d78b-4f7a-94ff-a016c10574d5",
+        "sector":"a1"
+      },
+      {
+        "id":"868f6d45-d78b-4f7a-94ff-a016c10574d6",
+        "sector":"b1"
+      }
+    ]);
+  });
+  it("Should allow for config lastEvaluatedKeyRaw with UnprocessedKeys", () => {
+    let response = {
+      "Responses": {
+        "electro": [
+          {
+            "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+            "mall": "WashingtonSquare",
+            "leaseEnd": "2020-01-20",
+            "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+            "__edb_e__": "TEST_ENTITY",
+            "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
+            "sector": "A1",
+            "store": "LatteLarrys",
+            "unit": "G1",
+            "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            "__edb_v__": "1",
+            "building":"BuildingZ",
+            "category":"food/coffee",
+            "rent":"0.00",
+            "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            "gsi3pk":"$bugbeater#mall_washingtonsquare",
+            "pk":"$bugbeater#sector_a1",
+            "gsi4pk":"$bugbeater#store_lattelarrys",
+            "gsi1pk":"mall_washingtonsquare",
+            "gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+            "gsi2pk":"m_washingtonsquare"
+          }
+        ]
+      },
+      "UnprocessedKeys": {
+        "electro": {
+          "Keys": [
+            {
+              "pk": "$bugbeater#sector_a1",
+              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
+            },
+            {
+              "pk": "$bugbeater#sector_b1",
+              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6"
+            }
+          ]
+        }
+      }
+    }
+    let results = MallStores.formatBulkGetResponse(undefined, response, {lastEvaluatedKeyRaw: true});
+    expect(results[1]).to.be.an("array").with.length(2);
+    expect(results[1]).to.deep.equal([
+      {
+        "pk": "$bugbeater#sector_a1",
+        "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
+      },
+      {
+        "pk": "$bugbeater#sector_b1",
+        "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6"
+      }
+    ]);
+  });
+  it("Should allow for includeKeys query option in results", () => {
+    let response = {
+      "Responses": {
+        "electro": [
+          {
+            "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+            "mall": "WashingtonSquare",
+            "leaseEnd": "2020-01-20",
+            "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+            "__edb_e__": "TEST_ENTITY",
+            "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
+            "sector": "A1",
+            "store": "LatteLarrys",
+            "unit": "G1",
+            "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            "__edb_v__": "1",
+            "building":"BuildingZ",
+            "category":"food/coffee",
+            "rent":"0.00",
+            "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            "gsi3pk":"$bugbeater#mall_washingtonsquare",
+            "pk":"$bugbeater#sector_a1",
+            "gsi4pk":"$bugbeater#store_lattelarrys",
+            "gsi1pk":"mall_washingtonsquare",
+            "gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+            "gsi2pk":"m_washingtonsquare"
+          }
+        ]
+      },
+      "UnprocessedKeys": {
+        "electro": {
+          "Keys": [
+            {
+              "pk": "$bugbeater#sector_a1",
+              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
+            },
+            {
+              "pk": "$bugbeater#sector_b1",
+              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6"
+            }
+          ]
+        }
+      }
+    }
+    let results = MallStores.formatBulkGetResponse(undefined, response, {includeKeys: true});
+    expect(results).to.be.an("array").with.length(2);
+    expect(results[0]).to.be.an("array").with.length(1);
+    expect(results[0][0]).to.be.deep.equal({
+      "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+      "mall": "WashingtonSquare",
+      "leaseEnd": "2020-01-20",
+      "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+      "__edb_e__": "TEST_ENTITY",
+      "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
+      "sector": "A1",
+      "store": "LatteLarrys",
+      "unit": "G1",
+      "id": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+      "__edb_v__": "1",
+      "building":"BuildingZ",
+      "category":"food/coffee",
+      "rent":"0.00",
+      "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+      "gsi3pk":"$bugbeater#mall_washingtonsquare",
+      "pk":"$bugbeater#sector_a1",
+      "gsi4pk":"$bugbeater#store_lattelarrys",
+      "gsi1pk":"mall_washingtonsquare",
+      "gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+      "gsi2pk":"m_washingtonsquare"
+    });
+  })
+  it("Should create params", async () => {
+    let params = MallStores.get([record1, record2, record3]).params({params: {ConsistentRead: true}});
+    expect(params).to.be.deep.equal({
+      "RequestItems": {
+        "electro": {
+          "ConsistentRead": true,
+          "Keys": [
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record1.id}`
+            },
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record2.id}`
+            },
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record3.id}`
+            }
+          ]
+        }
+      }
+    });
+  });
+});
