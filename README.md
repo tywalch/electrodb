@@ -2292,6 +2292,9 @@ By default electrodb tries to keep the stack trace close to your code, ideally t
 
 # Examples
 
+> Want to just play with ElectroDB instead of read about it?
+> Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+
 ## Employee App
 For an example, lets look at the needs of application used to manage Employees. The application Looks at employees, offices, tasks, and projects.
 
