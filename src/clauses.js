@@ -20,7 +20,7 @@ let clauses = {
 		// 	// todo: look for article/list of all dynamodb query limitations
 		// 	// return state;
 		// },
-		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch", "batchPut", "batchDelete"],
+		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch", "batchPut", "batchDelete", "batchGet"],
 	},
 	collection: {
 		name: "collection",
@@ -62,6 +62,11 @@ let clauses = {
 			}
 			return state;
 		},
+		children: ["params", "go"],
+	},
+	batchGet: {
+		name: "batchGet",
+		action: (entity, state, payload) => batchAction(clauses.get.action, MethodTypes.batchGet, entity, state, payload),
 		children: ["params", "go"],
 	},
 	batchDelete: {
@@ -356,6 +361,8 @@ let clauses = {
 				return entity._queryParams(state, options);
 			} else if(state.query.method === MethodTypes.batchWrite) {
 				return entity._batchWriteParams(state, options);
+			} else if (state.query.method === MethodTypes.batchGet) {
+				return entity._batchGetParams(state, options);
 			} else {
 				return entity._params(state, options);
 			}

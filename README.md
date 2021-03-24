@@ -105,6 +105,7 @@ StoreLocations.query
       - [Shopping Mall Stores](#shopping-mall-stores)
   * [Query Chains](#query-chains)
     + [Get Record](#get-method)
+    + [Batch Get](#batch-get)
     + [Delete Record](#delete-method)
     + [Batch Write - Delete Records](#batch-write-delete-records)
     + [Put Record](#put-record)
@@ -1282,9 +1283,9 @@ Queries in ***ElectroDB*** are built around the **Access Patterns** defined in t
 The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all facets described in the Entities' primary `PK` and `SK`.  
 
 ### Get Method
-Provide all table index facets in an object to the `get` method
+Provide all Table Index facets in an object to the `get` method
 ```javascript
-await StoreLocations.get({
+let results = await StoreLocations.get({
 	storeId: "LatteLarrys", 
 	mallId: "EastPointe", 
 	buildingId: "F34", 
@@ -1300,8 +1301,55 @@ await StoreLocations.get({
 //   TableName: 'StoreDirectory'
 // }
 ```
+
+### Batch Get
+Provide all Table Index facets in an array of objects to the `get` method to perform a BatchGet query.
+
+> Note: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below.
+
+```javascript
+let [results, unprocessed] = await StoreLocations.get([
+    {
+        storeId: "LatteLarrys", 
+        mallId: "EastPointe", 
+        buildingId: "F34", 
+        cityId: "Atlanta1"
+    },
+    {
+        storeId: "MochaJoes", 
+        mallId: "WestEnd", 
+        buildingId: "A21", 
+        cityId: "Madison2"
+    }   
+]).go();
+
+// Equivalent Params:
+// {
+//   "RequestItems": {
+//     "electro": {
+//       "Keys": [
+//         {
+//           "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+//           "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+//         },
+//         {
+//           "pk": "$mallstoredirectory#cityid_madison2#mallid_westend",
+//           "sk": "$mallstore_1#buildingid_a21#storeid_mochajoes"
+//         }
+//       ]
+//     }
+//   }
+// }
+```
+
+The two-dimensional array returned by batch get most easily used when deconstructed into two variables, in the above case: `results` and `unprocessed`. 
+
+The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as ElectroDB queries.
+
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
+
 ### Delete Method
-Provide all table index facets in an object to the `delete` method to delete a record.
+Provide all Table Index facets in an object to the `delete` method to delete a record.
 
 ```javascript
 await StoreLocations.delete({
@@ -1324,10 +1372,10 @@ await StoreLocations.delete({
 ### Batch Write Delete Records
 Provide all table index facets in an array of objects to the `delete` method to batch delete records.
 
-> Note: Performing a Batch Delete will return an array of "unProcessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
+> Note: Performing a Batch Delete will return an array of "unprocessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
 
 ```javascript
-await StoreLocations.delete([
+let unprocessed = await StoreLocations.delete([
     {
         storeId: "LatteLarrys", 
         mallId: "EastPointe", 
@@ -1366,6 +1414,8 @@ await StoreLocations.delete([
   }
 }
 ```
+
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
 Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
@@ -1421,10 +1471,10 @@ await StoreLocations
 ### Batch Write Put Records
 Provide all *required* Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
 
-> Note: Performing a Batch Put will return an array of "unProcessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
+> Note: Performing a Batch Put will return an array of "unprocessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](query-options).
 
 ```javascript
-await StoreLocations.put([
+let unprocessed = await StoreLocations.put([
     {
         cityId: "LosAngeles1",
         storeId: "LatteLarrys",
@@ -1502,8 +1552,10 @@ await StoreLocations.put([
 }
 ```
 
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+
 ### Update Record
-To update a record, pass all facets to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
+To update a record, pass all Table index facets to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
 
 *Note: If your update includes changes to an attribute that is also a facet for a global secondary index, you must provide all facets for that index.*
 
@@ -1989,7 +2041,7 @@ let options = {
 ```
 
 ## Query Options
-Query options can be added the `.params()`, `.go()` and `.page()` to change some of the queries behavior or add customer parameters to a query.  
+Query options can be added the `.params()`, `.go()` and `.page()` to change query behavior or add customer parameters to a query.  
 
 | Option | Description |  
 | ----------- | ----------- |  
@@ -1997,8 +2049,8 @@ Query options can be added the `.params()`, `.go()` and `.page()` to change some
 | table | Use a different table than the one defined in the model |
 | raw  | Returns query results as they were returned by the docClient.  
 | includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
+| lastEvaluatedKeyRaw | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more in the seconds for (Pages)[#pages], (Batch Get)[#batch-get], (BatchDelete)[#batch-write-delete-records], and (BatchPut)[#batch-write-put-records]. |
 | originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
-| lastEvaluatedKeyRaw | Used in `.pages()`calls to override ElectroDBs default behaviour to break apart LastEvaluatedKeys into facets. See more in the (Pages)[#pages] section. |
 
 # Errors:
 | Error Code | Description |
