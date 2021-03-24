@@ -1096,6 +1096,53 @@ describe("Misconfiguration exceptions", () => {
 		let database = new Service("electrotest", {table: "electro_test"});
 		expect(() => database.join(modelOne)).to.throw("Invalid instance: Valid instances to join include Models and Entity instances. Additionally, all models must be in the same format (v1 vs beta). Review https://github.com/tywalch/electrodb#version-v1-migration for more detail.");
 	});
+	it("Change the table name for the service and it's entities", () => {
+		let schema = {
+			model: {
+				entity: "MyEntity",
+				service: "MyService",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string",
+					field: "abc"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let tableBefore = "table_before";
+		let tableAfter = "table_after";
+		let service = new Service("MyService", {table: tableBefore});
+		service.join(schema);
+		let collectionParamsBefore = service.collections.collectionA({prop1: "abc"}).params();
+		let entityParamsBefore = service.entities.MyEntity.query.index1({prop1: "abc"}).params();
+		expect(collectionParamsBefore.TableName).to.equal(tableBefore);
+		expect(entityParamsBefore.TableName).to.equal(tableBefore);
+		service._setTableName(tableAfter);
+		let collectionParamsAfter = service.collections.collectionA({prop1: "abc"}).params();
+		let entityParamsAfter = service.entities.MyEntity.query.index1({prop1: "abc"}).params();
+		expect(collectionParamsAfter.TableName).to.equal(tableAfter);
+		expect(entityParamsAfter.TableName).to.equal(tableAfter);
+	});
 	it("Should build the correct pk and sk when the table's pk/sk are part of a collection", async () => {
 		let modelOne = {
 			entity: "entityOne",
