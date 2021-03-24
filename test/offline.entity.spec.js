@@ -4120,5 +4120,1151 @@ describe("Entity", () => {
 					}
 				});
 			}
-	})
+	});
+	describe("Attribute getters and setters", () => {
+		it("Should call the attribute setters for a facet when building a table key", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							return `${val}-prop1`
+						}
+					},
+					prop2: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop2++;
+							return `${val}-prop2`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					},
+					prop4: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop4++;
+							return `${val}-prop4`
+						}
+					},
+					prop5: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop5++;
+							return `${val}-prop5`
+						}
+					},
+					prop6: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop6++;
+							return `${val}-prop6`
+						}
+					},
+					prop7: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop7++;
+							return `${val}-prop7`
+						}
+					}
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop4"]
+						}
+					},
+					gsi2: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop5"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop6"]
+						}
+					}
+				}
+			};
+			let prop1 = "abc";
+			let prop2 = "def";
+			let prop3 = "hij";
+			let prop4 = "klm";
+			let prop5 = "nop";
+			let prop6 = "qrs";
+			let entity = new Entity(schema, {table: "test"});
+			let tableIndexGet = entity.get({prop1, prop2}).params();
+			let tableIndexQueryFull = entity.query.setters({prop1, prop2}).params();
+			let tableIndexQueryPartial = entity.query.setters({prop1}).params();
+			let gsiQueryFull = entity.query.gsi1({prop3, prop4}).params();
+			let gsiQueryPartial = entity.query.gsi1({prop3}).params();
+			expect(tableIndexGet).to.deep.equal({
+				Key: {
+					pk: '$testing#prop1_abc-prop1',
+					sk: '$setters_1#prop2_def-prop2'
+				},
+				TableName: 'test'
+			});
+			expect(tableIndexQueryFull).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'test',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: {
+					':pk': '$testing#prop1_abc-prop1',
+					':sk1': '$setters_1#prop2_def-prop2'
+				}
+			});
+			expect(tableIndexQueryPartial).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'test',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: { ':pk': '$testing#prop1_abc-prop1', ':sk1': '$setters_1#prop2_undefined-prop2' }
+			});
+			expect(gsiQueryFull).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'test',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: {
+					':pk': '$testing#prop3_hij-prop3',
+					':sk1': '$setters_1#prop4_klm-prop4'
+				},
+				IndexName: 'gsi1'
+			});
+			expect(gsiQueryPartial).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'test',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeValues: { ':pk': '$testing#prop3_hij-prop3', ':sk1': '$setters_1#prop4_undefined-prop4' },
+				IndexName: 'gsi1'
+			});
+		});
+		it("Should call the attribute setters for a facet when building tables keys that index doesnt have a sort key", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							return `${val}-prop1`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					}
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						}
+					}
+				}
+			};
+			let prop1 = "abc";
+			let prop3 = "hij";
+			let entity = new Entity(schema, {table: "test"});
+			let tableIndexGet = entity.get({prop1}).params();
+			let tableIndexQueryFull = entity.query.setters({prop1}).params();
+			let tableIndexQueryPartial = entity.query.setters({prop1}).params();
+			let gsiQueryFull = entity.query.gsi1({prop3}).params();
+			let gsiQueryPartial = entity.query.gsi1({prop3}).params();
+			expect(tableIndexGet).to.deep.equal({
+				Key: {
+					pk: '$testing$setters_1#prop1_abc-prop1',
+				},
+				TableName: 'test'
+			});
+			expect(tableIndexQueryFull).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk',
+				TableName: 'test',
+				ExpressionAttributeNames: { '#pk': 'pk' },
+				ExpressionAttributeValues: {
+					':pk': '$testing$setters_1#prop1_abc-prop1',
+				}
+			});
+			expect(tableIndexQueryPartial).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk',
+				TableName: 'test',
+				ExpressionAttributeNames: { '#pk': 'pk' },
+				ExpressionAttributeValues: { ':pk': '$testing$setters_1#prop1_abc-prop1' }
+			});
+			expect(gsiQueryFull).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk',
+				TableName: 'test',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk'},
+				ExpressionAttributeValues: {
+					':pk': '$testing$setters_1#prop3_hij-prop3',
+				},
+				IndexName: 'gsi1'
+			});
+			expect(gsiQueryPartial).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk',
+				TableName: 'test',
+				ExpressionAttributeNames: { '#pk': 'gsi1pk'},
+				ExpressionAttributeValues: { ':pk': '$testing$setters_1#prop3_hij-prop3' },
+				IndexName: 'gsi1'
+			});
+		});
+		it("Should call the attribute setters when deleting a record", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							return `${val}-prop1`
+						}
+					},
+					prop2: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop2++;
+							return `${val}-prop2`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					},
+					prop4: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop4++;
+							return `${val}-prop4`
+						}
+					},
+					prop5: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop5++;
+							return `${val}-prop5`
+						}
+					},
+					prop6: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop6++;
+							return `${val}-prop6`
+						}
+					},
+					prop7: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop7++;
+							return `${val}-prop7`
+						}
+					}
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop4"]
+						}
+					},
+					gsi2: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop5"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop6"]
+						}
+					}
+				}
+			};
+			let entity = new Entity(schema, {table: "test"});
+			let params = entity.delete({prop1: "abc", prop2: "def"}).params();
+			expect(setCalls.prop1).to.equal(1);
+			expect(setCalls.prop2).to.equal(1);
+			expect(setCalls.prop3).to.equal(0);
+			expect(setCalls.prop4).to.equal(0);
+			expect(setCalls.prop5).to.equal(0);
+			expect(setCalls.prop6).to.equal(0);
+			expect(setCalls.prop7).to.equal(0);
+			expect(params).to.deep.equal({
+				Key: { pk: '$testing#prop1_abc-prop1', sk: '$setters_1#prop2_def-prop2' },
+				TableName: 'test'
+			});
+		});
+		it("Should call the attribute setters when updating that attribute", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0,
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							return `${val}-prop1`
+						}
+					},
+					prop2: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop2++;
+							return `${val}-prop2`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					},
+					prop4: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop4++;
+							return `${val}-prop4`
+						}
+					},
+					prop5: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop5++;
+							return `${val}-prop5`
+						}
+					},
+					prop6: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop6++;
+							return `${val}-prop6`
+						}
+					},
+					prop7: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop7++;
+							return `${val}-prop7`
+						}
+					},
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop4"]
+						}
+					},
+					gsi2: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop5"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop6"]
+						}
+					}
+				}
+			};
+			let entity = new Entity(schema, {table: "test"});
+			let params = entity.update({prop1: "abc", prop2: "def"}).set({prop7: "hij"}).params();
+			expect(setCalls.prop1).to.equal(1);
+			expect(setCalls.prop2).to.equal(1);
+			expect(setCalls.prop3).to.equal(0);
+			expect(setCalls.prop4).to.equal(0);
+			expect(setCalls.prop5).to.equal(0);
+			expect(setCalls.prop6).to.equal(0);
+			expect(setCalls.prop7).to.equal(1);
+			expect(params).to.deep.equal({
+				UpdateExpression: 'SET #prop7 = :prop7',
+				ExpressionAttributeNames: { '#prop7': 'prop7' },
+				ExpressionAttributeValues: { ':prop7': 'hij-prop7' },
+				TableName: 'test',
+				Key: { pk: '$testing#prop1_abc-prop1', sk: '$setters_1#prop2_def-prop2' }
+			});
+		});
+		it("Should call the attribute setters when patching that attribute", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0,
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							return `${val}-prop1`
+						}
+					},
+					prop2: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop2++;
+							return `${val}-prop2`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					},
+					prop4: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop4++;
+							return `${val}-prop4`
+						}
+					},
+					prop5: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop5++;
+							return `${val}-prop5`
+						}
+					},
+					prop6: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop6++;
+							return `${val}-prop6`
+						}
+					},
+					prop7: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop7++;
+							return `${val}-prop7`
+						}
+					},
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop4"]
+						}
+					},
+					gsi2: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop5"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop6"]
+						}
+					}
+				}
+			};
+			let entity = new Entity(schema, {table: "test"});
+			let params = entity.patch({prop1: "abc", prop2: "def"}).set({prop7: "hij"}).params();
+			expect(setCalls.prop1).to.equal(1);
+			expect(setCalls.prop2).to.equal(1);
+			expect(setCalls.prop3).to.equal(0);
+			expect(setCalls.prop4).to.equal(0);
+			expect(setCalls.prop5).to.equal(0);
+			expect(setCalls.prop6).to.equal(0);
+			expect(setCalls.prop7).to.equal(1);
+			expect(params).to.deep.equal({
+				UpdateExpression: 'SET #prop7 = :prop7',
+				ExpressionAttributeNames: { '#prop7': 'prop7' },
+				ExpressionAttributeValues: { ':prop7': 'hij-prop7' },
+				TableName: 'test',
+				Key: { pk: '$testing#prop1_abc-prop1', sk: '$setters_1#prop2_def-prop2' },
+				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+			});
+		});
+		it("Should call the attribute setters when putting that attribute", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0,
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							return `${val}-prop1`
+						}
+					},
+					prop2: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop2++;
+							return `${val}-prop2`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					},
+					prop4: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop4++;
+							return `${val}-prop4`
+						}
+					},
+					prop5: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop5++;
+							return `${val}-prop5`
+						}
+					},
+					prop6: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop6++;
+							return `${val}-prop6`
+						}
+					},
+					prop7: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop7++;
+							return `${val}-prop7`
+						}
+					},
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop4"]
+						}
+					},
+					gsi2: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop5"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop6"]
+						}
+					}
+				}
+			};
+			let prop1 = "abc";
+			let prop2 = "def";
+			let prop3 = "hij";
+			let prop4 = "klm";
+			let prop5 = "nop";
+			let prop6 = "qrs";
+			let prop7 = "tuv";
+			let entity = new Entity(schema, {table: "test"});
+			let params = entity.put({prop1, prop2, prop3, prop4, prop5, prop6, prop7}).params();
+			// expect(setCalls.prop1).to.equal(1);
+			// expect(setCalls.prop2).to.equal(1);
+			// expect(setCalls.prop3).to.equal(1);
+			// expect(setCalls.prop4).to.equal(1);
+			// expect(setCalls.prop5).to.equal(1);
+			// expect(setCalls.prop6).to.equal(1);
+			// expect(setCalls.prop7).to.equal(1);
+			expect(params).to.deep.equal({
+				Item: {
+					prop1: 'abc-prop1',
+					prop2: 'def-prop2',
+					prop3: 'hij-prop3',
+					prop4: 'klm-prop4',
+					prop5: 'nop-prop5',
+					prop6: 'qrs-prop6',
+					prop7: 'tuv-prop7',
+					pk: '$testing#prop1_abc-prop1',
+					sk: '$setters_1#prop2_def-prop2',
+					gsi1pk: '$testing#prop3_hij-prop3',
+					gsi1sk: '$setters_1#prop4_klm-prop4',
+					gsi2pk: '$testing#prop5_nop-prop5',
+					gsi2sk: '$setters_1#prop6_qrs-prop6',
+					__edb_e__: 'setters',
+					__edb_v__: '1'
+				},
+				TableName: 'test',
+			})
+		});
+		it("Should call the attribute setters when creating that attribute", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0,
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							return `${val}-prop1`
+						}
+					},
+					prop2: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop2++;
+							return `${val}-prop2`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					},
+					prop4: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop4++;
+							return `${val}-prop4`
+						}
+					},
+					prop5: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop5++;
+							return `${val}-prop5`
+						}
+					},
+					prop6: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop6++;
+							return `${val}-prop6`
+						}
+					},
+					prop7: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop7++;
+							return `${val}-prop7`
+						}
+					},
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop4"]
+						}
+					},
+					gsi2: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop5"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop6"]
+						}
+					}
+				}
+			};
+			let prop1 = "abc";
+			let prop2 = "def";
+			let prop3 = "hij";
+			let prop4 = "klm";
+			let prop5 = "nop";
+			let prop6 = "qrs";
+			let prop7 = "tuv";
+			let entity = new Entity(schema, {table: "test"});
+			let params = entity.create({prop1, prop2, prop3, prop4, prop5, prop6, prop7}).params();
+			// expect(setCalls.prop1).to.equal(1);
+			// expect(setCalls.prop2).to.equal(1);
+			// expect(setCalls.prop3).to.equal(1);
+			// expect(setCalls.prop4).to.equal(1);
+			// expect(setCalls.prop5).to.equal(1);
+			// expect(setCalls.prop6).to.equal(1);
+			expect(setCalls.prop7).to.equal(1);
+			expect(params).to.deep.equal({
+				Item: {
+					prop1: 'abc-prop1',
+					prop2: 'def-prop2',
+					prop3: 'hij-prop3',
+					prop4: 'klm-prop4',
+					prop5: 'nop-prop5',
+					prop6: 'qrs-prop6',
+					prop7: 'tuv-prop7',
+					pk: '$testing#prop1_abc-prop1',
+					sk: '$setters_1#prop2_def-prop2',
+					gsi1pk: '$testing#prop3_hij-prop3',
+					gsi1sk: '$setters_1#prop4_klm-prop4',
+					gsi2pk: '$testing#prop5_nop-prop5',
+					gsi2sk: '$setters_1#prop6_qrs-prop6',
+					__edb_e__: 'setters',
+					__edb_v__: '1'
+				},
+				TableName: 'test',
+				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+			});
+		});
+		it("Should call the attribute setters when putting that attribute even if that attribute was not supplied", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0,
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							return `${val}-prop1`
+						}
+					},
+					prop2: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop2++;
+							return `${val}-prop2`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					},
+					prop4: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop4++;
+							return `${val}-prop4`
+						}
+					},
+					prop5: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop5++;
+							return `${val}-prop5`
+						}
+					},
+					prop6: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop6++;
+							return `${val}-prop6`
+						}
+					},
+					prop7: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop7++;
+							return `${val}-prop7`
+						}
+					},
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop4"]
+						}
+					},
+					gsi2: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop5"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop6"]
+						}
+					}
+				}
+			};
+			let entity = new Entity(schema, {table: "test"});
+			let params = entity.put({prop1: "abc", prop2: "def", prop3: "hij", prop4: "klm", prop5: "nop"}).params();
+			// expect(setCalls.prop1).to.equal(1);
+			// expect(setCalls.prop2).to.equal(1);
+			// expect(setCalls.prop3).to.equal(1);
+			// expect(setCalls.prop4).to.equal(1);
+			// expect(setCalls.prop5).to.equal(1);
+			// expect(setCalls.prop6).to.equal(1);
+			// expect(setCalls.prop7).to.equal(1);
+			expect(params).to.deep.equal({
+				Item: {
+					prop1: 'abc-prop1',
+					prop2: 'def-prop2',
+					prop3: 'hij-prop3',
+					prop4: 'klm-prop4',
+					prop5: 'nop-prop5',
+					prop6: 'undefined-prop6',
+					prop7: 'undefined-prop7',
+					pk: '$testing#prop1_abc-prop1',
+					sk: '$setters_1#prop2_def-prop2',
+					gsi1pk: "$testing#prop3_hij-prop3",
+					gsi1sk: "$setters_1#prop4_klm-prop4",
+					gsi2pk: "$testing#prop5_nop-prop5",
+					gsi2sk: "$setters_1#prop6_undefined-prop6",
+					__edb_e__: 'setters',
+					__edb_v__: '1'
+				},
+				TableName: 'test',
+			});
+		});
+		it("Should call the attribute setters when putting that attribute and will not set a value the value if it is undefined", () => {
+			let setCalls = {
+				prop1: 0,
+				prop2: 0,
+				prop3: 0,
+				prop4: 0,
+				prop5: 0,
+				prop6: 0,
+				prop7: 0,
+			};
+			let schema = {
+				model: {
+					entity: "setters",
+					service: "testing",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop1++;
+							// console.log(new Error("prop1 " + setCalls.prop1));
+							return `${val}-prop1`
+						}
+					},
+					prop2: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop2++;
+							return `${val}-prop2`
+						}
+					},
+					prop3: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop3++;
+							return `${val}-prop3`
+						}
+					},
+					prop4: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop4++;
+							return `${val}-prop4`
+						}
+					},
+					prop5: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop5++;
+							return undefined
+						}
+					},
+					prop6: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop6++;
+							return undefined
+						}
+					},
+					prop7: {
+						type: "string",
+						set: (val) => {
+							setCalls.prop7++;
+							return undefined
+						}
+					},
+				},
+				indexes: {
+					setters: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					gsi1: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop4"]
+						}
+					},
+					gsi2: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop5"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop6"]
+						}
+					}
+				}
+			};
+			let entity = new Entity(schema, {table: "test"});
+			let params = entity.put({prop1: "abc", prop2: "def", prop3: "hij", prop4: "klm", prop5: "nop"}).params();
+			// console.log(params);
+			// expect(setCalls.prop1).to.equal(1);
+			// expect(setCalls.prop2).to.equal(1);
+			// expect(setCalls.prop3).to.equal(1);
+			// expect(setCalls.prop4).to.equal(1);
+			// expect(setCalls.prop5).to.equal(1);
+			// expect(setCalls.prop6).to.equal(1);
+			// expect(setCalls.prop7).to.equal(1);
+			expect(params).to.deep.equal({
+				Item: {
+					prop1: 'abc-prop1',
+					prop2: 'def-prop2',
+					prop3: 'hij-prop3',
+					prop4: 'klm-prop4',
+					pk: '$testing#prop1_abc-prop1',
+					sk: '$setters_1#prop2_def-prop2',
+					gsi1pk: "$testing#prop3_hij-prop3",
+					gsi1sk: "$setters_1#prop4_klm-prop4",
+					gsi2pk: "$testing#prop5_",
+					gsi2sk: "$setters_1#prop6_",
+					__edb_e__: 'setters',
+					__edb_v__: '1'
+				},
+				TableName: 'test',
+			});
+		});
+	});
 });

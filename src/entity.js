@@ -719,8 +719,7 @@ class Entity {
 
 	/* istanbul ignore next */
 	_makePutParams({ data } = {}, pk, sk) {
-		let setAttributes = this.model.schema.applyAttributeSetters(data);
-		let { updatedKeys } = this._getPutKeys(pk, sk, setAttributes);
+		let { updatedKeys, setAttributes } = this._getPutKeys(pk, sk && sk.facets, data);
 		let translatedFields = this.model.schema.translateToFields(setAttributes);
 
 		return {
@@ -1033,6 +1032,7 @@ class Entity {
 	}
 
 	_getPutKeys(pk, sk, set) {
+		let setAttributes = this.model.schema.applyAttributeSetters(set);
 		let updateIndex = "";
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
@@ -1045,7 +1045,6 @@ class Entity {
 		if (!completeFacets.indexes.includes(updateIndex)) {
 			completeFacets.indexes.push(updateIndex);
 		}
-
 		let composedKeys = this._makePutKeysFromAttributes(completeFacets.indexes, { ...keyAttributes, ...set });
 		let updatedKeys = {};
 		let indexKey = {};
@@ -1063,7 +1062,7 @@ class Entity {
 			}
 		}
 
-		return { indexKey, updatedKeys };
+		return { indexKey, updatedKeys, setAttributes };
 	}
 
 	_getUpdatedKeys(pk, sk, set) {
@@ -1305,12 +1304,12 @@ class Entity {
 		if (!prefixes) {
 			throw new Error(`Invalid index: ${index}`);
 		}
-		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index], true);
+		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index], {excludeLabelTail: true});
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
 				sk.push(
-					this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index], true),
+					this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index], {excludeLabelTail: true}),
 				);
 			}
 		}
@@ -1341,24 +1340,32 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = {}, excludeLabelTail) {
+	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = {}, {excludeLabelTail} = {}) {
 		let key = prefix;
 		for (let i = 0; i < facets.length; i++) {
 			let facet = facets[i];
 			let { name } = this.model.schema.attributes[facet];
+
 			if (supplied[name] === undefined && excludeLabelTail) {
 				break;
 			}
+
 			if (isCustom) {
 				key = `${key}${labels[facet] === undefined ? "" : labels[facet]}`;
 			} else {
 				key = `${key}#${labels[facet] === undefined ? name : labels[facet]}_`;
 			}
-			if (supplied[name] !== undefined) {
-				key = `${key}${supplied[name]}`;
-			} else {
+
+			let value = this.model.schema.attributes[facet].set(supplied[name]);
+			// Undefined facet value means we cant build any more of the key
+			if (value == undefined) {
 				break;
 			}
+
+			key = `${key}${value}`;
+
+			// This didnt used to leverage the setter before adding the value
+			// key = `${key}${supplied[name]}`;
 		}
 		return key.toLowerCase();
 	}
@@ -1500,7 +1507,7 @@ class Entity {
 
 			let { facetArray, facetLabels } = parsedPKFacets;
 			customFacets.pk = parsedPKFacets.isCustom;
-			// labels can be set via the attribute definiton or as part of the facetTemplate.
+			// labels can be set via the attribute definition or as part of the facetTemplate.
 			facets.labels[indexName] = Object.assign({}, facets.labels[indexName] || {}, facetLabels);
 
 			let pk = {
