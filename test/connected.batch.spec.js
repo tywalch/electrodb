@@ -239,17 +239,17 @@ describe("BatchGet", async () => {
         "electro": [
           {
             "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-            "mall": "WashingtonSquare",
+            "mallId": "WashingtonSquare",
             "leaseEnd": "2020-01-20",
             "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
             "__edb_e__": "TEST_ENTITY",
             "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
             "sector": "A1",
-            "store": "LatteLarrys",
-            "unit": "G1",
+            "storeId": "LatteLarrys",
+            "unitId": "G1",
             "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
             "__edb_v__": "1",
-            "building":"BuildingZ",
+            "buildingId":"BuildingZ",
             "category":"food/coffee",
             "rent":"0.00",
             "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
@@ -309,17 +309,17 @@ describe("BatchGet", async () => {
         "electro": [
           {
             "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-            "mall": "WashingtonSquare",
+            "mallId": "WashingtonSquare",
             "leaseEnd": "2020-01-20",
             "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
             "__edb_e__": "TEST_ENTITY",
             "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
             "sector": "A1",
-            "store": "LatteLarrys",
-            "unit": "G1",
+            "storeId": "LatteLarrys",
+            "unitId": "G1",
             "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
             "__edb_v__": "1",
-            "building":"BuildingZ",
+            "buildingId":"BuildingZ",
             "category":"food/coffee",
             "rent":"0.00",
             "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
@@ -366,17 +366,17 @@ describe("BatchGet", async () => {
         "electro": [
           {
             "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-            "mall": "WashingtonSquare",
+            "mallId": "WashingtonSquare",
             "leaseEnd": "2020-01-20",
             "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
             "__edb_e__": "TEST_ENTITY",
             "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
             "sector": "A1",
-            "store": "LatteLarrys",
-            "unit": "G1",
+            "storeId": "LatteLarrys",
+            "unitId": "G1",
             "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
             "__edb_v__": "1",
-            "building":"BuildingZ",
+            "buildingId":"BuildingZ",
             "category":"food/coffee",
             "rent":"0.00",
             "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
@@ -434,7 +434,30 @@ describe("BatchGet", async () => {
   it("Should throw on invalid get facets", () => {
     expect(() => MallStores.get([record1, record2, record3, {}]).params()).to.throw("Incomplete or invalid key facets supplied. Missing properties: sector - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets");
   });
-  it("Should create params", async () => {
+  it("Should create params", () => {
+    let params = MallStores.get([record1, record2, record3]).params();
+    expect(params).to.be.deep.equal({
+      "RequestItems": {
+        "electro": {
+          "Keys": [
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record1.id}`
+            },
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record2.id}`
+            },
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record3.id}`
+            }
+          ]
+        }
+      }
+    });
+  });
+  it("Should allow for additional parameters to be specified through the `params` query option", async () => {
     let params = MallStores.get([record1, record2, record3]).params({params: {ConsistentRead: true}});
     expect(params).to.be.deep.equal({
       "RequestItems": {
