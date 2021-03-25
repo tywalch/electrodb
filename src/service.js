@@ -38,6 +38,7 @@ class Service {
 		this.collectionSchema = {};
 		this.collections = {};
 		this._instance = ElectroInstance.service;
+		this._instanceType = ElectroInstanceTypes.service;
 	}
 
 	join(instance = {}, config = {}) {

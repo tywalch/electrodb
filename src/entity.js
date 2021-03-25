@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions } = require("./types");
+const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const { clauses, initChainState } = require("./clauses");
@@ -35,6 +35,7 @@ class Entity {
 			version: this.config.identifiers.version || "__edb_v__",
 		};
 		this._instance = ElectroInstance.entity;
+		this._instanceType = ElectroInstanceTypes.entity;
 	}
 
 	setIdentifier(type = "", identifier = "") {
