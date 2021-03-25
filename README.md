@@ -500,6 +500,16 @@ attributes: {
 `set` | `(attribute, schema) => value` | no | A synchronous callback allowing you apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put 
 `get` | `(attribute, schema) => value` | no | A synchronous callback allowing you apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database. 
 
+##### Attribute Getters/Setters
+Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both methods should be idempotent synchronous functions and may be invoked multiple times during one query.   
+
+ElectroDB invokes an Attribute's `get` method after an Item has been retrieved from DynamoDB, and if that field exists on the item. 
+
+ElectroDB invokes an Attribute's `set` method in the following circumstances:
+1. Setters for all attributes will always be invoked when performing a `create` or `put` operation
+2. Setters will only be invoked when an attribute is modified when performing a `patch` or `update` operation
+3. Attributes used as facets will always have their `set` method invoked before applying the facet to a key
+
 #### Attribute Validation
 The `validation` property allows for many different function/type signatures. Here the different combinations *ElectroDB* supports:
 | signature | behavior |
