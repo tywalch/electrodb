@@ -206,7 +206,7 @@ const {Service} = require("electrodb");
 ```
 
 ## Join 
-Create individual (Entities)[#entities] with the (Models)[#models] or `join` them via a Service. 
+Create individual [Entities](#entities) with the [Models](#models) or `join` them via a Service. 
 
 ```javascript
 // Independent Models
