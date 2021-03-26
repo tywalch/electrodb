@@ -30,6 +30,9 @@ let model = {
 			type: "string",
 			required: true,
 			field: "mallId",
+			set: (mall) => {
+				return mall + "abc";
+			}
 		},
 		store: {
 			type: "string",
@@ -163,7 +166,7 @@ describe("Entity", async () => {
 			expect(putOne).to.deep.equal({
 				id: putOne.id,
 				sector,
-				mall,
+				mall: mall + "abc",
 				store,
 				building,
 				unit,
@@ -206,7 +209,7 @@ describe("Entity", async () => {
 			stores = await Promise.all(stores);
 			expect(stores).to.be.an("array").and.have.length(10);
 
-			let mallOne = malls[0];
+			let mallOne = malls[0] + "abc";
 			let mallOneIds = stores
 				.filter((store) => store.mall === mallOne)
 				.map((store) => store.id);
@@ -297,7 +300,8 @@ describe("Entity", async () => {
 				unit
 			};
 			let recordOne = await MallStores.create(record).go();
-			expect(recordOne).to.deep.equal(record);
+			// mall would be changed by the setter;
+			expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
 			let recordTwo = null;
 			try {
 				recordTwo = await MallStores.create(record).go();
@@ -309,7 +313,7 @@ describe("Entity", async () => {
 
 		it("Should only update a record if it already exists", async () => {
 			let id = uuid();
-			let mall = "EastPointe";
+			let mall = "EastPointe" + "abc";
 			let store = "LatteLarrys";
 			let sector = "A1";
 			let category = "food/coffee";
@@ -329,7 +333,8 @@ describe("Entity", async () => {
 				unit
 			};
 			let recordOne = await MallStores.create(record).go();
-			expect(recordOne).to.deep.equal(record);
+			// mall would be changed by the setter
+			expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
 			let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go();
 			let patchResultsTwo = null;
 			try {
@@ -1140,11 +1145,11 @@ describe("Entity", async () => {
 			stores = await Promise.all(stores);
 			let max = "50";
 			let filteredStores = stores.filter((store) => {
-				return store.mall === mall && store.rent <= max;
+				return store.mall === mall + "abc" && store.rent <= max;
 			});
 
 			let belowMarketUnits = await MallStores.query
-				.units({ mall, building })
+				.units({ mall: mall + "abc", building })
 				.maxRent(max)
 				.go();
 
