@@ -1046,7 +1046,7 @@ class Entity {
 		if (!completeFacets.indexes.includes(updateIndex)) {
 			completeFacets.indexes.push(updateIndex);
 		}
-		let composedKeys = this._makePutKeysFromAttributes(completeFacets.indexes, { ...keyAttributes, ...set });
+		let composedKeys = this._makePutKeysFromAttributes(completeFacets.indexes, { ...keyAttributes, ...setAttributes });
 		let updatedKeys = {};
 		let indexKey = {};
 		for (let [index, keys] of Object.entries(composedKeys)) {
@@ -1082,8 +1082,7 @@ class Entity {
 				sk: "sk"
 			}
 		}
-
-		let composedKeys = this._makeKeysFromAttributes(completeFacets.impactedIndexTypes,{ ...keyAttributes, ...set });
+		let composedKeys = this._makeKeysFromAttributes(completeFacets.impactedIndexTypes,{ ...set, ...keyAttributes });
 		let updatedKeys = {};
 		let indexKey = {};
 		for (let [index, keys] of Object.entries(composedKeys)) {
@@ -1356,17 +1355,12 @@ class Entity {
 			} else {
 				key = `${key}#${labels[facet] === undefined ? name : labels[facet]}_`;
 			}
-
-			let value = this.model.schema.attributes[facet].set(supplied[name]);
 			// Undefined facet value means we cant build any more of the key
-			if (value == undefined) {
+			if (supplied[name] === undefined) {
 				break;
 			}
 
-			key = `${key}${value}`;
-
-			// This didnt used to leverage the setter before adding the value
-			// key = `${key}${supplied[name]}`;
+			key = `${key}${supplied[name]}`;
 		}
 		return key.toLowerCase();
 	}
