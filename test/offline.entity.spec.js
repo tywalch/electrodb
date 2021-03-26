@@ -4122,7 +4122,7 @@ describe("Entity", () => {
 			}
 	});
 	describe("Attribute getters and setters", () => {
-		it("Should call the attribute setters for a facet when building a table key", () => {
+		it("Should npt call the attribute setters for a facet when building a table key", () => {
 			let setCalls = {
 				prop1: 0,
 				prop2: 0,
@@ -4238,8 +4238,8 @@ describe("Entity", () => {
 			let gsiQueryPartial = entity.query.gsi1({prop3}).params();
 			expect(tableIndexGet).to.deep.equal({
 				Key: {
-					pk: '$testing#prop1_abc-prop1',
-					sk: '$setters_1#prop2_def-prop2'
+					pk: '$testing#prop1_abc',
+					sk: '$setters_1#prop2_def'
 				},
 				TableName: 'test'
 			});
@@ -4248,23 +4248,23 @@ describe("Entity", () => {
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 				ExpressionAttributeValues: {
-					':pk': '$testing#prop1_abc-prop1',
-					':sk1': '$setters_1#prop2_def-prop2'
+					':pk': '$testing#prop1_abc',
+					':sk1': '$setters_1#prop2_def'
 				}
 			});
 			expect(tableIndexQueryPartial).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
-				ExpressionAttributeValues: { ':pk': '$testing#prop1_abc-prop1', ':sk1': '$setters_1#prop2_undefined-prop2' }
+				ExpressionAttributeValues: { ':pk': '$testing#prop1_abc', ':sk1': '$setters_1#prop2_' }
 			});
 			expect(gsiQueryFull).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 				ExpressionAttributeValues: {
-					':pk': '$testing#prop3_hij-prop3',
-					':sk1': '$setters_1#prop4_klm-prop4'
+					':pk': '$testing#prop3_hij',
+					':sk1': '$setters_1#prop4_klm'
 				},
 				IndexName: 'gsi1'
 			});
@@ -4272,11 +4272,11 @@ describe("Entity", () => {
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
-				ExpressionAttributeValues: { ':pk': '$testing#prop3_hij-prop3', ':sk1': '$setters_1#prop4_undefined-prop4' },
+				ExpressionAttributeValues: { ':pk': '$testing#prop3_hij', ':sk1': '$setters_1#prop4_' },
 				IndexName: 'gsi1'
 			});
 		});
-		it("Should call the attribute setters for a facet when building tables keys that index doesnt have a sort key", () => {
+		it("Should not call the attribute setters for a facet when building tables keys that index doesnt have a sort key", () => {
 			let setCalls = {
 				prop1: 0,
 				prop2: 0,
@@ -4334,7 +4334,7 @@ describe("Entity", () => {
 			let gsiQueryPartial = entity.query.gsi1({prop3}).params();
 			expect(tableIndexGet).to.deep.equal({
 				Key: {
-					pk: '$testing$setters_1#prop1_abc-prop1',
+					pk: '$testing$setters_1#prop1_abc',
 				},
 				TableName: 'test'
 			});
@@ -4343,21 +4343,21 @@ describe("Entity", () => {
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'pk' },
 				ExpressionAttributeValues: {
-					':pk': '$testing$setters_1#prop1_abc-prop1',
+					':pk': '$testing$setters_1#prop1_abc',
 				}
 			});
 			expect(tableIndexQueryPartial).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk',
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'pk' },
-				ExpressionAttributeValues: { ':pk': '$testing$setters_1#prop1_abc-prop1' }
+				ExpressionAttributeValues: { ':pk': '$testing$setters_1#prop1_abc' }
 			});
 			expect(gsiQueryFull).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk',
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'gsi1pk'},
 				ExpressionAttributeValues: {
-					':pk': '$testing$setters_1#prop3_hij-prop3',
+					':pk': '$testing$setters_1#prop3_hij',
 				},
 				IndexName: 'gsi1'
 			});
@@ -4365,11 +4365,11 @@ describe("Entity", () => {
 				KeyConditionExpression: '#pk = :pk',
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'gsi1pk'},
-				ExpressionAttributeValues: { ':pk': '$testing$setters_1#prop3_hij-prop3' },
+				ExpressionAttributeValues: { ':pk': '$testing$setters_1#prop3_hij' },
 				IndexName: 'gsi1'
 			});
 		});
-		it("Should call the attribute setters when deleting a record", () => {
+		it("Should not call the attribute setters when deleting a record", () => {
 			let setCalls = {
 				prop1: 0,
 				prop2: 0,
@@ -4473,15 +4473,15 @@ describe("Entity", () => {
 			};
 			let entity = new Entity(schema, {table: "test"});
 			let params = entity.delete({prop1: "abc", prop2: "def"}).params();
-			expect(setCalls.prop1).to.equal(1);
-			expect(setCalls.prop2).to.equal(1);
+			expect(setCalls.prop1).to.equal(0);
+			expect(setCalls.prop2).to.equal(0);
 			expect(setCalls.prop3).to.equal(0);
 			expect(setCalls.prop4).to.equal(0);
 			expect(setCalls.prop5).to.equal(0);
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(0);
 			expect(params).to.deep.equal({
-				Key: { pk: '$testing#prop1_abc-prop1', sk: '$setters_1#prop2_def-prop2' },
+				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
 				TableName: 'test'
 			});
 		});
@@ -4589,11 +4589,12 @@ describe("Entity", () => {
 			};
 			let entity = new Entity(schema, {table: "test"});
 			let params = entity.update({prop1: "abc", prop2: "def"}).set({prop7: "hij"}).params();
-			expect(setCalls.prop1).to.equal(1);
-			expect(setCalls.prop2).to.equal(1);
-			expect(setCalls.prop3).to.equal(0);
-			expect(setCalls.prop4).to.equal(0);
-			expect(setCalls.prop5).to.equal(0);
+			let secondaryIndexParams = entity.update({prop1: "abc", prop2: "def"}).set({prop3: "hij", prop4: "jkl", prop5: "lmn"}).params();
+			expect(setCalls.prop1).to.equal(0);
+			expect(setCalls.prop2).to.equal(0);
+			expect(setCalls.prop3).to.equal(1);
+			expect(setCalls.prop4).to.equal(1);
+			expect(setCalls.prop5).to.equal(1);
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
@@ -4601,7 +4602,28 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { '#prop7': 'prop7' },
 				ExpressionAttributeValues: { ':prop7': 'hij-prop7' },
 				TableName: 'test',
-				Key: { pk: '$testing#prop1_abc-prop1', sk: '$setters_1#prop2_def-prop2' }
+				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' }
+			});
+			expect(secondaryIndexParams).to.be.deep.equal({
+				UpdateExpression: 'SET #prop3 = :prop3, #prop4 = :prop4, #prop5 = :prop5, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk, #gsi2pk = :gsi2pk',
+				ExpressionAttributeNames: {
+					'#prop3': 'prop3',
+					'#prop4': 'prop4',
+					'#prop5': 'prop5',
+					'#gsi1pk': 'gsi1pk',
+					'#gsi1sk': 'gsi1sk',
+					'#gsi2pk': 'gsi2pk'
+				},
+				ExpressionAttributeValues: {
+					':prop3': 'hij-prop3',
+					':prop4': 'jkl-prop4',
+					':prop5': 'lmn-prop5',
+					':gsi1pk': '$testing#prop3_hij-prop3',
+					':gsi1sk': '$setters_1#prop4_jkl-prop4',
+					':gsi2pk': '$testing#prop5_lmn-prop5'
+				},
+				TableName: 'test',
+				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' }
 			});
 		});
 		it("Should call the attribute setters when patching that attribute", () => {
@@ -4708,11 +4730,12 @@ describe("Entity", () => {
 			};
 			let entity = new Entity(schema, {table: "test"});
 			let params = entity.patch({prop1: "abc", prop2: "def"}).set({prop7: "hij"}).params();
-			expect(setCalls.prop1).to.equal(1);
-			expect(setCalls.prop2).to.equal(1);
-			expect(setCalls.prop3).to.equal(0);
-			expect(setCalls.prop4).to.equal(0);
-			expect(setCalls.prop5).to.equal(0);
+			let secondaryIndexParams = entity.patch({prop1: "abc", prop2: "def"}).set({prop3: "hij", prop4: "jkl", prop5: "lmn"}).params();
+			expect(setCalls.prop1).to.equal(0);
+			expect(setCalls.prop2).to.equal(0);
+			expect(setCalls.prop3).to.equal(1);
+			expect(setCalls.prop4).to.equal(1);
+			expect(setCalls.prop5).to.equal(1);
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
@@ -4720,7 +4743,29 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { '#prop7': 'prop7' },
 				ExpressionAttributeValues: { ':prop7': 'hij-prop7' },
 				TableName: 'test',
-				Key: { pk: '$testing#prop1_abc-prop1', sk: '$setters_1#prop2_def-prop2' },
+				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
+				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+			});
+			expect(secondaryIndexParams).to.be.deep.equal({
+				UpdateExpression: 'SET #prop3 = :prop3, #prop4 = :prop4, #prop5 = :prop5, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk, #gsi2pk = :gsi2pk',
+				ExpressionAttributeNames: {
+					'#prop3': 'prop3',
+					'#prop4': 'prop4',
+					'#prop5': 'prop5',
+					'#gsi1pk': 'gsi1pk',
+					'#gsi1sk': 'gsi1sk',
+					'#gsi2pk': 'gsi2pk'
+				},
+				ExpressionAttributeValues: {
+					':prop3': 'hij-prop3',
+					':prop4': 'jkl-prop4',
+					':prop5': 'lmn-prop5',
+					':gsi1pk': '$testing#prop3_hij-prop3',
+					':gsi1sk': '$setters_1#prop4_jkl-prop4',
+					':gsi2pk': '$testing#prop5_lmn-prop5'
+				},
+				TableName: 'test',
+				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
 				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
 			});
 		});
