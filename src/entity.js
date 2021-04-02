@@ -159,7 +159,8 @@ class Entity {
 			params: options.params || {},
 			page: options.page,
 			pager: !!options.pager,
-			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw
+			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw,
+			table: options.table
 		};
 		let parameters = Object.assign({}, params);
 		let stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
@@ -253,13 +254,7 @@ class Entity {
 		}
 
 		if (response.Responses[table] && Array.isArray(response.Responses[table])) {
-			for (let value of response.Responses[table]) {
-				results.push(
-					// Value is added as Item here because formatResponse expects a regular Item/Items response
-					// typically returned by Gets or Queries.
-					this.formatResponse(index, {Item: value}, config)
-				);
-			}
+			results = this.formatResponse(index, {Items: response.Responses[table]}, config);
 		}
 
 		return [results, unprocessed];

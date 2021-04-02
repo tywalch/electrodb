@@ -481,4 +481,28 @@ describe("BatchGet", async () => {
       }
     });
   });
+  it("Should allow for custom table name to be specified through the `table` query option", async () => {
+    let table = "custom_table_name";
+    let params = MallStores.get([record1, record2, record3]).params({table});
+    expect(params).to.be.deep.equal({
+      "RequestItems": {
+        [table]: {
+          "Keys": [
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record1.id}`
+            },
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record2.id}`
+            },
+            {
+              "pk":"$bugbeater#sector_a1",
+              "sk":`$test_entity_1#id_${record3.id}`
+            }
+          ]
+        }
+      }
+    });
+  });
 });
