@@ -206,7 +206,7 @@ const {Service} = require("electrodb");
 ```
 
 ## Join 
-Create individual (Entities)[#entities] with the (Models)[#models] or `join` them via a Service. 
+Create individual [Entities](#entities) with the [Models](#models) or `join` them via a Service. 
 
 ```javascript
 // Independent Models
@@ -503,14 +503,13 @@ attributes: {
 ##### Attribute Getters and Setters
 Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both methods should be pure synchronous functions and may be invoked multiple times during one query.
 
-> Important Note: Using getters/setters on Facet Attributes is **not recommended** without considering the consequences of how that will impact your keys. As described further below, when a supplied Facet is formatted into an index key it will invoke the setters associated with that Facet Attribute. If the value already has artifacts from a previous setter transformation this could result in a sort of "doubling" in the effects of your setter. This was a concious design choice that considered the fact that *not* invoking the setter, before key creation, would result in a similar affect but without a means to mitigate the issue within the model; this consequence would require setter related logic to live in multiple places for the user.
+> Important Note: Using getters/setters on Facet Attributes is **not recommended** without considering the consequences of how that will impact your keys. When an Facet Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys.
 
 ElectroDB invokes an Attribute's `get` method after an Item has been retrieved from DynamoDB, and if that field exists on the item. 
 
 ElectroDB invokes an Attribute's `set` method in the following circumstances:
 1. Setters for all Attributes will always be invoked when performing a `create` or `put` operation.
 2. Setters will only be invoked when an Attribute is modified when performing a `patch` or `update` operation.
-3. Attributes used as Facets will always have their `set` method invoked before applying the facet to a key.
 
 #### Attribute Validation
 The `validation` property allows for many different function/type signatures. Here the different combinations *ElectroDB* supports:
