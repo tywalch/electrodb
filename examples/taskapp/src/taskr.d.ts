@@ -383,7 +383,7 @@ export declare namespace Employees {
         get(key: EmployeeIndexFacets): SingleRecordOperationOptions<Item>;
         get(key: EmployeeIndexFacets[]): SingleRecordOperationOptions<[Item[], EmployeeIndexFacets[]]>;
         delete(key: EmployeeIndexFacets): SingleRecordOperationOptions<Item>;
-        delete(key: EmployeeIndexFacets[]): SingleRecordOperationOptions<Facets[]>;
+        delete(key: EmployeeIndexFacets[]): SingleRecordOperationOptions<EmployeeIndexFacets[]>;
         update(key: EmployeeIndexFacets): {set: SetRecord<Item>};
         patch(key: EmployeeIndexFacets): {set: SetRecord<Item>};
         put(record: Item): SingleRecordOperationOptions<Item>;
@@ -716,7 +716,7 @@ export declare namespace Tasks {
         get(key: TaskIndexFacets): SingleRecordOperationOptions<Item>;
         get(key: TaskIndexFacets[]): SingleRecordOperationOptions<[Item[], TaskIndexFacets[]]>;
         delete(key: TaskIndexFacets): SingleRecordOperationOptions<Item>;
-        delete(key: TaskIndexFacets[]): SingleRecordOperationOptions<Facets[]>;
+        delete(key: TaskIndexFacets[]): SingleRecordOperationOptions<TaskIndexFacets[]>;
         update(key: TaskIndexFacets): {set: SetRecord<Item>};
         patch(key: TaskIndexFacets): {set: SetRecord<Item>};
         put(record: Item): SingleRecordOperationOptions<Item>;
@@ -982,7 +982,7 @@ export declare namespace Offices {
         get(key: LocationsIndexFacets): SingleRecordOperationOptions<Item>;
         get(key: LocationsIndexFacets[]): SingleRecordOperationOptions<[Item[], LocationsIndexFacets[]]>;
         delete(key: LocationsIndexFacets): SingleRecordOperationOptions<Item>;
-        delete(key: LocationsIndexFacets[]): SingleRecordOperationOptions<Facets[]>;
+        delete(key: LocationsIndexFacets[]): SingleRecordOperationOptions<LocationsIndexFacets[]>;
         update(key: LocationsIndexFacets): {set: SetRecord<Item>};
         patch(key: LocationsIndexFacets): {set: SetRecord<Item>};
         put(record: Item): SingleRecordOperationOptions<Item>;
