@@ -12,6 +12,7 @@
 
 ------------
 ### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+------------
 
 ## Features  
 - [**Attribute Schema Enforcement**](#attributes) - Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
