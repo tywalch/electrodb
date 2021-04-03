@@ -10,6 +10,7 @@
 
 *This library is a work in progress, please submit issues/feedback or reach out on twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
 
+------------
 ### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ## Features  
