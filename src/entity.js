@@ -464,7 +464,7 @@ class Entity {
 			if (option.pager) config.pager = true;
 			if (option.lastEvaluatedKeyRaw === true) config.lastEvaluatedKeyRaw = true;
 			if (option.limit) config.params.Limit = option.limit;
-			if (option.table) config.params.Limit = option.table;
+			if (option.table) config.params.TableName = option.table;
 			config.page = Object.assign({}, config.page, option.page);
 			config.params = Object.assign({}, config.params, option.params);
 			return config;
@@ -1479,7 +1479,11 @@ class Entity {
 			let index = indexes[accessPattern];
 			let indexName = index.index || "";
 			if (seenIndexes[indexName] !== undefined) {
-				throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model: ${accessPattern} ${indexName || "(PRIMARY INDEX)"}`);
+				if (indexName === "") {
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model: ${accessPattern} ${indexName || "(PRIMARY INDEX)"}. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model: ${accessPattern} ${indexName || "(PRIMARY INDEX)"}`);
+				}
 			}
 			seenIndexes[indexName] = indexName;
 			let hasSk = !!index.sk;
@@ -1685,9 +1689,6 @@ class Entity {
 				break;
 			default:
 				throw new Error("Invalid model");
-		}
-		if (typeof table !== "string" || table.length === 0) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidConfig, `config.table must be string`);
 		}
 		/** end beta/v1 condition **/
 

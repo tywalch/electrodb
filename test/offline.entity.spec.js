@@ -2911,11 +2911,13 @@ describe("Entity", () => {
 			let params = entity.get(facets).params();
 			expect(params.TableName).to.equal(table);
 		});
-		it("should not allow the table to be undefined", () => {
+		it("should allow the table to be defined in query options", () => {
 			let model = {
-				service: "myservice",
-				entity: "myentity",
-				version: "1",
+				model: {
+					service: "myservice",
+					entity: "myentity",
+					version: "1",
+				},
 				attributes: {
 					id: "string",
 					org: "string",
@@ -2935,7 +2937,42 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(model)).to.throw("config.table must be string");
+			let table = "electro";
+			let facets = {type: "abc", org: "def", id: "hij"};
+			let entity = new Entity(model);
+			let params = entity.get(facets).params({table});
+			console.log(params);
+			expect(params.TableName).to.equal(table);
+		});
+		it("should not allow the table to be undefined", () => {
+			let model = {
+				model: {
+					service: "myservice",
+					entity: "myentity",
+					version: "1",
+				},
+				attributes: {
+					id: "string",
+					org: "string",
+					type: "string"
+				},
+				indexes: {
+					thing: {
+						collection: "things",
+						pk: {
+							field: "pk",
+							facets: ["type", "org"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["id"]
+						}
+					}
+				}
+			};
+			let entity = new Entity(model);
+			let facets = {type: "abc", org: "def", id: "hij"};
+			expect(() => entity.get(facets).params()).to.throw("Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.");
 		});
 	});
 	describe("key prefixes", () => {
@@ -3263,7 +3300,7 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model: index2 (PRIMARY INDEX) - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
+			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model: index2 (PRIMARY INDEX). This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
 		});
 		it("Should check for index and collection name overlap", () => {
 			let schema = {
