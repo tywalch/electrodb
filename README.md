@@ -2277,6 +2277,15 @@ The current request is missing some facets to complete the query based on the mo
 *What to do about it:*
 The error should describe the missing facets, ensure those facets are included in the query or update the model to reflect the needs of the access pattern.
 
+### Missing Table
+*Code: 2003*
+
+*Why this occurred:*
+You never specified a table, either while [creating the Entity/Service](#model-service-options) or when [making the individual query](#query-options).
+
+*What to do about it:*
+If you know the table name a head of time, specify the table's name when you [create the Entity/Service](#model-service-options), otherwise if that decision needs to be made at the time of the query use of [query options](#query-options) to specify a `table`.     
+
 ### Invalid Last Evaluated Key
 *Code: 4002*
 
