@@ -115,6 +115,12 @@ const ErrorCodes = {
     name: "IncompleteFacets",
     sym: ErrorCode,
   },
+  MissingTable: {
+    code: 2003,
+    section: "missing-table",
+    name: "MissingTable",
+    sym: ErrorCode
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",

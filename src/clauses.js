@@ -1,4 +1,5 @@
 const { QueryTypes, MethodTypes } = require("./types");
+const v = require("./validations");
 const e = require("./errors");
 
 function batchAction(action, type, entity, state, payload) {
@@ -357,6 +358,9 @@ let clauses = {
 	params: {
 		name: "params",
 		action(entity, state, options = {}) {
+			if (!v.isStringHasLength(options.table) && !v.isStringHasLength(entity._getTableName())) {
+				throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
+			}
 			if (state.query.method === MethodTypes.query) {
 				return entity._queryParams(state, options);
 			} else if(state.query.method === MethodTypes.batchWrite) {
