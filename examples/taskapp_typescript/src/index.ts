@@ -2,13 +2,14 @@ import path from "path";
 import moment from "moment";
 import taskr from "../../taskapp/src/taskr";
 import Loader from "../../taskapp/lib/loader";
+
 /**
  * ATTENTION READ FIRST:
- * It is recomended that you use the dynamodb-local docker image for this example. For more
- * information on how to download visit: https://hub.docker.com/r/amazon/dynamodb-local
+ * It is recommended that you use the dynamodb-local docker image for this example. For more information on how to
+ * download visit: https://hub.docker.com/r/amazon/dynamodb-local
  *
- * If you intend on running this example against your own aws account, modify the config in
- * the file ./service to match your account. This includes *removing* the `endpoint` property,
+ * If you intend on running this example against your own aws account, modify the config in the
+ * file `../../taskapp/lib/client/index.js` to match your account. This includes *removing* the `endpoint` property
  * which is used when connecting to the local docker dynamo instance described above.
 **/
 

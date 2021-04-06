@@ -41,7 +41,7 @@ StoreLocations.query
         .params()
 ```
 **Into This**
-```javascript
+```json
 {
     "TableName": "StoreDirectory",
     "ExpressionAttributeNames": {
