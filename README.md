@@ -557,9 +557,9 @@ indexes: {
 `collection` | `string` | no | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality). 
 
 ### Indexes Without Sort Keys
-When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see (Collections)[[#collections] for more detail. 
+When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail. 
 
-> Note: It is generally recommended to have Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesnt _need_ an additional property to define a unique record, having an `sk` with no facets still opens the door to many more query opportunities like (collections)[#collections].
+> Note: It is generally recommended to have Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesnt _need_ an additional property to define a unique record, having an `sk` with no facets still opens the door to many more query opportunities like [collections](#collections).
 
 ```javascript
 // ElectroDB interprets as index *not having* an SK.
@@ -576,7 +576,7 @@ When using indexes without Sort Keys, that should be expressed as an index *with
 ```
 
 ### Indexes With Sort Keys
-When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the `sk` in your model, but it does exist on the table, simply use an empty for the `facets` property. This is still useful as it opens the door to many more query opportunities like (collections)[#collections].
+When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the `sk` in your model, but it does exist on the table, simply use an empty for the `facets` property. This is still useful as it opens the door to many more query opportunities like [collections](#collections).
 
 ```javascript
 // ElectroDB interprets as index *having* SK, but this model doesnt attach any facets to it.
@@ -1921,9 +1921,9 @@ let stores = MallStores.query
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tupple. 
 
-The first element for (Entity)[#entity] page query is the "page": an object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
+The first element for [Entity](#entity) page query is the "page": an object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
 
-The first element for (Collection)[#collections] page query is the `ExclusiveStartKey` as it was returned by the DynamoDB client.
+The first element for [Collection](#collections) page query is the `ExclusiveStartKey` as it was returned by the DynamoDB client.
 
 > Note: It is *highly recommended* to use the `lastEvaluatedKeyRaw` flag when using `.page()` in conjunction with scans. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
 
@@ -2062,7 +2062,7 @@ Query options can be added the `.params()`, `.go()` and `.page()` to change quer
 | table | Use a different table than the one defined in the model |
 | raw  | Returns query results as they were returned by the docClient.  
 | includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
-| lastEvaluatedKeyRaw | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more in the seconds for (Pages)[#pages], (Batch Get)[#batch-get], (BatchDelete)[#batch-write-delete-records], and (BatchPut)[#batch-write-put-records]. |
+| lastEvaluatedKeyRaw | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more in the seconds for [Pages](#pages), [Batch Get](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
 | originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
 
 # Errors:
@@ -2230,7 +2230,7 @@ Identify the index youre using as the Primary Index and ensure it _does not_ hav
 Some attribute on your model has an invalid configuration.   
    
 *What to do about it:*
-Use the error to identify which column needs to examined, double check the properties on that attribute. Checkout the section on (Attributes)[#attributes] for more information on how they are structured.
+Use the error to identify which column needs to examined, double check the properties on that attribute. Checkout the section on [Attributes](#attributes) for more information on how they are structured.
 
 ### Invalid Model
 *Code: 1009*
@@ -2239,7 +2239,7 @@ Use the error to identify which column needs to examined, double check the prope
 Some properties on your model are missing or invalid.  
    
 *What to do about it:*
-Checkout the section on (Models)[#model] to verify your model against what is expected.  
+Checkout the section on [Models](#model) to verify your model against what is expected.  
 
 ### Invalid Options
 *Code: 1010*
@@ -2248,7 +2248,7 @@ Checkout the section on (Models)[#model] to verify your model against what is ex
 Some properties on your options object are missing or invalid.  
    
 *What to do about it:*
-Checkout the section on (Model/Service Options)[#model-service-options] to verify your model against what is expected.
+Checkout the section on [Model/Service Options](#model-service-options) to verify your model against what is expected.
 
 ### Duplicate Index Fields
 *Code: 1014*
@@ -2263,7 +2263,7 @@ This is likely a typo, if not double check the names of the fields you assigned 
 *Code: 1014*
 
 *Why this occurred:*
-Within one index you tried to use the same facet in both the PK and SK. A facet may only be used once within an index. With electrodb it is not uncommon to use the same value as both the PK and SK when when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not neccessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a facet, checkout (this seciton)[#collection-without-an-sk] for more information.
+Within one index you tried to use the same facet in both the PK and SK. A facet may only be used once within an index. With electrodb it is not uncommon to use the same value as both the PK and SK when when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not neccessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a facet, checkout [this seciton](#collection-without-an-sk) for more information.
    
 *What to do about it:*
 Determine how you can change your access pattern to not duplicate the facet. Remember that an empty array for an SK is valid.   
@@ -2276,15 +2276,6 @@ The current request is missing some facets to complete the query based on the mo
    
 *What to do about it:*
 The error should describe the missing facets, ensure those facets are included in the query or update the model to reflect the needs of the access pattern.
-
-### Missing Table
-*Code: 2003*
-
-*Why this occurred:*
-You never specified a table, either while [creating the Entity/Service](#model-service-options) or when [making the individual query](#query-options).
-
-*What to do about it:*
-If you know the table name a head of time, specify the table's name when you [create the Entity/Service](#model-service-options), otherwise if that decision needs to be made at the time of the query use of [query options](#query-options) to specify a `table`.     
 
 ### Invalid Last Evaluated Key
 *Code: 4002*
