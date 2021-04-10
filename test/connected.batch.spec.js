@@ -19,7 +19,10 @@ let schema = {
   attributes: {
     id: {
       type: "string",
-      default: () => uuid(),
+      default: () => {
+        console.log("Wut?");
+        return uuid()
+      },
       field: "storeLocationId",
     },
     sector: {
@@ -168,6 +171,23 @@ let record3 = {
   unit: "G1",
 };
 
+
+function generateRecords(size) {
+  return new Array(size).fill(0).map(() => {
+    return {
+      id: uuid(),
+      mall: "WashingtonSquare",
+      store: "LatteLarrys",
+      sector: "A1",
+      category: "food/coffee",
+      leaseEnd: "2020-01-20",
+      rent: "0.00",
+      building: "BuildingZ",
+      unit: "G1",
+    }
+  });
+}
+
 async function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(() => resolve(), ms);
@@ -175,23 +195,24 @@ async function sleep(ms) {
 }
 
 describe("BatchWrite", async () => {
+
   it("should perform a batchPut via array to put method", async () => {
-    let created = await MallStores.put([record1, record2, record3]).go();
+    let unprocessed = await MallStores.put([record1, record2, record3]).go();
     // eventually consistent
     await sleep(500);
     // empty array is no unprocessed
-    expect(created).to.be.an("array").that.is.empty;
+    expect(unprocessed).to.be.an("array").that.is.empty;
     // verify existance
     let item = await MallStores.get(record1).go();
     expect(item).to.be.deep.equal(record1);
   }).timeout(5000);
 
   it("should perform a batchDelete via array to delete method", async () => {
-    let created = await MallStores.put([record1, record2, record3]).go();
+    let unprocessed = await MallStores.put([record1, record2, record3]).go();
     // eventually consistent
     await sleep(500);
     // empty array is no unprocessed
-    expect(created).to.be.an("array").that.is.empty;
+    expect(unprocessed).to.be.an("array").that.is.empty;
     // verify existance
     let item = await MallStores.get(record1).go();
     expect(item).to.be.deep.equal(record1);
@@ -220,6 +241,38 @@ describe("BatchWrite", async () => {
     expect(getRecord3).to.be.an("object").that.is.empty;
   }).timeout(5000);
 });
+
+describe("Batch Crud Large Arrays", async () => {
+  it("Should batchPut greater than 25 records, should get greater than 100 records, and then batch delete greater than 25 records", async () => {
+    // Create 101 unique records
+    let records = generateRecords(101);
+    let recordIds = {};
+    for (let record of records) {
+      recordIds[record.id] = record;
+    }
+
+    // Create all 101
+    let batchPutResults = await MallStores.put(records).go();
+    expect(batchPutResults).to.be.an("array").that.is.empty;
+
+    // Do a batch get to find all the records, expect them to all be present
+    let [batchGetResults, batchGetUnprocessed] = await MallStores.get(records).go({params: {ConsistentRead: true}});
+    expect(batchGetUnprocessed).to.be.an("array").that.is.empty;
+    expect(batchGetResults).to.be.an("array").that.has.length(101);
+    for (let result of batchGetResults) {
+      expect(recordIds[result.id]).to.deep.equal(result);
+    }
+
+    // Do a batch delete of all records
+    let batchDeleteResults = await MallStores.delete(records).go();
+    expect(batchDeleteResults).to.be.an("array").that.is.empty;
+
+    // Do a batch get to verify they were all deleted
+    let [batchGetRemovedResults, batchGetRemovedUnprocessed] = await MallStores.get(records).go({params: {ConsistentRead: true}});
+    expect(batchGetRemovedResults).to.be.an("array").that.is.empty;
+    expect(batchGetRemovedUnprocessed).to.be.an("array").that.has.length(0);
+  });
+})
 
 describe("BatchGet", async () => {
   it("Should consistently create then get a record in batch", async () => {
@@ -436,7 +489,7 @@ describe("BatchGet", async () => {
   });
   it("Should create params", () => {
     let params = MallStores.get([record1, record2, record3]).params();
-    expect(params).to.be.deep.equal({
+    expect(params).to.be.deep.equal([{
       "RequestItems": {
         "electro": {
           "Keys": [
@@ -455,11 +508,11 @@ describe("BatchGet", async () => {
           ]
         }
       }
-    });
+    }]);
   });
   it("Should allow for additional parameters to be specified through the `params` query option", async () => {
     let params = MallStores.get([record1, record2, record3]).params({params: {ConsistentRead: true}});
-    expect(params).to.be.deep.equal({
+    expect(params).to.be.deep.equal([{
       "RequestItems": {
         "electro": {
           "ConsistentRead": true,
@@ -479,12 +532,12 @@ describe("BatchGet", async () => {
           ]
         }
       }
-    });
+    }]);
   });
   it("Should allow for custom table name to be specified through the `table` query option", async () => {
     let table = "custom_table_name";
     let params = MallStores.get([record1, record2, record3]).params({table});
-    expect(params).to.be.deep.equal({
+    expect(params).to.be.deep.equal([{
       "RequestItems": {
         [table]: {
           "Keys": [
@@ -503,6 +556,6 @@ describe("BatchGet", async () => {
           ]
         }
       }
-    });
+    }]);
   });
 });

@@ -78,12 +78,18 @@ const ModelVersions = {
 	v1: "v1"
 };
 
+const MaxBatchItems = {
+	[MethodTypes.batchGet]: 100,
+	[MethodTypes.batchWrite]: 25
+};
+
 module.exports = {
 	KeyTypes,
 	QueryTypes,
 	MethodTypes,
 	CastTypes,
 	Comparisons,
+	MaxBatchItems,
 	ModelVersions,
 	AttributeTypes,
 	ExpressionTypes,

@@ -2941,7 +2941,6 @@ describe("Entity", () => {
 			let facets = {type: "abc", org: "def", id: "hij"};
 			let entity = new Entity(model);
 			let params = entity.get(facets).params({table});
-			console.log(params);
 			expect(params.TableName).to.equal(table);
 		});
 		it("should not allow the table to be undefined", () => {
@@ -5238,7 +5237,6 @@ describe("Entity", () => {
 						type: "string",
 						set: (val) => {
 							setCalls.prop1++;
-							// console.log(new Error("prop1 " + setCalls.prop1));
 							return `${val}-prop1`
 						}
 					},
@@ -5322,14 +5320,6 @@ describe("Entity", () => {
 			};
 			let entity = new Entity(schema, {table: "test"});
 			let params = entity.put({prop1: "abc", prop2: "def", prop3: "hij", prop4: "klm", prop5: "nop"}).params();
-			// console.log(params);
-			// expect(setCalls.prop1).to.equal(1);
-			// expect(setCalls.prop2).to.equal(1);
-			// expect(setCalls.prop3).to.equal(1);
-			// expect(setCalls.prop4).to.equal(1);
-			// expect(setCalls.prop5).to.equal(1);
-			// expect(setCalls.prop6).to.equal(1);
-			// expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
 				Item: {
 					prop1: 'abc-prop1',

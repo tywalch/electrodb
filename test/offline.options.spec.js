@@ -92,17 +92,17 @@ describe("Query Options", () => {
            {
                name: "batchGet",
                query: () => entity.get([properties]).params({table}),
-               extract: (params) => Object.keys(params.RequestItems)[0]
+               extract: (params) => Object.keys(params[0].RequestItems)[0]
            },
            {
                name: "batchDelete",
                query: () => entity.delete([properties]).params({table}),
-               extract: (params) => Object.keys(params.RequestItems)[0]
+               extract: (params) => Object.keys(params[0].RequestItems)[0]
            },
            {
                name: "batchPut",
                query: () => entity.put([properties]).params({table}),
-               extract: (params) => Object.keys(params.RequestItems)[0]
+               extract: (params) => Object.keys(params[0].RequestItems)[0]
            },
 
            // Queries (index1)
