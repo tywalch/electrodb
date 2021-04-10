@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes } = require("./types");
+const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const { clauses, initChainState } = require("./clauses");
@@ -151,7 +151,7 @@ class Entity {
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
 	}
 
-	async go(method, params = {}, options = {}) {
+	async go(method, parameters = {}, options = {}) {
 		let config = {
 			includeKeys: options.includeKeys,
 			originalErr: options.originalErr,
@@ -162,23 +162,15 @@ class Entity {
 			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw,
 			table: options.table
 		};
-		let parameters = Object.assign({}, params);
 		let stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		try {
-			let response = await this.client[method](parameters).promise().catch(err => {
-				err.__isAWSError = true;
-				throw err;
-			});
 			switch (method) {
-				case MethodTypes.put:
-				case MethodTypes.create:
-					return this.formatResponse(parameters.IndexName, parameters, config);
 				case MethodTypes.batchWrite:
-					return this.formatBulkWriteResponse(parameters.IndexName, response, config);
+					return await this.executeBulkWrite(parameters, config);
 				case MethodTypes.batchGet:
-					return this.formatBulkGetResponse(parameters.IndexName, response, config);
+					return await this.executeBulkGet(parameters, config);
 				default:
-					return this.formatResponse(parameters.IndexName, response, config);
+					return await this.executeQuery(method, parameters, config);
 			}
 		} catch (err) {
 			if (config.originalErr) {
@@ -196,6 +188,52 @@ class Entity {
 			}
 		}
 	}
+
+	async _exec(method, parameters) {
+		return this.client[method](parameters).promise().catch(err => {
+			err.__isAWSError = true;
+			throw err;
+		});
+	}
+
+	async executeBulkWrite(parameters, config) {
+		if (!Array.isArray(parameters)) {
+			parameters = [parameters];
+		}
+		let results = [];
+		await Promise.all(parameters.map(async params => {
+			let response = await this._exec(MethodTypes.batchWrite, params);
+			let unprocessed = this.formatBulkWriteResponse(params.IndexName, response, config);
+			results = [...results, ...unprocessed];
+		}));
+		return results;
+	}
+
+	async executeBulkGet(parameters, config) {
+		if (!Array.isArray(parameters)) {
+			parameters = [parameters];
+		}
+		let resultsAll = [];
+		let unprocessedAll = [];
+		await Promise.all(parameters.map(async params => {
+			let response = await this._exec(MethodTypes.batchGet, params);
+			let [results, unprocessed] = this.formatBulkGetResponse(params.IndexName, response, config);
+			resultsAll = [...resultsAll, ...results];
+			unprocessedAll = [...unprocessedAll, ...unprocessed];
+		}));
+		return [resultsAll, unprocessedAll];
+	}
+
+	async executeQuery(method, parameters, config) {
+		// let params = Object.assign({}, parameters);
+		let response = await this._exec(method, parameters);
+		if (method === MethodTypes.put || method === MethodTypes.create) {
+			return this.formatResponse(parameters.IndexName, parameters, config);
+		} else {
+			return this.formatResponse(parameters.IndexName, response, config);
+		}
+	}
+
 
 	cleanseRetrievedData(item = {}, options = {}) {
 		let { includeKeys } = options;
@@ -568,50 +606,56 @@ class Entity {
 	_batchGetParams(state, config = {}) {
 		let table = config.table || this._getTableName();
 		let userDefinedParams = config.params || {};
-		let keys = [];
+		let records = [];
 		for (let itemState of state.batch.items) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			if (method === MethodTypes.get) {
 				let {Key} = params;
-				keys.push(Key);
+				records.push(Key);
 			}
 		}
-		return {
-			RequestItems: {
-				[table]: {
-					...userDefinedParams,
-					Keys: keys
+		let batches = utilities.batchItems(records, MaxBatchItems.batchGet);
+		return batches.map(batch => {
+			return {
+				RequestItems: {
+					[table]: {
+						...userDefinedParams,
+						Keys: batch
+					}
 				}
 			}
-		}
+		});
 	}
 
 	_batchWriteParams(state, config = {}) {
 		let table = config.table || this._getTableName();
-		let batch = [];
+		let records = [];
 		for (let itemState of state.batch.items) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			switch (method) {
 				case MethodTypes.put:
 					let {Item} = params;
-					batch.push({PutRequest: {Item}});
+					records.push({PutRequest: {Item}});
 					break;
 				case MethodTypes.delete:
 					let {Key} = params;
-					batch.push({DeleteRequest: {Key}});
+					records.push({DeleteRequest: {Key}});
 					break;
 				/* istanbul ignore next */
 				default:
 					throw new Error("Invalid method type");
 			}
 		}
-		return {
-			RequestItems: {
-				[table]: batch
+		let batches = utilities.batchItems(records, MaxBatchItems.batchWrite);
+		return batches.map(batch => {
+			return {
+				RequestItems: {
+					[table]: batch
+				}
 			}
-		}
+		});
 	}
 
 	_makeParameterKey(index, pk, sk) {

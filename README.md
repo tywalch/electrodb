@@ -491,7 +491,7 @@ attributes: {
 | Property | Type | Required | Description |
 | -------- | :--: | :--: | ----------- |
 | `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
-`required` | `boolean` | no | Flag an attribute as required to be present when creating a new record. |  
+`required` | `boolean` | no | Flag an attribute as required to be present when creating a record. |  
 `default` | `value`, `() => value` | no | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
 `validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
 `field` | `string` | no | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
@@ -517,15 +517,19 @@ The `validation` property allows for many different function/type signatures. He
 | signature | behavior |
 | --------- | -------- |
 | `Regexp`  | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute |
-| `(value: T) => string`  | If a string with length is returned from `validate` it will be considered the _reason_ the value is invalid. It will generate an error message with this reason. |
-| `(value: T) => boolean` | If a boolean is returned, true or truthy values will signify than a value is invalid while false or falsey will be considered valid |
-| `(value: T) => void`    | A void/undefined return will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |  
+| `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. |
+| `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid. |
+| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |  
   
 
 ## Indexes
-The `indexes` object requires at least the definition of the table's natural **Partition Key** and (if applicable) **Sort Key**.
+When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
 
-When using ElectroDB, indexes are referenced by their `AccessPatternName`. For Secondary Indexes, use the `index` property to define the name of the GSI as defined in DynamoDB. These defined via a `facets` array that is made up of attributes names as listed the model.
+All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
+
+In your model, the _Table Index_ this is expressed as an _Access Pattern_ *without* an `index` property. For Secondary Indexes, use the `index` property to define the name of the index as defined on your DynamoDB table.
+
+Within these _AccessPatterns_, you define the PartitionKey and (optionally) SortKeys that are present on your DynamoDB table and map the key's name on the table with the `field` property.          
 
 ```typescript
 indexes: {
@@ -1315,9 +1319,10 @@ let results = await StoreLocations.get({
 ```
 
 ### Batch Get
-Provide all Table Index facets in an array of objects to the `get` method to perform a BatchGet query.
+Provide all Table Index facets in an array of objects to the `get` method to perform a BatchGet query. 
 
-> Note: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below.
+> Note: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below. 
+> Additionally, when performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet queries larger than the docClient's limit of 100 records.  
 
 ```javascript
 let [results, unprocessed] = await StoreLocations.get([
@@ -1356,9 +1361,9 @@ let [results, unprocessed] = await StoreLocations.get([
 
 The two-dimensional array returned by batch get most easily used when deconstructed into two variables, in the above case: `results` and `unprocessed`. 
 
-The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as ElectroDB queries.
+The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as other ElectroDB queries.
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
 
 ### Delete Method
 Provide all Table Index facets in an object to the `delete` method to delete a record.
@@ -1385,6 +1390,7 @@ await StoreLocations.delete({
 Provide all table index facets in an array of objects to the `delete` method to batch delete records.
 
 > Note: Performing a Batch Delete will return an array of "unprocessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options).
+> Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
 
 ```javascript
 let unprocessed = await StoreLocations.delete([
@@ -1430,7 +1436,7 @@ let unprocessed = await StoreLocations.delete([
 Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
-Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
+Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
 
 This example includes an optional conditional expression
 ```javascript
@@ -1481,10 +1487,11 @@ await StoreLocations
 ```
 
 ### Batch Write Put Records
-Provide all *required* Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing.
+Provide all *required* Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.    
 
 > Note: Performing a Batch Put will return an array of "unprocessed" records. An empty array signifies all records returned were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options).
-
+> Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
+>
 ```javascript
 let unprocessed = await StoreLocations.put([
     {
@@ -1564,12 +1571,12 @@ let unprocessed = await StoreLocations.put([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning back only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Update Record
 To update a record, pass all Table index facets to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
 
-*Note: If your update includes changes to an attribute that is also a facet for a global secondary index, you must provide all facets for that index.*
+> Note: If your update includes changes to an attribute that is also a facet for a global secondary index, you must provide all facets for that index.
 
 ```javascript
 await StoreLocations
@@ -1601,6 +1608,7 @@ await StoreLocations
 When scanning for rows, you can use filters the same as you would any query. For more information on filters, see the [Where](#where) section.
 
 *Note: `Scan` functionality will be scoped to your Entity. This means your results will only include records that match the Entity defined in the model.*
+
 ```javascript
 await StoreLocations.scan
     .where(({category}, {eq}) => `
@@ -2253,7 +2261,7 @@ Checkout the section on [Model/Service Options](#service-options) to verify your
 *Code: 1014*
 
 *Why this occurred:*
-An Index in your model references the same field twice across indexes. The `field` property in the definition of an index is a mapping to the name of the field assigned to the the PK or SK of an index. 
+An Index in your model references the same field twice across indexes. The `field` property in the definition of an index is a mapping to the name of the field assigned to the PK or SK of an index. 
    
 *What to do about it:*
 This is likely a typo, if not double check the names of the fields you assigned to be the PK and SK of your index, these field names must be unique.
@@ -2262,7 +2270,7 @@ This is likely a typo, if not double check the names of the fields you assigned 
 *Code: 1014*
 
 *Why this occurred:*
-Within one index you tried to use the same facet in both the PK and SK. A facet may only be used once within an index. With ElectroDB it is not uncommon to use the same value as both the PK and SK when when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a facet, checkout [this section](#collection-without-an-sk) for more information.
+Within one index you tried to use the same facet in both the PK and SK. A facet may only be used once within an index. With ElectroDB it is not uncommon to use the same value as both the PK and SK when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a facet, checkout [this section](#collection-without-an-sk) for more information.
    
 *What to do about it:*
 Determine how you can change your access pattern to not duplicate the facet. Remember that an empty array for an SK is valid.   
@@ -2311,14 +2319,14 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 For an example, lets look at the needs of application used to manage Employees. The application Looks at employees, offices, tasks, and projects.
 
 ### Employee App Requirements
-1. As Project Manager I need to find all tasks and details on a specific employee.
-2. As a Regional Manager I need to see all details about an office and its employees
-3. As an Employee I need to see all my Tasks.
-4. As a Product Manager I need to see all the tasks for a project.
-5. As a Client I need to find a physical office close to me. 
-6. As a Hiring manager I need to find employees with comparable salaries.  
-7. As HR I need to find upcoming employee birthdays/anniversaries 
-8. As HR I need to find all the employees that report to a specific manager
+1. As a Project Manager, I need to find all tasks and details on a specific employee.
+2. As a Regional Manager, I need to see all details about an office and its employees
+3. As an Employee, I need to see all my Tasks.
+4. As a Product Manager, I need to see all the tasks for a project.
+5. As a Client, I need to find a physical office close to me. 
+6. As a Hiring manager, I need to find employees with comparable salaries.  
+7. As HR, I need to find upcoming employee birthdays/anniversaries 
+8. As HR, I need to find all the employees that report to a specific manager
 
 ### App Entities
 ```javascript
