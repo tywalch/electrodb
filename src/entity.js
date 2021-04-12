@@ -160,7 +160,8 @@ class Entity {
 			page: options.page,
 			pager: !!options.pager,
 			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw,
-			table: options.table
+			table: options.table,
+			concurrent: options.concurrent
 		};
 		let stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		try {
@@ -201,11 +202,19 @@ class Entity {
 			parameters = [parameters];
 		}
 		let results = [];
-		await Promise.all(parameters.map(async params => {
-			let response = await this._exec(MethodTypes.batchWrite, params);
-			let unprocessed = this.formatBulkWriteResponse(params.IndexName, response, config);
-			results = [...results, ...unprocessed];
-		}));
+		let concurrent = this._normalizeConcurrencyValue(config.concurrent)
+		let concurrentOperations = utilities.batchItems(parameters, concurrent);
+		// console.log("PUT", JSON.stringify(concurrentOperations));
+		for (let operation of concurrentOperations) {
+			await Promise.all(operation.map(async params => {
+				let response = await this._exec(MethodTypes.batchWrite, params);
+				let unprocessed = this.formatBulkWriteResponse(params.IndexName, response, config);
+				for (let u of unprocessed) {
+					results.push(u);
+				}
+			}));
+		}
+
 		return results;
 	}
 
@@ -213,14 +222,23 @@ class Entity {
 		if (!Array.isArray(parameters)) {
 			parameters = [parameters];
 		}
+		let concurrent = this._normalizeConcurrencyValue(config.concurrent)
+		let concurrentOperations = utilities.batchItems(parameters, concurrent);
+
 		let resultsAll = [];
 		let unprocessedAll = [];
-		await Promise.all(parameters.map(async params => {
-			let response = await this._exec(MethodTypes.batchGet, params);
-			let [results, unprocessed] = this.formatBulkGetResponse(params.IndexName, response, config);
-			resultsAll = [...resultsAll, ...results];
-			unprocessedAll = [...unprocessedAll, ...unprocessed];
-		}));
+		for (let operation of concurrentOperations) {
+			await Promise.all(operation.map(async params => {
+				let response = await this._exec(MethodTypes.batchGet, params);
+				let [results, unprocessed] = this.formatBulkGetResponse(params.IndexName, response, config);
+				for (let r of results) {
+					resultsAll.push(r);
+				}
+				for (let u of unprocessed) {
+					unprocessedAll.push(u);
+				}
+			}));
+		}
 		return [resultsAll, unprocessedAll];
 	}
 
@@ -278,7 +296,6 @@ class Entity {
 		if (!response.UnprocessedKeys || !response.Responses) {
 			throw new Error("Unknown response format");
 		}
-
 		if (response.UnprocessedKeys[table] && response.UnprocessedKeys[table].Keys && Array.isArray(response.UnprocessedKeys[table].Keys)) {
 			for (let value of response.UnprocessedKeys[table].Keys) {
 				if (config && config.lastEvaluatedKeyRaw) {
@@ -384,6 +401,14 @@ class Entity {
 
 	_regexpEscape(string) {
 		return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	}
+
+	_normalizeConcurrencyValue(value = 1) {
+		value = parseInt(value);
+		if (isNaN(value) || value < 1) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConcurrencyOption, "Query option 'concurrency' must be of type 'number' and greater than zero.");
+		}
+		return value;
 	}
 
 	_deconstructKeys(index, keyType, key, backupFacets = {}) {

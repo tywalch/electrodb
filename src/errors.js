@@ -121,6 +121,12 @@ const ErrorCodes = {
     name: "MissingTable",
     sym: ErrorCode
   },
+  InvalidConcurrencyOption: {
+    code: 2004,
+    section: "invalid-concurrency-option",
+    name: "InvalidConcurrencyOption",
+    sym: ErrorCode
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",
