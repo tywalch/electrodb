@@ -106,7 +106,7 @@ StoreLocations.query
       - [Shopping Mall Stores](#shopping-mall-stores)
   * [Query Chains](#query-chains)
     + [Get Record](#get-method)
-    + [Batch Get](#batch-get)
+    + [Batch Get - Get Records](#batch-get)
     + [Delete Record](#delete-method)
     + [Batch Write - Delete Records](#batch-write-delete-records)
     + [Put Record](#put-record)
@@ -1324,6 +1324,16 @@ Provide all Table Index facets in an array of objects to the `get` method to per
 > Note: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below. 
 > Additionally, when performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet queries larger than the docClient's limit of 100 records.  
 
+If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously. 
+
+For example, 150 records (50 records over the DynamoDB maximum): 
+
+The default value of `concurrent` will be `1`. ElectroDB will execute a BatchGet request of 100, then after that request has responded, make another BatchGet request for 50 records.
+
+If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB will execute a BatchGet request of 100 records, and another BatchGet request for 50 records without waiting for the first request to finish.
+
+It is important to consider your Table's throughput considerations when setting this value.   
+
 ```javascript
 let [results, unprocessed] = await StoreLocations.get([
     {
@@ -1338,7 +1348,7 @@ let [results, unprocessed] = await StoreLocations.get([
         buildingId: "A21", 
         cityId: "Madison2"
     }   
-]).go();
+]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
 
 // Equivalent Params:
 // {
@@ -1392,6 +1402,16 @@ Provide all table index facets in an array of objects to the `delete` method to 
 > Note: Performing a Batch Delete will return an array of "unprocessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options).
 > Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
 
+If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously. 
+
+For example, 75 records (50 records over the DynamoDB maximum): 
+
+The default value of `concurrent` will be `1`. ElectroDB will execute a BatchWrite request of 25, then after that request has responded, make another BatchWrite request for 25 records, and then another.
+
+If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB will execute a BatchWrite request of 25 records, and another BatchGet request for 25 records without waiting for the first request to finish. After those two have finished it will execute another BatchWrite request for 25 records.
+
+It is important to consider your Table's throughput considerations when setting this value.
+
 ```javascript
 let unprocessed = await StoreLocations.delete([
     {
@@ -1406,7 +1426,7 @@ let unprocessed = await StoreLocations.delete([
         buildingId: "F35", 
         cityId: "LosAngeles1"
     }
-]).go();
+]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1` 
 
 // Equivalent Params:
 {
@@ -1491,7 +1511,17 @@ Provide all *required* Attributes as defined in the model to create records as a
 
 > Note: Performing a Batch Put will return an array of "unprocessed" records. An empty array signifies all records returned were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options).
 > Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
->
+
+If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously. 
+
+For example, 75 records (50 records over the DynamoDB maximum): 
+
+The default value of `concurrent` will be `1`. ElectroDB will execute a BatchWrite request of 25, then after that request has responded, make another BatchWrite request for 25 records, and then another.
+
+If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB will execute a BatchWrite request of 25 records, and another BatchGet request for 25 records without waiting for the first request to finish. After those two have finished it will execute another BatchWrite request for 25 records.
+
+It is important to consider your Table's throughput considerations when setting this value.
+
 ```javascript
 let unprocessed = await StoreLocations.put([
     {
@@ -1514,7 +1544,7 @@ let unprocessed = await StoreLocations.put([
         leaseEndDate: "2021-01-22",
         rent: "1500.00"
     }
-]).go()
+]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
 
 // Equivalent Params:
 {
@@ -2053,24 +2083,26 @@ Query options can be added the `.params()`, `.go()` and `.page()` to change quer
 By default, **ElectroDB** enables you to work with records as the names and properties defined in the model. Additionally, it removes the need to deal directly with the docClient parameters which can be complex for a team without as much experience with DynamoDB. The Query Options object can be passed to both the `.params()` and `.go()` methods when building you query. Below are the options available:
 
 ```typescript
-let options = {
-	params?: object,
-	table?: string,
-	raw?: boolean,
-	includeKeys?: boolean,
-	originalErr?: boolean,
-	lastEvaluatedKeyRaw?: boolean,
+{
+	params?: object
+	table?: string
+	raw?: boolean
+	includeKeys?: boolean
+    lastEvaluatedKeyRaw?: boolean	
+    originalErr?: boolean
+    concurrency?: number
 };
 ```
 
 | Option | Description |  
 | ----------- | ----------- |  
 | params  | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
-| table | Use a different table than the one defined in the model |
+| table | Use a different table than the one defined in the [Service Options](#service-options) |
 | raw  | Returns query results as they were returned by the docClient.  
 | includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
 | lastEvaluatedKeyRaw | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more detail about this in the sections for [Pages](#page), [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
 | originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
+| concurrency | (default: 1) When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
 
 # Errors:
 | Error Code | Description |
@@ -2283,6 +2315,24 @@ The current request is missing some facets to complete the query based on the mo
    
 *What to do about it:*
 The error should describe the missing facets, ensure those facets are included in the query or update the model to reflect the needs of the access pattern.
+
+### Missing Table
+*Code: 2003*f
+
+*Why this occurred:*
+You never specified a Table for DynamoDB to use.
+
+*What to do about it:*
+Tables can be defined on the [Service Options](#service-options) object when you create a Entity or Service, or if that is not known at the time of creation, it can be supplied as a [Query Option](#query-options) and supplied on each query individually. If can be supplied on both, in that case the Query Option will override the Service Option.
+
+### Invalid Concurrency Option
+*Code: 2004*
+
+*Why this occurred:*
+When performing a bulk operation ([Batch Get](#batch-get), [Batch Delete Records](#batch-write-delete-records), [Batch Put Records](#batch-write-put-records)) you can pass a [Query Options](#query-options) called `concurrency`, which impacts how many batch requests can occur at the same time. Your value pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+
+*What to do about it:*   
+Expect this error only if youre providing a concurrency value. Double check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.                  
 
 ### Invalid Last Evaluated Key
 *Code: 4002*
