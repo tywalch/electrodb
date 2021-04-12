@@ -2084,10 +2084,10 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 
 ```typescript
 {
-	params?: object
-	table?: string
-	raw?: boolean
-	includeKeys?: boolean
+    params?: object
+    table?: string
+    raw?: boolean
+    includeKeys?: boolean
     lastEvaluatedKeyRaw?: boolean	
     originalErr?: boolean
     concurrency?: number

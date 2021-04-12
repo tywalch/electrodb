@@ -328,13 +328,21 @@ export declare namespace Employees {
         includeKeys?: boolean;
         originalErr?: boolean;
         lastEvaluatedKeyRaw?: boolean;
+        table?: string;
     };
+
+    export type ParamOptions = {
+        params?: object;
+        table?: string;
+    }
+
+    export type BatchGoOptions = GoOptions & {concurrent?: number};
     
-    export type GoRecord<T> = (options?: GoOptions) => Promise<T>;
+    export type GoRecord<T, O extends GoOptions = GoOptions> = (options?: O) => Promise<T>;
 
     export type PageRecord<T> = (page?: EmployeeIndex | null, options?: GoOptions) => Promise<[EmployeeIndexFacets | null, T]>;
 
-    export type ParamRecord<T = object> = (options?: GoOptions) => T;
+    export type ParamRecord<T = object> = (options?: ParamOptions) => T;
 
     export type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
@@ -346,6 +354,11 @@ export declare namespace Employees {
         page: PageRecord<T>;
         filter: FilterRecords<T>;
         where: WhereRecords<T>;
+    }
+
+    export type BatchRecordOptions<T> = {
+        go: GoRecord<T, BatchGoOptions>;
+        params: ParamRecord<object[]>;
     }
 
     export type SingleRecordOperationOptions<T, P = object> = {
@@ -381,13 +394,13 @@ export declare namespace Employees {
     
     export class Employees {
         get(key: EmployeeIndexFacets): SingleRecordOperationOptions<Item>;
-        get(key: EmployeeIndexFacets[]): SingleRecordOperationOptions<[Item[], EmployeeIndexFacets[]], object[]>;
+        get(key: EmployeeIndexFacets[]): BatchRecordOptions<[Item[], EmployeeIndexFacets[]]>;
         delete(key: EmployeeIndexFacets): SingleRecordOperationOptions<Item>;
-        delete(key: EmployeeIndexFacets[]): SingleRecordOperationOptions<EmployeeIndexFacets[], object[]>;
+        delete(key: EmployeeIndexFacets[]): BatchRecordOptions<EmployeeIndexFacets[]>;
         update(key: EmployeeIndexFacets): {set: SetRecord<Item>};
         patch(key: EmployeeIndexFacets): {set: SetRecord<Item>};
         put(record: Item): SingleRecordOperationOptions<Item>;
-        put(record: Item[]): SingleRecordOperationOptions<Item[], object[]>;
+        put(record: Item[]): BatchRecordOptions<Item[]>;
         create(record: Item): SingleRecordOperationOptions<Item>;
         find(record: Partial<Item>): RecordsActionOptions<Item[]>;
         setIdentifier(type: "model" | "table", value: string): void;
@@ -661,13 +674,21 @@ export declare namespace Tasks {
         includeKeys?: boolean;
         originalErr?: boolean;
         lastEvaluatedKeyRaw?: boolean;
+        table?: string;
     };
+
+    export type ParamOptions = {
+        params?: object;
+        table?: string;
+    }
+
+    export type BatchGoOptions = GoOptions & {concurrent?: number};
     
-    export type GoRecord<T> = (options?: GoOptions) => Promise<T>;
+    export type GoRecord<T, O extends GoOptions = GoOptions> = (options?: O) => Promise<T>;
 
     export type PageRecord<T> = (page?: TaskIndex | null, options?: GoOptions) => Promise<[TaskIndexFacets | null, T]>;
 
-    export type ParamRecord<T = object> = (options?: GoOptions) => T;
+    export type ParamRecord<T = object> = (options?: ParamOptions) => T;
 
     export type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
@@ -679,6 +700,11 @@ export declare namespace Tasks {
         page: PageRecord<T>;
         filter: FilterRecords<T>;
         where: WhereRecords<T>;
+    }
+
+    export type BatchRecordOptions<T> = {
+        go: GoRecord<T, BatchGoOptions>;
+        params: ParamRecord<object[]>;
     }
 
     export type SingleRecordOperationOptions<T, P = object> = {
@@ -714,13 +740,13 @@ export declare namespace Tasks {
     
     export class Tasks {
         get(key: TaskIndexFacets): SingleRecordOperationOptions<Item>;
-        get(key: TaskIndexFacets[]): SingleRecordOperationOptions<[Item[], TaskIndexFacets[]], object[]>;
+        get(key: TaskIndexFacets[]): BatchRecordOptions<[Item[], TaskIndexFacets[]]>;
         delete(key: TaskIndexFacets): SingleRecordOperationOptions<Item>;
-        delete(key: TaskIndexFacets[]): SingleRecordOperationOptions<TaskIndexFacets[], object[]>;
+        delete(key: TaskIndexFacets[]): BatchRecordOptions<TaskIndexFacets[]>;
         update(key: TaskIndexFacets): {set: SetRecord<Item>};
         patch(key: TaskIndexFacets): {set: SetRecord<Item>};
         put(record: Item): SingleRecordOperationOptions<Item>;
-        put(record: Item[]): SingleRecordOperationOptions<Item[], object[]>;
+        put(record: Item[]): BatchRecordOptions<Item[]>;
         create(record: Item): SingleRecordOperationOptions<Item>;
         find(record: Partial<Item>): RecordsActionOptions<Item[]>;
         setIdentifier(type: "model" | "table", value: string): void;
@@ -927,13 +953,21 @@ export declare namespace Offices {
         includeKeys?: boolean;
         originalErr?: boolean;
         lastEvaluatedKeyRaw?: boolean;
+        table?: string;
     };
+
+    export type ParamOptions = {
+        params?: object;
+        table?: string;
+    }
+
+    export type BatchGoOptions = GoOptions & {concurrent?: number};
     
-    export type GoRecord<T> = (options?: GoOptions) => Promise<T>;
+    export type GoRecord<T, O extends GoOptions = GoOptions> = (options?: O) => Promise<T>;
 
     export type PageRecord<T> = (page?: LocationsIndex | null, options?: GoOptions) => Promise<[LocationsIndexFacets | null, T]>;
 
-    export type ParamRecord<T = object> = (options?: GoOptions) => T;
+    export type ParamRecord<T = object> = (options?: ParamOptions) => T;
 
     export type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
@@ -945,6 +979,11 @@ export declare namespace Offices {
         page: PageRecord<T>;
         filter: FilterRecords<T>;
         where: WhereRecords<T>;
+    }
+
+    export type BatchRecordOptions<T> = {
+        go: GoRecord<T, BatchGoOptions>;
+        params: ParamRecord<object[]>;
     }
 
     export type SingleRecordOperationOptions<T, P = object> = {
@@ -980,13 +1019,13 @@ export declare namespace Offices {
     
     export class Offices {
         get(key: LocationsIndexFacets): SingleRecordOperationOptions<Item>;
-        get(key: LocationsIndexFacets[]): SingleRecordOperationOptions<[Item[], LocationsIndexFacets[]], object[]>;
+        get(key: LocationsIndexFacets[]): BatchRecordOptions<[Item[], LocationsIndexFacets[]]>;
         delete(key: LocationsIndexFacets): SingleRecordOperationOptions<Item>;
-        delete(key: LocationsIndexFacets[]): SingleRecordOperationOptions<LocationsIndexFacets[], object[]>;
+        delete(key: LocationsIndexFacets[]): BatchRecordOptions<LocationsIndexFacets[]>;
         update(key: LocationsIndexFacets): {set: SetRecord<Item>};
         patch(key: LocationsIndexFacets): {set: SetRecord<Item>};
         put(record: Item): SingleRecordOperationOptions<Item>;
-        put(record: Item[]): SingleRecordOperationOptions<Item[], object[]>;
+        put(record: Item[]): BatchRecordOptions<Item[]>;
         create(record: Item): SingleRecordOperationOptions<Item>;
         find(record: Partial<Item>): RecordsActionOptions<Item[]>;
         setIdentifier(type: "model" | "table", value: string): void;
@@ -1226,10 +1265,15 @@ export declare namespace WorkplacesCollection {
         lastEvaluatedKeyRaw?: boolean;
         table?: string;
     };
-    
-    type GoRecord<T> = (options?: GoOptions) => Promise<T>;
 
-    type ParamRecord = (options?: GoOptions) => object;
+    export type ParamOptions = {
+        params?: object;
+        table?: string;
+    }
+    
+    type GoRecord<T, O extends GoOptions = GoOptions> = (options?: O) => Promise<T>;
+
+    type ParamRecord = (options?: ParamOptions) => object;
 
     type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
@@ -1483,10 +1527,15 @@ export declare namespace AssignmentsCollection {
         lastEvaluatedKeyRaw?: boolean;
         table?: string;
     };
-    
-    type GoRecord<T> = (options?: GoOptions) => Promise<T>;
 
-    type ParamRecord = (options?: GoOptions) => object;
+    export type ParamOptions = {
+        params?: object;
+        table?: string;
+    }
+    
+    type GoRecord<T, O extends GoOptions = GoOptions> = (options?: O) => Promise<T>;
+
+    type ParamRecord = (options?: ParamOptions) => object;
 
     type FilterRecords<T> = (filter: <A extends Attributes>(record: FilterAttributes<A>) => string) => RecordsActionOptions<T>;
 
