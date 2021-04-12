@@ -431,6 +431,16 @@ describe("Query Options", () => {
                     }
                 },
                 {
+                    description: "Should not string numbers that are greater than 0",
+                    error: false,
+                    input: {
+                        options: {concurrent: "1"}
+                    },
+                    output: {
+                        executions: 1
+                    }
+                },
+                {
                     description: "Should default to 1 when value is not supplied/undefined",
                     error: false,
                     input: {
