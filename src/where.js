@@ -25,11 +25,11 @@ class WhereFactory {
 
   _buildAttributes(setName) {
     let attributes = {};
-		for (let name of Object.keys(this.attributes)) {
+		for (let [name, attr] of Object.entries(this.attributes)) {
       Object.defineProperty(attributes, name, {
         get: () => {
           let path = `#${name}`;
-          setName(path, name);
+          setName(path, attr.field);
           return attributeProxy(path, name, setName);
         }
       })
