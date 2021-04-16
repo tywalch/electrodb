@@ -13,27 +13,27 @@ let model = {
 		id: {
 			type: "string",
 			default: () => uuidV4(),
-			facets: "storeLocationId",
+			field: "storeLocationId",
 		},
 		mall: {
 			type: "string",
 			required: true,
-			facets: "mallId",
+			field: "mallId",
 		},
 		store: {
 			type: "string",
 			required: true,
-			facets: "storeId",
+			field: "storeId",
 		},
 		building: {
 			type: "string",
 			required: true,
-			facets: "buildingId",
+			field: "buildingId",
 		},
 		unit: {
 			type: "string",
 			required: true,
-			facets: "unitId",
+			field: "unitId",
 		},
 		category: {
 			type: [
@@ -147,7 +147,7 @@ describe("Filter", () => {
 					filter: {
 						ExpressionAttributeNames: {
 							"#rent": "rent",
-							"#mall": "mall",
+							"#mall": "mallId",
 							"#leaseEnd": "leaseEnd",
 						},
 						ExpressionAttributeValues: {
@@ -196,7 +196,7 @@ describe("Filter", () => {
 					id: {
 						type: "string",
 						default: () => uuidV4(),
-						facets: "storeLocationId",
+						field: "storeLocationId",
 					},
 				},
 				indexes: {
