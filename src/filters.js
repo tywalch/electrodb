@@ -166,7 +166,6 @@ class FilterFactory {
 				return state.query.filter.valueCount[name]++;
 			};
 			let setName = (name, value) => {
-				console.log({name, value});
 					state.query.filter.ExpressionAttributeNames[name] = value
 			};
 			let setValue = (name, value) =>
