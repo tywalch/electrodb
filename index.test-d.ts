@@ -1,5 +1,5 @@
 import {Entity} from ".";
-import {expectType, expectError, expectNotAssignable, expectAssignable} from 'tsd';
+import {expectType, expectError, expectAssignable} from 'tsd';
 
 let entityWithSK = new Entity({
     model: {
@@ -327,11 +327,11 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<GetSingleParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<GetSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectNotAssignable<GetSingleGoParamsWithSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectNotAssignable<GetSingleGoParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<GetSingleGoParamsWithSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<GetSingleGoParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
 
-    expectNotAssignable<GetSingleParamsParamsWithSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectNotAssignable<GetSingleParamsParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<GetSingleParamsParamsWithSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<GetSingleParamsParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
 
     expectAssignable<GetBatchGoParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
     expectAssignable<GetBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
@@ -490,6 +490,7 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<PutParametersWithoutSK>([{}]);
 
     expectError<PutParametersWithSK>([putItemWithoutSK]);
+
     expectError<PutParametersWithSK>(putItemWithoutSK);
 
     expectError<PutParametersWithSK>(putItemWithoutPK);
@@ -581,31 +582,70 @@ let getKeys = ((val) => {}) as GetKeys;
 // Create
     let createItemFull: Item = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
     let createItemPartial: Item = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true};
+    let createItemFullWithoutSK = {attr2: "dsg", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
+    let createItemFullWithoutPK = {attr2: "dsg", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
 
     // Single
     entityWithSK.create(createItemFull);
+    entityWithoutSK.create(createItemFull);
+
     entityWithSK.create(createItemPartial);
+    entityWithoutSK.create(createItemPartial);
 
     // Batch
     type CreateParametersWithSK = Parameter<typeof entityWithSK.create>;
-    expectNotAssignable<CreateParametersWithSK>([createItemFull])
-    expectNotAssignable<CreateParametersWithSK>([createItemPartial])
+    type CreateParametersWithoutSK = Parameter<typeof entityWithoutSK.create>;
+
+    // batch not supported with create
+    expectError<CreateParametersWithSK>([createItemFull]);
+    expectError<CreateParametersWithoutSK>([createItemFull]);
+
+    // batch not supported with create
+    expectError<CreateParametersWithSK>([createItemPartial]);
+    expectError<CreateParametersWithoutSK>([createItemPartial]);
 
     // Invalid Query
-    expectNotAssignable<CreateParametersWithSK>([{}])
-    expectNotAssignable<CreateParametersWithSK>([{attr1: "abnc", attr2: "dsg", attr4: "24", attr8: "adef"}]);
+    expectError<CreateParametersWithSK>({});
+    expectError<CreateParametersWithoutSK>({});
+
+    expectError<CreateParametersWithSK>(createItemFullWithoutSK);
+
+    expectError<CreateParametersWithSK>(createItemFullWithoutPK);
+    expectError<CreateParametersWithoutSK>(createItemFullWithoutPK);
+
+    // Missing required properties
+    expectError<CreateParametersWithSK>([{attr1: "abnc", attr2: "dsg", attr4: "24", attr8: "adef"}]);
+    expectError<CreateParametersWithoutSK>([{attr1: "abnc", attr2: "dsg", attr4: "24", attr8: "adef"}]);
 
     // Finishers
     type CreateSingleFinishers = "go" | "params" | "where";
+
     let createSingleFinishers = getKeys(entityWithSK.create(putItemFull));
+    let createSingleFinishersWithoutSK = getKeys(entityWithoutSK.create(putItemFull));
+
     let createItem = entityWithSK.put(createItemFull);
+    let createItemWithoutSK = entityWithoutSK.put(createItemFull);
+
     expectAssignable<CreateSingleFinishers>(createSingleFinishers);
+    expectAssignable<CreateSingleFinishers>(createSingleFinishersWithoutSK);
+
     type CreateGoParams = Parameter<typeof createItem.go>;
+    type CreateGoParamsWithoutSK = Parameter<typeof createItemWithoutSK.go>;
+
     type CreateParamsParams = Parameter<typeof createItem.params>;
+    type CreateParamsParamsWithoutSK = Parameter<typeof createItemWithoutSK.params>;
+
     expectAssignable<CreateGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<CreateGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+
     expectAssignable<CreateParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectNotAssignable<CreateGoParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectNotAssignable<CreateParamsParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectAssignable<CreateParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+
+    expectError<CreateGoParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<CreateGoParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+
+    expectError<CreateParamsParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<CreateParamsParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
 
     // Where
     entityWithSK.create(putItemFull).where((attr, op) => {
@@ -613,34 +653,73 @@ let getKeys = ((val) => {}) as GetKeys;
         expectAssignable<keyof typeof attr>(AttributeName);
         expectAssignable<OperationNames>(opKeys);
         return "";
-    })
+    });
+    entityWithoutSK.create(putItemFull).where((attr, op) => {
+        let opKeys = getKeys(op);
+        expectAssignable<keyof typeof attr>(AttributeName);
+        expectAssignable<OperationNames>(opKeys);
+        return "";
+    });
 
     // Results
     expectAssignable<Promise<Item>>(entityWithSK.create(putItemFull).go());
+    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.create(putItemFull).go());
+
     expectAssignable<"paramtest">(entityWithSK.create(putItemFull).params<"paramtest">());
+    expectAssignable<"paramtest">(entityWithoutSK.create(putItemFull).params<"paramtest">());
 
 // Update
     let setItemFull = {attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
+
     let setFn = entityWithSK.update({attr1: "abc", attr2: "def"}).set;
+    let setFnWithoutSK = entityWithoutSK.update({attr1: "abc"}).set;
+
     type SetParameters = Parameter<typeof setFn>;
-    expectAssignable<SetParameters>(setItemFull)
+    type SetParametersWithoutSK = Parameter<typeof setFnWithoutSK>;
+
+    expectAssignable<SetParameters>(setItemFull);
+    expectAssignable<SetParametersWithoutSK>(setItemFull);
+
     expectAssignable<SetParameters>({});
+    expectAssignable<SetParametersWithoutSK>({});
 
     // Invalid Set
-    expectNotAssignable<SetParameters>({attr1: "ff"})
-    expectNotAssignable<SetParameters>({attr6: "1234"});
+    expectError<SetParameters>({attr1: "ff"});
+    expectError<SetParametersWithoutSK>({attr1: "ff"});
+
+    expectError<SetParameters>({attr6: "1234"});
+    expectError<SetParametersWithoutSK>({attr6: "1234"});
 
     // Finishers
     type UpdateParametersFinishers = "go" | "set" | "params" | "where";
-    let updateItem = entityWithSK.update({attr1: "abc", attr2: "def"}).set({})
+
+    let updateItem = entityWithSK.update({attr1: "abc", attr2: "def"}).set({});
+    let updateItemWithoutSK = entityWithoutSK.update({attr1: "abc"}).set({});
+
     let updateFinishers = getKeys(updateItem);
+    let updateFinishersWithoutSK = getKeys(updateItemWithoutSK);
+
     expectAssignable<UpdateParametersFinishers>(updateFinishers);
+    expectAssignable<UpdateParametersFinishers>(updateFinishersWithoutSK);
+
     let updateGo = updateItem.go;
+    let updateGoWithoutSK = updateItemWithoutSK.go;
+
     let updateParams = updateItem.params;
+    let updateParamsWithoutSK = updateItemWithoutSK.params;
+
     type UpdateGoParams = Parameter<typeof updateGo>;
+    type UpdateGoParamsWithoutSK = Parameter<typeof updateGoWithoutSK>;
+
     type UpdateParamsParams = Parameter<typeof updateParams>;
+    type UpdateParamsParamsWithoutSK = Parameter<typeof updateParamsWithoutSK>;
+
+
     expectAssignable<UpdateGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<UpdateGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+
     expectAssignable<UpdateParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<UpdateParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
     // Where
     updateItem.where((attr, op) => {
@@ -649,32 +728,73 @@ let getKeys = ((val) => {}) as GetKeys;
         expectAssignable<OperationNames>(opKeys);
         return "";
     });
+    updateItemWithoutSK.where((attr, op) => {
+        let opKeys = getKeys(op);
+        expectAssignable<keyof typeof attr>(AttributeName);
+        expectAssignable<OperationNames>(opKeys);
+        return "";
+    });
 
 // Patch
     let patchItemFull = {attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
+
     let patchFn = entityWithSK.patch({attr1: "abc", attr2: "def"}).set;
+    let patchFnWithoutSK = entityWithoutSK.patch({attr1: "abc"}).set;
+
     type PatchParameters = Parameter<typeof patchFn>;
-    expectAssignable<PatchParameters>(patchItemFull)
+    type PatchParametersWithoutSK = Parameter<typeof patchFnWithoutSK>;
+
+    expectAssignable<PatchParameters>(patchItemFull);
+    expectAssignable<PatchParametersWithoutSK>(patchItemFull);
+
     expectAssignable<PatchParameters>({});
+    expectAssignable<PatchParametersWithoutSK>({});
 
     // Invalid Set
-    expectNotAssignable<PatchParameters>({attr1: "ff"})
-    expectNotAssignable<PatchParameters>({attr6: "1234"});
+    expectError<PatchParameters>({attr1: "ff"});
+    expectError<PatchParametersWithoutSK>({attr1: "ff"});
+
+    expectError<PatchParameters>({attr6: "1234"});
+    expectError<PatchParametersWithoutSK>({attr6: "1234"});
 
     // Finishers
     type PatchParametersFinishers = "go" | "set" | "params" | "where";
-    let patchItem = entityWithSK.patch({attr1: "abc", attr2: "def"}).set({})
+
+    let patchItem = entityWithSK.patch({attr1: "abc", attr2: "def"}).set({});
+    let patchItemWithoutSK = entityWithoutSK.patch({attr1: "abc"}).set({});
+
     let patchFinishers = getKeys(patchItem);
+    let patchFinishersWithoutSK = getKeys(patchItemWithoutSK);
+
     expectAssignable<PatchParametersFinishers>(patchFinishers);
+    expectAssignable<PatchParametersFinishers>(patchFinishersWithoutSK);
+
     let patchGo = patchItem.go;
+    let patchGoWithoutSK = patchItemWithoutSK.go;
+
     let patchParams = patchItem.params;
+    let patchParamsWithoutSK = patchItemWithoutSK.params;
+
     type PatchGoParams = Parameter<typeof patchGo>;
+    type PatchGoParamsWithoutSK = Parameter<typeof patchGoWithoutSK>;
+
     type PatchParamsParams = Parameter<typeof patchParams>;
+    type PatchParamsParamsWithoutSK = Parameter<typeof patchParamsWithoutSK>;
+
     expectAssignable<PatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<PatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+
     expectAssignable<PatchParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<PatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
     // Where
     patchItem.where((attr, op) => {
+        let opKeys = getKeys(op);
+        expectAssignable<keyof typeof attr>(AttributeName);
+        expectAssignable<OperationNames>(opKeys);
+        return "";
+    });
+    patchItemWithoutSK.where((attr, op) => {
         let opKeys = getKeys(op);
         expectAssignable<keyof typeof attr>(AttributeName);
         expectAssignable<OperationNames>(opKeys);
@@ -684,13 +804,25 @@ let getKeys = ((val) => {}) as GetKeys;
 // Find
     // Query
     let findFn = entityWithSK.find;
+    let findFnWithoutSK = entityWithoutSK.find;
+
     type FindParameters = Parameter<typeof findFn>;
+    type FindParametersWithoutSK = Parameter<typeof findFnWithoutSK>;
+
     expectAssignable<keyof FindParameters>(AttributeName);
+    expectAssignable<keyof FindParametersWithoutSK>(AttributeName);
+
     expectAssignable<FindParameters>({attr6: 13});
+    expectAssignable<FindParametersWithoutSK>({attr6: 13});
+
 
     //  Invalid query
-    expectNotAssignable<FindParameters>({attr6: "ff"});
-    expectNotAssignable<FindParameters>({noexist: "ff"});
+    expectError<FindParameters>({attr6: "ff"});
+    expectError<FindParametersWithoutSK>({attr6: "ff"});
+
+    expectError<FindParameters>({noexist: "ff"});
+    expectError<FindParametersWithoutSK>({noexist: "ff"});
+
 
     // Where
     findFn({}).where((attr, op) => {
@@ -699,53 +831,119 @@ let getKeys = ((val) => {}) as GetKeys;
         expectAssignable<OperationNames>(opKeys);
         return "";
     });
+    findFnWithoutSK({}).where((attr, op) => {
+        let opKeys = getKeys(op);
+        expectAssignable<keyof typeof attr>(AttributeName);
+        expectAssignable<OperationNames>(opKeys);
+        return "";
+    });
 
     // Finishers
     type FindParametersFinishers = "go" | "params" | "where" | "page";
+
     let findFinishers = entityWithSK.find({});
+    let findFinishersWithoutSK = entityWithoutSK.find({});
+
     let findFinisherKeys = getKeys(findFinishers);
+    let findFinisherKeysWithoutSK = getKeys(findFinishersWithoutSK);
+
     expectAssignable<FindParametersFinishers>(findFinisherKeys);
+    expectAssignable<FindParametersFinishers>(findFinisherKeysWithoutSK);
+
     let findGo = findFinishers.go;
+    let findGoWithoutSK = findFinishersWithoutSK.go;
+
     let findParams = findFinishers.params;
+    let findParamsWithoutSK = findFinishersWithoutSK.params;
+
     type FindGoParams = Parameter<typeof findGo>;
+    type FindGoParamsWithoutSK = Parameter<typeof findGoWithoutSK>;
+
     type FindParamsParams = Parameter<typeof findParams>;
+    type FindParamsParamsWithoutSK = Parameter<typeof findParamsWithoutSK>;
+
     expectAssignable<FindGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<FindGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+
     expectAssignable<FindParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<FindParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+
 
     // Page
     let findPageFn = findFinishers.page;
+    let findPageFnWithoutSK = findFinishersWithoutSK.page;
+
     type FindPageParams = Parameters<typeof findPageFn>;
-    type FindPageReturn = Promise<[WithSKMyIndexFacets | null, Item[]]>
+    type FindPageParamsWithoutSK = Parameters<typeof findPageFnWithoutSK>;
+
+    type FindPageReturn = Promise<[WithSKMyIndexFacets | null, Item[]]>;
+    type FindPageReturnWithoutSK = Promise<[WithoutSKMyIndexFacets | null, ItemWithoutSK[]]>;
+
     expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, lastEvaluatedKeyRaw: true, originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, lastEvaluatedKeyRaw: true, originalErr: true, params: {}, raw: true, table: "abc"}]);
+
     expectAssignable<FindPageParams>([null]);
+    expectAssignable<FindPageParamsWithoutSK>([null]);
+
     expectAssignable<FindPageParams>([]);
+    expectAssignable<FindPageParamsWithoutSK>([]);
+
     expectAssignable<FindPageReturn>(findPageFn());
+    expectAssignable<FindPageReturnWithoutSK>(findPageFnWithoutSK());
+
 
 // Queries
     type AccessPatternNames = "myIndex" | "myIndex2" | "myIndex3";
+
     let accessPatternNames = getKeys(entityWithSK.query);
+    let accessPatternNamesWithoutSK = getKeys(entityWithoutSK.query);
+
     expectType<AccessPatternNames>(accessPatternNames);
+    expectType<AccessPatternNames>(accessPatternNamesWithoutSK);
+
     type MyIndexFacets = Parameter<typeof entityWithSK.query.myIndex>;
+    type MyIndexFacetsWithoutSK = Parameter<typeof entityWithoutSK.query.myIndex>;
+
     let myIndexBegins = entityWithSK.query.myIndex({attr1: "abc"}).begins;
-    type MyIndexRemaining = Parameter<typeof myIndexBegins>
+    // Begins does not exist on Find because the user has tossed out knowledge of order/indexes
+    expectError(entityWithoutSK.query.myIndex({attr1: "abc"}).begins);
+
+    type MyIndexRemaining = Parameter<typeof myIndexBegins>;
+
     expectAssignable<MyIndexFacets>({attr1: "abd"});
+    expectAssignable<MyIndexFacetsWithoutSK>({attr1: "abd"});
+
     expectAssignable<MyIndexFacets>({attr1: "abd", attr2: "def"});
+    expectAssignable<MyIndexFacetsWithoutSK>({attr1: "abd"});
+
     expectAssignable<MyIndexRemaining>({});
     expectAssignable<MyIndexRemaining>({attr2: "abc"});
+
     // attr1 not supplied
     expectError<MyIndexFacets>({attr2: "abc"});
+    expectError<MyIndexFacetsWithoutSK>({attr2: "abc"});
+
     // attr2 is a strin, not number
     expectError<MyIndexFacets>({attr1: "abd", attr2: 133});
+    expectError<MyIndexFacetsWithoutSK>({attr1: 243});
+
     // attr3 is not a pk or sk
     expectError<MyIndexFacets>({attr1: "abd", attr2: "def", attr3: "should_not_work"});
+    expectError<MyIndexFacetsWithoutSK>({attr1: "abd", attr2: "def", attr3: "should_not_work"});
+
     // attr1 was already used in the query method
     expectError<MyIndexRemaining>({attr1: "abd"});
+
     // attr2 is a string not number (this tests the 'remaining' facets which should also enforce type)
     expectError<MyIndexRemaining>({attr2: 1243});
+
     // require at least PK
     expectError(entityWithSK.query.myIndex({}));
+    expectError(entityWithoutSK.query.myIndex({}));
+
     // attr6 should be number
     expectError(entityWithSK.query.myIndex2({attr6: "45"}));
+    expectError(entityWithoutSK.query.myIndex2({attr6: "45"}));
 
     entityWithSK.query
         .myIndex({attr1: "abc", attr2: "def"})
@@ -1002,5 +1200,3 @@ let getKeys = ((val) => {}) as GetKeys;
         .where(({attr6}, {value, name, exists, begins, between, contains, eq, gt, gte, lt, lte, notContains, notExists}) => `
             ${notContains(attr6, "14")}
         `));
-
-

@@ -154,7 +154,7 @@ type PutItem<A extends string, F extends A, S extends Schema<A,F>> =
     Partial<Omit<Item<A,F,S>, RequiredAttributes<A,F,S>>>
 
 type SetItem<A extends string, F extends A, S extends Schema<A,F>> =
-    Omit< Partial<TableItem<A,F,S>>, keyof AllTableIndexFacets<A,F,S>>
+    Omit<Partial<TableItem<A,F,S>>, keyof AllTableIndexFacets<A,F,S>>
 
 type WhereAttributeSymbol<T> = {
     [clause: unique symbol]: void;
