@@ -31,6 +31,7 @@
     "mocha-lcov-reporter": "1.3.0",
     "moment": "2.24.0",
     "nyc": "15.0.0",
+    "tsd": "^0.14.0",
     "uuid": "7.0.1"
   },
   "keywords": [
@@ -39,6 +40,9 @@
     "dynamodb",
     "aws"
   ],
+  "tsd": {
+    "directory": "test"
+  },
   "dependencies": {
     "jsonschema": "1.2.7"
   }
