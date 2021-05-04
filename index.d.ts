@@ -1,46 +1,56 @@
 type BooleanAttribute = {
     readonly type: "boolean";
     readonly required?: boolean;
-    readonly get?: (val: boolean) => boolean;
-    readonly set?: (val: boolean) => boolean;
+    readonly get?: (val: boolean, schema: any) => boolean | undefined;
+    readonly set?: (val: boolean, schema: any) => boolean | undefined;
     readonly default?: boolean | (() => boolean);
     readonly validate?: ((val: boolean) => boolean) | ((val: boolean) => number);
+    readonly field?: string;
+    readonly label?: string;
 }
 
 type NumberAttribute = {
     readonly type: "number";
     readonly required?: boolean;
-    readonly get?: (val: number) => number;
-    readonly set?: (val: number) => number;
+    readonly get?: (val: number, schema: any) => number | undefined;
+    readonly set?: (val: number, schema: any) => number | undefined;
     readonly default?: number | (() => number);
     readonly validate?: ((val: number) => boolean) | ((val: number) => number);
+    readonly field?: string;
+    readonly label?: string;
 }
 
 type StringAttribute = {
     readonly type: "string";
     readonly required?: boolean;
-    readonly get?: (val: string) => string;
-    readonly set?: (val: string) => string;
+    readonly get?: (val: string, schema: any, schema: any) => string | undefined;
+    readonly set?: (val: string, schema: any, schema: any) => string | undefined;
     readonly default?: string | (() => string);
     readonly validate?: ((val: string) => boolean) | ((val: string) => string);
+    readonly field?: string;
+    readonly label?: string;
 }
 
 type EnumAttribute = {
     readonly type: Array<string>;
     readonly required?: boolean;
-    readonly get?: (val: string) => string;
-    readonly set?: (val: string) => string;
+    readonly get?: (val: string, schema: any) => string | undefined;
+    readonly set?: (val: string, schema: any) => string | undefined;
     readonly default?: string | (() => string);
     readonly validate?: ((val: string) => boolean) | ((val: string) => string);
+    readonly field?: string;
+    readonly label?: string;
 }
 
 type AnyAttribute = {
     readonly type: "any";
     readonly required?: boolean;
-    readonly get?: (val: any) => any;
-    readonly set?: (val: any) => any;
+    readonly get?: (val: any, schema: any) => any | undefined;
+    readonly set?: (val: any, schema: any) => any | undefined;
     readonly default?: () => any;
     readonly validate?: ((val: any) => boolean) | ((val: any) => string);
+    readonly field?: string;
+    readonly label?: string;
 }
 
 type Attribute = BooleanAttribute | NumberAttribute | StringAttribute | EnumAttribute | AnyAttribute;
@@ -67,7 +77,7 @@ type IndexWithSortKey = {
 
 type Schema<A extends string, F extends A> = {
     readonly model: {
-        readonly name: string;
+        readonly entity: string;
         readonly service: string;
         readonly version: string;
     }
@@ -269,9 +279,26 @@ type Queries<A extends string, F extends A, S extends Schema<A,F>> = {
             : never
 }
 
+type DocumentClientMethod = (parameters: any) => {promise: () => Promise<any>};
+
+type DocumentClient = {
+    get: DocumentClientMethod;
+    put: DocumentClientMethod;
+    delete: DocumentClientMethod;
+    update: DocumentClientMethod;
+    batchWrite: DocumentClientMethod;
+    batchGet: DocumentClientMethod;
+    scan: DocumentClientMethod;
+}
+
+type EntityConfiguration = {
+    table?: string;
+    client?: DocumentClient
+};
+
 export class Entity<A extends string, F extends A, S extends Schema<A,F>> {
     readonly schema: S;
-    constructor(schema: S);
+    constructor(schema: S, config?: EntityConfiguration);
     get(key: AllTableIndexFacets<A,F,S>): SingleRecordOperationOptions<A,F,S, TableItem<A,F,S>>;
     get(key: AllTableIndexFacets<A,F,S>[]): BulkRecordOperationOptions<A,F,S, [Required<TableIndexFacets<A,F,S>>, TableItem<A,F,S>[]]>;
     delete(key: AllTableIndexFacets<A,F,S>): SingleRecordOperationOptions<A,F,S, TableItem<A,F,S>>;
