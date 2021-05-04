@@ -77,7 +77,11 @@ type IndexWithSortKey = {
     }
 }
 
-type Schema<A extends string, F extends A> = {
+type IndexWithCollection = {
+    collection: string;
+}
+
+type Schema<A extends string, F extends A, C extends string> = {
     readonly model: {
         readonly entity: string;
         readonly service: string;
@@ -89,7 +93,7 @@ type Schema<A extends string, F extends A> = {
     readonly indexes: {
         [accessPattern: string]: {
             readonly index?: string;
-            readonly collection?: string;
+            readonly collection?: C;
             readonly pk: {
                 readonly field: string;
                 readonly facets: F[];
@@ -102,7 +106,7 @@ type Schema<A extends string, F extends A> = {
     }
 };
 
-type Item<A extends string, F extends A, S extends Schema<A,F>> = {
+type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [a in keyof S["attributes"]]: S["attributes"][a]["type"] extends infer R
         ? R extends "string" ? string
             : R extends "number" ? number
@@ -113,16 +117,22 @@ type Item<A extends string, F extends A, S extends Schema<A,F>> = {
         : never
 }
 
-type RequiredAttributes<A extends string, F extends A, S extends Schema<A,F>> = ExtractKeysOfValueType<{
+type RequiredAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<{
     [a in keyof S["attributes"]]: S["attributes"][a]["required"] extends infer R
         ? R extends true ? true
             : false
         : never;
 }, true>
 
-type ExtractKeysOfValueType<T, K> = { [I in keyof T]: T[I] extends K ? I : never }[keyof T];
+type ExtractKeysOfValueType<T, K> = {
+    [I in keyof T]: T[I] extends K ? I : never
+}[keyof T];
 
-type TableIndexes<A extends string, F extends A, S extends Schema<A,F>> = {
+type ExtractValuesWithKey<T, K> = {
+    [I in keyof T]: I extends K ? T[I] : never;
+}[keyof T];
+
+type TableIndexes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [i in keyof S["indexes"]]: S["indexes"][i] extends infer I
         ? I extends SecondaryIndex
             ? "secondary"
@@ -130,67 +140,89 @@ type TableIndexes<A extends string, F extends A, S extends Schema<A,F>> = {
         : never;
 };
 
-type TableIndexName<A extends string, F extends A, S extends Schema<A,F>> = ExtractKeysOfValueType<TableIndexes<A,F,S>, "table">;
+type IndexCollections<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
+    [i in keyof S["indexes"]]: S["indexes"][i] extends infer I
+        ? I extends IndexWithCollection
+            ? S["indexes"][i]["collection"] extends infer Name ? Name : never
+            : never
+        : never;
+}[keyof S["indexes"]];
 
-type PKFacets<A extends string, F extends A, S extends Schema<A,F>> = {
+type EntityCollections<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
+    [N in IndexCollections<A,F,C,S>]: {
+        [i in keyof S["indexes"]]: S["indexes"][i] extends infer I
+            ? I extends IndexWithCollection
+                ? S["indexes"][i]["collection"] extends infer Name
+                        ? Name extends N
+                            ? i
+                        : never
+                    : never
+                : never
+            : never
+    }[keyof S["indexes"]];
+}
+
+type TableIndexName<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<TableIndexes<A,F,C,S>, "table">;
+
+type PKFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [i in keyof S["indexes"]]: S["indexes"][i]["pk"]["facets"][number];
 }
 
-type SKFacets<A extends string, F extends A, S extends Schema<A,F>> = {
+type SKFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [i in keyof S["indexes"]]: S["indexes"][i] extends IndexWithSortKey
         ? S["indexes"][i]["sk"]["facets"][number]
         : never;
 }
 
-type TableIndexPKFacets<A extends string, F extends A, S extends Schema<A,F>> = Pick<PKFacets<A,F,S>, TableIndexName<A,F,S>>;
+type TableIndexPKFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = Pick<PKFacets<A,F,C,S>, TableIndexName<A,F,C,S>>;
 
-type TableIndexSKFacets<A extends string, F extends A, S extends Schema<A,F>> = Pick<SKFacets<A,F,S>, TableIndexName<A,F,S>>;
+type TableIndexSKFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = Pick<SKFacets<A,F,C,S>, TableIndexName<A,F,C,S>>;
 
-type IndexPKFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<PKFacets<A,F,S>, I>;
+type IndexPKFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = Pick<PKFacets<A,F,C,S>, I>;
 
-type IndexSKFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<SKFacets<A,F,S>, I>;
+type IndexSKFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = Pick<SKFacets<A,F,C,S>, I>;
 
-type TableIndexPKAttributes<A extends string, F extends A, S extends Schema<A,F>> = Pick<Item<A,F,S>, TableIndexPKFacets<A,F,S>[TableIndexName<A,F,S>]>;
+type TableIndexPKAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = Pick<Item<A,F,C,S>, TableIndexPKFacets<A,F,C,S>[TableIndexName<A,F,C,S>]>;
 
-type TableIndexSKAttributes<A extends string, F extends A, S extends Schema<A,F>> = TableIndexSKFacets<A,F,S>[TableIndexName<A,F,S>] extends keyof S["attributes"]
-    ? Pick<Item<A,F,S>, TableIndexSKFacets<A,F,S>[TableIndexName<A,F,S>]>
-    : Item<A,F,S>;
+type TableIndexSKAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = TableIndexSKFacets<A,F,C,S>[TableIndexName<A,F,C,S>] extends keyof S["attributes"]
+    ? Pick<Item<A,F,C,S>, TableIndexSKFacets<A,F,C,S>[TableIndexName<A,F,C,S>]>
+    : Item<A,F,C,S>;
 
-type IndexPKAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<Item<A,F,S>, IndexPKFacets<A,F,S,I>[I]>;
+type IndexPKAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = Pick<Item<A,F,C,S>, IndexPKFacets<A,F,C,S,I>[I]>;
 
-type IndexSKAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = IndexSKFacets<A,F,S,I>[I] extends keyof S["attributes"]
-    ? Pick<Item<A,F,S>, IndexSKFacets<A,F,S,I>[I]>
-    : Item<A,F,S>;
+type IndexSKAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = IndexSKFacets<A,F,C,S,I>[I] extends keyof S["attributes"]
+    ? Pick<Item<A,F,C,S>, IndexSKFacets<A,F,C,S,I>[I]>
+    : Item<A,F,C,S>;
 
-type TableIndexFacets<A extends string, F extends A, S extends Schema<A,F>> = TableIndexPKAttributes<A,F,S> & Partial<TableIndexSKAttributes<A,F,S>>;
+type TableIndexFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = TableIndexPKAttributes<A,F,C,S> & Partial<TableIndexSKAttributes<A,F,C,S>>;
 
-type AllTableIndexFacets<A extends string, F extends A, S extends Schema<A,F>> = TableIndexPKAttributes<A,F,S> & TableIndexSKAttributes<A,F,S>;
+type AllTableIndexFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = TableIndexPKAttributes<A,F,C,S> & TableIndexSKAttributes<A,F,C,S>;
 
-type IndexFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = IndexPKAttributes<A,F,S,I> & Partial<IndexSKAttributes<A,F,S,I>>;
+type IndexFacets<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = IndexPKAttributes<A,F,C,S,I> & Partial<IndexSKAttributes<A,F,C,S,I>>;
 
-type TableItem<A extends string, F extends A, S extends Schema<A,F>> =
-    AllTableIndexFacets<A,F,S> &
-    Pick<Item<A,F,S>, RequiredAttributes<A,F,S>> &
-    Partial<Omit<Item<A,F,S>, RequiredAttributes<A,F,S>>>
+type TableItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    AllTableIndexFacets<A,F,C,S> &
+    Pick<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>> &
+    Partial<Omit<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>>>
 
-type PutItem<A extends string, F extends A, S extends Schema<A,F>> =
-    AllTableIndexFacets<A,F,S> &
-    Pick<Item<A,F,S>, RequiredAttributes<A,F,S>> &
-    Partial<Omit<Item<A,F,S>, RequiredAttributes<A,F,S>>>
+type PutItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    AllTableIndexFacets<A,F,C,S> &
+    Pick<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>> &
+    Partial<Omit<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>>>
 
-type SetItem<A extends string, F extends A, S extends Schema<A,F>> =
-    Omit<Partial<TableItem<A,F,S>>, keyof AllTableIndexFacets<A,F,S>>
+type SetItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    Omit<Partial<TableItem<A,F,C,S>>, keyof AllTableIndexFacets<A,F,C,S>>
 
 interface WhereAttributeSymbol<T> {
     [WhereSymbol]: void;
     _: T;
 }
 
-type WhereAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends Item<A,F,S>> = {
+type WhereAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> = {
     [Attr in keyof I]: WhereAttributeSymbol<I[Attr]>
 }
 
-type WhereOperations<A extends string, F extends A, S extends Schema<A,F>, I extends Item<A,F,S>> = {
+type WhereOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> = {
     eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
@@ -206,8 +238,8 @@ type WhereOperations<A extends string, F extends A, S extends Schema<A,F>, I ext
     name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
 };
 
-type WhereCallback<A extends string, F extends A, S extends Schema<A,F>, I extends Item<A,F,S>> =
-    <W extends WhereAttributes<A,F,S,I>>(attributes: W, operations: WhereOperations<A,F,S,I>) => string;
+type WhereCallback<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> =
+    <W extends WhereAttributes<A,F,C,S,I>>(attributes: W, operations: WhereOperations<A,F,C,S,I>) => string;
 
 interface QueryOptions {
     params?: object;
@@ -232,64 +264,64 @@ type PageRecord<ResponseType, Facets> = (page?: Facets | null, options?: Paginat
 
 type ParamRecord<Options = QueryOptions> = <P>(options?: Options) => P;
 
-type RecordsActionOptions<A extends string, F extends A, S extends Schema<A,F>, Items, IndexFacets> = {
+type RecordsActionOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Items, IndexFacets> = {
     go: GoRecord<Items>;
     params: ParamRecord;
     page: PageRecord<Items,IndexFacets>;
-    where: WhereClause<A,F,S,RecordsActionOptions<A,F,S,Items,IndexFacets>>;
+    where: WhereClause<A,F,C,S,RecordsActionOptions<A,F,C,S,Items,IndexFacets>>;
 }
 
-type SingleRecordOperationOptions<A extends string, F extends A, S extends Schema<A,F>, ResponseType> = {
+type SingleRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
     go: GoRecord<ResponseType, QueryOptions>;
     params: ParamRecord<QueryOptions>;
-    where: WhereClause<A,F,S, SingleRecordOperationOptions<A,F,S,ResponseType>>;
+    where: WhereClause<A,F,C,S, SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
 };
 
-type BulkRecordOperationOptions<A extends string, F extends A, S extends Schema<A,F>, ResponseType> = {
+type BulkRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
     go: GoRecord<ResponseType, BulkOptions>;
     params: ParamRecord<BulkOptions>;
 };
 
-type SetRecordActionOptions<A extends string, F extends A, S extends Schema<A,F>, SetAttr,IndexFacets,TableItem> = {
+type SetRecordActionOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr,IndexFacets,TableItem> = {
     go: GoRecord<TableItem>;
     params: ParamRecord;
-    set: SetRecord<A,F,S, SetAttr,IndexFacets,TableItem>;
-    where: WhereClause<A,F,S,RecordsActionOptions<A,F,S,TableItem,IndexFacets>>;
+    set: SetRecord<A,F,C,S, SetAttr,IndexFacets,TableItem>;
+    where: WhereClause<A,F,C,S,RecordsActionOptions<A,F,C,S,TableItem,IndexFacets>>;
 }
 
-type SetRecord<A extends string, F extends A, S extends Schema<A,F>, SetAttr,IndexFacets,TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,S, SetAttr,IndexFacets,TableItem>;
+type SetRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr,IndexFacets,TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr,IndexFacets,TableItem>;
 
-type WhereClause<A extends string, F extends A, S extends Schema<A,F>, T> = (where: WhereCallback<A,F,S,Item<A,F,S>>) => T;
+type WhereClause<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, T> = (where: WhereCallback<A,F,C,S,Item<A,F,C,S>>) => T;
 
-type QueryOperations<A extends string, F extends A, S extends Schema<A,F>, Facets, TableItem, IndexFacets> = {
-    between: (skFacetsStart: Facets, skFacetsEnd: Facets) => RecordsActionOptions<A,F,S, Array<TableItem>,IndexFacets>;
-    gt: (skFacets: Facets) => RecordsActionOptions<A,F,S, Array<TableItem>,IndexFacets>;
-    gte: (skFacets: Facets) => RecordsActionOptions<A,F,S, Array<TableItem>,IndexFacets>;
-    lt: (skFacets: Facets) => RecordsActionOptions<A,F,S, Array<TableItem>,IndexFacets>;
-    lte: (skFacets: Facets) => RecordsActionOptions<A,F,S, Array<TableItem>,IndexFacets>;
-    begins: (skFacets: Facets) => RecordsActionOptions<A,F,S, Array<TableItem>,IndexFacets>;
+type QueryOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Facets, TableItem, IndexFacets> = {
+    between: (skFacetsStart: Facets, skFacetsEnd: Facets) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexFacets>;
+    gt: (skFacets: Facets) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexFacets>;
+    gte: (skFacets: Facets) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexFacets>;
+    lt: (skFacets: Facets) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexFacets>;
+    lte: (skFacets: Facets) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexFacets>;
+    begins: (skFacets: Facets) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexFacets>;
     go: GoRecord<Array<TableItem>>;
     params: ParamRecord;
     page: PageRecord<Array<TableItem>,IndexFacets>;
-    where: WhereClause<A,F,S,RecordsActionOptions<A,F,S,Array<TableItem>,IndexFacets>>
+    where: WhereClause<A,F,C,S,RecordsActionOptions<A,F,C,S,Array<TableItem>,IndexFacets>>
 }
 
-type Queries<A extends string, F extends A, S extends Schema<A,F>> = {
-    [I in keyof S["indexes"]]: <Facets extends IndexFacets<A,F,S,I>>(facets: Facets) =>
-        IndexSKAttributes<A,F,S,I> extends infer SK
+type Queries<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
+    [I in keyof S["indexes"]]: <Facets extends IndexFacets<A,F,C,S,I>>(facets: Facets) =>
+        IndexSKAttributes<A,F,C,S,I> extends infer SK
             // If there is no SK, dont show query operations (when an empty array is provided)
             ? [keyof SK] extends [never]
-            ? RecordsActionOptions<A,F,S, TableItem<A,F,S>[], AllTableIndexFacets<A,F,S>>
+            ? RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>
             // If there is no SK, dont show query operations (When no PK is specified)
             : S["indexes"][I] extends IndexWithSortKey
                 ? QueryOperations<
-                    A,F,S,
+                    A,F,C,S,
                     // Omit the facets already provided
-                    Omit<Partial<IndexSKAttributes<A,F,S,I>>, keyof Facets>,
-                    TableItem<A,F,S>,
-                    AllTableIndexFacets<A,F,S>
+                    Omit<Partial<IndexSKAttributes<A,F,C,S,I>>, keyof Facets>,
+                    TableItem<A,F,C,S>,
+                    AllTableIndexFacets<A,F,C,S>
                     >
-                : RecordsActionOptions<A,F,S, TableItem<A,F,S>[], AllTableIndexFacets<A,F,S>>
+                : RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>
             : never
 }
 
@@ -310,24 +342,25 @@ type EntityConfiguration = {
     client?: DocumentClient
 };
 
-export class Entity<A extends string, F extends A, S extends Schema<A,F>> {
+export class Entity<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> {
     readonly schema: S;
     constructor(schema: S, config?: EntityConfiguration);
-    get(key: AllTableIndexFacets<A,F,S>): SingleRecordOperationOptions<A,F,S, TableItem<A,F,S>>;
-    get(key: AllTableIndexFacets<A,F,S>[]): BulkRecordOperationOptions<A,F,S, [Required<TableIndexFacets<A,F,S>>, TableItem<A,F,S>[]]>;
-    delete(key: AllTableIndexFacets<A,F,S>): SingleRecordOperationOptions<A,F,S, TableItem<A,F,S>>;
-    delete(key: AllTableIndexFacets<A,F,S>[]): BulkRecordOperationOptions<A,F,S, Required<TableIndexFacets<A,F,S>>[]>;
-    update(key: AllTableIndexFacets<A,F,S>): {
-        set: SetRecord<A,F,S, SetItem<A,F,S>, TableIndexFacets<A,F,S>, TableItem<A,F,S>>
+    get(key: AllTableIndexFacets<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
+    get(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [Required<TableIndexFacets<A,F,C,S>>, TableItem<A,F,C,S>[]]>;
+    delete(key: AllTableIndexFacets<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
+    delete(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, Required<TableIndexFacets<A,F,C,S>>[]>;
+    update(key: AllTableIndexFacets<A,F,C,S>): {
+        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexFacets<A,F,C,S>, TableItem<A,F,C,S>>
     };
-    patch(key: AllTableIndexFacets<A,F,S>): {
-        set: SetRecord<A,F,S, SetItem<A,F,S>, TableIndexFacets<A,F,S>, TableItem<A,F,S>>
+    patch(key: AllTableIndexFacets<A,F,C,S>): {
+        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexFacets<A,F,C,S>, TableItem<A,F,C,S>>
     };
-    put(record: PutItem<A,F,S>): SingleRecordOperationOptions<A,F,S, TableItem<A,F,S>>;
-    put(record: PutItem<A,F,S>[]): BulkRecordOperationOptions<A,F,S, Required<TableIndexFacets<A,F,S>>[]>;
-    create(record: PutItem<A,F,S>): SingleRecordOperationOptions<A,F,S, TableItem<A,F,S>>;
-    find(record: Partial<Item<A,F,S>>): RecordsActionOptions<A,F,S, TableItem<A,F,S>[], Required<TableIndexFacets<A,F,S>>>;
+    put(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
+    put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, Required<TableIndexFacets<A,F,C,S>>[]>;
+    create(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
+    find(record: Partial<Item<A,F,C,S>>): RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], Required<TableIndexFacets<A,F,C,S>>>;
     setIdentifier(type: "model" | "version", value: string): void;
-    scan: RecordsActionOptions<A,F,S, Item<A,F,S>[], TableIndexFacets<A,F,S>>
-    query: Queries<A,F,S>;
+    scan: RecordsActionOptions<A,F,C,S, Item<A,F,C,S>[], TableIndexFacets<A,F,C,S>>
+    query: Queries<A,F,C,S>;
+    get _collections(): EntityCollections<A,F,C,S>;
 }

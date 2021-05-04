@@ -1200,3 +1200,5 @@ let getKeys = ((val) => {}) as GetKeys;
         .where(({attr6}, {value, name, exists, begins, between, contains, eq, gt, gte, lt, lte, notContains, notExists}) => `
             ${notContains(attr6, "14")}
         `));
+
+    entityWithSK._collections.mycollection;
