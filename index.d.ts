@@ -142,24 +142,30 @@ type SKFacets<A extends string, F extends A, S extends Schema<A,F>> = {
         : never;
 }
 
-// type TableIndexPKFacets<A extends string, F extends A, S extends Schema<A,F>> = Pick<IndexPKFacets<A,F,S>, TableIndexName<A,F,S>>
-type TableIndexPKFacets<A extends string, F extends A, S extends Schema<A,F>> = Pick<PKFacets<A,F,S>, TableIndexName<A,F,S>>
-type TableIndexSKFacets<A extends string, F extends A, S extends Schema<A,F>> = Pick<SKFacets<A,F,S>, TableIndexName<A,F,S>>
-type IndexPKFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<PKFacets<A,F,S>, I>
-type IndexSKFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<SKFacets<A,F,S>, I>
+type TableIndexPKFacets<A extends string, F extends A, S extends Schema<A,F>> = Pick<PKFacets<A,F,S>, TableIndexName<A,F,S>>;
+
+type TableIndexSKFacets<A extends string, F extends A, S extends Schema<A,F>> = Pick<SKFacets<A,F,S>, TableIndexName<A,F,S>>;
+
+type IndexPKFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<PKFacets<A,F,S>, I>;
+
+type IndexSKFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<SKFacets<A,F,S>, I>;
 
 type TableIndexPKAttributes<A extends string, F extends A, S extends Schema<A,F>> = Pick<Item<A,F,S>, TableIndexPKFacets<A,F,S>[TableIndexName<A,F,S>]>;
+
 type TableIndexSKAttributes<A extends string, F extends A, S extends Schema<A,F>> = TableIndexSKFacets<A,F,S>[TableIndexName<A,F,S>] extends keyof S["attributes"]
     ? Pick<Item<A,F,S>, TableIndexSKFacets<A,F,S>[TableIndexName<A,F,S>]>
     : Item<A,F,S>;
 
 type IndexPKAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<Item<A,F,S>, IndexPKFacets<A,F,S,I>[I]>;
+
 type IndexSKAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = IndexSKFacets<A,F,S,I>[I] extends keyof S["attributes"]
     ? Pick<Item<A,F,S>, IndexSKFacets<A,F,S,I>[I]>
     : Item<A,F,S>;
 
 type TableIndexFacets<A extends string, F extends A, S extends Schema<A,F>> = TableIndexPKAttributes<A,F,S> & Partial<TableIndexSKAttributes<A,F,S>>;
+
 type AllTableIndexFacets<A extends string, F extends A, S extends Schema<A,F>> = TableIndexPKAttributes<A,F,S> & TableIndexSKAttributes<A,F,S>;
+
 type IndexFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = IndexPKAttributes<A,F,S,I> & Partial<IndexSKAttributes<A,F,S,I>>;
 
 type TableItem<A extends string, F extends A, S extends Schema<A,F>> =
