@@ -1,3 +1,5 @@
+declare const WhereSymbol: unique symbol;
+
 type BooleanAttribute = {
     readonly type: "boolean";
     readonly required?: boolean;
@@ -23,8 +25,8 @@ type NumberAttribute = {
 type StringAttribute = {
     readonly type: "string";
     readonly required?: boolean;
-    readonly get?: (val: string, schema: any, schema: any) => string | undefined;
-    readonly set?: (val: string, schema: any, schema: any) => string | undefined;
+    readonly get?: (val: string, schema: any) => string | undefined;
+    readonly set?: (val: string, schema: any) => string | undefined;
     readonly default?: string | (() => string);
     readonly validate?: ((val: string) => boolean) | ((val: string) => string);
     readonly field?: string;
@@ -135,7 +137,9 @@ type PKFacets<A extends string, F extends A, S extends Schema<A,F>> = {
 }
 
 type SKFacets<A extends string, F extends A, S extends Schema<A,F>> = {
-    [i in keyof S["indexes"]]: S["indexes"][i]["sk"]["facets"][number];
+    [i in keyof S["indexes"]]: S["indexes"][i] extends IndexWithSortKey
+        ? S["indexes"][i]["sk"]["facets"][number]
+        : never;
 }
 
 // type TableIndexPKFacets<A extends string, F extends A, S extends Schema<A,F>> = Pick<IndexPKFacets<A,F,S>, TableIndexName<A,F,S>>
@@ -166,8 +170,8 @@ type PutItem<A extends string, F extends A, S extends Schema<A,F>> =
 type SetItem<A extends string, F extends A, S extends Schema<A,F>> =
     Omit<Partial<TableItem<A,F,S>>, keyof AllTableIndexFacets<A,F,S>>
 
-type WhereAttributeSymbol<T> = {
-    [clause: unique symbol]: void;
+interface WhereAttributeSymbol<T> {
+    [WhereSymbol]: void;
     _: T
 }
 

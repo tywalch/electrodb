@@ -3,7 +3,7 @@ import {expectType, expectError, expectAssignable} from 'tsd';
 
 let entityWithSK = new Entity({
     model: {
-        name: "abc",
+        entity: "abc",
         service: "myservice",
         version: "myversion"
     },
@@ -99,7 +99,7 @@ let entityWithSK = new Entity({
 
 let entityWithoutSK = new Entity({
     model: {
-        name: "abc",
+        entity: "abc",
         service: "myservice",
         version: "myversion"
     },
