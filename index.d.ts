@@ -148,10 +148,15 @@ type TableIndexSKFacets<A extends string, F extends A, S extends Schema<A,F>> = 
 type IndexPKFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<PKFacets<A,F,S>, I>
 type IndexSKFacets<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<SKFacets<A,F,S>, I>
 
-type TableIndexPKAttributes<A extends string, F extends A, S extends Schema<A,F>> = Pick<Item<A,F,S>, TableIndexPKFacets<A,F,S>[TableIndexName<A,F,S>]>
-type TableIndexSKAttributes<A extends string, F extends A, S extends Schema<A,F>> = Pick<Item<A,F,S>, TableIndexSKFacets<A,F,S>[TableIndexName<A,F,S>]>
-type IndexPKAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<Item<A,F,S>, IndexPKFacets<A,F,S,I>[I]>
-type IndexSKAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<Item<A,F,S>, IndexSKFacets<A,F,S,I>[I]>
+type TableIndexPKAttributes<A extends string, F extends A, S extends Schema<A,F>> = Pick<Item<A,F,S>, TableIndexPKFacets<A,F,S>[TableIndexName<A,F,S>]>;
+type TableIndexSKAttributes<A extends string, F extends A, S extends Schema<A,F>> = TableIndexSKFacets<A,F,S>[TableIndexName<A,F,S>] extends keyof S["attributes"]
+    ? Pick<Item<A,F,S>, TableIndexSKFacets<A,F,S>[TableIndexName<A,F,S>]>
+    : Item<A,F,S>;
+
+type IndexPKAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = Pick<Item<A,F,S>, IndexPKFacets<A,F,S,I>[I]>;
+type IndexSKAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends keyof S["indexes"]> = IndexSKFacets<A,F,S,I>[I] extends keyof S["attributes"]
+    ? Pick<Item<A,F,S>, IndexSKFacets<A,F,S,I>[I]>
+    : Item<A,F,S>;
 
 type TableIndexFacets<A extends string, F extends A, S extends Schema<A,F>> = TableIndexPKAttributes<A,F,S> & Partial<TableIndexSKAttributes<A,F,S>>;
 type AllTableIndexFacets<A extends string, F extends A, S extends Schema<A,F>> = TableIndexPKAttributes<A,F,S> & TableIndexSKAttributes<A,F,S>;
@@ -172,7 +177,7 @@ type SetItem<A extends string, F extends A, S extends Schema<A,F>> =
 
 interface WhereAttributeSymbol<T> {
     [WhereSymbol]: void;
-    _: T
+    _: T;
 }
 
 type WhereAttributes<A extends string, F extends A, S extends Schema<A,F>, I extends Item<A,F,S>> = {
@@ -197,7 +202,6 @@ type WhereOperations<A extends string, F extends A, S extends Schema<A,F>, I ext
 
 type WhereCallback<A extends string, F extends A, S extends Schema<A,F>, I extends Item<A,F,S>> =
     <W extends WhereAttributes<A,F,S,I>>(attributes: W, operations: WhereOperations<A,F,S,I>) => string;
-
 
 interface QueryOptions {
     params?: object;
