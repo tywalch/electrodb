@@ -1215,6 +1215,9 @@ let getKeys = ((val) => {}) as GetKeys;
             },
             prop2: {
                 type: "string"
+            },
+            prop3: {
+                type: "string"
             }
         },
         indexes: {
@@ -1242,8 +1245,15 @@ let getKeys = ((val) => {}) as GetKeys;
     // let b: typeof service.collections = "addag"
     // let a = service.collections.entityWithoutSK.mycollection({attr5: "string"})
     let b = service.collections
+    service.entities.standAloneEntity.query
+        .index1({prop1: "as"})
+        .where(({prop2}, {eq}) => eq(prop2, "shd"))
+        .go({table: "Abc"})
+        .then(records => records.map(item => item.prop3))
+
     service.collections
         .mycollection({attr5: "adggda"})
+        .go()
         .then(val => {
             val.entityWithSK.map(val => val.attr1);
             val.entityWithoutSK.map(val => val.attr5)

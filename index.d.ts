@@ -379,29 +379,32 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
                 : E[EntityName]["_collections"] extends infer Collections
                 ? {
                     // for each collection on that entity create a function type that has the same parameters as the index's query method
-                    [Collection in keyof Collections]: (facets: Parameters<E[EntityName]["query"][C[Collection]]>["0"]) => Promise<
+                    [Collection in keyof Collections]: (facets: Parameters<E[EntityName]["query"][C[Collection]]>["0"]) => {
                         // Pick only a subset of the Entities
-                        Pick<{
-                            // Infer the types for the Entity so TableIndex type can be used
-                            [e in keyof E]: E[e] extends Entity<infer A, infer F, infer C, infer S>
-                                // For each entity it should return back the items for that particular entity
-                                ? Collection extends keyof E[e]["_collections"]
-                                    // Entity has collections, it should be typed as an Item
-                                    ? TableItem<A,F,C,S>[]
-                                    // Entity doesnt have collections, fuggedaboutit
+                        go: GoRecord<
+                                Pick<{
+                                // Infer the types for the Entity so TableIndex type can be used
+                                [e in keyof E]: E[e] extends Entity<infer A, infer F, infer C, infer S>
+                                    // For each entity it should return back the items for that particular entity
+                                    ? Collection extends keyof E[e]["_collections"]
+                                        // Entity has collections, it should be typed as an Item
+                                        ? TableItem<A,F,C,S>[]
+                                        // Entity doesnt have collections, fuggedaboutit
+                                        : never
                                     : never
-                                : never
-                        // The keys for entities that have the collection being iterated over (otherwise entities without
-                        // this collection will appear even when their type is `never`
-                        }, ExtractKeysOfValueType<{
-                            // Same logic as in the first Pick param, except with true/false values for easy picking
-                            [e in keyof E]: E[e] extends Entity<infer A, infer F, infer C, infer S>
-                                ? Collection extends keyof E[e]["_collections"]
-                                    ? true
+                            // The keys for entities that have the collection being iterated over (otherwise entities without
+                            // this collection will appear even when their type is `never`
+                            }, ExtractKeysOfValueType<{
+                                // Same logic as in the first Pick param, except with true/false values for easy picking
+                                [e in keyof E]: E[e] extends Entity<infer A, infer F, infer C, infer S>
+                                    ? Collection extends keyof E[e]["_collections"]
+                                        ? true
+                                        : false
                                     : false
-                                : false
-                        }, true>>
-                    >
+                            }, true>>
+                        >,
+                        params: ParamRecord
+                    }
                 }
                 : never
     }[keyof E];
