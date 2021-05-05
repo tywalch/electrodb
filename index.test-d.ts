@@ -1,4 +1,4 @@
-import {Entity} from ".";
+import {Entity, Service} from ".";
 import {expectType, expectError, expectAssignable} from 'tsd';
 
 let entityWithSK = new Entity({
@@ -1202,3 +1202,51 @@ let getKeys = ((val) => {}) as GetKeys;
         `));
 
     entityWithSK._collections.mycollection;
+
+    let standAloneEntity = new Entity({
+        model: {
+            entity: "standalone",
+            service: "service",
+            version: "1"
+        },
+        attributes: {
+            prop1: {
+                type: "string"
+            },
+            prop2: {
+                type: "string"
+            }
+        },
+        indexes: {
+            index1: {
+                pk: {
+                    field: "pk",
+                    facets: ["prop1"]
+                },
+                sk: {
+                    field: "sk",
+                    facets: ["prop2"]
+                }
+            }
+        }
+    });
+
+
+
+    let service = new Service({
+        entityWithSK,
+        entityWithoutSK,
+        standAloneEntity
+    });
+    // let a = service.collections.entityWithSK.mycollection
+    // let b: typeof service.collections = "addag"
+    // let a = service.collections.entityWithoutSK.mycollection({attr5: "string"})
+    let b = service.collections
+    service.collections
+        .mycollection({attr5: "adggda"})
+        .then(val => {
+            val.entityWithSK.map(val => val.attr1);
+            val.entityWithoutSK.map(val => val.attr5)
+            val.entityWithSK.map(val => val.attr2)
+        })
+

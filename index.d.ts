@@ -128,10 +128,6 @@ type ExtractKeysOfValueType<T, K> = {
     [I in keyof T]: T[I] extends K ? I : never
 }[keyof T];
 
-type ExtractValuesWithKey<T, K> = {
-    [I in keyof T]: I extends K ? T[I] : never;
-}[keyof T];
-
 type TableIndexes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [i in keyof S["indexes"]]: S["indexes"][i] extends infer I
         ? I extends SecondaryIndex
@@ -364,3 +360,149 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     query: Queries<A,F,C,S>;
     get _collections(): EntityCollections<A,F,C,S>;
 }
+
+type CollectionEntities<N extends string, E extends {[name: N]: Entity<any, any, any, any>}> = {
+    [C in keyof (
+        {
+            [Name in keyof E]: E[Name]["_collections"];
+        }[keyof E]
+    )]: C;
+}
+//
+// type CollectionEntities<N extends string, E extends {[name: N]: Entity<any, any, any, any>}> = {
+//     [C in keyof (
+//         {[Name in keyof E]: E[Name]["_collections"]}[keyof E]
+//     )]: {
+//         [Name in keyof E]: E[Name]["_collections"][C] extends string
+//             ? "abc"
+//             : "none";
+//     }
+// }
+//
+// type ServiceCollections<N extends string, E extends {[name: N]: Entity<any, any, any, any>}> = {
+//     [I in ServiceCollectionIndexes<N, E>]: {
+//         [Name in keyof E]: E[Name]["query"][I]
+//     }[keyof E];
+// }
+
+type EntityCollections<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Name in keyof E]: E[Name];
+}
+
+type ServiceCollections<N extends string, E extends {[name: N]: Entity<any, any, any, any>}> = {
+    [
+        EC in keyof EntityCollections<N,E>
+    ]: {
+        [Name in keyof E]: {
+               [n: Name]: keyof E[Name]["_collections"] extends EC
+                   ? E[Name][EC]
+                   : never;
+                // extends Entity<infer A, infer F, infer C, infer S>
+                //    ? Item<A,F,C,S>
+                //    : never;
+        }[keyof E];
+    };
+}
+
+export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
+    entities: E;
+    // collections: {
+    //     [Name in keyof E]: {
+    //         [CN in keyof E[Name]["_collections"]]: {
+    //             [EName in keyof E]: keyof E[EName]["_collections"] extends infer CNames
+    //                 ? CNames extends CN
+    //                     ? (facets: Parameters<E[EName]["query"][E[Name]["_collections"][CNames]]>["0"]) => "test"
+    //                     : never
+    //                 : never
+    //         };
+    //     };
+    // };
+
+    // collections: {
+    //     [EntityName in keyof E]: {
+    //         [Collection in keyof E[EntityName]["_collections"]]:
+    //         keyof E[EntityName]["_collections"] extends infer CollectionNames
+    //             ? CollectionNames extends Collection
+    //             ? (facets: Parameters<E[EntityName]["query"][E[EntityName]["_collections"][CollectionNames]]>["0"]) => "test"
+    //             : never
+    //             : never
+    //     }
+    // }[keyof {
+    //     [EntityName in keyof E]:
+    //     [keyof E[EntityName]["_collections"]] extends [never]
+    //         ? "abc"
+    //         : "def"
+    // }]
+
+    // collections: {
+    //     [EntityName in keyof E]: {
+    //         [Collection in keyof E[EntityName]["_collections"]]:
+    //             keyof E[EntityName]["_collections"] extends infer CollectionNames
+    //                 ? CollectionNames extends Collection
+    //                     ? (facets: Parameters<E[EntityName]["query"][E[EntityName]["_collections"][CollectionNames]]>["0"]) => "test"
+    //                     : never
+    //                 : never
+    //     };
+    // };
+
+
+    // SO CLOSE!!
+    // collections: {
+    //     [EntityName in keyof E]:
+    //         [keyof E[EntityName]["_collections"]] extends [never]
+    //             ? never
+    //             : E[EntityName]["_collections"] extends infer C
+    //                 ? {
+    //                     [Collection in keyof C]: (facets: Parameters<E[EntityName]["query"][C[Collection]]>["0"]) => Promise<{
+    //                         [EName in keyof E]: E[EName] extends Entity<infer A, infer F, infer C, infer S>
+    //                             ? TableItem<A,F,C,S>[]
+    //                             : never
+    //                     }>
+    //                 }
+    //                 : never
+    // }[keyof E];
+
+    // Closer!
+    // collections: {
+    //     [EntityName in keyof E]:
+    //     [keyof E[EntityName]["_collections"]] extends [never]
+    //         ? never
+    //         : E[EntityName]["_collections"] extends infer Collections
+    //         ? {
+    //             [Collection in keyof Collections]: (facets: Parameters<E[EntityName]["query"][C[Collection]]>["0"]) => Promise<{
+    //                 [EName in keyof E]: E[EName] extends Entity<infer A, infer F, infer C, infer S>
+    //                     ? Collection extends keyof E[EName]["_collections"]
+    //                         ? TableItem<A,F,C,S>[]
+    //                         : never
+    //                     : never
+    //             }>
+    //         }
+    //         : never
+    // }[keyof E];
+
+    collections: {
+        [EntityName in keyof E]:
+            [keyof E[EntityName]["_collections"]] extends [never]
+                ? never
+                : E[EntityName]["_collections"] extends infer Collections
+                ? {
+                    [Collection in keyof Collections]: (facets: Parameters<E[EntityName]["query"][C[Collection]]>["0"]) => Promise<Pick<{
+                        [EName in keyof E]: E[EName] extends Entity<infer A, infer F, infer C, infer S>
+                            ? Collection extends keyof E[EName]["_collections"]
+                                ? TableItem<A,F,C,S>[]
+                                : never
+                            : never
+                    }, ExtractKeysOfValueType<{
+                        [EName in keyof E]: E[EName] extends Entity<infer A, infer F, infer C, infer S>
+                            ? Collection extends keyof E[EName]["_collections"]
+                                ? true
+                                : false
+                            : false
+                    }, true>>>
+                }
+                : never
+    }[keyof E];
+
+    constructor(entities: E);
+}
+
