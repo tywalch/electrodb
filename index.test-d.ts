@@ -1251,6 +1251,7 @@ let getKeys = ((val) => {}) as GetKeys;
         .go({table: "Abc"})
         .then(records => records.map(item => item.prop3))
 
+    service.collections.mycollection({attr5: "adggda"}).params({})
     service.collections
         .mycollection({attr5: "adggda"})
         .go()

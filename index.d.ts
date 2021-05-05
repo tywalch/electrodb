@@ -245,6 +245,11 @@ interface QueryOptions {
     table?: string;
 }
 
+interface ParamOptions {
+    params?: object;
+    table?: string;
+}
+
 interface PaginationOptions extends QueryOptions {
     lastEvaluatedKeyRaw?: boolean;
 }
@@ -258,7 +263,7 @@ type GoRecord<ResponseType, Options = QueryOptions> = (options?: Options) => Pro
 
 type PageRecord<ResponseType, Facets> = (page?: Facets | null, options?: PaginationOptions) => Promise<[Facets | null, ResponseType]>;
 
-type ParamRecord<Options = QueryOptions> = <P>(options?: Options) => P;
+type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
 
 type RecordsActionOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Items, IndexFacets> = {
     go: GoRecord<Items>;
