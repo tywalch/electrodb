@@ -413,103 +413,37 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
 
                     }[Collections[Collection]]
                 }
-
                 : never
-                // ? (params: RequiredProperties<Parameters<E[EntityName]["query"][E[EntityName]["_collections"][Collection]]>[0]>) => Promise<{
-                //     [EntityResultName in Collections[Collection]]:
-                //         EntityResultName extends keyof E
-                //             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                //                 ? {
-                //                     item: TableItem<A,F,C,S>[],
-                //                     tryit: RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], TableIndexFacets<A,F,C,S>>
-                //                     // query: RecordsActionOptions<
-                //                     //     CollectionAttributes<E>["a"],
-                //                     //     CollectionAttributes<E>["f"],
-                //                     //     CollectionAttributes<E>["c"],
-                //                     //     CollectionAttributes<E>["s"],
-                //                     //     TableItem<A,F,C,S>[],
-                //                     //     TableIndexFacets<A,F,C,S>
-                //                     // >
-                //                 }
-                //                 : never
-                //             : never
-                // }>
-                // : never
     }[keyof E]
 }
 
-type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
-    [EntityName in keyof E]:
-        E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
-            ?
-            {
-                a: keyof S["attributes"],
-                f: {
-                    [i in keyof S["indexes"]]: S["indexes"][i] extends infer I ?
-                        {
-                        facets: I extends IndexWithSortKey
-                            ? S["indexes"][i]["pk"]["facets"][number] | S["indexes"][i]["sk"]["facets"][number]
-                            : S["indexes"][i]["pk"]["facets"][number]
-                        }
-                        : never
-                }[keyof S["indexes"]]["facets"],
-                c: C,
-                s: S,
-            }
-            : never
-
-}[keyof E]
+// type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
+//     [EntityName in keyof E]:
+//         E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+//             ?
+//             {
+//                 a: keyof S["attributes"],
+//                 f: {
+//                     [i in keyof S["indexes"]]: S["indexes"][i] extends infer I ?
+//                         {
+//                         facets: I extends IndexWithSortKey
+//                             ? S["indexes"][i]["pk"]["facets"][number] | S["indexes"][i]["sk"]["facets"][number]
+//                             : S["indexes"][i]["pk"]["facets"][number]
+//                         }
+//                         : never
+//                 }[keyof S["indexes"]]["facets"],
+//                 c: C,
+//                 s: S,
+//             }
+//             : never
+//
+// }[keyof E]
 
 type RequiredProperties<T> = Pick<T, {[K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T]>
 
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
-    // a: CollectionAttributes<E>
-    q: CollectionQueries<E, CollectionAssociations<E>>
-    collections: {
-        [EntityName in keyof E]:
-            // Does the entity have collections?
-            [keyof E[EntityName]["_collections"]] extends [never]
-                // it doesnt, ignore it
-                ? never
-                // it does, infer what the values are for that entity
-                : E[EntityName]["_collections"] extends infer Collections
-                ?
-                {
-                    // for each collection on that entity create a function type that has the same parameters as the index's query method
-                    [Collection in keyof Collections]:  [E[EntityName]["query"][Collections[Collection]]] extends [never]
-                        ? never
-                        : (facets: RequiredProperties<Parameters<E[EntityName]["query"][Collections[Collection]]>[0]>) => {
-                            // Pick only a subset of the Entities
-                            go: GoRecord<
-                                    Pick<{
-                                    // Infer the types for the Entity so TableIndex type can be used
-                                    [e in keyof E]: E[e] extends Entity<infer A, infer F, infer C, infer S>
-                                        // For each entity it should return back the items for that particular entity
-                                        ? Collection extends keyof E[e]["_collections"]
-                                            // Entity has collections, it should be typed as an Item
-                                            ? TableItem<A,F,C,S>[]
-                                            // Entity doesnt have collections, fuggedaboutit
-                                            : never
-                                        : never
-                                // The keys for entities that have the collection being iterated over (otherwise entities without
-                                // this collection will appear even when their type is `never`
-                                }, ExtractKeysOfValueType<{
-                                    // Same logic as in the first Pick param, except with true/false values for easy picking
-                                    [e in keyof E]: E[e] extends Entity<infer A, infer F, infer C, infer S>
-                                        ? Collection extends keyof E[e]["_collections"]
-                                            ? true
-                                            : false
-                                        : false
-                                }, true>>
-                            >,
-                            params: ParamRecord
-                        }
-                        // : never
-                }
-                : never
-    }[keyof E]
-
+    collections: CollectionQueries<E, CollectionAssociations<E>>
     constructor(entities: E);
 }
 

@@ -1306,67 +1306,73 @@ let getKeys = ((val) => {}) as GetKeys;
     });
 
 
-
-    let service = new Service({
-        entityWithSK,
-        entityWithoutSK,
-        standAloneEntity,
-        wutwut1Entity,
-        wutwut2Entity
-    });
-    // let a = service.collections.entityWithSK.mycollection
-    // let b: typeof service.collections = "addag"
-    // let a = service.collections.entityWithoutSK.mycollection({attr5: "string"})
-    service.q.mycollection({attr5: "abc"}).where(({attr4}, {eq}) => {
-        return eq(attr4, "44");
-    }).go().then(data => {
-        data.entityWithoutSK.map(val => val.attr9)
-        data.entityWithSK.map(val => val.attr10)
-
-    })
-    service.q.wutwut({prop2: "abc", prop1: "ad"})
-        .where(({prop3}, {eq}) => {
-            return eq(prop3, "sdaggd");
-        })
-        .go({})
-        .then(data => {
-            data.wutwut1Entity.map((val) => val.prop3)
-            data.wutwut2Entity.map((val) => val.prop3)
-        })
-    service.q.mycollection({attr5: "abc"}).go().then(data => {
-        data.entityWithoutSK.map(val => val.attr9)
-        data.entityWithSK.map(val => val.attr10)
-    })
-
-    service.entities.standAloneEntity.query
-        .index1({prop1: "as", prop2: "abc"})
-        .where(({prop2}, {eq}) => eq(prop2, "shd"))
-        .go({table: "Abc"})
-        .then(records => records.map(item => item.prop3))
-    // service.collections.entityWithSK.mycollection2({attr1: "def"}).go({});
-
-    service.q.mycollection({attr5: "abc"}).then(data => {
-        data.entityWithSK.map((val => val.attr2))
-        data.entityWithoutSK.map((val => val.attr2))
-    })
-
-    service.q.mycollection({attr5: "Abc"});                // success
-    service.q.mycollection({attr1: "Abc"});                // fail
-    service.q.mycollection2({attr5: "Abc", attr1: "def"}); // fail
-    service.q.mycollection2({attr1: "def"})                // success
-    service.q.wutwut({prop1: "abc", prop2: "def"});        // success
-    service.q.wutwut({prop2: "def"});                      // fail
-
-
-    service.q.wutwut.fn({prop1})
-    service.collections.mycollection2({attr1: "abc"});
-    service.collections.mycollection({attr5: "abc"})
-    service.collections
-        .mycollection({attr5: "adggda"})
-        .go()
-        .then(val => {
-            val.entityWithSK.map(val => val.attr1);
-            val.entityWithoutSK.map(val => val.attr5)
-            val.entityWithSK.map(val => val.attr2)
-        })
-
+    //
+    // let service = new Service({
+    //     entityWithSK,
+    //     entityWithoutSK,
+    //     standAloneEntity,
+    //     wutwut1Entity,
+    //     wutwut2Entity
+    // });
+    // // let a = service.collections.entityWithSK.mycollection
+    // // let b: typeof service.collections = "addag"
+    // // let a = service.collections.entityWithoutSK.mycollection({attr5: "string"})
+    // service.collections.mycollection({attr5: "abc"})
+    //     .where(({attr4}, {eq}) => {
+    //         return eq(attr4, "44");
+    //     })
+    //     .go()
+    //     .then(data => {
+    //         data.entityWithoutSK.map(val => val.attr9)
+    //         data.entityWithSK.map(val => val.attr10)
+    //     })
+    // service.collections.wutwut({prop2: "abc", prop1: "ad"})
+    //     .where(({prop3}, {eq}) => {
+    //         return eq(prop3, "sdaggd");
+    //     })
+    //     .go({})
+    //     .then(data => {
+    //         data.wutwut1Entity.map((val) => val.prop3)
+    //         data.wutwut2Entity.map((val) => val.prop3)
+    //     });
+    //
+    // service.collections.mycollection({attr5: "abc"})
+    //     .go()
+    //     .then(data => {
+    //         data.entityWithoutSK.map(val => val.attr9)
+    //         data.entityWithSK.map(val => val.attr10)
+    //     });
+    //
+    // service.entities.standAloneEntity.query
+    //     .index1({prop1: "as", prop2: "abc"})
+    //     .where(({prop2}, {eq}) => eq(prop2, "shd"))
+    //     .go({table: "Abc"})
+    //     .then(records => records.map(item => item.prop3))
+    // // service.collections.entityWithSK.mycollection2({attr1: "def"}).go({});
+    //
+    // service.collections.mycollection({attr5: "abc"})
+    //     .go()
+    //     .then(data => {
+    //         data.entityWithSK.map((val => val.attr2))
+    //         data.entityWithoutSK.map((val => val.attr2))
+    //     })
+    //
+    // service.collections.mycollection({attr5: "Abc"});                // success
+    // service.collections.mycollection({attr1: "Abc"});                // fail
+    // service.collections.mycollection2({attr5: "Abc", attr1: "def"}); // fail
+    // service.collections.mycollection2({attr1: "def"})                // success
+    // service.collections.wutwut({prop1: "abc", prop2: "def"});        // success
+    // service.collections.wutwut({prop2: "def"});                      // fail
+    //
+    //
+    // service.collections.mycollection2({attr1: "abc"});
+    // service.collections.mycollection({attr5: "abc"})
+    // service.collections
+    //     .mycollection({attr5: "adggda"})
+    //     .go()
+    //     .then(val => {
+    //         val.entityWithSK.map(val => val.attr1);
+    //         val.entityWithoutSK.map(val => val.attr5)
+    //         val.entityWithSK.map(val => val.attr2)
+    //     })
+    //
