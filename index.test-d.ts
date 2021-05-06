@@ -1312,11 +1312,27 @@ let getKeys = ((val) => {}) as GetKeys;
         entityWithoutSK,
         standAloneEntity,
         wutwut1Entity,
-        // wutwut2Entity
+        wutwut2Entity
     });
     // let a = service.collections.entityWithSK.mycollection
     // let b: typeof service.collections = "addag"
     // let a = service.collections.entityWithoutSK.mycollection({attr5: "string"})
+    service.q.mycollection({attr5: "abc"}).where(({attr4}, {eq}) => {
+        return eq(attr4, "44");
+    }).go().then(data => {
+        data.entityWithoutSK.map(val => val.attr9)
+        data.entityWithSK.map(val => val.attr10)
+
+    })
+    service.q.wutwut({prop2: "abc", prop1: "ad"})
+        .where(({prop3}, {eq}) => {
+            return eq(prop3, "sdaggd");
+        })
+        .go({})
+        .then(data => {
+            data.wutwut1Entity.map((val) => val.prop3)
+            data.wutwut2Entity.map((val) => val.prop3)
+        })
     service.q.mycollection({attr5: "abc"}).go().then(data => {
         data.entityWithoutSK.map(val => val.attr9)
         data.entityWithSK.map(val => val.attr10)

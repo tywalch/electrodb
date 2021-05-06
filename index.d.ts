@@ -396,7 +396,22 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
                                     : never
                                 : never
                     }>,
-                    params: ParamRecord
+                    params: ParamRecord,
+                    where: {
+                        [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                    ? WhereClause<A,F,C,S, RecordsActionOptions<A,F,C,S, {
+                                    [EntityResultName in Collections[Collection]]:
+                                    EntityResultName extends keyof E
+                                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                        ? TableItem<A,F,C,S>[]
+                                        : never
+                                        : never
+                                    }, TableIndexFacets<A,F,C,S>>>
+                                    : never
+                                : never
+
+                    }[Collections[Collection]]
                 }
 
                 : never
