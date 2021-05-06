@@ -71,6 +71,7 @@ let entityWithSK = new Entity({
             }
         },
         myIndex2: {
+            collection: "mycollection1",
             index: "gsi1",
             pk: {
                 field: "gsipk1",
@@ -83,7 +84,7 @@ let entityWithSK = new Entity({
         },
         myIndex3: {
             collection: "mycollection",
-            index: "gsi1",
+            index: "gsi2",
             pk: {
                 field: "gsipk1",
                 facets: ["attr5"]
@@ -163,6 +164,7 @@ let entityWithoutSK = new Entity({
         },
         myIndex2: {
             index: "gsi1",
+            collection: "mycollection1",
             pk: {
                 field: "gsipk1",
                 facets: ["attr6", "attr9"]
@@ -170,7 +172,7 @@ let entityWithoutSK = new Entity({
         },
         myIndex3: {
             collection: "mycollection",
-            index: "gsi1",
+            index: "gsi2",
             pk: {
                 field: "gsipk1",
                 facets: ["attr5"]
@@ -718,8 +720,8 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<UpdateGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<UpdateGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectAssignable<UpdateParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<UpdateParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<UpdateParamsParams>({params: {}, table: "abc"});
+    expectAssignable<UpdateParamsParamsWithoutSK>({params: {}, table: "abc"});
 
     // Where
     updateItem.where((attr, op) => {
@@ -784,8 +786,8 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<PatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<PatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectAssignable<PatchParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<PatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<PatchParamsParams>({params: {}, table: "abc"});
+    expectAssignable<PatchParamsParamsWithoutSK>({params: {}, table: "abc"});
 
     // Where
     patchItem.where((attr, op) => {
@@ -865,8 +867,8 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<FindGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<FindGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectAssignable<FindParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<FindParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<FindParamsParams>({params: {}, table: "abc"});
+    expectAssignable<FindParamsParamsWithoutSK>({params: {}, table: "abc"});
 
 
     // Page
@@ -1224,11 +1226,77 @@ let getKeys = ((val) => {}) as GetKeys;
             index1: {
                 pk: {
                     field: "pk",
-                    facets: ["prop1"]
+                    facets: ["prop1", "prop2"]
                 },
                 sk: {
                     field: "sk",
-                    facets: ["prop2"]
+                    facets: ["prop3"]
+                }
+            }
+        }
+    });
+
+    let wutwut1Entity = new Entity({
+        model: {
+            entity: "wutwut1",
+            service: "service",
+            version: "1"
+        },
+        attributes: {
+            prop1: {
+                type: "string"
+            },
+            prop2: {
+                type: "string"
+            },
+            prop3: {
+                type: "string"
+            }
+        },
+        indexes: {
+            wutindex: {
+                collection: "wutwut",
+                index: "idx11",
+                pk: {
+                    field: "pk",
+                    facets: ["prop1", "prop2"]
+                },
+                sk: {
+                    field: "sk",
+                    facets: ["prop3"]
+                }
+            }
+        }
+    });
+
+    let wutwut2Entity = new Entity({
+        model: {
+            entity: "wutwut2",
+            service: "service",
+            version: "1"
+        },
+        attributes: {
+            prop1: {
+                type: "string"
+            },
+            prop2: {
+                type: "string"
+            },
+            prop3: {
+                type: "string"
+            }
+        },
+        indexes: {
+            wutindex: {
+                collection: "wutwut",
+                index: "idx11",
+                pk: {
+                    field: "pk",
+                    facets: ["prop1", "prop2"]
+                },
+                sk: {
+                    field: "sk",
+                    facets: ["prop3"]
                 }
             }
         }
@@ -1239,19 +1307,37 @@ let getKeys = ((val) => {}) as GetKeys;
     let service = new Service({
         entityWithSK,
         entityWithoutSK,
-        standAloneEntity
+        standAloneEntity,
+        wutwut1Entity,
+        // wutwut2Entity
     });
     // let a = service.collections.entityWithSK.mycollection
     // let b: typeof service.collections = "addag"
     // let a = service.collections.entityWithoutSK.mycollection({attr5: "string"})
-    let b = service.collections
+
     service.entities.standAloneEntity.query
-        .index1({prop1: "as"})
+        .index1({prop1: "as", prop2: "abc"})
         .where(({prop2}, {eq}) => eq(prop2, "shd"))
         .go({table: "Abc"})
         .then(records => records.map(item => item.prop3))
+    // service.collections.entityWithSK.mycollection2({attr1: "def"}).go({});
 
-    service.collections.mycollection({attr5: "adggda"}).params({})
+    service.q.mycollection({attr5: "abc"}).then(data => {
+        data.entityWithSK.map((val => val.attr2))
+        data.entityWithoutSK.map((val => val.attr2))
+    })
+
+    service.q.mycollection({attr5: "Abc"});                // success
+    service.q.mycollection({attr1: "Abc"});                // fail
+    service.q.mycollection2({attr5: "Abc", attr1: "def"}); // fail
+    service.q.mycollection2({attr1: "def"})                // success
+    service.q.wutwut({prop1: "abc", prop2: "def"});        // success
+    service.q.wutwut({prop2: "def"});                      // fail
+
+    service.col.mycollection({attr5: "Abc"})
+    service.q.wutwut.fn({prop1})
+    service.collections.mycollection2({attr1: "abc"});
+    service.collections.mycollection({attr5: "abc"})
     service.collections
         .mycollection({attr5: "adggda"})
         .go()
