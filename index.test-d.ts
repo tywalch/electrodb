@@ -56,6 +56,9 @@ let entityWithSK = new Entity({
         },
         attr9: {
             type: "number"
+        },
+        attr10: {
+            type: "boolean"
         }
     },
     indexes: {
@@ -1314,6 +1317,10 @@ let getKeys = ((val) => {}) as GetKeys;
     // let a = service.collections.entityWithSK.mycollection
     // let b: typeof service.collections = "addag"
     // let a = service.collections.entityWithoutSK.mycollection({attr5: "string"})
+    service.q.mycollection({attr5: "abc"}).go().then(data => {
+        data.entityWithoutSK.map(val => val.attr9)
+        data.entityWithSK.map(val => val.attr10)
+    })
 
     service.entities.standAloneEntity.query
         .index1({prop1: "as", prop2: "abc"})
@@ -1334,7 +1341,7 @@ let getKeys = ((val) => {}) as GetKeys;
     service.q.wutwut({prop1: "abc", prop2: "def"});        // success
     service.q.wutwut({prop2: "def"});                      // fail
 
-    service.col.mycollection({attr5: "Abc"})
+
     service.q.wutwut.fn({prop1})
     service.collections.mycollection2({attr1: "abc"});
     service.collections.mycollection({attr5: "abc"})

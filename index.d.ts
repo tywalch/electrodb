@@ -387,23 +387,69 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
     [Collection in keyof Collections]: {
         [EntityName in keyof E]:
             EntityName extends Collections[Collection]
-                ? (params: RequiredProperties<Parameters<E[EntityName]["query"][E[EntityName]["_collections"][Collection]]>[0]>) => Promise<{
-                    [EntityResultName in Collections[Collection]]:
-                        EntityResultName extends keyof E
-                            ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                ? TableItem<A,F,C,S>[]
+                ? (params: RequiredProperties<Parameters<E[EntityName]["query"][E[EntityName]["_collections"][Collection]]>[0]>) => {
+                    go: GoRecord<{
+                        [EntityResultName in Collections[Collection]]:
+                            EntityResultName extends keyof E
+                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                    ? TableItem<A,F,C,S>[]
+                                    : never
                                 : never
-                            : never
-                }>
+                    }>,
+                    params: ParamRecord
+                }
+
                 : never
+                // ? (params: RequiredProperties<Parameters<E[EntityName]["query"][E[EntityName]["_collections"][Collection]]>[0]>) => Promise<{
+                //     [EntityResultName in Collections[Collection]]:
+                //         EntityResultName extends keyof E
+                //             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                //                 ? {
+                //                     item: TableItem<A,F,C,S>[],
+                //                     tryit: RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], TableIndexFacets<A,F,C,S>>
+                //                     // query: RecordsActionOptions<
+                //                     //     CollectionAttributes<E>["a"],
+                //                     //     CollectionAttributes<E>["f"],
+                //                     //     CollectionAttributes<E>["c"],
+                //                     //     CollectionAttributes<E>["s"],
+                //                     //     TableItem<A,F,C,S>[],
+                //                     //     TableIndexFacets<A,F,C,S>
+                //                     // >
+                //                 }
+                //                 : never
+                //             : never
+                // }>
+                // : never
     }[keyof E]
 }
+
+type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [EntityName in keyof E]:
+        E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ?
+            {
+                a: keyof S["attributes"],
+                f: {
+                    [i in keyof S["indexes"]]: S["indexes"][i] extends infer I ?
+                        {
+                        facets: I extends IndexWithSortKey
+                            ? S["indexes"][i]["pk"]["facets"][number] | S["indexes"][i]["sk"]["facets"][number]
+                            : S["indexes"][i]["pk"]["facets"][number]
+                        }
+                        : never
+                }[keyof S["indexes"]]["facets"],
+                c: C,
+                s: S,
+            }
+            : never
+
+}[keyof E]
 
 type RequiredProperties<T> = Pick<T, {[K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T]>
 
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
-    col: CollectionAssociations<E>;
+    // a: CollectionAttributes<E>
     q: CollectionQueries<E, CollectionAssociations<E>>
     collections: {
         [EntityName in keyof E]:
