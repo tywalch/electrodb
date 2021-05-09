@@ -1296,7 +1296,7 @@ let getKeys = ((val) => {}) as GetKeys;
             prop5: {
                 type: "number"
             },
-            prop6: {
+            attr6: {
                 type: "number",
                 default: () => 100,
                 get: (val) => val + 5,
@@ -1441,9 +1441,9 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<string>(item.prop3);
                 expectType<number|undefined>(item.prop5);
                 expectType<number|undefined>(item.attr9);
-                expectType<number|undefined>(item.prop6);
+                expectType<number|undefined>(item.attr6);
                 // .go response related entities correct items
-                let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop5" | "attr9" | "prop6";
+                let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop5" | "attr9" | "attr6";
                 expectType<keyof typeof item>(itemKeys);
             });
         });
@@ -1495,7 +1495,7 @@ let getKeys = ((val) => {}) as GetKeys;
             let opKeys = getKeys(op);
             expectType<OperationNames>(opKeys);
             op.eq(attr.attr9, 455)
-            // expectType<"attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" |"attr9" | "prop1" | "prop2" | "prop3" | "prop5">(attrKeys)
+            expectType<"attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" | "attr9" | "attr10">(attrKeys)
             return "";
         })
         .go()
