@@ -375,6 +375,29 @@ type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> 
         : never
 }[keyof E];
 
+
+type AttributeType<T extends "string" | "number" | "boolean" | "any" | string[]> =
+    T extends "string" ? string
+        : T extends "number" ? number
+        : T extends "boolean" ? boolean
+        : T extends Array<infer E> ? E
+        : T extends "any" ? any
+        : never
+
+type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Name in keyof E]: {
+        [A in keyof E[Name]["schema"]["attributes"]]: A
+    }[keyof E[Name]["schema"]["attributes"]]
+}[keyof E]
+
+type AllEntityAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Attr in AllEntityAttributeNames<E>]: {
+        [Name in keyof E]: Attr extends keyof E[Name]["schema"]["attributes"]
+            ? AttributeType<E[Name]["schema"]["attributes"][Attr]["type"]>
+            : never
+    }[keyof E];
+};
+
 type CollectionAssociations<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Collection in AllCollectionNames<E>]: {
         [Name in keyof E]: Collection extends keyof E[Name]["_collections"]
@@ -383,65 +406,95 @@ type CollectionAssociations<E extends {[name: string]: Entity<any, any, any, any
     }[keyof E];
 }
 
+type CollectionWhereOperations = {
+    eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    gte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    lte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    between: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never, value2: A["_"] extends infer V ? V: never) => string;
+    begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    exists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    notExists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    value: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+}
+
+type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, any, any>}> =
+    <W extends {[A in keyof AllEntityAttributes<E>]: WhereAttributeSymbol<AllEntityAttributes<E>[A]>}>(attributes: W, operations: CollectionWhereOperations) => string;
+
+// type WhereCollectionCallback<E extends {[name: string]: Entity<any, any, any, any>}> = <W extends >()
+
 type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
         [EntityName in keyof E]:
             EntityName extends Collections[Collection]
                 ? (params: RequiredProperties<Parameters<E[EntityName]["query"][E[EntityName]["_collections"][Collection]]>[0]>) => {
-                    go: GoRecord<{
-                        [EntityResultName in Collections[Collection]]:
-                            EntityResultName extends keyof E
-                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                    ? TableItem<A,F,C,S>[]
-                                    : never
-                                : never
-                    }>,
-                    params: ParamRecord,
+                    // go: GoRecord<{
+                    //     [EntityResultName in Collections[Collection]]:
+                    //         EntityResultName extends keyof E
+                    //             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                    //                 ? TableItem<A,F,C,S>[]
+                    //                 : never
+                    //             : never
+                    // }>,
+                    // params: ParamRecord,
+                    // where: (where: <
+                    //         W extends {[A in keyof AllEntityAttributes<E>]: WhereAttributeSymbol<AllEntityAttributes<E>[A]>}
+                    //     >(attributes: W, operations: {
+                    //         eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+                    //         gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+                    //         lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+                    //         gte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+                    //         lte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+                    //         between: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never, value2: A["_"] extends infer V ? V: never) => string;
+                    //         begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+                    //         exists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+                    //         notExists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+                    //         contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+                    //         notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+                    //         value: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+                    //         name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+                    //     }) => string
+                    // ) => {
+                    //     go: GoRecord<{
+                    //         [EntityResultName in Collections[Collection]]:
+                    //         EntityResultName extends keyof E
+                    //             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                    //             ? TableItem<A,F,C,S>[]
+                    //             : never
+                    //             : never
+                    //     }>
+                    // }
+                    // bear: (where: CollectionWhereCallback<E>) => {
+                    //     go: "abc"
+                    // }
                     where: {
                         [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
                                 ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
                                     ? WhereClause<A,F,C,S, RecordsActionOptions<A,F,C,S, {
-                                    [EntityResultName in Collections[Collection]]:
-                                    EntityResultName extends keyof E
-                                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                        ? TableItem<A,F,C,S>[]
-                                        : never
-                                        : never
+                                        [EntityResultName in Collections[Collection]]:
+                                            EntityResultName extends keyof E
+                                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                                    ? TableItem<A,F,C,S>[]
+                                                    : never
+                                                : never
                                     }, TableIndexFacets<A,F,C,S>>>
                                     : never
                                 : never
 
-                    }[Collections[Collection]]
+                    }[Collections[Collection]];
                 }
                 : never
     }[keyof E]
 }
 
-// type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
-//     [EntityName in keyof E]:
-//         E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
-//             ?
-//             {
-//                 a: keyof S["attributes"],
-//                 f: {
-//                     [i in keyof S["indexes"]]: S["indexes"][i] extends infer I ?
-//                         {
-//                         facets: I extends IndexWithSortKey
-//                             ? S["indexes"][i]["pk"]["facets"][number] | S["indexes"][i]["sk"]["facets"][number]
-//                             : S["indexes"][i]["pk"]["facets"][number]
-//                         }
-//                         : never
-//                 }[keyof S["indexes"]]["facets"],
-//                 c: C,
-//                 s: S,
-//             }
-//             : never
-//
-// }[keyof E]
-
 type RequiredProperties<T> = Pick<T, {[K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T]>
 
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
+    attributes: AllEntityAttributes<E>;
     entities: E;
     collections: CollectionQueries<E, CollectionAssociations<E>>
     constructor(entities: E);

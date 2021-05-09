@@ -321,10 +321,10 @@ let getKeys = ((val) => {}) as GetKeys;
     type GetSingleParamsParamsWithoutSK = Parameter<typeof getSingleParamsWithoutSK>;
 
     type GetBatchGoParamsWithSK = Parameter<typeof getBatchGoWithSK>;
-    type GetBatchGoParamsWithoutSK = Parameter<typeof getBatchGoWithSK>;
+    type GetBatchGoParamsWithoutSK = Parameter<typeof getBatchGoWithoutSK>;
 
     type GetBatchParamsParamsWithSK = Parameter<typeof getBatchParamsWithSK>;
-    type GetBatchParamsParamsWithoutSK = Parameter<typeof getBatchParamsWithSK>;
+    type GetBatchParamsParamsWithoutSK = Parameter<typeof getBatchParamsWithoutSK>;
 
     expectAssignable<GetSingleGoParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<GetSingleGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
@@ -1239,9 +1239,9 @@ let getKeys = ((val) => {}) as GetKeys;
         }
     });
 
-    let wutwut1Entity = new Entity({
+    let normalEntity1 = new Entity({
         model: {
-            entity: "wutwut1",
+            entity: "normalEntity1",
             service: "service",
             version: "1"
         },
@@ -1253,12 +1253,16 @@ let getKeys = ((val) => {}) as GetKeys;
                 type: "string"
             },
             prop3: {
-                type: "string"
+                type: "string",
+                required: true
+            },
+            prop4: {
+                type: "number"
             }
         },
         indexes: {
-            wutindex: {
-                collection: "wutwut",
+            tableIndex: {
+                collection: "normalcollection",
                 index: "idx11",
                 pk: {
                     field: "pk",
@@ -1266,15 +1270,15 @@ let getKeys = ((val) => {}) as GetKeys;
                 },
                 sk: {
                     field: "sk",
-                    facets: ["prop3"]
+                    facets: ["prop4"]
                 }
             }
         }
     });
 
-    let wutwut2Entity = new Entity({
+    let normalEntity2 = new Entity({
         model: {
-            entity: "wutwut2",
+            entity: "normalEntity2",
             service: "service",
             version: "1"
         },
@@ -1286,12 +1290,26 @@ let getKeys = ((val) => {}) as GetKeys;
                 type: "string"
             },
             prop3: {
-                type: "string"
-            }
+                type: "string",
+                required: true
+            },
+            prop5: {
+                type: "number"
+            },
+            prop6: {
+                type: "number",
+                default: () => 100,
+                get: (val) => val + 5,
+                set: (val) => val + 5,
+                validate: (val) => true,
+            },
+            attr9: {
+                type: "number"
+            },
         },
         indexes: {
-            wutindex: {
-                collection: "wutwut",
+            indexTable: {
+                collection: "normalcollection",
                 index: "idx11",
                 pk: {
                     field: "pk",
@@ -1299,11 +1317,213 @@ let getKeys = ((val) => {}) as GetKeys;
                 },
                 sk: {
                     field: "sk",
-                    facets: ["prop3"]
+                    facets: ["prop5"]
+                }
+            },
+            anotherIndex: {
+                index: "gsi1",
+                collection: "mycollection1",
+                pk: {
+                    field: "gsipk1",
+                    facets: ["attr6", "attr9"]
                 }
             }
         }
     });
+
+    // Invalid cases
+    expectError(() => new Service({abc: "123"}));
+
+
+    // Service with no Entities
+    let nullCaseService = new Service({});
+    type nullCollections = typeof nullCaseService.collections;
+    type nullEntities = typeof nullCaseService.collections;
+    expectType<nullCollections>({});
+    expectType<nullEntities>({});
+
+    // Service with no Collections
+    let serviceNoCollections = new Service({standAloneEntity});
+    type noEntityCollections = typeof serviceNoCollections.collections;
+    expectType<noEntityCollections>({});
+
+    // Service no shared entity collections
+    let serviceNoShared = new Service({
+        entityWithoutSK,
+        standAloneEntity,
+        normalEntity1,
+    });
+
+    let expectNoSharedCollections = "" as "normalcollection" | "mycollection" | "mycollection1"
+    type NoSharedCollectionsList = keyof typeof serviceNoShared.collections;
+    expectType<NoSharedCollectionsList>(expectNoSharedCollections);
+    type NoSharedCollectionParameter1 = Parameter<typeof serviceNoShared.collections.mycollection>;
+    expectType<NoSharedCollectionParameter1>({attr5: "string"});
+    expectError<NoSharedCollectionParameter1>({});
+    expectError<NoSharedCollectionParameter1>({attr5: 123});
+    expectError<NoSharedCollectionParameter1>({attr1: "123"});
+
+    type NoSharedCollectionParameter2 = Parameter<typeof serviceNoShared.collections.normalcollection>;
+    expectType<NoSharedCollectionParameter2>({prop2: "abc", prop1: "def"});
+    expectError<NoSharedCollectionParameter2>({});
+    expectError<NoSharedCollectionParameter2>({prop2: "abc"});
+    expectError<NoSharedCollectionParameter2>({prop1: "abc"});
+    expectError<NoSharedCollectionParameter2>({prop1: 35});
+    expectError<NoSharedCollectionParameter2>({prop2: 35});
+    expectError<NoSharedCollectionParameter2>({prop3: "35"});
+
+    // Service with complex collections
+    let complexService = new Service({
+        entityWithoutSK,
+        entityWithSK,
+        standAloneEntity,
+        normalEntity1,
+        normalEntity2
+    });
+
+    let expectSharedCollections = "" as "normalcollection" | "mycollection" | "mycollection1" | "mycollection2"
+    type SharedCollectionsList = keyof typeof complexService.collections;
+    expectType<SharedCollectionsList>(expectSharedCollections);
+    type SharedCollectionParameter1 = Parameter<typeof complexService.collections.mycollection>;
+    // success
+    complexService.collections.mycollection({attr5: "abc"});
+    // failure - no collection facets
+    expectError<SharedCollectionParameter1>({});
+    // failure - incorrect entity facet types
+    expectError<SharedCollectionParameter1>({attr5: 123});
+    // failure - incorrect entity facet properties
+    expectError<SharedCollectionParameter1>({attr1: "123"});
+
+    type SharedCollectionParameter2 = Parameter<typeof complexService.collections.normalcollection>;
+    // success
+    complexService.collections.normalcollection({prop2: "abc", prop1: "def"});
+    // failure - no collection facets
+    expectError<SharedCollectionParameter2>({});
+    // failure - incomplete facets
+    expectError<SharedCollectionParameter2>({prop2: "abc"});
+    // failure - incomplete facets
+    expectError<SharedCollectionParameter2>({prop1: "abc"});
+    // failure - incorrect entity facet types
+    expectError<SharedCollectionParameter2>({prop1: 35});
+    // failure - incorrect entity facet types
+    expectError<SharedCollectionParameter2>({prop2: 35});
+    // failure - incorrect entity facet properties
+    expectError<SharedCollectionParameter2>({prop3: "35"});
+
+    let chainMethods = complexService.collections.normalcollection({prop2: "abc", prop1: "def"});
+    type AfterQueryChainMethods = keyof typeof chainMethods;
+    let expectedAfterQueryChainMethods = "" as "where" | "go" | "params"
+    expectType<AfterQueryChainMethods>(expectedAfterQueryChainMethods);
+
+    // .go params
+    type GoParams = Parameter<typeof chainMethods.go>;
+    expectAssignable<GoParams>({table: "df", raw: true, params: {}, originalErr: true, includeKeys: true});
+    complexService.collections
+        .normalcollection({prop2: "abc", prop1: "def"})
+        .go()
+        .then(values => {
+            // .go response includes only related entities
+            type NormalCollectionRelatedEntities = keyof typeof values;
+            let expectedEntities = "" as "normalEntity1" | "normalEntity2";
+            expectType<NormalCollectionRelatedEntities>(expectedEntities);
+            values.normalEntity1.map(item => {
+                expectType<string | undefined>(item.prop1);
+                expectType<string | undefined>(item.prop2);
+                expectType<string>(item.prop3);
+                expectType<number|undefined>(item.prop4);
+                // .go response related entities correct items
+                let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop4";
+                expectType<keyof typeof item>(itemKeys);
+            });
+            values.normalEntity2.map(item => {
+                expectType<string | undefined>(item.prop1);
+                expectType<string | undefined>(item.prop2);
+                expectType<string>(item.prop3);
+                expectType<number|undefined>(item.prop5);
+                expectType<number|undefined>(item.attr9);
+                expectType<number|undefined>(item.prop6);
+                // .go response related entities correct items
+                let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop5" | "attr9" | "prop6";
+                expectType<keyof typeof item>(itemKeys);
+            });
+        });
+    complexService.collections
+        .mycollection({attr5: "sgad"})
+        .go()
+        .then(values => {
+            // .go response includes only related entities
+            type NormalCollectionRelatedEntities = keyof typeof values;
+            let expectedEntities = "" as "entityWithSK" | "entityWithoutSK";
+            expectType<NormalCollectionRelatedEntities>(expectedEntities);
+            values.entityWithSK.map(item => {
+                expectType<string>(item.attr1);
+                expectType<string>(item.attr2);
+                expectType<string|undefined>(item.attr3);
+                expectType<string>(item.attr4);
+                expectType<string|undefined>(item.attr5);
+                expectType<number|undefined>(item.attr6);
+                expectType<any>(item.attr7);
+                expectType<boolean>(item.attr8);
+                expectType<number|undefined>(item.attr9);
+                expectType<boolean|undefined>(item.attr10);
+                // .go response related entities correct items
+                let itemKeys = "" as  "attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" |"attr9" | "attr10";
+                expectType<keyof typeof item>(itemKeys);
+            });
+            values.entityWithoutSK.map(item => {
+                item.attr2
+                expectType<string>(item.attr1);
+                expectType<string | undefined>(item.attr2);
+                expectType<string|undefined>(item.attr3);
+                expectType<string>(item.attr4);
+                expectType<string|undefined>(item.attr5);
+                expectType<number|undefined>(item.attr6);
+                expectType<any>(item.attr7);
+                expectType<boolean>(item.attr8);
+                expectType<number|undefined>(item.attr9);
+                // .go response related entities correct items
+                let itemKeys = "" as "attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" |"attr9";
+                expectType<keyof typeof item>(itemKeys);
+            });
+        });
+
+    let serviceWhere = complexService.collections
+        .mycollection1({attr6: 13, attr9: 54})
+        .where((attr, op) => {
+            let attrKeys = getKeys(attr);
+
+            let opKeys = getKeys(op);
+            expectType<OperationNames>(opKeys);
+            op.eq(attr.attr9, 455)
+            // expectType<"attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" |"attr9" | "prop1" | "prop2" | "prop3" | "prop5">(attrKeys)
+            return "";
+        })
+        .go()
+        .then((items) => {
+            items
+        })
+
+    complexService.collections.normalcollection({prop1: "abc", prop2: "def"})
+        .where((attr, op) => {
+            op.eq(attr.prop1, "db");
+            return "";
+        })
+    complexService.collections.mycollection2({attr1: "abc"})
+        .where((attr, op) => {
+
+            op.eq(attr.attr9, 768);
+            return "";
+        })
+
+    // .where attributes encompass all attributes
+    // .where attributes are correct types
+    // .where operations require correct types
+    // .where callback returns correct type
+    // .where method returns correct chain methods
+
+    // .params params correct
+    // .params allows optional type
+
 
 
     //
