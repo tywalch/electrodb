@@ -269,13 +269,13 @@ type RecordsActionOptions<A extends string, F extends A, C extends string, S ext
     go: GoRecord<Items>;
     params: ParamRecord;
     page: PageRecord<Items,IndexFacets>;
-    where: WhereClause<A,F,C,S,RecordsActionOptions<A,F,C,S,Items,IndexFacets>>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S>,RecordsActionOptions<A,F,C,S,Items,IndexFacets>>;
 }
 
 type SingleRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
     go: GoRecord<ResponseType, QueryOptions>;
     params: ParamRecord<QueryOptions>;
-    where: WhereClause<A,F,C,S, SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
 };
 
 type BulkRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
@@ -287,12 +287,12 @@ type SetRecordActionOptions<A extends string, F extends A, C extends string, S e
     go: GoRecord<TableItem>;
     params: ParamRecord;
     set: SetRecord<A,F,C,S, SetAttr,IndexFacets,TableItem>;
-    where: WhereClause<A,F,C,S,RecordsActionOptions<A,F,C,S,TableItem,IndexFacets>>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S>,RecordsActionOptions<A,F,C,S,TableItem,IndexFacets>>;
 }
 
 type SetRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr,IndexFacets,TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr,IndexFacets,TableItem>;
 
-type WhereClause<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, T> = (where: WhereCallback<A,F,C,S,Item<A,F,C,S>>) => T;
+type WhereClause<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>, T> = (where: WhereCallback<A,F,C,S,I>) => T;
 
 type QueryOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Facets, TableItem, IndexFacets> = {
     between: (skFacetsStart: Facets, skFacetsEnd: Facets) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexFacets>;
@@ -304,7 +304,7 @@ type QueryOperations<A extends string, F extends A, C extends string, S extends 
     go: GoRecord<Array<TableItem>>;
     params: ParamRecord;
     page: PageRecord<Array<TableItem>,IndexFacets>;
-    where: WhereClause<A,F,C,S,RecordsActionOptions<A,F,C,S,Array<TableItem>,IndexFacets>>
+    where: WhereClause<A,F,C,S,Item<A,F,C,S>,RecordsActionOptions<A,F,C,S,Array<TableItem>,IndexFacets>>
 }
 
 type Queries<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
@@ -405,6 +405,60 @@ type CollectionAssociations<E extends {[name: string]: Entity<any, any, any, any
             : never
     }[keyof E];
 }
+//
+// type CollectionAttributesOld<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
+//     [Collection in keyof Collections]: {
+//         [EntityName in keyof E]:
+//             EntityName extends Collections[Collection]
+//                 ? {
+//                     [EntityResultName in Collections[Collection]]:
+//                         EntityResultName extends keyof E
+//                             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+//                                 ? TableItem<A, F, C, S>[]
+//                                 : never
+//                             : never
+//                 }
+//                 : never
+//
+//     }
+// }
+
+// type CollectionAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Attributes extends AllEntityAttributes<Entities>, Collections extends keyof CollectionAssociations<E>> = {
+//     [Attribute in keyof Attributes]: {
+//         [Collection in Collections]:
+//             Entities[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+//             ? Attribute extends keyof S["attributes"]
+//                 ? "ok"
+//                 : "notok"
+//                 // ? {
+//                 //     [name: Attribute]: Attributes[Attribute]
+//                 // }
+//                 // : never
+//         : never
+//     }
+// }
+//
+// type CollectionAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Attributes extends AllEntityAttributes<Entities>, Collections extends CollectionAssociations<Entities>> = {
+//     [Attribute in keyof Attributes]: {
+//         [Entity in keyof Entities]: {
+//             provided: Collections
+//             c: keyof Entities[Entity]["_collections"]
+//             collects: Entities[Entity]["_collections"]
+//             has: keyof Entities[Entity]["_collections"] extends Collections ? "yes" : "no"
+//             spas: Collections extends keyof Entities[Entity]["_collections"] ? "yes" : "no"
+//         }
+//
+//             // Collections extends Entities[Entity]["_collections"]
+//                 // ? {
+//                 //     [Collection in Collections]: {
+//                 //         [name: Attribute]: Attributes[Attribute]
+//                 //     }
+//                 // }
+//                 // : never
+//     }
+// }
+
+type CollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = keyof CollectionAssociations<E>
 
 type CollectionWhereOperations = {
     eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
@@ -425,7 +479,15 @@ type CollectionWhereOperations = {
 type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, any, any>}> =
     <W extends {[A in keyof AllEntityAttributes<E>]: WhereAttributeSymbol<AllEntityAttributes<E>[A]>}>(attributes: W, operations: CollectionWhereOperations) => string;
 
-// type WhereCollectionCallback<E extends {[name: string]: Entity<any, any, any, any>}> = <W extends >()
+type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends AllEntityAttributes<E>, T> = (where: CollectionWhereCallback<E>) => T;
+
+type WhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Items, IndexFacets> = {
+    go: GoRecord<Items>;
+    params: ParamRecord;
+    page: PageRecord<Items,IndexFacets>;
+    where: CollectionWhereClause<E,A,F,C,S,AllEntityAttributes<E>,WhereRecordsActionOptions<E,A,F,C,S,Items,IndexFacets>>;
+}
+
 
 type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
@@ -439,19 +501,22 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
                                     ? TableItem<A,F,C,S>[]
                                     : never
                                 : never
-                    }>,
-                    params: ParamRecord,
+                    }>;
+                    params: ParamRecord;
                     where: {
                         [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
                                 ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                    ? WhereClause<A,F,C,S, RecordsActionOptions<A,F,C,S, {
-                                        [EntityResultName in Collections[Collection]]:
-                                            EntityResultName extends keyof E
-                                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                                    ? TableItem<A,F,C,S>[]
+                                    ? CollectionWhereClause<E,A,F,C,S,
+                                        AllEntityAttributes<E>,
+                                        WhereRecordsActionOptions<E,A,F,C,S, {
+                                            [EntityResultName in Collections[Collection]]:
+                                                EntityResultName extends keyof E
+                                                    ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                                        ? TableItem<A,F,C,S>[]
+                                                        : never
                                                     : never
-                                                : never
-                                    }, TableIndexFacets<A,F,C,S>>>
+                                        },
+                                        TableIndexFacets<A,F,C,S>>>
                                     : never
                                 : never
 

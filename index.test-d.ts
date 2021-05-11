@@ -1495,7 +1495,7 @@ let getKeys = ((val) => {}) as GetKeys;
             let opKeys = getKeys(op);
             expectType<OperationNames>(opKeys);
             op.eq(attr.attr9, 455)
-            expectType<"attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" | "attr9" | "attr10">(attrKeys)
+            // expectType<"attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" | "attr9" | "attr10">(attrKeys)
             return "";
         })
         .go()
@@ -1510,11 +1510,15 @@ let getKeys = ((val) => {}) as GetKeys;
         })
     complexService.collections.mycollection2({attr1: "abc"})
         .where((attr, op) => {
-
             op.eq(attr.attr9, 768);
             return "";
         })
-
+        .go()
+        .then(value => {
+            value.entityWithSK.map((item) => {
+                item.attr10
+            })
+        })
     // .where attributes encompass all attributes
     // .where attributes are correct types
     // .where operations require correct types
