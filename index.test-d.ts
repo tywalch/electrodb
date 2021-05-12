@@ -188,6 +188,132 @@ let entityWithoutSK = new Entity({
     }
 });
 
+let standAloneEntity = new Entity({
+    model: {
+        entity: "standalone",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string"
+        },
+        prop2: {
+            type: "string"
+        },
+        prop3: {
+            type: "string"
+        }
+    },
+    indexes: {
+        index1: {
+            pk: {
+                field: "pk",
+                facets: ["prop1", "prop2"]
+            },
+            sk: {
+                field: "sk",
+                facets: ["prop3"]
+            }
+        }
+    }
+});
+
+let normalEntity1 = new Entity({
+    model: {
+        entity: "normalEntity1",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string"
+        },
+        prop2: {
+            type: "string"
+        },
+        prop3: {
+            type: "string",
+            required: true
+        },
+        prop4: {
+            type: "number"
+        },
+        prop10: {
+            type: "boolean"
+        }
+    },
+    indexes: {
+        tableIndex: {
+            collection: "normalcollection",
+            index: "idx11",
+            pk: {
+                field: "pk",
+                facets: ["prop1", "prop2"]
+            },
+            sk: {
+                field: "sk",
+                facets: ["prop4"]
+            }
+        }
+    }
+});
+
+let normalEntity2 = new Entity({
+    model: {
+        entity: "normalEntity2",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string"
+        },
+        prop2: {
+            type: "string"
+        },
+        prop3: {
+            type: "string",
+            required: true
+        },
+        prop5: {
+            type: "number"
+        },
+        attr6: {
+            type: "number",
+            default: () => 100,
+            get: (val) => val + 5,
+            set: (val) => val + 5,
+            validate: (val) => true,
+        },
+        attr9: {
+            type: "number"
+        },
+    },
+    indexes: {
+        indexTable: {
+            collection: "normalcollection",
+            index: "idx11",
+            pk: {
+                field: "pk",
+                facets: ["prop1", "prop2"]
+            },
+            sk: {
+                field: "sk",
+                facets: ["prop5"]
+            }
+        },
+        anotherIndex: {
+            index: "gsi1",
+            collection: "mycollection1",
+            pk: {
+                field: "gsipk1",
+                facets: ["attr6", "attr9"]
+            }
+        }
+    }
+});
+
 type Item = {
     attr1: string;
     attr2: string;
@@ -1206,130 +1332,7 @@ let getKeys = ((val) => {}) as GetKeys;
             ${notContains(attr6, "14")}
         `));
 
-    entityWithSK._collections.mycollection;
 
-    let standAloneEntity = new Entity({
-        model: {
-            entity: "standalone",
-            service: "service",
-            version: "1"
-        },
-        attributes: {
-            prop1: {
-                type: "string"
-            },
-            prop2: {
-                type: "string"
-            },
-            prop3: {
-                type: "string"
-            }
-        },
-        indexes: {
-            index1: {
-                pk: {
-                    field: "pk",
-                    facets: ["prop1", "prop2"]
-                },
-                sk: {
-                    field: "sk",
-                    facets: ["prop3"]
-                }
-            }
-        }
-    });
-
-    let normalEntity1 = new Entity({
-        model: {
-            entity: "normalEntity1",
-            service: "service",
-            version: "1"
-        },
-        attributes: {
-            prop1: {
-                type: "string"
-            },
-            prop2: {
-                type: "string"
-            },
-            prop3: {
-                type: "string",
-                required: true
-            },
-            prop4: {
-                type: "number"
-            }
-        },
-        indexes: {
-            tableIndex: {
-                collection: "normalcollection",
-                index: "idx11",
-                pk: {
-                    field: "pk",
-                    facets: ["prop1", "prop2"]
-                },
-                sk: {
-                    field: "sk",
-                    facets: ["prop4"]
-                }
-            }
-        }
-    });
-
-    let normalEntity2 = new Entity({
-        model: {
-            entity: "normalEntity2",
-            service: "service",
-            version: "1"
-        },
-        attributes: {
-            prop1: {
-                type: "string"
-            },
-            prop2: {
-                type: "string"
-            },
-            prop3: {
-                type: "string",
-                required: true
-            },
-            prop5: {
-                type: "number"
-            },
-            attr6: {
-                type: "number",
-                default: () => 100,
-                get: (val) => val + 5,
-                set: (val) => val + 5,
-                validate: (val) => true,
-            },
-            attr9: {
-                type: "number"
-            },
-        },
-        indexes: {
-            indexTable: {
-                collection: "normalcollection",
-                index: "idx11",
-                pk: {
-                    field: "pk",
-                    facets: ["prop1", "prop2"]
-                },
-                sk: {
-                    field: "sk",
-                    facets: ["prop5"]
-                }
-            },
-            anotherIndex: {
-                index: "gsi1",
-                collection: "mycollection1",
-                pk: {
-                    field: "gsipk1",
-                    facets: ["attr6", "attr9"]
-                }
-            }
-        }
-    });
 
     // Invalid cases
     expectError(() => new Service({abc: "123"}));
@@ -1432,7 +1435,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<string>(item.prop3);
                 expectType<number|undefined>(item.prop4);
                 // .go response related entities correct items
-                let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop4";
+                let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop4" | "prop10";
                 expectType<keyof typeof item>(itemKeys);
             });
             values.normalEntity2.map(item => {
@@ -1505,6 +1508,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     complexService.collections.normalcollection({prop1: "abc", prop2: "def"})
         .where((attr, op) => {
+            attr
             op.eq(attr.prop1, "db");
             return "";
         })
@@ -1519,6 +1523,21 @@ let getKeys = ((val) => {}) as GetKeys;
                 item.attr10
             })
         })
+
+    complexService.collections
+        .mycollection1({attr9: 34, attr6: 355})
+        .where((attr, op) => {
+
+            return ""
+        })
+        .where((attr, op) => {
+            return op.begins(attr.prop5, 10);
+        })
+
+    complexService.collections
+        .mycollection1({attr9: 34, attr6: 355})
+        .where
+
     // .where attributes encompass all attributes
     // .where attributes are correct types
     // .where operations require correct types

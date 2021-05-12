@@ -460,6 +460,22 @@ type CollectionAssociations<E extends {[name: string]: Entity<any, any, any, any
 
 type CollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = keyof CollectionAssociations<E>
 
+type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
+    [Collection in keyof Collections]: {
+        [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ? EntityName extends Collections[Collection]
+                ? keyof S["attributes"]
+                : never
+            : never
+    }[keyof E]
+}
+
+type MatchPick<T, K extends keyof T> = {
+    [P in K]: [T[P]] extends [never]
+        ? never
+        : T[P]
+}
+
 type CollectionWhereOperations = {
     eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
@@ -476,18 +492,17 @@ type CollectionWhereOperations = {
     name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
 }
 
-type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, any, any>}> =
-    <W extends {[A in keyof AllEntityAttributes<E>]: WhereAttributeSymbol<AllEntityAttributes<E>[A]>}>(attributes: W, operations: CollectionWhereOperations) => string;
+type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, any, any>}, I extends Partial<AllEntityAttributes<E>>> =
+    <W extends {[A in keyof I]: WhereAttributeSymbol<I[A]>}>(attributes: W, operations: CollectionWhereOperations) => string;
 
-type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends AllEntityAttributes<E>, T> = (where: CollectionWhereCallback<E>) => T;
+type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, T> = (where: CollectionWhereCallback<E, I>) => T;
 
-type WhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Items, IndexFacets> = {
+type WhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexFacets> = {
     go: GoRecord<Items>;
     params: ParamRecord;
     page: PageRecord<Items,IndexFacets>;
-    where: CollectionWhereClause<E,A,F,C,S,AllEntityAttributes<E>,WhereRecordsActionOptions<E,A,F,C,S,Items,IndexFacets>>;
+    where: CollectionWhereClause<E,A,F,C,S,I, WhereRecordsActionOptions<E,A,F,C,S,I,Items,IndexFacets>>;
 }
-
 
 type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
@@ -506,20 +521,23 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
                     where: {
                         [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
                                 ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                    ? CollectionWhereClause<E,A,F,C,S,
-                                        AllEntityAttributes<E>,
-                                        WhereRecordsActionOptions<E,A,F,C,S, {
-                                            [EntityResultName in Collections[Collection]]:
-                                                EntityResultName extends keyof E
-                                                    ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                                        ? TableItem<A,F,C,S>[]
-                                                        : never
-                                                    : never
-                                        },
-                                        TableIndexFacets<A,F,C,S>>>
+                                    ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
+                                        ? CollectionWhereClause<E,A,F,C,S,
+                                            Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>>,
+                                            WhereRecordsActionOptions<E,A,F,C,S,
+                                                Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>>,
+                                                {
+                                                    [EntityResultName in Collections[Collection]]:
+                                                        EntityResultName extends keyof E
+                                                            ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                                                ? TableItem<A,F,C,S>[]
+                                                                : never
+                                                            : never
+                                                },
+                                            TableIndexFacets<A,F,C,S>>>
+                                        : never
                                     : never
                                 : never
-
                     }[Collections[Collection]];
                 }
                 : never

@@ -7,6 +7,7 @@
     "test": "mocha ./test/offline**.spec.js",
     "test-all": "mocha ./test/**.spec.js",
     "test-all-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha ./test/**.spec.js",
+    "test-types": "tsd",
     "coverage": "nyc npm run test-all && nyc report --reporter=text-lcov | coveralls",
     "coverage-coveralls-local": "nyc npm run test-all-local && nyc report --reporter=text-lcov | coveralls",
     "coverage-html-local": "nyc npm run test-all-local && nyc report --reporter=html"
