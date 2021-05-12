@@ -209,7 +209,7 @@ type PutItem<A extends string, F extends A, C extends string, S extends Schema<A
 type SetItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Omit<Partial<TableItem<A,F,C,S>>, keyof AllTableIndexFacets<A,F,C,S>>
 
-interface WhereAttributeSymbol<T> {
+export interface WhereAttributeSymbol<T> {
     [WhereSymbol]: void;
     _: T;
 }
@@ -405,60 +405,6 @@ type CollectionAssociations<E extends {[name: string]: Entity<any, any, any, any
             : never
     }[keyof E];
 }
-//
-// type CollectionAttributesOld<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
-//     [Collection in keyof Collections]: {
-//         [EntityName in keyof E]:
-//             EntityName extends Collections[Collection]
-//                 ? {
-//                     [EntityResultName in Collections[Collection]]:
-//                         EntityResultName extends keyof E
-//                             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-//                                 ? TableItem<A, F, C, S>[]
-//                                 : never
-//                             : never
-//                 }
-//                 : never
-//
-//     }
-// }
-
-// type CollectionAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Attributes extends AllEntityAttributes<Entities>, Collections extends keyof CollectionAssociations<E>> = {
-//     [Attribute in keyof Attributes]: {
-//         [Collection in Collections]:
-//             Entities[EntityName] extends Entity<infer A, infer F, infer C, infer S>
-//             ? Attribute extends keyof S["attributes"]
-//                 ? "ok"
-//                 : "notok"
-//                 // ? {
-//                 //     [name: Attribute]: Attributes[Attribute]
-//                 // }
-//                 // : never
-//         : never
-//     }
-// }
-//
-// type CollectionAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Attributes extends AllEntityAttributes<Entities>, Collections extends CollectionAssociations<Entities>> = {
-//     [Attribute in keyof Attributes]: {
-//         [Entity in keyof Entities]: {
-//             provided: Collections
-//             c: keyof Entities[Entity]["_collections"]
-//             collects: Entities[Entity]["_collections"]
-//             has: keyof Entities[Entity]["_collections"] extends Collections ? "yes" : "no"
-//             spas: Collections extends keyof Entities[Entity]["_collections"] ? "yes" : "no"
-//         }
-//
-//             // Collections extends Entities[Entity]["_collections"]
-//                 // ? {
-//                 //     [Collection in Collections]: {
-//                 //         [name: Attribute]: Attributes[Attribute]
-//                 //     }
-//                 // }
-//                 // : never
-//     }
-// }
-
-type CollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = keyof CollectionAssociations<E>
 
 type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
@@ -468,12 +414,6 @@ type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}
                 : never
             : never
     }[keyof E]
-}
-
-type MatchPick<T, K extends keyof T> = {
-    [P in K]: [T[P]] extends [never]
-        ? never
-        : T[P]
 }
 
 type CollectionWhereOperations = {

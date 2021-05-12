@@ -1,5 +1,5 @@
-import {Entity, Service} from ".";
-import {expectType, expectError, expectAssignable} from 'tsd';
+import {Entity, Service, WhereAttributeSymbol} from ".";
+import {expectType, expectError, expectAssignable, expectNotAssignable} from 'tsd';
 
 let entityWithSK = new Entity({
     model: {
@@ -1494,11 +1494,27 @@ let getKeys = ((val) => {}) as GetKeys;
         .mycollection1({attr6: 13, attr9: 54})
         .where((attr, op) => {
             let attrKeys = getKeys(attr);
-
+            op.eq(attr.attr10, true)
             let opKeys = getKeys(op);
             expectType<OperationNames>(opKeys);
             op.eq(attr.attr9, 455)
-            // expectType<"attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" | "attr9" | "attr10">(attrKeys)
+            op.eq(attr.prop5, 455);
+            expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr3: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr4: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
+            expectAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr)
+            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr)
+            expectAssignable<{prop1: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{prop2: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{prop4: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{prop5: WhereAttributeSymbol<number>}>(attr)
+            expectNotAssignable<{prop10: WhereAttributeSymbol<boolean>}>(attr);
             return "";
         })
         .go()
@@ -1508,14 +1524,44 @@ let getKeys = ((val) => {}) as GetKeys;
 
     complexService.collections.normalcollection({prop1: "abc", prop2: "def"})
         .where((attr, op) => {
-            attr
-            op.eq(attr.prop1, "db");
-            return "";
+            expectNotAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{attr3: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{attr4: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
+            expectNotAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
+            expectNotAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr)
+            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr)
+            expectNotAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr)
+            expectAssignable<{prop1: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{prop2: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{prop4: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{prop5: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{prop10: WhereAttributeSymbol<boolean>}>(attr);
+            return op.eq(attr.prop1, "db");
+
         })
     complexService.collections.mycollection2({attr1: "abc"})
         .where((attr, op) => {
-            op.eq(attr.attr9, 768);
-            return "";
+            expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr3: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr4: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
+            expectAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr)
+            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr)
+            expectNotAssignable<{prop1: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{prop2: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{prop3: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{prop4: WhereAttributeSymbol<number>}>(attr)
+            expectNotAssignable<{prop5: WhereAttributeSymbol<number>}>(attr)
+            expectNotAssignable<{prop10: WhereAttributeSymbol<boolean>}>(attr);
+            return op.eq(attr.attr9, 768);
         })
         .go()
         .then(value => {
@@ -1526,17 +1572,12 @@ let getKeys = ((val) => {}) as GetKeys;
 
     complexService.collections
         .mycollection1({attr9: 34, attr6: 355})
-        .where((attr, op) => {
-
-            return ""
+        .where((attr, {eq}) => {
+            return eq(attr.prop1, "dagda");
         })
         .where((attr, op) => {
-            return op.begins(attr.prop5, 10);
+            return op.begins(attr.prop2, "10");
         })
-
-    complexService.collections
-        .mycollection1({attr9: 34, attr6: 355})
-        .where
 
     // .where attributes encompass all attributes
     // .where attributes are correct types
