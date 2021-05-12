@@ -34,7 +34,7 @@ type StringAttribute = {
 }
 
 type EnumAttribute = {
-    readonly type: Array<string>;
+    readonly type: ReadonlyArray<string>;
     readonly required?: boolean;
     readonly get?: (val: string, schema: any) => string | undefined;
     readonly set?: (val: string, schema: any) => string | undefined;
@@ -363,24 +363,23 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     setIdentifier(type: "model" | "version", value: string): void;
     scan: RecordsActionOptions<A,F,C,S, Item<A,F,C,S>[], TableIndexFacets<A,F,C,S>>
     query: Queries<A,F,C,S>;
-    get _collections(): EntityCollections<A,F,C,S>;
 }
 
-
 type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
-    [Name in keyof E]: E[Name]["_collections"] extends infer Collections
+    [Name in keyof E]:
+    E[Name] extends Entity<infer A, infer F, infer C, infer S>
         ? {
-            [Collection in keyof Collections]: Collection
-        }[keyof Collections]
+            [Collection in keyof EntityCollections<A,F,C,S>]: Collection
+        }[keyof EntityCollections<A,F,C,S>]
         : never
 }[keyof E];
 
 
-type AttributeType<T extends "string" | "number" | "boolean" | "any" | string[]> =
+type AttributeType<T extends "string" | "number" | "boolean" | "any" | ReadonlyArray<any>> =
     T extends "string" ? string
         : T extends "number" ? number
         : T extends "boolean" ? boolean
-        : T extends Array<infer E> ? E
+        : T extends ReadonlyArray<infer E> ? E
         : T extends "any" ? any
         : never
 
@@ -400,8 +399,10 @@ type AllEntityAttributes<E extends {[name: string]: Entity<any, any, any, any>}>
 
 type CollectionAssociations<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Collection in AllCollectionNames<E>]: {
-        [Name in keyof E]: Collection extends keyof E[Name]["_collections"]
-            ? Name
+        [Name in keyof E]: E[Name] extends Entity<infer A, infer F, infer C, infer S>
+            ? Collection extends keyof EntityCollections<A,F,C,S>
+                ? Name
+                : never
             : never
     }[keyof E];
 }
@@ -448,7 +449,18 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
     [Collection in keyof Collections]: {
         [EntityName in keyof E]:
             EntityName extends Collections[Collection]
-                ? (params: RequiredProperties<Parameters<E[EntityName]["query"][E[EntityName]["_collections"][Collection]]>[0]>) => {
+                ? (params:
+                       RequiredProperties<
+                           Parameters<
+                               E[EntityName]["query"][
+                                   E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+                                       ? Collection extends keyof EntityCollections<A,F,C,S>
+                                        ? EntityCollections<A,F,C,S>[Collection]
+                                        : never
+                                       : never
+                               ]
+                           >[0]
+                       >) => {
                     go: GoRecord<{
                         [EntityResultName in Collections[Collection]]:
                             EntityResultName extends keyof E

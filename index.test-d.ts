@@ -1,5 +1,5 @@
 import {Entity, Service, WhereAttributeSymbol} from ".";
-import {expectType, expectError, expectAssignable, expectNotAssignable} from 'tsd';
+import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 
 let entityWithSK = new Entity({
     model: {
@@ -1430,22 +1430,42 @@ let getKeys = ((val) => {}) as GetKeys;
             let expectedEntities = "" as "normalEntity1" | "normalEntity2";
             expectType<NormalCollectionRelatedEntities>(expectedEntities);
             values.normalEntity1.map(item => {
-                expectType<string | undefined>(item.prop1);
-                expectType<string | undefined>(item.prop2);
+                expectError(item.attr1);
+                expectError(item.attr2);
+                expectError(item.attr3);
+                expectError(item.attr4);
+                expectError(item.attr5);
+                expectError(item.attr6);
+                expectError(item.attr7);
+                expectError(item.attr8);
+                expectError(item.attr9);
+                expectError(item.attr10);
+                expectType<string|undefined>(item.prop1);
+                expectType<string|undefined>(item.prop2);
                 expectType<string>(item.prop3);
                 expectType<number|undefined>(item.prop4);
-                // .go response related entities correct items
+                expectType<boolean|undefined>(item.prop10);
                 let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop4" | "prop10";
                 expectType<keyof typeof item>(itemKeys);
             });
             values.normalEntity2.map(item => {
-                expectType<string | undefined>(item.prop1);
-                expectType<string | undefined>(item.prop2);
+                expectType<string|undefined>(item.prop1);
+                expectType<string|undefined>(item.prop2);
                 expectType<string>(item.prop3);
                 expectType<number|undefined>(item.prop5);
                 expectType<number|undefined>(item.attr9);
                 expectType<number|undefined>(item.attr6);
-                // .go response related entities correct items
+                expectNotAssignable<{attr1: any}>(item);
+                expectNotAssignable<{attr2: any}>(item);
+                expectNotAssignable<{attr3: any}>(item);
+                expectNotAssignable<{attr4: any}>(item);
+                expectNotAssignable<{attr5: any}>(item);
+                expectNotAssignable<{attr6: any}>(item);
+                expectNotAssignable<{attr7: any}>(item);
+                expectNotAssignable<{attr8: any}>(item);
+                expectNotAssignable<{attr9: any}>(item);
+                expectNotAssignable<{attr10: any}>(item);
+                expectNotAssignable<{prop10: any}>(item);
                 let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop5" | "attr9" | "attr6";
                 expectType<keyof typeof item>(itemKeys);
             });
@@ -1524,6 +1544,8 @@ let getKeys = ((val) => {}) as GetKeys;
 
     complexService.collections.normalcollection({prop1: "abc", prop2: "def"})
         .where((attr, op) => {
+            let opKeys = getKeys(op);
+            expectType<OperationNames>(opKeys);
             expectNotAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
             expectNotAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
             expectNotAssignable<{attr3: WhereAttributeSymbol<string>}>(attr)
@@ -1545,6 +1567,8 @@ let getKeys = ((val) => {}) as GetKeys;
         })
     complexService.collections.mycollection2({attr1: "abc"})
         .where((attr, op) => {
+            let opKeys = getKeys(op);
+            expectType<OperationNames>(opKeys);
             expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr3: WhereAttributeSymbol<string>}>(attr)
@@ -1579,84 +1603,3 @@ let getKeys = ((val) => {}) as GetKeys;
             return op.begins(attr.prop2, "10");
         })
 
-    // .where attributes encompass all attributes
-    // .where attributes are correct types
-    // .where operations require correct types
-    // .where callback returns correct type
-    // .where method returns correct chain methods
-
-    // .params params correct
-    // .params allows optional type
-
-
-
-    //
-    // let service = new Service({
-    //     entityWithSK,
-    //     entityWithoutSK,
-    //     standAloneEntity,
-    //     wutwut1Entity,
-    //     wutwut2Entity
-    // });
-    // // let a = service.collections.entityWithSK.mycollection
-    // // let b: typeof service.collections = "addag"
-    // // let a = service.collections.entityWithoutSK.mycollection({attr5: "string"})
-    // service.collections.mycollection({attr5: "abc"})
-    //     .where(({attr4}, {eq}) => {
-    //         return eq(attr4, "44");
-    //     })
-    //     .go()
-    //     .then(data => {
-    //         data.entityWithoutSK.map(val => val.attr9)
-    //         data.entityWithSK.map(val => val.attr10)
-    //     })
-    // service.collections.wutwut({prop2: "abc", prop1: "ad"})
-    //     .where(({prop3}, {eq}) => {
-    //         return eq(prop3, "sdaggd");
-    //     })
-    //     .go({})
-    //     .then(data => {
-    //         data.wutwut1Entity.map((val) => val.prop3)
-    //         data.wutwut2Entity.map((val) => val.prop3)
-    //     });
-    //
-    // service.collections.mycollection({attr5: "abc"})
-    //     .go()
-    //     .then(data => {
-    //         data.entityWithoutSK.map(val => val.attr9)
-    //         data.entityWithSK.map(val => val.attr10)
-    //     });
-    //
-    // service.entities.standAloneEntity.query
-    //     .index1({prop1: "as", prop2: "abc"})
-    //     .where(({prop2}, {eq}) => eq(prop2, "shd"))
-    //     .go({table: "Abc"})
-    //     .then(records => records.map(item => item.prop3))
-    // // service.collections.entityWithSK.mycollection2({attr1: "def"}).go({});
-    //
-    // service.collections.mycollection({attr5: "abc"})
-    //     .go()
-    //     .then(data => {
-    //         data.entityWithSK.map((val => val.attr2))
-    //         data.entityWithoutSK.map((val => val.attr2))
-    //     })
-    //
-    // service.collections.mycollection({attr5: "Abc"});                // success
-    // service.collections.mycollection({attr1: "Abc"});                // fail
-    // service.collections.mycollection2({attr5: "Abc", attr1: "def"}); // fail
-    // service.collections.mycollection2({attr1: "def"})                // success
-    // service.collections.wutwut({prop1: "abc", prop2: "def"});        // success
-    // service.collections.wutwut({prop2: "def"});                      // fail
-    //
-    //
-    // service.collections.mycollection2({attr1: "abc"});
-    // service.collections.mycollection({attr5: "abc"})
-    // service.collections
-    //     .mycollection({attr5: "adggda"})
-    //     .go()
-    //     .then(val => {
-    //         val.entityWithSK.map(val => val.attr1);
-    //         val.entityWithoutSK.map(val => val.attr5)
-    //         val.entityWithSK.map(val => val.attr2)
-    //     })
-    //
