@@ -6,31 +6,53 @@ const { getInstanceType, getModelVersion, applyBetaModelOverrides } = require(".
 const v = require("./validations");
 const e = require("./errors");
 
+const ConstructorTypes = {
+	beta: "beta",
+	v1: "v1",
+	v1Map: "v1Map",
+	unknown: "unknown"
+}
+
+function inferConstructorType(service) {
+	if (v.isNameEntityRecordType(service)) {
+		return ConstructorTypes.v1Map;
+	} else if (v.isObjectHasLength(service)) {
+		return ConstructorTypes.beta;
+	} else if (v.isStringHasLength(service)) {
+		return ConstructorTypes.v1;
+	} else {
+		return ConstructorTypes.unknown;
+	}
+}
+
+function inferJoinValues(alias, instance, config) {
+	let hasAlias = true;
+	let args = {alias, instance, config, hasAlias};
+	if (typeof alias !== "string") {
+		args.config = instance;
+		args.instance = alias;
+		args.hasAlias = false;
+	}
+	return args;
+}
+
 class Service {
-	constructor(service = "", config = {}) {
+	_betaConstructor(service, config) {
 		this.service = {};
-		/** start beta/v1 condition **/
 		this._modelOverrides = {};
-		this._modelVersion = ModelVersions.v1;
-		if (v.isObjectHasLength(service)) {
-			this._modelVersion = ModelVersions.beta;
-			this._modelOverrides = {
-				table: service.table,
-				service: service.service,
-				version: service.version,
-			};
-			this.service.name = service.name || service.service;
-			this.service.table = service.table || config.table;
-			this.service.version = service.version;
-		} else if (v.isStringHasLength(service)) {
-			this._modelVersion = ModelVersions.v1;
-			this.service.name = service;
-			this.service.table = config.table;
-			this._modelOverrides.table = config.table;
-		} else {
-			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Invalid service name: ${JSON.stringify(service)}. Service name must have length greater than zero`);
-		}
-		/** end beta/v1 condition **/
+
+		// Unique to Beta
+		this._modelVersion = ModelVersions.beta;
+		this._modelOverrides = {
+			table: service.table,
+			service: service.service,
+			version: service.version,
+		};
+		this.service.name = service.name || service.service;
+		this.service.table = service.table || config.table;
+		this.service.version = service.version;
+		// Unique to Beta
+
 		this.config = config;
 		this.client = config.client;
 		this.entities = {};
@@ -41,13 +63,56 @@ class Service {
 		this._instanceType = ElectroInstanceTypes.service;
 	}
 
-	join(instance = {}, config = {}) {
-		let options = { ...config, ...this.config };
+	_v1Constructor(service, config) {
+		this.service = {};
+		this._modelOverrides = {};
+
+		// Unique to V1
+		this._modelVersion = ModelVersions.v1;
+		this.service.name = service;
+		this.service.table = config.table;
+		this._modelOverrides.table = config.table;
+		// Unique to V1
+
+		this.config = config;
+		this.client = config.client;
+		this.entities = {};
+		this.find = {};
+		this.collectionSchema = {};
+		this.collections = {};
+		this._instance = ElectroInstance.service;
+		this._instanceType = ElectroInstanceTypes.service;
+	}
+
+	_v1MapConstructor(service, config) {
+		this._v1Constructor(service, config);
+		for (let name of Object.keys(service)) {
+			let entity = service[name];
+			this.join(name, entity);
+		}
+	}
+
+	constructor(service = "", config = {}) {
+		let type = inferConstructorType(service);
+		switch(type) {
+			case ConstructorTypes.v1Map:
+				this._v1MapConstructor(service, config);
+				break;
+			case ConstructorTypes.beta:
+				this._betaConstructor(service, config);
+				break;
+			case ConstructorTypes.v1:
+				this._v1Constructor(service, config);
+				break;
+			default:
+				throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Invalid service name: ${JSON.stringify(service)}. Service name must have length greater than zero`);
+		}
+	}
+
+	_inferJoinEntity(instance, options) {
 		let entity = {};
 		let type = getInstanceType(instance);
-		/** start beta/v1 condition **/
 		let modelVersion = getModelVersion(instance);
-		/** end beta/v1 condition **/
 		switch(type) {
 			case ElectroInstanceTypes.model:
 				entity = new Entity(instance, options);
@@ -68,8 +133,22 @@ class Service {
 				/** end beta/v1 condition **/
 				break;
 		}
+		return entity;
+	}
 
-		let name = entity.model.entity;
+	/**
+	 * Join
+	 * @param {string} alias
+	 * @param instance
+	 * @param config
+	 * @returns {Service}
+	 */
+	join(...args) {
+		let {alias, instance, config, hasAlias} = inferJoinValues(...args);
+		let options = { ...config, ...this.config };
+		let entity = this._inferJoinEntity(instance, options);
+		let name = hasAlias ? alias : entity.model.entity;
+
 		if (this.service.name.toLowerCase() !== entity.model.service.toLowerCase()) {
 			throw new Error(`Service name defined on joined instance, ${entity.model.service}, does not match the name of this Service: ${this.service.name}. Verify or update the service name on the Entity/Model to match the name defined on this service.`);
 		}

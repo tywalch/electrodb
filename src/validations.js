@@ -252,10 +252,17 @@ function isArrayHasLength(arr) {
 	return Array.isArray(arr) && arr.length > 0;
 }
 
+function isNameEntityRecordType(entityRecord) {
+	return isObjectHasLength(entityRecord) && Object.values(entityRecord).find(value => {
+		return value._instance !== undefined;
+	})
+}
+
 module.exports = {
 	model: validateModel,
 	testModel,
 	isArrayHasLength,
 	isStringHasLength,
 	isObjectHasLength,
+	isNameEntityRecordType
 };

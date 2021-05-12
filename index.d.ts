@@ -374,20 +374,19 @@ type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> 
         : never
 }[keyof E];
 
-
 type AttributeType<T extends "string" | "number" | "boolean" | "any" | ReadonlyArray<any>> =
     T extends "string" ? string
         : T extends "number" ? number
         : T extends "boolean" ? boolean
         : T extends ReadonlyArray<infer E> ? E
         : T extends "any" ? any
-        : never
+        : never;
 
 type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Name in keyof E]: {
         [A in keyof E[Name]["schema"]["attributes"]]: A
     }[keyof E[Name]["schema"]["attributes"]]
-}[keyof E]
+}[keyof E];
 
 type AllEntityAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Attr in AllEntityAttributeNames<E>]: {
@@ -493,7 +492,7 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
                     }[Collections[Collection]];
                 }
                 : never
-    }[keyof E]
+    }[keyof E];
 }
 
 type RequiredProperties<T> = Pick<T, {[K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T]>

@@ -36,6 +36,7 @@ class Entity {
 		};
 		this._instance = ElectroInstance.entity;
 		this._instanceType = ElectroInstanceTypes.entity;
+		this.schema = model;
 	}
 
 	setIdentifier(type = "", identifier = "") {
