@@ -259,6 +259,287 @@ database.join(modelTwo);
 database.join(modelThree);
 
 describe("Service Offline", async () => {
+	describe("TypeScript oriented constructor", () => {
+		let modelOne = {
+			model: {
+				entity: "entityOne",
+				service: "myservice",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string",
+				},
+				prop3: {
+					type: "string",
+				},
+				prop4: {
+					type: "string",
+				},
+				prop5: {
+					type: "string",
+				},
+				prop6: {
+					type: "string",
+				},
+				prop7: {
+					type: "string",
+				},
+				prop8: {
+					type: "string",
+				},
+				prop9: {
+					type: "string",
+				},
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				},
+				index2: {
+					pk: {
+						field: "gsi1pk",
+						facets: ["prop3"],
+					},
+					sk: {
+						field: "gsi1sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionB",
+					index: "gsi1pk-gsi1sk-index",
+				},
+				index3: {
+					pk: {
+						field: "gsi2pk",
+						facets: ["prop5"],
+					},
+					sk: {
+						field: "gsi2sk",
+						facets: ["prop6", "prop7"],
+					},
+					collection: "collectionC",
+					index: "gsi2pk-gsi2sk-index",
+				},
+				index4: {
+					pk: {
+						field: "gsi3pk",
+						facets: ["prop7"],
+					},
+					sk: {
+						field: "gsi3sk",
+						facets: ["prop8", "prop9"],
+					},
+					collection: "collectionD",
+					index: "gsi3pk-gsi3sk-index",
+				},
+			},
+		};
+
+		let modelTwo = {
+			model: {
+				entity: "entityTwo",
+				service: "myservice",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string",
+				},
+				prop3: {
+					type: "string",
+				},
+				prop4: {
+					type: "string",
+				},
+				prop5: {
+					type: "string",
+				},
+				prop6: {
+					type: "string",
+				},
+				prop7: {
+					type: "string",
+				},
+				prop8: {
+					type: "string",
+				},
+				prop9: {
+					type: "string",
+				},
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionE",
+				},
+				index2: {
+					pk: {
+						field: "gsi1pk",
+						facets: ["prop3"],
+					},
+					sk: {
+						field: "gsi1sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionB",
+					index: "gsi1pk-gsi1sk-index",
+				},
+				index3: {
+					pk: {
+						field: "gsi2pk",
+						facets: ["prop5"],
+					},
+					sk: {
+						field: "gsi2sk",
+						facets: ["prop6", "prop7"],
+					},
+					collection: "collectionF",
+					index: "gsi2pk-gsi2sk-index",
+				},
+				index4: {
+					pk: {
+						field: "gsi3pk",
+						facets: ["prop7"],
+					},
+					sk: {
+						field: "gsi3sk",
+						facets: ["prop8", "prop9"],
+					},
+					collection: "collectionG",
+					index: "gsi3pk-gsi3sk-index",
+				},
+			},
+		};
+
+		let modelThree = {
+			model: {
+				entity: "entityThree",
+				service: "myservice",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string",
+				},
+				prop3: {
+					type: "string",
+				},
+				prop4: {
+					type: "string",
+				},
+				prop5: {
+					type: "string",
+				},
+				prop6: {
+					type: "string",
+				},
+				prop7: {
+					type: "string",
+				},
+				prop8: {
+					type: "string",
+				},
+				prop9: {
+					type: "string",
+				},
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionE",
+				},
+				index2: {
+					pk: {
+						field: "gsi1pk",
+						facets: ["prop3"],
+					},
+					sk: {
+						field: "gsi1sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionB",
+					index: "gsi1pk-gsi1sk-index",
+				},
+				index3: {
+					pk: {
+						field: "gsi2pk",
+						facets: ["prop5"],
+					},
+					sk: {
+						field: "gsi2sk",
+						facets: ["prop6", "prop7"],
+					},
+					collection: "collectionF",
+					index: "gsi2pk-gsi2sk-index",
+				},
+				index4: {
+					pk: {
+						field: "gsi3pk",
+						facets: ["prop7"],
+					},
+					sk: {
+						field: "gsi3sk",
+						facets: ["prop8", "prop9"],
+					},
+					collection: "collectionD",
+					index: "gsi3pk-gsi3sk-index",
+				},
+			},
+		};
+		it("Should take a map of Entities", () => {
+			let entityMap = {
+				modelOne: new Entity(modelOne),
+				modelTwo: new Entity(modelTwo),
+				modelThree: new Entity(modelThree),
+			};
+			let service = new Service(entityMap);
+			expect(service.entities.modelOne).to.equal(entityMap.modelOne);
+			expect(service.entities.modelTwo).to.equal(entityMap.modelTwo);
+			expect(service.entities.modelThree).to.equal(entityMap.modelThree);
+		});
+		it("Should take a map of Models", () => {
+			let entityMap = {
+				modelOne,
+				modelTwo,
+				modelThree,
+			};
+			let service = new Service(entityMap);
+			expect(service.entities.modelOne.model.entity).to.equal(modelOne.model.entity);
+			expect(service.entities.modelTwo.model.entity).to.equal(modelTwo.model.entity);
+			expect(service.entities.modelThree.model.entity).to.equal(modelThree.model.entity);
+		});
+	})
 	it("Should not allow a service to be created without a name", () => {
 		expect(() => new Service()).to.throw(`Invalid service name: "". Service name must have length greater than zero - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
 	});
@@ -1262,4 +1543,5 @@ describe("Misconfiguration exceptions", () => {
 		testKeys(update.Key.pk, update.Key.sk);
 	});
 });
-// database.find.collectionA({}).go();
+
+

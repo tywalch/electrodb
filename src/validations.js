@@ -258,11 +258,28 @@ function isNameEntityRecordType(entityRecord) {
 	})
 }
 
+function isNameModelRecordType(modelRecord) {
+	return isObjectHasLength(modelRecord) && Object.values(modelRecord).find(value => {
+		return value.model
+			&& isStringHasLength(value.model.entity)
+			&& isStringHasLength(value.model.version)
+			&& isStringHasLength(value.model.service)
+	});
+}
+
+function isBetaServiceConfig(serviceConfig) {
+	return isObjectHasLength(serviceConfig)
+		&& (isStringHasLength(serviceConfig.service) || isStringHasLength(serviceConfig.name))
+		&& isStringHasLength(serviceConfig.version)
+}
+
 module.exports = {
 	model: validateModel,
 	testModel,
 	isArrayHasLength,
+	isNameModelRecordType,
 	isStringHasLength,
 	isObjectHasLength,
+	isBetaServiceConfig,
 	isNameEntityRecordType
 };

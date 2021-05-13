@@ -14,9 +14,9 @@ const ConstructorTypes = {
 }
 
 function inferConstructorType(service) {
-	if (v.isNameEntityRecordType(service)) {
+	if (v.isNameEntityRecordType(service) || v.isNameModelRecordType(service)) {
 		return ConstructorTypes.v1Map;
-	} else if (v.isObjectHasLength(service)) {
+	} else if (v.isBetaServiceConfig(service)) {
 		return ConstructorTypes.beta;
 	} else if (v.isStringHasLength(service)) {
 		return ConstructorTypes.v1;
@@ -85,10 +85,12 @@ class Service {
 	}
 
 	_v1MapConstructor(service, config) {
-		this._v1Constructor(service, config);
-		for (let name of Object.keys(service)) {
+		let entityNames = Object.keys(service);
+		let serviceName = this._inferServiceNameFromEntityMap(service);
+		this._v1Constructor(serviceName, config);
+		for (let name of entityNames) {
 			let entity = service[name];
-			this.join(name, entity);
+			this.join(name, entity, config);
 		}
 	}
 
@@ -107,6 +109,20 @@ class Service {
 			default:
 				throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Invalid service name: ${JSON.stringify(service)}. Service name must have length greater than zero`);
 		}
+	}
+
+	_inferServiceNameFromEntityMap(service) {
+		let names = Object.keys(service);
+		let entity = names
+			.map(name => service[name])
+			.map(instance => this._inferJoinEntity(instance))
+			.find(entity => entity && entity.model && entity.model.service)
+
+		if (!entity || !entity.model || !entity.model.service) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Invalid service name: Entities/Models provided do not contain property for Service Name`);
+		}
+
+		return entity.model.service;
 	}
 
 	_inferJoinEntity(instance, options) {
