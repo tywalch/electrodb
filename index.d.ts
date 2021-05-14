@@ -201,10 +201,31 @@ type TableItem<A extends string, F extends A, C extends string, S extends Schema
     Pick<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>> &
     Partial<Omit<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>>>
 
+/* Seems to be a TypeScript defect? Can't add this type onto an Entity without it breaking Services */
+// type PutItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+//     (Pick<AllTableIndexFacets<A,F,C,S>, RequiredPutFacets<A,F,C,S>> & Partial<Omit<AllTableIndexFacets<A,F,C,S>, RequiredPutFacets<A,F,C,S>>>)
+//     & (Pick<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>> & Partial<Omit<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>>>)
+
+type RequiredPutItems<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
+    [Attribute in keyof S["attributes"]]:
+    "required" extends keyof S["attributes"][Attribute]
+        ? true extends S["attributes"][Attribute]["required"]
+            ? true
+            : "default" extends keyof S["attributes"][Attribute]
+                ? false
+                : Attribute extends keyof TableIndexFacets<A,F,C,S>
+                    ? true
+                    : false
+    : "default" extends keyof S["attributes"][Attribute]
+        ? false
+        : Attribute extends keyof TableIndexFacets<A,F,C,S>
+            ? true
+            : false
+}
+
 type PutItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    AllTableIndexFacets<A,F,C,S> &
-    Pick<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>> &
-    Partial<Omit<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>>>
+    Pick<Item<A,F,C,S>, ExtractKeysOfValueType<RequiredPutItems<A,F,C,S>,true>>
+    & Partial<Item<A,F,C,S>>
 
 type SetItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Omit<Partial<TableItem<A,F,C,S>>, keyof AllTableIndexFacets<A,F,C,S>>

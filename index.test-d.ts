@@ -10,7 +10,6 @@ let entityWithSK = new Entity({
     attributes: {
         attr1: {
             type: "string",
-            // static default
             default: "abc",
             get: (val) => val + 123,
             set: (val) => val + 456,
@@ -18,7 +17,8 @@ let entityWithSK = new Entity({
         },
         attr2: {
             type: "string",
-            default: () => "sfg",
+            // default: () => "sfg",
+            // required: false,
             validate: (val) => val.length > 0
         },
         attr3: {
@@ -49,7 +49,6 @@ let entityWithSK = new Entity({
         attr8: {
             type: "boolean",
             required: true,
-            default: false,
             get: (val) => !!val,
             set: (val) => !!val,
             validate: (val) => !!val,
@@ -78,7 +77,7 @@ let entityWithSK = new Entity({
             index: "gsi1",
             pk: {
                 field: "gsipk1",
-                facets: ["attr6"]
+                facets: ["attr6", "attr9"]
             },
             sk: {
                 field: "gsisk1",
@@ -89,11 +88,11 @@ let entityWithSK = new Entity({
             collection: "mycollection",
             index: "gsi2",
             pk: {
-                field: "gsipk1",
+                field: "gsipk2",
                 facets: ["attr5"]
             },
             sk: {
-                field: "gsisk1",
+                field: "gsisk2",
                 facets: ["attr4", "attr3", "attr9"]
             }
         }
@@ -110,15 +109,15 @@ let entityWithoutSK = new Entity({
     attributes: {
         attr1: {
             type: "string",
-            // static default
-            default: "abc",
+            // default: "abc",
             get: (val) => val + 123,
             set: (val) => val + 456,
             validate: (val) => !!val,
         },
         attr2: {
             type: "string",
-            default: () => "sfg",
+            // default: () => "sfg",
+            // required: false,
             validate: (val) => val.length > 0
         },
         attr3: {
@@ -149,7 +148,7 @@ let entityWithoutSK = new Entity({
         attr8: {
             type: "boolean",
             required: true,
-            default: false,
+            default: () => false,
             get: (val) => !!val,
             set: (val) => !!val,
             validate: (val) => !!val,
@@ -171,17 +170,21 @@ let entityWithoutSK = new Entity({
             pk: {
                 field: "gsipk1",
                 facets: ["attr6", "attr9"]
+            },
+            sk: {
+                field: "gsisk1",
+                facets: []
             }
         },
         myIndex3: {
             collection: "mycollection",
             index: "gsi2",
             pk: {
-                field: "gsipk1",
+                field: "gsipk2",
                 facets: ["attr5"]
             },
             sk: {
-                field: "gsisk1",
+                field: "gsisk2",
                 facets: []
             }
         }
@@ -191,12 +194,13 @@ let entityWithoutSK = new Entity({
 let standAloneEntity = new Entity({
     model: {
         entity: "standalone",
-        service: "service",
+        service: "myservice",
         version: "1"
     },
     attributes: {
         prop1: {
-            type: "string"
+            type: "string",
+            default: "abc"
         },
         prop2: {
             type: "string"
@@ -222,12 +226,13 @@ let standAloneEntity = new Entity({
 let normalEntity1 = new Entity({
     model: {
         entity: "normalEntity1",
-        service: "service",
+        service: "myservice",
         version: "1"
     },
     attributes: {
         prop1: {
-            type: "string"
+            type: "string",
+            default: "abc"
         },
         prop2: {
             type: "string"
@@ -246,7 +251,6 @@ let normalEntity1 = new Entity({
     indexes: {
         tableIndex: {
             collection: "normalcollection",
-            index: "idx11",
             pk: {
                 field: "pk",
                 facets: ["prop1", "prop2"]
@@ -262,7 +266,7 @@ let normalEntity1 = new Entity({
 let normalEntity2 = new Entity({
     model: {
         entity: "normalEntity2",
-        service: "service",
+        service: "myservice",
         version: "1"
     },
     attributes: {
@@ -293,7 +297,6 @@ let normalEntity2 = new Entity({
     indexes: {
         indexTable: {
             collection: "normalcollection",
-            index: "idx11",
             pk: {
                 field: "pk",
                 facets: ["prop1", "prop2"]
@@ -309,13 +312,17 @@ let normalEntity2 = new Entity({
             pk: {
                 field: "gsipk1",
                 facets: ["attr6", "attr9"]
+            },
+            sk: {
+                field: "gsisk1",
+                facets: []
             }
         }
     }
 });
 
 type Item = {
-    attr1: string;
+    attr1?: string;
     attr2: string;
     attr3?: string,
     attr4: string;
@@ -324,10 +331,11 @@ type Item = {
     attr7?: any;
     attr8: boolean;
     attr9?: number;
+    attr10?: boolean;
 }
 
 type ItemWithoutSK = {
-    attr1: string;
+    attr1?: string;
     attr2?: string;
     attr3?: string,
     attr4: string;
@@ -594,16 +602,15 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<Promise<WithoutSKMyIndexFacets[]>>(entityWithoutSK.delete([{attr1: "abc"}]).go());
 
 // Put
-    let putItemFull: Item = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
-    let putItemPartial: Item = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true};
+    let putItemFull = {attr1: "abnc", attr2: "dsg", attr3: "abc", attr4: "24", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: 24, attr10: true};
+    let putItemPartial = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true};
     let putItemWithoutSK = {attr1: "abnc", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
     let putItemWithoutPK = {attr4: "24", attr2: "dsg", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
-
     // Single
     entityWithSK.put(putItemFull);
-    entityWithoutSK.put(putItemFull);
+    entityWithoutSK.put({attr1: "abnc", attr2: "dsg", attr3: "abc", attr4: "24", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: 24});
 
-    entityWithSK.put(putItemPartial);
+    entityWithSK.put({attr1: "abnc", attr2: "dsg", attr3: "abc", attr4: "24", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: undefined, attr10: undefined});
     entityWithoutSK.put(putItemPartial);
 
     // Batch
@@ -627,7 +634,9 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<PutParametersWithSK>(putItemWithoutPK);
     expectError<PutParametersWithoutSK>(putItemWithoutPK);
 
-    expectError<PutParametersWithSK>([putItemWithoutPK]);
+    // Assignable because attr1 has a default
+    expectAssignable<PutParametersWithSK>([putItemWithoutPK]);
+
     expectError<PutParametersWithoutSK>([putItemWithoutPK]);
 
     expectError<PutParametersWithSK>([{attr1: "abnc", attr2: "dsg", attr4: "24", attr8: "adef"}]);
@@ -711,13 +720,14 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<Promise<WithoutSKMyIndexFacets[]>>(entityWithoutSK.put([putItemFull]).go());
 
 // Create
-    let createItemFull: Item = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
-    let createItemPartial: Item = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true};
-    let createItemFullWithoutSK = {attr2: "dsg", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
+    let createItemFull = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
+    let createItemPartial = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true};
+    let createItemFullWithoutSK = {attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
     let createItemFullWithoutPK = {attr2: "dsg", attr4: "24", attr8: true, attr3: "abc", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}};
 
     // Single
     entityWithSK.create(createItemFull);
+    entityWithSK.create(createItemFullWithoutPK);
     entityWithoutSK.create(createItemFull);
 
     entityWithSK.create(createItemPartial);
@@ -741,7 +751,9 @@ let getKeys = ((val) => {}) as GetKeys;
 
     expectError<CreateParametersWithSK>(createItemFullWithoutSK);
 
-    expectError<CreateParametersWithSK>(createItemFullWithoutPK);
+    // Assignable because attr1 has a default value
+    expectAssignable<CreateParametersWithSK>(createItemFullWithoutPK);
+
     expectError<CreateParametersWithoutSK>(createItemFullWithoutPK);
 
     // Missing required properties
@@ -1087,12 +1099,12 @@ let getKeys = ((val) => {}) as GetKeys;
         .then(a => a.map(val => val.attr4))
 
     entityWithSK.query
-        .myIndex2({attr6: 45, attr4: "abc", attr5: "def"})
+        .myIndex2({attr6: 45, attr9: 454, attr4: "abc", attr5: "def"})
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
 
     entityWithSK.query
-        .myIndex2({attr6: 45})
+        .myIndex2({attr6: 45, attr9: 24})
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
 
@@ -1126,7 +1138,7 @@ let getKeys = ((val) => {}) as GetKeys;
         .then(a => a.map(val => val.attr4))
 
     entityWithSK.query
-        .myIndex2({attr6: 45, attr4: "abc"})
+        .myIndex2({attr6: 45, attr9: 34, attr4: "abc"})
         .begins({attr5: "db"})
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
@@ -1144,7 +1156,7 @@ let getKeys = ((val) => {}) as GetKeys;
         .then(a => a.map(val => val.attr4))
 
     entityWithSK.query
-        .myIndex2({attr6: 45, attr4: "abc"})
+        .myIndex2({attr6: 45, attr9: 33, attr4: "abc"})
         .gt({attr5: "abd"})
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
@@ -1440,19 +1452,19 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectError(item.attr8);
                 expectError(item.attr9);
                 expectError(item.attr10);
-                expectType<string|undefined>(item.prop1);
-                expectType<string|undefined>(item.prop2);
+                expectType<string>(item.prop1);
+                expectType<string>(item.prop2);
                 expectType<string>(item.prop3);
-                expectType<number|undefined>(item.prop4);
+                expectType<number>(item.prop4);
                 expectType<boolean|undefined>(item.prop10);
                 let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop4" | "prop10";
                 expectType<keyof typeof item>(itemKeys);
             });
             values.normalEntity2.map(item => {
-                expectType<string|undefined>(item.prop1);
-                expectType<string|undefined>(item.prop2);
+                expectType<string>(item.prop1);
+                expectType<string>(item.prop2);
                 expectType<string>(item.prop3);
-                expectType<number|undefined>(item.prop5);
+                expectType<number>(item.prop5);
                 expectType<number|undefined>(item.attr9);
                 expectType<number|undefined>(item.attr6);
                 expectNotAssignable<{attr1: any}>(item);
@@ -1602,4 +1614,21 @@ let getKeys = ((val) => {}) as GetKeys;
         .where((attr, op) => {
             return op.begins(attr.prop2, "10");
         })
-
+    // entityWithSK.plop.attr10.v
+    // entityWithSK.plop.attr4 // item0
+    // entityWithSK.plop.attr2.r // item4
+    // entityWithSK.plop.attr1 // item3
+    // entityWithSK.plop.attr1.f = true // success
+    // entityWithSK.plop.attr1.f = false // fail
+    // entityWithSK.plop.attr1.d = true // success
+    // entityWithSK.plop.attr1.d = false // fail
+    // entityWithSK.plop.attr1.r = false // success
+    // entityWithSK.plop.attr1.r = true // fail
+    // entityWithSK.plop.attr5.f = false
+    // entityWithSK.plop.attr5.f = true
+    // entityWithSK.plop.attr5.r = false
+    // entityWithSK.plop.attr5.r = true
+    // entityWithSK.plop.attr4.r = true
+    // entityWithSK.plop.attr4.r = false
+    // entityWithSK.plop.attr5.f = false
+    // entityWithSK.plop.attr5.f = true
