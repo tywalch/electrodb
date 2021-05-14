@@ -162,6 +162,7 @@ class Service {
 	join(...args) {
 		let {alias, instance, config, hasAlias} = inferJoinValues(...args);
 		let options = { ...config, ...this.config };
+
 		let entity = this._inferJoinEntity(instance, options);
 		let name = hasAlias ? alias : entity.model.entity;
 
@@ -170,7 +171,11 @@ class Service {
 		}
 
 		if (this._getTableName()) {
-			entity.table = this._getTableName();
+			entity._setTableName(this._getTableName());
+		}
+
+		if (options.client) {
+			entity._setClient(options.client);
 		}
 
 		if (this.service.version) {
@@ -182,22 +187,47 @@ class Service {
 			this._addCollectionEntity(collection, name, this.entities[name]);
 			this.collections[collection] = (...facets) => {
 				let { entities, attributes, identifiers } = this.collectionSchema[collection];
-				return this._makeCollectionChain(collection, attributes, clauses, identifiers, Object.values(entities)[0], ...facets);
+				return this._makeCollectionChain(collection, attributes, clauses, identifiers, entities, Object.values(entities)[0], ...facets);
 			};
 		}
 		this.find = { ...this.entities, ...this.collections };
 		return this;
 	}
 
-	cleanseRetrievedData(collection = "", data = {}, config = {}) {
+	/**
+	 * todo: test entities with custom model identifiers
+	 * todo: test entities with custom version identifiers
+	 * todo: test for entities with aliases
+	 * todo: test setClient on entity
+	 * todo: test entities with different tables on entities
+	 * todo: test entities with different clients on entities
+	 * todo: test config combinations services/entities
+	 */
+	cleanseRetrievedData(collection = "", entities, data = {}, config = {}) {
 		data.Items = data.Items || [];
 		let results = {};
+		let entityAliasMap = {};
+		let entityIdentifiers = [];
+		for (let alias of Object.keys(entities)) {
+			results[alias] = [];
+			let name = entities[alias].model.entity;
+			entityIdentifiers.push({name, identifier: entities[alias].identifiers.entity});
+			entityAliasMap[name] = alias;
+		}
 		for (let record of data.Items) {
-			let entity = record.__edb_e__;
-			if (entity) {
-				results[entity] = results[entity] || [];
-				results[entity].push(this.collectionSchema[collection].entities[entity].cleanseRetrievedData(record, config));
+			let match = entityIdentifiers.find(({name, identifier}) => {
+				return record[identifier] === name
+			});
+			if (!match) {
+				continue;
 			}
+			let entity = record[match.identifier];
+			let alias = entityAliasMap[entity];
+			if (!alias) {
+				continue;
+			}
+			results[alias] = results[alias] || [];
+			results[alias].push(this.collectionSchema[collection].entities[alias].cleanseRetrievedData(record, config));
 		}
 		return results;
 	}
@@ -213,7 +243,7 @@ class Service {
 		}
 	}
 
-	_makeCollectionChain(name = "", attributes = {}, clauses = {}, identifiers = {}, entity = {}, facets = {}) {
+	_makeCollectionChain(name = "", attributes = {}, clauses = {}, identifiers = {}, entities = {}, entity = {}, facets = {}) {
 		let filterBuilder = new FilterFactory(attributes, FilterTypes);
 		clauses = filterBuilder.injectFilterClauses(clauses);
 		return new Proxy(entity.collection(name, clauses, facets, identifiers), {
@@ -222,7 +252,7 @@ class Service {
 					return (options = {}) => {
 						let config = { ...options, raw: true };
 						return target[prop](config).then((data) => {
-							return this.cleanseRetrievedData(name, data, options);
+							return this.cleanseRetrievedData(name, entities, data, options);
 						});
 					};
 				} else {

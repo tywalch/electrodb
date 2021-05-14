@@ -364,6 +364,11 @@ type EntityConfiguration = {
     client?: DocumentClient
 };
 
+type ServiceConfiguration = {
+    table?: string;
+    client?: DocumentClient
+};
+
 export class Entity<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> {
     readonly schema: S;
     constructor(schema: S, config?: EntityConfiguration);
@@ -521,6 +526,6 @@ type RequiredProperties<T> = Pick<T, {[K in keyof T]-?: {} extends Pick<T, K> ? 
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
     collections: CollectionQueries<E, CollectionAssociations<E>>
-    constructor(entities: E);
+    constructor(entities: E, config?: ServiceConfiguration);
 }
 

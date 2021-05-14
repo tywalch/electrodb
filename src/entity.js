@@ -377,6 +377,12 @@ class Entity {
 		this.config.table = table;
 	}
 
+	_setClient(client) {
+		if (client) {
+			this.client = client;
+		}
+	}
+
 	_chain(state, clauses, clause) {
 		let current = {};
 		for (let child of clause.children) {
