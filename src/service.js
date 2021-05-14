@@ -202,6 +202,7 @@ class Service {
 	 * todo: test entities with different tables on entities
 	 * todo: test entities with different clients on entities
 	 * todo: test config combinations services/entities
+	 * todo: don't over query entity versions
 	 */
 	cleanseRetrievedData(collection = "", entities, data = {}, config = {}) {
 		data.Items = data.Items || [];
@@ -211,18 +212,21 @@ class Service {
 		for (let alias of Object.keys(entities)) {
 			results[alias] = [];
 			let name = entities[alias].model.entity;
-			entityIdentifiers.push({name, identifier: entities[alias].identifiers.entity});
+			let version = entities[alias].model.version;
+			let nameIdentifier = entities[alias].identifiers.entity;
+			let versionIdentifier = entities[alias].identifiers.version;
+			entityIdentifiers.push({name, version, nameIdentifier, versionIdentifier});
 			entityAliasMap[name] = alias;
 		}
 		for (let record of data.Items) {
-			let match = entityIdentifiers.find(({name, identifier}) => {
-				return record[identifier] === name
+			let match = entityIdentifiers.find(({name, version, nameIdentifier, versionIdentifier}) => {
+				return record[nameIdentifier] === name && record[versionIdentifier] === version;
 			});
 			if (!match) {
 				continue;
 			}
-			let entity = record[match.identifier];
-			let alias = entityAliasMap[entity];
+			// let entity = match.name;
+			let alias = entityAliasMap[match.name];
 			if (!alias) {
 				continue;
 			}
