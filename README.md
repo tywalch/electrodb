@@ -2090,7 +2090,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
     includeKeys?: boolean
     lastEvaluatedKeyRaw?: boolean	
     originalErr?: boolean
-    concurrency?: number
+    concurrent?: number
 };
 ```
 
@@ -2102,7 +2102,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 | includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
 | lastEvaluatedKeyRaw | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more detail about this in the sections for [Pages](#page), [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
 | originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
-| concurrency | (default: 1) When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
+| concurrent | (default: 1) When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
 
 # Errors:
 | Error Code | Description |
@@ -2329,7 +2329,7 @@ Tables can be defined on the [Service Options](#service-options) object when you
 *Code: 2004*
 
 *Why this occurred:*
-When performing a bulk operation ([Batch Get](#batch-get), [Batch Delete Records](#batch-write-delete-records), [Batch Put Records](#batch-write-put-records)) you can pass a [Query Options](#query-options) called `concurrency`, which impacts how many batch requests can occur at the same time. Your value pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+When performing a bulk operation ([Batch Get](#batch-get), [Batch Delete Records](#batch-write-delete-records), [Batch Put Records](#batch-write-put-records)) you can pass a [Query Options](#query-options) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 *What to do about it:*   
 Expect this error only if youre providing a concurrency value. Double check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.                  
