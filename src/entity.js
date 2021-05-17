@@ -41,7 +41,7 @@ class Entity {
 
 	setIdentifier(type = "", identifier = "") {
 		if (!this.identifiers[type]) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: ${type}. Valid indentifiers include ${Object.keys(this.identifiers).join(", ")}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: "${type}". Valid identifiers include: ${Object.keys(this.identifiers).join(", ")}`);
 		} else {
 			this.identifiers[type] = identifier;
 		}

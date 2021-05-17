@@ -3178,6 +3178,7 @@ describe("Entity", () => {
 
 		const tests = [
 			{
+				success: true,
 				description: "default identifiers",
 				custom: false,
 				input: {},
@@ -3199,6 +3200,7 @@ describe("Entity", () => {
 				}
 			},
 			{
+				success: true,
 				description: "custom version identifier",
 				custom: true,
 				input: {type: "version", value: "custom_version"},
@@ -3220,6 +3222,7 @@ describe("Entity", () => {
 				}
 			},
 			{
+				success: true,
 				description: "custom entity identifier",
 				custom: true,
 				input: {type: "entity", value: "custom_entity"},
@@ -3240,20 +3243,40 @@ describe("Entity", () => {
 					TableName: 'test'
 				}
 			},
+			{
+				description: "invalid custom identifier: undefined",
+				input: {value: "custom_version"},
+				custom: true,
+				success: false,
+				error: `Invalid identifier type: "". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
+			},
+			{
+				description: "invalid custom identifier: bad value",
+				input: {type: "bad_value", value: "custom_version"},
+				custom: true,
+				success: false,
+				error: `Invalid identifier type: "bad_value". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
+			}
 		];
 		for (let test of tests) {
 			it(test.description, () => {
 				let entity = new Entity(schema, {table: "test"});
 				if (test.custom) {
-					entity.setIdentifier(test.input.type, test.input.value);
+					if (test.success) {
+						entity.setIdentifier(test.input.type, test.input.value);
+					} else {
+						expect(() => entity.setIdentifier(test.input.type, test.input.value)).to.throw(test.error);
+					}
 				}
-				let params = entity.put({id, mall, store, building, unit}).params();
-				expect(params).to.deep.equal(test.output);
+				if (test.success) {
+					let params = entity.put({id, mall, store, building, unit}).params();
+					expect(params).to.deep.equal(test.output);
+				}
 			});
 		}
 		it("Should not allow setIdentifier to be used on identifiers that dont exist", () => {
 			let entity = new Entity(schema, {table: "test"});
-			expect(() => entity.setIdentifier("doesnt_exist")).to.throw("Invalid identifier type: doesnt_exist. Valid indentifiers include entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier");
+			expect(() => entity.setIdentifier("doesnt_exist")).to.throw(`Invalid identifier type: "doesnt_exist". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`);
 		});
 	});
 	describe("Misconfiguration", () => {
