@@ -517,7 +517,105 @@ describe("Service Offline", async () => {
 				},
 			},
 		};
+		let modelThreeV2 = {
+			model: {
+				entity: "entityThree",
+				service: "myservice",
+				version: "2"
+			},
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string",
+				},
+				prop3: {
+					type: "string",
+				},
+				prop4: {
+					type: "string",
+				},
+				prop5: {
+					type: "string",
+				},
+				prop6: {
+					type: "string",
+				},
+				prop7: {
+					type: "string",
+				},
+				prop8: {
+					type: "string",
+				},
+				prop9: {
+					type: "string",
+				},
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionE",
+				},
+				index2: {
+					pk: {
+						field: "gsi1pk",
+						facets: ["prop3"],
+					},
+					sk: {
+						field: "gsi1sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionB",
+					index: "gsi1pk-gsi1sk-index",
+				},
+				index3: {
+					pk: {
+						field: "gsi2pk",
+						facets: ["prop5"],
+					},
+					sk: {
+						field: "gsi2sk",
+						facets: ["prop6", "prop7"],
+					},
+					collection: "collectionF",
+					index: "gsi2pk-gsi2sk-index",
+				},
+				index4: {
+					pk: {
+						field: "gsi3pk",
+						facets: ["prop7"],
+					},
+					sk: {
+						field: "gsi3sk",
+						facets: ["prop8", "prop9"],
+					},
+					collection: "collectionD",
+					index: "gsi3pk-gsi3sk-index",
+				},
+			},
+		};
 		it("Should take a map of Entities", () => {
+			let entityMap = {
+				modelOne: new Entity(modelOne),
+				modelTwo: new Entity(modelTwo),
+				modelThree: new Entity(modelThree),
+				entityThreeV2: new Entity(modelThreeV2)
+			};
+			let service = new Service(entityMap);
+			expect(service.entities.modelOne).to.equal(entityMap.modelOne);
+			expect(service.entities.modelTwo).to.equal(entityMap.modelTwo);
+			expect(service.entities.modelThree).to.equal(entityMap.modelThree);
+			expect(service.entities.entityThreeV2).to.equal(entityMap.entityThreeV2);
+		});
+		it("Should allow Entities with different versions to be added", () => {
 			let entityMap = {
 				modelOne: new Entity(modelOne),
 				modelTwo: new Entity(modelTwo),
@@ -538,6 +636,138 @@ describe("Service Offline", async () => {
 			expect(service.entities.modelOne.model.entity).to.equal(modelOne.model.entity);
 			expect(service.entities.modelTwo.model.entity).to.equal(modelTwo.model.entity);
 			expect(service.entities.modelThree.model.entity).to.equal(modelThree.model.entity);
+		});
+		describe("Should apply service configuration options onto entities", () => {
+			let model1 = {
+				model: {
+					entity: "e1",
+					service: "s",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					}
+				},
+				indexes: {
+					records: {
+						pk: {
+							field: "pk",
+							facets: ["attr1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["attr2"]
+						}
+					},
+					more: {
+						index: "gsi1",
+						collection: "morerecords",
+						pk: {
+							field: "gsi1pk",
+							facets: ["attr1"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["attr2"]
+						}
+					}
+				}
+			};
+			let model2 = {
+				model: {
+					entity: "e2",
+					service: "s",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					}
+				},
+				indexes: {
+					records: {
+						pk: {
+							field: "pk",
+							facets: ["attr1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["attr2"]
+						}
+					},
+					more: {
+						index: "gsi1",
+						collection: "morerecords",
+						pk: {
+							field: "gsi1pk",
+							facets: ["attr1"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["attr2"]
+						}
+					}
+				}
+			}
+			it("Should apply a table name to each entity when not set on the entity itself", () => {
+				let table = "table_name";
+				let entity1 = new Entity(model1);
+				let entity2 = new Entity(model2);
+				let service = new Service({entity1, entity2}, {table});
+				let query = service.collections
+					.morerecords({attr1: "blah"})
+					.params();
+				expect(query.TableName).to.equal(table)
+			});
+			it("Should apply a table name to each entity even when set on the entities themselves", () => {
+				let table = "table_name";
+				let entity1 = new Entity(model1, {table: "different_table_name"});
+				let entity2 = new Entity(model2, {table: "different_table_name"});
+				let service = new Service({entity1, entity2}, {table});
+				let query = service.collections
+					.morerecords({attr1: "blah"})
+					.params();
+				expect(query.TableName).to.equal(table)
+			});
+			it("Allow a table name to only be supplied via query options", () => {
+				let table = "table_name";
+				let entity1 = new Entity(model1);
+				let entity2 = new Entity(model2);
+				let service = new Service({entity1, entity2});
+				let query = service.collections
+					.morerecords({attr1: "blah"})
+					.params({table});
+				expect(query.TableName).to.equal(table);
+				expect(() => service.collections.morerecords({attr1: "blah"}).params()).to.throw("Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option. - For more detail on this error reference: https://github.com/tywalch/electrodb#missing-table");
+			});
+			it("Should throw if entities are defined with different table names", () => {
+				let table = "table_name";
+				let entity1 = new Entity(model1, {table: "different_table_name1"});
+				let entity2 = new Entity(model2, {table: "different_table_name2"});
+				expect(() => new Service({entity1, entity2})).to.throw("Entity with name 'entity2' is defined to use a different Table than what is defined on other Service Entities and/or the Service itself. Entity 'entity2' is defined with table name 'different_table_name2' but the Service has been defined to use table name 'different_table_name1'. All Entities in a Service must reference the same DynamoDB table. To ensure all Entities will use the same DynamoDB table, it is possible to apply the property 'table' to the Service constructor's configuration parameter. - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
+				let service = new Service({entity1, entity2}, {table});
+				let query = service.collections
+					.morerecords({attr1: "blah"})
+					.params();
+				expect(query.TableName).to.equal(table)
+			});
+			it("Should apply a docClient to each entity", () => {
+				let client = {};
+				let table = "table_name";
+				let entity1 = new Entity(model1);
+				let entity2 = new Entity(model2 );
+				let service = new Service({entity1, entity2}, {table, client});
+				expect(service.client).to.equal(client);
+				expect(entity1.client).to.equal(client);
+				expect(entity2.client).to.equal(client);
+			});
 		});
 	})
 	it("Should not allow a service to be created without a name", () => {
@@ -665,7 +895,7 @@ describe("Service Offline", async () => {
 		expect(() => service.join(schema)).to.not.throw();
 		expect(service.entities).to.have.property("MyEntity");
 	});
-	it("Should require all PK values", () => {
+	it("Should require matching PK values for entities associated with a common collection", () => {
 		let entityOne = {
 			entity: "entityOne",
 			attributes: {
@@ -697,7 +927,7 @@ describe("Service Offline", async () => {
 			}
 		};
 		let entityTwo = {
-			entity: "entityOne",
+			entity: "entityTwo",
 			attributes: {
 				prop1: {
 					type: "string",
@@ -719,7 +949,7 @@ describe("Service Offline", async () => {
 				index1: {
 					pk: {
 						field: "pk",
-						facets: ["prop1", "prop7"],
+						facets: ["prop1"],
 					},
 					sk: {
 						field: "sk",
@@ -738,7 +968,7 @@ describe("Service Offline", async () => {
 		database
 			.join(entityOne)
 
-		expect(() => database.join(entityTwo)).to.throw(`Entity with name ${"entityOne"} has already been joined to this service`);
+		expect(() => database.join(entityTwo)).to.throw("Invalid entity index definitions. The following index definitions have already been defined on this model but with incompatible or conflicting properties: Partition Key Facets provided \"prop1\" do not match established facets \"prop1, prop7\" - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
 	});
 	it("Should require all PK values", () => {
 		let entityOne = {
@@ -817,21 +1047,12 @@ describe("Service Offline", async () => {
 		expect(() => database.collections.collectionA({prop1: "abc",}).params()).to.throw("Incomplete or invalid key facets supplied. Missing properties: prop7");
 		expect(database.collections.collectionA({prop1: "abc", prop7: "def", prop2: "hij"}).params()).to.deep.equal({
 			KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
-			FilterExpression: "(#__edb_e___entityOne = :__edb_e___entityOne AND #__edb_v___entityOne = :__edb_v___entityOne) OR (#__edb_e___entityTwo = :__edb_e___entityTwo AND #__edb_v___entityTwo = :__edb_v___entityTwo)",
 			TableName: 'electro',
 			ExpressionAttributeNames: {
-				"#__edb_e___entityOne": "__edb_e__",
-				"#__edb_v___entityOne": "__edb_v__",
-				"#__edb_e___entityTwo": "__edb_e__",
-				"#__edb_v___entityTwo": "__edb_v__",
 				"#pk": "pk",
 				"#sk1": "sk"
 			},
 			ExpressionAttributeValues: {
-				":__edb_e___entityOne": "entityOne",
-				":__edb_v___entityOne": "1",
-				":__edb_e___entityTwo": "entityTwo",
-				":__edb_v___entityTwo": "1",
 				':pk': '$electrotest_1#prop1_abc#prop7_def',
 				':sk1': '$collectiona'
 			}
@@ -1524,7 +1745,7 @@ describe("Misconfiguration exceptions", () => {
 		let get = database.entities.entityOne.get({prop1, prop2, prop3}).params();
 		let destroy = database.entities.entityOne.delete({prop1, prop2, prop3}).params();
 		let update = database.entities.entityOne.update({prop1, prop2, prop3}).set({prop4, prop5, prop6, prop7, prop8, prop9}).params();
-		let collection = database.collections.collectionD({prop7, prop8, prop9}).params();
+		// let collection = database.collections.collectionD({prop7, prop8, prop9}).params();
 
 		function testKeys(pk, sk) {
 			if (!pk.startsWith("$electrotest_1#prop1_")) {
@@ -1535,7 +1756,7 @@ describe("Misconfiguration exceptions", () => {
 			}
 		}
 
-		expect(collection.FilterExpression).to.equal("(#__edb_e___entityOne = :__edb_e___entityOne AND #__edb_v___entityOne = :__edb_v___entityOne)");
+		// expect(collection.FilterExpression).to.equal("(#__edb_e___entityOne = :__edb_e___entityOne AND #__edb_v___entityOne = :__edb_v___entityOne)");
 		testKeys(query.ExpressionAttributeValues[":pk"], query.ExpressionAttributeValues[":sk1"]);
 		testKeys(scan.ExpressionAttributeValues[":pk"], scan.ExpressionAttributeValues[":sk"]);
 		testKeys(get.Key.pk, get.Key.sk);

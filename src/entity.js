@@ -47,6 +47,14 @@ class Entity {
 		}
 	}
 
+	getName() {
+		return this.model.entity;
+	}
+
+	getVersion() {
+		return this.model.version;
+	}
+
 	find(facets = {}) {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
@@ -74,22 +82,22 @@ class Entity {
 		}
 	}
 
-	collection(collection = "", clauses = {}, facets = {}, expressions = {}) {
+	collection(collection = "", clauses = {}, facets = {}, {expressions = {}, parse} = {}) {
 		let options = {
+			parse,
 			expressions: {
 				names: expressions.names || {},
-				values: expressions.values|| {},
+				values: expressions.values || {},
 				expression: expressions.expression || ""
 			},
 			lastEvaluatedKeyRaw: true,
 		};
-		let index = this.model.translations.collections.fromCollectionToIndex[
-			collection
-		];
+
+		let index = this.model.translations.collections.fromCollectionToIndex[collection];
 		if (index === undefined) {
 			throw new Error(`Invalid collection: ${collection}`);
 		}
-		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).collection(
+		return this._makeChain(index, clauses, clauses.index, options).collection(
 			collection,
 			facets
 		);
@@ -152,18 +160,7 @@ class Entity {
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
 	}
 
-	async go(method, parameters = {}, options = {}) {
-		let config = {
-			includeKeys: options.includeKeys,
-			originalErr: options.originalErr,
-			raw: options.raw,
-			params: options.params || {},
-			page: options.page,
-			pager: !!options.pager,
-			lastEvaluatedKeyRaw: !!options.lastEvaluatedKeyRaw,
-			table: options.table,
-			concurrent: options.concurrent
-		};
+	async go(method, parameters = {}, config = {}) {
 		let stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		try {
 			switch (method) {
@@ -205,10 +202,16 @@ class Entity {
 		let results = [];
 		let concurrent = this._normalizeConcurrencyValue(config.concurrent)
 		let concurrentOperations = utilities.batchItems(parameters, concurrent);
-		// console.log("PUT", JSON.stringify(concurrentOperations));
 		for (let operation of concurrentOperations) {
 			await Promise.all(operation.map(async params => {
 				let response = await this._exec(MethodTypes.batchWrite, params);
+				if (validations.isFunction(config.parse)) {
+					let parsed = await config.parse(config, response);
+					if (parsed) {
+						results.push(parsed);
+					}
+					return;
+				}
 				let unprocessed = this.formatBulkWriteResponse(params.IndexName, response, config);
 				for (let u of unprocessed) {
 					results.push(u);
@@ -231,6 +234,10 @@ class Entity {
 		for (let operation of concurrentOperations) {
 			await Promise.all(operation.map(async params => {
 				let response = await this._exec(MethodTypes.batchGet, params);
+				if (validations.isFunction(config.parse)) {
+					resultsAll.push(await config.parse(config, response));
+					return;
+				}
 				let [results, unprocessed] = this.formatBulkGetResponse(params.IndexName, response, config);
 				for (let r of results) {
 					resultsAll.push(r);
@@ -244,15 +251,16 @@ class Entity {
 	}
 
 	async executeQuery(method, parameters, config) {
-		// let params = Object.assign({}, parameters);
 		let response = await this._exec(method, parameters);
+		if (validations.isFunction(config.parse)) {
+			return config.parse(config, response);
+		}
 		if (method === MethodTypes.put || method === MethodTypes.create) {
 			return this.formatResponse(parameters.IndexName, parameters, config);
 		} else {
 			return this.formatResponse(parameters.IndexName, response, config);
 		}
 	}
-
 
 	cleanseRetrievedData(item = {}, options = {}) {
 		let { includeKeys } = options;
@@ -329,7 +337,6 @@ class Entity {
 					results = response;
 				}
 			} else {
-
 				let data = {};
 				if (response.Item) {
 					data = this.cleanseRetrievedData(response.Item, config);
@@ -524,17 +531,50 @@ class Entity {
 			raw: false,
 			params: {},
 			page: {},
-			pager: false
+			pager: false,
+			lastEvaluatedKeyRaw: false,
+			table: undefined,
+			concurrent: undefined,
+			parse: undefined
 		};
 
 		config = options.reduce((config, option) => {
-			if (option.includeKeys) config.includeKeys = true;
-			if (option.originalErr) config.originalErr = true;
-			if (option.raw) config.raw = true;
-			if (option.pager) config.pager = true;
-			if (option.lastEvaluatedKeyRaw === true) config.lastEvaluatedKeyRaw = true;
-			if (option.limit) config.params.Limit = option.limit;
-			if (option.table) config.params.TableName = option.table;
+			if (option.includeKeys === true) {
+				config.includeKeys = true;
+			}
+
+			if (option.originalErr === true) {
+				config.originalErr = true;
+			}
+
+			if (option.raw === true) {
+				config.raw = true;
+			}
+
+			if (option.pager) {
+				config.pager = true;
+			}
+
+			if (option.lastEvaluatedKeyRaw === true) {
+				config.lastEvaluatedKeyRaw = true;
+			}
+
+			if (!isNaN(option.limit)) {
+				config.params.Limit = option.limit;
+			}
+
+			if (validations.isStringHasLength(option.table)) {
+				config.params.TableName = option.table;
+			}
+
+			if (option.concurrent !== undefined) {
+				config.concurrent = option.concurrent;
+			}
+
+			if (validations.isFunction(option.parse)) {
+				config.parse = option.parse;
+			}
+
 			config.page = Object.assign({}, config.page, option.page);
 			config.params = Object.assign({}, config.params, option.params);
 			return config;
@@ -556,7 +596,7 @@ class Entity {
 			}
 		}
 
-		return parameters;
+		return {parameters, config};
 	}
 
 	_makeCreateConditions(index) {
@@ -605,12 +645,12 @@ class Entity {
 	/* istanbul ignore next */
 	_params(state, config = {}) {
 		let { keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} } = state.query;
-		let conlidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
+		let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
 			case MethodTypes.get:
 			case MethodTypes.delete:
-				params = this._makeSimpleIndexParams(keys.pk, ...conlidatedQueryFacets);
+				params = this._makeSimpleIndexParams(keys.pk, ...consolidatedQueryFacets);
 				break;
 			case MethodTypes.put:
 			case MethodTypes.create:
@@ -621,7 +661,7 @@ class Entity {
 				params = this._makeUpdateParams(
 					update,
 					keys.pk,
-					...conlidatedQueryFacets,
+					...consolidatedQueryFacets,
 				);
 				break;
 			case MethodTypes.scan:
@@ -631,8 +671,8 @@ class Entity {
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
-		params = this._applyParameterOptions(params, options, config);
-		return this._applyParameterExpressionTypes(params, filter);
+		let applied = this._applyParameterOptions(params, options, config);
+		return this._applyParameterExpressionTypes(applied.parameters, filter);
 	}
 
 	_batchGetParams(state, config = {}) {
@@ -704,17 +744,19 @@ class Entity {
 		return key;
 	}
 
-	getIdentifierExpressions() {
+	getIdentifierExpressions(alias = this.getName()) {
+		let name = this.getName();
+		let version = this.getVersion();
 		return {
 			names: {
-				[`#${this.identifiers.entity}_${this.model.entity}`]: this.identifiers.entity,
-				[`#${this.identifiers.version}_${this.model.entity}`]: this.identifiers.version,
+				[`#${this.identifiers.entity}_${alias}`]: this.identifiers.entity,
+				[`#${this.identifiers.version}_${alias}`]: this.identifiers.version,
 			},
 			values: {
-				[`:${this.identifiers.entity}_${this.model.entity}`]: this.model.entity,
-				[`:${this.identifiers.version}_${this.model.entity}`]: this.model.version,
+				[`:${this.identifiers.entity}_${alias}`]: name,
+				[`:${this.identifiers.version}_${alias}`]: version,
 			},
-			expression: `(#${this.identifiers.entity}_${this.model.entity} = :${this.identifiers.entity}_${this.model.entity} AND #${this.identifiers.version}_${this.model.entity} = :${this.identifiers.version}_${this.model.entity})`
+			expression: `(#${this.identifiers.entity}_${alias} = :${this.identifiers.entity}_${alias} AND #${this.identifiers.version}_${alias} = :${this.identifiers.version}_${alias})`
 		}
 	}
 
@@ -742,8 +784,8 @@ class Entity {
 		};
 		params.ExpressionAttributeNames["#" + this.identifiers.entity] = this.identifiers.entity;
 		params.ExpressionAttributeNames["#" + this.identifiers.version] = this.identifiers.version;
-		params.ExpressionAttributeValues[":" + this.identifiers.entity] = this.model.entity;
-		params.ExpressionAttributeValues[":" + this.identifiers.version] = this.model.version;
+		params.ExpressionAttributeValues[":" + this.identifiers.entity] = this.getName();
+		params.ExpressionAttributeValues[":" + this.identifiers.version] = this.getVersion();
 		params.FilterExpression = `${params.FilterExpression} AND #${this.identifiers.entity} = :${this.identifiers.entity} AND #${this.identifiers.version} = :${this.identifiers.version}`;
 		if (hasSortKey) {
 			let skField = this.model.indexes[accessPattern].sk.field;
@@ -798,8 +840,8 @@ class Entity {
 			Item: {
 				...translatedFields,
 				...updatedKeys,
-				[this.identifiers.entity]: this.model.entity,
-				[this.identifiers.version]: this.model.version,
+				[this.identifiers.entity]: this.getName(),
+				[this.identifiers.version]: this.getVersion(),
 			},
 			TableName: this._getTableName(),
 		};
@@ -901,16 +943,15 @@ class Entity {
 
 	/* istanbul ignore next */
 	_queryParams(state = {}, options = {}) {
-		let conlidatedQueryFacets = this._consolidateQueryFacets(
+		let consolidatedQueryFacets = this._consolidateQueryFacets(
 			state.query.keys.sk,
 		);
 		let indexKeys;
 		if (state.query.type === QueryTypes.is) {
-			indexKeys = this._makeIndexKeys(state.query.index, state.query.keys.pk, ...conlidatedQueryFacets);
+			indexKeys = this._makeIndexKeys(state.query.index, state.query.keys.pk, ...consolidatedQueryFacets);
 		} else {
-			indexKeys = this._makeIndexKeysWithoutTail(state.query.index, state.query.keys.pk, ...conlidatedQueryFacets);
+			indexKeys = this._makeIndexKeysWithoutTail(state.query.index, state.query.keys.pk, ...consolidatedQueryFacets);
 		}
-
 		let parameters = {};
 		switch (state.query.type) {
 			case QueryTypes.is:
@@ -953,9 +994,10 @@ class Entity {
 				);
 				break;
 			default:
-				throw new Error(`Invalid method: ${method}`);
+				throw new Error(`Invalid query type: ${state.query.type}`);
 		}
-		return this._applyParameterOptions(parameters, options);
+		let applied = this._applyParameterOptions(parameters, state.query.options, options);
+		return applied.parameters;
 	}
 
 	_makeBetweenQueryParams(index, filter, pk, ...sk) {
@@ -1556,16 +1598,16 @@ class Entity {
 			let indexName = index.index || "";
 			if (seenIndexes[indexName] !== undefined) {
 				if (indexName === "") {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model: ${accessPattern} ${indexName || "(PRIMARY INDEX)"}. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName || "(PRIMARY INDEX)"}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
 				} else {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model: ${accessPattern} ${indexName || "(PRIMARY INDEX)"}`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName}'`);
 				}
 			}
 			seenIndexes[indexName] = indexName;
 			let hasSk = !!index.sk;
 			let inCollection = !!index.collection;
 			if (!hasSk && inCollection) {
-				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid index definition: Access pattern, ${accessPattern} ${indexName || "(PRIMARY INDEX)"}, contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
+				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid Access pattern definition for '${accessPattern}': '${indexName || "(PRIMARY INDEX)"}', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
 			}
 			let collection = index.collection || "";
 			let customFacets = {
@@ -1616,9 +1658,9 @@ class Entity {
 
 			if (sk.field) {
 				if (sk.field === pk.field) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `The Access Pattern '${accessPattern}' references the field '${pk.field}' as the field name for both the PK and SK. Fields used for indexes need to be unique to avoid conflicts.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `The Access Pattern '${accessPattern}' references the field '${sk.field}' as the field name for both the PK and SK. Fields used for indexes need to be unique to avoid conflicts.`);
 				} else if (seenIndexFields[sk.field] !== undefined) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Sort Key (sk) on Access Pattern '${accessPattern}' references the field '${pk.field}' which is already referenced by the Access Pattern '${seenIndexFields[pk.field]}'. Fields used for indexes need to be unique to avoid conflicts.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Sort Key (sk) on Access Pattern '${accessPattern}' references the field '${sk.field}' which is already referenced by the Access Pattern '${seenIndexFields[sk.field]}'. Fields used for indexes need to be unique to avoid conflicts.`);
 				}else {
 					seenIndexFields[sk.field] = accessPattern;
 				}
@@ -1749,19 +1791,21 @@ class Entity {
 	_parseModel(model, config = {}) {
 		/** start beta/v1 condition **/
 		let modelVersion = utilities.getModelVersion(model);
-		let service, entity, version, table;
+		let service, entity, version, table, name;
 		switch(modelVersion) {
 			case ModelVersions.beta:
 				service = model.service;
 				entity = model.entity;
 				version = model.version;
 				table = config.table || model.table;
+				name = entity;
 				break;
 			case ModelVersions.v1:
 				service = model.model && model.model.service;
 				entity = model.model && model.model.entity;
 				version = model.model && model.model.version;
 				table = config.table || model.table;
+				name = entity;
 				break;
 			default:
 				throw new Error("Invalid model");
@@ -1788,17 +1832,18 @@ class Entity {
 		}
 
 		return {
-			modelVersion,
-			service,
-			version,
-			entity,
+			name,
 			table,
 			schema,
 			facets,
+			entity,
+			service,
 			indexes,
+			version,
 			filters,
 			prefixes,
 			collections,
+			modelVersion,
 			lookup: {
 				indexHasSortKeys,
 			},

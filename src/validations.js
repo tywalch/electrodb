@@ -273,6 +273,10 @@ function isBetaServiceConfig(serviceConfig) {
 		&& isStringHasLength(serviceConfig.version)
 }
 
+function isFunction(value) {
+	return typeof value === "function";
+}
+
 module.exports = {
 	model: validateModel,
 	testModel,
@@ -280,6 +284,7 @@ module.exports = {
 	isNameModelRecordType,
 	isStringHasLength,
 	isObjectHasLength,
+	isFunction,
 	isBetaServiceConfig,
 	isNameEntityRecordType
 };

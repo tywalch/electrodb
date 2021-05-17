@@ -177,7 +177,7 @@ describe("Model Validation", () => {
 				},
 			},
 		};
-		expect(() => new Entity(schema)).to.throw("Sort Key (sk) on Access Pattern 'record2' references the field 'gsi1pk' which is already referenced by the Access Pattern 'record2'. Fields used for indexes need to be unique to avoid conflicts. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-fields")
+		expect(() => new Entity(schema)).to.throw("Sort Key (sk) on Access Pattern 'record2' references the field 'sk' which is already referenced by the Access Pattern 'record'. Fields used for indexes need to be unique to avoid conflicts. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-fields")
 	});
 
 	it("should not allow index fields to be used more than once in across indexes: duplicate pk/sk", () => {

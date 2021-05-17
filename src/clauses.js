@@ -380,7 +380,8 @@ let clauses = {
 				throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 			}
 			let params = clauses.params.action(entity, state, options);
-			return entity.go(state.query.method, params, options)
+			let {config} = entity._applyParameterOptions({}, state.query.options, options);
+			return entity.go(state.query.method, params, config);
 		},
 		children: [],
 	},
