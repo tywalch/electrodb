@@ -50,7 +50,7 @@ class Service {
 			version: service.version,
 		};
 		this.service.name = service.name || service.service;
-		this.service.table = service.table || config.table;
+		this.service.table = service.table;
 		this.service.version = service.version;
 		// Unique to Beta
 
@@ -207,9 +207,8 @@ class Service {
 	 * done: don't over query entity versions
 	 * done: services require extra parens for entity wheres?
 	 * todo: tests for params query option for all query methods?
-	 * todo: readme write up on applying table to v1Map constructors
+	 * done: readme write up on applying table to v1Map constructors
 	 * done: test applying attribute properties when doing collection query
-	 * todo: make complete query option test suite
 	 */
 	cleanseRetrievedData(collection = "", entities, data = {}, config = {}) {
 		if (config.raw) {
