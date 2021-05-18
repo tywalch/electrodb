@@ -463,18 +463,25 @@ describe("Service Connected", async () => {
 		expect(collectionC).to.deep.equal({
 			entityOne: [recordOne],
 		});
+
 		expect(collectionD).to.deep.equal({
 			entityOne: [recordOne],
 			entityThree: [recordThree],
 		});
+
 		expect(collectionE).to.deep.equal({
 			entityTwo: [recordTwo],
 			entityThree: [recordThree],
 		});
+
 		expect(collectionG).to.deep.equal({
 			entityTwo: [recordTwo],
 		});
 	}).timeout(10000);
+
+	it("Should apply attribute getters when formatting the response", () => {
+		throw "DO THIS";
+	})
 });
 
 describe("Entities with custom identifiers and versions", () => {
@@ -1332,6 +1339,150 @@ describe("Entities with custom identifiers and versions", () => {
 				':sk1': '$collectiona',
 			},
 			"FilterExpression": "#uniqueToModelTwo = :uniqueToModelTwo_w1 OR #uniqueToModelOne = :uniqueToModelOne_w1"
+		});
+	});
+
+	it("should apply attribute getters from the appropriate entities when retrieving data from a collection query.", async () => {
+		let modelOne = {
+			model: {
+				entity: "entityOne",
+				service: "myservice",
+				version: "1"
+			},
+			attributes: {
+				uniqueToModelOne: {
+					type: "string",
+					get: (value) => value + "_fromEntityOneGetter"
+				},
+				prop1: {
+					type: "string",
+					get: (value) => value + "_fromEntityOneGetter"
+				},
+				prop2: {
+					type: "string",
+					get: (value) => value + "_fromEntityOneGetter"
+				},
+				prop3: {
+					type: "string",
+					get: (value) => value + "_fromEntityOneGetter"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				},
+			},
+		};
+		let modelTwo = {
+			model: {
+				entity: "entityTwo",
+				service: "myservice",
+				version: "1"
+			},
+			attributes: {
+				uniqueToModelTwo: {
+					type: "string",
+					get: (value) => value + "_fromEntityTwoGetter"
+				},
+				prop1: {
+					type: "string",
+					get: (value) => value + "_fromEntityTwoGetter"
+				},
+				prop2: {
+					type: "string",
+					get: (value) => value + "_fromEntityTwoGetter"
+				},
+				prop3: {
+					type: "string",
+					get: (value) => value + "_fromEntityTwoGetter"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				},
+			},
+		};
+		let entityOne = new Entity(modelOne);
+		let entityTwo = new Entity(modelTwo);
+		let service = new Service({
+			entityOne,
+			entityTwo,
+		},{table: "electro", client});
+		let prop1 = uuid();
+		await Promise.all([
+			entityOne.put({
+				prop1,
+				prop2: "prop2Value",
+				prop3: "prop3Value_entityOne",
+				uniqueToModelOne: "uniqueToModelOneValue",
+			}).go(),
+			entityTwo.put({
+				prop1,
+				prop2: "prop2Value",
+				prop3: "prop3Value_entityTwo",
+				uniqueToModelTwo: "uniqueToModelTwoValue",
+			}).go()
+		]);
+		let record = await service.collections
+			.collectionA({prop1})
+			.go();
+		let recordWithWhere = await service.collections
+			.collectionA({prop1})
+			.where(({prop2}, {eq}) => eq(prop2, "prop2Value"))
+			.go();
+
+		expect(record).to.deep.equal({
+			"entityOne": [
+				{
+					"prop2": "prop2Value_fromEntityOneGetter",
+					"prop1": `${prop1}_fromEntityOneGetter`,
+					"uniqueToModelOne": "uniqueToModelOneValue_fromEntityOneGetter",
+					"prop3": "prop3Value_entityOne_fromEntityOneGetter"
+				}
+			],
+			"entityTwo": [
+				{
+					"prop2": "prop2Value_fromEntityTwoGetter",
+					"prop1": `${prop1}_fromEntityTwoGetter`,
+					"uniqueToModelTwo": "uniqueToModelTwoValue_fromEntityTwoGetter",
+					"prop3": "prop3Value_entityTwo_fromEntityTwoGetter"
+				}
+			]
+		});
+		expect(recordWithWhere).to.deep.equal({
+			"entityOne": [
+				{
+					"prop2": "prop2Value_fromEntityOneGetter",
+					"prop1": `${prop1}_fromEntityOneGetter`,
+					"uniqueToModelOne": "uniqueToModelOneValue_fromEntityOneGetter",
+					"prop3": "prop3Value_entityOne_fromEntityOneGetter"
+				}
+			],
+			"entityTwo": [
+				{
+					"prop2": "prop2Value_fromEntityTwoGetter",
+					"prop1": `${prop1}_fromEntityTwoGetter`,
+					"uniqueToModelTwo": "uniqueToModelTwoValue_fromEntityTwoGetter",
+					"prop3": "prop3Value_entityTwo_fromEntityTwoGetter"
+				}
+			]
 		});
 	});
 });

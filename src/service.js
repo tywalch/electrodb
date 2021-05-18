@@ -197,17 +197,19 @@ class Service {
 	}
 
 	/**
-	 * todo: test matching entities with custom model identifiers
-	 * todo: test matching entities with custom version identifiers
-	 * todo: test matching entities with aliases
+	 * done: test matching entities with custom model identifiers
+	 * done: test matching entities with custom version identifiers
+	 * done: test matching entities with aliases
 	 * done: test setClient on entity
 	 * done: test entities with different tables on entities
 	 * done: test entities with different clients on entities
 	 * done: test config combinations services/entities
-	 * todo: don't over query entity versions
+	 * done: don't over query entity versions
 	 * done: services require extra parens for entity wheres?
 	 * todo: tests for params query option for all query methods?
 	 * todo: readme write up on applying table to v1Map constructors
+	 * done: test applying attribute properties when doing collection query
+	 * todo: make complete query option test suite
 	 */
 	cleanseRetrievedData(collection = "", entities, data = {}, config = {}) {
 		if (config.raw) {
