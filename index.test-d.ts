@@ -1614,21 +1614,3 @@ let getKeys = ((val) => {}) as GetKeys;
         .where((attr, op) => {
             return op.begins(attr.prop2, "10");
         })
-    // entityWithSK.plop.attr10.v
-    // entityWithSK.plop.attr4 // item0
-    // entityWithSK.plop.attr2.r // item4
-    // entityWithSK.plop.attr1 // item3
-    // entityWithSK.plop.attr1.f = true // success
-    // entityWithSK.plop.attr1.f = false // fail
-    // entityWithSK.plop.attr1.d = true // success
-    // entityWithSK.plop.attr1.d = false // fail
-    // entityWithSK.plop.attr1.r = false // success
-    // entityWithSK.plop.attr1.r = true // fail
-    // entityWithSK.plop.attr5.f = false
-    // entityWithSK.plop.attr5.f = true
-    // entityWithSK.plop.attr5.r = false
-    // entityWithSK.plop.attr5.r = true
-    // entityWithSK.plop.attr4.r = true
-    // entityWithSK.plop.attr4.r = false
-    // entityWithSK.plop.attr5.f = false
-    // entityWithSK.plop.attr5.f = true

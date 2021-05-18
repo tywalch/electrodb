@@ -1,4 +1,3 @@
-
 # ElectroDB  
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
 [![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) 
@@ -24,7 +23,8 @@
 - [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and efficiently query based on defined sort key structures. 
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
 - [**Use With Your Existing Solution**](#facet-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Facet Templates to leverage your existing key structures.
-- [**Generate Type Definitions**](#electro-cli) - Generate **TypeScript** type definition files (`.d.ts`) based on your model.
+- [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services. 
+- [**Generate Type Definitions**](#electro-cli) - Generate **TypeScript** type definition files (`.d.ts`) based on your model for more concise accurate types.
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
 - [**Stand Up HTTP Service for Entities**](#electro-cli) - stand up an HTTP Service to interact with your `Entities`, `Services`, `Models` for easier prototyping.
 
@@ -33,7 +33,7 @@
 **Turn this**
 ```javascript
 StoreLocations.query
-        .leases({storeId})
+        .leases({storeId: "lattelarrys"})
         .gte({leaseEndDate: "2010"})
         .where((attr, op) => `
             ${op.eq(attr.cityId, "Atlanta1")} AND ${op.contains(attr.category, "food")}
@@ -73,6 +73,7 @@ StoreLocations.query
   * [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
+  * [TypeScript Support](#typescript-support)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
@@ -178,7 +179,22 @@ npm install electrodb --save
 Require `Entity` and/or `Service` from `electrodb`:    
 ```javascript  
 const {Entity, Service} = require("electrodb");
+// or 
+import {Entity, Service} from "electrodb";
 ```
+
+## TypeScript Support
+
+New with version `0.10.0` is TypeScript support. Previously, through the [Electro CLI](#electro-cli), it was possible to generate type definition files (`.d.ts`) for you Models, Entities, and Services. Entities and Services now support strong TypeScript enforcement. 
+
+As of writing this, this functionality is still a work in progress, and enforcement of some of ElectroDB's query constraints have still not been written into the type checks. Most notably are the following constraints not yet enforced by the type checker, but are enforced at query runtime:
+
+- Put/Create/Update/Patch operations that partially impact index facets. When performing a `put` or `update` operation that impacts a facet of a secondary index, that operation can result in a change to the keys for that index. ElectroDB is not able to determine the new value of that index key, because not all facets were provided, then this will result in a runtime error. 
+- Sort Key Facet order. Sort Key Facets must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about facet ordering see the section on [Facets](#facets).
+- Use of the `params` method does not yet return strict types.
+
+If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create an issue and it will be addressed. 
+
 
 # Entities and Services
 > To see full examples of ***ElectroDB*** in action, go to the [Examples](#examples) section.
@@ -196,18 +212,39 @@ In ***ElectroDB*** an `Entity` is represents a single business object. For examp
 Require or import `Entity` from `electrodb`:    
 ```javascript  
 const {Entity} = require("electrodb");
+// or
+import {Entity} from "electrodb";
 ```
+
+> When using TypeScript, for strong type checking, be sure to either add your model as an object literal to the Entity constructor or create your model using const assertions with the `as const` syntax.
 
 # Services
 In ***ElectroDB*** a `Service` represents a collection of related Entities. Services allow you to build queries span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that `join` multiple Entities.
 
-Require `electrodb`:    
+Require:    
 ```javascript  
 const {Service} = require("electrodb");
+// or
+import {Service} from "electrodb";
 ```
 
+## TypeScript Services
+New with version `0.10.0` is TypeScript support. To ensure accurate types with, TypeScript users should create their services by passing an Object literal or const object that maps Entity alias names to Entity instances.
+```typescript
+const table = "my_table_name";
+const employees = new Entity(EmployeesModel, { client, table });
+const tasks = new Entity(TasksModel, { client, table });
+const TaskApp = new Service({employees, tasks});
+```
+
+The property name you assign the entity will then be "alias", or name, you can reference that entity by through the Service. Aliases can be useful if you are building a service with multiple versions of the same entity or wish to change the reference name of an entity without impacting the schema/key names of that entity.
+
+Services take an optional second parameter, similar to Entities, with a `client` and `table`. Using this constructor interface, the Service will utilize the values from those entities, if they were provided, or be passed values to override the `client` or `table` name on the individual entities. 
+
+Not yet available for TypeScript, this pattern will also accept Models, or a mix of Entities and Models, in the same object literal format.
+
 ## Join 
-Create individual [Entities](#entities) with the [Models](#model) or `join` them via a Service. 
+When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service. 
 
 ```javascript
 // Independent Models
@@ -519,8 +556,7 @@ The `validation` property allows for many different function/type signatures. He
 | `Regexp`  | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute |
 | `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. |
 | `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid. |
-| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |  
-  
+| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |
 
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.

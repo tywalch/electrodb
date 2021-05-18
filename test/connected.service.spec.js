@@ -478,10 +478,6 @@ describe("Service Connected", async () => {
 			entityTwo: [recordTwo],
 		});
 	}).timeout(10000);
-
-	it("Should apply attribute getters when formatting the response", () => {
-		throw "DO THIS";
-	})
 });
 
 describe("Entities with custom identifiers and versions", () => {
