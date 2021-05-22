@@ -20,7 +20,6 @@ let schema = {
     id: {
       type: "string",
       default: () => {
-        console.log("Wut?");
         return uuid()
       },
       field: "storeLocationId",

@@ -185,7 +185,7 @@ import {Entity, Service} from "electrodb";
 
 ## TypeScript Support
 
-New with version `0.10.0` is TypeScript support. Previously, through the [Electro CLI](#electro-cli), it was possible to generate type definition files (`.d.ts`) for you Models, Entities, and Services. Entities and Services now support strong TypeScript enforcement. 
+Previously it was possible to generate type definition files (`.d.ts`) for you Models, Entities, and Services with the [Electro CLI](#electro-cli). New with version `0.10.0` is TypeScript support for Entities and Services. 
 
 As of writing this, this functionality is still a work in progress, and enforcement of some of ElectroDB's query constraints have still not been written into the type checks. Most notably are the following constraints not yet enforced by the type checker, but are enforced at query runtime:
 
@@ -1071,11 +1071,12 @@ The `attributes` object contains every Attribute defined in the Entity's Model. 
 
 operator | example | result
 | ----------- | ----------- | ----------- |  
+`eq` | `eq(rent, maxRent)` | `#rent = :rent1`
+`ne` | `eq(rent, maxRent)` | `#rent <> :rent1`
 `gte` | `gte(rent, value)` | `#rent >= :rent1`
 `gt` | `gt(rent, maxRent)` | `#rent > :rent1`
 `lte` | `lte(rent, maxRent)` | `#rent <= :rent1`
 `lt` | `lt(rent, maxRent)` | `#rent < :rent1`
-`eq` | `eq(rent, maxRent)` | `#rent = :rent1`
 `begins` | `begins(rent, maxRent)` | `begins_with(#rent, :rent1)`
 `exists` | `exists(rent)` | `attribute_exists(#rent)`
 `notExists` | `notExists(rent)` | `attribute_not_exists(#rent)`

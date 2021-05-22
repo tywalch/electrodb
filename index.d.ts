@@ -62,18 +62,18 @@ type SecondaryIndex = {
     readonly collection?: string;
     readonly pk: {
         readonly field: string;
-        readonly facets: string[];
+        readonly facets: ReadonlyArray<string>;
     }
     readonly sk?: {
         readonly field: string;
-        readonly facets: string[];
+        readonly facets: ReadonlyArray<string>;
     }
 }
 
 type IndexWithSortKey = {
     readonly sk: {
         readonly field: string;
-        readonly facets: string[];
+        readonly facets: ReadonlyArray<string>;
     }
 }
 
@@ -96,11 +96,11 @@ type Schema<A extends string, F extends A, C extends string> = {
             readonly collection?: C;
             readonly pk: {
                 readonly field: string;
-                readonly facets: F[];
+                readonly facets: ReadonlyArray<F>;
             }
             readonly sk?: {
                 readonly field: string;
-                readonly facets: F[];
+                readonly facets: ReadonlyArray<F>;
             }
         }
     }
@@ -111,7 +111,7 @@ type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,
         ? R extends "string" ? string
             : R extends "number" ? number
                 : R extends "boolean" ? boolean
-                    : R extends Array<infer E> ? E
+                    : R extends ReadonlyArray<infer E> ? E
                         : R extends "any" ? any
                             : never
         : never
@@ -241,6 +241,7 @@ type WhereAttributes<A extends string, F extends A, C extends string, S extends 
 
 type WhereOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> = {
     eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    ne: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     gte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
@@ -251,7 +252,7 @@ type WhereOperations<A extends string, F extends A, C extends string, S extends 
     notExists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
     contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    value: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
 };
 
@@ -264,6 +265,7 @@ interface QueryOptions {
     includeKeys?: boolean;
     originalErr?: boolean;
     table?: string;
+    limit?: number;
 }
 
 interface ParamOptions {
@@ -273,6 +275,7 @@ interface ParamOptions {
 
 interface PaginationOptions extends QueryOptions {
     lastEvaluatedKeyRaw?: boolean;
+    limit?: number;
 }
 
 interface BulkOptions extends QueryOptions {
@@ -529,3 +532,12 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     constructor(entities: E, config?: ServiceConfiguration);
 }
 
+export type EntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? TableItem<A, F, C, S>
+        : never;
+
+export type CreateEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? PutItem<A, F, C, S>
+        : never;

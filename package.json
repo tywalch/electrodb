@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha ./test/offline**.spec.js",
+    "test-ts": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha -r ts-node/register ./test/**.spec.ts",
     "test-all": "mocha ./test/**.spec.js",
     "test-all-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha ./test/**.spec.js && npm run test-types",
     "test-types": "node ./node_modules/tsd/dist/cli.js",
@@ -23,6 +24,11 @@
   },
   "homepage": "https://github.com/tywalch/electrodb#readme",
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^8.0.3",
+    "@types/node": "^15.6.0",
+    "@types/uuid": "^8.3.0",
     "aws-sdk": "2.630.0",
     "chai": "4.2.0",
     "coveralls": "3.0.13",
@@ -32,7 +38,10 @@
     "mocha-lcov-reporter": "1.3.0",
     "moment": "2.24.0",
     "nyc": "15.0.0",
+    "source-map-support": "^0.5.19",
+    "ts-node": "^9.0.0",
     "tsd": "^0.14.0",
+    "typescript": "^4.2.4",
     "uuid": "7.0.1"
   },
   "keywords": [
