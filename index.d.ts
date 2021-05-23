@@ -447,6 +447,7 @@ type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}
 
 type CollectionWhereOperations = {
     eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    ne: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     gte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
@@ -457,7 +458,7 @@ type CollectionWhereOperations = {
     notExists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
     contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    value: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
     name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
 }
 
