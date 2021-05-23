@@ -23,7 +23,7 @@ let entityWithSK = new Entity({
         },
         attr3: {
             type: ["123", "def", "ghi"] as const,
-            default: "abc"
+            default: "def"
         },
         attr4: {
             type: "string",
@@ -121,7 +121,7 @@ let entityWithoutSK = new Entity({
         },
         attr3: {
             type: ["123", "def", "ghi"] as const,
-            default: "abc"
+            default: "def"
         },
         attr4: {
             type: "string",
@@ -1550,8 +1550,44 @@ let getKeys = ((val) => {}) as GetKeys;
         })
         .go()
         .then((items) => {
-            items
-        })
+            items.normalEntity2.map(item => {
+                let keys = "" as keyof typeof item;
+                expectType<"prop1" | "prop2" | "prop3" | "prop5" | "attr6" | "attr9">(keys);
+                expectType<string>(item.prop1);
+                expectType<string>(item.prop2);
+                expectType<string>(item.prop3);
+                expectType<number>(item.prop5);
+                expectType<number|undefined>(item.attr6);
+                expectType<number|undefined>(item.attr9);
+            });
+            items.entityWithSK.map((item) => {
+                let keys = "" as keyof typeof item;
+                expectType<"attr1" | "attr2" | "attr3" | "attr4" | "attr5" | "attr6" | "attr7" | "attr8" | "attr9" | "attr10">(keys);
+                expectType<string>(item.attr1);
+                expectType<string>(item.attr2);
+                expectType<"123" | "def" | "ghi" | undefined>(item.attr3);
+                expectType<string>(item.attr4);
+                expectType<string | undefined>(item.attr5);
+                expectType<number | undefined>(item.attr6);
+                expectType<any>(item.attr7);
+                expectType<boolean>(item.attr8);
+                expectType<number | undefined>(item.attr9);
+                expectType<boolean | undefined>(item.attr10);
+            });
+            items.entityWithoutSK.map((item) => {
+                let keys = "" as keyof typeof item;
+                expectType<"attr1" | "attr2" | "attr3" | "attr4" | "attr5" | "attr6" | "attr7" | "attr8" | "attr9">(keys);
+                expectType<string>(item.attr1);
+                expectType<string | undefined>(item.attr2);
+                expectType<"123" | "def" | "ghi" | undefined>(item.attr3);
+                expectType<string>(item.attr4);
+                expectType<string | undefined>(item.attr5);
+                expectType<number | undefined>(item.attr6);
+                expectType<any>(item.attr7);
+                expectType<boolean>(item.attr8);
+                expectType<number | undefined>(item.attr9);
+            });
+        });
 
     complexService.collections.normalcollection({prop1: "abc", prop2: "def"})
         .where((attr, op) => {
@@ -1574,8 +1610,30 @@ let getKeys = ((val) => {}) as GetKeys;
             expectAssignable<{prop5: WhereAttributeSymbol<number>}>(attr)
             expectAssignable<{prop10: WhereAttributeSymbol<boolean>}>(attr);
             return op.eq(attr.prop1, "db");
-
         })
+        .go()
+        .then((items) => {
+            items.normalEntity1.map(item => {
+                let keys = "" as keyof typeof item;
+                expectType<"prop1" | "prop2" | "prop3" | "prop4" | "prop10">(keys);
+                expectType<string>(item.prop1);
+                expectType<string>(item.prop2);
+                expectType<string>(item.prop3);
+                expectType<number>(item.prop4);
+                expectType<boolean | undefined>(item.prop10);
+            });
+            items.normalEntity2.map(item => {
+                let keys = "" as keyof typeof item;
+                expectType<"prop1" | "prop2" | "prop3" | "prop5" | "attr6" | "attr9">(keys);
+                expectType<string>(item.prop1);
+                expectType<string>(item.prop2);
+                expectType<string>(item.prop3);
+                expectType<number>(item.prop5);
+                expectType<number|undefined>(item.attr6);
+                expectType<number|undefined>(item.attr9);
+            });
+        });
+
     complexService.collections.mycollection2({attr1: "abc"})
         .where((attr, op) => {
             let opKeys = getKeys(op);
@@ -1599,17 +1657,19 @@ let getKeys = ((val) => {}) as GetKeys;
             return op.eq(attr.attr9, 768);
         })
         .go()
-        .then(value => {
-            value.entityWithSK.map((item) => {
-                item.attr10
-            })
-        })
-
-    complexService.collections
-        .mycollection1({attr9: 34, attr6: 355})
-        .where((attr, {eq}) => {
-            return eq(attr.prop1, "dagda");
-        })
-        .where((attr, op) => {
-            return op.begins(attr.prop2, "10");
-        })
+        .then(results => {
+            results.entityWithSK.map((item) => {
+                let keys = "" as keyof typeof item;
+                expectType<"attr1" | "attr2" | "attr3" | "attr4" | "attr5" | "attr6" | "attr7" | "attr8" | "attr9" | "attr10">(keys);
+                expectType<string>(item.attr1);
+                expectType<string>(item.attr2);
+                expectType<"123" | "def" | "ghi" | undefined>(item.attr3);
+                expectType<string>(item.attr4);
+                expectType<string | undefined>(item.attr5);
+                expectType<number | undefined>(item.attr6);
+                expectType<any>(item.attr7);
+                expectType<boolean>(item.attr8);
+                expectType<number | undefined>(item.attr9);
+                expectType<boolean | undefined>(item.attr10);
+            });
+        });
