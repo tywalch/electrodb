@@ -26,7 +26,7 @@ let entityWithSK = new Entity({
             default: "def"
         },
         attr4: {
-            type: "string",
+            type: ["abc", "ghi"] as const,
             required: true
         },
         attr5: {
@@ -124,7 +124,7 @@ let entityWithoutSK = new Entity({
             default: "def"
         },
         attr4: {
-            type: "string",
+            type: ["abc", "def"] as const,
             required: true
         },
         attr5: {
@@ -601,15 +601,15 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<Promise<WithoutSKMyIndexFacets[]>>(entityWithoutSK.delete([{attr1: "abc"}]).go());
 
 // Put
-    let putItemFull = {attr1: "abnc", attr2: "dsg", attr3: "def", attr4: "24", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: 24, attr10: true} as const;
-    let putItemPartial = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true};
-    let putItemWithoutSK = {attr1: "abnc", attr4: "24", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
-    let putItemWithoutPK = {attr4: "24", attr2: "dsg", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
+    let putItemFull = {attr1: "abnc", attr2: "dsg", attr3: "def", attr4: "abc", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: 24, attr10: true} as const;
+    let putItemPartial = {attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: true} as const;
+    let putItemWithoutSK = {attr1: "abnc", attr4: "abc", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
+    let putItemWithoutPK = {attr4: "abc", attr2: "def", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
     // Single
     entityWithSK.put(putItemFull);
-    entityWithoutSK.put({attr1: "abnc", attr2: "dsg", attr3: "def", attr4: "24", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: 24});
+    entityWithoutSK.put({attr1: "abnc", attr2: "dsg", attr3: "def", attr4: "def", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: 24});
 
-    entityWithSK.put({attr1: "abnc", attr2: "dsg", attr3: "def", attr4: "24", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: undefined, attr10: undefined});
+    entityWithSK.put({attr1: "abnc", attr2: "dsg", attr3: "def", attr4: "abc", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: undefined, attr10: undefined});
     entityWithoutSK.put(putItemPartial);
 
     // Batch
@@ -638,8 +638,8 @@ let getKeys = ((val) => {}) as GetKeys;
 
     expectError<PutParametersWithoutSK>([putItemWithoutPK]);
 
-    expectError<PutParametersWithSK>([{attr1: "abnc", attr2: "dsg", attr4: "24", attr8: "adef"}]);
-    expectError<PutParametersWithoutSK>([{attr1: "abnc", attr2: "dsg", attr4: "24", attr8: "adef"}]);
+    expectError<PutParametersWithSK>([{attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: "adef"}]);
+    expectError<PutParametersWithoutSK>([{attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: "adef"}]);
 
     // Finishers
     type PutSingleFinishers = "go" | "params" | "where";
@@ -719,10 +719,10 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<Promise<WithoutSKMyIndexFacets[]>>(entityWithoutSK.put([putItemFull]).go());
 
 // Create
-    let createItemFull = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
-    let createItemPartial = {attr1: "abnc", attr2: "dsg", attr4: "24", attr8: true} as const;
-    let createItemFullWithoutSK = {attr4: "24", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
-    let createItemFullWithoutPK = {attr2: "dsg", attr4: "24", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
+    let createItemFull = {attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
+    let createItemPartial = {attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: true} as const;
+    let createItemFullWithoutSK = {attr4: "abc", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
+    let createItemFullWithoutPK = {attr2: "dsg", attr4: "abc", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
 
     // Single
     entityWithSK.create(createItemFull);
@@ -756,8 +756,8 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<CreateParametersWithoutSK>(createItemFullWithoutPK);
 
     // Missing required properties
-    expectError<CreateParametersWithSK>([{attr1: "abnc", attr2: "dsg", attr4: "24", attr8: "adef"}]);
-    expectError<CreateParametersWithoutSK>([{attr1: "abnc", attr2: "dsg", attr4: "24", attr8: "adef"}]);
+    expectError<CreateParametersWithSK>([{attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: "adef"}]);
+    expectError<CreateParametersWithoutSK>([{attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: "adef"}]);
 
     // Finishers
     type CreateSingleFinishers = "go" | "params" | "where";
@@ -811,7 +811,7 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<"paramtest">(entityWithoutSK.create(putItemFull).params<"paramtest">());
 
 // Update
-    let setItemFull = {attr4: "24", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
+    let setItemFull = {attr4: "abc", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
 
     let setFn = entityWithSK.update({attr1: "abc", attr2: "def"}).set;
     let setFnWithoutSK = entityWithoutSK.update({attr1: "abc"}).set;
@@ -878,7 +878,7 @@ let getKeys = ((val) => {}) as GetKeys;
     });
 
 // Patch
-    let patchItemFull = {attr4: "24", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
+    let patchItemFull = {attr4: "abc", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
 
     let patchFn = entityWithSK.patch({attr1: "abc", attr2: "def"}).set;
     let patchFnWithoutSK = entityWithoutSK.patch({attr1: "abc"}).set;
@@ -1144,7 +1144,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
-        .between({attr4: "a", attr9: 3, attr3: "def"}, {attr4: "d", attr9: 4, attr3: "def"})
+        .between({attr4: "abc", attr9: 3, attr3: "def"}, {attr4: "abc", attr9: 4, attr3: "def"})
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
 
@@ -1162,13 +1162,13 @@ let getKeys = ((val) => {}) as GetKeys;
 
     entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
-        .lte({attr4: "a", attr9: 3})
+        .lte({attr4: "abc", attr9: 3})
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
-        .lt({attr4: "a", attr9: 3})
+        .lt({attr4: "abc", attr9: 3})
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
 
@@ -1237,7 +1237,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     expectError(entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
-        .between({attr4: "a", attr9: "3", attr3: "def"}, {attr4: "d", attr9: "4", attr3: "def"})
+        .between({attr4: "abc", attr9: "3", attr3: "def"}, {attr4: "abc", attr9: "4", attr3: "def"})
         .go({params: {}})
         .then(a => a.map(val => val.attr4)))
 
@@ -1255,13 +1255,13 @@ let getKeys = ((val) => {}) as GetKeys;
 
     expectError(entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
-        .lte({attr4: "a", attr9: "3"})
+        .lte({attr4: "abc", attr9: "3"})
         .go({params: {}})
         .then(a => a.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
-        .lt({attr4: "a", attr9: "3"})
+        .lt({attr4: "abc", attr9: "3"})
         .go({params: {}})
         .then(a => a.map(val => val.attr4)))
 
@@ -1493,7 +1493,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<string>(item.attr1);
                 expectType<string>(item.attr2);
                 expectType<"123" | "def" | "ghi"|undefined>(item.attr3);
-                expectType<string>(item.attr4);
+                expectType<"abc" | "ghi">(item.attr4);
                 expectType<string|undefined>(item.attr5);
                 expectType<number|undefined>(item.attr6);
                 expectType<any>(item.attr7);
@@ -1509,7 +1509,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<string>(item.attr1);
                 expectType<string | undefined>(item.attr2);
                 expectType<"123" | "def" | "ghi" | undefined>(item.attr3);
-                expectType<string>(item.attr4);
+                expectType<"abc" | "def">(item.attr4);
                 expectType<string|undefined>(item.attr5);
                 expectType<number|undefined>(item.attr6);
                 expectType<any>(item.attr7);
@@ -1533,7 +1533,7 @@ let getKeys = ((val) => {}) as GetKeys;
             expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr)
-            expectAssignable<{attr4: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr)
             expectAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
             expectAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
@@ -1566,7 +1566,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<string>(item.attr1);
                 expectType<string>(item.attr2);
                 expectType<"123" | "def" | "ghi" | undefined>(item.attr3);
-                expectType<string>(item.attr4);
+                expectType<"abc" | "ghi">(item.attr4);
                 expectType<string | undefined>(item.attr5);
                 expectType<number | undefined>(item.attr6);
                 expectType<any>(item.attr7);
@@ -1580,7 +1580,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<string>(item.attr1);
                 expectType<string | undefined>(item.attr2);
                 expectType<"123" | "def" | "ghi" | undefined>(item.attr3);
-                expectType<string>(item.attr4);
+                expectType<"abc" | "def">(item.attr4);
                 expectType<string | undefined>(item.attr5);
                 expectType<number | undefined>(item.attr6);
                 expectType<any>(item.attr7);
@@ -1596,7 +1596,7 @@ let getKeys = ((val) => {}) as GetKeys;
             expectNotAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
             expectNotAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
             expectNotAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr)
-            expectNotAssignable<{attr4: WhereAttributeSymbol<string>}>(attr)
+            expectNotAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr)
             expectNotAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
             expectNotAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
@@ -1641,7 +1641,7 @@ let getKeys = ((val) => {}) as GetKeys;
             expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr)
-            expectAssignable<{attr4: WhereAttributeSymbol<string>}>(attr)
+            expectAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr)
             expectAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
             expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
             expectAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
@@ -1664,7 +1664,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<string>(item.attr1);
                 expectType<string>(item.attr2);
                 expectType<"123" | "def" | "ghi" | undefined>(item.attr3);
-                expectType<string>(item.attr4);
+                expectType<"abc" | "ghi">(item.attr4);
                 expectType<string | undefined>(item.attr5);
                 expectType<number | undefined>(item.attr6);
                 expectType<any>(item.attr7);
