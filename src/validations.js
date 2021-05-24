@@ -252,10 +252,39 @@ function isArrayHasLength(arr) {
 	return Array.isArray(arr) && arr.length > 0;
 }
 
+function isNameEntityRecordType(entityRecord) {
+	return isObjectHasLength(entityRecord) && Object.values(entityRecord).find(value => {
+		return value._instance !== undefined;
+	})
+}
+
+function isNameModelRecordType(modelRecord) {
+	return isObjectHasLength(modelRecord) && Object.values(modelRecord).find(value => {
+		return value.model
+			&& isStringHasLength(value.model.entity)
+			&& isStringHasLength(value.model.version)
+			&& isStringHasLength(value.model.service)
+	});
+}
+
+function isBetaServiceConfig(serviceConfig) {
+	return isObjectHasLength(serviceConfig)
+		&& (isStringHasLength(serviceConfig.service) || isStringHasLength(serviceConfig.name))
+		&& isStringHasLength(serviceConfig.version)
+}
+
+function isFunction(value) {
+	return typeof value === "function";
+}
+
 module.exports = {
 	model: validateModel,
 	testModel,
 	isArrayHasLength,
+	isNameModelRecordType,
 	isStringHasLength,
 	isObjectHasLength,
+	isFunction,
+	isBetaServiceConfig,
+	isNameEntityRecordType
 };

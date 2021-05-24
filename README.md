@@ -1,4 +1,3 @@
-
 # ElectroDB  
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
 [![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) 
@@ -11,7 +10,9 @@
 *This library is a work in progress, please submit issues/feedback or reach out on twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
 
 ------------
-### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+
+> ### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+
 ------------
 
 ## Features  
@@ -24,16 +25,17 @@
 - [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and efficiently query based on defined sort key structures. 
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
 - [**Use With Your Existing Solution**](#facet-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Facet Templates to leverage your existing key structures.
-- [**Generate Type Definitions**](#electro-cli) - Generate **TypeScript** type definition files (`.d.ts`) based on your model.
+- [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services now in Beta. 
+- [**Generate Type Definitions**](#electro-cli) - Generate **TypeScript** type definition files (`.d.ts`) based on your model for more concise, accurate types.
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
-- [**Stand Up HTTP Service for Entities**](#electro-cli) - stand up an HTTP Service to interact with your `Entities`, `Services`, `Models` for easier prototyping.
+- [**Stand Up Rest Server for Entities**](#electro-cli) - Stand up a REST Server to interact with your `Entities`, `Services`, `Models` for easier prototyping.
 
 ------------
 
 **Turn this**
 ```javascript
 StoreLocations.query
-        .leases({storeId})
+        .leases({storeId: "lattelarrys"})
         .gte({leaseEndDate: "2010"})
         .where((attr, op) => `
             ${op.eq(attr.cityId, "Atlanta1")} AND ${op.contains(attr.category, "food")}
@@ -62,7 +64,9 @@ StoreLocations.query
 }
 ``` 
 
-### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+------------
+
+> ### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ------------
 
@@ -73,23 +77,29 @@ StoreLocations.query
   * [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
+  * [TypeScript Support](#typescript-support)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
-  * [Join](#join) 
+  * [TypeScript Services](#typescript-services)
+  * [Join](#join)
   * [Model](#model)
     + [Model Properties](#model-properties)
     + [Service Options](#service-options)
   * [Attributes](#attributes)
-      - [Simple Syntax](#simple-syntax)
-      - [Expanded Syntax](#expanded-syntax)
+    + [Simple Syntax](#simple-syntax)
+    + [Expanded Syntax](#expanded-syntax)
+      - [Enum Attributes](#enum-attributes)
+      - [Any Attributes](#any-attributes)
+        * [Attribute Getters and Setters](#attribute-getters-and-setters)
       - [Attribute Validation](#attribute-validation)
   * [Indexes](#indexes)
-      - [Indexes Without Sort Keys](#indexes-without-sort-keys)
-      - [Indexes With Sort Keys](#indexes-with-sort-keys)
+    + [Indexes Without Sort Keys](#indexes-without-sort-keys)
+    + [Indexes With Sort Keys](#indexes-with-sort-keys)
   * [Facets](#facets)
     + [Facet Arrays](#facet-arrays)
     + [Facet Templates](#facet-templates)
+  * [Facet and Index Considerations](#facet-and-index-considerations)
   * [Collections](#collections)
   * [Filters](#filters)
     + [Defined on the model](#defined-on-the-model)
@@ -101,25 +111,25 @@ StoreLocations.query
     + [Attributes and Operations](#attributes-and-operations)
     + [Multiple Where Clauses](#multiple-where-clauses)
 - [Building Queries](#building-queries)
-    + [Sort Key Operations](#sort-key-operations)
-    + [Using facets to make hierarchical keys](#using-facets-to-make-hierarchical-keys)
-      - [Shopping Mall Stores](#shopping-mall-stores)
+  + [Using facets to make hierarchical keys](#using-facets-to-make-hierarchical-keys)
+    - [Shopping Mall Stores](#shopping-mall-stores)
+  + [Query App Records](#query-app-records)
+    - [Partition Key Facets](#partition-key-facets)
+  + [Sort Key Operations](#sort-key-operations)
   * [Query Chains](#query-chains)
-    + [Get Record](#get-method)
-    + [Batch Get - Get Records](#batch-get)
-    + [Delete Record](#delete-method)
-    + [Batch Write - Delete Records](#batch-write-delete-records)
+    + [Get Method](#get-method)
+    + [Batch Get](#batch-get)
+    + [Delete Method](#delete-method)
+    + [Batch Write Delete Records](#batch-write-delete-records)
     + [Put Record](#put-record)
-    + [Batch Write - Put Records](#batch-write-put-records)
+    + [Batch Write Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
     + [Scan Records](#scan-records)
     + [Patch Records](#patch-records)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
     + [Access Pattern Queries](#access-pattern-queries)
-	   - [Begins With Queries](#begins-with-queries)
-    + [Query Records](#query-records)
-      - [Partition Key Facets](#partition-key-facets)
+      - [Begins With Queries](#begins-with-queries)
   * [Collection Chains](#collection-chains)
   * [Execute Queries](#execute-queries)
     + [Params](#params)
@@ -127,11 +137,30 @@ StoreLocations.query
     + [Page](#page)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
+- [Errors:](#errors-)
+  + [No Client Defined On Model](#no-client-defined-on-model)
+  + [Invalid Identifier](#invalid-identifier)
+  + [Invalid Key Facet Template](#invalid-key-facet-template)
+  + [Duplicate Indexes](#duplicate-indexes)
+  + [Collection Without An SK](#collection-without-an-sk)
+  + [Duplicate Collections](#duplicate-collections)
+  + [Missing Primary Index](#missing-primary-index)
+  + [Invalid Attribute Definition](#invalid-attribute-definition)
+  + [Invalid Model](#invalid-model)
+  + [Invalid Options](#invalid-options)
+  + [Duplicate Index Fields](#duplicate-index-fields)
+  + [Duplicate Index Facets](#duplicate-index-facets)
+  + [Missing Facets](#missing-facets)
+  + [Missing Table](#missing-table)
+  + [Invalid Concurrency Option](#invalid-concurrency-option)
+  + [Invalid Last Evaluated Key](#invalid-last-evaluated-key)
+  + [aws-error](#aws-error)
+  + [Unknown Error](#unknown-error)
 - [Examples](#examples)
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
-    + [Entities](#app-entities)
-    + [Query Records](#query-app-records)
+    + [App Entities](#app-entities)
+    + [Query Records](#query-records)
       - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee)
       - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office)
       - [Tasks for a given employee](#tasks-for-a-given-employee)
@@ -146,12 +175,12 @@ StoreLocations.query
     + [PUT Record](#put-record)
       - [Add a new Store to the Mall](#add-a-new-store-to-the-mall)
     + [UPDATE Record](#update-record)
-      - [Change the Store's Lease Date](#change-the-stores-lease-date)
+      - [Change the Stores Lease Date](#change-the-stores-lease-date)
     + [GET Record](#get-record)
       - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
     + [DELETE Record](#delete-record)
       - [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
-    + [Query Records](#query-mall-records)
+    + [Query Mall Records](#query-mall-records)
       - [All Stores in a particular mall](#all-stores-in-a-particular-mall)
       - [All Stores in a particular mall building](#all-stores-in-a-particular-mall-building)
       - [Find the store located in unit B47](#find-the-store-located-in-unit-b47)
@@ -161,9 +190,11 @@ StoreLocations.query
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
 - [Electro CLI](#electro-cli)
-  * [TypeScript](#electro-cli)
-- [Version 1.0 Migration](#version-1-migration)
+- [Version 1 Migration](#version-1-migration)
+  * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
 - [Coming Soon](#coming-soon)
+
+----------
 
 # Installation    
 
@@ -178,7 +209,22 @@ npm install electrodb --save
 Require `Entity` and/or `Service` from `electrodb`:    
 ```javascript  
 const {Entity, Service} = require("electrodb");
+// or 
+import {Entity, Service} from "electrodb";
 ```
+
+## TypeScript Support
+
+Previously it was possible to generate type definition files (`.d.ts`) for you Models, Entities, and Services with the [Electro CLI](#electro-cli). New with version `0.10.0` is TypeScript support for Entities and Services. 
+
+As of writing this, this functionality is still a work in progress, and enforcement of some of ElectroDB's query constraints have still not been written into the type checks. Most notably are the following constraints not yet enforced by the type checker, but are enforced at query runtime:
+
+- Put/Create/Update/Patch operations that partially impact index facets are not statically typed. When performing a `put` or `update` type operation that impacts a facet of a secondary index, ElectroDB performs a check at runtime to ensure all facets of that key are included. This is detailed more in the section [Facet and Index Considerations](#facet-and-index-considerations). 
+- Sort Key Facet order is not strongly typed. Sort Key Facets must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about facet ordering see the section on [Facets](#facets).
+- Use of the `params` method does not yet return strict types.
+- Use of the `raw` or `includeKeys` query options do not yet impact the returned types.
+
+If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a github issue, and it can be addressed.
 
 # Entities and Services
 > To see full examples of ***ElectroDB*** in action, go to the [Examples](#examples) section.
@@ -196,18 +242,40 @@ In ***ElectroDB*** an `Entity` is represents a single business object. For examp
 Require or import `Entity` from `electrodb`:    
 ```javascript  
 const {Entity} = require("electrodb");
+// or
+import {Entity} from "electrodb";
 ```
+
+> When using TypeScript, for strong type checking, be sure to either add your model as an object literal to the Entity constructor or create your model using const assertions with the `as const` syntax.
 
 # Services
 In ***ElectroDB*** a `Service` represents a collection of related Entities. Services allow you to build queries span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that `join` multiple Entities.
 
-Require `electrodb`:    
+Require:    
 ```javascript  
 const {Service} = require("electrodb");
+// or
+import {Service} from "electrodb";
 ```
 
+## TypeScript Services
+
+New with version `0.10.0` is TypeScript support. To ensure accurate types with, TypeScript users should create their services by passing an Object literal or const object that maps Entity alias names to Entity instances.
+```typescript
+const table = "my_table_name";
+const employees = new Entity(EmployeesModel, { client, table });
+const tasks = new Entity(TasksModel, { client, table });
+const TaskApp = new Service({employees, tasks});
+```
+
+The property name you assign the entity will then be "alias", or name, you can reference that entity by through the Service. Aliases can be useful if you are building a service with multiple versions of the same entity or wish to change the reference name of an entity without impacting the schema/key names of that entity.
+
+Services take an optional second parameter, similar to Entities, with a `client` and `table`. Using this constructor interface, the Service will utilize the values from those entities, if they were provided, or be passed values to override the `client` or `table` name on the individual entities. 
+
+Not yet available for TypeScript, this pattern will also accept Models, or a mix of Entities and Models, in the same object literal format.
+
 ## Join 
-Create individual [Entities](#entities) with the [Models](#model) or `join` them via a Service. 
+When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service. See [TypeScript Services](#typescript-services) to learn how to "join" entities in TypeScript.
 
 ```javascript
 // Independent Models
@@ -228,8 +296,16 @@ TaskApp
 // Joining models to a Service
 let TaskApp = new Service("TaskApp", { client, table });
 TaskApp
-	.join(EmployeesModel) // available at TaskApp.entities.employees
-	.join(TasksModel);    // available at TaskApp.entities.tasks
+	.join(EmployeesModel) // available at TaskApp.entities.employees (based on entity name in model)
+	.join(TasksModel);    // available at TaskApp.entities.tasks (based on entity name in model)
+```
+
+```javascript
+// Joining Entities or Models with an "alias"
+let TaskApp = new Service("TaskApp", { client, table });
+TaskApp
+    .join("personnel", EmployeesModel) // available at TaskApp.entities.personnel
+    .join("directives", tasks); // available at TaskApp.entities.directives
 ```
  
 When joining a Model/Entity to a Service, ElectroDB will perform a number of validations to ensure that Entity conforms to expectations collectively established by all joined Entities.
@@ -461,36 +537,60 @@ Optional second parameter
 > **Pro-Tip:**
 > Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. For example, you may refer to an attribute as `organization` but want to save the attribute with a field name of `org` in DynamoDB. 
 
-#### Simple Syntax
+### Simple Syntax
 Assign just the `type` of the attribute directly to the attribute name. Types currently supported options are "string", "number", "boolean", an array of strings representing a fixed set of possible values, or "any" which disables value type checking on that attribute.
 ```typescript
 attributes: {
-	<AttributeName>: "string"|"number"|"boolean"|"any"|string[]
+	<AttributeName>: "string" | "number" | "boolean" | "any" | string[] | ReadonlyArray<string> 
 }
 ```
 
-#### Expanded Syntax
+### Expanded Syntax
 Use the expanded syntax build out more robust attribute options.
 ```typescript
 attributes: {
 	<AttributeName>: {
-		"type": string|string[],
-		"required"?: boolean,
-		"default"?: value|() => value
-		"validate"?: RegExp|(value: any) => void|string
-		"field"?: string
-		"readOnly"?: boolean
-		"label"?: string
-		"cast"?: "number"|"string"|"boolean",
-		"get"?: (attribute, schema) => value,
-		"set"?: (attribute, schema) => value 
+		type: string | ReadonlyArray<string>;
+		required?: boolean;
+		default?: value|() => value;
+		validate?: RegExp|(value: any) => void|string;
+		field?: string;
+		readOnly?: boolean;
+		label?: string;
+		cast?: "number"|"string"|"boolean";
+		get?: (attribute, schema) => value;
+		set?: (attribute, schema) => value;
 	}
 }
 ```
 
+#### Enum Attributes
+
+When using TypeScript, if you wish to also enforce this type make sure to us the `as const` syntax. If TypeScript is not told this array is Readonly, even when your model is passed directly to the Entity constructor, it will not resolve the unique values within that array. This may be desirable, however, as enforcing the type value can require consumers of your model to do more work to resolve the type beyond just the type `string`.
+
+> Note: Regardless of using TypeScript or JavaScript, ElectroDB will enforce values supplied match the supplied array of values at runtime. 
+
+The following example shows the differences in how TypeScript may enforce your enum value:
+```typescript
+attributes: {
+  myEnumAttribute1: {
+      type: ["option1", "option2", "option3"] // TypeScript enforces as `string[]`
+  },
+  myEnumAttribute2: {
+    type: ["option1", "option2", "option3"] as const // TypeScript enforces as `"option1" | "option2" | "option3" | undefined`
+  },
+  myEnumAttribute3: {
+    required: true,
+    type: ["option1", "option2", "option3"] as const // TypeScript enforces as `"option1" | "option2" | "option3"`
+  }
+}
+```
+
+#### Any Attributes 
+
 | Property | Type | Required | Description |
 | -------- | :--: | :--: | ----------- |
-| `type`  | `string`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
+| `type`  | `string`, `ReadonlyArray<string>`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
 `required` | `boolean` | no | Flag an attribute as required to be present when creating a record. |  
 `default` | `value`, `() => value` | no | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
 `validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
@@ -504,7 +604,7 @@ attributes: {
 ##### Attribute Getters and Setters
 Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both methods should be pure synchronous functions and may be invoked multiple times during one query.
 
-> Important Note: Using getters/setters on Facet Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Facet Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys.
+> Note: Using getters/setters on Facet Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Facet Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.
 
 ElectroDB invokes an Attribute's `get` method after an Item has been retrieved from DynamoDB, and if that field exists on the item. 
 
@@ -513,14 +613,13 @@ ElectroDB invokes an Attribute's `set` method in the following circumstances:
 2. Setters will only be invoked when an Attribute is modified when performing a `patch` or `update` operation.
 
 #### Attribute Validation
-The `validation` property allows for many different function/type signatures. Here the different combinations *ElectroDB* supports:
+The `validation` property allows for multiple function/type signatures. Here the different combinations *ElectroDB* supports:
 | signature | behavior |
 | --------- | -------- |
 | `Regexp`  | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute |
 | `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. |
 | `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid. |
-| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |  
-  
+| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |
 
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
@@ -597,7 +696,7 @@ When using indexes with Sort Keys, that should be expressed as an index *with* a
     }
   }
 }
-```  
+```
 
 ## Facets 
 A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or a **Sort Key** key, which define an `index`.
@@ -630,7 +729,10 @@ For `PK` values, the `service` and `version` values from the model are prefixed 
 For `SK` values, the `entity` value from the model is prefixed onto the key. 
 
 ### Facet Arrays
-In a Facet Array, each element is the name of the corresponding Attribute defined in the Model. If the Attribute has a `label` property, that will be used to prefix the facets, otherwise the full Attribute name will be used.
+In a Facet Array, each element is the name of the corresponding Attribute defined in the Model. 
+
+> Note: If the Attribute has a `label` property, that will be used to prefix the facets, otherwise the full Attribute name will be used.
+> 
 ```javascript
 attributes: {
 	storeId: {
@@ -684,11 +786,13 @@ Attributes are identified by a prefixed colon and the attributes name. For examp
 
 Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_:mallId#bid_:buildingId`. 
 
-> ***ElectroDB*** will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit ***ElectroDB's*** ability to prevent leaking entities with some queries.
+> Note: ***ElectroDB*** will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit ***ElectroDB's*** ability to prevent leaking entities with some queries.
 
 Facet Templates have some "gotchas" to consider: 
-	1. Keys only allow for one instance of an attribute, the template `:prop1#:prop1` will be interpreted the same as `:prop1#`. 
-	2. ElectroDB will continue to always add a trailing delimiter to facets with keys are partially supplied. (More documentation coming on this soon)   
+
+  1. Keys only allow for one instance of an attribute, the template `:prop1#:prop1` will be interpreted the same as `:prop1#`. 
+	
+  2. ElectroDB will continue to always add a trailing delimiter to facets with keys are partially supplied. The section on [BeginsWith Queries](#begins-with-queries) goes into more detail about how ***ElectroDB*** builds indexes from facets.    
 
 ```javascript
 attributes: {
@@ -734,8 +838,18 @@ indexes: {
 }
 ```
 
+## Facet and Index Considerations
+
+As described in the above two sections ([Facets](#facets), [Indexes](#indexes)), ElectroDB builds your keys using the attribute values defined in your model and provided on your query. Here are a few considerations to take into account when thinking about how to model your indexes:
+
+- Your table's primary Partition and Sort Keys cannot be changed after a record has been created. Be mindful of **not** to use Attributes that have values that can change as facets for your primary table index.
+
+- When updating/patching an Attribute that is also a facet for secondary index, ElectroDB will perform a runtime check that the operation will leave a key in a partially built state. For example: if a Sort Key is defined as having the Facets `["prop1", "prop2", "prop3"]`, than an update to the `prop1` Attribute will require supplying the `prop2` and `prop3` Attributes as well. This prevents a loss of key fidelity because ElectroDB is not able to update a key partially in place with its existing values.
+
+- As described and detailed in [Facet Arrays](#facet-arrays), you can use the `label` property on an Attribute shorten a facet's prefix on a key. This can allow trim down the length of your keys.   
+
 ## Collections
-A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If you background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities. 
+A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities. 
 
 Collections are defined on an Index and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
 
@@ -766,26 +880,26 @@ TaskApp.collections.assignments({employee: "JExotic"}).params();
 
 Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further. By adding Filters to your model, you can extend your queries with custom filters. Below is the traditional way you would add a filter to Dynamo's DocumentClient directly alongside how you would accomplish the same using a Filter function.
 
-```javascript
+```json
 {
-  IndexName: 'idx2',
-  TableName: 'StoreDirectory',
-  ExpressionAttributeNames: {
-    '#rent': 'rent',
-    '#discount': 'discount',
-    '#pk': 'idx2pk',
-    '#sk1': 'idx2sk'
+  "IndexName": "idx2",
+  "TableName": "StoreDirectory",
+  "ExpressionAttributeNames": {
+    "#rent": "rent",
+    "#discount": "discount",
+    "#pk": "idx2pk",
+    "#sk1": "idx2sk"
   },
-  ExpressionAttributeValues: {
-    ':rent1': '2000.00',
-    ':rent2': '5000.00',
-    ':discount1': '1000.00',
-    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
-    ':sk1': '$mallstore#leaseenddate_2020-04-01#rent_',
-    ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
+  "ExpressionAttributeValues": {
+    ":rent1": "2000.00",
+    ":rent2": "5000.00",
+    ":discount1": "1000.00",
+    ":pk": "$mallstoredirectory_1#mallid_eastpointe",
+    ":sk1": "$mallstore#leaseenddate_2020-04-01#rent_",
+    ":sk2": "$mallstore#leaseenddate_2020-07-01#rent_"
   },
-  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
+  "KeyConditionExpression": ",#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+  "FilterExpression": "(#rent between :rent1 and :rent2) AND #discount <= :discount1"
 }
 ```
 ### Defined on the model
@@ -887,6 +1001,7 @@ operator | example | result
 `lte` | `rent.lte(maxRent)` | `#rent <= :rent1`
 `lt` | `rent.lt(maxRent)` | `#rent < :rent1`
 `eq` | `rent.eq(maxRent)` | `#rent = :rent1`
+`ne` | `rent.ne(maxRent)` | `#rent <> :rent1`
 `begins` | `rent.begins(maxRent)` | `begins_with(#rent, :rent1)`
 `exists` | `rent.exists()` | `attribute_exists(#rent)`
 `notExists` | `rent.notExists()` | `attribute_not_exists(#rent)`
@@ -1035,11 +1150,12 @@ The `attributes` object contains every Attribute defined in the Entity's Model. 
 
 operator | example | result
 | ----------- | ----------- | ----------- |  
+`eq` | `eq(rent, maxRent)` | `#rent = :rent1`
+`ne` | `eq(rent, maxRent)` | `#rent <> :rent1`
 `gte` | `gte(rent, value)` | `#rent >= :rent1`
 `gt` | `gt(rent, maxRent)` | `#rent > :rent1`
 `lte` | `lte(rent, maxRent)` | `#rent <= :rent1`
 `lt` | `lt(rent, maxRent)` | `#rent < :rent1`
-`eq` | `eq(rent, maxRent)` | `#rent = :rent1`
 `begins` | `begins(rent, maxRent)` | `begins_with(#rent, :rent1)`
 `exists` | `exists(rent)` | `attribute_exists(#rent)`
 `notExists` | `notExists(rent)` | `attribute_not_exists(#rent)`
@@ -1794,7 +1910,7 @@ await StoreLocations.find({
 After invoking the **Access Pattern** with the required **Partition Key** **Facets**, you can now choose what **Sort Key Facets** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
 
 ### Access Pattern Queries
-When you define your [indexes](#indexes) in your model, you are defining the access patterns of your entity. The [facets](#facets) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
+When you define your [indexes](#indexes) in your model, you are defining the Access Patterns of your entity. The [facets](#facets) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
 
 Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this to multiply our available access patterns and use the Sort Key Operations: `begins`, `between`, `lt`, `lte`, `gt`, and `gte`. These queries are more performant and cost effective than filters. The costs associated with DynamoDB directly correlate to how effectively you leverage Sort Key Operations. 
 
@@ -1821,9 +1937,9 @@ The following examples will use the following Access Pattern definition for `uni
     }  
 }
 ```
-An Access Pattern method is the method after query you use to query a particular accessType:
+The names you have given to your indexes on your entity model/schema express themselves as "Access Pattern" methods on your Entity's `query` object:
 ```javascript
-// Example #1
+// Example #1, access pattern `units`
 StoreLocations.query.units({mallId, buildingId}).go();
 // -----------------------^^^^^^^^^^^^^^^^^^^^^^
 ```
@@ -2959,7 +3075,7 @@ let buildingId = "BuildingA1";
 let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
-``` 
+```
 
 # Electro CLI
 > _NOTE: The ElectroCLI is currently in a beta phase and subject to change._
@@ -2971,7 +3087,6 @@ Electro is a CLI utility toolbox for extending the functionality of **ElectroDB*
 3. Dynamically stand up an HTTP Service to interact with your `Entities`, `Services`, `Models`.
 
 For usage and installation details you can learn more [here](https://github.com/tywalch/electrocli).
-
 
 # Version 1 Migration
 This section is to detail any breaking changes made on the journey to a stable 1.0 product. 

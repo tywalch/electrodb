@@ -1,12 +1,14 @@
 {
   "name": "electrodb",
-  "version": "0.9.52",
+  "version": "0.10.0",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
     "test": "mocha ./test/offline**.spec.js",
+    "test-ts": "mocha -r ts-node/register ./test/**.spec.ts",
     "test-all": "mocha ./test/**.spec.js",
-    "test-all-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha ./test/**.spec.js",
+    "test-all-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha ./test/**.spec.js && npm run test-types && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 npm run test-ts",
+    "test-types": "node ./node_modules/tsd/dist/cli.js",
     "coverage": "nyc npm run test-all && nyc report --reporter=text-lcov | coveralls",
     "coverage-coveralls-local": "nyc npm run test-all-local && nyc report --reporter=text-lcov | coveralls",
     "coverage-html-local": "nyc npm run test-all-local && nyc report --reporter=html"
@@ -22,15 +24,24 @@
   },
   "homepage": "https://github.com/tywalch/electrodb#readme",
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^8.0.3",
+    "@types/node": "^15.6.0",
+    "@types/uuid": "^8.3.0",
     "aws-sdk": "2.630.0",
     "chai": "4.2.0",
-    "coveralls": "3.0.13",
+    "coveralls": "^3.1.0",
     "istanbul": "0.4.5",
     "jest": "25.4.0",
     "mocha": "7.1.1",
-    "mocha-lcov-reporter": "1.3.0",
+    "mocha-lcov-reporter": "^1.3.0",
     "moment": "2.24.0",
-    "nyc": "15.0.0",
+    "nyc": "^15.1.0",
+    "source-map-support": "^0.5.19",
+    "ts-node": "^9.0.0",
+    "tsd": "^0.14.0",
+    "typescript": "^4.2.4",
     "uuid": "7.0.1"
   },
   "keywords": [
@@ -39,6 +50,9 @@
     "dynamodb",
     "aws"
   ],
+  "tsd": {
+    "directory": "test"
+  },
   "dependencies": {
     "jsonschema": "1.2.7"
   }

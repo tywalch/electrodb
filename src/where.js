@@ -51,13 +51,13 @@ class WhereFactory {
               let {path, attr} = property();
               let attrValues = [];
               for (let value of values) {
-								let valueCount = getValueCount(attr);
-								let attrValue = `:${attr}_w${valueCount}`;
-								if (template.length > 1) {
-									setValue(attrValue, value);
-									attrValues.push(attrValue);
-								}
-							}
+					let valueCount = getValueCount(attr);
+					let attrValue = `:${attr}_w${valueCount}`;
+					if (template.length > 1) {
+						setValue(attrValue, value);
+						attrValues.push(attrValue);
+					}
+				}
               let expression = template(path, ...attrValues);
               return expression.trim();
             // } else if (typeof property === "string") {

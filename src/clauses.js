@@ -16,11 +16,6 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		// action(entity, state, facets = {}) {
-		// 	// todo: maybe all key info is passed on the subsequent query identifiers?
-		// 	// todo: look for article/list of all dynamodb query limitations
-		// 	// return state;
-		// },
 		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch", "batchPut", "batchDelete", "batchGet"],
 	},
 	collection: {
@@ -380,7 +375,8 @@ let clauses = {
 				throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 			}
 			let params = clauses.params.action(entity, state, options);
-			return entity.go(state.query.method, params, options)
+			let {config} = entity._applyParameterOptions({}, state.query.options, options);
+			return entity.go(state.query.method, params, config);
 		},
 		children: [],
 	},

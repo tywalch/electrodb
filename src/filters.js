@@ -2,6 +2,12 @@ const e = require("./errors");
 const {MethodTypes, ExpressionTypes} = require("./types");
 
 let FilterTypes = {
+	ne: {
+		template: function eq(name, value) {
+			return `${name} <> ${value}`;
+		},
+		strict: false,
+	},
 	eq: {
 		template: function eq(name, value) {
 			return `${name} = ${value}`;

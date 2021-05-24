@@ -565,7 +565,7 @@ describe("Entity", () => {
 				}
 			};
 
-			let error = "Invalid index definition: Access pattern, store (PRIMARY INDEX), contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.";
+			let error = "Invalid Access pattern definition for 'store': '(PRIMARY INDEX)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.";
 			expect(() => new Entity(schema)).to.throw(error);
 		});
 		it("Should identify impacted indexes from attributes", () => {
@@ -3014,7 +3014,7 @@ describe("Entity", () => {
 				it("throw when a collection is added to an index without an SK", () => {
 					let model = JSON.parse(base);
 					delete model.indexes.thing.sk;
-					expect(() => new Entity(model)).to.throw("Invalid index definition: Access pattern, thing (PRIMARY INDEX), contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.");
+					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(PRIMARY INDEX)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://github.com/tywalch/electrodb#collection-without-an-sk");
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
@@ -3082,7 +3082,7 @@ describe("Entity", () => {
 				it("throw when a collection is added to an index without an SK", () => {
 					let model = JSON.parse(base);
 					delete model.indexes.thing.sk;
-					expect(() => new Entity(model)).to.throw("Invalid index definition: Access pattern, thing (PRIMARY INDEX), contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.");
+					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(PRIMARY INDEX)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://github.com/tywalch/electrodb#collection-without-an-sk");
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
@@ -3178,6 +3178,7 @@ describe("Entity", () => {
 
 		const tests = [
 			{
+				success: true,
 				description: "default identifiers",
 				custom: false,
 				input: {},
@@ -3199,6 +3200,7 @@ describe("Entity", () => {
 				}
 			},
 			{
+				success: true,
 				description: "custom version identifier",
 				custom: true,
 				input: {type: "version", value: "custom_version"},
@@ -3220,6 +3222,7 @@ describe("Entity", () => {
 				}
 			},
 			{
+				success: true,
 				description: "custom entity identifier",
 				custom: true,
 				input: {type: "entity", value: "custom_entity"},
@@ -3240,20 +3243,40 @@ describe("Entity", () => {
 					TableName: 'test'
 				}
 			},
+			{
+				description: "invalid custom identifier: undefined",
+				input: {value: "custom_version"},
+				custom: true,
+				success: false,
+				error: `Invalid identifier type: "". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
+			},
+			{
+				description: "invalid custom identifier: bad value",
+				input: {type: "bad_value", value: "custom_version"},
+				custom: true,
+				success: false,
+				error: `Invalid identifier type: "bad_value". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
+			}
 		];
 		for (let test of tests) {
 			it(test.description, () => {
 				let entity = new Entity(schema, {table: "test"});
 				if (test.custom) {
-					entity.setIdentifier(test.input.type, test.input.value);
+					if (test.success) {
+						entity.setIdentifier(test.input.type, test.input.value);
+					} else {
+						expect(() => entity.setIdentifier(test.input.type, test.input.value)).to.throw(test.error);
+					}
 				}
-				let params = entity.put({id, mall, store, building, unit}).params();
-				expect(params).to.deep.equal(test.output);
+				if (test.success) {
+					let params = entity.put({id, mall, store, building, unit}).params();
+					expect(params).to.deep.equal(test.output);
+				}
 			});
 		}
 		it("Should not allow setIdentifier to be used on identifiers that dont exist", () => {
 			let entity = new Entity(schema, {table: "test"});
-			expect(() => entity.setIdentifier("doesnt_exist")).to.throw("Invalid identifier type: doesnt_exist. Valid indentifiers include entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier");
+			expect(() => entity.setIdentifier("doesnt_exist")).to.throw(`Invalid identifier type: "doesnt_exist". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`);
 		});
 	});
 	describe("Misconfiguration", () => {
@@ -3299,7 +3322,7 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model: index2 (PRIMARY INDEX). This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
+			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index2': '(PRIMARY INDEX)'. This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
 		});
 		it("Should check for index and collection name overlap", () => {
 			let schema = {
