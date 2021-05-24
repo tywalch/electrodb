@@ -2,10 +2,9 @@ process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const AWS = require("aws-sdk");
 const uuid = require("uuid").v4;
 const {expect} = require("chai");
-const {Entity} = require("../src/entity");
+const {Entity} = require("../");
 const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
 const region = "us-east-1";
-const isLocal = !!endpoint;
 AWS.config.update({region, endpoint});
 const client = new AWS.DynamoDB.DocumentClient();
 const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -331,5 +330,7 @@ describe("Page", async () => {
     let tasks = new Tasks(TasksModel);
     let query = () => tasks.query.task({task: "abc"}).page();
     expect(query).to.throw("No client defined on model")
-  })
+  });
+
+
 });

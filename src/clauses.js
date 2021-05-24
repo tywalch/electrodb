@@ -16,11 +16,6 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		// action(entity, state, facets = {}) {
-		// 	// todo: maybe all key info is passed on the subsequent query identifiers?
-		// 	// todo: look for article/list of all dynamodb query limitations
-		// 	// return state;
-		// },
 		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch", "batchPut", "batchDelete", "batchGet"],
 	},
 	collection: {
