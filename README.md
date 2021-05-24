@@ -206,7 +206,7 @@ npm install electrodb --save
 
 
 # Usage
-Require `Entity` and/or `Service` from `electrodb`:    
+Require/import `Entity` and/or `Service` from `electrodb`:    
 ```javascript  
 const {Entity, Service} = require("electrodb");
 // or 
