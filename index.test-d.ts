@@ -1524,27 +1524,25 @@ let getKeys = ((val) => {}) as GetKeys;
     let serviceWhere = complexService.collections
         .mycollection1({attr6: 13, attr9: 54})
         .where((attr, op) => {
-            let attrKeys = getKeys(attr);
-            op.eq(attr.attr10, true)
             let opKeys = getKeys(op);
             expectType<OperationNames>(opKeys);
-            op.eq(attr.attr9, 455)
+            op.eq(attr.attr9, 455);
             op.eq(attr.prop5, 455);
-            expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr)
-            expectAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr)
-            expectAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
-            expectAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
-            expectAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr)
-            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr)
-            expectAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr)
-            expectAssignable<{prop1: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{prop2: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr)
-            expectNotAssignable<{prop4: WhereAttributeSymbol<number>}>(attr)
-            expectAssignable<{prop5: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr);
+            expectAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr);
+            expectAssignable<{attr5: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr);
+            expectAssignable<{attr7: WhereAttributeSymbol<any>}>(attr);
+            expectAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr);
+            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr);
+            expectAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr);
+            expectAssignable<{prop1: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{prop2: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr);
+            expectNotAssignable<{prop4: WhereAttributeSymbol<number>}>(attr);
+            expectAssignable<{prop5: WhereAttributeSymbol<number>}>(attr);
             expectNotAssignable<{prop10: WhereAttributeSymbol<boolean>}>(attr);
             return "";
         })
@@ -1593,22 +1591,22 @@ let getKeys = ((val) => {}) as GetKeys;
         .where((attr, op) => {
             let opKeys = getKeys(op);
             expectType<OperationNames>(opKeys);
-            expectNotAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
-            expectNotAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
-            expectNotAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr)
-            expectNotAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr)
-            expectNotAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
-            expectNotAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
-            expectNotAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr)
-            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr)
-            expectNotAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr)
-            expectAssignable<{prop1: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{prop2: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{prop4: WhereAttributeSymbol<number>}>(attr)
-            expectAssignable<{prop5: WhereAttributeSymbol<number>}>(attr)
-            expectAssignable<{prop10: WhereAttributeSymbol<boolean>}>(attr);
+            expectNotAssignable<{attr1: WhereAttributeSymbol<string>}>(attr);
+            expectNotAssignable<{attr2: WhereAttributeSymbol<string>}>(attr);
+            expectNotAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr);
+            expectNotAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr);
+            expectNotAssignable<{attr5: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr);
+            expectNotAssignable<{attr7: WhereAttributeSymbol<any>}>(attr);
+            expectNotAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr);
+            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr);
+            expectNotAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr);
+            expectAssignable<{prop1: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{prop2: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{prop4: WhereAttributeSymbol<number>}>(attr);
+            expectAssignable<{prop5: WhereAttributeSymbol<number>}>(attr);
+            expectAssignable<{prop10: WhereAttributeSymbol<boolean>}>(attr);;
             return op.eq(attr.prop1, "db");
         })
         .go()
@@ -1638,21 +1636,21 @@ let getKeys = ((val) => {}) as GetKeys;
         .where((attr, op) => {
             let opKeys = getKeys(op);
             expectType<OperationNames>(opKeys);
-            expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr)
-            expectAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr)
-            expectAssignable<{attr5: WhereAttributeSymbol<string>}>(attr)
-            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr)
-            expectAssignable<{attr7: WhereAttributeSymbol<any>}>(attr)
-            expectAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr)
-            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr)
-            expectAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr)
-            expectNotAssignable<{prop1: WhereAttributeSymbol<string>}>(attr)
-            expectNotAssignable<{prop2: WhereAttributeSymbol<string>}>(attr)
-            expectNotAssignable<{prop3: WhereAttributeSymbol<string>}>(attr)
-            expectNotAssignable<{prop4: WhereAttributeSymbol<number>}>(attr)
-            expectNotAssignable<{prop5: WhereAttributeSymbol<number>}>(attr)
+            expectAssignable<{attr1: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{attr2: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{attr3: WhereAttributeSymbol<"123" | "def" | "ghi">}>(attr);
+            expectAssignable<{attr4: WhereAttributeSymbol<"abc" | "def" | "ghi">}>(attr);
+            expectAssignable<{attr5: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{attr6: WhereAttributeSymbol<number>}>(attr);
+            expectAssignable<{attr7: WhereAttributeSymbol<any>}>(attr);
+            expectAssignable<{attr8: WhereAttributeSymbol<boolean>}>(attr);
+            expectAssignable<{attr9: WhereAttributeSymbol<number>}>(attr);
+            expectAssignable<{attr10: WhereAttributeSymbol<boolean>}>(attr);
+            expectNotAssignable<{prop1: WhereAttributeSymbol<string>}>(attr);
+            expectNotAssignable<{prop2: WhereAttributeSymbol<string>}>(attr);
+            expectNotAssignable<{prop3: WhereAttributeSymbol<string>}>(attr);
+            expectNotAssignable<{prop4: WhereAttributeSymbol<number>}>(attr);
+            expectNotAssignable<{prop5: WhereAttributeSymbol<number>}>(attr);
             expectNotAssignable<{prop10: WhereAttributeSymbol<boolean>}>(attr);
             return op.eq(attr.attr9, 768);
         })

@@ -28,7 +28,7 @@
 - [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services now in Beta. 
 - [**Generate Type Definitions**](#electro-cli) - Generate **TypeScript** type definition files (`.d.ts`) based on your model for more concise, accurate types.
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
-- [**Stand Up HTTP Service for Entities**](#electro-cli) - stand up an HTTP Service to interact with your `Entities`, `Services`, `Models` for easier prototyping.
+- [**Stand Up Rest Server for Entities**](#electro-cli) - Stand up a REST Server to interact with your `Entities`, `Services`, `Models` for easier prototyping.
 
 ------------
 
@@ -259,6 +259,7 @@ import {Service} from "electrodb";
 ```
 
 ## TypeScript Services
+
 New with version `0.10.0` is TypeScript support. To ensure accurate types with, TypeScript users should create their services by passing an Object literal or const object that maps Entity alias names to Entity instances.
 ```typescript
 const table = "my_table_name";
@@ -274,7 +275,7 @@ Services take an optional second parameter, similar to Entities, with a `client`
 Not yet available for TypeScript, this pattern will also accept Models, or a mix of Entities and Models, in the same object literal format.
 
 ## Join 
-When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service. 
+When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service. See [TypeScript Services](#typescript-services) to learn how to "join" entities in TypeScript.
 
 ```javascript
 // Independent Models
@@ -295,8 +296,16 @@ TaskApp
 // Joining models to a Service
 let TaskApp = new Service("TaskApp", { client, table });
 TaskApp
-	.join(EmployeesModel) // available at TaskApp.entities.employees
-	.join(TasksModel);    // available at TaskApp.entities.tasks
+	.join(EmployeesModel) // available at TaskApp.entities.employees (based on entity name in model)
+	.join(TasksModel);    // available at TaskApp.entities.tasks (based on entity name in model)
+```
+
+```javascript
+// Joining Entities or Models with an "alias"
+let TaskApp = new Service("TaskApp", { client, table });
+TaskApp
+    .join("personnel", EmployeesModel) // available at TaskApp.entities.personnel
+    .join("directives", tasks); // available at TaskApp.entities.directives
 ```
  
 When joining a Model/Entity to a Service, ElectroDB will perform a number of validations to ensure that Entity conforms to expectations collectively established by all joined Entities.
