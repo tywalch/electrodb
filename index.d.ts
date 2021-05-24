@@ -376,9 +376,9 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     readonly schema: S;
     constructor(schema: S, config?: EntityConfiguration);
     get(key: AllTableIndexFacets<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
-    get(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [Required<TableIndexFacets<A,F,C,S>>, TableItem<A,F,C,S>[]]>;
+    get(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [AllTableIndexFacets<A,F,C,S>[], TableItem<A,F,C,S>[]]>;
     delete(key: AllTableIndexFacets<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
-    delete(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, Required<TableIndexFacets<A,F,C,S>>[]>;
+    delete(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexFacets<A,F,C,S>[]>;
     update(key: AllTableIndexFacets<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexFacets<A,F,C,S>, TableItem<A,F,C,S>>
     };
@@ -386,9 +386,9 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexFacets<A,F,C,S>, TableItem<A,F,C,S>>
     };
     put(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
-    put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, Required<TableIndexFacets<A,F,C,S>>[]>;
+    put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexFacets<A,F,C,S>[]>;
     create(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
-    find(record: Partial<Item<A,F,C,S>>): RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], Required<TableIndexFacets<A,F,C,S>>>;
+    find(record: Partial<Item<A,F,C,S>>): RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>;
     setIdentifier(type: "model" | "version", value: string): void;
     scan: RecordsActionOptions<A,F,C,S, Item<A,F,C,S>[], TableIndexFacets<A,F,C,S>>
     query: Queries<A,F,C,S>;

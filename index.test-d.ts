@@ -483,8 +483,8 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<"paramtest">(entityWithSK.get({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.get({attr1: "abc"}).params<"paramtest">());
 
-    expectAssignable<Promise<[WithSKMyIndexFacets, Item[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
-    expectAssignable<Promise<[WithoutSKMyIndexFacets, ItemWithoutSK[]]>>(entityWithoutSK.get([{attr1: "abc"}]).go());
+    expectAssignable<Promise<[WithSKMyIndexFacets[], Item[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
+    expectAssignable<Promise<[WithoutSKMyIndexFacets[], ItemWithoutSK[]]>>(entityWithoutSK.get([{attr1: "abc"}]).go());
 
 // Delete
     // Single
