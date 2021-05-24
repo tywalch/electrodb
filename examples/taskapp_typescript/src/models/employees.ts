@@ -29,7 +29,7 @@ const schema = {
 			required: true,
 		},
 		team: {
-			type: ["development", "marketing", "finance", "product", "cool cats and kittens"],
+			type: ["development", "marketing", "finance", "product", "cool cats and kittens"] as const,
 			required: true,
 		},
 		salary: {

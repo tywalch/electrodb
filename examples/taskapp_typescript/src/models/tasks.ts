@@ -21,7 +21,7 @@ const schema = {
 			"type": "string"
 		},
 		"status": {
-			"type": ["open", "in-progress", "closed"],
+			"type": ["open", "in-progress", "closed"] as const,
 			"default": "open"
 		},
 		"points": {
