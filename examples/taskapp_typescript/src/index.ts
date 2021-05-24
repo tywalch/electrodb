@@ -92,6 +92,7 @@ async function query() {
       { dateHired: twoYearsAgo }
     ).go();
   console.log("Employees hired between two and five years ago:", recentHires, "\r\n");
+
   // Explore the models in `./models` and the README for more queries to try!
 
   // CreateEntityItem< typeof YOUR_ENTITY > is exported to help you type items as they are used for creation
