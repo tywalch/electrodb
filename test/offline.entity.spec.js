@@ -3319,6 +3319,62 @@ describe("Entity", () => {
 			};
 			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index2': '(PRIMARY INDEX)'. This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
 		});
+		it("Should check for duplicate indexes on secondary index", () => {
+			let schema = {
+				model: {
+					entity: "MyEntity",
+					service: "MyService",
+					version: "1"
+				},
+				table: "MyTable",
+				attributes: {
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string"
+					},
+					prop3: {
+						type: "string"
+					}
+				},
+				indexes: {
+					index1: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2", "prop3"],
+						},
+					},
+					index2: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"],
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop2", "prop1"],
+						},
+					},
+					index3: {
+						index: "gsi1",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop3"],
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop2", "prop1"],
+						},
+					}
+				}
+			};
+			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index3': 'gsi1' - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
+		});
 		it("Should check for index and collection name overlap", () => {
 			let schema = {
 				model: {
