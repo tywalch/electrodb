@@ -65,6 +65,21 @@ let animals = [
 ];
 
 describe("Offline Where", () => {
+    it("Should allow where clauses to return empty strings", () => {
+        let animals = WhereTests.query
+            .farm({pen})
+            .where(() => "")
+            .where(() => "")
+            .where(() => "")
+            .params();
+
+        expect(animals).to.deep.equal({
+            KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+            TableName: 'electro',
+            ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+            ExpressionAttributeValues: { ':pk': '$tests#pen_pen_name', ':sk1': '$filters_1#row_' }
+        });
+    })
     it("Should filter 'eq' with 'where'", () => {
         let animals = WhereTests.query
             .farm({pen})

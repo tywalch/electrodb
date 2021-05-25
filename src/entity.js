@@ -61,7 +61,7 @@ class Entity {
 			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
 				let eqFilters = [];
 				for (let facet of Object.keys(facets)) {
-					if (attr[facet]) {
+					if (attr[facet] !== undefined && facets[facet] !== undefined) {
 						eqFilters.push(attr[facet].eq(facets[facet]));
 					}
 				}
@@ -73,7 +73,7 @@ class Entity {
 			).filter(attr => {
 				let eqFilters = [];
 				for (let facet of Object.keys(facets)) {
-					if (attr[facet]) {
+					if (attr[facet] !== undefined && facets[facet] !== undefined) {
 						eqFilters.push(attr[facet].eq(facets[facet]));
 					}
 				}
@@ -329,13 +329,15 @@ class Entity {
 		try {
 			let results;
 
-			if (config.raw) {
+			if (config.raw && !config.pager) {
 				if (response.TableName) {
 					// a VERY hacky way to deal with PUTs
 					results = {};
 				} else {
 					results = response;
 				}
+			} else if (config.raw && config.pager) {
+				return [response.LastEvaluatedKey || null, response];
 			} else {
 				let data = {};
 				if (response.Item) {
@@ -358,7 +360,7 @@ class Entity {
 
 			if (config.pager) {
 				let nextPage = response.LastEvaluatedKey || null;
-				if (!config.raw && !config.lastEvaluatedKeyRaw) {
+				if (!config.lastEvaluatedKeyRaw) {
 					nextPage = this._formatReturnPager(index, nextPage, results[results.length - 1]);
 				}
 				results = [nextPage, results];
@@ -1399,7 +1401,7 @@ class Entity {
 	}
 
 	_getCollectionSk(collection) {
-		if (typeof collection && collection.length) {
+		if (typeof collection === "string" && collection.length) {
 			return `$${collection}`.toLowerCase();
 		} else {
 			return "";

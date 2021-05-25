@@ -130,7 +130,7 @@ let schema = {
 };
 
 describe("Entity", () => {
-	describe("'client' validation", () => {
+	it("Should check whether or not a client has been supplied before trying to query dynamodb", async () => {
 		let mall = "EastPointe";
 		let store = "LatteLarrys";
 		let building = "BuildingA";
@@ -139,17 +139,12 @@ describe("Entity", () => {
 		let leaseEnd = "2020-01-20";
 		let rent = "0.00";
 		let MallStores = new Entity(schema);
-		expect(() =>
-			MallStores.put({
-				store,
-				mall,
-				building,
-				rent,
-				category,
-				leaseEnd,
-				unit,
-			}).go(),
-		).to.throw("No client defined on model");
+		let {success, results} = await MallStores.put({store, mall, building, rent, category, leaseEnd, unit})
+			.go()
+			.then(results => ({success: true, results}))
+			.catch(results => ({success: false, results}));
+		expect(success).to.be.false;
+		expect(results.message).to.equal("No client defined on model - For more detail on this error reference: https://github.com/tywalch/electrodb#no-client-defined-on-model");
 	});
 	describe("Schema validation", () => {
 		let MallStores = new Entity(schema);
@@ -524,16 +519,16 @@ describe("Entity", () => {
 					}),
 			).to.throw(`Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a facet of the the following indexes: Table Index`);
 		});
-		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", () => {
+		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", async () => {
 			let id = uuidV4();
 			let rent = "0.00";
 			let category = "food/coffee";
-			let mall = "EastPointe";
+			let adjustments = "500.00";
 			expect(() =>
-				MallStores.update({ id }).set({ rent, category, id }),
+				MallStores.update({ id }).set({ rent, category, id }).params(),
 			).to.throw("Attribute id is Read-Only and cannot be updated");
 			expect(() =>
-				MallStores.update({ id }).set({ rent, category, mall }),
+				MallStores.update({ id }).set({ rent, adjustments }).params(),
 			).to.not.throw();
 		});
 		it("Should prevent an index without an SK to have a `collection` property defined", () => {
@@ -866,7 +861,7 @@ describe("Entity", () => {
 			})
 		})
 		it("Should check if filter returns string", () => {
-			expect(() => MallStores.scan.filter(() => 1234)).to.throw("Invalid filter response. Expected result to be of type string");
+			expect(() => MallStores.scan.filter(() => 1234).params()).to.throw("Invalid filter response. Expected result to be of type string");
 		})
 		it("Should create parameters for a given chain", () => {
 			let mall = "EastPointe";
@@ -2513,6 +2508,27 @@ describe("Entity", () => {
 			expect(keys).to.be.deep.equal([]);
 			expect(index).to.be.equal("");
 		});
+		it("Should decide to scan and not add undefined values to the query filters", () => {
+			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
+			let mallId = undefined;
+			let params = MallStores.find({leaseEnd, mallId})
+				.where(() => "")
+				.params();
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
+				ExpressionAttributeValues: {
+					":__edb_e__": "MallStores",
+					":__edb_v__": "1",
+					':leaseEnd1': '123',
+					':pk': '$mallstoredirectory_1$mallstores#id_'
+				},
+				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd1"
+			});
+			expect(shouldScan).to.be.true;
+			expect(keys).to.be.deep.equal([]);
+			expect(index).to.be.equal("");
+		});
 		it("Should match on the primary index", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
 			let params = MallStores.find({id}).params();
@@ -3323,6 +3339,62 @@ describe("Entity", () => {
 				}
 			};
 			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index2': '(PRIMARY INDEX)'. This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
+		});
+		it("Should check for duplicate indexes on secondary index", () => {
+			let schema = {
+				model: {
+					entity: "MyEntity",
+					service: "MyService",
+					version: "1"
+				},
+				table: "MyTable",
+				attributes: {
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string"
+					},
+					prop3: {
+						type: "string"
+					}
+				},
+				indexes: {
+					index1: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2", "prop3"],
+						},
+					},
+					index2: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"],
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: ["prop2", "prop1"],
+						},
+					},
+					index3: {
+						index: "gsi1",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop3"],
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop2", "prop1"],
+						},
+					}
+				}
+			};
+			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index3': 'gsi1' - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
 		});
 		it("Should check for index and collection name overlap", () => {
 			let schema = {

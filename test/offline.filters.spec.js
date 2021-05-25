@@ -117,6 +117,23 @@ let model = {
 };
 
 describe("Filter", () => {
+	it("Should allow for a filter to return an empty string", () => {
+		let MallStores = new Entity(model);
+
+		let params = MallStores.find({id: "abc"})
+			.filter(() => "")
+			.filter(() => "")
+			.filter(() => "")
+			.params()
+
+		expect(params).to.deep.equal({
+			KeyConditionExpression: '#pk = :pk',
+			TableName: 'StoreDirectory',
+			ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk' },
+			ExpressionAttributeValues: { ':id1': 'abc', ':pk': '$mallstoredirectory_1$mallstores#id_abc' },
+			FilterExpression: '#id = :id1'
+		});
+	})
 	describe("Clause Building", () => {
 		let MallStores = new Entity(model);
 		it("Should build a clause", () => {
