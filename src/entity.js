@@ -61,7 +61,7 @@ class Entity {
 			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
 				let eqFilters = [];
 				for (let facet of Object.keys(facets)) {
-					if (attr[facet]) {
+					if (attr[facet] !== undefined && facets[facet] !== undefined) {
 						eqFilters.push(attr[facet].eq(facets[facet]));
 					}
 				}
@@ -73,7 +73,7 @@ class Entity {
 			).filter(attr => {
 				let eqFilters = [];
 				for (let facet of Object.keys(facets)) {
-					if (attr[facet]) {
+					if (attr[facet] !== undefined && facets[facet] !== undefined) {
 						eqFilters.push(attr[facet].eq(facets[facet]));
 					}
 				}
