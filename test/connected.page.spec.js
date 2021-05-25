@@ -292,12 +292,12 @@ describe("Page", async () => {
 
     for (let test of tests) {
       let query = test.type === "scan"
-        ? () => tasks.scan.page(test.input.page)
-        : () => tasks.query[test.input.index](test.input.facets).page(test.input.page);
+          ? () => tasks.scan.page(test.input.page)
+          : () => tasks.query[test.input.index](test.input.facets).page(test.input.page);
       try {
-        await query()
-      } catch(err) {
-        expect(err.message).to.be.equal(test.output.error);
+        await query();
+      } catch (err) {
+          expect(err.message).to.be.equal(test.output.error);
       }
     }
   }).timeout(10000);
@@ -326,10 +326,15 @@ describe("Page", async () => {
     }
   }).timeout(10000);
 
-  it("Should require a dynamodb client object to use the page method", () => {
+  it("Should require a dynamodb client object to use the page method", async () => {
     let tasks = new Tasks(TasksModel);
-    let query = () => tasks.query.task({task: "abc"}).page();
-    expect(query).to.throw("No client defined on model")
+    let {success, results} = await tasks.query
+        .task({task: "abc"})
+        .page()
+        .then(results => ({success: true, results}))
+        .catch(results => ({success: false, results}));
+    expect(success).to.be.false;
+    expect(results.message).to.be.equal("No client defined on model - For more detail on this error reference: https://github.com/tywalch/electrodb#no-client-defined-on-model")
   });
 
 

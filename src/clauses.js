@@ -3,14 +3,23 @@ const v = require("./validations");
 const e = require("./errors");
 
 function batchAction(action, type, entity, state, payload) {
-	state.query.method = type;
-
-	for (let facets of payload) {
-		let batchState = action(entity, state.batch.create(), facets);
-		state.batch.push(batchState);
+	if (state.error !== null) {
+		return state;
 	}
-
-	return state;
+	try {
+		state.query.method = type;
+		for (let facets of payload) {
+			let batchState = action(entity, state.batch.create(), facets);
+			if (batchState.error !== null) {
+				throw batchState.error;
+			}
+			state.batch.push(batchState);
+		}
+		return state;
+	} catch(err) {
+		state.error = err;
+		return state;
+	}
 }
 
 let clauses = {
@@ -22,20 +31,36 @@ let clauses = {
 		name: "collection",
 		/* istanbul ignore next */
 		action(entity, state, collection = "", facets /* istanbul ignore next */ = {}) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
-			state.query.collection = collection;
-			state.query.method = MethodTypes.query;
-			state.query.type = QueryTypes.collection;
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+				entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
+				state.query.collection = collection;
+				state.query.method = MethodTypes.query;
+				state.query.type = QueryTypes.collection;
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["params", "go", "page"],
 	},
 	scan: {
 		name: "scan",
 		action(entity, state) {
-			state.query.method = MethodTypes.scan;
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				state.query.method = MethodTypes.scan;
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["params", "go", "page"],
 	},
@@ -43,20 +68,28 @@ let clauses = {
 		name: "get",
 		/* istanbul ignore next */
 		action(entity, state, facets = {}) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			state.query.method = MethodTypes.get;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					facets,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
+			if (state.error !== null) {
+				return state;
 			}
-			return state;
+			try {
+				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+				state.query.method = MethodTypes.get;
+				state.query.type = QueryTypes.eq;
+				if (state.hasSortKey) {
+					let queryFacets = entity._buildQueryFacets(
+						facets,
+						state.query.facets.sk,
+					);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["params", "go"],
 	},
@@ -74,20 +107,28 @@ let clauses = {
 		name: "delete",
 		/* istanbul ignore next */
 		action(entity, state, facets = {}) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			state.query.method = MethodTypes.delete;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					facets,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
+			if (state.error !== null) {
+				return state;
 			}
-			return state;
+			try {
+				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+				state.query.method = MethodTypes.delete;
+				state.query.type = QueryTypes.eq;
+				if (state.hasSortKey) {
+					let queryFacets = entity._buildQueryFacets(
+						facets,
+						state.query.facets.sk,
+					);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["params", "go"],
 	},
@@ -95,23 +136,30 @@ let clauses = {
 		name: "put",
 		/* istanbul ignore next */
 		action(entity, state, payload) {
-			let record = entity.model.schema.checkCreate({ ...payload });
-			state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
-			state.query.method = MethodTypes.put;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					record,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
+			if (state.error !== null) {
+				return state;
 			}
-
-			state.query.put.data = Object.assign({}, record);
-			return state;
+			try {
+				let record = entity.model.schema.checkCreate({...payload});
+				state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
+				state.query.method = MethodTypes.put;
+				state.query.type = QueryTypes.eq;
+				if (state.hasSortKey) {
+					let queryFacets = entity._buildQueryFacets(
+						record,
+						state.query.facets.sk,
+					);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				state.query.put.data = Object.assign({}, record);
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["params", "go"],
 	},
@@ -123,75 +171,107 @@ let clauses = {
 	create: {
 		name: "create",
 		action(entity, state, payload) {
-			let record = entity.model.schema.checkCreate({ ...payload });
-			state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
-			state.query.method = MethodTypes.put;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					record,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
+			if (state.error !== null) {
+				return state;
 			}
-			state.query.put.data = Object.assign({}, record);
-			return state;
+			try {
+				let record = entity.model.schema.checkCreate({...payload});
+				state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
+				state.query.method = MethodTypes.put;
+				state.query.type = QueryTypes.eq;
+				if (state.hasSortKey) {
+					let queryFacets = entity._buildQueryFacets(
+						record,
+						state.query.facets.sk,
+					);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				state.query.put.data = Object.assign({}, record);
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["params", "go"],
 	},
 	patch: {
 		name: "patch",
 		action(entity, state, facets) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			state.query.method = MethodTypes.update;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					facets,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
+			if (state.error !== null) {
+				return state;
 			}
-			return state;
+			try {
+				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+				state.query.method = MethodTypes.update;
+				state.query.type = QueryTypes.eq;
+				if (state.hasSortKey) {
+					let queryFacets = entity._buildQueryFacets(
+						facets,
+						state.query.facets.sk,
+					);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
-		children: ["set", "append", "remove", "add", "subtract", ],
+		children: ["set", "append", "remove", "add", "subtract"],
 	},
 	update: {
 		name: "update",
 		action(entity, state, facets) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			state.query.method = MethodTypes.update;
-			state.query.type = QueryTypes.eq;
-			if (state.hasSortKey) {
-				let queryFacets = entity._buildQueryFacets(
-					facets,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
+			if (state.error !== null) {
+				return state;
 			}
-			return state;
+			try {
+				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+				state.query.method = MethodTypes.update;
+				state.query.type = QueryTypes.eq;
+				if (state.hasSortKey) {
+					let queryFacets = entity._buildQueryFacets(
+						facets,
+						state.query.facets.sk,
+					);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["set", "append", "remove", "add", "subtract"],
 	},
 	set: {
 		name: "set",
 		action(entity, state, data) {
-			let record = entity.model.schema.checkUpdate({ ...data });
-			state.query.update.set = Object.assign(
-				{},
-				state.query.update.set,
-				record,
-			);
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				let record = entity.model.schema.checkUpdate({...data});
+				state.query.update.set = Object.assign(
+					{},
+					state.query.update.set,
+					record,
+				);
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["set", "go", "params"],
 	},
@@ -231,139 +311,204 @@ let clauses = {
 	query: {
 		name: "query",
 		action(entity, state, facets, options = {}) {
-			state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-			entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
-			state.query.method = MethodTypes.query;
-			state.query.type = QueryTypes.is;
-			if (state.query.facets.sk) {
-				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
+			if (state.error !== null) {
+				return state;
 			}
-			return state;
+			try {
+				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+				entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
+				state.query.method = MethodTypes.query;
+				state.query.type = QueryTypes.is;
+				if (state.query.facets.sk) {
+					let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go", "page"],
 	},
 	between: {
 		name: "between",
 		action(entity, state, startingFacets = {}, endingFacets = {}) {
-			entity._expectFacets(
-				startingFacets,
-				Object.keys(startingFacets),
-				`"between" facets`,
-			);
-			entity._expectFacets(
-				endingFacets,
-				Object.keys(endingFacets),
-				`"and" facets`,
-			);
-			state.query.type = QueryTypes.between;
-			let queryEndingFacets = entity._buildQueryFacets(
-				endingFacets,
-				state.query.facets.sk,
-			);
-			let queryStartingFacets = entity._buildQueryFacets(
-				startingFacets,
-				state.query.facets.sk,
-			);
-			state.query.keys.sk.push({
-				type: QueryTypes.and,
-				facets: queryEndingFacets,
-			});
-			state.query.keys.sk.push({
-				type: QueryTypes.between,
-				facets: queryStartingFacets,
-			});
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				entity._expectFacets(
+					startingFacets,
+					Object.keys(startingFacets),
+					`"between" facets`,
+				);
+				entity._expectFacets(
+					endingFacets,
+					Object.keys(endingFacets),
+					`"and" facets`,
+				);
+				state.query.type = QueryTypes.between;
+				let queryEndingFacets = entity._buildQueryFacets(
+					endingFacets,
+					state.query.facets.sk,
+				);
+				let queryStartingFacets = entity._buildQueryFacets(
+					startingFacets,
+					state.query.facets.sk,
+				);
+				state.query.keys.sk.push({
+					type: QueryTypes.and,
+					facets: queryEndingFacets,
+				});
+				state.query.keys.sk.push({
+					type: QueryTypes.between,
+					facets: queryStartingFacets,
+				});
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["go", "params", "page"],
 	},
 	begins: {
 		name: "begins",
 		action(entity, state, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
-			state.query.type = QueryTypes.begins;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
+				state.query.type = QueryTypes.begins;
+				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["go", "params", "page"],
 	},
 	gt: {
 		name: "gt",
 		action(entity, state, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
-			state.query.type = QueryTypes.gt;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
+				state.query.type = QueryTypes.gt;
+				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["go", "params", "page"],
 	},
 	gte: {
 		name: "gte",
 		action(entity, state, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"gte" facets`);
-			state.query.type = QueryTypes.gte;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				entity._expectFacets(facets, Object.keys(facets), `"gte" facets`);
+				state.query.type = QueryTypes.gte;
+				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["go", "params", "page"],
 	},
 	lt: {
 		name: "lt",
 		action(entity, state, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"lt" facets`);
-			state.query.type = QueryTypes.lt;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				entity._expectFacets(facets, Object.keys(facets), `"lt" facets`);
+				state.query.type = QueryTypes.lt;
+				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["go", "params", "page"],
 	},
 	lte: {
 		name: "lte",
 		action(entity, state, facets = {}) {
-			entity._expectFacets(facets, Object.keys(facets), `"lte" facets`);
-			state.query.type = QueryTypes.lte;
-			let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-			state.query.keys.sk.push({
-				type: state.query.type,
-				facets: queryFacets,
-			});
-			return state;
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				entity._expectFacets(facets, Object.keys(facets), `"lte" facets`);
+				state.query.type = QueryTypes.lte;
+				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
+				state.query.keys.sk.push({
+					type: state.query.type,
+					facets: queryFacets,
+				});
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
 		},
 		children: ["go", "params", "page"],
 	},
 	params: {
 		name: "params",
 		action(entity, state, options = {}) {
-			if (!v.isStringHasLength(options.table) && !v.isStringHasLength(entity._getTableName())) {
-				throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
+			if (state.error !== null) {
+				throw state.error;
 			}
-			if (state.query.method === MethodTypes.query) {
-				return entity._queryParams(state, options);
-			} else if(state.query.method === MethodTypes.batchWrite) {
-				return entity._batchWriteParams(state, options);
-			} else if (state.query.method === MethodTypes.batchGet) {
-				return entity._batchGetParams(state, options);
-			} else {
-				return entity._params(state, options);
+			try {
+				if (!v.isStringHasLength(options.table) && !v.isStringHasLength(entity._getTableName())) {
+					throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
+				}
+				let results;
+				if (state.query.method === MethodTypes.query) {
+					results = entity._queryParams(state, options);
+				} else if (state.query.method === MethodTypes.batchWrite) {
+					results = entity._batchWriteParams(state, options);
+				} else if (state.query.method === MethodTypes.batchGet) {
+					results = entity._batchGetParams(state, options);
+				} else {
+					results = entity._params(state, options);
+				}
+				return results;
+			} catch(err) {
+				throw err;
 			}
 		},
 		children: [],
@@ -371,25 +516,39 @@ let clauses = {
 	go: {
 		name: "go",
 		action(entity, state, options = {}) {
-			if (entity.client === undefined) {
-				throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
+			if (state.error !== null) {
+				return Promise.reject(state.error);
 			}
-			let params = clauses.params.action(entity, state, options);
-			let {config} = entity._applyParameterOptions({}, state.query.options, options);
-			return entity.go(state.query.method, params, config);
+			try {
+				if (entity.client === undefined) {
+					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
+				}
+				let params = clauses.params.action(entity, state, options);
+				let {config} = entity._applyParameterOptions({}, state.query.options, options);
+				return entity.go(state.query.method, params, config);
+			} catch(err) {
+				return Promise.reject(err);
+			}
 		},
 		children: [],
 	},
 	page: {
 		name: "page",
 		action(entity, state, page = null, options = {}) {
-			options.page = page;
-			options.pager = true;
-			if (entity.client === undefined) {
-				throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
+			if (state.error !== null) {
+				return Promise.reject(state.error);
 			}
-			let params = clauses.params.action(entity, state, options);
-			return entity.go(state.query.method, params, options);
+			try {
+				options.page = page;
+				options.pager = true;
+				if (entity.client === undefined) {
+					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
+				}
+				let params = clauses.params.action(entity, state, options);
+				return entity.go(state.query.method, params, options);
+			} catch(err) {
+				return Promise.reject(err);
+			}
 		},
 		children: []
 	},
@@ -397,6 +556,7 @@ let clauses = {
 
 function initChainState(index, facets = {}, hasSortKey, options) {
 	return {
+		error: null,
 		query: {
 			index: index,
 			type: "",

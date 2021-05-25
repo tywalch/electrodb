@@ -130,7 +130,7 @@ let schema = {
 };
 
 describe("Entity", () => {
-	describe("'client' validation", () => {
+	it("Should check whether or not a client has been supplied before trying to query dynamodb", async () => {
 		let mall = "EastPointe";
 		let store = "LatteLarrys";
 		let building = "BuildingA";
@@ -139,17 +139,12 @@ describe("Entity", () => {
 		let leaseEnd = "2020-01-20";
 		let rent = "0.00";
 		let MallStores = new Entity(schema);
-		expect(() =>
-			MallStores.put({
-				store,
-				mall,
-				building,
-				rent,
-				category,
-				leaseEnd,
-				unit,
-			}).go(),
-		).to.throw("No client defined on model");
+		let {success, results} = await MallStores.put({store, mall, building, rent, category, leaseEnd, unit})
+			.go()
+			.then(results => ({success: true, results}))
+			.catch(results => ({success: false, results}));
+		expect(success).to.be.false;
+		expect(results.message).to.equal("No client defined on model - For more detail on this error reference: https://github.com/tywalch/electrodb#no-client-defined-on-model");
 	});
 	describe("Schema validation", () => {
 		let MallStores = new Entity(schema);
@@ -524,16 +519,16 @@ describe("Entity", () => {
 					}),
 			).to.throw(`Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a facet of the the following indexes: Table Index`);
 		});
-		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", () => {
+		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", async () => {
 			let id = uuidV4();
 			let rent = "0.00";
 			let category = "food/coffee";
-			let mall = "EastPointe";
+			let adjustments = "500.00";
 			expect(() =>
-				MallStores.update({ id }).set({ rent, category, id }),
+				MallStores.update({ id }).set({ rent, category, id }).params(),
 			).to.throw("Attribute id is Read-Only and cannot be updated");
 			expect(() =>
-				MallStores.update({ id }).set({ rent, category, mall }),
+				MallStores.update({ id }).set({ rent, adjustments }).params(),
 			).to.not.throw();
 		});
 		it("Should prevent an index without an SK to have a `collection` property defined", () => {
@@ -866,7 +861,7 @@ describe("Entity", () => {
 			})
 		})
 		it("Should check if filter returns string", () => {
-			expect(() => MallStores.scan.filter(() => 1234)).to.throw("Invalid filter response. Expected result to be of type string");
+			expect(() => MallStores.scan.filter(() => 1234).params()).to.throw("Invalid filter response. Expected result to be of type string");
 		})
 		it("Should create parameters for a given chain", () => {
 			let mall = "EastPointe";
