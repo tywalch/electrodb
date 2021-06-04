@@ -312,11 +312,12 @@ When joining a Model/Entity to a Service, ElectroDB will perform a number of val
 
 - [Entity](#entities) names must be unique across a Service.
 - [Collection](#collections) names must be unique across a Service.
+- All [Collections](#collections) map to on the same DynamoDB indexes with the same index field names. See [Indexes](#indexes).
+- Partition Key [Facets](#facet-arrays) on a [Collection](#collections) must have the same attribute names and labels (if applicable). See [Attribute Definitions](#attribute-definition).  
 - The [name of the Service in the Model](#model-properties) must match the Name defined on the [Service](#services) instance.
 - Joined instances must be type [Model](#model) or [Entity](#entities).
-- If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching [attribute options](#attributes).   
-- All primary and global secondary indexes must have the same name field names and be written to assume SortKeys exist/don't exist in the same manor. See [Indexes](#indexes).
-- All models conform to the same model format. If you created your model prior to ElectroDB version 0.9.19 see section [Version 1 Migration](#version-1-migration). 
+- If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching [attribute definitions](#attributes).
+- All models conform to the same model format. If you created your model prior to ElectroDB version 0.9.19 see section [Version 1 Migration](#version-1-migration).
 
 ## Model 
 
@@ -586,7 +587,7 @@ attributes: {
 }
 ```
 
-#### Any Attributes 
+#### Attribute Definition 
 
 | Property | Type | Required | Description |
 | -------- | :--: | :--: | ----------- |
