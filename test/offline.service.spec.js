@@ -968,7 +968,7 @@ describe("Service Offline", async () => {
 		database
 			.join(entityOne)
 
-		expect(() => database.join(entityTwo)).to.throw("Invalid entity index definitions. The following index definitions have already been defined on this model but with incompatible or conflicting properties: Partition Key Facets provided \"prop1\" do not match established facets \"prop1, prop7\" - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
+		expect(() => database.join(entityTwo)).to.throw("Partition Key Facets provided [\"prop1\"] for index \"(Primary Index)\" do not match established facets [\"prop1\", \"prop7\"] on established index \"(Primary Index)\" - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
 	});
 	it("Should require all PK values", () => {
 		let entityOne = {
@@ -1260,7 +1260,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Invalid entity index definitions. The following index definitions have already been defined on this model but with incompatible or conflicting properties: Index provided "gis1" does not match established index: gis2 - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Collection defined on provided index "gis1" does not match collection established index "gis2". Collections must be defined on the same index across all entities within a service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 		// expect(() => database.join(entityTwo)).to.throw("You cant do that");
 	});
 	it("Should require collections to be set on the same index", () => {
@@ -1336,7 +1336,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Index provided "different-index-than-entity-one" does not match established index: [Main Table Index]`);
+		expect(() => database.join(entityTwo)).to.throw(`Collection defined on provided index "different-index-than-entity-one" does not match collection established index "(Primary Index)". Collections must be defined on the same index across all entities within a service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 		// expect(() => database.join(entityTwo)).to.throw("You cant do that");
 	});
 	it("Should validate the PK facets match on all added schemas", () => {
@@ -1400,7 +1400,136 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Partition Key Facets provided "prop4" do not match established facets "prop1"`);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key facets provided for index "(Primary Index)" do not match established facet "prop1" on established index "(Primary Index)": "prop1" != "prop4"; Facet definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these facet definitions are identical for all entities associated with this service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+	});
+	it("Should validate the PK facet labels match on all added schemas and throw when incorrect", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+					label: "rop"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let entityTwo = {
+			entity: "entityTwo",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionA",
+				},
+			}
+		};
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+		database.join(entityOne);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key facets provided for index "(Primary Index)" contain conflicting facet labels for established facet "prop1" on established index "(Primary Index)". Established facet "prop1" on established index "(Primary Index)" was defined with label "rop" while provided facet "prop1" on provided index "(Primary Index)" is defined with label "prop1". Facet labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+	});
+	it("Should validate the PK facet labels match on all added schemas and not throw when they do match", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+					label: "rop"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let entityTwo = {
+			entity: "entityTwo",
+			attributes: {
+				prop1: {
+					type: "string",
+					label: "rop"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop4", "prop5"],
+					},
+					collection: "collectionA",
+				},
+			}
+		};
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+		database.join(entityOne);
+		database.join(entityTwo);
 	});
 	it("Should validate that attributes with the same have the same field also listed", () => {
 		let entityOne = {
@@ -1528,7 +1657,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);		
-		expect(() => database.join(entityTwo)).to.throw(`Partition Key Field provided "pkz" for index "" does not match established field "pk"`);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key facets provided "pkz" for index "(Primary Index)" do not match established field "pk" on established index "(Primary Index)" - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 	});
 	it("Should validate the attributes with matching names have matching fields on all added schemas", () => {
 		let entityOne = {

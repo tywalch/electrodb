@@ -560,7 +560,7 @@ describe("Entity", () => {
 				}
 			};
 
-			let error = "Invalid Access pattern definition for 'store': '(PRIMARY INDEX)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.";
+			let error = "Invalid Access pattern definition for 'store': '(Primary Index)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.";
 			expect(() => new Entity(schema)).to.throw(error);
 		});
 		it("Should identify impacted indexes from attributes", () => {
@@ -3030,7 +3030,7 @@ describe("Entity", () => {
 				it("throw when a collection is added to an index without an SK", () => {
 					let model = JSON.parse(base);
 					delete model.indexes.thing.sk;
-					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(PRIMARY INDEX)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://github.com/tywalch/electrodb#collection-without-an-sk");
+					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(Primary Index)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://github.com/tywalch/electrodb#collection-without-an-sk");
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
@@ -3098,7 +3098,7 @@ describe("Entity", () => {
 				it("throw when a collection is added to an index without an SK", () => {
 					let model = JSON.parse(base);
 					delete model.indexes.thing.sk;
-					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(PRIMARY INDEX)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://github.com/tywalch/electrodb#collection-without-an-sk");
+					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(Primary Index)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://github.com/tywalch/electrodb#collection-without-an-sk");
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
@@ -3338,7 +3338,7 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index2': '(PRIMARY INDEX)'. This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
+			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index2': '(Primary Index)'. This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
 		});
 		it("Should check for duplicate indexes on secondary index", () => {
 			let schema = {

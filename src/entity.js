@@ -1600,7 +1600,7 @@ class Entity {
 			let indexName = index.index || "";
 			if (seenIndexes[indexName] !== undefined) {
 				if (indexName === "") {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName || "(PRIMARY INDEX)"}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName || "(Primary Index)"}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
 				} else {
 					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName}'`);
 				}
@@ -1609,7 +1609,7 @@ class Entity {
 			let hasSk = !!index.sk;
 			let inCollection = !!index.collection;
 			if (!hasSk && inCollection) {
-				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid Access pattern definition for '${accessPattern}': '${indexName || "(PRIMARY INDEX)"}', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
+				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid Access pattern definition for '${accessPattern}': '${indexName || "(Primary Index)"}', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
 			}
 			let collection = index.collection || "";
 			let customFacets = {
@@ -1639,7 +1639,7 @@ class Entity {
 				parsedSKFacets = this._parseFacets(index.sk.facets);
 				let { facetArray, facetLabels } = parsedSKFacets;
 				customFacets.sk = parsedSKFacets.isCustom;
-        facets.labels[indexName] = Object.assign({}, facets.labels[indexName] || {}, facetLabels);
+				facets.labels[indexName] = Object.assign({}, facets.labels[indexName] || {}, facetLabels);
 				sk = {
 					facetLabels,
 					accessPattern,
@@ -1831,6 +1831,7 @@ class Entity {
 		let modelLabels = schema.getLabels();
 		for (let indexName of Object.keys(facets.labels)) {
 			facets.labels[indexName] = Object.assign({}, modelLabels, facets.labels[indexName]);
+			indexes[indexAccessPattern.fromIndexToAccessPattern[indexName]].labels = facets.labels[indexName];
 		}
 
 		return {
