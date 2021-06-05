@@ -55,6 +55,16 @@ class Entity {
 		return this.model.version;
 	}
 
+	ownsItem(item) {
+		return (
+			item &&
+			this.getName() === item[this.identifiers.entity] &&
+			this.getVersion() === item[this.identifiers.version] &&
+			validations.isStringHasLength(item[this.identifiers.entity]) &&
+			validations.isStringHasLength(item[this.identifiers.version])
+		)
+	}
+
 	find(facets = {}) {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
@@ -161,7 +171,10 @@ class Entity {
 	}
 
 	async go(method, parameters = {}, config = {}) {
-		let stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+		let stackTrace;
+		if (!config.originalErr) {
+			stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+		}
 		try {
 			switch (method) {
 				case MethodTypes.batchWrite:
@@ -172,7 +185,7 @@ class Entity {
 					return await this.executeQuery(method, parameters, config);
 			}
 		} catch (err) {
-			if (config.originalErr) {
+			if (config.originalErr || stackTrace === undefined) {
 				return Promise.reject(err);
 			} else {
 				if (err.__isAWSError) {
@@ -325,10 +338,12 @@ class Entity {
 	}
 
 	formatResponse(index, response, config = {}) {
-		let stackTrace = new Error();
+		let stackTrace;
+		if (!config.originalErr) {
+			stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+		}
 		try {
-			let results;
-
+			let results = {};
 			if (config.raw && !config.pager) {
 				if (response.TableName) {
 					// a VERY hacky way to deal with PUTs
@@ -339,21 +354,19 @@ class Entity {
 			} else if (config.raw && config.pager) {
 				return [response.LastEvaluatedKey || null, response];
 			} else {
-				let data = {};
 				if (response.Item) {
-					data = this.cleanseRetrievedData(response.Item, config);
+					if (this.ownsItem(response.Item)) {
+						results = this.model.schema.formatItemForRetrieval(response.Item, config);
+					}
 				} else if (response.Items) {
-					data = response.Items.map((item) =>
-						this.cleanseRetrievedData(item, config),
-					);
-				}
-
-				if (Array.isArray(data)) {
-					results = data.map((item) =>
-						this.model.schema.applyAttributeGetters(item),
-					);
-				} else {
-					results = this.model.schema.applyAttributeGetters(data);
+					results = [];
+					for (let item of response.Items) {
+						if (this.ownsItem(item)) {
+							results.push(
+								this.model.schema.formatItemForRetrieval(item, config)
+							);
+						}
+					}
 				}
 			}
 
@@ -369,7 +382,7 @@ class Entity {
 			return results;
 
 		} catch (err) {
-			if (config.originalErr) {
+			if (config.originalErr || stackTrace === undefined) {
 				throw err;
 			} else {
 				stackTrace.message = err.message;
@@ -807,9 +820,21 @@ class Entity {
 		return {Key, TableName};
 	}
 
+	_removeAttributes(item, keys) {
+		let copy = {...item};
+		for (let key of (Object.keys(keys))) {
+			delete copy[key];
+		}
+		return copy;
+	}
+
 	/* istanbul ignore next */
 	_makeUpdateParams({ set } = {}, pk = {}, sk = {}) {
-		let setAttributes = this.model.schema.applyAttributeSetters(set);
+		let withoutKeyFacets = this._removeAttributes(set, {...pk, ...sk});
+		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
+		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
+		// should only happen when an attribute is changed.
+		let setAttributes = this.model.schema.applyAttributeSetters(withoutKeyFacets);
 		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
 		let translatedFields = this.model.schema.translateToFields(setAttributes);
 

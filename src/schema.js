@@ -1,4 +1,4 @@
-const { KeyTypes, CastTypes, AttributeTypes } = require("./types");
+const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
@@ -31,6 +31,23 @@ class Attribute {
 		let { type, enumArray } = this._makeType(this.name, definition.type);
 		this.type = type;
 		this.enumArray = enumArray;
+	}
+
+	static _destructureWatcher(definition) {
+		let watchingCopy = [...(definition.watching || [])];
+		let watchedByCopy = [...(definition.watchedBy || [])];
+		let isWatched = watchingCopy.length > 0;
+		let isWatcher = watchedByCopy.length > 0;
+		let watchedBy = {};
+		let watching = {};
+		for (let attribute of watchingCopy) {
+			watching[attribute] = attribute;
+		}
+		for (let watched of watchedByCopy) {
+			watchedBy[watched] = watched;
+		}
+
+		return {isWatcher, isWatched, watching, watchedBy};
 	}
 
 	_makeGet(name, get) {
@@ -239,8 +256,10 @@ class Schema {
 	_formatWatchTranslations(attributes) {
 		let watchersToAttributes = {};
 		let attributesToWatchers = {};
+		let hasWatchers = false;
 		for (let name of Object.keys(attributes)) {
 			if (attributes[name].isWatcher()) {
+				hasWatchers = true;
 				watchersToAttributes[name] = attributes[name].watching;
 			} else {
 				attributesToWatchers[name] = attributesToWatchers[name] || {};
@@ -248,6 +267,7 @@ class Schema {
 			}
 		}
 		return {
+			hasWatchers,
 			watchersToAttributes,
 			attributesToWatchers
 		};
@@ -333,22 +353,22 @@ class Schema {
 		let watchingUnknownAttributes = [];
 		for (let watched of Object.keys(watchedAttributes)) {
 			if (normalized[watched] === undefined) {
-				for (let watcher of watchedAttributes[watched]) {
-					watchingUnknownAttributes.push(watcher);
+				for (let attribute of watchedAttributes[watched]) {
+					watchingUnknownAttributes.push({attribute, watched});
 				}
 			} else if (normalized[watched].isWatcher()) {
-				for (let attribute of normalized[watched].watching) {
+				for (let attribute of watchedAttributes[watched]) {
 					watchedWatchers.push({attribute, watched});
 				}
 			}
 		}
 
 		if (watchingUnknownAttributes.length > 0) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Attribute Validation Error. The following attributes are defined to "watch" invalid/unknown attributes: ${watchingUnknownAttributes.map(attribute => `"${attribute}"`).join(", ")}.`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeWatchDefinition, `Attribute Validation Error. The following attributes are defined to "watch" invalid/unknown attributes: ${watchingUnknownAttributes.map(({watched, attribute}) => `"${attribute}"->"${watched}"`).join(", ")}.`);
 		}
 
 		if (watchedWatchers.length > 0) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Attribute Validation Error. Attributes may only "watch" other attributes that do not also have a watch dependency. The following attributes are defined with ineligible attributes to watch: ${watchedWatchers.map(({attribute}) => `"${attribute}"`).join(", ")}.`)
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeWatchDefinition, `Attribute Validation Error. Attributes may only "watch" other attributes also watch attributes. The following attributes are defined with ineligible attributes to watch: ${watchedWatchers.map(({attribute, watched}) => `"${attribute}"->"${watched}"`).join(", ")}.`)
 		}
 
 		let missingFacetAttributes = facets.attributes
@@ -370,6 +390,21 @@ class Schema {
 				attributes: normalized,
 			};
 		}
+	}
+
+	reMapRetrievedData(item = {}, options = {}) {
+		let { includeKeys } = options;
+		let data = {};
+		let names = this.translationForRetrieval;
+		for (let [attr, value] of Object.entries(item)) {
+			let name = names[attr];
+			if (name) {
+				data[name] = value;
+			} else if (includeKeys) {
+				data[attr] = value;
+			}
+		}
+		return data;
 	}
 
 	getLabels() {
@@ -426,43 +461,46 @@ class Schema {
 	// 	return {path, names, target, attr: attr.value, expression: expressions.join(".")};
 	// }
 
-	_applyAttributeMutation(method, attributes, payload) {
+	_applyAttributeMutation(method, include, avoid, payload) {
 		let data = { ...payload };
-		for (let attribute of Object.keys(payload)) {
-			if (attributes[attribute] !== undefined) {
+		for (let attribute of Object.keys(include)) {
+			// this.attributes[attribute] !== undefined | Attribute exists as actual attribute. If `includeKeys` is turned on for example this will include values that do not have a presence in the model and therefore will not have a `.get()` method
+			// avoid[attribute] === undefined           | Attribute shouldn't be in the avoided
+			if (this.attributes[attribute] !== undefined && avoid[attribute] === undefined) {
 				data[attribute] = this.attributes[attribute][method](payload[attribute], {...payload});
 			}
 		}
 		return data;
 	}
 
-	_fulfillMutationMethod(method, payload) {
-		let attributes = Object.keys(this.translationForWatching.attributesToWatchers);
+	_fulfillAttributeMutationMethod(method, payload) {
 		let watchersToTrigger = {};
-		let data = this._applyAttributeMutation(method, this.translationForWatching.attributesToWatchers, payload);
+		// include: payload               | We want to hit the getters/setters for any attributes coming in to be changed
+		// avoid: watchersToAttributes    | We want to avoid anything that is a watcher, even if it was included
+		let data = this._applyAttributeMutation(method, payload, this.translationForWatching.watchersToAttributes, payload);
+		// `data` here will include all the original payload values, but with the mutations applied to on non-watchers
+		if (!this.translationForWatching.hasWatchers) {
+			// exit early, why not
+			return data;
+		}
 		for (let attribute of Object.keys(data)) {
-			let valueIsDefined = data[attribute] !== undefined;
 			let watchers = this.translationForWatching.attributesToWatchers[attribute];
-			if (valueIsDefined && watchers !== undefined) {
+			// Any of the attributes on data have a watcher?
+			if (watchers !== undefined) {
 				watchersToTrigger = {...watchersToTrigger, ...watchers}
 			}
 		}
-		return this._applyAttributeMutation(method, watchersToTrigger, data);
-	}
-
-	__applyAttributeGetters(payload = {}) {
-		let method = "get";
-		let data = this._applyAttributeMutation(method, this._watch.attributes, payload, "attributes");
-		// let watchers = Object.keys(data)this._watch.watchers.filter(attribute => attribute !== undefined);
-		return this._applyAttributeMutation(method, this._watch.watchers, data, "watchers");
+		// include: ...data, ...watchersToTrigger | We want to hit attributes that were watching an attribute included in data, and include an properties that were skipped because they were a watcher
+		// avoid: attributesToWatchers            | We want to avoid hit anything that was not a watcher because they were already hit once above
+		return this._applyAttributeMutation(method, {...data, ...watchersToTrigger}, this.translationForWatching.attributesToWatchers, data);
 	}
 
 	applyAttributeGetters(payload = {}) {
-		return this._fulfillMutationMethod("get", payload);
+		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.get, payload);
 	}
 
 	applyAttributeSetters(payload = {}) {
-		return this._fulfillMutationMethod("set", payload);
+		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
 	}
 
 	translateToFields(payload = {}) {
@@ -506,9 +544,9 @@ class Schema {
 			.map((attribute) => attribute.name);
 	}
 
-	formatItemForRetrieval(item) {
-		let data = this.applyAttributeGetters(item);
-
+	formatItemForRetrieval(item, config) {
+		let remapped = this.reMapRetrievedData(item, config);
+		return this._fulfillAttributeMutationMethod("get", remapped);
 	}
 }
 

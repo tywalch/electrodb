@@ -83,6 +83,11 @@ const MaxBatchItems = {
 	[MethodTypes.batchWrite]: 25
 };
 
+const AttributeMutationMethods = {
+	get: "get",
+	set: "set"
+}
+
 module.exports = {
 	KeyTypes,
 	QueryTypes,
@@ -95,4 +100,5 @@ module.exports = {
 	ExpressionTypes,
 	ElectroInstance,
 	ElectroInstanceTypes,
+	AttributeMutationMethods,
 };

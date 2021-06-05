@@ -12,7 +12,7 @@ let entityWithSK = new Entity({
             type: "string",
             default: "abc",
             get: (val) => val + 123,
-            set: (val) => val + 456,
+            set: (val) => (val ?? "") + 456,
             validate: (val) => !!val,
         },
         attr2: {
@@ -36,14 +36,14 @@ let entityWithSK = new Entity({
             type: "number",
             default: () => 100,
             get: (val) => val + 5,
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr7: {
             type: "any",
             default: () => false,
             get: (val) => ({key: "value"}),
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr8: {
@@ -110,7 +110,7 @@ let entityWithoutSK = new Entity({
             type: "string",
             // default: "abc",
             get: (val) => val + 123,
-            set: (val) => val + 456,
+            set: (val) => (val ?? "0") + 456,
             validate: (val) => !!val,
         },
         attr2: {
@@ -134,14 +134,14 @@ let entityWithoutSK = new Entity({
             type: "number",
             default: () => 100,
             get: (val) => val + 5,
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr7: {
             type: "any",
             default: () => false,
             get: (val) => ({key: "value"}),
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr8: {
@@ -286,7 +286,7 @@ let normalEntity2 = new Entity({
             type: "number",
             default: () => 100,
             get: (val) => val + 5,
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr9: {
