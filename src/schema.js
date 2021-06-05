@@ -16,38 +16,38 @@ class Attribute {
 		this.get = this._makeGet(definition.name, definition.get);
 		this.set = this._makeSet(definition.name, definition.set);
 		this.indexes = [...(definition.indexes || [])];
-		let watching = [...(definition.watching || [])];
-		let watchedBy = [...(definition.watchedBy || [])];
-		this._isWatched = watchedBy.length > 0;
-		this._isWatcher = watching.length > 0;
-		this.watchedBy = {};
-		this.watching = {};
-		for (let watched of watchedBy) {
-			this.watchedBy[watched] = watched;
-		}
-		for (let attribute of watching) {
-			this.watching[attribute] = attribute;
-		}
+		let {isWatched, isWatcher, watchedBy, watching} = Attribute._destructureWatcher(definition);
+		this._isWatched = isWatched
+		this._isWatcher = isWatcher;
+		this.watchedBy = watchedBy;
+		this.watching = watching;
 		let { type, enumArray } = this._makeType(this.name, definition.type);
 		this.type = type;
 		this.enumArray = enumArray;
 	}
 
 	static _destructureWatcher(definition) {
-		let watchingCopy = [...(definition.watching || [])];
-		let watchedByCopy = [...(definition.watchedBy || [])];
-		let isWatched = watchingCopy.length > 0;
-		let isWatcher = watchedByCopy.length > 0;
+		let watchedByArr = [...(definition.watchedBy || [])];
+		let watchingArr = [...(definition.watching || [])];
+		let isWatched = watchedByArr.length > 0;
+		let isWatcher = watchingArr.length > 0;
 		let watchedBy = {};
 		let watching = {};
-		for (let attribute of watchingCopy) {
-			watching[attribute] = attribute;
-		}
-		for (let watched of watchedByCopy) {
+
+		for (let watched of watchedByArr) {
 			watchedBy[watched] = watched;
 		}
 
-		return {isWatcher, isWatched, watching, watchedBy};
+		for (let attribute of watchingArr) {
+			watching[attribute] = attribute;
+		}
+
+		return {
+			isWatched,
+			isWatcher,
+			watchedBy,
+			watching
+		}
 	}
 
 	_makeGet(name, get) {

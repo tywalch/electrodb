@@ -34,8 +34,8 @@ describe("Entity", async () => {
                 type: "string",
                 required: true,
                 field: "mallId",
-                set: (mall: string) => {
-                    return mall + "abc";
+                set: (mall?: string) => {
+                    return (mall ?? "") + "abc";
                 }
             },
             store: {

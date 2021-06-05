@@ -600,18 +600,147 @@ attributes: {
 `label` | `string` | no | Used in index composition to prefix key facets. By default, the `AttributeName` is used as the label.
 `cast` | `"number"`, `"string"`, `"boolean"` | no | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
 `set` | `(attribute, schema) => value` | no | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put 
-`get` | `(attribute, schema) => value` | no | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database. 
+`get` | `(attribute, schema) => value` | no | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
+`watch` | `Attribute[]` | no | Define other attributes that will always trigger your attribute's getter and setter methods after their getter/setter methods are executed.
 
 ##### Attribute Getters and Setters
 Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both methods should be pure synchronous functions and may be invoked multiple times during one query.
 
 > Note: Using getters/setters on Facet Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Facet Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.
 
-ElectroDB invokes an Attribute's `get` method after an Item has been retrieved from DynamoDB, and if that field exists on the item. 
+ElectroDB invokes an Attribute's `get` method in the following circumstances:
+1. If a field exists on an item after retrieval from DynamoDB, the attribute associated with field will have its getter method invoked.
+2. After a `put` or `create` operation is performed, attribute getters are applied on the object original received and returned.
+3. When using ElectroDB's [attribute watching](#attribute-watching) functionality, will have its getter method invoked whenever the getter method of any "watched" attributes is invoked. Note: The getter of an Attribute Watcher will always be applied after the getters for the attributes it watches.  
 
 ElectroDB invokes an Attribute's `set` method in the following circumstances:
 1. Setters for all Attributes will always be invoked when performing a `create` or `put` operation.
 2. Setters will only be invoked when an Attribute is modified when performing a `patch` or `update` operation.
+3. When using ElectroDB's [attribute watching](#attribute-watching) functionality, your attribute will have its setter method invoked whenever the setter method of any "watched" attributes is invoked. Note: The setter of an Attribute Watcher will always be applied after the setters for the attributes it watches.
+
+##### Attribute Watching 
+Attribute watching is a powerful feature in ElectroDB that can be used to solve many unique challenges with DynamoDB. In short, you can define a column to have its getter/setter methods called whenever
+another attribute's getter or setter methods are called. If you haven't read the section on [Attribute Getters and Setters](#attribute-getters-and-setters), it will provide you with more context about when
+an attribute's mutation methods are called. Because DynamoDB allows for a flexible schema, and ElectroDB allows for optional attributes, it is possible for items belonging to an entity to not have all attributes
+when setting or getting records. Sometimes values or changes to other attributes will require corresponding changes to another attribute. Sometimes, to fully leverage some advanced model denormalization or query access patterns,
+it is necessary to duplicate some attributes values with similar or identical values. This functionality has many uses, below are just a few examples of how you can use `watch`:
+
+**Example 1**
+A calculated attribute that depends on the value of another attribute. In this example, we have an attribute "fee" that needs to be updated any time an item's "price" attribute is updated. Fee uses `watch` to define its need to have its setter attribute called anytime price's setter is called -- on puts, creates, updates, and patches.     
+```javascript
+{
+  model: {
+    entity: "services",
+    service: "costEstimator",
+    version: "1"
+  },
+  attributes: {
+    service: {
+      type: "string"
+    },
+    price: {
+      type: "number",
+      required: true
+    },
+    fee: {
+      type: "number",
+      watch: ["price"],
+      set: (_, {price}) => {
+        return price * .2;
+      }
+    }
+  },
+  index: {
+    pk: {
+      field: "pk",
+      facets: ["service"]
+    }
+  }
+}
+```
+
+**Example 2**
+Making a virtual attribute that never persists to the database. In this example we have an attribute "displayPrice" that need's its getter called anytime an item's "price" attribute is retrieved. "displayPrice" uses `watch` to define its need to _never_ save its value to the database by returning undefined in its setter Additionally "displayPrice" leverages `watch` to return a formatted value based off the "price" by specifying that its getter method should be called whenever the getter method for "price" is called.    
+```javascript
+{
+  model: {
+    entity: "services",
+    service: "costEstimator",
+    version: "1"
+  },
+  attributes: {
+    service: {
+      type: "string"
+    },
+    price: {
+      type: "number",
+      required: true
+    },
+    displayPrice: {
+      type: "string",
+      watch: ["price"],
+      get: (_, {price}) => {
+        return "$" + price;  
+      },
+      set: () => undefined,
+    }
+  },
+  index: {
+    pk: {
+      field: "pk",
+      facets: ["service"]
+    }
+  }
+}
+```
+
+**Example 3**
+Creating a more filter-friendly version of an attribute without impacting the original attribute. In this example we have an attribute "descriptionSearch" which needs to convert the attribute "description" to lowercase. This need comes from requirements to be able to search and filter on a transaction's description without having to take into consideration its casing. Without ElectroDB's `watch` functionality, to accomplish this you would either have to duplicate this logic cause permanent modification to the property itself. Additionally, this attribute returns a value of `undefined` from its getter method ensuring it won't be sent back after the item's retrieval.
+```javascript
+{
+  model: {
+    entity: "transaction",
+    service: "bank",
+    version: "1"
+  },
+  attributes: {
+    accountNumber: {
+      type: "string"
+    },
+    transactionId: {
+      type: "string"
+    },
+    amount: {
+      type: "number",
+    },
+    description: {
+      type: "string",
+    },
+    descriptionSearch: {
+      type: "string",
+      watch: ["description"],
+      get: () => undefined,
+      set: (_, {description}) => {
+        if (typeof description === "string") {
+            return description.toLowerCase();
+        }
+      }
+    }
+  },
+  index: {
+    pk: {
+      field: "pk",
+      facets: ["accountNumber"]
+    }
+  }
+}
+```
+
+##### Calculated Attributes
+See: [Attribute Watching](#attribute-watching)
+
+##### Virtual Attributes
+See: [Attribute Watching](#attribute-watching)
 
 #### Attribute Validation
 The `validation` property allows for multiple function/type signatures. Here the different combinations *ElectroDB* supports:
