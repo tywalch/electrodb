@@ -3,34 +3,37 @@ declare const WhereSymbol: unique symbol;
 type BooleanAttribute = {
     readonly type: "boolean";
     readonly required?: boolean;
-    readonly get?: (val: boolean, schema: any) => boolean | undefined;
-    readonly set?: (val: boolean, schema: any) => boolean | undefined;
+    readonly get?: (val: boolean | undefined, schema: any) => boolean | undefined;
+    readonly set?: (val: boolean | undefined, schema: any) => boolean | undefined;
     readonly default?: boolean | (() => boolean);
     readonly validate?: ((val: boolean) => boolean) | ((val: boolean) => void) | ((val: boolean) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type NumberAttribute = {
     readonly type: "number";
     readonly required?: boolean;
-    readonly get?: (val: number, schema: any) => number | undefined;
-    readonly set?: (val: number, schema: any) => number | undefined;
+    readonly get?: (val: number | undefined, schema: any) => number | undefined;
+    readonly set?: (val: number | undefined, schema: any) => number | undefined;
     readonly default?: number | (() => number);
     readonly validate?: ((val: number) => boolean) | ((val: number) => void) | ((val: number) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type StringAttribute = {
     readonly type: "string";
     readonly required?: boolean;
-    readonly get?: (val: string, schema: any) => string | undefined;
-    readonly set?: (val: string, schema: any) => string | undefined;
+    readonly get?: (val: string | undefined, schema: any) => string | undefined;
+    readonly set?: (val: string | undefined, schema: any) => string | undefined;
     readonly default?: string | (() => string);
     readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type EnumAttribute = {
@@ -42,17 +45,19 @@ type EnumAttribute = {
     readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type AnyAttribute = {
     readonly type: "any";
     readonly required?: boolean;
-    readonly get?: (val: any, schema: any) => any | undefined;
-    readonly set?: (val: any, schema: any) => any | undefined;
+    readonly get?: (val: any | undefined, schema: any) => any | undefined;
+    readonly set?: (val: any | undefined, schema: any) => any | undefined;
     readonly default?: () => any;
     readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type Attribute = BooleanAttribute | NumberAttribute | StringAttribute | EnumAttribute | AnyAttribute;

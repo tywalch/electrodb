@@ -466,7 +466,7 @@ describe("Entity", () => {
 				},
 			};
 			expect(() => new Entity(schema)).to.throw(
-				`Schema Validation Error: Attribute "duplicateFieldName" property "field". Received: "id", Expected: "Unique field property, already used by attribute id"`,
+				`Schema Validation Error. Attribute "duplicateFieldName" property "field". Received: "id", Expected: "Unique field property, already used by attribute id" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition`,
 			);
 		});
 		it("Should validate regex", () => {
