@@ -26,6 +26,15 @@ const Attribute = {
 		field: {
 			type: "string",
 		},
+		hidden: {
+			type: "boolean"
+		},
+		watch: {
+			type: "array",
+			items: {
+				type: "string",
+			}
+		},
 		label: {
 			type: "string",
 		},
@@ -143,7 +152,7 @@ const Modelv1= {
 		},
 		filters: { $ref: "/Filters" },
 	},
-	required: ["model", "attributes"]
+	required: ["model", "attributes", "indexes"]
 };
 
 const ModelBeta = {

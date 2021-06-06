@@ -12,7 +12,7 @@ let entityWithSK = new Entity({
             type: "string",
             default: "abc",
             get: (val) => val + 123,
-            set: (val) => val + 456,
+            set: (val) => (val ?? "") + 456,
             validate: (val) => !!val,
         },
         attr2: {
@@ -36,14 +36,14 @@ let entityWithSK = new Entity({
             type: "number",
             default: () => 100,
             get: (val) => val + 5,
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr7: {
             type: "any",
             default: () => false,
             get: (val) => ({key: "value"}),
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr8: {
@@ -110,7 +110,7 @@ let entityWithoutSK = new Entity({
             type: "string",
             // default: "abc",
             get: (val) => val + 123,
-            set: (val) => val + 456,
+            set: (val) => (val ?? "0") + 456,
             validate: (val) => !!val,
         },
         attr2: {
@@ -134,14 +134,14 @@ let entityWithoutSK = new Entity({
             type: "number",
             default: () => 100,
             get: (val) => val + 5,
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr7: {
             type: "any",
             default: () => false,
             get: (val) => ({key: "value"}),
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr8: {
@@ -286,7 +286,7 @@ let normalEntity2 = new Entity({
             type: "number",
             default: () => 100,
             get: (val) => val + 5,
-            set: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
             validate: (val) => true,
         },
         attr9: {
@@ -1671,3 +1671,141 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<boolean | undefined>(item.attr10);
             });
         });
+
+    let entityWithHiddenAttributes1 = new Entity({
+        model: {
+            entity: "e1",
+            service: "s1",
+            version: "1"
+        },
+        attributes: {
+            prop1: {
+                type: "string"
+            },
+            prop2: {
+                type: "string"
+            },
+            prop3: {
+                type: "string",
+                hidden: true
+            }
+        },
+        indexes: {
+            record: {
+                collection: "collection1",
+                pk: {
+                    field: "pk",
+                    facets: ["prop1"]
+                },
+                sk: {
+                    field: "sk",
+                    facets: ["prop2"]
+                }
+            }
+        }
+    });
+
+    let entityWithHiddenAttributes2 = new Entity({
+        model: {
+            entity: "e2",
+            service: "s1",
+            version: "1"
+        },
+        attributes: {
+            prop1: {
+                type: "string"
+            },
+            prop2: {
+                type: "string"
+            },
+            prop4: {
+                type: "string",
+                hidden: true
+            },
+            prop5: {
+                type: "string",
+            }
+        },
+        indexes: {
+            record: {
+                collection: "collection1",
+                pk: {
+                    field: "pk",
+                    facets: ["prop1"]
+                },
+                sk: {
+                    field: "sk",
+                    facets: ["prop2"]
+                }
+            }
+        }
+    });
+
+    const serviceWithHiddenAttributes = new Service({
+        e1: entityWithHiddenAttributes1,
+        e2: entityWithHiddenAttributes2
+    });
+
+    type Entity1WithHiddenAttribute = {
+        prop1: string;
+        prop2: string;
+    };
+
+    let entity1WithHiddenAttributeKey = "" as keyof Entity1WithHiddenAttribute;
+
+    type Entity2WithHiddenAttribute = {
+        prop1: string;
+        prop2: string;
+        prop5: string | undefined;
+    };
+
+    let entity2WithHiddenAttributeKey = "" as keyof Entity2WithHiddenAttribute;
+
+    entityWithHiddenAttributes1
+        .get({prop1: "abc", prop2: "def"})
+        .where((attr, op) => {
+            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr);
+            return op.eq(attr.prop3, "abc");
+        })
+        .go()
+        .then(value => {
+            expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
+            expectType<Entity1WithHiddenAttribute>(value);
+        });
+
+    entityWithHiddenAttributes1
+        .query.record({prop1: "abc"})
+        .where((attr, op) => {
+            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr);
+            return op.eq(attr.prop3, "abc");
+        })
+        .go()
+        .then(values => {
+            return values.map(value => {
+                expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
+                expectType<Entity1WithHiddenAttribute>(value);
+            });
+        });
+
+    serviceWithHiddenAttributes.collections
+        .collection1({prop1: "abc"})
+        .where((attr, op) => {
+            expectAssignable<{prop3: WhereAttributeSymbol<string>}>(attr);
+            expectAssignable<{prop4: WhereAttributeSymbol<string>}>(attr);
+            return `${op.eq(attr.prop3, "abc")} AND ${op.eq(attr.prop4, "def")}`
+        })
+        .go()
+        .then(results => {
+            results.e1.map(value => {
+                expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
+                expectType<Entity1WithHiddenAttribute>(value);
+            });
+            results.e2.map(value => {
+                expectType<keyof typeof value>(entity2WithHiddenAttributeKey);
+                expectType<string>(value.prop1);
+                expectType<string>(value.prop2);
+                expectType<string | undefined>(value.prop5);
+            });
+        })
+
+

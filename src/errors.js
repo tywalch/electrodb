@@ -103,6 +103,12 @@ const ErrorCodes = {
     name: "DuplicateIndexFacets",
     sym: ErrorCode,
   },
+  InvalidAttributeWatchDefinition: {
+    code: 1016,
+    section: "invalid-attribute-watch-definition",
+    name: "InvalidAttributeWatchDefinition",
+    sym: ErrorCode
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",

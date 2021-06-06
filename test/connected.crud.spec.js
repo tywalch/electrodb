@@ -2,6 +2,7 @@ const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity } = require("../src/entity");
+const { Service } = require("../src/service");
 const { expect } = require("chai");
 const uuid = require("uuid").v4;
 const moment = require("moment");
@@ -10,12 +11,13 @@ const client = new DynamoDB.DocumentClient({
 	region: "us-east-1",
 	endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
+const table = "electro";
 const SERVICE = "BugBeater";
 const ENTITY = "TEST_ENTITY";
 let model = {
 	service: SERVICE,
 	entity: ENTITY,
-	table: "electro",
+	table,
 	version: "1",
 	attributes: {
 		id: {
@@ -1014,6 +1016,1701 @@ describe("Entity", async () => {
 			});
 		}).timeout(20000);
 	});
+	describe("Watchers", async () => {
+		// PUT
+			// Watching an attribute should trigger the setter of an attribute without that attribute being supplied
+			// Watching an attribute should trigger the setter of an attribute without that attribute being supplied AFTER the other attribute's setter as been applied
+			// Not setting an attribute or the watcher should result in neither setter being called
+			// Setting the attribute should still pass the value
+			// Key Values don't count as updates
+		// CREATE
+			// Watching an attribute should trigger the setter of an attribute without that attribute being supplied
+			// Watching an attribute should trigger the setter of an attribute without that attribute being supplied AFTER the other attribute's setter as been applied
+			// Not setting an attribute or the watcher should result in neither setter being called
+			// Setting the attribute should still pass the value
+			// Key Values don't count as updates
+		// UPDATE
+			// Watching an attribute should trigger the setter of an attribute without that attribute being supplied
+			// Watching an attribute should trigger the setter of an attribute without that attribute being supplied AFTER the other attribute's setter as been applied
+			// Not setting an attribute or the watcher should result in neither setter being called
+			// Setting the attribute should still pass the value
+			// Key Values don't count as updates
+		// PATCH
+			// Watching an attribute should trigger the setter of an attribute without that attribute being supplied
+			// Watching an attribute should trigger the setter of an attribute without that attribute being supplied AFTER the other attribute's setter as been applied
+			// Not setting an attribute or the watcher should result in neither setter being called
+			// Setting the attribute should still pass the value
+			// Key Values don't count as updates
+		// GET
+			// Watching an attribute should trigger the getter of an attribute without that attribute on the item
+			// Watching an attribute should trigger the getter of an attribute without that attribute on the table and only when that other attribute exists in the item and AFTER the other attribute's getter as been applied
+			// Not getting an attribute or the watcher should result in neither getter being called
+			// Getting the attribute should still pass the value
+			// Key Values don't count as updates
+		// QUERY
+			// Watching an attribute should trigger the getter of an attribute without that attribute on the item
+			// Watching an attribute should trigger the getter of an attribute without that attribute on the table and only when that other attribute exists in the item and AFTER the other attribute's getter as been applied
+			// Not getting an attribute or the watcher should result in neither getter being called
+			// Getting the attribute should still pass the value
+			// Key Values don't count as updates
+		// COLLECTION
+			// Watching an attribute should trigger the getter of an attribute without that attribute on the item
+			// Watching an attribute should trigger the getter of an attribute without that attribute on the table and only when that other attribute exists in the item and AFTER the other attribute's getter as been applied
+			// Not getting an attribute or the watcher should result in neither getter being called
+			// Getting the attribute should still pass the value
+			// Key Values don't count as updates
+		// A watcher can be an index
+		// A watcher can be in the same index as the attribute it's watching
+		// A watcher cannot watch another watcher
+		class TriggerListener {
+			constructor() {
+				this.fresh();
+			}
+
+			fresh() {
+				this.store = {};
+				this.events = [];
+				this.current = undefined;
+			}
+
+			stop() {
+				if (this.current !== undefined) {
+					this.store[this.current] = this.events;
+				}
+				this.events = [];
+				this.current = undefined;
+			}
+
+			list(name) {
+				return this.store[name];
+			}
+
+			start(name) {
+				this.stop();
+				this.current = name;
+			}
+
+			trigger(value) {
+				this.events.push(value);
+			}
+
+			end() {
+				this.stop();
+				let store = this.store;
+				this.fresh();
+				return store;
+			}
+		}
+		describe("Readme examples", async () => {
+			it("Should test Attribute Watching 'Example 1' from the readme", async () => {
+				let entity = new Entity({
+					model: {
+						entity: "services",
+						service: "costEstimator",
+						version: "1"
+					},
+					attributes: {
+						service: {
+							type: "string"
+						},
+						price: {
+							type: "number",
+							required: true
+						},
+						fee: {
+							type: "number",
+							watch: ["price"],
+							set: (_, {price}) => {
+								return price * .2;
+							}
+						}
+					},
+					indexes: {
+						pricing: {
+							pk: {
+								field: "pk",
+								facets: ["service"]
+							},
+							sk: {
+								field: "sk",
+								facets: []
+							}
+						}
+					}
+				}, {table, client});
+
+				let service = uuid();
+
+				let input1 = {
+					service,
+					price: 100
+				};
+
+				let output1 = {
+					service,
+					price: input1.price,
+					fee: input1.price * .2
+				};
+
+				let input2 = {
+					price: 200
+				};
+
+				let output2 = {
+					service,
+					price: input2.price,
+					fee: input2.price * .2
+				};
+
+				let putRecord = await entity.put(input1).go();
+				let getRecord1 = await entity.get({service}).go();
+				await entity.update({service}).set(input2).go();
+				let getRecord2 = await entity.get({service}).go();
+				expect(putRecord).to.deep.equal(putRecord);
+				expect(getRecord1).to.deep.equal(output1);
+				expect(getRecord2).to.deep.equal(output2);
+			});
+			it("Should test Attribute Watching 'Example 2' from the readme", async () => {
+				let entity = new Entity({
+					model: {
+						entity: "services",
+						service: "costEstimator",
+						version: "1"
+					},
+					attributes: {
+						service: {
+							type: "string"
+						},
+						price: {
+							type: "number",
+							required: true
+						},
+						displayPrice: {
+							type: "string",
+							watch: ["price"],
+							get: (_, {price}) => {
+								return "$" + price;
+							},
+							set: () => undefined
+						}
+					},
+					indexes: {
+						pricing: {
+							pk: {
+								field: "pk",
+								facets: ["service"]
+							},
+							sk: {
+								field: "sk",
+								facets: []
+							}
+						}
+					}
+				}, {table, client});
+
+				let service = uuid();
+
+				let input1 = {
+					service,
+					price: 100,
+					displayPrice: "shouldnt_take_value"
+				};
+
+				let output1 = {
+					service,
+					price: input1.price,
+					displayPrice: "$" + input1.price
+				};
+
+				let input2 = {
+					price: 200,
+					displayPrice: "shouldnt_take_value"
+				};
+
+				let output2 = {
+					service,
+					price: input2.price,
+					displayPrice: "$" + input2.price
+				};
+
+				let putRecord = await entity.put(input1).go();
+				let getRecord1 = await entity.get({service}).go();
+				await entity.update({service}).set(input2).go();
+				let getRecord2 = await entity.get({service}).go();
+				expect(putRecord).to.deep.equal(putRecord);
+				expect(getRecord1).to.deep.equal(output1);
+				expect(getRecord2).to.deep.equal(output2);
+			});
+			it("Should test Attribute Watching 'Example 3' from the readme", async () => {
+				let entity = new Entity({
+					model: {
+						entity: "transaction",
+						service: "bank",
+						version: "1"
+					},
+					attributes: {
+						accountNumber: {
+							type: "string"
+						},
+						transactionId: {
+							type: "string"
+						},
+						amount: {
+							type: "number",
+						},
+						description: {
+							type: "string",
+						},
+						descriptionSearch: {
+							type: "string",
+							hidden: true,
+							watch: ["description"],
+							set: (_, {description}) => {
+								if (typeof description === "string") {
+									return description.toLowerCase();
+								}
+							}
+						}
+					},
+					indexes: {
+						transactions: {
+							pk: {
+								field: "pk",
+								facets: ["accountNumber"]
+							},
+							sk: {
+								field: "sk",
+								facets: ["transactionId"]
+							}
+						}
+					}
+				}, {table, client});
+
+				let accountNumber = uuid();
+				let transactionId = uuid();
+
+				let transaction = {
+					accountNumber,
+					transactionId,
+					amount: 100,
+					description: "MiXeD CaSe DeScRiPtIoN"
+				};
+
+				let putRecord = await entity.put(transaction).go();
+
+				let queryRecord1 = await entity.query
+					.transactions({accountNumber})
+					.where(({descriptionSearch}, {contains}) => contains(descriptionSearch, "mixed case"))
+					.go();
+
+				expect(putRecord).to.deep.equal(transaction);
+				expect(queryRecord1).to.deep.equal([transaction]);
+			});
+		});
+		describe("Setter Triggers", async () => {
+			const counter = new TriggerListener();
+			const entity = new Entity({
+				model: {
+					entity: "entity",
+					service: "service",
+					version: "1"
+				},
+				attributes: {
+					prop3: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop3", method: "get"});
+							return value + "_fromgetter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop3", method: "set"});
+							return value + "_fromsetter";
+						}
+					},
+					prop4: {
+						type: "string",
+						watch: ["prop3"],
+						get: (value, {prop3}) => {
+							counter.trigger({value, attr: "prop4", method: "get", watched: prop3});
+							return "prop4_fromgetter";
+						},
+						set: (value, {prop3}) => {
+							counter.trigger({value, attr: "prop4", method: "set", watched: prop3});
+							return value === undefined ? "prop4_fromsetter" : value + "_fromvaluefromsetter";
+						}
+					},
+					prop5: {
+						type: "string",
+						watch: ["prop2"],
+						get: (value, {prop2}) => {
+							counter.trigger({value, attr: "prop5", method: "get", watched: prop2});
+							return "prop5_fromgetter";
+						},
+						set: (value, {prop2}) => {
+							counter.trigger({value, attr: "prop5", method: "set", watched: prop2});
+							return "prop5_fromsetter";
+						}
+					},
+					prop6: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop6", method: "get"});
+							return value + "_fromgetter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop6", method: "set"});
+							return value === undefined ? "prop6_fromsetter" : value + "_fromsetter";
+						}
+					},
+					prop1: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop1", method: "get"});
+							return value + "_after_getter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop1", method: "set"});
+							return value + "_after_setter";
+						}
+					},
+					prop2: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop2", method: "get"});
+							return value + "_after_getter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop2", method: "set"});
+							return value + "_after_setter";
+						}
+					},
+				}, indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					}
+				}
+			}, {table});
+			it("Should trigger the setter of a watcher because the attribute being watched is supplied regardless if the watcher was supplied after the attribute's setter has been applied", () => {
+				let prop1 = uuid();
+				let prop2 = "prop2";
+				let prop3 = "prop3";
+				let prop4 = "prop4";
+				let keys = {
+					put: "put",
+					create: "create",
+					update: "update",
+					patch: "patch"
+				}
+				counter.start(keys.put);
+				let putParams = entity.put({prop1, prop2, prop3}).params();
+				counter.start(keys.create);
+				let createParams = entity.create({prop1, prop2, prop3}).params();
+				counter.start(keys.update);
+				let updateParams = entity.update({prop1, prop2}).set({prop3}).params();
+				counter.start(keys.patch);
+				let patchParams = entity.patch({prop1, prop2}).set({prop3}).params();
+				counter.stop();
+				expect(putParams).to.deep.equal({
+					Item: {
+						prop1: prop1 + "_after_setter",
+						prop2: 'prop2_after_setter',
+						prop3: 'prop3_fromsetter',
+						prop4: 'prop4_fromsetter',
+						prop5: "prop5_fromsetter",
+						prop6: "prop6_fromsetter",
+						pk: `$service#prop1_${prop1}_after_setter`,
+						sk: '$entity_1#prop2_prop2_after_setter',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro'
+				});
+				expect(counter.list(keys.put)).to.deep.equal([
+					{ value: 'prop3', attr: 'prop3', method: 'set' },
+					{
+						"attr": "prop6",
+						"method": "set",
+						"value": undefined
+					},
+					{
+						attr: "prop1",
+					  	method: "set",
+					  	value: prop1,
+					},
+					{
+					  	attr: "prop2",
+					  	method: "set",
+					  	value: "prop2",
+					},
+					{
+						value: undefined,
+						attr: 'prop4',
+						method: 'set',
+						watched: 'prop3_fromsetter'
+					},
+					{
+						attr: "prop5",
+						method: "set",
+						value: undefined,
+						watched: "prop2_after_setter",
+					},
+				]);
+				expect(createParams).to.deep.equal({
+					Item: {
+						prop1: prop1 + "_after_setter",
+						prop2: 'prop2_after_setter',
+						prop3: 'prop3_fromsetter',
+						prop4: 'prop4_fromsetter',
+						prop5: "prop5_fromsetter",
+						prop6: "prop6_fromsetter",
+						pk: `$service#prop1_${prop1}_after_setter`,
+						sk: '$entity_1#prop2_prop2_after_setter',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro',
+					ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+				});
+				expect(counter.list(keys.create)).to.deep.equal([
+					{ value: 'prop3', attr: 'prop3', method: 'set' },
+					{
+						"attr": "prop6",
+						"method": "set",
+						"value": undefined
+					},
+					{
+						attr: "prop1",
+						method: "set",
+						value: prop1,
+					},
+					{
+						attr: "prop2",
+						method: "set",
+						value: "prop2",
+					},
+					{
+						value: undefined,
+						attr: 'prop4',
+						method: 'set',
+						watched: 'prop3_fromsetter'
+					},
+					{
+						attr: "prop5",
+						method: "set",
+						value: undefined,
+						watched: "prop2_after_setter",
+					}
+				]);
+				expect(updateParams).to.deep.equal({
+					UpdateExpression: 'SET #prop3 = :prop3, #prop4 = :prop4',
+					ExpressionAttributeNames: { '#prop3': 'prop3', '#prop4': 'prop4' },
+					ExpressionAttributeValues: { ':prop3': 'prop3_fromsetter', ':prop4': 'prop4_fromsetter'},
+					TableName: 'electro',
+					Key: {
+						pk: `$service#prop1_${prop1}`,
+						sk: '$entity_1#prop2_prop2'
+					}
+				});
+				expect(counter.list(keys.update)).to.deep.equal([
+					{ value: 'prop3', attr: 'prop3', method: 'set' },
+					{
+						value: undefined,
+						attr: 'prop4',
+						method: 'set',
+						watched: 'prop3_fromsetter'
+					}
+				]);
+				expect(patchParams).to.deep.equal({
+					UpdateExpression: 'SET #prop3 = :prop3, #prop4 = :prop4',
+					ExpressionAttributeNames: { '#prop3': 'prop3', '#prop4': 'prop4' },
+					ExpressionAttributeValues: { ':prop3': 'prop3_fromsetter', ':prop4': 'prop4_fromsetter' },
+					TableName: 'electro',
+					Key: {
+						pk: `$service#prop1_${prop1}`,
+						sk: '$entity_1#prop2_prop2'
+					},
+					ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				});
+				expect(counter.list(keys.patch)).to.deep.equal([
+					{ value: 'prop3', attr: 'prop3', method: 'set' },
+					{
+						value: undefined,
+						attr: 'prop4',
+						method: 'set',
+						watched: 'prop3_fromsetter'
+					}
+				]);
+			});
+			it("Should not trigger either setter if neither attribute is supplied", () => {
+				let prop1 = uuid();
+				let prop2 = "prop2";
+				let prop6 = "prop6";
+				let keys = {
+					put: "put",
+					create: "create",
+					update: "update",
+					patch: "patch"
+				}
+				counter.start(keys.put);
+				let putParams = entity.put({prop1, prop2, prop6}).params();
+				counter.start(keys.create);
+				let createParams = entity.create({prop1, prop2, prop6}).params();
+				counter.start(keys.update);
+				let updateParams = entity.update({prop1, prop2}).set({prop6}).params();
+				counter.start(keys.patch);
+				let patchParams = entity.patch({prop1, prop2}).set({prop6}).params();
+				counter.stop();
+				expect(putParams).to.deep.equal({
+					Item: {
+						prop1: prop1 + "_after_setter",
+						prop2: 'prop2_after_setter',
+						prop3: 'undefined_fromsetter',
+						prop4: 'prop4_fromsetter',
+						prop5: "prop5_fromsetter",
+						prop6: "prop6_fromsetter",
+						pk: `$service#prop1_${prop1}_after_setter`,
+						sk: '$entity_1#prop2_prop2_after_setter',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro'
+				});
+				expect(counter.list(keys.put)).to.deep.equal([
+					{ value: undefined, attr: 'prop3', method: 'set' },
+					{ value: "prop6", attr: 'prop6', method: 'set' },
+					{
+						attr: "prop1",
+						method: "set",
+						value: prop1,
+					},
+					{
+						attr: "prop2",
+						method: "set",
+						value: "prop2",
+					},
+					{
+						value: undefined,
+						attr: 'prop4',
+						method: 'set',
+						watched: 'undefined_fromsetter'
+					},
+					{
+						attr: "prop5",
+						method: "set",
+						value: undefined,
+						watched: "prop2_after_setter",
+					}
+				]);
+				expect(createParams).to.deep.equal({
+					Item: {
+						prop1: prop1 + "_after_setter",
+						prop2: 'prop2_after_setter',
+						prop3: 'undefined_fromsetter',
+						prop4: 'prop4_fromsetter',
+						prop5: "prop5_fromsetter",
+						prop6: "prop6_fromsetter",
+						pk: `$service#prop1_${prop1}_after_setter`,
+						sk: '$entity_1#prop2_prop2_after_setter',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro',
+					ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+				});
+				expect(counter.list(keys.create)).to.deep.equal([
+					{ value: undefined, attr: 'prop3', method: 'set' },
+					{ value: "prop6", attr: "prop6", method: "set" },
+					{
+						attr: "prop1",
+						method: "set",
+						value: prop1,
+					},
+					{
+						attr: "prop2",
+						method: "set",
+						value: "prop2",
+					},
+					{
+						value: undefined,
+						attr: 'prop4',
+						method: 'set',
+						watched: 'undefined_fromsetter'
+					},
+					{
+						attr: "prop5",
+						method: "set",
+						value: undefined,
+						watched: "prop2_after_setter",
+					}
+				]);
+				expect(updateParams).to.deep.equal({
+					UpdateExpression: 'SET #prop6 = :prop6',
+					ExpressionAttributeNames: { '#prop6': 'prop6' },
+					ExpressionAttributeValues: { ':prop6': 'prop6_fromsetter'},
+					TableName: 'electro',
+					Key: {
+						pk: `$service#prop1_${prop1}`,
+						sk: '$entity_1#prop2_prop2'
+					}
+				});
+				expect(counter.list(keys.update)).to.deep.equal([
+					{ value: "prop6", attr: "prop6", method: "set" },
+				]);
+				expect(patchParams).to.deep.equal({
+					UpdateExpression: 'SET #prop6 = :prop6',
+					ExpressionAttributeNames: { '#prop6': 'prop6' },
+					ExpressionAttributeValues: { ':prop6': 'prop6_fromsetter'},
+					TableName: 'electro',
+					Key: {
+						pk: `$service#prop1_${prop1}`,
+						sk: '$entity_1#prop2_prop2'
+					},
+					ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				});
+				expect(counter.list(keys.patch)).to.deep.equal([
+					{ value: "prop6", attr: "prop6", method: "set" },
+				]);
+			});
+			it("Should still trigger setter if the attribute is set manually and include it's value, but will do so after the attribute it's watching", () => {
+				let prop1 = uuid();
+				let prop2 = "prop2";
+				let prop6 = "prop6";
+				let prop4 = "prop4"
+				let keys = {
+					put: "put",
+					create: "create",
+					update: "update",
+					patch: "patch"
+				}
+				counter.start(keys.put);
+				let putParams = entity.put({prop1, prop2, prop6, prop4}).params();
+				counter.start(keys.create);
+				let createParams = entity.create({prop1, prop2, prop6, prop4}).params();
+				counter.start(keys.update);
+				let updateParams = entity.update({prop1, prop2}).set({prop6, prop4}).params();
+
+				counter.start(keys.patch);
+				let patchParams = entity.patch({prop1, prop2}).set({prop6, prop4}).params();
+				counter.stop();
+				expect(putParams).to.deep.equal({
+					Item: {
+						prop1: prop1 + "_after_setter",
+						prop2: 'prop2_after_setter',
+						prop3: 'undefined_fromsetter',
+						prop4: 'prop4_fromvaluefromsetter',
+						prop5: "prop5_fromsetter",
+						prop6: "prop6_fromsetter",
+						pk: `$service#prop1_${prop1}_after_setter`,
+						sk: '$entity_1#prop2_prop2_after_setter',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro'
+				});
+				expect(counter.list(keys.put)).to.deep.equal([
+					{ value: undefined, attr: 'prop3', method: 'set' },
+					{ value: "prop6", attr: 'prop6', method: 'set' },
+					{
+						attr: "prop1",
+						method: "set",
+						value: prop1,
+					},
+					{
+						attr: "prop2",
+						method: "set",
+						value: "prop2",
+					},
+					{
+						value: "prop4",
+						attr: 'prop4',
+						method: 'set',
+						watched: 'undefined_fromsetter'
+					},
+					{
+						attr: "prop5",
+						method: "set",
+						value: undefined,
+						watched: "prop2_after_setter",
+					},
+				]);
+				expect(createParams).to.deep.equal({
+					Item: {
+						prop1: prop1 + "_after_setter",
+						prop2: 'prop2_after_setter',
+						prop3: 'undefined_fromsetter',
+						prop4: 'prop4_fromvaluefromsetter',
+						prop5: "prop5_fromsetter",
+						prop6: "prop6_fromsetter",
+						pk: `$service#prop1_${prop1}_after_setter`,
+						sk: '$entity_1#prop2_prop2_after_setter',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro',
+					ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+				});
+				expect(counter.list(keys.create)).to.deep.equal([
+					{ value: undefined, attr: 'prop3', method: 'set' },
+					{ value: "prop6", attr: "prop6", method: "set" },
+					{
+						attr: "prop1",
+						method: "set",
+						value: prop1,
+					},
+					{
+						attr: "prop2",
+						method: "set",
+						value: "prop2",
+					},
+					{
+						value: "prop4",
+						attr: 'prop4',
+						method: 'set',
+						watched: 'undefined_fromsetter'
+					},
+					{
+						attr: "prop5",
+						method: "set",
+						value: undefined,
+						watched: "prop2_after_setter",
+					},
+				]);
+				expect(updateParams).to.deep.equal({
+					UpdateExpression: 'SET #prop4 = :prop4, #prop6 = :prop6',
+					ExpressionAttributeNames: { '#prop6': 'prop6', '#prop4': 'prop4' },
+					ExpressionAttributeValues: { ':prop6': 'prop6_fromsetter', ':prop4': 'prop4_fromvaluefromsetter'},
+					TableName: 'electro',
+					Key: {
+						pk: `$service#prop1_${prop1}`,
+						sk: '$entity_1#prop2_prop2'
+					}
+				});
+				expect(counter.list(keys.update)).to.deep.equal([
+					{ value: "prop6", attr: "prop6", method: "set" },
+					{ value: "prop4", attr: "prop4", method: "set", watched: undefined },
+				]);
+				expect(patchParams).to.deep.equal({
+					UpdateExpression: 'SET #prop4 = :prop4, #prop6 = :prop6',
+					ExpressionAttributeNames: { '#prop6': 'prop6', '#prop4': 'prop4' },
+					ExpressionAttributeValues: { ':prop6': 'prop6_fromsetter', ':prop4': 'prop4_fromvaluefromsetter'},
+					TableName: 'electro',
+					Key: {
+						pk: `$service#prop1_${prop1}`,
+						sk: '$entity_1#prop2_prop2'
+					},
+					ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				});
+				expect(counter.list(keys.patch)).to.deep.equal([
+					{ value: "prop6", attr: "prop6", method: "set" },
+					{ value: "prop4", attr: "prop4", method: "set", watched: undefined },
+				]);
+			});
+			it("Should be possible to use a watcher as a facet", () => {
+				const counter = new TriggerListener();
+				let entity = new Entity({
+					model: {
+						entity: "entity",
+						service: "service",
+						version: "1"
+					},
+					attributes: {
+						prop5: {
+							type: "string",
+							watch: ["prop2"],
+							get: (value, {prop2}) => {
+								counter.trigger({value, attr: "prop5", method: "get", watched: prop2});
+								return "prop5_fromgetter";
+							},
+							set: (value, {prop2}) => {
+								counter.trigger({value, attr: "prop5", method: "set", watched: prop2});
+								return "prop5_fromsetter";
+							}
+						},
+						prop1: {
+							type: "string",
+							get: (value) => {
+								counter.trigger({value, attr: "prop1", method: "get"});
+								return value + "_after_getter";
+							},
+							set: (value) => {
+								counter.trigger({value, attr: "prop1", method: "set"});
+								return value + "_after_setter";
+							}
+						},
+						prop2: {
+							type: "string",
+							get: (value) => {
+								counter.trigger({value, attr: "prop2", method: "get"});
+								return value + "_after_getter";
+							},
+							set: (value) => {
+								counter.trigger({value, attr: "prop2", method: "set"});
+								return value + "_after_setter";
+							}
+						},
+					},
+					indexes: {
+						record: {
+							pk: {
+								field: "pk",
+								facets: ["prop1"]
+							},
+							sk: {
+								field: "sk",
+								facets: ["prop2"]
+							}
+						},
+						index2: {
+							index: "gsi1",
+							pk: {
+								field: "gsi1pk",
+								facets: ["prop5"]
+							},
+							sk: {
+								field: "gsi1sk",
+								facets: []
+							}
+						}
+					}
+				}, {table});
+				let prop1 = "prop1";
+				let prop2 = "prop2";
+				let prop5 = "prop5";
+				let keys = {
+					put: "put",
+					create: "create",
+				}
+				counter.start(keys.put);
+				let putParams = entity.put({prop1, prop2, prop5}).params();
+				counter.start(keys.create);
+				let createParams = entity.create({prop1, prop2, prop5}).params();
+				counter.start(keys.update);
+				counter.stop();
+				expect(putParams).to.deep.equal({
+					Item: {
+						prop1: 'prop1_after_setter',
+						prop2: 'prop2_after_setter',
+						prop5: 'prop5_fromsetter',
+						pk: '$service#prop1_prop1_after_setter',
+						sk: '$entity_1#prop2_prop2_after_setter',
+						gsi1pk: '$service#prop5_prop5_fromsetter',
+						gsi1sk: '$entity_1',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro'
+				});
+				expect(counter.list(keys.put)).to.deep.equal([
+					{ value: 'prop1', attr: 'prop1', method: 'set' },
+					{ value: 'prop2', attr: 'prop2', method: 'set' },
+					{ value: 'prop5', attr: 'prop5', method: 'set', watched: 'prop2_after_setter' }
+				]);
+				expect(createParams).to.deep.equal({
+					Item: {
+						prop1: 'prop1_after_setter',
+						prop2: 'prop2_after_setter',
+						prop5: 'prop5_fromsetter',
+						pk: '$service#prop1_prop1_after_setter',
+						sk: '$entity_1#prop2_prop2_after_setter',
+						gsi1pk: '$service#prop5_prop5_fromsetter',
+						gsi1sk: '$entity_1',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro',
+					ConditionExpression: "attribute_not_exists(pk) AND attribute_not_exists(sk)"
+				});
+				expect(counter.list(keys.create)).to.deep.equal([
+					{ value: 'prop1', attr: 'prop1', method: 'set' },
+					{ value: 'prop2', attr: 'prop2', method: 'set' },
+					{ value: 'prop5', attr: 'prop5', method: 'set', watched: 'prop2_after_setter' }
+				]);
+			});
+
+			it("Should be possible to use a watcher as a facet in the same index as another facet it is watching", () => {
+				const counter = new TriggerListener();
+				let entity = new Entity({
+					model: {
+						entity: "entity",
+						service: "service",
+						version: "1"
+					},
+					attributes: {
+						prop5: {
+							type: "string",
+							watch: ["prop2"],
+							get: (value, {prop2}) => {
+								counter.trigger({value, attr: "prop5", method: "get", watched: prop2});
+								return "prop5_fromgetter";
+							},
+							set: (value, {prop2}) => {
+								counter.trigger({value, attr: "prop5", method: "set", watched: prop2});
+								return "prop5_fromsetter";
+							}
+						},
+						prop1: {
+							type: "string",
+							get: (value) => {
+								counter.trigger({value, attr: "prop1", method: "get"});
+								return value + "_after_getter";
+							},
+							set: (value) => {
+								counter.trigger({value, attr: "prop1", method: "set"});
+								return value + "_after_setter";
+							}
+						},
+						prop2: {
+							type: "string",
+							get: (value) => {
+								counter.trigger({value, attr: "prop2", method: "get"});
+								return value + "_after_getter";
+							},
+							set: (value) => {
+								counter.trigger({value, attr: "prop2", method: "set"});
+								return value + "_after_setter";
+							}
+						},
+
+					},
+					indexes: {
+						record: {
+							pk: {
+								field: "pk",
+								facets: ["prop1"]
+							},
+							sk: {
+								field: "sk",
+								facets: []
+							}
+						},
+						index2: {
+							index: "gsi1",
+							pk: {
+								field: "gsi1pk",
+								facets: ["prop5"]
+							},
+							sk: {
+								field: "gsi1sk",
+								facets: ["prop2"]
+							}
+						}
+					}
+				}, {table});
+				let prop1 = "prop1";
+				let prop2 = "prop2";
+				let prop5 = "prop5";
+				let keys = {
+					put: "put",
+					create: "create",
+				}
+				counter.start(keys.put);
+				let putParams = entity.put({prop1, prop2, prop5}).params();
+				counter.start(keys.create);
+				let createParams = entity.create({prop1, prop2, prop5}).params();
+				counter.stop();
+				expect(putParams).to.deep.equal({
+					Item: {
+						prop1: 'prop1_after_setter',
+						prop2: 'prop2_after_setter',
+						prop5: 'prop5_fromsetter',
+						pk: '$service#prop1_prop1_after_setter',
+						sk: '$entity_1',
+						gsi1pk: '$service#prop5_prop5_fromsetter',
+						gsi1sk: '$entity_1#prop2_prop2_after_setter',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro'
+				});
+				expect(counter.list(keys.put)).to.deep.equal([
+					{ value: 'prop1', attr: 'prop1', method: 'set' },
+					{ value: 'prop2', attr: 'prop2', method: 'set' },
+					{ value: 'prop5', attr: 'prop5', method: 'set', watched: 'prop2_after_setter' }
+				]);
+				expect(createParams).to.deep.equal({
+					Item: {
+						prop1: 'prop1_after_setter',
+						prop2: 'prop2_after_setter',
+						prop5: 'prop5_fromsetter',
+						pk: '$service#prop1_prop1_after_setter',
+						sk: '$entity_1',
+						gsi1pk: '$service#prop5_prop5_fromsetter',
+						gsi1sk: '$entity_1#prop2_prop2_after_setter',
+						__edb_e__: 'entity',
+						__edb_v__: '1'
+					},
+					TableName: 'electro',
+					ConditionExpression: "attribute_not_exists(pk) AND attribute_not_exists(sk)"
+				});
+				expect(counter.list(keys.create)).to.deep.equal([
+					{ value: 'prop1', attr: 'prop1', method: 'set' },
+					{ value: 'prop2', attr: 'prop2', method: 'set' },
+					{ value: 'prop5', attr: 'prop5', method: 'set', watched: 'prop2_after_setter' }
+				]);
+			});
+		});
+		describe("Getter Triggers", () => {
+			const counter = new TriggerListener();
+			let entity1 = new Entity({
+				model: {
+					entity: "entity1",
+					service: "service",
+					version: "1"
+				},
+				attributes: {
+					prop3: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop3", method: "get", entity: "entity1"});
+							return value + "_fromgetter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop3", method: "set", entity: "entity1"});
+							return value;
+						}
+					},
+					prop4: {
+						type: "string",
+						watch: ["prop3"],
+						get: (value, {prop3}) => {
+							counter.trigger({value, attr: "prop4", method: "get", watched: prop3, entity: "entity1"});
+							return "prop4_fromgetter";
+						},
+						set: (value, {prop3}) => {
+							counter.trigger({value, attr: "prop4", method: "set", watched: prop3, entity: "entity1"});
+							return value === undefined ? "prop4_fromsetter" : value + "_fromvaluefromsetter";
+						}
+					},
+					prop5: {
+						type: "string",
+						watch: ["prop2"],
+						get: (value, {prop2}) => {
+							counter.trigger({value, attr: "prop5", method: "get", watched: prop2, entity: "entity1"});
+							return "prop5_fromgetter";
+						},
+						set: (value, {prop2}) => {
+							counter.trigger({value, attr: "prop5", method: "set", watched: prop2, entity: "entity1"});
+							return "prop5_fromsetter";
+						}
+					},
+					prop6: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop6", method: "get", entity: "entity1"});
+							return value + "_fromgetter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop6", method: "set", entity: "entity1"});
+							return value;
+						}
+					},
+					prop7: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop7", method: "get", entity: "entity1"});
+							return value + "_fromgetter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop7", method: "set", entity: "entity1"});
+							return value;
+						}
+					},
+					prop1: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop1", method: "get", entity: "entity1"});
+							return value + "_after_getter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop1", method: "set", entity: "entity1"});
+							return value;
+						}
+					},
+					prop2: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop2", method: "get", entity: "entity1"});
+							return value + "_after_getter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop2", method: "set", entity: "entity1"});
+							return value;
+						}
+					},
+					prop8: {
+						type: "string",
+						watch: ["prop6"],
+						set: (value) => {
+							counter.trigger({value, attr: "prop8", method: "set", entity: "entity2"});
+							return undefined;
+						},
+						get: (value, {prop6}) => {
+							counter.trigger({value, attr: "prop8", method: "get", watched: prop6, entity: "entity2"});
+							return prop6 + "_fromprop8_entity1"
+						}
+					},
+					prop9: {
+						type: "string",
+						watch: ["prop2"],
+						set: (value) => {
+							counter.trigger({value, attr: "prop9", method: "set", entity: "entity2"});
+							return undefined;
+						},
+						get: (value, {prop2}) => {
+							counter.trigger({value, attr: "prop9", method: "get", watched: prop2, entity: "entity2"});
+							return prop2 + "_fromprop9_entity1";
+						}
+					}
+				},
+				indexes: {
+					record: {
+						collection: "collection1",
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					index1: {
+						collection: "collection2",
+						index: "gsi1pk-gsi1sk-index",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: []
+						}
+					},
+					index2: {
+						collection: "collection3",
+						index: "gsi2pk-gsi2sk-index",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop6"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop7"]
+						}
+					}
+				}
+			}, {table});
+
+			let entity2 = new Entity({
+				model: {
+					entity: "entity2",
+					service: "service",
+					version: "1"
+				},
+				attributes: {
+					prop3: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop3", method: "get", entity: "entity2"});
+							return value + "_fromgetter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop3", method: "set", entity: "entity2"});
+							return value;
+						}
+					},
+					prop4: {
+						type: "string",
+						watch: ["prop3"],
+						get: (value, {prop3}) => {
+							counter.trigger({value, attr: "prop4", method: "get", watched: prop3, entity: "entity2"});
+							return "prop4_fromgetter";
+						},
+						set: (value, {prop3}) => {
+							counter.trigger({value, attr: "prop4", method: "set", watched: prop3, entity: "entity2"});
+							return value === undefined ? "prop4_fromsetter" : value + "_fromvaluefromsetter";
+						}
+					},
+					prop5: {
+						type: "string",
+						watch: ["prop2"],
+						get: (value, {prop2}) => {
+							counter.trigger({value, attr: "prop5", method: "get", watched: prop2, entity: "entity2"});
+							return "prop5_fromgetter";
+						},
+						set: (value, {prop2}) => {
+							counter.trigger({value, attr: "prop5", method: "set", watched: prop2, entity: "entity2"});
+							return "prop5_fromsetter";
+						}
+					},
+					prop6: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop6", method: "get", entity: "entity2"});
+							return value + "_fromgetter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop6", method: "set", entity: "entity2"});
+							return value;
+						}
+					},
+					prop1: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop1", method: "get", entity: "entity2"});
+							return value + "_after_getter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop1", method: "set", entity: "entity2"});
+							return value;
+						}
+					},
+					prop2: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop2", method: "get", entity: "entity2"});
+							return value + "_after_getter";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop2", method: "set", entity: "entity2"});
+							return value;
+						}
+					},
+					prop7: {
+						type: "string",
+						get: (value) => {
+							counter.trigger({value, attr: "prop7", method: "get", entity: "entity2"});
+							return value + "_fromgetter_entity2";
+						},
+						set: (value) => {
+							counter.trigger({value, attr: "prop7", method: "set", entity: "entity2"});
+							return value;
+						}
+					},
+					prop8: {
+						type: "string",
+						watch: ["prop6"],
+						set: (value) => {
+							counter.trigger({value, attr: "prop8", method: "set", entity: "entity2"});
+							return undefined;
+						},
+						get: (value, {prop6}) => {
+							counter.trigger({value, attr: "prop8", method: "get", watched: prop6, entity: "entity2"});
+							return prop6 + "_fromprop8_entity2"
+						}
+					},
+					prop9: {
+						type: "string",
+						watch: ["prop2"],
+						set: (value) => {
+							counter.trigger({value, attr: "prop9", method: "set", entity: "entity2"});
+							return undefined;
+						},
+						get: (value, {prop2}) => {
+							counter.trigger({value, attr: "prop9", method: "get", watched: prop2, entity: "entity2"});
+							return prop2 + "_fromprop9_entity2";
+						}
+					}
+				},
+				indexes: {
+					record: {
+						collection: "collection1",
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					},
+					index1: {
+						collection: "collection2",
+						index: "gsi1pk-gsi1sk-index",
+						pk: {
+							field: "gsi1pk",
+							facets: ["prop3"]
+						},
+						sk: {
+							field: "gsi1sk",
+							facets: []
+						}
+					},
+					index2: {
+						collection: "collection3",
+						index: "gsi2pk-gsi2sk-index",
+						pk: {
+							field: "gsi2pk",
+							facets: ["prop6"]
+						},
+						sk: {
+							field: "gsi2sk",
+							facets: ["prop7"]
+						}
+					}
+				}
+			}, {table});
+			let service = new Service({entity1, entity2}, {table, client});
+			it("Should trigger the setter of a watcher because the attribute being watched is supplied regardless if the watcher was supplied after the attribute's setter has been applied", async () => {
+				let prop1 = uuid();
+				let prop2 = "prop2";
+				let prop3 = uuid();
+				let prop4 = "prop4";
+				let prop5 = "prop5";
+				let prop6 = uuid();
+				let prop7 = "prop7";
+				let keys = {
+					get: "get",
+					query: "query",
+					collection: "collection",
+					puts: "puts"
+				}
+				prop1 = prop1;
+				prop2 = prop2;
+				counter.start(keys.puts);
+				let e1 = await service.entities.entity1.put({prop1, prop2, prop3}).go();
+				let e2 = await service.entities.entity2.put({prop1, prop2, prop3}).go();
+				counter.start("get1");
+				let get1 = await service.entities.entity1.get({prop1, prop2}).go();
+				counter.start("get2");
+				let get2 = await service.entities.entity2.get({prop1, prop2}).go();
+				counter.start("query1");
+				let query1 = await entity1.query.record({prop1}).go();
+				counter.start("query2");
+				let query2 = await entity2.query.record({prop1}).go();
+				counter.start("collection");
+				let collection = await service.collections.collection2({prop3}).go();
+				counter.stop();
+				expect(e1).to.deep.equal({
+					prop3: `${prop3}_fromgetter`,
+					prop4: 'prop4_fromgetter',
+					prop5: 'prop5_fromgetter',
+					prop1: `${prop1}_after_getter`,
+					prop2: 'prop2_after_getter',
+					prop9: 'prop2_after_getter_fromprop9_entity1'
+				});
+				expect(e2).to.deep.equal({
+					prop3: `${prop3}_fromgetter`,
+					prop4: 'prop4_fromgetter',
+					prop5: 'prop5_fromgetter',
+					prop1: `${prop1}_after_getter`,
+					prop2: 'prop2_after_getter',
+					prop9: 'prop2_after_getter_fromprop9_entity2'
+				});
+				expect(get1).to.deep.equal(e1);
+				expect(get2).to.deep.equal(e2);
+				expect(query1).to.be.an("array").with.length(1);
+				expect(query1[0]).to.deep.equal(e1);
+				expect(query2).to.be.an("array").with.length(1);
+				expect(query2[0]).to.deep.equal(e2);
+				expect(collection).to.be.an("object").with.keys("entity1", "entity2");
+				expect(collection.entity1).to.be.an("array").with.length(1);
+				expect(collection.entity1[0]).to.deep.equal(e1);
+				expect(collection.entity2).to.be.an("array").with.length(1);
+				expect(collection.entity2[0]).to.deep.equal(e2);
+				expect(counter.list("get1")).to.deep.equal([
+					{ value: 'prop2', attr: 'prop2', method: 'get', entity: 'entity1' },
+					{
+						value: prop1,
+						attr: 'prop1',
+						method: 'get',
+						entity: 'entity1'
+					},
+					{
+						value: prop3,
+						attr: 'prop3',
+						method: 'get',
+						entity: 'entity1'
+					},
+					{
+						value: 'prop5_fromsetter',
+						attr: 'prop5',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity1'
+					},
+					{
+						value: 'prop4_fromsetter',
+						attr: 'prop4',
+						method: 'get',
+						watched: `${prop3}_fromgetter`,
+						entity: 'entity1'
+					},
+					{
+						value: undefined,
+						attr: 'prop9',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					}
+				]);
+				expect(counter.list("get2")).to.deep.equal([
+					{ value: 'prop2', attr: 'prop2', method: 'get', entity: 'entity2' },
+					{
+						value: prop1,
+						attr: 'prop1',
+						method: 'get',
+						entity: 'entity2'
+					},
+					{
+						value: prop3,
+						attr: 'prop3',
+						method: 'get',
+						entity: 'entity2'
+					},
+					{
+						value: 'prop5_fromsetter',
+						attr: 'prop5',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					},
+					{
+						value: 'prop4_fromsetter',
+						attr: 'prop4',
+						method: 'get',
+						watched: `${prop3}_fromgetter`,
+						entity: 'entity2'
+					},
+					{
+						value: undefined,
+						attr: 'prop9',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					}
+				]);
+				expect(counter.list("query1")).to.deep.equal([
+					{ value: 'prop2', attr: 'prop2', method: 'get', entity: 'entity1' },
+					{
+						value: prop1,
+						attr: 'prop1',
+						method: 'get',
+						entity: 'entity1'
+					},
+					{
+						value: prop3,
+						attr: 'prop3',
+						method: 'get',
+						entity: 'entity1'
+					},
+					{
+						value: 'prop5_fromsetter',
+						attr: 'prop5',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity1'
+					},
+					{
+						value: 'prop4_fromsetter',
+						attr: 'prop4',
+						method: 'get',
+						watched: `${prop3}_fromgetter`,
+						entity: 'entity1'
+					},
+					{
+						value: undefined,
+						attr: 'prop9',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					}
+				]);
+				expect(counter.list("query2")).to.deep.equal([
+					{ value: 'prop2', attr: 'prop2', method: 'get', entity: 'entity2' },
+					{
+						value: prop1,
+						attr: 'prop1',
+						method: 'get',
+						entity: 'entity2'
+					},
+					{
+						value: prop3,
+						attr: 'prop3',
+						method: 'get',
+						entity: 'entity2'
+					},
+					{
+						value: 'prop5_fromsetter',
+						attr: 'prop5',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					},
+					{
+						value: 'prop4_fromsetter',
+						attr: 'prop4',
+						method: 'get',
+						watched: `${prop3}_fromgetter`,
+						entity: 'entity2'
+					},
+					{
+						value: undefined,
+						attr: 'prop9',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					}
+				]);
+				expect(counter.list("collection")).to.deep.equal([
+					{ value: 'prop2', attr: 'prop2', method: 'get', entity: 'entity1' },
+					{
+						value: prop1,
+						attr: 'prop1',
+						method: 'get',
+						entity: 'entity1'
+					},
+					{
+						value: prop3,
+						attr: 'prop3',
+						method: 'get',
+						entity: 'entity1'
+					},
+					{
+						value: 'prop5_fromsetter',
+						attr: 'prop5',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity1'
+					},
+					{
+						value: 'prop4_fromsetter',
+						attr: 'prop4',
+						method: 'get',
+						watched: `${prop3}_fromgetter`,
+						entity: 'entity1'
+					},
+					{
+						value: undefined,
+						attr: 'prop9',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					},
+					{ value: 'prop2', attr: 'prop2', method: 'get', entity: 'entity2' },
+					{
+						value: prop1,
+						attr: 'prop1',
+						method: 'get',
+						entity: 'entity2'
+					},
+					{
+						value: prop3,
+						attr: 'prop3',
+						method: 'get',
+						entity: 'entity2'
+					},
+					{
+						value: 'prop5_fromsetter',
+						attr: 'prop5',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					},
+					{
+						value: 'prop4_fromsetter',
+						attr: 'prop4',
+						method: 'get',
+						watched: `${prop3}_fromgetter`,
+						entity: 'entity2'
+					},
+					{
+						value: undefined,
+						attr: 'prop9',
+						method: 'get',
+						watched: 'prop2_after_getter',
+						entity: 'entity2'
+					}
+				]);
+			});
+		});
+		it("Should not allow a watcher to watch another watcher", () => {
+			let schema = {
+				model: {
+					entity: "entity",
+					service: "service",
+					version: "version"
+				},
+				attributes: {
+					prop1: {
+						type: "string"
+					},
+					prop2: {
+						type: "string",
+						watch: ["prop1"]
+					},
+					prop3: {
+						type: "string",
+						watch: ["prop2", "prop1"]
+					},
+					prop4: {
+						type: "string",
+						watch: ["prop3"]
+					},
+					prop5: {
+						type: "string",
+						watch: ["prop1", "prop2", "prop3", "prop4"]
+					},
+					prop6: {
+						type: "string",
+						watch: ["prop1"]
+					},
+					prop7: {
+						type: "string"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						}
+					}
+				}
+			}
+
+			expect(() => new Entity(schema)).to.throw(`Attribute Validation Error. Attributes may only "watch" other attributes also watch attributes. The following attributes are defined with ineligible attributes to watch: "prop3"->"prop2", "prop5"->"prop2", "prop4"->"prop3", "prop5"->"prop3", "prop5"->"prop4". - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-watch-definition`);
+		});
+		it("Should not allow a watcher to watch an unknown property", () => {
+			let schema = {
+				model: {
+					entity: "entity",
+					service: "service",
+					version: "version"
+				},
+				attributes: {
+					prop1: {
+						type: "string"
+					},
+					prop2: {
+						type: "string",
+						watch: ["prop1"]
+					},
+					prop3: {
+						type: "string",
+						watch: ["unknown"]
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						}
+					}
+				}
+			}
+
+			expect(() => new Entity(schema)).to.throw(`Attribute Validation Error. The following attributes are defined to "watch" invalid/unknown attributes: "prop3"->"unknown". - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-watch-definition`);
+		});
+	});
 	describe("Query Options", async () => {
 		let entity = uuid();
 		let db = new Entity(
@@ -1843,5 +3540,137 @@ describe("Entity", async () => {
 			expect(leasesRecord.find(record => record.id === id)).to.not.be.undefined;
 			expect(shopRecord.find(record => record.id === id)).to.not.be.undefined;
 		})
+	});
+	describe("Hidden Attributes", () => {
+		it("Should remove an attribute upon retrieval before returning it back to the user", async () => {
+			const entity = new Entity({
+				model: {
+					entity: "e2",
+					service: "s1",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string"
+					},
+					prop2: {
+						type: "string"
+					},
+					prop3: {
+						type: "string",
+						hidden: true
+					},
+					prop4: {
+						type: "string",
+					}
+				},
+				indexes: {
+					record: {
+						collection: "collection1",
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					}
+				}
+			}, {table, client});
+
+			let item = {
+				prop1: uuid(),
+				prop2: "abc",
+				prop3: "should_not_be_returned",
+				prop4: "def"
+			};
+
+			let data = {
+				prop1: item.prop1,
+				prop2: item.prop2,
+				prop4: item.prop4
+			};
+
+			let putResult = await entity.put(item).go();
+
+			let getResponse = await entity
+				.get(item)
+				.go();
+
+			let queryResponse = await entity.query
+				.record(item)
+				.where(({prop3}, {eq}) => `${eq(prop3, item.prop3)}`)
+				.go();
+
+			expect(putResult).to.deep.equal(data);
+			expect(getResponse).to.deep.equal(data);
+			expect(queryResponse).to.deep.equal([data]);
+		});
+
+		it("Should should be technically possible to make all fields hidden, but not recommended", async () => {
+			const entity = new Entity({
+				model: {
+					entity: "e2",
+					service: "s1",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						hidden: true,
+					},
+					prop2: {
+						type: "string",
+						hidden: true,
+					},
+					prop3: {
+						type: "string",
+						hidden: true
+					},
+					prop4: {
+						type: "string",
+						hidden: true,
+					}
+				},
+				indexes: {
+					record: {
+						collection: "collection1",
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					}
+				}
+			}, {table, client});
+
+			let item = {
+				prop1: uuid(),
+				prop2: "abc",
+				prop3: "should_not_be_returned",
+				prop4: "def"
+			};
+
+			let data = {};
+
+			let putResult = await entity.put(item).go();
+
+			let getResponse = await entity
+				.get(item)
+				.go();
+
+			let queryResponse = await entity.query
+				.record(item)
+				.where(({prop3}, {eq}) => `${eq(prop3, item.prop3)}`)
+				.go();
+
+			expect(putResult).to.deep.equal(data);
+			expect(getResponse).to.deep.equal(data);
+			expect(queryResponse).to.deep.equal([data]);
+		});
 	})
 });

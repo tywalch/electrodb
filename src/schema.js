@@ -1,4 +1,4 @@
-const { KeyTypes, CastTypes, AttributeTypes } = require("./types");
+const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
@@ -9,6 +9,7 @@ class Attribute {
 		this.field = definition.field || definition.name;
 		this.label = definition.label;
 		this.readOnly = !!definition.readOnly;
+		this.hidden = !!definition.hidden;
 		this.required = !!definition.required;
 		this.cast = this._makeCast(definition.name, definition.cast);
 		this.default = this._makeDefault(definition.default);
@@ -16,9 +17,38 @@ class Attribute {
 		this.get = this._makeGet(definition.name, definition.get);
 		this.set = this._makeSet(definition.name, definition.set);
 		this.indexes = [...(definition.indexes || [])];
+		let {isWatched, isWatcher, watchedBy, watching} = Attribute._destructureWatcher(definition);
+		this._isWatched = isWatched
+		this._isWatcher = isWatcher;
+		this.watchedBy = watchedBy;
+		this.watching = watching;
 		let { type, enumArray } = this._makeType(this.name, definition.type);
 		this.type = type;
 		this.enumArray = enumArray;
+	}
+
+	static _destructureWatcher(definition) {
+		let watchedByArr = [...(definition.watchedBy || [])];
+		let watchingArr = [...(definition.watching || [])];
+		let isWatched = watchedByArr.length > 0;
+		let isWatcher = watchingArr.length > 0;
+		let watchedBy = {};
+		let watching = {};
+
+		for (let watched of watchedByArr) {
+			watchedBy[watched] = watched;
+		}
+
+		for (let attribute of watchingArr) {
+			watching[attribute] = attribute;
+		}
+
+		return {
+			isWatched,
+			isWatcher,
+			watchedBy,
+			watching
+		}
 	}
 
 	_makeGet(name, get) {
@@ -118,6 +148,22 @@ class Attribute {
 		return { type, enumArray };
 	}
 
+	isWatcher() {
+		return this._isWatcher;
+	}
+
+	isWatched() {
+		return this._isWatched;
+	}
+
+	isWatching(attribute) {
+		return this.watching[attribute] !== undefined;
+	}
+
+	isWatchedBy(attribute) {
+		return this.watchedBy[attribute] !== undefined;
+	}
+
 	_isType(value) {
 		if (value === undefined) {
 			return [!this.required, this.required ? "Value is required" : ""];
@@ -203,9 +249,33 @@ class Schema {
 		this.enums = schema.enums;
 		this.translationForTable = schema.translationForTable;
 		this.translationForRetrieval = schema.translationForRetrieval;
+		this.hiddenAttributes = schema.hiddenAttributes;
+		this.readOnlyAttributes = schema.readOnlyAttributes;
+		this.requiredAttributes = schema.requiredAttributes;
+		this.translationForWatching = this._formatWatchTranslations(this.attributes);
 	}
 
 	_validateProperties() {}
+
+	_formatWatchTranslations(attributes) {
+		let watchersToAttributes = {};
+		let attributesToWatchers = {};
+		let hasWatchers = false;
+		for (let name of Object.keys(attributes)) {
+			if (attributes[name].isWatcher()) {
+				hasWatchers = true;
+				watchersToAttributes[name] = attributes[name].watching;
+			} else {
+				attributesToWatchers[name] = attributesToWatchers[name] || {};
+				attributesToWatchers[name] = attributes[name].watchedBy;
+			}
+		}
+		return {
+			hasWatchers,
+			watchersToAttributes,
+			attributesToWatchers
+		};
+	}
 
 	_normalizeAttributes(attributes = {}, facets = {}) {
 		let invalidProperties = [];
@@ -214,6 +284,11 @@ class Schema {
 		let enums = {};
 		let translationForTable = {};
 		let translationForRetrieval = {};
+		let watchedAttributes = {};
+		let requiredAttributes = {};
+		let hiddenAttributes = new Set();
+		let readOnlyAttributes = new Set();
+		let definitions = {};
 		for (let name in attributes) {
 			let attribute = attributes[name];
 			if (typeof attribute === AttributeTypes.string || Array.isArray(attribute)) {
@@ -233,16 +308,29 @@ class Schema {
 				label: facets.labels[name] || attribute.label,
 				required: !!attribute.required,
 				field: attribute.field || name,
-				hide: !!attribute.hide,
 				default: attribute.default,
 				validate: attribute.validate,
 				readOnly: !!attribute.readOnly || isKey,
+				hidden: !!attribute.hidden,
 				indexes: facets.byAttr[name] || [],
 				type: attribute.type,
 				get: attribute.get,
 				set: attribute.set,
+				watching: Array.isArray(attribute.watch) ? attribute.watch : []
 			};
-			
+
+			if (definition.readOnly) {
+				readOnlyAttributes.add(name);
+			}
+
+			if (definition.hidden) {
+				hiddenAttributes.add(name);
+			}
+
+			if (definition.required) {
+				requiredAttributes[name] = name;
+			}
+
 			if (facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
 				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
 				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid facet definition: Facets must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a facet of the the following indexes: ${assignedIndexes.join(", ")}`);
@@ -263,8 +351,45 @@ class Schema {
 			
 			translationForTable[definition.name] = definition.field;
 			translationForRetrieval[definition.field] = definition.name;
+
+			for (let watched of definition.watching) {
+				watchedAttributes[watched] = watchedAttributes[watched] || [];
+				watchedAttributes[watched].push(name);
+			}
+
+			definitions[name] = definition;
+		}
+
+		for (let name of Object.keys(definitions)) {
+			let definition = definitions[name];
+			definition.watchedBy = Array.isArray(watchedAttributes[name])
+				? watchedAttributes[name]
+				: []
 			normalized[name] = new Attribute(definition);
 		}
+
+		let watchedWatchers = [];
+		let watchingUnknownAttributes = [];
+		for (let watched of Object.keys(watchedAttributes)) {
+			if (normalized[watched] === undefined) {
+				for (let attribute of watchedAttributes[watched]) {
+					watchingUnknownAttributes.push({attribute, watched});
+				}
+			} else if (normalized[watched].isWatcher()) {
+				for (let attribute of watchedAttributes[watched]) {
+					watchedWatchers.push({attribute, watched});
+				}
+			}
+		}
+
+		if (watchingUnknownAttributes.length > 0) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeWatchDefinition, `Attribute Validation Error. The following attributes are defined to "watch" invalid/unknown attributes: ${watchingUnknownAttributes.map(({watched, attribute}) => `"${attribute}"->"${watched}"`).join(", ")}.`);
+		}
+
+		if (watchedWatchers.length > 0) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeWatchDefinition, `Attribute Validation Error. Attributes may only "watch" other attributes also watch attributes. The following attributes are defined with ineligible attributes to watch: ${watchedWatchers.map(({attribute, watched}) => `"${attribute}"->"${watched}"`).join(", ")}.`)
+		}
+
 		let missingFacetAttributes = facets.attributes
 			.filter(({ name }) => {
 				return !normalized[name];
@@ -274,11 +399,14 @@ class Schema {
 			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(", ")}`);
 		}
 		if (invalidProperties.length) {
-			let message = invalidProperties.map((prop) => `Schema Validation Error: Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`);
+			let message = invalidProperties.map((prop) => `Schema Validation Error. Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`);
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, message);
 		} else {
 			return {
 				enums,
+				hiddenAttributes,
+				readOnlyAttributes,
+				requiredAttributes,
 				translationForTable,
 				translationForRetrieval,
 				attributes: normalized,
@@ -340,28 +468,61 @@ class Schema {
 	// 	return {path, names, target, attr: attr.value, expression: expressions.join(".")};
 	// }
 
-	applyAttributeGetters(payload = {}) {
-		let attributes = { ...payload };
-		for (let [name, value] of Object.entries(attributes)) {
-			if (this.attributes[name] === undefined) {
-				attributes[name] = value;
-			} else {
-				attributes[name] = this.attributes[name].get(value, { ...payload });
+	_applyAttributeMutation(method, include, avoid, payload) {
+		let data = { ...payload };
+		for (let attribute of Object.keys(include)) {
+			// this.attributes[attribute] !== undefined | Attribute exists as actual attribute. If `includeKeys` is turned on for example this will include values that do not have a presence in the model and therefore will not have a `.get()` method
+			// avoid[attribute] === undefined           | Attribute shouldn't be in the avoided
+			if (this.attributes[attribute] !== undefined && avoid[attribute] === undefined) {
+				data[attribute] = this.attributes[attribute][method](payload[attribute], {...payload});
 			}
 		}
-		return attributes;
+		return data;
+	}
+
+	_fulfillAttributeMutationMethod(method, payload) {
+		let watchersToTrigger = {};
+		// include: payload               | We want to hit the getters/setters for any attributes coming in to be changed
+		// avoid: watchersToAttributes    | We want to avoid anything that is a watcher, even if it was included
+		let data = this._applyAttributeMutation(method, payload, this.translationForWatching.watchersToAttributes, payload);
+		// `data` here will include all the original payload values, but with the mutations applied to on non-watchers
+		if (!this.translationForWatching.hasWatchers) {
+			// exit early, why not
+			return data;
+		}
+		for (let attribute of Object.keys(data)) {
+			let watchers = this.translationForWatching.attributesToWatchers[attribute];
+			// Any of the attributes on data have a watcher?
+			if (watchers !== undefined) {
+				watchersToTrigger = {...watchersToTrigger, ...watchers}
+			}
+		}
+		// include: ...data, ...watchersToTrigger | We want to hit attributes that were watching an attribute included in data, and include an properties that were skipped because they were a watcher
+		// avoid: attributesToWatchers            | We want to avoid hit anything that was not a watcher because they were already hit once above
+		return this._applyAttributeMutation(method, {...data, ...watchersToTrigger}, this.translationForWatching.attributesToWatchers, data);
+	}
+
+	applyAttributeGetters(payload = {}) {
+		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.get, payload);
 	}
 
 	applyAttributeSetters(payload = {}) {
-		let attributes = { ...payload };
-		for (let [name, value] of Object.entries(attributes)) {
-			if (this.attributes[name] !== undefined) {
-				attributes[name] = this.attributes[name].set(value, { ...payload });
-			} else {
-				attributes[name] = value;
+		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
+	}
+
+	translateFromFields(item = {}, options = {}) {
+		let { includeKeys } = options;
+		let data = {};
+		let names = this.translationForRetrieval;
+		for (let [attr, value] of Object.entries(item)) {
+			let name = names[attr];
+			if (name) {
+				data[name] = value;
+			} else if (includeKeys) {
+				data[attr] = value;
 			}
 		}
-		return attributes;
+		return data;
 	}
 
 	translateToFields(payload = {}) {
@@ -400,9 +561,20 @@ class Schema {
 	}
 
 	getReadOnly() {
-		return Object.values(this.attributes)
-			.filter((attribute) => attribute.readOnly)
-			.map((attribute) => attribute.name);
+		return Array.from(this.readOnlyAttributes);
+	}
+
+	formatItemForRetrieval(item, config) {
+		let remapped = this.translateFromFields(item, config);
+		let data = this._fulfillAttributeMutationMethod("get", remapped);
+		if (this.hiddenAttributes.size > 0) {
+			for (let attribute of Object.keys(data)) {
+				if (this.hiddenAttributes.has(attribute)) {
+					delete data[attribute];
+				}
+			}
+		}
+		return data;
 	}
 }
 

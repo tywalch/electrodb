@@ -3,56 +3,66 @@ declare const WhereSymbol: unique symbol;
 type BooleanAttribute = {
     readonly type: "boolean";
     readonly required?: boolean;
-    readonly get?: (val: boolean, schema: any) => boolean | undefined;
-    readonly set?: (val: boolean, schema: any) => boolean | undefined;
+    readonly hidden?: boolean;
+    readonly get?: (val: boolean, item: any) => boolean | undefined;
+    readonly set?: (val: boolean | undefined, item: any) => boolean | undefined;
     readonly default?: boolean | (() => boolean);
     readonly validate?: ((val: boolean) => boolean) | ((val: boolean) => void) | ((val: boolean) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type NumberAttribute = {
     readonly type: "number";
     readonly required?: boolean;
-    readonly get?: (val: number, schema: any) => number | undefined;
-    readonly set?: (val: number, schema: any) => number | undefined;
+    readonly hidden?: boolean;
+    readonly get?: (val: number, item: any) => number | undefined;
+    readonly set?: (val: number | undefined, item: any) => number | undefined;
     readonly default?: number | (() => number);
     readonly validate?: ((val: number) => boolean) | ((val: number) => void) | ((val: number) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type StringAttribute = {
     readonly type: "string";
     readonly required?: boolean;
-    readonly get?: (val: string, schema: any) => string | undefined;
-    readonly set?: (val: string, schema: any) => string | undefined;
+    readonly hidden?: boolean;
+    readonly get?: (val: string, item: any) => string | undefined;
+    readonly set?: (val: string | undefined, item: any) => string | undefined;
     readonly default?: string | (() => string);
     readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type EnumAttribute = {
     readonly type: ReadonlyArray<string>;
     readonly required?: boolean;
-    readonly get?: (val: string, schema: any) => string | undefined;
-    readonly set?: (val: string, schema: any) => string | undefined;
+    readonly hidden?: boolean;
+    readonly get?: (val: string, item: any) => string | undefined;
+    readonly set?: (val: string | undefined, item: any) => string | undefined;
     readonly default?: string | (() => string);
     readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type AnyAttribute = {
     readonly type: "any";
     readonly required?: boolean;
-    readonly get?: (val: any, schema: any) => any | undefined;
-    readonly set?: (val: any, schema: any) => any | undefined;
+    readonly hidden?: boolean;
+    readonly get?: (val: any, item: any) => any | undefined;
+    readonly set?: (val: any | undefined, item: any) => any | undefined;
     readonly default?: () => any;
     readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly label?: string;
+    readonly watch?: ReadonlyArray<string>;
 }
 
 type Attribute = BooleanAttribute | NumberAttribute | StringAttribute | EnumAttribute | AnyAttribute;
@@ -120,6 +130,14 @@ type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,
 type RequiredAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<{
     [a in keyof S["attributes"]]: S["attributes"][a]["required"] extends infer R
         ? R extends true ? true
+            : false
+        : never;
+}, true>
+
+type HiddenAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<{
+    [a in keyof S["attributes"]]: S["attributes"][a]["hidden"] extends infer R
+        ? R extends true
+            ? true
             : false
         : never;
 }, true>
@@ -200,6 +218,9 @@ type TableItem<A extends string, F extends A, C extends string, S extends Schema
     AllTableIndexFacets<A,F,C,S> &
     Pick<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>> &
     Partial<Omit<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>>>
+
+type ResponseItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    Omit<TableItem<A,F,C,S>, HiddenAttributes<A,F,C,S>>
 
 /* Seems to be a TypeScript defect? Can't add this type onto an Entity without it breaking Services */
 // type PutItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
@@ -336,17 +357,17 @@ type Queries<A extends string, F extends A, C extends string, S extends Schema<A
         IndexSKAttributes<A,F,C,S,I> extends infer SK
             // If there is no SK, dont show query operations (when an empty array is provided)
             ? [keyof SK] extends [never]
-                ? RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>
+                ? RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>
                 // If there is no SK, dont show query operations (When no PK is specified)
                 : S["indexes"][I] extends IndexWithSortKey
                     ? QueryOperations<
                         A,F,C,S,
                         // Omit the facets already provided
                         Omit<Partial<IndexSKAttributes<A,F,C,S,I>>, keyof Facets>,
-                        TableItem<A,F,C,S>,
+                        ResponseItem<A,F,C,S>,
                         AllTableIndexFacets<A,F,C,S>
                         >
-                    : RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>
+                    : RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>
             : never
 }
 
@@ -375,22 +396,22 @@ type ServiceConfiguration = {
 export class Entity<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> {
     readonly schema: S;
     constructor(schema: S, config?: EntityConfiguration);
-    get(key: AllTableIndexFacets<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
-    get(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [AllTableIndexFacets<A,F,C,S>[], TableItem<A,F,C,S>[]]>;
-    delete(key: AllTableIndexFacets<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
+    get(key: AllTableIndexFacets<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+    get(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [AllTableIndexFacets<A,F,C,S>[], ResponseItem<A,F,C,S>[]]>;
+    delete(key: AllTableIndexFacets<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     delete(key: AllTableIndexFacets<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexFacets<A,F,C,S>[]>;
     update(key: AllTableIndexFacets<A,F,C,S>): {
-        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexFacets<A,F,C,S>, TableItem<A,F,C,S>>
+        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexFacets<A,F,C,S>, ResponseItem<A,F,C,S>>
     };
     patch(key: AllTableIndexFacets<A,F,C,S>): {
-        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexFacets<A,F,C,S>, TableItem<A,F,C,S>>
+        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexFacets<A,F,C,S>, ResponseItem<A,F,C,S>>
     };
-    put(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
+    put(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexFacets<A,F,C,S>[]>;
-    create(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, TableItem<A,F,C,S>>;
-    find(record: Partial<Item<A,F,C,S>>): RecordsActionOptions<A,F,C,S, TableItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>;
+    create(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+    find(record: Partial<Item<A,F,C,S>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>;
     setIdentifier(type: "model" | "version", value: string): void;
-    scan: RecordsActionOptions<A,F,C,S, Item<A,F,C,S>[], TableIndexFacets<A,F,C,S>>
+    scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexFacets<A,F,C,S>>
     query: Queries<A,F,C,S>;
 }
 
@@ -494,7 +515,7 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
                         [EntityResultName in Collections[Collection]]:
                             EntityResultName extends keyof E
                                 ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                    ? TableItem<A,F,C,S>[]
+                                    ? ResponseItem<A,F,C,S>[]
                                     : never
                                 : never
                     }>;
@@ -511,11 +532,11 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
                                                     [EntityResultName in Collections[Collection]]:
                                                         EntityResultName extends keyof E
                                                             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                                                ? TableItem<A,F,C,S>[]
+                                                                ? ResponseItem<A,F,C,S>[]
                                                                 : never
                                                             : never
                                                 },
-                                            TableIndexFacets<A,F,C,S>>>
+                                                TableIndexFacets<A,F,C,S>>>
                                         : never
                                     : never
                                 : never
@@ -535,7 +556,7 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
 
 export type EntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
-        ? TableItem<A, F, C, S>
+        ? ResponseItem<A, F, C, S>
         : never;
 
 export type CreateEntityItem<E extends Entity<any, any, any, any>> =
