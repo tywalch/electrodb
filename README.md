@@ -73,11 +73,17 @@ StoreLocations.query
 ## Table of Contents
 
 - [ElectroDB](#electrodb)
+  + [Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries](#try-it-out-for-yourself--https---runkitcom-tywalch-electrodb-building-queries)
   * [Features](#features)
+    + [Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries](#try-it-out-for-yourself--https---runkitcom-tywalch-electrodb-building-queries-1)
   * [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
   * [TypeScript Support](#typescript-support)
+    + [Exported Types](#exported-types)
+      - [EntityItem](#entityitem)
+      - [CreateEntityItem](#createentityitem)
+      - [CreateEntityItem](#createentityitem-1)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
@@ -90,8 +96,11 @@ StoreLocations.query
     + [Simple Syntax](#simple-syntax)
     + [Expanded Syntax](#expanded-syntax)
       - [Enum Attributes](#enum-attributes)
-      - [Any Attributes](#any-attributes)
+      - [Attribute Definition](#attribute-definition)
         * [Attribute Getters and Setters](#attribute-getters-and-setters)
+        * [Attribute Watching](#attribute-watching)
+        * [Calculated Attributes](#calculated-attributes)
+        * [Virtual Attributes](#virtual-attributes)
       - [Attribute Validation](#attribute-validation)
   * [Indexes](#indexes)
     + [Indexes Without Sort Keys](#indexes-without-sort-keys)
@@ -225,6 +234,67 @@ As of writing this, this functionality is still a work in progress, and enforcem
 - Use of the `raw` or `includeKeys` query options do not yet impact the returned types.
 
 If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a github issue, and it can be addressed.
+
+### Exported Types
+
+The following types are exported for easier use while using ElectroDB with TypeScript:
+
+#### EntityItem
+
+This type represents an item as it's returned from a query to DynamoDB.
+
+_Definition:_
+
+```typescript
+export type EntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? ResponseItem<A, F, C, S>
+  : never;
+```
+
+_Use:_
+
+```typescript
+type Thing = EntityItem<typeof YourEntityInstance>;
+```
+
+#### CreateEntityItem
+
+This type represents an item that you would pass your entity's `put` or `create` method 
+
+_Definition:_
+
+```typescript
+export type CreateEntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? PutItem<A, F, C, S>
+  : never;
+```
+
+_Use:_
+
+```typescript
+type NewThing = CreateEntityItem<typeof YourEntityInstance>;
+```
+
+#### CreateEntityItem
+
+This type represents an item that you would pass your entity's `create` or `update` method to `set`  
+
+_Definition:_
+
+```typescript
+export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? SetItem<A, F, C, S>
+  : never;
+```
+
+_Use:_
+
+```typescript
+type UpdateProperties = UpdateEntityItem<typeof YourEntityInstance>;
+```
 
 # Entities and Services
 > To see full examples of ***ElectroDB*** in action, go to the [Examples](#examples) section.
