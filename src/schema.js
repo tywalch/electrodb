@@ -9,6 +9,7 @@ class Attribute {
 		this.field = definition.field || definition.name;
 		this.label = definition.label;
 		this.readOnly = !!definition.readOnly;
+		this.hidden = !!definition.hidden;
 		this.required = !!definition.required;
 		this.cast = this._makeCast(definition.name, definition.cast);
 		this.default = this._makeDefault(definition.default);
@@ -248,6 +249,8 @@ class Schema {
 		this.enums = schema.enums;
 		this.translationForTable = schema.translationForTable;
 		this.translationForRetrieval = schema.translationForRetrieval;
+		this.hiddenAttributes = schema.hiddenAttributes;
+		this.requiredAttributes = schema.requiredAttributes;
 		this.translationForWatching = this._formatWatchTranslations(this.attributes);
 	}
 
@@ -281,6 +284,8 @@ class Schema {
 		let translationForTable = {};
 		let translationForRetrieval = {};
 		let watchedAttributes = {};
+		let requiredAttributes = {};
+		let hiddenAttributes = {};
 		let definitions = {};
 		for (let name in attributes) {
 			let attribute = attributes[name];
@@ -301,16 +306,24 @@ class Schema {
 				label: facets.labels[name] || attribute.label,
 				required: !!attribute.required,
 				field: attribute.field || name,
-				hide: !!attribute.hide,
 				default: attribute.default,
 				validate: attribute.validate,
 				readOnly: !!attribute.readOnly || isKey,
+				hidden: !!attribute.hidden,
 				indexes: facets.byAttr[name] || [],
 				type: attribute.type,
 				get: attribute.get,
 				set: attribute.set,
 				watching: Array.isArray(attribute.watch) ? attribute.watch : []
 			};
+
+			if (definition.hidden) {
+				hiddenAttributes[name] = name;
+			}
+
+			if (definition.required) {
+				requiredAttributes[name] = name;
+			}
 			
 			if (facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
 				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
@@ -385,6 +398,8 @@ class Schema {
 		} else {
 			return {
 				enums,
+				hiddenAttributes,
+				requiredAttributes,
 				translationForTable,
 				translationForRetrieval,
 				attributes: normalized,
@@ -546,7 +561,15 @@ class Schema {
 
 	formatItemForRetrieval(item, config) {
 		let remapped = this.reMapRetrievedData(item, config);
-		return this._fulfillAttributeMutationMethod("get", remapped);
+		let data = this._fulfillAttributeMutationMethod("get", remapped);
+		if (Object.keys(this.hiddenAttributes).length > 0) {
+			for (let attribute of Object.keys(data)) {
+				if (this.hiddenAttributes[attribute] !== undefined) {
+					delete data[attribute];
+				}
+			}
+		}
+		return data;
 	}
 }
 
