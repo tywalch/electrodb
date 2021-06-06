@@ -9,6 +9,7 @@ class Attribute {
 		this.field = definition.field || definition.name;
 		this.label = definition.label;
 		this.readOnly = !!definition.readOnly;
+		this.hidden = !!definition.hidden;
 		this.required = !!definition.required;
 		this.cast = this._makeCast(definition.name, definition.cast);
 		this.default = this._makeDefault(definition.default);
@@ -248,6 +249,9 @@ class Schema {
 		this.enums = schema.enums;
 		this.translationForTable = schema.translationForTable;
 		this.translationForRetrieval = schema.translationForRetrieval;
+		this.hiddenAttributes = schema.hiddenAttributes;
+		this.readOnlyAttributes = schema.readOnlyAttributes;
+		this.requiredAttributes = schema.requiredAttributes;
 		this.translationForWatching = this._formatWatchTranslations(this.attributes);
 	}
 
@@ -281,6 +285,9 @@ class Schema {
 		let translationForTable = {};
 		let translationForRetrieval = {};
 		let watchedAttributes = {};
+		let requiredAttributes = {};
+		let hiddenAttributes = new Set();
+		let readOnlyAttributes = new Set();
 		let definitions = {};
 		for (let name in attributes) {
 			let attribute = attributes[name];
@@ -301,17 +308,29 @@ class Schema {
 				label: facets.labels[name] || attribute.label,
 				required: !!attribute.required,
 				field: attribute.field || name,
-				hide: !!attribute.hide,
 				default: attribute.default,
 				validate: attribute.validate,
 				readOnly: !!attribute.readOnly || isKey,
+				hidden: !!attribute.hidden,
 				indexes: facets.byAttr[name] || [],
 				type: attribute.type,
 				get: attribute.get,
 				set: attribute.set,
 				watching: Array.isArray(attribute.watch) ? attribute.watch : []
 			};
-			
+
+			if (definition.readOnly) {
+				readOnlyAttributes.add(name);
+			}
+
+			if (definition.hidden) {
+				hiddenAttributes.add(name);
+			}
+
+			if (definition.required) {
+				requiredAttributes[name] = name;
+			}
+
 			if (facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
 				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
 				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid facet definition: Facets must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a facet of the the following indexes: ${assignedIndexes.join(", ")}`);
@@ -385,26 +404,14 @@ class Schema {
 		} else {
 			return {
 				enums,
+				hiddenAttributes,
+				readOnlyAttributes,
+				requiredAttributes,
 				translationForTable,
 				translationForRetrieval,
 				attributes: normalized,
 			};
 		}
-	}
-
-	reMapRetrievedData(item = {}, options = {}) {
-		let { includeKeys } = options;
-		let data = {};
-		let names = this.translationForRetrieval;
-		for (let [attr, value] of Object.entries(item)) {
-			let name = names[attr];
-			if (name) {
-				data[name] = value;
-			} else if (includeKeys) {
-				data[attr] = value;
-			}
-		}
-		return data;
 	}
 
 	getLabels() {
@@ -503,6 +510,21 @@ class Schema {
 		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
 	}
 
+	translateFromFields(item = {}, options = {}) {
+		let { includeKeys } = options;
+		let data = {};
+		let names = this.translationForRetrieval;
+		for (let [attr, value] of Object.entries(item)) {
+			let name = names[attr];
+			if (name) {
+				data[name] = value;
+			} else if (includeKeys) {
+				data[attr] = value;
+			}
+		}
+		return data;
+	}
+
 	translateToFields(payload = {}) {
 		let record = {};
 		for (let [name, value] of Object.entries(payload)) {
@@ -539,14 +561,20 @@ class Schema {
 	}
 
 	getReadOnly() {
-		return Object.values(this.attributes)
-			.filter((attribute) => attribute.readOnly)
-			.map((attribute) => attribute.name);
+		return Array.from(this.readOnlyAttributes);
 	}
 
 	formatItemForRetrieval(item, config) {
-		let remapped = this.reMapRetrievedData(item, config);
-		return this._fulfillAttributeMutationMethod("get", remapped);
+		let remapped = this.translateFromFields(item, config);
+		let data = this._fulfillAttributeMutationMethod("get", remapped);
+		if (this.hiddenAttributes.size > 0) {
+			for (let attribute of Object.keys(data)) {
+				if (this.hiddenAttributes.has(attribute)) {
+					delete data[attribute];
+				}
+			}
+		}
+		return data;
 	}
 }
 

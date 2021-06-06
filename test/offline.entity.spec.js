@@ -3444,7 +3444,7 @@ describe("Entity", () => {
 			expect(() => new Entity(schema)).to.throw(`Duplicate collection, "collectionA" is defined across multiple indexes "index1" and "index2". Collections must be unique names across indexes for an Entity. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-collections`)
 		});
 		it("should require a valid schema", () => {
-			expect(() => new Entity()).to.throw(`instance requires property "model", instance requires property "attributes", instance.model is required - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model`);
+			expect(() => new Entity()).to.throw(`instance requires property "model", instance requires property "attributes", instance requires property "indexes", instance.model is required - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model`);
 		})
 	});
 	describe("v1 and beta models", () => {

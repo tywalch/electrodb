@@ -592,7 +592,8 @@ attributes: {
 | Property | Type | Required | Description |
 | -------- | :--: | :--: | ----------- |
 | `type`  | `string`, `ReadonlyArray<string>`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
-`required` | `boolean` | no | Flag an attribute as required to be present when creating a record. |  
+`required` | `boolean` | no | Flag an attribute as required to be present when creating a record. |
+`hidden` | `boolean` | no | Flag an attribute for removal upon retrieval. |
 `default` | `value`, `() => value` | no | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
 `validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
 `field` | `string` | no | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
@@ -654,10 +655,16 @@ In this example, we have an attribute `"fee"` that needs to be updated any time 
       }
     }
   },
-  index: {
-    pk: {
-      field: "pk",
-      facets: ["service"]
+  indexes: {
+    pricing: {
+      pk: {
+        field: "pk",
+        facets: ["service"]
+      },
+      sk: {
+        field: "sk",
+        facets: []
+      }
     }
   }
 }
@@ -691,10 +698,16 @@ In this example we have an attribute `"displayPrice"` that needs its getter call
       set: () => undefined
     }
   },
-  index: {
-    pk: {
-      field: "pk",
-      facets: ["service"]
+  indexes: {
+    pricing: {
+      pk: {
+        field: "pk",
+        facets: ["service"]
+      },
+      sk: {
+        field: "sk",
+        facets: []
+      }
     }
   }
 }
@@ -702,7 +715,7 @@ In this example we have an attribute `"displayPrice"` that needs its getter call
 
 **Example 3 - Creating a more filter-friendly version of an attribute without impacting the original attribute:**  
 
-In this example we have an attribute `"descriptionSearch"` which will help our users easily filter for transactions by `"description"`. To ensure our filters will not take into account a description's character casing, `descriptionSearch` duplicates the value of `"description"` so it can be used in filters without impacting the original `"description"` value. Without ElectroDB's `watch` functionality, to accomplish this you would either have to duplicate this logic or cause permanent modification to the property itself. Additionally, the `"descriptionSearch"` attribute returns a value of `undefined` from its getter callback removing it from the item upon retrieval.
+In this example we have an attribute `"descriptionSearch"` which will help our users easily filter for transactions by `"description"`. To ensure our filters will not take into account a description's character casing, `descriptionSearch` duplicates the value of `"description"` so it can be used in filters without impacting the original `"description"` value. Without ElectroDB's `watch` functionality, to accomplish this you would either have to duplicate this logic or cause permanent modification to the property itself. Additionally, the `"descriptionSearch"` attribute has used `hidden:true` to ensure this value will not be presented to the user.
 
 ```javascript
 {
@@ -726,8 +739,8 @@ In this example we have an attribute `"descriptionSearch"` which will help our u
     },
     descriptionSearch: {
       type: "string",
+      hidden: true,
       watch: ["description"],
-      get: () => undefined,
       set: (_, {description}) => {
         if (typeof description === "string") {
             return description.toLowerCase();
@@ -735,14 +748,16 @@ In this example we have an attribute `"descriptionSearch"` which will help our u
       }
     }
   },
-  index: {
-    pk: {
-      field: "pk",
-      facets: ["accountNumber"]
-    },
-    sk: {
-      field: "sk",
-      facets: ["transactionId"]
+  indexes: {
+    transactions: {
+      pk: {
+        field: "pk",
+        facets: ["accountNumber"]
+      },
+      sk: {
+        field: "sk",
+        facets: ["transactionId"]
+      }
     }
   }
 }

@@ -1101,6 +1101,212 @@ describe("Entity", async () => {
 				return store;
 			}
 		}
+		describe("Readme examples", async () => {
+			it("Should test Attribute Watching 'Example 1' from the readme", async () => {
+				let entity = new Entity({
+					model: {
+						entity: "services",
+						service: "costEstimator",
+						version: "1"
+					},
+					attributes: {
+						service: {
+							type: "string"
+						},
+						price: {
+							type: "number",
+							required: true
+						},
+						fee: {
+							type: "number",
+							watch: ["price"],
+							set: (_, {price}) => {
+								return price * .2;
+							}
+						}
+					},
+					indexes: {
+						pricing: {
+							pk: {
+								field: "pk",
+								facets: ["service"]
+							},
+							sk: {
+								field: "sk",
+								facets: []
+							}
+						}
+					}
+				}, {table, client});
+
+				let service = uuid();
+
+				let input1 = {
+					service,
+					price: 100
+				};
+
+				let output1 = {
+					service,
+					price: input1.price,
+					fee: input1.price * .2
+				};
+
+				let input2 = {
+					price: 200
+				};
+
+				let output2 = {
+					service,
+					price: input2.price,
+					fee: input2.price * .2
+				};
+
+				let putRecord = await entity.put(input1).go();
+				let getRecord1 = await entity.get({service}).go();
+				await entity.update({service}).set(input2).go();
+				let getRecord2 = await entity.get({service}).go();
+				expect(putRecord).to.deep.equal(putRecord);
+				expect(getRecord1).to.deep.equal(output1);
+				expect(getRecord2).to.deep.equal(output2);
+			});
+			it("Should test Attribute Watching 'Example 2' from the readme", async () => {
+				let entity = new Entity({
+					model: {
+						entity: "services",
+						service: "costEstimator",
+						version: "1"
+					},
+					attributes: {
+						service: {
+							type: "string"
+						},
+						price: {
+							type: "number",
+							required: true
+						},
+						displayPrice: {
+							type: "string",
+							watch: ["price"],
+							get: (_, {price}) => {
+								return "$" + price;
+							},
+							set: () => undefined
+						}
+					},
+					indexes: {
+						pricing: {
+							pk: {
+								field: "pk",
+								facets: ["service"]
+							},
+							sk: {
+								field: "sk",
+								facets: []
+							}
+						}
+					}
+				}, {table, client});
+
+				let service = uuid();
+
+				let input1 = {
+					service,
+					price: 100,
+					displayPrice: "shouldnt_take_value"
+				};
+
+				let output1 = {
+					service,
+					price: input1.price,
+					displayPrice: "$" + input1.price
+				};
+
+				let input2 = {
+					price: 200,
+					displayPrice: "shouldnt_take_value"
+				};
+
+				let output2 = {
+					service,
+					price: input2.price,
+					displayPrice: "$" + input2.price
+				};
+
+				let putRecord = await entity.put(input1).go();
+				let getRecord1 = await entity.get({service}).go();
+				await entity.update({service}).set(input2).go();
+				let getRecord2 = await entity.get({service}).go();
+				expect(putRecord).to.deep.equal(putRecord);
+				expect(getRecord1).to.deep.equal(output1);
+				expect(getRecord2).to.deep.equal(output2);
+			});
+			it("Should test Attribute Watching 'Example 3' from the readme", async () => {
+				let entity = new Entity({
+					model: {
+						entity: "transaction",
+						service: "bank",
+						version: "1"
+					},
+					attributes: {
+						accountNumber: {
+							type: "string"
+						},
+						transactionId: {
+							type: "string"
+						},
+						amount: {
+							type: "number",
+						},
+						description: {
+							type: "string",
+						},
+						descriptionSearch: {
+							type: "string",
+							hidden: true,
+							watch: ["description"],
+							set: (_, {description}) => {
+								if (typeof description === "string") {
+									return description.toLowerCase();
+								}
+							}
+						}
+					},
+					indexes: {
+						transactions: {
+							pk: {
+								field: "pk",
+								facets: ["accountNumber"]
+							},
+							sk: {
+								field: "sk",
+								facets: ["transactionId"]
+							}
+						}
+					}
+				}, {table, client});
+
+				let accountNumber = uuid();
+				let transactionId = uuid();
+
+				let transaction = {
+					accountNumber,
+					transactionId,
+					amount: 100,
+					description: "MiXeD CaSe DeScRiPtIoN"
+				};
+
+				let putRecord = await entity.put(transaction).go();
+
+				let queryRecord1 = await entity.query
+					.transactions({accountNumber})
+					.where(({descriptionSearch}, {contains}) => contains(descriptionSearch, "mixed case"))
+					.go();
+
+				expect(putRecord).to.deep.equal(transaction);
+				expect(queryRecord1).to.deep.equal([transaction]);
+			});
+		});
 		describe("Setter Triggers", async () => {
 			const counter = new TriggerListener();
 			const entity = new Entity({
@@ -3334,5 +3540,137 @@ describe("Entity", async () => {
 			expect(leasesRecord.find(record => record.id === id)).to.not.be.undefined;
 			expect(shopRecord.find(record => record.id === id)).to.not.be.undefined;
 		})
+	});
+	describe("Hidden Attributes", () => {
+		it("Should remove an attribute upon retrieval before returning it back to the user", async () => {
+			const entity = new Entity({
+				model: {
+					entity: "e2",
+					service: "s1",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string"
+					},
+					prop2: {
+						type: "string"
+					},
+					prop3: {
+						type: "string",
+						hidden: true
+					},
+					prop4: {
+						type: "string",
+					}
+				},
+				indexes: {
+					record: {
+						collection: "collection1",
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					}
+				}
+			}, {table, client});
+
+			let item = {
+				prop1: uuid(),
+				prop2: "abc",
+				prop3: "should_not_be_returned",
+				prop4: "def"
+			};
+
+			let data = {
+				prop1: item.prop1,
+				prop2: item.prop2,
+				prop4: item.prop4
+			};
+
+			let putResult = await entity.put(item).go();
+
+			let getResponse = await entity
+				.get(item)
+				.go();
+
+			let queryResponse = await entity.query
+				.record(item)
+				.where(({prop3}, {eq}) => `${eq(prop3, item.prop3)}`)
+				.go();
+
+			expect(putResult).to.deep.equal(data);
+			expect(getResponse).to.deep.equal(data);
+			expect(queryResponse).to.deep.equal([data]);
+		});
+
+		it("Should should be technically possible to make all fields hidden, but not recommended", async () => {
+			const entity = new Entity({
+				model: {
+					entity: "e2",
+					service: "s1",
+					version: "1"
+				},
+				attributes: {
+					prop1: {
+						type: "string",
+						hidden: true,
+					},
+					prop2: {
+						type: "string",
+						hidden: true,
+					},
+					prop3: {
+						type: "string",
+						hidden: true
+					},
+					prop4: {
+						type: "string",
+						hidden: true,
+					}
+				},
+				indexes: {
+					record: {
+						collection: "collection1",
+						pk: {
+							field: "pk",
+							facets: ["prop1"]
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop2"]
+						}
+					}
+				}
+			}, {table, client});
+
+			let item = {
+				prop1: uuid(),
+				prop2: "abc",
+				prop3: "should_not_be_returned",
+				prop4: "def"
+			};
+
+			let data = {};
+
+			let putResult = await entity.put(item).go();
+
+			let getResponse = await entity
+				.get(item)
+				.go();
+
+			let queryResponse = await entity.query
+				.record(item)
+				.where(({prop3}, {eq}) => `${eq(prop3, item.prop3)}`)
+				.go();
+
+			expect(putResult).to.deep.equal(data);
+			expect(getResponse).to.deep.equal(data);
+			expect(queryResponse).to.deep.equal([data]);
+		});
 	})
 });
