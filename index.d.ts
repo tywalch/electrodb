@@ -4,6 +4,7 @@ type BooleanAttribute = {
     readonly type: "boolean";
     readonly required?: boolean;
     readonly hidden?: boolean;
+    readonly readOnly?: boolean;
     readonly get?: (val: boolean, item: any) => boolean | undefined;
     readonly set?: (val: boolean | undefined, item: any) => boolean | undefined;
     readonly default?: boolean | (() => boolean);
@@ -17,6 +18,7 @@ type NumberAttribute = {
     readonly type: "number";
     readonly required?: boolean;
     readonly hidden?: boolean;
+    readonly readOnly?: boolean;
     readonly get?: (val: number, item: any) => number | undefined;
     readonly set?: (val: number | undefined, item: any) => number | undefined;
     readonly default?: number | (() => number);
@@ -30,6 +32,7 @@ type StringAttribute = {
     readonly type: "string";
     readonly required?: boolean;
     readonly hidden?: boolean;
+    readonly readOnly?: boolean;
     readonly get?: (val: string, item: any) => string | undefined;
     readonly set?: (val: string | undefined, item: any) => string | undefined;
     readonly default?: string | (() => string);
@@ -43,6 +46,7 @@ type EnumAttribute = {
     readonly type: ReadonlyArray<string>;
     readonly required?: boolean;
     readonly hidden?: boolean;
+    readonly readOnly?: boolean;
     readonly get?: (val: string, item: any) => string | undefined;
     readonly set?: (val: string | undefined, item: any) => string | undefined;
     readonly default?: string | (() => string);
@@ -56,6 +60,7 @@ type AnyAttribute = {
     readonly type: "any";
     readonly required?: boolean;
     readonly hidden?: boolean;
+    readonly readOnly?: boolean;
     readonly get?: (val: any, item: any) => any | undefined;
     readonly set?: (val: any | undefined, item: any) => any | undefined;
     readonly default?: () => any;
@@ -136,6 +141,14 @@ type RequiredAttributes<A extends string, F extends A, C extends string, S exten
 
 type HiddenAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<{
     [a in keyof S["attributes"]]: S["attributes"][a]["hidden"] extends infer R
+        ? R extends true
+            ? true
+            : false
+        : never;
+}, true>
+
+type ReadOnlyAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<{
+    [a in keyof S["attributes"]]: S["attributes"][a]["readOnly"] extends infer R
         ? R extends true
             ? true
             : false
@@ -249,7 +262,10 @@ type PutItem<A extends string, F extends A, C extends string, S extends Schema<A
     & Partial<Item<A,F,C,S>>
 
 type SetItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    Omit<Partial<TableItem<A,F,C,S>>, keyof AllTableIndexFacets<A,F,C,S>>
+    Omit<
+        Omit<Partial<TableItem<A,F,C,S>>, keyof AllTableIndexFacets<A,F,C,S>>,
+        ReadOnlyAttributes<A,F,C,S>
+    >
 
 export interface WhereAttributeSymbol<T> {
     [WhereSymbol]: void;
@@ -562,4 +578,9 @@ export type EntityItem<E extends Entity<any, any, any, any>> =
 export type CreateEntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
         ? PutItem<A, F, C, S>
+        : never;
+
+export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? SetItem<A, F, C, S>
         : never;
