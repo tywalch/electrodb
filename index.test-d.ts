@@ -1,4 +1,4 @@
-import {Entity, Service, WhereAttributeSymbol} from ".";
+import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, SetItem} from ".";
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 
 let entityWithSK = new Entity({
@@ -1808,4 +1808,62 @@ let getKeys = ((val) => {}) as GetKeys;
             });
         })
 
+    let entityWithReadOnlyAttribute = new Entity({
+        model: {
+            entity: "e1",
+            service: "s1",
+            version: "1"
+        },
+        attributes: {
+            prop1: {
+                type: "string"
+            },
+            prop2: {
+                type: "string"
+            },
+            prop3: {
+                type: "string",
+                readOnly: true
+            },
+            prop4: {
+                type: "string"
+            }
+        },
+        indexes: {
+            record: {
+                collection: "collection1",
+                pk: {
+                    field: "pk",
+                    facets: ["prop1"]
+                },
+                sk: {
+                    field: "sk",
+                    facets: ["prop2"]
+                }
+            }
+        }
+    });
+
+    entityWithReadOnlyAttribute.put({prop1: "abc", prop2: "def", prop3: "ghi"}).params();
+    entityWithReadOnlyAttribute.create({prop1: "abc", prop2: "def", prop3: "ghi"}).params();
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .set({prop3: "abc"})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .set({prop3: "abc"})
+            .params();
+    });
+
+    let setItemValue = {} as UpdateEntityItem<typeof entityWithReadOnlyAttribute>
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .set(setItemValue)
+        .params();
 
