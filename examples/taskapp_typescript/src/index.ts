@@ -31,7 +31,7 @@ async function execute() {
   const loader = new Loader(taskr);
   
   /**
-   * Uncomment the relevent lines to create a table, then load it, optionally delete, and finally query.
+   * Uncomment the relevant lines to create a table, then load it, optionally delete, and finally query.
    * For more examples checkout the README.
   **/
   // Make table:

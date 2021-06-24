@@ -484,7 +484,7 @@ describe("BatchGet", async () => {
     });
   });
   it("Should throw on invalid get facets", () => {
-    expect(() => MallStores.get([record1, record2, record3, {}]).params()).to.throw("Incomplete or invalid key facets supplied. Missing properties: sector - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets");
+    expect(() => MallStores.get([record1, record2, record3, {}]).params()).to.throw('Incomplete or invalid key facets supplied. Missing properties: "sector" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets');
   });
   it("Should create params", () => {
     let params = MallStores.get([record1, record2, record3]).params();

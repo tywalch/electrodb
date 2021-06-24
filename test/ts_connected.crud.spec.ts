@@ -1465,7 +1465,7 @@ describe("Entity", async () => {
                 throw null;
             } catch(err) {
                 expect(err).to.not.be.null;
-                expect(err.message).to.equal("Incomplete facets: Without the facets 'prop7', 'prop8' the following access patterns cannot be updated: 'index3'  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets");
+                expect(err.message).to.equal('Incomplete facets: Without the facets "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets');
             }
         });
 
@@ -1477,7 +1477,7 @@ describe("Entity", async () => {
                 throw null;
             } catch(err) {
                 expect(err).to.not.be.null;
-                expect(err.message).to.equal("Incomplete facets: Without the facets 'prop7', 'prop8' the following access patterns cannot be updated: 'index3'  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets");
+                expect(err.message).to.equal(`Incomplete facets: Without the facets "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`);
             }
         });
 

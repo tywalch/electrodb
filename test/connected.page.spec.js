@@ -268,7 +268,7 @@ describe("Page", async () => {
       count++;
       let [next, items] = await tasks.query.assigned({employee: Tasks.employees[0]}).page(page, {limit});
       if (next && count > 0) {
-        expect(next).to.have.keys(["project", "points", "employee", "task"]);
+        expect(next).to.have.keys(["project", "points", "employee", "task", "__edb_e__", "__edb_v__"]);
       }
       expect(items.length <= limit).to.be.true;
       for (let item of items) {
@@ -342,7 +342,7 @@ describe("Page", async () => {
           page: {task: "1234", project: undefined}
         },
         output: {
-          error: "Incomplete or invalid key facets supplied. Missing properties: project - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+          error: 'Incomplete or invalid key facets supplied. Missing properties: "project" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
         },
       }, {
         type: "query",
@@ -352,7 +352,7 @@ describe("Page", async () => {
           page: {task: "1234", project: "anc"}
         },
         output: {
-          error: "Incomplete or invalid key facets supplied. Missing properties: employee - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+          error: 'Incomplete or invalid key facets supplied. Missing properties: "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
         },
       }, {
         type: "scan",
@@ -360,7 +360,7 @@ describe("Page", async () => {
           page: {task: "1234", project: undefined}
         },
         output: {
-          error: "Incomplete or invalid key facets supplied. Missing properties: project, employee - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+          error: 'Incomplete or invalid key facets supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
         },
       }
     ];
@@ -411,6 +411,6 @@ describe("Page", async () => {
     expect(success).to.be.false;
     expect(results.message).to.be.equal("No client defined on model - For more detail on this error reference: https://github.com/tywalch/electrodb#no-client-defined-on-model")
   });
-
-
 });
+
+// describe("Collection Pagination")

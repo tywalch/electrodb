@@ -1,4 +1,4 @@
-import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, SetItem} from ".";
+import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem} from ".";
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 
 let entityWithSK = new Entity({
@@ -1426,7 +1426,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     let chainMethods = complexService.collections.normalcollection({prop2: "abc", prop1: "def"});
     type AfterQueryChainMethods = keyof typeof chainMethods;
-    let expectedAfterQueryChainMethods = "" as "where" | "go" | "params"
+    let expectedAfterQueryChainMethods = "" as "where" | "go" | "params" | "page";
     expectType<AfterQueryChainMethods>(expectedAfterQueryChainMethods);
 
     // .go params
@@ -1866,4 +1866,3 @@ let getKeys = ((val) => {}) as GetKeys;
         .update({prop1: "abc", prop2: "def"})
         .set(setItemValue)
         .params();
-

@@ -86,9 +86,16 @@ const MaxBatchItems = {
 const AttributeMutationMethods = {
 	get: "get",
 	set: "set"
+};
+
+const Pager = {
+	raw: "raw",
+	named: "named",
+	item: "item"
 }
 
 module.exports = {
+	Pager,
 	KeyTypes,
 	QueryTypes,
 	MethodTypes,

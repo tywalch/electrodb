@@ -95,9 +95,9 @@ class EmployeeAppLoader {
     for (let i = 0; i < n; i++) {
       let randomRecord = this.generateRandomTask(employees);
       this.tasks.push(randomRecord);
-      inserts.push(this.service.db.entities.tasks.put(randomRecord).go());
+      inserts.push(randomRecord);
     }
-    return Promise.all(inserts)
+    return this.service.db.entities.tasks.put(inserts).go({concurrent: 5});
   }
 
   async loadEmployees(n = 0, offices) {
@@ -105,9 +105,9 @@ class EmployeeAppLoader {
     for (let i = 0; i < n; i++) {
       let randomRecord = this.generateRandomEmployee(offices);
       this.employees.push(randomRecord);
-      inserts.push(this.service.db.entities.employees.put(randomRecord).go());
+      inserts.push(randomRecord);
     }
-    return Promise.all(inserts)
+    return this.service.db.entities.employees.put(inserts).go({concurrent: 5});
   }
 
   async loadOffices() {
@@ -116,9 +116,10 @@ class EmployeeAppLoader {
       let city = EmployeeAppLoader.cities[i];
       let randomRecord = this.generateRandomOffice(city);
       this.offices.push(randomRecord);
-      inserts.push(this.service.db.entities.offices.put(randomRecord).go());
+      inserts.push(randomRecord);
+      inserts.push();
     }
-    return Promise.all(inserts)
+    return this.service.db.entities.offices.put(inserts).go({concurrent: 5});
   }
 
   async load(employees = 1, tasks = 1) {

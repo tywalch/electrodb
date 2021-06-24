@@ -540,12 +540,13 @@ let clauses = {
 			}
 			try {
 				options.page = page;
-				options.pager = true;
+				options._isPagination = true;
 				if (entity.client === undefined) {
 					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 				}
 				let params = clauses.params.action(entity, state, options);
-				return entity.go(state.query.method, params, options);
+				let {config} = entity._applyParameterOptions({}, state.query.options, options);
+				return entity.go(state.query.method, params, config);
 			} catch(err) {
 				return Promise.reject(err);
 			}
