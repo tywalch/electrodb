@@ -97,7 +97,7 @@ class EmployeeAppLoader {
       this.tasks.push(randomRecord);
       inserts.push(randomRecord);
     }
-    return this.service.db.entities.tasks.put(inserts).go({concurrent: 5});
+    return this.service.db.entities.tasks.put(inserts).go();
   }
 
   async loadEmployees(n = 0, offices) {
@@ -107,25 +107,28 @@ class EmployeeAppLoader {
       this.employees.push(randomRecord);
       inserts.push(randomRecord);
     }
-    return this.service.db.entities.employees.put(inserts).go({concurrent: 5});
+    return this.service.db.entities.employees.put(inserts).go();
   }
 
-  async loadOffices() {
+  async loadOffices(cities = []) {
     let inserts = [];
-    for (let i = 0; i < EmployeeAppLoader.cities.length; i++) {
-      let city = EmployeeAppLoader.cities[i];
+    if (cities.length === 0) {
+      cities = EmployeeAppLoader.cities;
+    }
+    for (let i = 0; i < cities.length; i++) {
+      let city = cities[i];
       let randomRecord = this.generateRandomOffice(city);
       this.offices.push(randomRecord);
       inserts.push(randomRecord);
       inserts.push();
     }
-    return this.service.db.entities.offices.put(inserts).go({concurrent: 5});
+    return this.service.db.entities.offices.put(inserts).go();
   }
 
-  async load(employees = 1, tasks = 1) {
-    await this.loadOffices();
-    await this.loadEmployees(employees, this.offices);
-    await this.loadTasks(tasks, this.employees);
+  async load(employees = 1, tasks = 1, {offices = []} = {}) {
+    let unprocessedOffices = await this.loadOffices(offices);
+    let unprocessedEmployees = await this.loadEmployees(employees, this.offices);
+    let unprocessedTasks = await this.loadTasks(tasks, this.employees);
   }
 
   async paginate(limit, pages, query, test = (data) => data) {
@@ -154,8 +157,6 @@ class EmployeeAppLoader {
 }
 
 EmployeeAppLoader.cities = [
-  "Scranton",
-  "Pawnee",
   "Tampa",
   "Madison",
   "Portland",

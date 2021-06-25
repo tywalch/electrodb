@@ -42,7 +42,7 @@ class TaskAppExampleLoader {
    * @param {number} tasks the number of task records create
    */
 
-  async loadTable({employees = 1, tasks = 1} = {}) {
+  async loadTable({employees = 1, tasks = 1, offices = []} = {}) {
     if (this.db.client === undefined) {
       throw new Error("Operation requires DynamoDB DocumentClient. Please include a DynamoDB DocumentClient on class instantiation.")
     }
@@ -54,7 +54,7 @@ class TaskAppExampleLoader {
     }
     let loader = makeLoader(this);
     
-    return loader.load(employees, tasks)
+    return loader.load(employees, tasks, {offices})
       .then(() => console.log("Table loaded!"))
       .catch(err => {
         console.log("Error loading table", err);

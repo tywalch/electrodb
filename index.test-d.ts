@@ -1021,8 +1021,8 @@ let getKeys = ((val) => {}) as GetKeys;
     type FindPageReturn = Promise<[WithSKMyIndexFacets | null, Item[]]>;
     type FindPageReturnWithoutSK = Promise<[WithoutSKMyIndexFacets | null, ItemWithoutSK[]]>;
 
-    expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, lastEvaluatedKeyRaw: true, originalErr: true, params: {}, raw: true, table: "abc"}]);
-    expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, lastEvaluatedKeyRaw: true, originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
 
     expectAssignable<FindPageParams>([null]);
     expectAssignable<FindPageParamsWithoutSK>([null]);

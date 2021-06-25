@@ -2297,19 +2297,21 @@ let stores = MallStores.query
 
 ### Page
 
-> As of September 29th 2020 the `.page()` now returns the facets that make up the `ExclusiveStartKey` instead of the `ExclusiveStartKey` itself. To get back only the `ExclusiveStartKey`, add the flag `exclusiveStartKeyRaw` to your query options. If you treated this value opaquely no changes are needed, or if you used the `raw` flag. 
+> As of September 29th 2020 the `.page()` now returns the facets that make up the `ExclusiveStartKey` instead of the `ExclusiveStartKey` itself. To get back only the `ExclusiveStartKey`, add the [query option](#query-options) `{pager: "raw"}` to your query options. If you treated this value opaquely no changes are needed, or if you used the `raw` flag. 
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tuple. 
 
-The first element for [Entity](#entities) page query is the "page": an object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
+The first element for a page query is the "pager": an object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
 
-The first element for [Collection](#collections) page query is the `ExclusiveStartKey` as it was returned by the DynamoDB client.
+The "pager" includes the associated entity's Identifiers.
 
-> Note: It is *highly recommended* to use the `lastEvaluatedKeyRaw` flag when using `.page()` in conjunction with scans. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+> Note: It is *highly recommended* to use the [query option](#query-options) `pager: "raw""` flag when using `.page()` with `scan` operations. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
 
 The second element is the results of the query, exactly as it would be returned through a `query` operation.
 
 > Note: When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
+
+#### Entity Pagination
 
 ```javascript
 let [page, stores] = await MallStores.query
@@ -2326,6 +2328,8 @@ let [pageTwo, moreStores] = await MallStores.query
 //   mallId: "EastPointe", 
 //   buildingId: "BuildingA1", 
 //   unitId: "B47"
+//   __edb_e__: "MallStore",
+//   __edb_v__: "version" 
 // }
 
 // stores
@@ -2431,21 +2435,21 @@ By default, **ElectroDB** enables you to work with records as the names and prop
     table?: string
     raw?: boolean
     includeKeys?: boolean
-    lastEvaluatedKeyRaw?: boolean	
+    pager?: "raw" | "named" | "item"	
     originalErr?: boolean
     concurrent?: number
 };
 ```
 
-| Option | Description |  
-| ----------- | ----------- |  
-| params  | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
-| table | Use a different table than the one defined in the [Service Options](#service-options) |
-| raw  | Returns query results as they were returned by the docClient.  
-| includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
-| lastEvaluatedKeyRaw | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more detail about this in the sections for [Pages](#page), [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
-| originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
-| concurrent | (default: 1) When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
+| Option      | Default              | Description |  
+| ----------- | :------------------: | ----------- |  
+| params      | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
+| table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options) |
+| raw         | `false`              | Returns query results as they were returned by the docClient.  
+| includeKeys | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
+| pager       | `"named"`            | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more detail about this in the sections for [Pages](#page), [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
+| originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
+| concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
 
 # Errors:
 | Error Code | Description |

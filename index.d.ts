@@ -343,7 +343,7 @@ interface ParamOptions {
 }
 
 interface PaginationOptions extends QueryOptions {
-    lastEvaluatedKeyRaw?: boolean;
+    pager?: "raw" | "item" | "named";
     limit?: number;
 }
 

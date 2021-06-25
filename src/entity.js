@@ -75,7 +75,10 @@ class Entity {
 		return pkMatch;
 	}
 
-	ownsPager(index, pager = {}) {
+	ownsPager(index, pager) {
+		if (pager === null) {
+			return false;
+		}
 		let tableIndex = "";
 		let tableIndexFacets = this.model.facets.byIndex[tableIndex];
 		let indexFacets = this.model.facets.byIndex[tableIndex];
@@ -237,6 +240,7 @@ class Entity {
 	}
 
 	async _exec(method, parameters) {
+		// console.log(JSON.stringify({method, parameters}));
 		return this.client[method](parameters).promise().catch(err => {
 			err.__isAWSError = true;
 			throw err;
@@ -520,7 +524,7 @@ class Entity {
 			}
 			for (let facet of facets) {
 				if (backupFacets[facet] === undefined) {
-					throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, "LastEvaluatedKey contains entity that does not match the entity used to query. Use {lastEvaulatedKeyRaw: true} option.");
+					throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, 'LastEvaluatedKey contains entity that does not match the entity used to query. Use {pager: "raw"} query option.');
 				} else {
 					results[facet] = backupFacets[facet];
 				}

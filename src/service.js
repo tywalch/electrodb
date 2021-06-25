@@ -197,6 +197,14 @@ class Service {
 		return this;
 	}
 
+	_setClient(client) {
+		if (client !== undefined) {
+			for (let entity of Object.values(this.entities)) {
+				entity._setClient(client);
+			}
+		}
+	}
+
 	_getEntityIdentifiers(entities) {
 		let identifiers = [];
 		for (let alias of Object.keys(entities)) {
@@ -266,6 +274,9 @@ class Service {
 			throw new Error("Invalid collection")
 		}
 		let matchingEntities = [];
+		if (pager === null) {
+			return matchingEntities;
+		}
 		for (let entity of Object.values(this.collectionSchema[collection].entities)) {
 			if (entity.ownsPager(this.collectionSchema[collection].index, pager)) {
 				matchingEntities.push(entity);
@@ -275,7 +286,7 @@ class Service {
 	}
 
 	findNamedPagerOwner(pager = {}) {
-		let identifiers = this._getEntityIdentifiers();
+		let identifiers = this._getEntityIdentifiers(this.entities);
 		for (let identifier of identifiers) {
 			let hasCorrectFieldProperties = typeof pager[identifier.nameField] === "string" && typeof pager[identifier.versionField] === "string";
 			let hasMatchingFieldValues = pager[identifier.nameField] === identifier.name && pager[identifier.versionField] === identifier.version;
@@ -288,7 +299,7 @@ class Service {
 	expectPagerOwner(type, collection, pager) {
 		if (type === Pager.raw) {
 			return Object.values(this.collectionSchema[collection].entities)[0];
-		} else if (type === Pager.named) {
+		} else if (type === Pager.named || type === undefined) {
 			let owner = this.findNamedPagerOwner(pager);
 			if (owner === undefined) {
 				throw new Error("No owner found for pager");
@@ -298,8 +309,6 @@ class Service {
 			let owners = this.findItemPagerOwner(collection, pager);
 			if (owners.length === 1) {
 				return owners[0];
-			} else if (owners.length === 0) {
-				throw new Error("No owner found for pager");
 			} else {
 				throw new Error("pager not unique");
 			}
@@ -313,6 +322,9 @@ class Service {
 			throw new Error("Invalid collection")
 		}
 		let matchingIdentifiers = [];
+		if (pager === null) {
+			return matchingIdentifiers;
+		}
 		for (let entity of Object.values(this.collectionSchema[collection].entities)) {
 			if (entity.ownsPager(this.collectionSchema[collection].index, pager)) {
 				matchingIdentifiers.push({
@@ -325,7 +337,7 @@ class Service {
 	}
 
 	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {
-		if (config.lastEvaluatedKeyRaw) {
+		if (config.pager === "raw") {
 			return lastEvaluatedKey;
 		} else if (!lastEvaluatedKey) {
 			return null;
@@ -337,8 +349,10 @@ class Service {
 					: null
 			}
 			let page = entity._formatKeysToItem(index, lastEvaluatedKey);
-			page[entity.identifiers.entity] = entity.getName();
-			page[entity.identifiers.version] = entity.getVersion();
+			if (config.pager === "named") {
+				page[entity.identifiers.entity] = entity.getName();
+				page[entity.identifiers.version] = entity.getVersion();
+			}
 			return page;
 		}
 	}
@@ -360,12 +374,16 @@ class Service {
 
 		let pageClause = {...initialClauses.page};
 		let pageAction = initialClauses.page.action;
-		pageClause.action = (entity, state, page = null, options) => {
-			if (page === null) {
-				return pageAction(entity, state, page, options);
+		pageClause.action = (entity, state, page = null, options = {}) => {
+			try {
+				if (page === null) {
+					return pageAction(entity, state, page, options);
+				}
+				let owner = this.expectPagerOwner(options.pager, name, page);
+				return pageAction(owner, state, page, options);
+			} catch(err) {
+				return Promise.reject(err);
 			}
-			let owner = this.expectPagerOwner(options.type, name, page);
-			return pageAction(owner, state, page, options);
 		}
 		let clauses = {...initialClauses, page: pageClause};
 

@@ -25,26 +25,8 @@ export async function getPublicRepository(username: string) {
 
 // Get PullRequest and Associated Comments -- newest comments first
 export async function reviewPullRequest(pr: PullRequestIds) {
-    // let a = await store.collections.PRReview(pr)
-    //     .page()
-    //     .then(([page, results]) => {
-    //        return page?.ticketType
-    //     });
-    //     // .go({params: {ScanIndexForward: false}});
-    let b = await store.collections
-        .inbox({replyTo: "user"})
-        // .go()
-        // .then((results) => {
-        //     results.issueComments.map(items => {
-        //         items.
-        //     })
-        // })
-
-        .page({replyTo: "abc"})
-        .then(([page, results]) => {
-            page?.pullRequestNumber
-        });
-
+    return store.collections.PRReview(pr)
+        .page(null, {params: {ScanIndexForward: false}})
 }
 
 // Get Issue and Associated Comments -- newest comments first
