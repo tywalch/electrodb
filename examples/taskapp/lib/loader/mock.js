@@ -120,15 +120,14 @@ class EmployeeAppLoader {
       let randomRecord = this.generateRandomOffice(city);
       this.offices.push(randomRecord);
       inserts.push(randomRecord);
-      inserts.push();
     }
     return this.service.db.entities.offices.put(inserts).go();
   }
 
   async load(employees = 1, tasks = 1, {offices = []} = {}) {
-    let unprocessedOffices = await this.loadOffices(offices);
-    let unprocessedEmployees = await this.loadEmployees(employees, this.offices);
-    let unprocessedTasks = await this.loadTasks(tasks, this.employees);
+    await this.loadOffices(offices);
+    await this.loadEmployees(employees, this.offices);
+    await this.loadTasks(tasks, this.employees);
   }
 
   async paginate(limit, pages, query, test = (data) => data) {

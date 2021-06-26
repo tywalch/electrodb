@@ -501,10 +501,11 @@ class Entity {
 		let {prefix, isCustom} = this.model.prefixes[index][keyType];
 		let {facets} = this.model.indexes[accessPattern][keyType];
 		let names = [];
+		let types = [];
 		let pattern = `^${this._regexpEscape(prefix)}`;
 		let labels = this.model.facets.labels[index];
 		for (let facet of facets) {
-			let { name } = this.model.schema.attributes[facet];
+			let { name, type } = this.model.schema.attributes[facet];
 			let label = labels[facet];
 			if (isCustom) {
 				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
@@ -512,6 +513,7 @@ class Entity {
 				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
 			}
 			names.push(name);
+			types.push(type);
 		}
 		pattern += "$";
 		let regex = RegExp(pattern);
@@ -531,7 +533,18 @@ class Entity {
 			}
 		} else {
 			for (let i = 0; i < names.length; i++) {
-				results[names[i]] = match[i+1]; 
+				let key = names[i];
+				let value = match[i+1];
+				let type = types[i];
+				switch (type) {
+					case "number":
+						value = parseFloat(value);
+						break;
+					case "boolean":
+						value = value === "true";
+						break;
+				}
+				results[key] = value;
 			}
 		}
 		return results;

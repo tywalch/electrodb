@@ -38,78 +38,55 @@ async function execute() {
 }
 
 async function query() {
-  // let results = await taskr.entities.offices.scan.go();
-  // console.log({results});
-  // let [page, values] = await taskr.entities.employees.query.coworkers({office: "Tampa Branch"}).page(null, {raw: true});
+  let records = await taskr.entities.employees.scan.go();
+  if (records.length === 0) {
+    console.log(`
+    Table is empty, be sure to load data into the table by uncommenting out 'loader.loadTable' in ${path.resolve(__dirname, "./index.js")}
+    `);
+    process.exit(1);
+  }
+  // Use Collections to query across entities.
+  // Find office and staff information for the "Scranton Branch"
+  let scranton = await taskr.collections.workplaces({office: "Scranton Branch"}).go();
+  console.log("Workplace Collection:", scranton, "\r\n");
 
-  // let [page, values] = await taskr.collections.workplaces({office: "Tampa Branch"}).page(null, {lastEvaluatedKeyRaw: true});
-  let [page2, values2] = await taskr.collections.workplaces({office: "Tampa Branch"}).page();
-  // console.log(JSON.stringify({page, values}, null, 4));
-  console.log(JSON.stringify({page2}, null, 4));
-  console.log({
-    offices: taskr.entities.offices.ownsPager("gsi1pk-gsi1sk-index", page2),
-    employees: taskr.entities.employees.ownsPager("gsi1pk-gsi1sk-index", page2),
-    tasks: taskr.entities.tasks.ownsPager("gsi1pk-gsi1sk-index", page2),
-    workplaces: taskr.findPagerIdentifiers("workplaces", page2)
-  });
-  // pager: "raw" |
-
-  // console.log(JSON.stringify(taskr.entities.employees.model.prefixes));
-
-  // let [page, records] = await taskr.collections.workplaces({office: "Tampa Branch"}).page(null, {params: {Limit: 5}, lastEvaluatedKeyRaw: true});
-  // console.log({page, records});
-  // let [page2] = await taskr.collections.workplaces({office: "Tampa Branch"}).page(null, {params: {Limit: 5}});
-  // console.log({page2});
+  // Get employee details and all assigned
+  let {firstName, lastName, employee} = scranton.employees[0];
+  let kanban = await taskr.collections.assignments({employee}).go();
+  console.log(`Assignments for ${firstName} ${lastName}:`, kanban, "\r\n");
 
 
-  // if (records.length === 0) {
-  //   console.log(`
-  //   Table is empty, be sure to load data into the table by uncommenting out 'loader.loadTable' in ${path.resolve(__dirname, "./index.js")}
-  //   `);
-  //   process.exit(1);
-  // }
-  // // Use Collections to query across entities.
-  // // Find office and staff information for the "Scranton Branch"
-  // let scranton = await taskr.collections.workplaces({office: "Scranton Branch"}).go();
-  // console.log("Workplace Collection:", scranton, "\r\n");
-  //
-  // // Get employee details and all assigned
-  // let {firstName, lastName, employee} = scranton.employees[0];
-  // let kanban = await taskr.collections.assignments({employee}).go();
-  // console.log(`Assignments for ${firstName} ${lastName}:`, kanban, "\r\n");
-  //
-  //
-  // // Use Entities to drill into specific entities.
-  // // Find Junior Developers making more than 100,000
-  // let title = "Junior Software Engineer";
-  // let salary = "100000";
-  // let developers = await taskr.entities.employees.query.roles({title}).gt({salary}).go();
-  // console.log("Junior Developers with a salary greater than $100,000:", developers, "\r\n");
-  //
-  //
-  // // Find all open tasks for a given project less than or equal to 13 points
-  // let status = "open";
-  // let project = "135-53";
-  // let tasks = await taskr.entities.tasks.query
-  //   .statuses({status, project})
-  //   .where(({points}, {lte}) => lte(points, 13))
-  //   .go();
-  // console.log("All open tasks for a given project less than or equal to 13 points:", tasks, "\r\n");
-  //
-  //
-  // // Find marketing team members who were hired in between two and five years ago:
-  // let team = "marketing";
-  // let twoYearsAgo = moment.utc().subtract(2, "years").format("YYYY-MM-DD");
-  // let fiveYearsAgo = moment.utc().subtract(5, "years").format("YYYY-MM-DD");
-  // let recentHires = await taskr.entities.employees.query
-  //   .teams({team})
-  //   .between(
-  //     { dateHired: fiveYearsAgo },
-  //     { dateHired: twoYearsAgo }
-  //   ).go();
-  // console.log("Employees hired between two and five years ago:", recentHires, "\r\n");
-  //
-  // // Explore the models in `./models` and the README for more queries to try!
+  // Use Entities to drill into specific entities.
+  // Find Junior Developers making more than 100,000
+  let title = "Junior Software Engineer";
+  let salary = "100000";
+  let developers = await taskr.entities.employees.query.roles({title}).gt({salary}).go();
+  console.log("Junior Developers with a salary greater than $100,000:", developers, "\r\n");
+
+
+  // Find all open tasks for a given project less than or equal to 13 points
+  let status = "open";
+  let project = "135-53";
+  let tasks = await taskr.entities.tasks.query
+    .statuses({status, project})
+    .where(({points}, {lte}) => lte(points, 13))
+    .go();
+  console.log("All open tasks for a given project less than or equal to 13 points:", tasks, "\r\n");
+
+
+  // Find marketing team members who were hired in between two and five years ago:
+  let team = "marketing";
+  let twoYearsAgo = moment.utc().subtract(2, "years").format("YYYY-MM-DD");
+  let fiveYearsAgo = moment.utc().subtract(5, "years").format("YYYY-MM-DD");
+  let recentHires = await taskr.entities.employees.query
+    .teams({team})
+    .between(
+      { dateHired: fiveYearsAgo },
+      { dateHired: twoYearsAgo }
+    ).go();
+  console.log("Employees hired between two and five years ago:", recentHires, "\r\n");
+
+  // Explore the models in `./models` and the README for more queries to try!
 }
 
 execute().catch(console.error);

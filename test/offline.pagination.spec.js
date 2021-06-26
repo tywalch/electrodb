@@ -1,3 +1,4 @@
+const {Entity, Service} = require("../index");
 const {data} = require("./pagination.data");
 const taskr = require("../examples/taskapp/src/taskr");
 const {expect} = require("chai");
@@ -5,12 +6,12 @@ const LastEvaluatedKey = data.LastEvaluatedKey;
 
 function makeClient(lastEvaluatedKey) {
     let queries = [];
-    let response = data;
-    if (lastEvaluatedKey) {
-        data.LastEvaluatedKey = lastEvaluatedKey;
-    } else {
-        data.LastEvaluatedKey = LastEvaluatedKey;
-    }
+    let response = {
+        ...data,
+        LastEvaluatedKey: lastEvaluatedKey
+            ? lastEvaluatedKey
+            : data.LastEvaluatedKey
+    };
     return {
         queries,
         client: {
@@ -358,4 +359,71 @@ describe("Offline Pagination", () => {
            taskr.entities.employees.setIdentifier("version", "__edb_v__");
        });
    });
+   describe("Last Evaluated Key Parsing", () => {
+       const {client} = makeClient({
+           pk: '$testing#attr2_32#attr3_true',
+           sk: '$mixedtype#test_1#attr1_abc#attr4_1.1',
+       });
+       const entity = new Entity({
+           model: {
+               entity: "test",
+               service: "testing",
+               version: "1"
+           },
+           attributes: {
+               attr1: {
+                   type: "string"
+               },
+               attr2: {
+                   type: "number"
+               },
+               attr3: {
+                   type: "boolean"
+               },
+               attr4: {
+                   type: "number"
+               }
+           },
+           indexes: {
+               record: {
+                   collection: "mixedtype",
+                   pk: {
+                       field: "pk",
+                       facets: ["attr2", "attr3"]
+                   },
+                   sk: {
+                       field: "sk",
+                       facets: ["attr1", "attr4"]
+                   }
+               }
+           }
+       }, {table: "testing", client});
+       const service = new Service({entity});
+       it("Should parse the individual pager facets into their original type", async () => {
+           let [next] = await entity.query
+               .record({attr2: 13, attr3: true})
+               .page();
+           expect(next).to.deep.equal({
+               attr1: 'abc',
+               attr2: 32,
+               attr3: true,
+               attr4: 1.1,
+               __edb_e__: 'test',
+               __edb_v__: '1'
+           });
+       });
+       it("Should parse the individual pager facets into their original type", async () => {
+           let [next] = await service.collections
+               .mixedtype({attr2: 32, attr3: true})
+               .page()
+           expect(next).to.deep.equal({
+               attr1: 'abc',
+               attr2: 32,
+               attr3: true,
+               attr4: 1.1,
+               __edb_e__: 'test',
+               __edb_v__: '1'
+           });
+       });
+   })
 });
