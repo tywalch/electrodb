@@ -333,7 +333,7 @@ class Schema {
 
 			if (facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
 				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
-				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid facet definition: Facets must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a facet of the the following indexes: ${assignedIndexes.join(", ")}`);
+				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid composite attribute definition: Composite attributes must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a composite attribute of the the following indexes: ${assignedIndexes.join(", ")}`);
 			}
 			
 			if (usedAttrs[definition.field] || usedAttrs[name]) {
@@ -396,7 +396,7 @@ class Schema {
 			})
 			.map((facet) => `"${facet.type}: ${facet.name}"`);
 		if (missingFacetAttributes.length) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: ${missingFacetAttributes.join(", ")}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Invalid key composite attribute template. The following composite attribute attributes were described in the key composite attribute template but were not included model's attributes: ${missingFacetAttributes.join(", ")}`);
 		}
 		if (invalidProperties.length) {
 			let message = invalidProperties.map((prop) => `Schema Validation Error. Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`);

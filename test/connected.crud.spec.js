@@ -1812,7 +1812,7 @@ describe("Entity", async () => {
 					{ value: "prop4", attr: "prop4", method: "set", watched: undefined },
 				]);
 			});
-			it("Should be possible to use a watcher as a facet", () => {
+			it("Should be possible to use a watcher as a composite attribute", () => {
 				const counter = new TriggerListener();
 				let entity = new Entity({
 					model: {
@@ -1934,7 +1934,7 @@ describe("Entity", async () => {
 				]);
 			});
 
-			it("Should be possible to use a watcher as a facet in the same index as another facet it is watching", () => {
+			it("Should be possible to use a watcher as a composite attribute in the same index as another composite attribute it is watching", () => {
 				const counter = new TriggerListener();
 				let entity = new Entity({
 					model: {
@@ -3085,7 +3085,7 @@ describe("Entity", async () => {
 				throw null;
 			} catch(err) {
 				expect(err).to.not.be.null;
-				expect(err.message).to.equal(`Incomplete facets: Without the facets "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`);
+				expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
 			}
 		});
 
@@ -3097,7 +3097,7 @@ describe("Entity", async () => {
 				throw null;
 			} catch(err) {
 				expect(err).to.not.be.null;
-				expect(err.message).to.equal(`Incomplete facets: Without the facets "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`);
+				expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
 			}
 		});
 
@@ -3321,8 +3321,8 @@ describe("Entity", async () => {
 			}
 		}).timeout(10000);
 	});
-	describe("template and facets arrays", async () => {
-		it("Should resolve facet labels at an index level", async () => {
+	describe("template and composite attribute arrays", async () => {
+		it("Should resolve composite attribute labels at an index level", async () => {
 			const SERVICE = "facettest";
 			const ENTITY = uuid();
 			let model = {

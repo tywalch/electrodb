@@ -444,12 +444,12 @@ class Service {
 			);
 		} else if (!pkFieldMatch) {
 			collectionDifferences.push(
-				`Partition Key facets provided "${providedIndex.pk.field}" for index "${providedIndexName}" do not match established field "${definition.pk.field}" on established index "${definitionIndexName}"`,
+				`Partition Key composite attributes provided "${providedIndex.pk.field}" for index "${providedIndexName}" do not match established field "${definition.pk.field}" on established index "${definitionIndexName}"`,
 			);
 		}
 		if (!pkFacetLengthMatch) {
 			collectionDifferences.push(
-				`Partition Key Facets provided [${providedIndex.pk.facets.map(val => `"${val}"`).join(", ")}] for index "${providedIndexName}" do not match established facets [${definition.pk.facets.map(val => `"${val}"`).join(", ")}] on established index "${definitionIndexName}"`,
+				`Partition Key composite attributes provided [${providedIndex.pk.facets.map(val => `"${val}"`).join(", ")}] for index "${providedIndexName}" do not match established composite attributes [${definition.pk.facets.map(val => `"${val}"`).join(", ")}] on established index "${definitionIndexName}"`,
 			);
 		// Else if used here because if they don't even have the same facet length then the data collected for the mismatched facets would include undefined values
 		// which would make the error messages even more confusing.
@@ -458,11 +458,11 @@ class Service {
 			for (let mismatch of mismatchedFacetLabels) {
 				if (mismatch.type === "facet") {
 					collectionDifferences.push(
-						`Partition Key facets provided for index "${providedIndexName}" do not match established facet "${mismatch.definitionFacet}" on established index "${definitionIndexName}": "${mismatch.definitionLabel}" != "${mismatch.providedLabel}"; Facet definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these facet definitions are identical for all entities associated with this service.`
+						`Partition Key composite attributes provided for index "${providedIndexName}" do not match established composite attribute "${mismatch.definitionFacet}" on established index "${definitionIndexName}": "${mismatch.definitionLabel}" != "${mismatch.providedLabel}"; Composite attribute definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these composite attribute definitions are identical for all entities associated with this service.`
 					);
 				} else {
 					collectionDifferences.push(
-						`Partition Key facets provided for index "${providedIndexName}" contain conflicting facet labels for established facet "${mismatch.definitionFacet}" on established index "${definitionIndexName}". Established facet "${mismatch.definitionFacet}" on established index "${definitionIndexName}" was defined with label "${mismatch.definitionLabel}" while provided facet "${mismatch.providedFacet}" on provided index "${providedIndexName}" is defined with label "${mismatch.providedLabel}". Facet labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service.`
+						`Partition Key composite attributes provided for index "${providedIndexName}" contain conflicting composite attribute labels for established composite attribute "${mismatch.definitionFacet}" on established index "${definitionIndexName}". Established composite attribute "${mismatch.definitionFacet}" on established index "${definitionIndexName}" was defined with label "${mismatch.definitionLabel}" while provided composite attribute "${mismatch.providedFacet}" on provided index "${providedIndexName}" is defined with label "${mismatch.providedLabel}". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service.`
 					);
 				}
 

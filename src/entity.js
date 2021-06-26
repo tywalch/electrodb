@@ -1207,8 +1207,8 @@ class Entity {
 		if (isIncomplete) {
 			let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index]);
 			let missingFacets = incomplete.reduce((result, { missing }) => [...result, ...missing], []);
-			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets,
-				`Incomplete facets: Without the facets ${utilities.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${utilities.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))} `,
+			throw new e.ElectroError(e.ErrorCodes.IncompleteCompositeAttributes,
+				`Incomplete composite attributes: Without the composite attributes ${utilities.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${utilities.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))} `,
 			);
 		}
 		return complete;
@@ -1414,10 +1414,10 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_expectFacets(obj = {}, properties = [], type = "key facets") {
+	_expectFacets(obj = {}, properties = [], type = "key composite attributes") {
 		let [incompletePk, missing, matching] = this._expectProperties(obj, properties);
 		if (incompletePk) {
-			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets, `Incomplete or invalid ${type} supplied. Missing properties: ${utilities.commaSeparatedString(missing)}`);
+			throw new e.ElectroError(e.ErrorCodes.IncompleteCompositeAttributes, `Incomplete or invalid ${type} supplied. Missing properties: ${utilities.commaSeparatedString(missing)}`);
 		} else {
 			return matching;
 		}
@@ -1637,7 +1637,7 @@ class Entity {
 		let facets = {};
 		let names = key.match(/:[A-Z1-9]+/gi);
 		if (!names) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: ${key}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidKeyCompositeAttributeTemplate, `Invalid key composite attribute template. No composite attributes provided, expected at least one composite attribute with the format ":attributeName". Received: ${key}`);
 		}
 		let labels = key.split(/:[A-Z1-9]+/gi);
 		for (let i = 0; i < names.length; i++) {
@@ -1773,7 +1773,7 @@ class Entity {
 			if (Array.isArray(sk.facets)) {
 				let duplicates = pk.facets.filter(facet => sk.facets.includes(facet));
 				if (duplicates.length !== 0) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFacets, `The Access Pattern '${accessPattern}' contains duplicate references the facet(s): ${utilities.commaSeparatedString(duplicates)}. Facet attributes can only be used once within an index. If this leaves the Sort Key (sk) without any facets simply set this to be an empty array.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexCompositeAttributes, `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${utilities.commaSeparatedString(duplicates)}. Composite attributes may only be used once within an index. If this leaves the Sort Key (sk) without any composite attributes simply set this to be an empty array.`);
 				}
 			}
 

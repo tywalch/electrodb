@@ -35,7 +35,7 @@ describe("Model Validation", () => {
 			"instance.attributes.prop1.type is not of a type(s) string,array, instance.attributes.prop1.field is not of a type(s) string, instance.attributes.prop1.label is not of a type(s) string, instance.attributes.prop1.readOnly is not of a type(s) boolean, instance.attributes.prop1.required is not of a type(s) boolean, instance.attributes.prop1.cast is not of a type(s) string, instance.attributes.prop1.cast is not one of enum values: string,number, instance.attributes.prop1.default must be either a function or string, instance.attributes.prop1.validate must be either a function or Regexp, instance.attributes.prop1.get must be a function, instance.attributes.prop1.set must be a function",
 		);
 	});
-	it("should not allow facets to be used more than once in one index", () => {
+	it("should not allow composite attributes to be used more than once in one index", () => {
 		const schema = {
 			service: "MallStoreDirectory",
 			entity: "MallStores",
@@ -73,7 +73,7 @@ describe("Model Validation", () => {
 				},
 			},
 		};
-		expect(() => new Entity(schema)).to.throw(`The Access Pattern 'record' contains duplicate references the facet(s): "id", "prop3". Facet attributes can only be used once within an index. If this leaves the Sort Key (sk) without any facets simply set this to be an empty array. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-facets`)
+		expect(() => new Entity(schema)).to.throw(`The Access Pattern 'record' contains duplicate references the composite attribute(s): "id", "prop3". Composite attributes may only be used once within an index. If this leaves the Sort Key (sk) without any composite attributes simply set this to be an empty array. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-composite-attributes`)
 	});
 
 	it("should not allow index fields to be used more than once in across indexes: duplicate pk", () => {

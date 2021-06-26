@@ -411,7 +411,7 @@ describe("Offline Pagination", () => {
        }, {table: "testing", client});
 
        const service = new Service({entity});
-       it("Should parse the individual pager facets into their original type", async () => {
+       it("Should parse the individual pager composite attributes into their original type", async () => {
            let [next] = await entity.query
                .record({attr2: 13, attr3: true})
                .page();
@@ -424,7 +424,7 @@ describe("Offline Pagination", () => {
                __edb_v__: '1'
            });
        });
-       it("Should parse the individual pager facets into their original type", async () => {
+       it("Should parse the individual pager composite attributes into their original type", async () => {
            let [next] = await service.collections
                .mixedtype({attr2: 32, attr3: true})
                .page()

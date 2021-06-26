@@ -191,7 +191,7 @@ describe("Entity", () => {
 				}
 			})).to.throw("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index")
 		});
-		it("Should validate an attribute's type when evaluating a facet. Supported facet types should be a string, number, boolean, or enum", () => {
+		it("Should validate an attribute's type when evaluating a composite attribute. Supported composite attribute types should be a string, number, boolean, or enum", () => {
 			let tests = [
 				{
 					input: "string",
@@ -208,19 +208,19 @@ describe("Entity", () => {
 				},{
 					input: "set",
 					fail: true,
-					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "set" but is a facet of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "set" but is a composite attribute of the the following indexes: Table Index`
 				},{
 					input: "list",
 					fail: true,
-					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "list" but is a facet of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "list" but is a composite attribute of the the following indexes: Table Index`
 				},{
 					input: "map",
 					fail: true,
-					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "map" but is a facet of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "map" but is a composite attribute of the the following indexes: Table Index`
 				},{
 					input: "any",
 					fail: true,
-					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "any" but is a facet of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "any" but is a composite attribute of the the following indexes: Table Index`
 				}
 			];
 			let schema = {
@@ -517,7 +517,7 @@ describe("Entity", () => {
 							},
 						},
 					}),
-			).to.throw(`Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a facet of the the following indexes: Table Index`);
+			).to.throw(`Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a composite attribute of the the following indexes: Table Index`);
 		});
 		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", async () => {
 			let id = uuidV4();
@@ -1170,7 +1170,7 @@ describe("Entity", () => {
 					"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys".toLowerCase(),
 				);
 		});
-		it("Should identify when a facet cannot be made based on the data provided", () => {
+		it("Should identify when a composite attribute cannot be made based on the data provided", () => {
 			let schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -1273,7 +1273,7 @@ describe("Entity", () => {
 						mall: "Washington Square",
 						stores: undefined
 					},
-					output: `Without the facets "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`
+					output: `Without the composite attributes "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
 				},
 				{
 					happy: false,
@@ -1290,7 +1290,7 @@ describe("Entity", () => {
 						id: "12345",
 						mall
 					},
-					output: `Without the facets "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`
+					output: `Without the composite attributes "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
 				},
 			]
 			for (let test of tests) {
@@ -1465,7 +1465,7 @@ describe("Entity", () => {
 				FilterExpression: 'begins_with(#parition_key, :parition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
 			});
 		});
-		it("Should stop making a key early when there is a gap in the supplied facets", () => {
+		it("Should stop making a key early when there is a gap in the supplied composite attributes", () => {
 			let index = schema.indexes.categories.index;
 			let { pk, sk } = MallStores._makeIndexKeys(
 				index,
@@ -1686,7 +1686,7 @@ describe("Entity", () => {
 			);
 		});
 
-		it("Should allow facets to be a facet template (string)", () => {
+		it("Should allow composite attributes to be a composite attribute template (string)", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2001,7 +2001,7 @@ describe("Entity", () => {
 		// 		`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: d_:date|p2_:prop2`,
 		// 	);
 		// });
-		it("Should allow for custom labels for facets", () => {
+		it("Should allow for custom labels for composite attributes", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2191,7 +2191,7 @@ describe("Entity", () => {
 			});
 
 		});
-		it("Should default labels to facet attribute names in facet template (string)", () => {
+		it("Should default labels to composite attribute attribute names in composite attribute template (string)", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2250,7 +2250,7 @@ describe("Entity", () => {
 			});
 		});
 
-		it("Should allow for mixed custom/composed facets, and adding collection prefixes when defined", () => {
+		it("Should allow for mixed custom/composed composite attributes, and adding collection prefixes when defined", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2314,7 +2314,7 @@ describe("Entity", () => {
 				TableName: "StoreDirectory",
 			});
 		});
-		it("Should throw on invalid characters in facet template (string)", () => {
+		it("Should throw on invalid characters in composite attribute template (string)", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2350,7 +2350,7 @@ describe("Entity", () => {
 				},
 			};
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: dbsfhdfhsdshfshf`,
+				`Invalid key composite attribute template. No composite attributes provided, expected at least one composite attribute with the format ":attributeName". Received: dbsfhdfhsdshfshf`,
 			);
 		});
 		it("Should accept attributes with string values and interpret them as the attribute's `type`", () => {
@@ -2397,7 +2397,7 @@ describe("Entity", () => {
 				},{
 					success: false,
 					output: {
-						err: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "prop1" is defined as being type "invalid_value" but is a facet of the the following indexes: Table Index`
+						err: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "prop1" is defined as being type "invalid_value" but is a composite attribute of the the following indexes: Table Index`
 					},
 					input: {
 						model: {
@@ -2440,7 +2440,7 @@ describe("Entity", () => {
 				}
 			}
 		});
-		it("Should throw when defined facets are not in attributes: facet template and facet array", () => {
+		it("Should throw when defined composite attributes are not in attributes: composite attribute template and composite attribute array", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2476,12 +2476,12 @@ describe("Entity", () => {
 				},
 			};
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: "pk: prop5", "sk: prop3", "sk: prop4"`,
+				`Invalid key composite attribute template. The following composite attribute attributes were described in the key composite attribute template but were not included model's attributes: "pk: prop5", "sk: prop3", "sk: prop4"`,
 			);
 		});
 	});
 
-	describe("Identifying indexes by facets", () => {
+	describe("Identifying indexes by composite attributes", () => {
 		let MallStores = new Entity(schema);
 		let mall = "123";
 		let store = "123";
@@ -2676,7 +2676,7 @@ describe("Entity", () => {
 					"sort keys",
 				);
 			expect(allMatches).to.throw(
-				'Incomplete or invalid key facets supplied. Missing properties: "mall", "building", "unit"',
+				'Incomplete or invalid key composite attributes supplied. Missing properties: "mall", "building", "unit"',
 			);
 			expect(pkMatches).to.throw(
 				'Incomplete or invalid partition keys supplied. Missing properties: "mall"',
@@ -4253,7 +4253,7 @@ describe("Entity", () => {
 			}
 	});
 	describe("Attribute getters and setters", () => {
-		it("Should npt call the attribute setters for a facet when building a table key", () => {
+		it("Should npt call the attribute setters for a composite attribute when building a table key", () => {
 			let setCalls = {
 				prop1: 0,
 				prop2: 0,
@@ -4407,7 +4407,7 @@ describe("Entity", () => {
 				IndexName: 'gsi1'
 			});
 		});
-		it("Should not call the attribute setters for a facet when building tables keys that index doesnt have a sort key", () => {
+		it("Should not call the attribute setters for a composite attribute when building tables keys that index doesnt have a sort key", () => {
 			let setCalls = {
 				prop1: 0,
 				prop2: 0,

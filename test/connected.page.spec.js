@@ -332,7 +332,7 @@ describe("Page", async () => {
     } while(page !== null);
   }).timeout(10000);
 
-  it("Should not accept incomplete page facets", async () => {
+  it("Should not accept incomplete page composite attributes", async () => {
     let tests = [
       {
         type: "query",
@@ -342,7 +342,7 @@ describe("Page", async () => {
           page: {task: "1234", project: undefined}
         },
         output: {
-          error: 'Incomplete or invalid key facets supplied. Missing properties: "project" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
+          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
         },
       }, {
         type: "query",
@@ -352,7 +352,7 @@ describe("Page", async () => {
           page: {task: "1234", project: "anc"}
         },
         output: {
-          error: 'Incomplete or invalid key facets supplied. Missing properties: "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
+          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
         },
       }, {
         type: "scan",
@@ -360,7 +360,7 @@ describe("Page", async () => {
           page: {task: "1234", project: undefined}
         },
         output: {
-          error: 'Incomplete or invalid key facets supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
+          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
         },
       }
     ];

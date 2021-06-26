@@ -333,7 +333,7 @@ describe("BatchWrite", () => {
      }])
     });
 
-    it("Should return unprocessed items and their facets by default batch delete", () => {
+    it("Should return unprocessed items and their composite attributes by default batch delete", () => {
       let UnprocessedDelete = {
         "UnprocessedItems": {
           "electro": [

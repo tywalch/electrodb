@@ -25,10 +25,10 @@ const ErrorCodes = {
     name: "InvalidIdentifier",
     sym: ErrorCode,
   },
-  InvalidKeyFacetTemplate: {
+  InvalidKeyCompositeAttributeTemplate: {
     code: 1003,
-    section: "invalid-key-facet-template",
-    name: "InvalidKeyFacetTemplate",
+    section: "invalid-key-composite-attribute-template",
+    name: "InvalidKeyCompositeAttributeTemplate",
     sym: ErrorCode,
   },
   DuplicateIndexes: {
@@ -97,10 +97,10 @@ const ErrorCodes = {
     name: "DuplicateIndexField",
     sym: ErrorCode,
   },
-  DuplicateIndexFacets: {
+  DuplicateIndexCompositeAttributes: {
     code: 1015,
-    section: "duplicate-index-facets",
-    name: "DuplicateIndexFacets",
+    section: "duplicate-index-composite-attributes",
+    name: "DuplicateIndexCompositeAttributes",
     sym: ErrorCode,
   },
   InvalidAttributeWatchDefinition: {
@@ -115,10 +115,10 @@ const ErrorCodes = {
     name: "MissingAttribute",
     sym: ErrorCode,
   },
-  IncompleteFacets: {
+  IncompleteCompositeAttributes: {
     code: 2002,
-    section: "incomplete-facets",
-    name: "IncompleteFacets",
+    section: "incomplete-composite-attributes",
+    name: "IncompleteCompositeAttributes",
     sym: ErrorCode,
   },
   MissingTable: {
