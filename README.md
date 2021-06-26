@@ -25,8 +25,7 @@
 - [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and efficiently query based on defined sort key structures. 
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
 - [**Use With Your Existing Solution**](#facet-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Facet Templates to leverage your existing key structures.
-- [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services now in Beta. 
-- [**Generate Type Definitions**](#electro-cli) - Generate **TypeScript** type definition files (`.d.ts`) based on your model for more concise, accurate types.
+- [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services now in Beta.
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
 - [**Stand Up Rest Server for Entities**](#electro-cli) - Stand up a REST Server to interact with your `Entities`, `Services`, `Models` for easier prototyping.
 
@@ -3415,9 +3414,8 @@ let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).g
 
 Electro is a CLI utility toolbox for extending the functionality of **ElectroDB**. Current functionality of the CLI allows you to:
 
-1. Generate TypeScript type definition files for your `Entities` and `Services`.
-2. Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
-3. Dynamically stand up an HTTP Service to interact with your `Entities`, `Services`, `Models`.
+1. Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
+2. Dynamically stand up an HTTP Service to interact with your `Entities`, `Services`, `Models`.
 
 For usage and installation details you can learn more [here](https://github.com/tywalch/electrocli).
 
