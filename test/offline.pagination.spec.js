@@ -119,7 +119,7 @@ describe("Offline Pagination", () => {
            });
        });
 
-       it("Should throw when named pager does not map to any known entities", async () => {
+       it("Should throw when named pager does not map to any known entities -- pager option 'named'", async () => {
            const {client, queries} = makeClient();
            taskr._setClient(client);
            const pager = {
@@ -132,7 +132,18 @@ describe("Offline Pagination", () => {
            };
            let result = await taskr.collections.workplaces({office: "Mobile Branch"}).page(pager, {pager: "named"}).then(() => ({success: true})).catch((err) => ({success: false, err}));
            expect(result.success).to.be.false;
-           expect(result.err.message).to.equal("No owner found for pager");
+           expect(result.err.message).to.equal("Supplied Pager does not resolve to Entity within Service - For more detail on this error reference: https://github.com/tywalch/electrodb#no-owner-for-pager");
+       });
+
+       it("Should throw when named pager does not map to any known entities -- pager option 'item'", async () => {
+           const {client, queries} = makeClient();
+           taskr._setClient(client);
+           const pager = {
+               "team": "marketing"
+           };
+           let result = await taskr.collections.workplaces({office: "Mobile Branch"}).page(pager, {pager: "item"}).then(() => ({success: true})).catch((err) => ({success: false, err}));
+           expect(result.success).to.be.false;
+           expect(result.err.message).to.equal("Supplied Pager does not resolve to Entity within Service - For more detail on this error reference: https://github.com/tywalch/electrodb#no-owner-for-pager");
        });
 
        it("Should reformat a item pager correctly back into a ExclusiveStartKey", async () => {
@@ -358,6 +369,7 @@ describe("Offline Pagination", () => {
            taskr.entities.employees.setIdentifier("version", "__edb_v__");
        });
    });
+
    describe("Last Evaluated Key Parsing", () => {
        const {client} = makeClient({
            pk: '$testing#attr2_32#attr3_true',
@@ -397,6 +409,7 @@ describe("Offline Pagination", () => {
                }
            }
        }, {table: "testing", client});
+
        const service = new Service({entity});
        it("Should parse the individual pager facets into their original type", async () => {
            let [next] = await entity.query
@@ -423,6 +436,79 @@ describe("Offline Pagination", () => {
                __edb_e__: 'test',
                __edb_v__: '1'
            });
+       });
+   });
+   describe("Identical item pagers", () => {
+       const {client, queries} = makeClient({
+           pk: '$testing#attr1_abc',
+           sk: '$mixedtype#test_1#attr2_def',
+       });
+       const entity1 = new Entity({
+           model: {
+               entity: "test",
+               service: "testing",
+               version: "1"
+           },
+           attributes: {
+               attr1: {
+                   type: "string"
+               },
+               attr2: {
+                   type: "string"
+               },
+           },
+           indexes: {
+               record: {
+                   collection: "mixedtype",
+                   pk: {
+                       field: "pk",
+                       facets: ["attr1"]
+                   },
+                   sk: {
+                       field: "sk",
+                       facets: ["attr2"]
+                   }
+               }
+           }
+       }, {table: "testing", client});
+       const entity2 = new Entity({
+           model: {
+               entity: "test",
+               service: "testing",
+               version: "2"
+           },
+           attributes: {
+               attr1: {
+                   type: "string"
+               },
+               attr2: {
+                   type: "string"
+               },
+           },
+           indexes: {
+               record: {
+                   collection: "mixedtype",
+                   pk: {
+                       field: "pk",
+                       facets: ["attr1"]
+                   },
+                   sk: {
+                       field: "sk",
+                       facets: ["attr2"]
+                   }
+               }
+           }
+       }, {table: "testing", client});
+       const service = new Service({entity1, entity2});
+
+       it("Should is allow an ambiguous 'item' pager", async() => {
+          let results = await service.collections
+              .mixedtype({attr1: "abc", attr2: "def"})
+              .page({attr1: "ghi", attr2: "jkl"}, {pager: "item"})
+              .then(() => ({success: true}))
+              .catch(err => ({success: false, err}))
+           expect(results.success).to.be.false;
+           expect(results.err.message).to.equal("Supplied Pager did not resolve to single Entity - For more detail on this error reference: https://github.com/tywalch/electrodb#pager-not-unique");
        });
    })
 });

@@ -171,7 +171,7 @@ const ErrorCodes = {
   },
   PagerNotUnique: {
     code: 5005,
-    section: "no-owner-for-pager",
+    section: "pager-not-unique",
     name: "NoOwnerForPager",
     sym: ErrorCode,
   },

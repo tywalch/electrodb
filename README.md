@@ -2364,8 +2364,9 @@ Pagination with services is also possible. Similar to [Entity Pagination](#entit
 
 The `.page()` method also accepts [Query Options](#query-options) just like the `.go()` and `.params()` methods. Unlike those methods, however, the `.page()` method accepts Query Options as the _second_ parameter (the first parameter is reserved for the "pager").
 
-A notable Query Option, available only to the `.page()` method is a property called `pager`. This property defines the post processing ElectroDB should perform on a returned `LastEvaluatedKey`. The three options for the query option `pager` are as follows:
+A notable Query Option, that is available only to the `.page()` method, is an option called `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
 
+The three options for the query option `pager` are as follows:
 
 ```javascript
 // LastEvaluatedKey
@@ -2392,7 +2393,7 @@ A notable Query Option, available only to the `.page()` method is a property cal
 }
 ```
 
-**"item":**  Similar to "named", however without the Entity's "identifiers". If two Entities with a service have otherwise identical index definitions, using the "item" pager option can result in errors while paginating a Collection. If this is not a concern with your Service, or you a paginating with only an Entity, this option could be preferable because it has fewer properties.       
+**"item":**  Similar to "named", however without the Entity's "identifiers". If two Entities with a service have otherwise identical index definitions, using the "item" pager option can result in errors while paginating a Collection. If this is not a concern with your Service, or you are paginating with only an Entity, this option could be preferable because it has fewer properties.       
 
 ```javascript
 // {pager: "item"} 
@@ -2405,7 +2406,7 @@ A notable Query Option, available only to the `.page()` method is a property cal
 }
 ```
 
-**"raw":** The `"raw"` option returns the LastEvaluatedKey as it was returned by the DynamoDB DocClient.
+**"raw":** The `"raw"` option returns the LastEvaluatedKey as it was returned by the DynamoDB DocClient. 
 
 ```javascript
 // {pager: "raw"} 
@@ -2774,7 +2775,7 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 ### Unknown Errors
 
 ### Invalid Last Evaluated Key
-*Code: 4003*
+*Code: 5003*
 
 *Why this occurred:*
 _Likely_ you were were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
@@ -2787,19 +2788,23 @@ myModel.scan.page(null, {pager: "raw"});
 ```
 
 ### No Owner For Pager
-*Code: 4004*
+*Code: 5004*
 
 *Why this occurred:*
-When using pagination with a service, the service must try to identify which entity . Consult the section on [Pagination](#page) to learn more.  
+When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied pager. This error can occur when you supply an invalid pager, or when you are using a different [pager option](#pager-query-options) to a pager than what was used when retrieving it. Consult the section on [Pagination](#page) to learn more.  
 
 *What to do about it:*
-It is highly recommended to use the query option, `{pager: "raw"}`, when using the .page() method with *scans*. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
-```javascript
-// example
-myModel.scan.page(null, {pager: "raw"});
-```
+If you are sure the pager you are passing to `.page()` is the same you received from `.page()` this could be an unexpected error. To mitigate the issue use the Query Option `{pager: "raw"}` and please open a support issue.
 
+### Pager Not Unique
 
+*Code: 5005*
+
+*Why this occurred:*
+When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied [pager option](#pager-query-options). This error can occur when you supply a pager that resolves to more than one Entity. This can happen if your entities share the same facets for the index you are querying on, and you are using the Query Option `{pager: "item""}`.
+
+*What to do about it:*
+Because this scenario is possible with otherwise well considered/thoughtful entity models, the default `pager` type used by ElectroDB is `"named"`. To avoid this error, you will need to use either the `"raw"` or `"named"` [pager options](#pager-query-options) for any index that could result in an ambiguous Entity owner.
 
 # Examples
 

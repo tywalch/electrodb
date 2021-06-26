@@ -302,7 +302,7 @@ class Service {
 		} else if (type === Pager.named || type === undefined) {
 			let owner = this.findNamedPagerOwner(pager);
 			if (owner === undefined) {
-				throw new Error("No owner found for pager");
+				throw new e.ElectroError(e.ErrorCodes.NoOwnerForPager, "Supplied Pager does not resolve to Entity within Service");
 			}
 			return owner;
 		} else if (type === Pager.item) {
@@ -310,10 +310,10 @@ class Service {
 			if (owners.length === 1) {
 				return owners[0];
 			} else {
-				throw new Error("pager not unique");
+				throw new e.ElectroError(e.ErrorCodes.PagerNotUnique, "Supplied Pager did not resolve to single Entity");
 			}
 		} else {
-			throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provider: "${option.pager}". Allowed values include ${u.commaSeparatedString(Object.keys(Pager))}.`)
+			throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provider: "${pager}". Allowed values include ${u.commaSeparatedString(Object.keys(Pager))}.`)
 		}
 	}
 
