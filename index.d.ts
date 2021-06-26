@@ -352,9 +352,17 @@ interface BulkOptions extends QueryOptions {
     concurrency?: number;
 }
 
+type OptionalDefaultEntityIdentifiers = {
+    __edb_e__?: string;
+    __edb_v__?: string;
+}
+
 type GoRecord<ResponseType, Options = QueryOptions> = (options?: Options) => Promise<ResponseType>;
 
-type PageRecord<ResponseType, Facets> = (page?: Facets | null, options?: PaginationOptions) => Promise<[Facets | null, ResponseType]>;
+type PageRecord<ResponseType, Facets> = (page?: (Facets & OptionalDefaultEntityIdentifiers) | null, options?: PaginationOptions) => Promise<[
+    (Facets & OptionalDefaultEntityIdentifiers) | null,
+    ResponseType
+]>;
 
 type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
 
@@ -458,6 +466,7 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexFacets<A,F,C,S>[]>;
     create(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     find(record: Partial<Item<A,F,C,S>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexFacets<A,F,C,S>>;
+    setIdentifier(type: "entity" | "version", value: string): void;
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexFacets<A,F,C,S>>
     query: Queries<A,F,C,S>;
 }
@@ -667,15 +676,25 @@ type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, C
                                             Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>>,
                                             WhereRecordsActionOptions<E,A,F,C,S,
                                                 Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>>,
-                                                {
-                                                    [EntityResultName in Collections[Collection]]:
-                                                        EntityResultName extends keyof E
-                                                            ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                                                ? ResponseItem<A,F,C,S>[]
+                                                    {
+                                                        [EntityResultName in Collections[Collection]]:
+                                                            EntityResultName extends keyof E
+                                                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                                                    ? ResponseItem<A,F,C,S>[]
+                                                                    : never
                                                                 : never
-                                                            : never
-                                                },
-                                                TableIndexFacets<A,F,C,S>>>
+                                                    },
+                                                    Partial<
+                                                        Spread<
+                                                            Collection extends keyof CollectionPageAttributes<E, Collections>
+                                                                ? CollectionPageAttributes<E, Collections>[Collection]
+                                                                : {},
+                                                            Collection extends keyof CollectionIndexAttributes<E, Collections>
+                                                                ? CollectionIndexAttributes<E, Collections>[Collection]
+                                                                : {}
+                                                            >
+                                                    >
+                                                >>
                                         : never
                                     : never
                                 : never
