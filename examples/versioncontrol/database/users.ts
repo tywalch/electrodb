@@ -35,11 +35,11 @@ export const users = new Entity({
     user: {
       collection: "overview",
       pk: {
-        facets: ["username"],
+        composite: ["username"],
         field: "pk"
       },
       sk: {
-        facets: [],
+        composite: [],
         field: "sk"
       }
     },
@@ -47,23 +47,23 @@ export const users = new Entity({
       collection: "owned",
       index: "gsi1pk-gsi1sk-index",
       pk: {
-        facets: ["username"],
+        composite: ["username"],
         field: "gsi1pk"
       },
       sk: {
         field: "gsi1sk",
-        facets: []
+        composite: []
       }
     },
     subscriptions: {
       collection: "watching",
       index: "gsi3pk-gsi3sk-index",
       pk: {
-        facets: ["username"],
+        composite: ["username"],
         field: "gsi3pk"
       },
       sk: {
-        facets: [],
+        composite: [],
         field: "gsi3sk"
       }
     }

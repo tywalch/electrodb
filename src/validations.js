@@ -85,13 +85,21 @@ const Index = {
 					items: {
 						type: "string",
 					},
-					required: true,
+					required: false,
+				},
+				composite: {
+					type: ["array"],
+					minItems: 1,
+					items: {
+						type: "string",
+					},
+					required: false,
 				},
 			},
 		},
 		sk: {
 			type: "object",
-			required: ["field", "facets"],
+			required: ["field"],
 			properties: {
 				field: {
 					type: "string",
@@ -99,7 +107,14 @@ const Index = {
 				},
 				facets: {
 					type: ["array", "string"],
-					required: true,
+					required: false,
+					items: {
+						type: "string",
+					},
+				},
+				composite: {
+					type: ["array"],
+					required: false,
 					items: {
 						type: "string",
 					},
@@ -109,6 +124,9 @@ const Index = {
 		index: {
 			type: "string",
 		},
+		collection: {
+			type: "string"
+		}
 	},
 };
 

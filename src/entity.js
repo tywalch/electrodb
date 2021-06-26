@@ -1892,6 +1892,34 @@ class Entity {
 		return prefixes;
 	}
 
+	_applyCompositeToFacetConversion(model) {
+		for (let accessPattern of Object.keys(model.indexes)) {
+			let index = model.indexes[accessPattern];
+			if (Array.isArray(index.pk.composite)) {
+				index.pk = {
+					...index.pk,
+					facets: index.pk.composite
+				}
+			} else if (index.pk.facets === undefined) {
+				// "Composite Attributes" and "Facets" were not provided.
+				throw new Error("Missing Index Composite Attributes!");
+			}
+
+			// SK may not exist on index
+			if (index.sk && Array.isArray(index.sk.composite)) {
+				index.sk = {
+					...index.sk,
+					facets: index.sk.composite
+				}
+			} else if (index.sk && index.sk.facets === undefined) {
+				// "Composite Attributes" and "Facets" were not provided.
+				throw new Error("Missing Index Composite Attributes!");
+			}
+			model.indexes[accessPattern] = index;
+		}
+		return model;
+	}
+
 	_parseModel(model, config = {}) {
 		/** start beta/v1 condition **/
 		let modelVersion = utilities.getModelVersion(model);
@@ -1914,6 +1942,8 @@ class Entity {
 			default:
 				throw new Error("Invalid model");
 		}
+
+		model = this._applyCompositeToFacetConversion(model);
 		/** end beta/v1 condition **/
 
 		let {

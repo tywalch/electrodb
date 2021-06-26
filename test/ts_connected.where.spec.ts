@@ -52,11 +52,11 @@ describe("Where Clause Queries", async () => {
             farm: {
                 pk: {
                     field: "pk",
-                    facets: ["pen"],
+                    composite: ["pen"],
                 },
                 sk: {
                     field: "sk",
-                    facets: ["row"]
+                    composite: ["row"]
                 }
             },
         },

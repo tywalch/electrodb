@@ -82,11 +82,11 @@ export const repositories = new Entity({
     repositories: {
       collection: "alerts",
       pk: {
-        facets: ["repoOwner"],
+        composite: ["repoOwner"],
         field: "pk"
       },
       sk: {
-        facets: ["repoName"],
+        composite: ["repoName"],
         field: "sk"
       }
     },
@@ -94,11 +94,11 @@ export const repositories = new Entity({
       collection: "owned",
       index: "gsi1pk-gsi1sk-index",
       pk: {
-        facets: ["username"],
+        composite: ["username"],
         field: "gsi1pk"
       },
       sk: {
-        facets: ["isPrivate", "createdAt"],
+        composite: ["isPrivate", "createdAt"],
         field: "gsi1sk"
       }
     },
