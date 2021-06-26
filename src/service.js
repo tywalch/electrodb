@@ -170,7 +170,7 @@ class Service {
 		let name = hasAlias ? alias : entity.getName();
 
 		if (this.service.name.toLowerCase() !== entity.model.service.toLowerCase()) {
-			throw new Error(`Service name defined on joined instance, ${entity.model.service}, does not match the name of this Service: ${this.service.name}. Verify or update the service name on the Entity/Model to match the name defined on this service.`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Service name defined on joined instance, ${entity.model.service}, does not match the name of this Service: ${this.service.name}. Verify or update the service name on the Entity/Model to match the name defined on this service.`);
 		}
 
 		if (this._getTableName()) {
@@ -319,7 +319,7 @@ class Service {
 
 	findPagerIdentifiers(collection, pager = {}) {
 		if (this.collectionSchema[collection] === undefined) {
-			throw new Error("Invalid collection")
+			throw new Error("Invalid collection");
 		}
 		let matchingIdentifiers = [];
 		if (pager === null) {
