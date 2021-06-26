@@ -73,9 +73,7 @@ StoreLocations.query
 ## Table of Contents
 
 - [ElectroDB](#electrodb)
-  + [Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries](#try-it-out-for-yourself--https---runkitcom-tywalch-electrodb-building-queries)
   * [Features](#features)
-    + [Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries](#try-it-out-for-yourself--https---runkitcom-tywalch-electrodb-building-queries-1)
   * [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -144,6 +142,10 @@ StoreLocations.query
     + [Params](#params)
     + [Go](#go)
     + [Page](#page)
+      - [Entity Pagination](#entity-pagination)
+      - [Service Pagination](#service-pagination)
+      - [Pager Query Options](#pager-query-options)
+        * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
 - [Errors:](#errors-)
@@ -162,9 +164,11 @@ StoreLocations.query
   + [Missing Facets](#missing-facets)
   + [Missing Table](#missing-table)
   + [Invalid Concurrency Option](#invalid-concurrency-option)
-  + [Invalid Last Evaluated Key](#invalid-last-evaluated-key)
   + [aws-error](#aws-error)
-  + [Unknown Error](#unknown-error)
+  + [Unknown Errors](#unknown-errors)
+  + [Invalid Last Evaluated Key](#invalid-last-evaluated-key)
+  + [No Owner For Pager](#no-owner-for-pager)
+  + [Pager Not Unique](#pager-not-unique)
 - [Examples](#examples)
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
@@ -200,7 +204,6 @@ StoreLocations.query
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
 - [Electro CLI](#electro-cli)
 - [Version 1 Migration](#version-1-migration)
-  * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
 - [Coming Soon](#coming-soon)
 
 ----------
