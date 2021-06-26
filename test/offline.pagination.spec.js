@@ -2,7 +2,6 @@ const {Entity, Service} = require("../index");
 const {data} = require("./pagination.data");
 const taskr = require("../examples/taskapp/src/taskr");
 const {expect} = require("chai");
-const LastEvaluatedKey = data.LastEvaluatedKey;
 
 function makeClient(lastEvaluatedKey) {
     let queries = [];
