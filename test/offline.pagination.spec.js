@@ -143,7 +143,7 @@ describe("Offline Pagination", () => {
            };
            let result = await taskr.collections.workplaces({office: "Mobile Branch"}).page(pager, {pager: "item"}).then(() => ({success: true})).catch((err) => ({success: false, err}));
            expect(result.success).to.be.false;
-           expect(result.err.message).to.equal("Supplied Pager does not resolve to Entity within Service - For more detail on this error reference: https://github.com/tywalch/electrodb#no-owner-for-pager");
+           expect(result.err.message).to.equal("Supplied Pager did not resolve to single Entity - For more detail on this error reference: https://github.com/tywalch/electrodb#pager-not-unique");
        });
 
        it("Should reformat a item pager correctly back into a ExclusiveStartKey", async () => {
