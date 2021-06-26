@@ -3459,8 +3459,8 @@ let old_schema = {
   service: "service_name",
   version: "1",
   table: table,
-  attributes: {},
-  indexes: {}
+  attributes: {...},
+  indexes: {...}
 };
 new Entity(old_schema, {client});
 
@@ -3471,8 +3471,8 @@ let new_schema = {
     service: "service_name",
     version: "1",
   },
-  attributes: {},
-  indexes: {}
+  attributes: {...},
+  indexes: {...}
 };
 new Entity(new_schema, {client, table});
 ```    
@@ -3493,7 +3493,20 @@ new Service({
 
 // new way
 new Service("service_name", {client, table});
+
+// new way (for better TypeScript support)
+new Service({entity1, entity2, ...})
 ```
+
+## The renaming of index property Facets to Composite and Template
+
+In preparation of moving the codebase to version 1.0, ElectroDB will now accept the `facets` property as either the `composite` and/or `template` properties. Using the `facets` property is still accepted by ElectroDB but will be deprecated sometime in the future (tbd).
+
+This change stems from the fact the `facets` is already a defined term in the DynamoDB space and that definition does not fit the use-case of how ElectroDB uses the term. To avoid confusion from new developers, the `facets` property shall now be called `composite` (as in Composite Attributes) when supplying an Array of attributes, and `template` while supplying a string. These are two independent fields for two reasons:
+
+1. ElectroDB will validate the Composite Attributes provided map to those in the template (more validation is always nice)
+
+2. Allowing for the `composite` array to be supplied independently will allow for Composite Attributes to remained typed even when using a Composite Attribute Template.
 
 # Coming Soon
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
