@@ -61,9 +61,14 @@ function batchItems(arr = [], size) {
   return batched;
 }
 
+function commaSeparatedString(array = []) {
+  return array.map(value => `"${value}"`).join(", ");
+}
+
 module.exports = {
   batchItems,
   getInstanceType,
   getModelVersion,
+  commaSeparatedString,
   applyBetaModelOverrides
 };

@@ -73,7 +73,7 @@ describe("Model Validation", () => {
 				},
 			},
 		};
-		expect(() => new Entity(schema)).to.throw("The Access Pattern 'record' contains duplicate references the facet(s): 'id', 'prop3'. Facet attributes can only be used once within an index. If this leaves the Sort Key (sk) without any facets simply set this to be an empty array. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-facets")
+		expect(() => new Entity(schema)).to.throw(`The Access Pattern 'record' contains duplicate references the facet(s): "id", "prop3". Facet attributes can only be used once within an index. If this leaves the Sort Key (sk) without any facets simply set this to be an empty array. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-facets`)
 	});
 
 	it("should not allow index fields to be used more than once in across indexes: duplicate pk", () => {

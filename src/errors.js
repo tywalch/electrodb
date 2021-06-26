@@ -145,12 +145,6 @@ const ErrorCodes = {
     name: "AWSError",
     sym: ErrorCode,
   },
-  LastEvaluatedKey: {
-    code: 4002,
-    section: "invalid-last-evaluated-key",
-    name: "LastEvaluatedKey",
-    sym: ErrorCode,
-  },
   UnknownError: {
     code: 5001,
     section: "unknown-error",
@@ -162,6 +156,24 @@ const ErrorCodes = {
     section: "",
     name: "GeneralError",
     sym: ErrorCode
+  },
+  LastEvaluatedKey: {
+    code: 5003,
+    section: "invalid-last-evaluated-key",
+    name: "LastEvaluatedKey",
+    sym: ErrorCode,
+  },
+  NoOwnerForPager: {
+    code: 5004,
+    section: "no-owner-for-pager",
+    name: "NoOwnerForPager",
+    sym: ErrorCode,
+  },
+  PagerNotUnique: {
+    code: 5005,
+    section: "pager-not-unique",
+    name: "NoOwnerForPager",
+    sym: ErrorCode,
   },
 };
 

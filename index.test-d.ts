@@ -1021,8 +1021,8 @@ let getKeys = ((val) => {}) as GetKeys;
     type FindPageReturn = Promise<[WithSKMyIndexFacets | null, Item[]]>;
     type FindPageReturnWithoutSK = Promise<[WithoutSKMyIndexFacets | null, ItemWithoutSK[]]>;
 
-    expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, lastEvaluatedKeyRaw: true, originalErr: true, params: {}, raw: true, table: "abc"}]);
-    expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, lastEvaluatedKeyRaw: true, originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
 
     expectAssignable<FindPageParams>([null]);
     expectAssignable<FindPageParamsWithoutSK>([null]);
@@ -1426,7 +1426,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     let chainMethods = complexService.collections.normalcollection({prop2: "abc", prop1: "def"});
     type AfterQueryChainMethods = keyof typeof chainMethods;
-    let expectedAfterQueryChainMethods = "" as "where" | "go" | "params"
+    let expectedAfterQueryChainMethods = "" as "where" | "go" | "params" | "page"
     expectType<AfterQueryChainMethods>(expectedAfterQueryChainMethods);
 
     // .go params
@@ -1867,3 +1867,72 @@ let getKeys = ((val) => {}) as GetKeys;
         .set(setItemValue)
         .params();
 
+    type MyCollection1Pager = {
+        attr5?: string | undefined;
+        attr9?: number | undefined;
+        attr6?: number | undefined;
+        attr1?: string | undefined;
+        attr2?: string | undefined;
+        prop1?: string | undefined;
+        prop2?: string | undefined;
+        prop5?: number | undefined;
+        __edb_e__?: string | undefined;
+        __edb_v__?: string | undefined;
+        attr4?: "abc" | "def" |  "ghi" | undefined;
+    }
+
+    type Collection1EntityNames = "entityWithSK" | "normalEntity2" | "entityWithoutSK";
+    const names = "" as Collection1EntityNames;
+    complexService.collections
+        .mycollection1({attr9: 123, attr6: 245})
+        .page()
+        .then(([next, results]) => {
+            expectType<string | undefined>(next?.attr1);
+            expectType<string | undefined>(next?.attr2);
+            expectType<number | undefined>(next?.attr6);
+            expectType<number | undefined>(next?.attr9);
+            expectType<"abc" | "def" |  "ghi" | undefined>(next?.attr4);
+            expectType<string | undefined>(next?.attr5);
+            expectType<number | undefined>(next?.prop5);
+            expectType<string | undefined>(next?.prop1);
+            expectType<string | undefined>(next?.prop2);
+            expectType<string | undefined>(next?.__edb_e__);
+            expectType<string | undefined>(next?.__edb_v__);
+            expectAssignable<typeof next>({
+                attr1: "abc",
+                attr2: "abc",
+                attr6: 27,
+                attr9: 89,
+                attr4: "abc",
+                attr5: "abc",
+                __edb_e__: "entityWithSK",
+                __edb_v__: "1"
+            });
+            expectAssignable<typeof next>({
+                prop1: "abc",
+                prop2: "abc",
+                attr6: 27,
+                attr9: 89,
+                prop5: 12,
+                __edb_e__: "normalEntity2",
+                __edb_v__: "1"
+            });
+            expectAssignable<typeof next>({
+                attr1: "abc",
+                attr6: 27,
+                attr9: 89,
+                __edb_e__: "entityWithoutSK",
+                __edb_v__: "1"
+            });
+            expectType<keyof typeof results>(names);
+            expectNotType<any>(next);
+        })
+
+    complexService.collections
+        .mycollection1({attr9: 123, attr6: 245})
+        .page(null)
+
+    const nextPage = {} as MyCollection1Pager;
+    complexService.collections
+        .mycollection1({attr9: 123, attr6: 245})
+        .page(nextPage, {})

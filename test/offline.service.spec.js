@@ -1044,7 +1044,7 @@ describe("Service Offline", async () => {
 			.join(entityOne)
 			.join(entityTwo);
 
-		expect(() => database.collections.collectionA({prop1: "abc",}).params()).to.throw("Incomplete or invalid key facets supplied. Missing properties: prop7");
+		expect(() => database.collections.collectionA({prop1: "abc",}).params()).to.throw('Incomplete or invalid key facets supplied. Missing properties: "prop7"');
 		expect(database.collections.collectionA({prop1: "abc", prop7: "def", prop2: "hij"}).params()).to.deep.equal({
 			KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 			TableName: 'electro',

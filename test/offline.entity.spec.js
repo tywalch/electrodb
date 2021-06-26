@@ -1273,7 +1273,7 @@ describe("Entity", () => {
 						mall: "Washington Square",
 						stores: undefined
 					},
-					output: "Without the facets 'stores' the following access patterns cannot be updated: 'store'  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+					output: `Without the facets "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`
 				},
 				{
 					happy: false,
@@ -1290,7 +1290,7 @@ describe("Entity", () => {
 						id: "12345",
 						mall
 					},
-					output: "Without the facets 'stores' the following access patterns cannot be updated: 'store'  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets"
+					output: `Without the facets "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`
 				},
 			]
 			for (let test of tests) {
@@ -2676,13 +2676,13 @@ describe("Entity", () => {
 					"sort keys",
 				);
 			expect(allMatches).to.throw(
-				"Incomplete or invalid key facets supplied. Missing properties: mall, building, unit",
+				'Incomplete or invalid key facets supplied. Missing properties: "mall", "building", "unit"',
 			);
 			expect(pkMatches).to.throw(
-				"Incomplete or invalid partition keys supplied. Missing properties: mall",
+				'Incomplete or invalid partition keys supplied. Missing properties: "mall"',
 			);
 			expect(skMatches).to.throw(
-				"Incomplete or invalid sort keys supplied. Missing properties: unit",
+				'Incomplete or invalid sort keys supplied. Missing properties: "unit"',
 			);
 		});
 	});
@@ -3264,14 +3264,14 @@ describe("Entity", () => {
 				input: {value: "custom_version"},
 				custom: true,
 				success: false,
-				error: `Invalid identifier type: "". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
+				error: `Invalid identifier type: "". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
 			},
 			{
 				description: "invalid custom identifier: bad value",
 				input: {type: "bad_value", value: "custom_version"},
 				custom: true,
 				success: false,
-				error: `Invalid identifier type: "bad_value". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
+				error: `Invalid identifier type: "bad_value". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
 			}
 		];
 		for (let test of tests) {
@@ -3292,7 +3292,7 @@ describe("Entity", () => {
 		}
 		it("Should not allow setIdentifier to be used on identifiers that dont exist", () => {
 			let entity = new Entity(schema, {table: "test"});
-			expect(() => entity.setIdentifier("doesnt_exist")).to.throw(`Invalid identifier type: "doesnt_exist". Valid identifiers include: entity, version - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`);
+			expect(() => entity.setIdentifier("doesnt_exist")).to.throw(`Invalid identifier type: "doesnt_exist". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`);
 		});
 	});
 	describe("Misconfiguration", () => {

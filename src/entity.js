@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const { clauses, initChainState } = require("./clauses");
@@ -41,7 +41,7 @@ class Entity {
 
 	setIdentifier(type = "", identifier = "") {
 		if (!this.identifiers[type]) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: "${type}". Valid identifiers include: ${Object.keys(this.identifiers).join(", ")}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: "${type}". Valid identifiers include: ${utilities.commaSeparatedString(Object.keys(this.identifiers))}`);
 		} else {
 			this.identifiers[type] = identifier;
 		}
@@ -63,6 +63,44 @@ class Entity {
 			validations.isStringHasLength(item[this.identifiers.entity]) &&
 			validations.isStringHasLength(item[this.identifiers.version])
 		)
+	}
+
+	ownsLastEvaluatedKey(key = {}) {
+		let {pk, sk} = this.model.prefixes[""];
+		let hasSK = this.model.lookup.indexHasSortKeys[""];
+		let pkMatch = typeof key[pk.field] === "string" && key[pk.field].startsWith(pk.prefix);
+		if (pkMatch && hasSK) {
+			return typeof key[sk.field] === "string" && key[sk.field].startsWith(sk.prefix);
+		}
+		return pkMatch;
+	}
+
+	ownsPager(index, pager) {
+		if (pager === null) {
+			return false;
+		}
+		let tableIndex = "";
+		let tableIndexFacets = this.model.facets.byIndex[tableIndex];
+		let indexFacets = this.model.facets.byIndex[tableIndex];
+
+		// Unknown index
+		if (tableIndexFacets === undefined || indexFacets === undefined) {
+			return false;
+		}
+
+		// Should match all primary index facets
+		let matchesTableIndex = tableIndexFacets.all.every((facet) => {
+			return pager[facet.name] !== undefined;
+		});
+
+		// If the pager doesnt match the table index, exit early
+		if (!matchesTableIndex) {
+			return false;
+		}
+		//
+		return indexFacets.all.every((facet) => {
+			return pager[facet.name] !== undefined;
+		});
 	}
 
 	find(facets = {}) {
@@ -100,7 +138,7 @@ class Entity {
 				values: expressions.values || {},
 				expression: expressions.expression || ""
 			},
-			lastEvaluatedKeyRaw: true,
+			// lastEvaluatedKeyRaw: true,
 		};
 
 		let index = this.model.translations.collections.fromCollectionToIndex[collection];
@@ -202,6 +240,7 @@ class Entity {
 	}
 
 	async _exec(method, parameters) {
+		// console.log(JSON.stringify({method, parameters}));
 		return this.client[method](parameters).promise().catch(err => {
 			err.__isAWSError = true;
 			throw err;
@@ -301,7 +340,11 @@ class Entity {
 				if (request.PutRequest) {
 					return this.formatResponse(index, request.PutRequest, config);
 				} else if (request.DeleteRequest) {
-					return this._formatReturnPager(index, request.DeleteRequest.Key);
+					if (config.lastEvaluatedKeyRaw) {
+						return request.DeleteRequest.Key;
+					} else {
+						return this._formatKeysToItem(index, request.DeleteRequest.Key);
+					}
 				} else {
 					throw new Error("Unknown response format");
 				}
@@ -324,7 +367,7 @@ class Entity {
 					unprocessed.push(value);
 				} else {
 					unprocessed.push(
-						this._formatReturnPager(index, value)
+						this._formatKeysToItem(index, value)
 					);
 				}
 			}
@@ -344,14 +387,14 @@ class Entity {
 		}
 		try {
 			let results = {};
-			if (config.raw && !config.pager) {
+			if (config.raw && !config._isPagination) {
 				if (response.TableName) {
 					// a VERY hacky way to deal with PUTs
 					results = {};
 				} else {
 					results = response;
 				}
-			} else if (config.raw && config.pager) {
+			} else if (config.raw && (config._isPagination || config.lastEvaluatedKeyRaw)) {
 				return [response.LastEvaluatedKey || null, response];
 			} else {
 				if (response.Item) {
@@ -371,11 +414,8 @@ class Entity {
 			}
 
 
-			if (config.pager) {
-				let nextPage = response.LastEvaluatedKey || null;
-				if (!config.lastEvaluatedKeyRaw) {
-					nextPage = this._formatReturnPager(index, nextPage, results[results.length - 1]);
-				}
+			if (config._isPagination) {
+				let nextPage = this._formatReturnPager(config, index, response.LastEvaluatedKey, results[results.length - 1]);
 				results = [nextPage, results];
 			}
 
@@ -389,6 +429,18 @@ class Entity {
 				throw stackTrace;
 			}
 		}
+	}
+
+	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {
+		let page = lastEvaluatedKey || null;
+		if (config.pager !== Pager.raw) {
+			page = this._formatKeysToItem(index, page, lastReturned);
+			if (page && config.pager === Pager.named) {
+				page[this.identifiers.entity] = this.getName();
+				page[this.identifiers.version] = this.getVersion();
+			}
+		}
+		return page;
 	}
 
 	_getTableName() {
@@ -449,10 +501,11 @@ class Entity {
 		let {prefix, isCustom} = this.model.prefixes[index][keyType];
 		let {facets} = this.model.indexes[accessPattern][keyType];
 		let names = [];
+		let types = [];
 		let pattern = `^${this._regexpEscape(prefix)}`;
 		let labels = this.model.facets.labels[index];
 		for (let facet of facets) {
-			let { name } = this.model.schema.attributes[facet];
+			let { name, type } = this.model.schema.attributes[facet];
 			let label = labels[facet];
 			if (isCustom) {
 				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
@@ -460,6 +513,7 @@ class Entity {
 				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
 			}
 			names.push(name);
+			types.push(type);
 		}
 		pattern += "$";
 		let regex = RegExp(pattern);
@@ -472,14 +526,25 @@ class Entity {
 			}
 			for (let facet of facets) {
 				if (backupFacets[facet] === undefined) {
-					throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, "LastEvaluatedKey contains entity that does not match the entity used to query. Use {lastEvaulatedKeyRaw: true} option.");
+					throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, 'LastEvaluatedKey contains entity that does not match the entity used to query. Use {pager: "raw"} query option.');
 				} else {
 					results[facet] = backupFacets[facet];
 				}
 			}
 		} else {
 			for (let i = 0; i < names.length; i++) {
-				results[names[i]] = match[i+1]; 
+				let key = names[i];
+				let value = match[i+1];
+				let type = types[i];
+				switch (type) {
+					case "number":
+						value = parseFloat(value);
+						break;
+					case "boolean":
+						value = value === "true";
+						break;
+				}
+				results[key] = value;
 			}
 		}
 		return results;
@@ -499,7 +564,7 @@ class Entity {
 		return facets;
 	}
 
-	_formatReturnPager(index = "", lastEvaluated, lastReturned) {
+	_formatKeysToItem(index = "", lastEvaluated, lastReturned) {
 		if (lastEvaluated === null || typeof lastEvaluated !== "object" || Object.keys(lastEvaluated).length === 0) {
 			return lastEvaluated;
 		}
@@ -546,11 +611,12 @@ class Entity {
 			raw: false,
 			params: {},
 			page: {},
-			pager: false,
 			lastEvaluatedKeyRaw: false,
 			table: undefined,
 			concurrent: undefined,
-			parse: undefined
+			parse: undefined,
+			pager: Pager.named,
+			_isPagination: false
 		};
 
 		config = options.reduce((config, option) => {
@@ -566,12 +632,13 @@ class Entity {
 				config.raw = true;
 			}
 
-			if (option.pager) {
-				config.pager = true;
+			if (option._isPagination) {
+				config._isPagination = true;
 			}
 
 			if (option.lastEvaluatedKeyRaw === true) {
 				config.lastEvaluatedKeyRaw = true;
+				config.pager = Pager.raw;
 			}
 
 			if (!isNaN(option.limit)) {
@@ -590,6 +657,14 @@ class Entity {
 				config.parse = option.parse;
 			}
 
+			if (typeof option.pager === "string") {
+				if (Pager[option.pager] !== undefined) {
+					config.pager = option.pager;
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provider: "${option.pager}". Allowed values include ${utilities.commaSeparatedString(Object.keys(Pager))}.`)
+				}
+			}
+
 			config.page = Object.assign({}, config.page, option.page);
 			config.params = Object.assign({}, config.params, option.params);
 			return config;
@@ -604,7 +679,7 @@ class Entity {
 		}
 
 		if (Object.keys(config.page || {}).length) {
-			if (config.raw || config.lastEvaluatedKeyRaw) {
+			if (config.raw || config.pager === Pager.raw) {
 				parameters.ExclusiveStartKey = config.page;
 			} else {
 				parameters.ExclusiveStartKey = this._formatSuppliedPager(params.IndexName, config.page);
@@ -934,7 +1009,7 @@ class Entity {
 			let props = Object.keys(item);
 			let missing = require.filter((prop) => !props.includes(prop));
 			if (!missing) {
-				throw new e.ElectroError(e.ErrorCodes.MissingAttribute, `Item is missing attributes: ${missing.join(", ")}`);
+				throw new e.ElectroError(e.ErrorCodes.MissingAttribute, `Item is missing attributes: ${utilities.commaSeparatedString(missing)}`);
 			}
 		}
 
@@ -943,7 +1018,7 @@ class Entity {
 				throw new Error(`Invalid attribute ${prop}`);
 			}
 			if (restrict.length && !restrict.includes(prop)) {
-				throw new Error(`${prop} is not a valid attribute: ${restrict.join(", ")}`);
+				throw new Error(`${prop} is not a valid attribute: ${utilities.commaSeparatedString(restrict)}`);
 			}
 			if (prop === undefined || skip.includes(prop)) {
 				continue;
@@ -1096,7 +1171,7 @@ class Entity {
 	_makeComparisonQueryParams(index = "", comparison = "", filter = {}, pk = {}, sk = {}) {
 		let operator = Comparisons[comparison];
 		if (!operator) {
-			throw new Error(`Unexpected comparison operator "${comparison}", expected ${Object.values(Comparisons,).join(", ")}`);
+			throw new Error(`Unexpected comparison operator "${comparison}", expected ${utilities.commaSeparatedString(Object.values(Comparisons))}`);
 		}
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
 			index,
@@ -1133,7 +1208,7 @@ class Entity {
 			let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index]);
 			let missingFacets = incomplete.reduce((result, { missing }) => [...result, ...missing], []);
 			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets,
-				`Incomplete facets: Without the facets ${missingFacets.map(val => `'${val}'`).join(", ")} the following access patterns cannot be updated: ${incompleteAccessPatterns.filter((val) => val !== undefined).map(val => `'${val}'`).join(", ")} `,
+				`Incomplete facets: Without the facets ${utilities.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${utilities.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))} `,
 			);
 		}
 		return complete;
@@ -1342,7 +1417,7 @@ class Entity {
 	_expectFacets(obj = {}, properties = [], type = "key facets") {
 		let [incompletePk, missing, matching] = this._expectProperties(obj, properties);
 		if (incompletePk) {
-			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets, `Incomplete or invalid ${type} supplied. Missing properties: ${missing.join(", ")}`);
+			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets, `Incomplete or invalid ${type} supplied. Missing properties: ${utilities.commaSeparatedString(missing)}`);
 		} else {
 			return matching;
 		}
@@ -1377,11 +1452,13 @@ class Entity {
 		let keys = {
 			pk: {
 				prefix: "",
-				isCustom: tableIndex.customFacets.pk
+				isCustom: tableIndex.customFacets.pk,
+				field: tableIndex.pk.field
 			},
 			sk: {
 				prefix: "",
-				isCustom: tableIndex.customFacets.sk
+				isCustom: tableIndex.customFacets.sk,
+				field: tableIndex.sk ? tableIndex.sk.field : undefined,
 			}
 		};
 
@@ -1696,7 +1773,7 @@ class Entity {
 			if (Array.isArray(sk.facets)) {
 				let duplicates = pk.facets.filter(facet => sk.facets.includes(facet));
 				if (duplicates.length !== 0) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFacets, `The Access Pattern '${accessPattern}' contains duplicate references the facet(s): ${duplicates.map(facet => `'${facet}'`).join(", ")}. Facet attributes can only be used once within an index. If this leaves the Sort Key (sk) without any facets simply set this to be an empty array.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFacets, `The Access Pattern '${accessPattern}' contains duplicate references the facet(s): ${utilities.commaSeparatedString(duplicates)}. Facet attributes can only be used once within an index. If this leaves the Sort Key (sk) without any facets simply set this to be an empty array.`);
 				}
 			}
 
@@ -1797,7 +1874,7 @@ class Entity {
 
 		for (let [name, fn] of Object.entries(filters)) {
 			if (invalidFilterNames.includes(name)) {
-				throw new e.ElectroError(e.ErrorCodes.InvalidFilter, `Invalid filter name: ${name}. Filter cannot be named ${invalidFilterNames.map(name => `"${name}"`).join(", ")}`);
+				throw new e.ElectroError(e.ErrorCodes.InvalidFilter, `Invalid filter name: ${name}. Filter cannot be named ${utilities.commaSeparatedString(invalidFilterNames)}`);
 			} else {
 				normalized[name] = fn;
 			}

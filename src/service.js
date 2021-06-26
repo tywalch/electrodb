@@ -1,11 +1,12 @@
 const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
-const { ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
+const { Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const { getInstanceType, getModelVersion, applyBetaModelOverrides } = require("./util");
 const v = require("./validations");
 const e = require("./errors");
+const u = require("./util");
 
 const ConstructorTypes = {
 	beta: "beta",
@@ -169,7 +170,7 @@ class Service {
 		let name = hasAlias ? alias : entity.getName();
 
 		if (this.service.name.toLowerCase() !== entity.model.service.toLowerCase()) {
-			throw new Error(`Service name defined on joined instance, ${entity.model.service}, does not match the name of this Service: ${this.service.name}. Verify or update the service name on the Entity/Model to match the name defined on this service.`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Service name defined on joined instance, ${entity.model.service}, does not match the name of this Service: ${this.service.name}. Verify or update the service name on the Entity/Model to match the name defined on this service.`);
 		}
 
 		if (this._getTableName()) {
@@ -196,30 +197,52 @@ class Service {
 		return this;
 	}
 
-	cleanseRetrievedData(collection = "", entities, data = {}, config = {}) {
-		if (config.raw) {
-			return data;
+	_setClient(client) {
+		if (client !== undefined) {
+			for (let entity of Object.values(this.entities)) {
+				entity._setClient(client);
+			}
 		}
-		data.Items = data.Items || [];
-		let results = {};
-		let entityIdentifiers = [];
+	}
+
+	_getEntityIdentifiers(entities) {
+		let identifiers = [];
 		for (let alias of Object.keys(entities)) {
 			let entity = entities[alias];
 			let name = entity.model.entity;
 			let version = entity.model.version;
-			results[alias] = [];
-			entityIdentifiers.push({
+			identifiers.push({
 				name,
 				alias,
 				version,
-				nameIdentifier: entity.identifiers.entity,
-				versionIdentifier: entity.identifiers.version
+				entity,
+				nameField: entity.identifiers.entity,
+				versionField: entity.identifiers.version
 			});
+		}
+		return identifiers;
+	}
+
+	cleanseRetrievedData(collection = "", entities, data = {}, config = {}) {
+		if (config.raw) {
+			if (config._isPagination) {
+				return [data.LastEvaluatedKey, data];
+			} else {
+				return data;
+			}
+		}
+
+		data.Items = data.Items || [];
+		let index = this.collectionSchema[collection].index;
+		let results = {};
+		let identifiers = this._getEntityIdentifiers(entities);
+		for (let {alias} of identifiers) {
+			results[alias] = [];
 		}
 		for (let record of data.Items) {
 			let entityAlias;
-			for (let {name, version, nameIdentifier, versionIdentifier, alias} of entityIdentifiers) {
-				if (record[nameIdentifier] !== undefined && record[nameIdentifier] === name && record[versionIdentifier] !== undefined && record[versionIdentifier] === version) {
+			for (let {name, version, nameField, versionField, alias} of identifiers) {
+				if (record[nameField] !== undefined && record[nameField] === name && record[versionField] !== undefined && record[versionField] === version) {
 					entityAlias = alias;
 					break;
 				}
@@ -227,12 +250,111 @@ class Service {
 			if (!entityAlias) {
 				continue;
 			}
-			let index = this.collectionSchema[collection].index;
-			results[entityAlias].push(
-				this.collectionSchema[collection].entities[entityAlias].formatResponse(index, {Item: record}, config)
-			);
+
+			// pager=false because we don't want the entity trying to parse the lastEvaluatedKey
+			let items = this.collectionSchema[collection].entities[entityAlias].formatResponse(index, {Item: record}, {...config, pager: false});
+			results[entityAlias].push(items);
 		}
-		return results;
+
+		if (config._isPagination) {
+			let page = this._formatReturnPager(config, index, data.LastEvaluatedKey, data.Items[data.Items.length - 1]);
+			return [page, results];
+		} else {
+			return results;
+		}
+	}
+
+	findKeyOwner(lastEvaluatedKey) {
+		return Object.values(this.entities)
+			.find((entity) => entity.ownsLastEvaluatedKey(lastEvaluatedKey));
+	}
+
+	findItemPagerOwner(collection, pager = {}) {
+		if (this.collectionSchema[collection] === undefined) {
+			throw new Error("Invalid collection")
+		}
+		let matchingEntities = [];
+		if (pager === null) {
+			return matchingEntities;
+		}
+		for (let entity of Object.values(this.collectionSchema[collection].entities)) {
+			if (entity.ownsPager(this.collectionSchema[collection].index, pager)) {
+				matchingEntities.push(entity);
+			}
+		}
+		return matchingEntities;
+	}
+
+	findNamedPagerOwner(pager = {}) {
+		let identifiers = this._getEntityIdentifiers(this.entities);
+		for (let identifier of identifiers) {
+			let hasCorrectFieldProperties = typeof pager[identifier.nameField] === "string" && typeof pager[identifier.versionField] === "string";
+			let hasMatchingFieldValues = pager[identifier.nameField] === identifier.name && pager[identifier.versionField] === identifier.version;
+			if (hasCorrectFieldProperties && hasMatchingFieldValues) {
+				return identifier.entity;
+			}
+		}
+	}
+
+	expectPagerOwner(type, collection, pager) {
+		if (type === Pager.raw) {
+			return Object.values(this.collectionSchema[collection].entities)[0];
+		} else if (type === Pager.named || type === undefined) {
+			let owner = this.findNamedPagerOwner(pager);
+			if (owner === undefined) {
+				throw new e.ElectroError(e.ErrorCodes.NoOwnerForPager, "Supplied Pager does not resolve to Entity within Service");
+			}
+			return owner;
+		} else if (type === Pager.item) {
+			let owners = this.findItemPagerOwner(collection, pager);
+			if (owners.length === 1) {
+				return owners[0];
+			} else {
+				throw new e.ElectroError(e.ErrorCodes.PagerNotUnique, "Supplied Pager did not resolve to single Entity");
+			}
+		} else {
+			throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provider: "${pager}". Allowed values include ${u.commaSeparatedString(Object.keys(Pager))}.`)
+		}
+	}
+
+	findPagerIdentifiers(collection, pager = {}) {
+		if (this.collectionSchema[collection] === undefined) {
+			throw new Error("Invalid collection");
+		}
+		let matchingIdentifiers = [];
+		if (pager === null) {
+			return matchingIdentifiers;
+		}
+		for (let entity of Object.values(this.collectionSchema[collection].entities)) {
+			if (entity.ownsPager(this.collectionSchema[collection].index, pager)) {
+				matchingIdentifiers.push({
+					[entity.identifiers.entity]: entity.getName(),
+					[entity.identifiers.version]: entity.getVersion(),
+				});
+			}
+		}
+		return matchingIdentifiers;
+	}
+
+	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {
+		if (config.pager === "raw") {
+			return lastEvaluatedKey;
+		} else if (!lastEvaluatedKey) {
+			return null;
+		} else {
+			let entity = this.findKeyOwner(lastEvaluatedKey);
+			if (!entity) {
+				return lastReturned !== undefined
+					? this._formatReturnPager(config, index, lastReturned)
+					: null
+			}
+			let page = entity._formatKeysToItem(index, lastEvaluatedKey);
+			if (config.pager === "named") {
+				page[entity.identifiers.entity] = entity.getName();
+				page[entity.identifiers.version] = entity.getVersion();
+			}
+			return page;
+		}
 	}
 
 	_getTableName() {
@@ -246,19 +368,39 @@ class Service {
 		}
 	}
 
-	_makeCollectionChain(name = "", attributes = {}, clauses = {}, expressions = {}, entities = {}, entity = {}, facets = {}) {
+	_makeCollectionChain(name = "", attributes = {}, initialClauses = {}, expressions = {}, entities = {}, entity = {}, facets = {}) {
 		let filterBuilder = new FilterFactory(attributes, FilterTypes);
 		let whereBuilder = new WhereFactory(attributes, FilterTypes);
+
+		let pageClause = {...initialClauses.page};
+		let pageAction = initialClauses.page.action;
+		pageClause.action = (entity, state, page = null, options = {}) => {
+			try {
+				if (page === null) {
+					return pageAction(entity, state, page, options);
+				}
+				let owner = this.expectPagerOwner(options.pager, name, page);
+				return pageAction(owner, state, page, options);
+			} catch(err) {
+				return Promise.reject(err);
+			}
+		}
+		let clauses = {...initialClauses, page: pageClause};
+
 		clauses = filterBuilder.injectFilterClauses(clauses);
 		clauses = whereBuilder.injectWhereClauses(clauses);
+
 		let options = {
 			// expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
 			parse: (options, data) => {
 				return this.cleanseRetrievedData(name, entities, data, options);
 			}
-		}
+		};
+
 		return entity.collection(name, clauses, facets, options);
 	}
+
+
 
 	_validateCollectionDefinition(definition = {}, providedIndex = {}) {
 		let indexMatch = definition.index === providedIndex.index;

@@ -2297,28 +2297,30 @@ let stores = MallStores.query
 
 ### Page
 
-> As of September 29th 2020 the `.page()` now returns the facets that make up the `ExclusiveStartKey` instead of the `ExclusiveStartKey` itself. To get back only the `ExclusiveStartKey`, add the flag `exclusiveStartKeyRaw` to your query options. If you treated this value opaquely no changes are needed, or if you used the `raw` flag. 
+> As of September 29th 2020 the `.page()` now returns the facets that make up the `ExclusiveStartKey` instead of the `ExclusiveStartKey` itself. To get back only the `ExclusiveStartKey`, add the [query option](#query-options) `{pager: "raw"}` to your query options. If you treated this value opaquely no changes are needed, or if you used the `raw` flag. 
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tuple. 
 
-The first element for [Entity](#entities) page query is the "page": an object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
+The first element for a page query is the "pager": an object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
 
-The first element for [Collection](#collections) page query is the `ExclusiveStartKey` as it was returned by the DynamoDB client.
+The "pager" includes the associated entity's Identifiers.
 
-> Note: It is *highly recommended* to use the `lastEvaluatedKeyRaw` flag when using `.page()` in conjunction with scans. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+> Note: It is *highly recommended* to use the [query option](#query-options) `pager: "raw""` flag when using `.page()` with `scan` operations. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
 
 The second element is the results of the query, exactly as it would be returned through a `query` operation.
 
 > Note: When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
 
+#### Entity Pagination
+
 ```javascript
-let [page, stores] = await MallStores.query
+let [next, stores] = await MallStores.query
 	.leases({ mallId })
-	.page();
+	.page(); // no "pager" passed to `.page()`
 
 let [pageTwo, moreStores] = await MallStores.query
 	.leases({ mallId })
-	.page(page, {});
+	.page(next, {}); // the "pager" from the first query (`next`) passed to the second query
 
 // page:
 // { 
@@ -2326,6 +2328,8 @@ let [pageTwo, moreStores] = await MallStores.query
 //   mallId: "EastPointe", 
 //   buildingId: "BuildingA1", 
 //   unitId: "B47"
+//   __edb_e__: "MallStore",
+//   __edb_v__: "version" 
 // }
 
 // stores
@@ -2351,6 +2355,88 @@ let [pageTwo, moreStores] = await MallStores.query
 //   category: 'food/coffee',
 //   rent: '0.00'
 // }]
+```
+
+#### Service Pagination
+Pagination with services is also possible. Similar to [Entity Pagination](#entity-pagination), calling the `.page()` method returns a `[pager, results]` tuple. Also similar to pagination on Entities, the pager object returned by default is a deconstruction of the returned LastEvaluatedKey.     
+
+#### Pager Query Options
+
+The `.page()` method also accepts [Query Options](#query-options) just like the `.go()` and `.params()` methods. Unlike those methods, however, the `.page()` method accepts Query Options as the _second_ parameter (the first parameter is reserved for the "pager").
+
+A notable Query Option, that is available only to the `.page()` method, is an option called `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
+
+The three options for the query option `pager` are as follows:
+
+```javascript
+// LastEvaluatedKey
+{
+  pk: '$taskapp#country_united states of america#state_oregon',
+  sk: '$offices_1#city_power#zip_34706#office_mobile branch',
+  gsi1pk: '$taskapp#office_mobile branch',
+  gsi1sk: '$workplaces#offices_1'
+}
+```
+
+**"named" (default):** By default, ElectroDB will deconstruct the LastEvaluatedKey returned by the DocClient into it's individual facet parts. The "named" option, chosen by default, also includes the Entity's column "identifiers" -- this is useful with Services where destructured pagers may be identical between more than one Entity in that Service.      
+
+```javascript
+// {pager: "named"} | {pager: undefined} 
+{  
+  "city": "power",
+  "country": "united states of america",
+  "state": "oregon",
+  "zip": "34706",
+  "office": "mobile branch",
+  "__edb_e__": "offices",
+  "__edb_v__": "1"
+}
+```
+
+**"item":**  Similar to "named", however without the Entity's "identifiers". If two Entities with a service have otherwise identical index definitions, using the "item" pager option can result in errors while paginating a Collection. If this is not a concern with your Service, or you are paginating with only an Entity, this option could be preferable because it has fewer properties.       
+
+```javascript
+// {pager: "item"} 
+{  
+  "city": "power",
+  "country": "united states of america",
+  "state": "oregon",
+  "zip": "34706",
+  "office": "mobile branch",
+}
+```
+
+**"raw":** The `"raw"` option returns the LastEvaluatedKey as it was returned by the DynamoDB DocClient. 
+
+```javascript
+// {pager: "raw"} 
+{
+  pk: '$taskapp#country_united states of america#state_oregon',
+  sk: '$offices_1#city_power#zip_34706#office_mobile branch',
+  gsi1pk: '$taskapp#office_mobile branch',
+  gsi1sk: '$workplaces#offices_1'
+}
+```
+  
+##### Pagination Example
+
+Simple pagination example:
+
+```javascript
+async function getAllStores(mallId) {
+  let stores = [];
+  let pager = null;
+
+  do {
+    let [next, results] = await MallStores.query
+      .leases({ mallId })
+      .page(pager);
+    stores = [...stores, ...results]; 
+    pager = next;
+  } while(pager !== null);
+  
+  return stores;
+} 
 ```
 
 ## Query Examples
@@ -2431,21 +2517,21 @@ By default, **ElectroDB** enables you to work with records as the names and prop
     table?: string
     raw?: boolean
     includeKeys?: boolean
-    lastEvaluatedKeyRaw?: boolean	
+    pager?: "raw" | "named" | "item"	
     originalErr?: boolean
     concurrent?: number
 };
 ```
 
-| Option | Description |  
-| ----------- | ----------- |  
-| params  | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
-| table | Use a different table than the one defined in the [Service Options](#service-options) |
-| raw  | Returns query results as they were returned by the docClient.  
-| includeKeys | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
-| lastEvaluatedKeyRaw | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more detail about this in the sections for [Pages](#page), [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
-| originalErr | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
-| concurrent | (default: 1) When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
+| Option      | Default              | Description |  
+| ----------- | :------------------: | ----------- |  
+| params      | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
+| table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options) |
+| raw         | `false`              | Returns query results as they were returned by the docClient.  
+| includeKeys | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
+| pager       | `"named"`            | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more detail about this in the sections for [Pager Query Options](#pager-query-options), [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
+| originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
+| concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
 
 # Errors:
 | Error Code | Description |
@@ -2675,20 +2761,7 @@ Tables can be defined on the [Service Options](#service-options) object when you
 When performing a bulk operation ([Batch Get](#batch-get), [Batch Delete Records](#batch-write-delete-records), [Batch Put Records](#batch-write-put-records)) you can pass a [Query Options](#query-options) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 *What to do about it:*   
-Expect this error only if youre providing a concurrency value. Double check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.                  
-
-### Invalid Last Evaluated Key
-*Code: 4002*
-
-*Why this occurred:*
-_Likely_ you were were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
-   
-*What to do about it:*
-It is highly recommended to use the exclusiveStartKeyRaw flag when using .page() with scans. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
-```javascript
-// example
-model.scan.page({exclusiveStartKeyRaw: true});
-```
+Expect this error only if youre providing a concurrency value. Double check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### aws-error
 *Code: 4001*
@@ -2699,9 +2772,39 @@ DynamoDB did not like something about your query.
 *What to do about it:*
 By default ElectroDB tries to keep the stack trace close to your code, ideally this can help you identify what might be going on. A tip to help with troubleshooting: use `.params()` to get more insight into how your query is converted to DocClient params.
 
- 
+### Unknown Errors
 
-### Unknown Error
+### Invalid Last Evaluated Key
+*Code: 5003*
+
+*Why this occurred:*
+_Likely_ you were were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
+
+*What to do about it:*
+It is highly recommended to use the query option, `{pager: "raw"}`, when using the .page() method with *scans*. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+```javascript
+// example
+myModel.scan.page(null, {pager: "raw"});
+```
+
+### No Owner For Pager
+*Code: 5004*
+
+*Why this occurred:*
+When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied pager. This error can occur when you supply an invalid pager, or when you are using a different [pager option](#pager-query-options) to a pager than what was used when retrieving it. Consult the section on [Pagination](#page) to learn more.  
+
+*What to do about it:*
+If you are sure the pager you are passing to `.page()` is the same you received from `.page()` this could be an unexpected error. To mitigate the issue use the Query Option `{pager: "raw"}` and please open a support issue.
+
+### Pager Not Unique
+
+*Code: 5005*
+
+*Why this occurred:*
+When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied [pager option](#pager-query-options). This error can occur when you supply a pager that resolves to more than one Entity. This can happen if your entities share the same facets for the index you are querying on, and you are using the Query Option `{pager: "item""}`.
+
+*What to do about it:*
+Because this scenario is possible with otherwise well considered/thoughtful entity models, the default `pager` type used by ElectroDB is `"named"`. To avoid this error, you will need to use either the `"raw"` or `"named"` [pager options](#pager-query-options) for any index that could result in an ambiguous Entity owner.
 
 # Examples
 
