@@ -915,7 +915,7 @@ When using indexes without Sort Keys, that should be expressed as an index *with
 ```
 
 ### Indexes With Sort Keys
-When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the Sort Key in your model, but it does exist on the table, simply use an empty for the `composite` property. An empty array is still very useful useful, and opens the door to more query opportunities and access patterns like [collections](#collections).
+When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the Sort Key in your model, but it does exist on the table, simply use an empty for the `composite` property. An empty array is still very useful, and opens the door to more query opportunities and access patterns like [collections](#collections).
 
 ```javascript
 // ElectroDB interprets as index *having* SK, but this model doesnt assign any composite attributes to it.
@@ -1651,7 +1651,7 @@ const MallStore = new Entity(schema, {table: "StoreDirectory"});
 #### Partition Key Composite Attributes
 All queries require (*at minimum*) the **Composite Attributes** included in its defined **Partition Key**. **Composite Attributes** you define on the **Sort Key** can be partially supplied, but must be supplied in the order they are defined.
 
-> *Important: Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern***. This is because your your composite attributes from a concatinated string, and if supplied out of order, will not resolve to a complete string.
+> *Important: Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern***. This is because composite attributes are used to form a concatenated key string, and if attributes supplied out of order, it is not possible to fill the gaps in that concatenation.
 
 ```javascript
 const MallStore = new Entity({
