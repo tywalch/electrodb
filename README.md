@@ -17,7 +17,7 @@
 
 ## Features  
 - [**Attribute Schema Enforcement**](#attributes) - Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
-- [**Easily Compose Hierarchical Access Patterns**](#composite attributes) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
+- [**Easily Compose Hierarchical Access Patterns**](#composite-attributes) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
 - [**Single Table Entity Segregation**](#model) - Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
 - [**Simplified Sort Key Condition Querying**](#building-queries) - Write efficient sort key queries by easily building compose keys.
 - [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
@@ -235,7 +235,7 @@ Previously it was possible to generate type definition files (`.d.ts`) for you M
 As of writing this, this functionality is still a work in progress, and enforcement of some of ElectroDB's query constraints have still not been written into the type checks. Most notably are the following constraints not yet enforced by the type checker, but are enforced at query runtime:
 
 - Put/Create/Update/Patch operations that partially impact index composite attributes are not statically typed. When performing a `put` or `update` type operation that impacts a composite attribute of a secondary index, ElectroDB performs a check at runtime to ensure all composite attributes of that key are included. This is detailed more in the section [Composite Attribute and Index Considerations](#composite attribute-and-index-considerations). 
-- Sort Key Composite Attribute order is not strongly typed. Sort Key Composite Attributes must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about composite attribute ordering see the section on [Composite Attributes](#composite attributes).
+- Sort Key Composite Attribute order is not strongly typed. Sort Key Composite Attributes must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about composite attribute ordering see the section on [Composite Attributes](#composite-attributes).
 - Use of the `params` method does not yet return strict types.
 - Use of the `raw` or `includeKeys` query options do not yet impact the returned types.
 
@@ -849,10 +849,10 @@ See: [Attribute Watching](#attribute-watching)
 The `validation` property allows for multiple function/type signatures. Here the different combinations *ElectroDB* supports:
 | signature | behavior |
 | --------- | -------- |
-| `Regexp`  | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute |
-| `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. |
-| `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid. |
-| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |
+| `Regexp`  | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute 
+| `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. 
+| `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid. 
+| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query 
 
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
@@ -880,16 +880,18 @@ indexes: {
 }
 ```
 
-| Property | Type | Required | Description |
-| -------- | :--: | :--: | ----------- |
-| `pk`  | `object` | yes | Configuration for the pk of that index or table |
-`pk.composite attributes` | `boolean` | no | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite attributes) below for more on this functionality). |  
-`pk.field` | `string` | yes | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. | 
-| `sk`  | `object` | no | Configuration for the sk of that index or table |  
-`sk.composite attributes` | `array | string` | no | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite attributes) below for more on this functionality). |  
-`sk.field` | `string` | yes | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. |  
-`index` | `string` | no | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index. |
-`collection` | `string` | no | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality). 
+| Property       | Type             | Required | Description |
+| -------------- | :--------------: | :------: | ----------- |
+| `pk`           | `object`         | yes      | Configuration for the pk of that index or table
+| `pk.composite` | `array | string` | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `pk.template`  | `string`         | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
+| `pk.field`     | `string`         | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.  
+| `sk`           | `object`         | no       | Configuration for the sk of that index or table 
+| `sk.composite` | `array | string` | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `sk.template`  | `string`         | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
+| `sk.field`     | `string`         | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. 
+| `index`        | `string`         | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
+| `collection`   | `string`         | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality). 
 
 ### Indexes Without Sort Keys
 When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail. 
@@ -1152,7 +1154,7 @@ const schema = {
 
 ## Composite Attribute and Index Considerations
 
-As described in the above two sections ([Composite Attributes](#composite attributes), [Indexes](#indexes)), ElectroDB builds your keys using the attribute values defined in your model and provided on your query. Here are a few considerations to take into account when thinking about how to model your indexes:
+As described in the above two sections ([Composite Attributes](#composite-attributes), [Indexes](#indexes)), ElectroDB builds your keys using the attribute values defined in your model and provided on your query. Here are a few considerations to take into account when thinking about how to model your indexes:
 
 - Your table's primary Partition and Sort Keys cannot be changed after a record has been created. Be mindful of **not** to use Attributes that have values that can change as composite attributes for your primary table index.
 
@@ -2244,7 +2246,7 @@ await StoreLocations.find({
 After invoking the **Access Pattern** with the required **Partition Key** **Composite Attributes**, you can now choose what **Sort Key Composite Attributes** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
 
 ### Access Pattern Queries
-When you define your [indexes](#indexes) in your model, you are defining the Access Patterns of your entity. The [composite attributes](#composite attributes) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
+When you define your [indexes](#indexes) in your model, you are defining the Access Patterns of your entity. The [composite attributes](#composite-attributes) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
 
 Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this to multiply our available access patterns and use the Sort Key Operations: `begins`, `between`, `lt`, `lte`, `gt`, and `gte`. These queries are more performant and cost effective than filters. The costs associated with DynamoDB directly correlate to how effectively you leverage Sort Key Operations. 
 
