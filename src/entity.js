@@ -400,16 +400,22 @@ class Entity {
 				if (response.Item) {
 					if (this.ownsItem(response.Item)) {
 						results = this.model.schema.formatItemForRetrieval(response.Item, config);
+						if (Object.keys(results).length === 0) {
+							results = null;
+						}
 					}
 				} else if (response.Items) {
 					results = [];
 					for (let item of response.Items) {
 						if (this.ownsItem(item)) {
-							results.push(
-								this.model.schema.formatItemForRetrieval(item, config)
-							);
+							let record = this.model.schema.formatItemForRetrieval(item, config);
+							if (Object.keys(record).length > 0) {
+								results.push(record);
+							}
 						}
 					}
+				} else {
+					results = null;
 				}
 			}
 

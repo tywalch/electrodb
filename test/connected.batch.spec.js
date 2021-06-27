@@ -235,9 +235,9 @@ describe("BatchWrite", async () => {
       MallStores.get(record2).go(),
       MallStores.get(record3).go(),
     ]);
-    expect(getRecord1).to.be.an("object").that.is.empty;
+    expect(getRecord1).to.be.null;
     expect(getRecord2).to.be.deep.equal(record2);
-    expect(getRecord3).to.be.an("object").that.is.empty;
+    expect(getRecord3).to.be.null;
   }).timeout(5000);
 });
 

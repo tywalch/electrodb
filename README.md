@@ -3565,6 +3565,10 @@ This change stems from the fact the `facets` is already a defined term in the Dy
 
 2. Allowing for the `composite` array to be supplied independently will allow for Composite Attributes to remained typed even when using a Composite Attribute Template.
 
+## Get Method to Return null
+
+1.0.0 brings back a `null` response from the `get()` method when a record could not be found. Prior to `1.0.0` ElectroDB returned an empty object.
+
 # Coming Soon
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
 - Append/Add/Subtract/Remove updates capabilities

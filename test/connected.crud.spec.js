@@ -154,6 +154,10 @@ describe("Entity", async () => {
 		let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		let building = "BuildingZ";
 		let unit = "G1";
+		it("Should return null when item retrieved does not exist", async () => {
+			let data = await MallStores.get({sector: "does_not_exist", id: "also_does_not_exist"}).go();
+			expect(data).to.be.null;
+		})
 		it("Should return the created item", async () => {
 			let putOne = await MallStores.put({
 				sector,
@@ -275,7 +279,7 @@ describe("Entity", async () => {
 			let updatedStore = await MallStores.update(secondStore)
 				.set({ rent: newRent })
 				.go();
-			expect(updatedStore).to.deep.equal({});
+			expect(updatedStore).to.be.null;
 			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
@@ -614,7 +618,7 @@ describe("Entity", async () => {
 			let updatedStore = await MallStores.update(secondStore)
 				.set({ rent: newRent })
 				.go();
-			expect(updatedStore).to.deep.equal({});
+			expect(updatedStore).to.be.null;
 			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
@@ -928,7 +932,7 @@ describe("Entity", async () => {
 			await sleep(150);
 			let recordNoLongerExists = await record.get({ prop1, prop2 }).go();
 			expect(!!Object.keys(recordExists).length).to.be.true;
-			expect(!!Object.keys(recordNoLongerExists).length).to.be.false;
+			expect(recordNoLongerExists).to.be.null;
 		});
 	});
 
@@ -1006,7 +1010,7 @@ describe("Entity", async () => {
 				.update({ date, id })
 				.set({ prop1: updatedProp1 })
 				.go();
-			expect(updatedRecord).to.deep.equal({});
+			expect(updatedRecord).to.be.null;
 			let getUpdatedRecord = await db.get({ date, id }).go();
 			expect(getUpdatedRecord).to.deep.equal({
 				id,
@@ -3655,7 +3659,7 @@ describe("Entity", async () => {
 				prop4: "def"
 			};
 
-			let data = {};
+			let data = null;
 
 			let putResult = await entity.put(item).go();
 
@@ -3670,7 +3674,7 @@ describe("Entity", async () => {
 
 			expect(putResult).to.deep.equal(data);
 			expect(getResponse).to.deep.equal(data);
-			expect(queryResponse).to.deep.equal([data]);
+			expect(queryResponse).to.deep.equal([]);
 		});
 	})
 });

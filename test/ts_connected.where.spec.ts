@@ -299,7 +299,7 @@ describe("Where Clause Queries", async () => {
             .set({dangerous: true})
             .where(({dangerous}, {notExists}) => notExists(dangerous))
             .go();
-        expect(results).to.be.empty;
+        expect(results).to.be.null;
         let after = await WhereTests.get(penRow).go(consistentRead);
         expect(after.dangerous).to.be.true;
         let doesExist = await WhereTests.patch(penRow)
