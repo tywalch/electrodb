@@ -5537,4 +5537,114 @@ describe("Entity", () => {
 			});
 		});
 	});
+	describe("Numeric and boolean keys", () => {
+		it("Should create keys with primitive types other than strings if specified as a template without prefix", () => {
+			const entity = new Entity({
+				model: {
+					entity: "nonstring_indexes",
+					service: "tests",
+					version: "1"
+				},
+				attributes: {
+					number1: {
+						type: "number"
+					},
+					number2: {
+						type: "number"
+					},
+					number3: {
+						type: "number"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: ":number1",
+						},
+						sk: {
+							field: "sk",
+							template: ":number2"
+						}
+					},
+					anotherRecord: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							template: ":number2"
+						},
+						sk: {
+							field: "gsi1sk",
+							template: ":number1"
+						}
+					},
+					yetAnotherRecord: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							template: ":number1"
+						}
+					},
+					andAnotherOne: {
+						index: "gsi3",
+						pk: {
+							field: "gsi3pk",
+							template: ":number2"
+						}
+					}
+				}
+			}, {table: "electro_nostringkeys"});
+			let putParams = entity.put({number1: 55, number2: 66}).params();
+			let getParams = entity.get({number1: 55, number2: 66}).params();
+			let deleteParams = entity.delete({number1: 55, number2: 66}).params();
+			let updateParams = entity.update({number1: 55, number2: 66}).set({number3: 77}).params();
+			let queryParams = entity.query.record({number1: 55}).params();
+			expect(putParams).to.deep.equal({
+				Item: {
+					number1: 55,
+					number2: 66,
+					pk: 55,
+					sk: 66,
+					gsi1pk: 66,
+					gsi1sk: 55,
+					gsi2pk: 55,
+					gsi3pk: 66,
+					__edb_e__: 'nonstring_indexes',
+					__edb_v__: '1'
+				},
+				TableName: 'electro_nostringkeys'
+			});
+
+			expect(getParams).to.deep.equal({
+				Key: {
+					pk: 55,
+					sk: 66
+				},
+				TableName: 'electro_nostringkeys'
+			});
+
+			expect(queryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk',
+				TableName: 'electro_nostringkeys',
+				ExpressionAttributeNames: { '#pk': 'pk' },
+				ExpressionAttributeValues: { ':pk': 55 }
+			});
+
+			expect(deleteParams).to.deep.equal({
+				Key: {
+					pk: 55,
+					sk: 66
+				},
+				TableName: 'electro_nostringkeys'
+			});
+
+			expect(updateParams).to.deep.equal({
+				UpdateExpression: 'SET #number3 = :number3',
+				ExpressionAttributeNames: { '#number3': 'number3' },
+				ExpressionAttributeValues: { ':number3': 77 },
+				TableName: 'electro_nostringkeys',
+				Key: { pk: 55, sk: 66 }
+			});
+		});
+	});
 });

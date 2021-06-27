@@ -1150,7 +1150,7 @@ class Entity {
 	_makeBeginsWithQueryParams(options, index, filter, pk, sk) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
 		let KeyConditionExpression = "#pk = :pk";
-		if (this.model.lookup.indexHasSortKeys[index]) {
+		if (this.model.lookup.indexHasSortKeys[index] && keyExpressions.ExpressionAttributeNames["#sk1"] !== undefined) {
 			KeyConditionExpression = `${KeyConditionExpression} and begins_with(#sk1, :sk1)`;
 		}
 		let customExpressions = {
@@ -1542,9 +1542,10 @@ class Entity {
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
-				sk.push(
-					this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index], {excludeLabelTail: true}),
-				);
+				let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index], {excludeLabelTail: true});
+				if (sortKey !== undefined) {
+					sk.push(sortKey);
+				}
 			}
 		}
 		return { pk, sk };
@@ -1565,16 +1566,28 @@ class Entity {
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
-				sk.push(
-					this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index]),
-				);
+				let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index]);
+				if (sortKey !== undefined) {
+					sk.push(sortKey);
+				}
 			}
 		}
 		return { pk, sk };
 	}
 
+	_isNumericKey(isCustom, facets = [], labels = {}) {
+		let attribute = this.model.schema.attributes[facets[0]];
+		let isSingleComposite = facets.length === 1;
+		let hasNoLabels = !labels[facets[0]];
+		let facetIsNonStringPrimitive = attribute && attribute.type === "number";
+		return isCustom && isSingleComposite && hasNoLabels && facetIsNonStringPrimitive
+	}
+
 	/* istanbul ignore next */
 	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = {}, {excludeLabelTail} = {}) {
+		if (this._isNumericKey(isCustom, facets, labels)) {
+			return supplied[facets[0]];
+		}
 		let key = prefix;
 		for (let i = 0; i < facets.length; i++) {
 			let facet = facets[i];

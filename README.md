@@ -1116,6 +1116,40 @@ An example of using `template` while also using `composite`:
 }
 ```
 
+## Numeric Keys
+
+If you have an index where the Partition or Sort Keys are expected to be numeric values, you can accomplish this with the `template` property on the index that requires numeric keys. Define the attribute used in the composite template as type "number", and then create a template string with only the attribute's name. For example, this model defines both the Partition and Sort Key as numeric:
+
+```javascript
+const schema = {
+  model: {
+    entity: "numeric",
+    service: "example",
+    version: "1"
+  },
+  attributes: {
+    number1: {
+      type: "number" // defined as number
+    },
+    number2: {
+      type: "number"  // defined as number
+    }
+  },
+  indexes: {
+    record: {
+      pk: {
+        field: "pk",
+        template: ":number1" // will build PK as numeric value 
+      },
+      sk: {
+        field: "sk",
+        template: ":number2" // will build SK as numeric value
+      }
+    }
+  }
+}
+```
+
 ## Composite Attribute and Index Considerations
 
 As described in the above two sections ([Composite Attributes](#composite attributes), [Indexes](#indexes)), ElectroDB builds your keys using the attribute values defined in your model and provided on your query. Here are a few considerations to take into account when thinking about how to model your indexes:

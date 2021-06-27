@@ -3676,5 +3676,74 @@ describe("Entity", async () => {
 			expect(getResponse).to.deep.equal(data);
 			expect(queryResponse).to.deep.equal([]);
 		});
-	})
+	});
+	describe("Numeric and boolean keys", () => {
+		it("Should create keys with primitive types other than strings if specified as a template without prefix", async () => {
+			const entity = new Entity({
+				model: {
+					entity: "nonstring_indexes",
+					service: "tests",
+					version: "1"
+				},
+				attributes: {
+					number1: {
+						type: "number"
+					},
+					number2: {
+						type: "number"
+					},
+					number3: {
+						type: "number"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: ":number1",
+						},
+						sk: {
+							field: "sk",
+							template: ":number2"
+						}
+					},
+					anotherRecord: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							template: ":number2"
+						},
+						sk: {
+							field: "gsi1sk",
+							template: ":number1"
+						}
+					},
+					yetAnotherRecord: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							template: ":number1"
+						}
+					},
+					andAnotherOne: {
+						index: "gsi3",
+						pk: {
+							field: "gsi3pk",
+							template: ":number2"
+						}
+					}
+				}
+			}, {table: "electro_nostringkeys", client});
+			let putRecord = await entity.put({number1: 55, number2: 66}).go();
+			let getRecord = await entity.get({number1: 55, number2: 66}).go();
+			let updateRecord = await entity.update({number1: 55, number2: 66}).set({number3: 77}).go();
+			let queryRecord = await entity.query.record({number1: 55}).go();
+			let deleteRecord = await entity.delete({number1: 55, number2: 66}).go();
+			expect(putRecord).to.deep.equal({ number1: 55, number2: 66 });
+			expect(getRecord).to.deep.equal({ number1: 55, number2: 66 });
+			expect(queryRecord).to.deep.equal([{ number1: 55, number2: 66, number3: 77 }]);
+			expect(updateRecord).to.be.null;
+			expect(deleteRecord).to.be.null;
+		});
+	});
 });
