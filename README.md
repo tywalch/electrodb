@@ -7,7 +7,7 @@
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb-drk.png?raw=true)
 ***ElectroDB*** is a dynamodb library to ease the use of having multiple entities and complex hierarchical relationships in a single dynamodb table. 
 
-*This library is a work in progress, please submit issues/feedback or reach out on twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
+*This library is a work in progress, please submit issues/feedback or reach out on Twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
 
 ------------
 
@@ -80,7 +80,7 @@ StoreLocations.query
     + [Exported Types](#exported-types)
       - [EntityItem](#entityitem)
       - [CreateEntityItem](#createentityitem)
-      - [CreateEntityItem](#createentityitem-1)
+      - [UpdateEntityItem](#updateentityitem)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
@@ -150,7 +150,7 @@ StoreLocations.query
         * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
-- [Errors:](#errors-)
+- [Errors:](#errors)
   + [No Client Defined On Model](#no-client-defined-on-model)
   + [Invalid Identifier](#invalid-identifier)
   + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
@@ -234,12 +234,12 @@ Previously it was possible to generate type definition files (`.d.ts`) for you M
 
 As of writing this, this functionality is still a work in progress, and enforcement of some of ElectroDB's query constraints have still not been written into the type checks. Most notably are the following constraints not yet enforced by the type checker, but are enforced at query runtime:
 
-- Put/Create/Update/Patch operations that partially impact index composite attributes are not statically typed. When performing a `put` or `update` type operation that impacts a composite attribute of a secondary index, ElectroDB performs a check at runtime to ensure all composite attributes of that key are included. This is detailed more in the section [Composite Attribute and Index Considerations](#composite attribute-and-index-considerations). 
+- Put/Create/Update/Patch operations that partially impact index composite attributes are not statically typed. When performing a `put` or `update` type operation that impacts a composite attribute of a secondary index, ElectroDB performs a check at runtime to ensure all composite attributes of that key are included. This is detailed more in the section [Composite Attribute and Index Considerations](#composite-attribute-and-index-considerations). 
 - Sort Key Composite Attribute order is not strongly typed. Sort Key Composite Attributes must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about composite attribute ordering see the section on [Composite Attributes](#composite-attributes).
 - Use of the `params` method does not yet return strict types.
 - Use of the `raw` or `includeKeys` query options do not yet impact the returned types.
 
-If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a github issue, and it can be addressed.
+If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a GitHub issue, and it can be addressed.
 
 ### Exported Types
 
@@ -283,7 +283,7 @@ _Use:_
 type NewThing = CreateEntityItem<typeof YourEntityInstance>;
 ```
 
-#### CreateEntityItem
+#### UpdateEntityItem
 
 This type represents an item that you would pass your entity's `create` or `update` method to `set`  
 
@@ -630,7 +630,7 @@ attributes: {
 		type: string | ReadonlyArray<string>;
 		required?: boolean;
 		default?: value|() => value;
-		validate?: RegExp|(value: any) => void|string;
+		validate?: RegExp | (value: any) => void | string;
 		field?: string;
 		readOnly?: boolean;
 		label?: string;
@@ -685,7 +685,7 @@ Using `get` and `set` on an attribute can allow you to apply logic before and ju
 
 The first argument in an attribute's `get` or `set` callback is the value received in the query. The second argument, called `"item"`, in an attribute's is an object containing the values of other attributes on the item as it was given or retrieved. If your attribute uses `watch`, the getter or setter of attribute being watched will be invoked _before_ your getter or setter and the updated value will be on the `"item"` argument instead of the original.            
 
-> Note: Using getters/setters on Composite Attribute Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.  
+> Note: Using getters/setters on Composite Attribute Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.  
 
 ElectroDB invokes an Attribute's `get` method in the following circumstances:
 1. If a field exists on an item after retrieval from DynamoDB, the attribute associated with that field will have its getter method invoked.
@@ -943,7 +943,7 @@ To learn about why this change was made in preparation for 1.0 checkout [Renamin
 
 
 ## Composite Attributes 
-A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key** or a **Sort Key** key, which define an `index`.
+A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key**, or a **Sort Key** key, which define an `index`.
 
 > Note: Only attributes with a type of `"string"`, `"number"`, or `"boolean"` can be used as a composite attribute.
 
@@ -1165,7 +1165,7 @@ As described in the above two sections ([Composite Attributes](#composite-attrib
 ## Collections
 A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities. 
 
-Collections are defined on an Index and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
+Collections are defined on an Index, and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
 
 > **Note**: `collection` should be unique to a single common index across entities. 
 
@@ -1217,7 +1217,7 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 }
 ```
 ### Defined on the model
-Filters can defined on the model and used in your query chain.  
+Filters can be defined on the model and used in your query chain.  
 
 ```javascript
 /**
@@ -1653,7 +1653,7 @@ All queries require (*at minimum*) the **Composite Attributes** included in its 
 ```javascript
 const MallStore = new Entity({
 	model: {
-		service: "mallmgmt"
+		service: "mallmgmt",
 		entity: "store", 
 		version: "1"
 	},
@@ -1803,7 +1803,7 @@ The two-dimensional array returned by batch get most easily used when deconstruc
 
 The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as other ElectroDB queries.
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
 
 ### Delete Method
 Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
@@ -1883,7 +1883,7 @@ let unprocessed = await StoreLocations.delete([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
 Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
@@ -2031,7 +2031,7 @@ let unprocessed = await StoreLocations.put([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Update Record
 To update a record, pass all Table index composite attributes to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
@@ -2248,7 +2248,7 @@ After invoking the **Access Pattern** with the required **Partition Key** **Comp
 ### Access Pattern Queries
 When you define your [indexes](#indexes) in your model, you are defining the Access Patterns of your entity. The [composite attributes](#composite-attributes) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
 
-Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this to multiply our available access patterns and use the Sort Key Operations: `begins`, `between`, `lt`, `lte`, `gt`, and `gte`. These queries are more performant and cost effective than filters. The costs associated with DynamoDB directly correlate to how effectively you leverage Sort Key Operations. 
+Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this to multiply our available access patterns and use the Sort Key Operations: `begins`, `between`, `lt`, `lte`, `gt`, and `gte`. These queries are more performant and cost-effective than filters. The costs associated with DynamoDB directly correlate to how effectively you leverage Sort Key Operations. 
 
 > For a comprehensive and interactive guide to build queries please visit this runkit: https://runkit.com/tywalch/electrodb-building-queries.
 
@@ -2261,16 +2261,23 @@ The difference is nuanced and makes better sense with an example, but the rule o
 
 The following examples will use the following Access Pattern definition for `units`:
 ```json
-"units": {  
-    "index": "gis1pk-gsi1sk-index",  
+{
+  "units": {
+    "index": "gis1pk-gsi1sk-index",
     "pk": {
-        "field": "gis1pk",
-        "composite attributes": ["mallId"]
-    },  
+      "field": "gis1pk",
+      "composite attributes": [
+        "mallId"
+      ]
+    },
     "sk": {
-        "field": "gsi1sk",
-        "composite attributes": ["buildingId", "unitId"]
-    }  
+      "field": "gsi1sk",
+      "composite attributes": [
+        "buildingId",
+        "unitId"
+      ]
+    }
+  }
 }
 ```
 The names you have given to your indexes on your entity model/schema express themselves as "Access Pattern" methods on your Entity's `query` object:
@@ -2467,7 +2474,7 @@ let [pageTwo, moreStores] = await MallStores.query
 ```
 
 #### Service Pagination
-Pagination with services is also possible. Similar to [Entity Pagination](#entity-pagination), calling the `.page()` method returns a `[pager, results]` tuple. Also similar to pagination on Entities, the pager object returned by default is a deconstruction of the returned LastEvaluatedKey.     
+Pagination with services is also possible. Similar to [Entity Pagination](#entity-pagination), calling the `.page()` method returns a `[pager, results]` tuple. Also, similar to pagination on Entities, the pager object returned by default is a deconstruction of the returned LastEvaluatedKey.     
 
 #### Pager Query Options
 
@@ -2692,7 +2699,7 @@ Checkout the section on [Composite Attribute Templates](#composite attribute-tem
 Your model contains duplicate indexes. This could be because you accidentally included an index twice or even forgot to add an index name on a secondary index, which would be interpreted as "duplicate" to the Table's Primary index.
    
 *What to do about it:*
-Double check the index names on your model for duplicate indexes. The error should specify which index has been duplicated. It is also possible that you have forgotten to include an index name. Each table must have at least one Table Index (which does not include an `index` property in ElectroDB), but all Secondary and Local indexes must include an `index` property with the name of that index as defined on the table. 
+Double-check the index names on your model for duplicate indexes. The error should specify which index has been duplicated. It is also possible that you have forgotten to include an index name. Each table must have at least one Table Index (which does not include an `index` property in ElectroDB), but all Secondary and Local indexes must include an `index` property with the name of that index as defined on the table. 
 ```javascript
 {
   indexes: {
@@ -2717,7 +2724,7 @@ Double check the index names on your model for duplicate indexes. The error shou
 You have added a `collection` to an index that does not have an SK. Because Collections are used to help query across entities via the Sort Key, not having a Sort Key on an index defeats the purpose of a Collection.  
    
 *What to do about it:*
-If your index _does_ have a Sort Key but you are unsure of how to inform electro without setting composite attributes to the SK, add the SK object to the index and use an empty array for Composite Attributes:
+If your index _does_ have a Sort Key, but you are unsure of how to inform electro without setting composite attributes to the SK, add the SK object to the index and use an empty array for Composite Attributes:
 ```javascript
 // ElectroDB interprets as index *not having* an SK.
 {
@@ -2764,7 +2771,7 @@ Determine a new naming scheme
 DynamoDB requires the definition of at least one Primary Index on the table. In Electro this is defined as an Index _without_ an `index` property. Each model needs at least one, and the composite attributes used for this index must ensure each composite represents a unique record. 
    
 *What to do about it:*
-Identify the index you're using as the Primary Index and ensure it _does not_ have an index property on it's definition.
+Identify the index you're using as the Primary Index and ensure it _does not_ have an index property on its definition.
 ```javascript
 // ElectroDB interprets as the Primary Index because it lacks an `index` property.
 {
@@ -2807,7 +2814,7 @@ Identify the index you're using as the Primary Index and ensure it _does not_ ha
 Some attribute on your model has an invalid configuration.   
    
 *What to do about it:*
-Use the error to identify which column needs to examined, double check the properties on that attribute. Checkout the section on [Attributes](#attributes) for more information on how they are structured.
+Use the error to identify which column needs to examined, double-check the properties on that attribute. Checkout the section on [Attributes](#attributes) for more information on how they are structured.
 
 ### Invalid Model
 *Code: 1009*
@@ -2834,7 +2841,7 @@ Checkout the section on [Model/Service Options](#service-options) to verify your
 An Index in your model references the same field twice across indexes. The `field` property in the definition of an index is a mapping to the name of the field assigned to the PK or SK of an index. 
    
 *What to do about it:*
-This is likely a typo, if not double check the names of the fields you assigned to be the PK and SK of your index, these field names must be unique.
+This is likely a typo, if not double-check the names of the fields you assigned to be the PK and SK of your index, these field names must be unique.
 
 ### Duplicate Index Composite Attributes
 *Code: 1015*
@@ -2870,7 +2877,7 @@ The error should describe the missing composite attributes, ensure those composi
 You never specified a Table for DynamoDB to use.
 
 *What to do about it:*
-Tables can be defined on the [Service Options](#service-options) object when you create a Entity or Service, or if that is not known at the time of creation, it can be supplied as a [Query Option](#query-options) and supplied on each query individually. If can be supplied on both, in that case the Query Option will override the Service Option.
+Tables can be defined on the [Service Options](#service-options) object when you create an Entity or Service, or if that is not known at the time of creation, it can be supplied as a [Query Option](#query-options) and supplied on each query individually. If can be supplied on both, in that case the Query Option will override the Service Option.
 
 ### Invalid Concurrency Option
 *Code: 2004*
@@ -2879,7 +2886,7 @@ Tables can be defined on the [Service Options](#service-options) object when you
 When performing a bulk operation ([Batch Get](#batch-get), [Batch Delete Records](#batch-write-delete-records), [Batch Put Records](#batch-write-put-records)) you can pass a [Query Options](#query-options) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 *What to do about it:*   
-Expect this error only if youre providing a concurrency value. Double check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
+Expect this error only if you're providing a concurrency value. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### aws-error
 *Code: 4001*
@@ -2896,10 +2903,10 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 *Code: 5003*
 
 *Why this occurred:*
-_Likely_ you were were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
+_Likely_ you were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
 
 *What to do about it:*
-It is highly recommended to use the query option, `{pager: "raw"}`, when using the .page() method with *scans*. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+It is highly recommended that the query option, `{pager: "raw"}`, is applied while using the .page() method with *scan* operations. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
 ```javascript
 // example
 myModel.scan.page(null, {pager: "raw"});
@@ -3165,7 +3172,7 @@ Returns the following:
 		manager: "",
 		dateHired: "1992-11-04",
 		birthday: "1961-06-06",
-	}].
+	}],
 	tasks: [{
 		task: "Feed tigers",
 		description: "Prepare food for tigers to eat",
@@ -3205,8 +3212,8 @@ Returns the following:
 		office: "big cat rescue",
 		country: "usa",
 		state: "florida",
-		city: "tampa"
-		zip: "12345"
+		city: "tampa",
+		zip: "12345",
 		address: "123 Kitty Cat Lane"
 	}]
 }
@@ -3263,8 +3270,8 @@ Returns the following:
 		office: "big cat rescue",
 		country: "usa",
 		state: "florida",
-		city: "tampa"
-		zip: "12345"
+		city: "tampa",
+		zip: "12345",
 		address: "123 Kitty Cat Lane"
 	}
 ]
@@ -3387,7 +3394,7 @@ Returns the following:
 	"category": "spite store",
 	"leaseEndDate": "2020-02-29",
 	"rent": "5000.00",
-	"discount": "0.00",
+	"discount": "0.00"
 }
 ```
 ---
