@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const { clauses, initChainState } = require("./clauses");
@@ -103,7 +103,7 @@ class Entity {
 		});
 	}
 
-	find(facets = {}) {
+	match(facets = {}) {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
 			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
@@ -114,7 +114,7 @@ class Entity {
 					}
 				}
 				return eqFilters.join(" AND");
-			})
+			});
 		} else {
 			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(
 				facets,
@@ -130,6 +130,15 @@ class Entity {
 		}
 	}
 
+	find(facets = {}) {
+		let match = this._findBestIndexKeyMatch(facets);
+		if (match.shouldScan) {
+			return this._makeChain("", this._clausesWithFilters, clauses.index).scan();
+		} else {
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(facets);
+		}
+	}
+
 	collection(collection = "", clauses = {}, facets = {}, {expressions = {}, parse} = {}) {
 		let options = {
 			parse,
@@ -137,8 +146,7 @@ class Entity {
 				names: expressions.names || {},
 				values: expressions.values || {},
 				expression: expressions.expression || ""
-			},
-			// lastEvaluatedKeyRaw: true,
+			}
 		};
 
 		let index = this.model.translations.collections.fromCollectionToIndex[collection];
@@ -350,7 +358,7 @@ class Entity {
 				if (request.PutRequest) {
 					return this.formatResponse(index, request.PutRequest, config);
 				} else if (request.DeleteRequest) {
-					if (config.lastEvaluatedKeyRaw) {
+					if (config.unprocessed === UnprocessedTypes.raw) {
 						return request.DeleteRequest.Key;
 					} else {
 						return this._formatKeysToItem(index, request.DeleteRequest.Key);
@@ -373,7 +381,7 @@ class Entity {
 		}
 		if (response.UnprocessedKeys[table] && response.UnprocessedKeys[table].Keys && Array.isArray(response.UnprocessedKeys[table].Keys)) {
 			for (let value of response.UnprocessedKeys[table].Keys) {
-				if (config && config.lastEvaluatedKeyRaw) {
+				if (config && config.unprocessed === UnprocessedTypes.raw) {
 					unprocessed.push(value);
 				} else {
 					unprocessed.push(
@@ -632,6 +640,7 @@ class Entity {
 			concurrent: undefined,
 			parse: undefined,
 			pager: Pager.named,
+			unprocessed: UnprocessedTypes.item,
 			_isPagination: false
 		};
 
@@ -655,6 +664,7 @@ class Entity {
 			if (option.lastEvaluatedKeyRaw === true) {
 				config.lastEvaluatedKeyRaw = true;
 				config.pager = Pager.raw;
+				config.unprocessed = UnprocessedTypes.raw;
 			}
 
 			if (!isNaN(option.limit)) {
@@ -674,10 +684,18 @@ class Entity {
 			}
 
 			if (typeof option.pager === "string") {
-				if (Pager[option.pager] !== undefined) {
+				if (typeof Pager[option.pager] === "string") {
 					config.pager = option.pager;
 				} else {
-					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provider: "${option.pager}". Allowed values include ${utilities.commaSeparatedString(Object.keys(Pager))}.`)
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provided: "${option.pager}". Allowed values include ${utilities.commaSeparatedString(Object.keys(Pager))}.`);
+				}
+			}
+
+			if (typeof option.unprocessed === "string") {
+				if (typeof UnprocessedTypes[option.unprocessed] === "string") {
+					config.unproessed = UnprocessedTypes[option.unprocessed];
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "unprocessed" provided: "${option.unprocessed}". Allowed values include ${utilities.commaSeparatedString(Object.keys(UnprocessedTypes))}.`);
 				}
 			}
 

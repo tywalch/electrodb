@@ -355,7 +355,7 @@ describe("BatchGet", async () => {
       }
     ]);
   });
-  it("Should allow for config lastEvaluatedKeyRaw with UnprocessedKeys", () => {
+  it("Should allow for config unprocessed='raw' with UnprocessedKeys", () => {
     let response = {
       "Responses": {
         "electro": [
@@ -399,7 +399,7 @@ describe("BatchGet", async () => {
         }
       }
     }
-    let results = MallStores.formatBulkGetResponse(undefined, response, {lastEvaluatedKeyRaw: true});
+    let results = MallStores.formatBulkGetResponse(undefined, response, {unprocessed: "raw"});
     expect(results[1]).to.be.an("array").with.length(2);
     expect(results[1]).to.deep.equal([
       {

@@ -1509,6 +1509,7 @@ describe("Entity", () => {
 			let scanParams = MallStores.scan.filter(attr => attr.id.eq(id)).params();
 			let queryParams = MallStores.query.store({id}).params();
 			let findParams = MallStores.find({id}).params();
+			let matchParams = MallStores.match({id}).params();
 			const PK = "$mallstoredirectory_1$mallstores#id_12345";
 			expect(getParams.Key.pk).to.equal(PK);
 			expect(getParams.Key.sk).to.be.undefined;
@@ -1526,6 +1527,8 @@ describe("Entity", () => {
 			expect(scanParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
 			expect(findParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(findParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
+			expect(matchParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(matchParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
 		});
 		it("Should create the correct key structure when a table has a PK and an SK", () => {
 			let schema = {
@@ -1626,8 +1629,10 @@ describe("Entity", () => {
 			let scanParams = MallStores.scan.filter(attr => attr.id.eq(id)).params();
 			let queryParams = MallStores.query.store({id, mall}).params();
 			let findParams = MallStores.find({id, mall}).params();
+			let matchParams = MallStores.find({id, mall}).params();
 			let partialQueryParams = MallStores.query.store({id}).params();
 			let partialFindParams = MallStores.find({id}).params();
+			let partialMatchParams = MallStores.find({id}).params();
 			const PK = "$mallstoredirectory_1#id_12345";
 			const SK = "$mallstores#mall_eastpointe";
 			expect(getParams.Key.pk).to.equal(PK);
@@ -1646,10 +1651,14 @@ describe("Entity", () => {
 			expect(scanParams.ExpressionAttributeValues[":sk"]).to.equal(SK.replace(mall.toLowerCase(), ""))
 			expect(findParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(findParams.ExpressionAttributeValues[":sk1"]).to.equal(SK);
+			expect(matchParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(matchParams.ExpressionAttributeValues[":sk1"]).to.equal(SK);
 			expect(partialQueryParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(partialQueryParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
 			expect(partialFindParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(partialFindParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
+			expect(partialMatchParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(partialMatchParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
 		});
 		it("Should return the approprate pk and multiple sks when given multiple", () => {
 			let index = schema.indexes.shops.index;
@@ -2593,9 +2602,9 @@ describe("Entity", () => {
 		let category = "123";
 		let unit = "123";
 		let leaseEnd = "123";
-		it("Should decide to scan", () => {
+		it("Should decide to scan with Match method", () => {
 			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
-			let params = MallStores.find({leaseEnd}).params();
+			let params = MallStores.match({leaseEnd}).params();
 			expect(params).to.be.deep.equal({
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
@@ -2611,10 +2620,27 @@ describe("Entity", () => {
 			expect(keys).to.be.deep.equal([]);
 			expect(index).to.be.equal("");
 		});
-		it("Should decide to scan and not add undefined values to the query filters", () => {
+		it("Should decide to scan with Find method", () => {
+			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
+			let params = MallStores.find({leaseEnd}).params();
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#pk': 'pk' },
+				ExpressionAttributeValues: {
+					":__edb_e__": "MallStores",
+					":__edb_v__": "1",
+					':pk': '$mallstoredirectory_1$mallstores#id_'
+				},
+				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__"
+			});
+			expect(shouldScan).to.be.true;
+			expect(keys).to.be.deep.equal([]);
+			expect(index).to.be.equal("");
+		});
+		it("Should decide to scan and not add undefined values to the query filters with Match method", () => {
 			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
 			let mallId = undefined;
-			let params = MallStores.find({leaseEnd, mallId})
+			let params = MallStores.match({leaseEnd, mallId})
 				.where(() => "")
 				.params();
 			expect(params).to.be.deep.equal({
@@ -2632,9 +2658,29 @@ describe("Entity", () => {
 			expect(keys).to.be.deep.equal([]);
 			expect(index).to.be.equal("");
 		});
-		it("Should match on the primary index", () => {
+		it("Should decide to scan and not add undefined values to the query filters for Find", () => {
+			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
+			let mallId = undefined;
+			let params = MallStores.find({leaseEnd, mallId})
+				.where(() => "")
+				.params();
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#pk': 'pk' },
+				ExpressionAttributeValues: {
+					":__edb_e__": "MallStores",
+					":__edb_v__": "1",
+					':pk': '$mallstoredirectory_1$mallstores#id_'
+				},
+				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__"
+			});
+			expect(shouldScan).to.be.true;
+			expect(keys).to.be.deep.equal([]);
+			expect(index).to.be.equal("");
+		});
+		it("Should match on the primary index with Match method", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
-			let params = MallStores.find({id}).params();
+			let params = MallStores.match({id}).params();
 			expect(params).to.be.deep.equal({
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk'},
@@ -2648,13 +2694,27 @@ describe("Entity", () => {
 			expect(keys).to.be.deep.equal([{ name: "id", type: "pk" }]);
 			expect(index).to.be.equal("");
 		});
-		it("Should match on gsi1pk-gsi1sk-index", () => {
+		it("Should match on the primary index with Find method", () => {
+			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
+			let params = MallStores.find({id}).params();
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'pk'},
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1$mallstores#id_123',
+				},
+				KeyConditionExpression: '#pk = :pk',
+			});
+			expect(keys).to.be.deep.equal([{ name: "id", type: "pk" }]);
+			expect(index).to.be.equal("");
+		});
+		it("Should match on gsi1pk-gsi1sk-index with Match method", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({
 				mall,
 				building,
 				unit,
 			});
-			let params = MallStores.find({mall, building, unit}).params();
+			let params = MallStores.match({mall, building, unit}).params();
 			expect(params).to.be.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
@@ -2674,6 +2734,33 @@ describe("Entity", () => {
 				},
 				IndexName: 'gsi1pk-gsi1sk-index',
 				FilterExpression: '#mall = :mall1 AND#building = :building1 AND#unit = :unit1'
+			});
+			expect(keys).to.be.deep.equal([
+				{ name: "mall", type: "pk" },
+				{ name: "building", type: "sk" },
+				{ name: "unit", type: "sk" },
+			]);
+			expect(index).to.be.deep.equal(schema.indexes.units.index);
+		});
+		it("Should match on gsi1pk-gsi1sk-index with Find method", () => {
+			let { index, keys } = MallStores._findBestIndexKeyMatch({
+				mall,
+				building,
+				unit,
+			});
+			let params = MallStores.find({mall, building, unit}).params();
+			expect(params).to.be.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: {
+					'#pk': 'gsi1pk',
+					'#sk1': 'gsi1sk'
+				},
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1#mall_123',
+					':sk1': '$mallstores#building_123#unit_123#store_'
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
 			});
 			expect(keys).to.be.deep.equal([
 				{ name: "mall", type: "pk" },

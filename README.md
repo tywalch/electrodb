@@ -7,7 +7,9 @@
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb-drk.png?raw=true)
 ***ElectroDB*** is a dynamodb library to ease the use of having multiple entities and complex hierarchical relationships in a single dynamodb table. 
 
-*This library is a work in progress, please submit issues/feedback or reach out on Twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
+*Please submit issues/feedback or reach out on Twitter [@tinkertamper](https://twitter.com/tinkertamper).*
+
+<h1 align="center">ElectroDB has now entered version 1.0!</h1>  
 
 ------------
 
@@ -22,7 +24,7 @@
 - [**Simplified Sort Key Condition Querying**](#building-queries) - Write efficient sort key queries by easily building compose keys.
 - [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
 - [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/idiomatic queries that return multiple entities in a single request.
-- [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and efficiently query based on defined sort key structures. 
+- [**Automatic Index Selection**](#find-records) - Use `.find()` or `.match()` methods to dynamically and efficiently query based on defined sort key structures. 
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
 - [**Use With Your Existing Solution**](#composite-attribute-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Composite Attribute Templates to leverage your existing key structures.
 - [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services now in Beta.
@@ -107,6 +109,7 @@ StoreLocations.query
     + [Composite Attribute Arrays](#composite-attribute-arrays)
     + [Composite Attribute Templates](#composite-attribute-templates)
       - [Templates and Composite Attribute Arrays](#templates-and-composite-attribute-arrays)
+  * [Numeric Keys](#numeric-keys)
   * [Composite Attribute and Index Considerations](#composite-attribute-and-index-considerations)
   * [Collections](#collections)
   * [Filters](#filters)
@@ -137,6 +140,7 @@ StoreLocations.query
     + [Patch Records](#patch-records)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
+    + [Match Records](#match-records)
     + [Access Pattern Queries](#access-pattern-queries)
       - [Begins With Queries](#begins-with-queries)
   * [Collection Chains](#collection-chains)
@@ -150,7 +154,7 @@ StoreLocations.query
         * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
-- [Errors:](#errors)
+- [Errors:](#errors-)
   + [No Client Defined On Model](#no-client-defined-on-model)
   + [Invalid Identifier](#invalid-identifier)
   + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
@@ -207,6 +211,9 @@ StoreLocations.query
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
 - [Electro CLI](#electro-cli)
 - [Version 1 Migration](#version-1-migration)
+  * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
+  * [The renaming of index property Facets to Composite and Template](#the-renaming-of-index-property-facets-to-composite-and-template)
+  * [Get Method to Return null](#get-method-to-return-null)
 - [Coming Soon](#coming-soon)
 
 ----------
@@ -1737,7 +1744,10 @@ Queries in ***ElectroDB*** are built around the **Access Patterns** defined in t
 The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all composite attributes described in the Entities' primary `PK` and `SK`.  
 
 ### Get Method
-Provide all Table Index composite attributes in an object to the `get` method
+Provide all Table Index composite attributes in an object to the `get` method. In the event no record is found, a value of `null` will be returned.
+
+> Note: As part of ElectroDB's roll out of 1.0.0, a breaking change was made to the `get` method. Prior to 1.0.0, the `get` method would return an empty object if a record was not found. This has been changed to now return a value of `null` in this case. 
+
 ```javascript
 let results = await StoreLocations.get({
 	storeId: "LatteLarrys", 
@@ -1811,7 +1821,7 @@ The two-dimensional array returned by batch get most easily used when deconstruc
 
 The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as other ElectroDB queries.
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.    
 
 ### Delete Method
 Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
@@ -1891,7 +1901,7 @@ let unprocessed = await StoreLocations.delete([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
 Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
@@ -2039,7 +2049,7 @@ let unprocessed = await StoreLocations.put([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Update Record
 To update a record, pass all Table index composite attributes to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
@@ -2217,7 +2227,41 @@ await StoreLocations
 
 ### Find Records
 
-DynamoDB offers three methods to find records: `get`, `query`, and `scan`. In **_ElectroDB_**, there is a fourth type: `find`. Unlike `get` and `query`, the `find` method does not require you to provide keys, but under the covers it will leverage the attributes provided to find the best index to query on. Provide the `find` method will all properties known to match a record and **_ElectroDB_** will generate the most performant query it can to locate the results. This can be helpful with highly dynamic querying needs. If an index cannot be satisfied with the attributes provided, `scan` will be used as a last resort.
+DynamoDB offers three methods to query records: `get`, `query`, and `scan`. In **_ElectroDB_**, there is a fourth type: `find`. Unlike `get` and `query`, the `find` method does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on. Provide the `find` method will all properties known to match a record and **_ElectroDB_** will generate the most performant query it can to locate the results. This can be helpful with highly dynamic querying needs. If an index cannot be satisfied with the attributes provided, `scan` will be used as a last resort.
+
+> Note: The Find method is similar to the Match method with one exception: The attributes you supply directly to the `.find()` method will only be used to identify and fulfill your index access patterns. Any values supplied that do not contribute to a composite key will not be applied as query filters. Furthermore, if the values you provide do not resolve to an index access pattern then a scan will be performed. Use the `where()` chain method to further filter beyond keys, or use [Match](#match) for the convenience of automatic filtering based on the values given directly to that method. 
+
+```javascript
+await StoreLocations.find({
+    mallId: "EastPointe",
+    buildingId: "BuildingA1",
+}).go()
+
+// Equivalent Params:
+{
+  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+  "TableName": "StoreDirectory",
+  "ExpressionAttributeNames": {
+    "#mallId": "mallId",
+    "#buildingId": "buildingId",
+    "#pk": "gis1pk",
+    "#sk1": "gsi1sk"
+  },
+  "ExpressionAttributeValues": {
+    ":mallId1": "EastPointe",
+    ":buildingId1": "BuildingA1",
+    ":pk": "$mallstoredirectory#mallid_eastpointe",
+    ":sk1": "$mallstore_1#buildingid_buildinga1#unitid_"
+  },
+  "IndexName": "gis1pk-gsi1sk-index",
+}
+```
+
+### Match Records
+
+Match is a convenience method based off of ElectroDB's [find](#find-records) method. Similar to Find, Match does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on. 
+
+Match differs from [Find](#find-records) in that it will also include all supplied values into a query filter.     
 
 ```javascript
 await StoreLocations.find({
@@ -2250,6 +2294,7 @@ await StoreLocations.find({
   "IndexName": "gis1pk-gsi1sk-index",
   "FilterExpression": "#mallId = :mallId1 AND#buildingId = :buildingId1 AND#leaseEndDate = :leaseEndDate1 AND#rent = :rent1"
 }
+
 ```
 After invoking the **Access Pattern** with the required **Partition Key** **Composite Attributes**, you can now choose what **Sort Key Composite Attributes** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
 
@@ -2490,6 +2535,8 @@ The `.page()` method also accepts [Query Options](#query-options) just like the 
 
 A notable Query Option, that is available only to the `.page()` method, is an option called `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
 
+> Note: Because the "pager" object is destructured from the keys DynamoDB returns as the `LastEvaluatedKey`, these composite attributes differ from the record's actual attribute values in one important way: Their string values will all be lowercase. If you intend to use these attributes in ways where their casing _will_ matter (e.g. in a `where` filter), keep in mind this may result in unexpected outcomes.    
+
 The three options for the query option `pager` are as follows:
 
 ```javascript
@@ -2637,25 +2684,27 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 
 ```typescript
 {
-    params?: object
-    table?: string
-    raw?: boolean
-    includeKeys?: boolean
-    pager?: "raw" | "named" | "item"	
-    originalErr?: boolean
-    concurrent?: number
+  params?: object;
+  table?: string;
+  raw?: boolean;
+  includeKeys?: boolean;
+  pager?: "raw" | "named" | "item";
+  originalErr?: boolean;
+  concurrent?: number;
+  unprocessed?: "raw" | "item"   
 };
 ```
 
-| Option      | Default              | Description |  
-| ----------- | :------------------: | ----------- |  
-| params      | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
-| table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options) |
-| raw         | `false`              | Returns query results as they were returned by the docClient.  
-| includeKeys | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
-| pager       | `"named"`            | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options), [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
-| originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
-| concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
+Option      | Default              | Description   
+----------- | :------------------: | -----------   
+params      | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. 
+table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options) 
+raw         | `false`              | Returns query results as they were returned by the docClient.  
+includeKeys | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response. 
+pager       | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options). 
+originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. 
+concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
+unprocessed | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
 
 # Errors:
 | Error Code | Description |
@@ -2864,7 +2913,7 @@ Determine how you can change your access pattern to not duplicate the composite 
 *Code: 1017*
 
 *Why this occurred:*
-You are trying to use the custom Key Composite Attribute Template, and a Composite Attribute Array on your model, and they do not contain identical facets.
+You are trying to use the custom Key Composite Attribute Template, and a Composite Attribute Array on your model, and they do not contain identical composite attributes.
 
 *What to do about it:*
 Checkout the section on [Composite Attribute Templates](#composite attribute-templates) and verify your template conforms to the rules detailed there. Both properties must contain the same attributes and be provided in the same order.

@@ -117,10 +117,10 @@ let model = {
 };
 
 describe("Filter", () => {
-	it("Should allow for a filter to return an empty string", () => {
+	it("Should allow for a filter to return an empty string with Match method", () => {
 		let MallStores = new Entity(model);
 
-		let params = MallStores.find({id: "abc"})
+		let params = MallStores.match({id: "abc"})
 			.filter(() => "")
 			.filter(() => "")
 			.filter(() => "")
@@ -132,6 +132,22 @@ describe("Filter", () => {
 			ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk' },
 			ExpressionAttributeValues: { ':id1': 'abc', ':pk': '$mallstoredirectory_1$mallstores#id_abc' },
 			FilterExpression: '#id = :id1'
+		});
+	})
+	it("Should allow for a filter to return an empty string with Find method", () => {
+		let MallStores = new Entity(model);
+
+		let params = MallStores.find({id: "abc"})
+			.filter(() => "")
+			.filter(() => "")
+			.filter(() => "")
+			.params()
+
+		expect(params).to.deep.equal({
+			KeyConditionExpression: '#pk = :pk',
+			TableName: 'StoreDirectory',
+			ExpressionAttributeNames: { '#pk': 'pk' },
+			ExpressionAttributeValues: { ':pk': '$mallstoredirectory_1$mallstores#id_abc' }
 		});
 	})
 	describe("Clause Building", () => {

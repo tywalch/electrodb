@@ -95,6 +95,11 @@ const Pager = {
 	item: "item"
 }
 
+const UnprocessedTypes = {
+	raw: "raw",
+	item: "item"
+};
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -107,6 +112,7 @@ module.exports = {
 	AttributeTypes,
 	ExpressionTypes,
 	ElectroInstance,
+	UnprocessedTypes,
 	ElectroInstanceTypes,
 	AttributeMutationMethods,
 };
