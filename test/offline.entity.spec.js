@@ -1959,48 +1959,142 @@ describe("Entity", () => {
 				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
 			})
 		});
-
-		/* This test was removed because facet templates was refactored to remove all electrodb opinions. */
-		//
-		// it("Should throw on invalid characters in facet template (string)", () => {
-		// 	const schema = {
-		// 		service: "MallStoreDirectory",
-		// 		entity: "MallStores",
-		// 		table: "StoreDirectory",
-		// 		version: "1",
-		// 		attributes: {
-		// 			id: {
-		// 				type: "string",
-		// 				field: "storeLocationId",
-		// 			},
-		// 			date: {
-		// 				type: "string",
-		// 				field: "dateTime",
-		// 			},
-		// 			prop1: {
-		// 				type: "string",
-		// 			},
-		// 			prop2: {
-		// 				type: "string",
-		// 			},
-		// 		},
-		// 		indexes: {
-		// 			record: {
-		// 				pk: {
-		// 					field: "pk",
-		// 					facets: `id_:id#p1_:prop1`,
-		// 				},
-		// 				sk: {
-		// 					field: "sk",
-		// 					facets: `d_:date|p2_:prop2`,
-		// 				},
-		// 			},
-		// 		},
-		// 	};
-		// 	expect(() => new Entity(schema)).to.throw(
-		// 		`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: d_:date|p2_:prop2`,
-		// 	);
-		// });
+		it("Should allow for both a composite attribute array and a composite attribute template to be passed", () => {
+			const entity = new Entity({
+				model: {
+					entity: "test",
+					service: "tester",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					},
+					attr4: {
+						type: "string"
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							composite: ["attr1", "attr2"],
+							template: ":attr1#:attr2"
+						},
+						sk: {
+							field: "sk",
+							composite: ["attr3", "attr4"],
+							template: ":attr3#:attr4"
+						}
+					},
+					theseRecords: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							composite: ["attr1", "attr2", "attr3", "attr4"],
+							template: ":attr1#:attr2#:attr3#:attr4"
+						},
+						sk: {
+							// empty properties
+							field: "gsi1sk",
+							composite: [],
+							template: ""
+						}
+					},
+					thoseRecords: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							composite: ["attr1", "attr2", "attr3", "attr4"],
+							template: ":attr1#:attr2#:attr3#:attr4"
+						},
+						// no pk
+					}
+				}
+			})
+		});
+		it("Should throw when a supplied composite attribute array does not match a composite attribute template's parsed attributes - On PK Definition", () => {
+			const schema ={
+				model: {
+					entity: "test",
+					service: "tester",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					},
+					attr4: {
+						type: "string"
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							composite: ["attr1", "attr2"],
+							template: ":attr2#:attr1"
+						},
+						sk: {
+							field: "sk",
+							composite: ["attr3", "attr4"],
+							template: ":attr3#:attr4"
+						}
+					}
+				}
+			};
+			expect(() => new Entity(schema)).to.throw(`Incompatible PK 'template' and 'composite' properties for defined on index "(Primary Index)". PK "template" string is defined as having composite attributes "attr2", "attr1" while PK "composite" array is defined with composite attributes "attr1", "attr2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incompatible-key-composite-attribute-template`);
+		});
+		it("Should throw when a supplied composite attribute array does not match a composite attribute template's parsed attributes - On SK Definition", () => {
+			const schema ={
+				model: {
+					entity: "test",
+					service: "tester",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					},
+					attr4: {
+						type: "string"
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							composite: ["attr2"],
+							template: ":attr2"
+						},
+						sk: {
+							field: "sk",
+							composite: ["attr3", "attr4"],
+							template: ":attr4#:attr3"
+						}
+					}
+				}
+			};
+			expect(() => new Entity(schema)).to.throw(`Incompatible SK 'template' and 'composite' properties for defined on index "(Primary Index)". SK "template" string is defined as having composite attributes "attr4", "attr3" while SK "composite" array is defined with composite attributes "attr3", "attr4" - For more detail on this error reference: https://github.com/tywalch/electrodb#incompatible-key-composite-attribute-template`);
+		});
 		it("Should allow for custom labels for composite attributes", () => {
 			const schema = {
 				service: "MallStoreDirectory",
@@ -2052,14 +2146,14 @@ describe("Entity", () => {
 						},
 						sk: {
 							field: "gsi1sk",
-							facets: `:date#p2_:prop2#propzduce_:prop2`,
+							template: `:date#p2_:prop2#propzduce_:prop2`,
 						},
 					},
 					justTemplate: {
 						index: "gsi2",
 						pk: {
 							field: "gsi2pk",
-							facets: `idz_:id#:prop1#third_:prop3`,
+							template: `idz_:id#:prop1#third_:prop3`,
 						},
 						sk: {
 							field: "gsi2sk",
@@ -2070,7 +2164,7 @@ describe("Entity", () => {
 						index: "gsi3",
 						pk: {
 							field: "gsi3pk",
-							facets: `:date#p2_:prop2#propz3_:prop3`,
+							template: `:date#p2_:prop2#propz3_:prop3`,
 						},
 						sk: {
 							field: "gsi3sk",
@@ -2088,7 +2182,7 @@ describe("Entity", () => {
 						index: "gsi5",
 						pk: {
 							field: "gsi5pk",
-							facets: `:date#p2_:prop2#propz3_:prop3`,
+							template: `:date#p2_:prop2#propz3_:prop3`,
 						}
 					}
 				},

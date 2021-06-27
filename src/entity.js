@@ -1651,14 +1651,21 @@ class Entity {
 	}
 
 	_parseFacets(facets) {
-		let isCustom = !Array.isArray(facets);
-		if (isCustom) {
+		let isCustom = !Array.isArray(facets) && typeof facets === "string";
+		if (isCustom && facets.length > 0) {
 			let facetLabels = this._parseComposedKey(facets);
 			return {
 				isCustom,
 				facetLabels,
 				facetArray: Object.keys(facetLabels),
 			};
+		} else if (isCustom && facets.length === 0) {
+			// treat like empty array sk
+			return {
+				isCustom: false,
+				facetLabels: {},
+				facetArray: []
+			}
 		} else {
 			return {
 				isCustom,
@@ -1666,6 +1673,15 @@ class Entity {
 				facetArray: facets,
 			};
 		}
+	}
+
+	_compositeTemplateAreCompatible(parsedAttributes, composite) {
+		if (!Array.isArray(composite) || !parsedAttributes || !parsedAttributes.isCustom) {
+			// not beholden to compatibility constraints
+			return true;
+		}
+
+		return validations.stringArrayMatch(composite, parsedAttributes.facetArray);
 	}
 
 	_normalizeIndexes(indexes) {
@@ -1851,6 +1867,18 @@ class Entity {
 				facets.bySlot[j] = facets.bySlot[j] || [];
 				facets.bySlot[j][i] = facet;
 			});
+
+			let pkTemplateIsCompatible = this._compositeTemplateAreCompatible(parsedPKFacets, index.pk.composite);
+			if (!pkTemplateIsCompatible) {
+				throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible PK 'template' and 'composite' properties for defined on index "${indexName || "(Primary Index)"}". PK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedPKFacets.facetArray)} while PK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.pk.composite)}`);
+			}
+
+			if (index.sk !== undefined && Array.isArray(index.sk.composite) && typeof index.sk.template === "string") {
+				let skTemplateIsCompatible = this._compositeTemplateAreCompatible(parsedSKFacets, index.sk.composite);
+				if (!skTemplateIsCompatible) {
+					throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible SK 'template' and 'composite' properties for defined on index "${indexName || "(Primary Index)"}". SK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedSKFacets.facetArray)} while SK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.sk.composite)}`);
+				}
+			}
 		}
 
 		if (facets.byIndex[""] === undefined) {
@@ -1895,15 +1923,28 @@ class Entity {
 	_applyCompositeToFacetConversion(model) {
 		for (let accessPattern of Object.keys(model.indexes)) {
 			let index = model.indexes[accessPattern];
+			let invalidPK = index.pk.facets === undefined && index.pk.composite === undefined && index.pk.template === undefined;
+			let invalidSK = index.sk && (index.sk.facets === undefined && index.sk.composite === undefined && index.sk.template === undefined);
+			if (invalidPK) {
+				throw new Error("Missing Index Composite Attributes!");
+			} else if (invalidSK) {
+				throw new Error("Missing Index Composite Attributes!");
+			}
+
+
 			if (Array.isArray(index.pk.composite)) {
 				index.pk = {
 					...index.pk,
 					facets: index.pk.composite
 				}
-			} else if (index.pk.facets === undefined) {
-				// "Composite Attributes" and "Facets" were not provided.
-				throw new Error("Missing Index Composite Attributes!");
 			}
+
+			if (typeof index.pk.template === "string") {
+				index.pk = {
+					...index.pk,
+					facets: index.pk.template
+				}
+		    }
 
 			// SK may not exist on index
 			if (index.sk && Array.isArray(index.sk.composite)) {
@@ -1911,10 +1952,15 @@ class Entity {
 					...index.sk,
 					facets: index.sk.composite
 				}
-			} else if (index.sk && index.sk.facets === undefined) {
-				// "Composite Attributes" and "Facets" were not provided.
-				throw new Error("Missing Index Composite Attributes!");
 			}
+
+			if (index.sk && typeof index.sk.template === "string") {
+				index.sk = {
+					...index.sk,
+					facets: index.sk.template
+				}
+			}
+
 			model.indexes[accessPattern] = index;
 		}
 		return model;

@@ -78,10 +78,12 @@ type SecondaryIndex = {
     readonly pk: {
         readonly field: string;
         readonly composite: ReadonlyArray<string>;
+        readonly template?: string;
     }
     readonly sk?: {
         readonly field: string;
         readonly composite: ReadonlyArray<string>;
+        readonly template?: string;
     }
 }
 
@@ -89,6 +91,7 @@ type IndexWithSortKey = {
     readonly sk: {
         readonly field: string;
         readonly composite: ReadonlyArray<string>;
+        readonly template?: string;
     }
 }
 
@@ -112,10 +115,12 @@ type Schema<A extends string, F extends A, C extends string> = {
             readonly pk: {
                 readonly field: string;
                 readonly composite: ReadonlyArray<F>;
+                readonly template?: string;
             }
             readonly sk?: {
                 readonly field: string;
                 readonly composite: ReadonlyArray<F>;
+                readonly template?: string;
             }
         }
     }

@@ -95,6 +95,10 @@ const Index = {
 					},
 					required: false,
 				},
+				template: {
+					type: "string",
+					required: false,
+				},
 			},
 		},
 		sk: {
@@ -118,6 +122,10 @@ const Index = {
 					items: {
 						type: "string",
 					},
+				},
+				template: {
+					type: "string",
+					required: false,
 				},
 			},
 		},
@@ -304,6 +312,18 @@ function isFunction(value) {
 	return typeof value === "function";
 }
 
+function stringArrayMatch(arr1, arr2) {
+	let areArrays = Array.isArray(arr1) && Array.isArray(arr2);
+	let match = areArrays && arr1.length === arr2.length;
+	for (let i = 0; i < arr1.length; i++) {
+		if (!match) {
+			break;
+		}
+		match = isStringHasLength(arr1[i]) && arr1[i] === arr2[i];
+	}
+	return match;
+}
+
 module.exports = {
 	model: validateModel,
 	testModel,
@@ -311,6 +331,7 @@ module.exports = {
 	isNameModelRecordType,
 	isStringHasLength,
 	isObjectHasLength,
+	stringArrayMatch,
 	isFunction,
 	isBetaServiceConfig,
 	isNameEntityRecordType

@@ -24,7 +24,7 @@
 - [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/idiomatic queries that return multiple entities in a single request.
 - [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and efficiently query based on defined sort key structures. 
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
-- [**Use With Your Existing Solution**](#composite attribute-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Composite Attribute Templates to leverage your existing key structures.
+- [**Use With Your Existing Solution**](#composite-attribute-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Composite Attribute Templates to leverage your existing key structures.
 - [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services now in Beta.
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
 - [**Stand Up Rest Server for Entities**](#electro-cli) - Stand up a REST Server to interact with your `Entities`, `Services`, `Models` for easier prototyping.
@@ -1011,7 +1011,7 @@ indexes: {
 ### Composite Attribute Templates
 In a Composite Attribute Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
-Attributes are identified by a prefixed colon and the attributes name. For example, the syntax `:storeId`  will matches `storeId` attribute in the `model`. 
+Attributes are identified by via prefixed colon, and then the attributes name. For example, the syntax `:storeId`  will match `storeId` attribute in the `model`. 
 
 Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_:mallId#bid_:buildingId`. 
 
@@ -1024,31 +1024,38 @@ Composite Attribute Templates have some "gotchas" to consider:
   2. ElectroDB will continue to always add a trailing delimiter to composite attributes with keys are partially supplied. The section on [BeginsWith Queries](#begins-with-queries) goes into more detail about how ***ElectroDB*** builds indexes from composite attributes.    
 
 ```javascript
-attributes: {
-	storeId: {
-		type: "string"
-	},
-	mallId: {
-		type: "string"
-	},
-	buildingId: {
-		type: "string"
-	},
-	unitId: {
-		type: "string"
-	}
-},
-indexes: {
-	locations: {
-		pk: {
-			field: "pk",
-			composite: "sid_:storeId"
-		},
-		sk: {
-			field: "sk",
-			composite: "mid_:mallId#bid_:buildingId#uid_:unitId"
-		}
-	}
+{
+    model: {
+        entity: "MallStoreCustom",
+        version: "1",
+        service: "mallstoredirectory"
+    },
+  attributes: {
+      storeId: {
+          type: "string"
+      },
+      mallId: {
+          type: "string"
+      },
+      buildingId: {
+          type: "string"
+      },
+      unitId: {
+          type: "string"
+      }
+  },
+  indexes: {
+      locations: {
+          pk: {
+              field: "pk",
+              template: "sid_:storeId"
+          },
+          sk: {
+              field: "sk",
+              template: "mid_:mallId#bid_:buildingId#uid_:unitId"
+          }
+      }
+  }
 }
 
 
@@ -1064,6 +1071,35 @@ indexes: {
 {
 	pk: 'sid_storevalue',
 	sk: 'mid_mallvalue#bid_buildingvalue#uid_unitvalue'
+}
+```
+
+#### Templates and Composite Attribute Arrays
+
+The example above shows indexes defined only with the `template` property. This property alone is enough to work with ElectroDB, however it can be useful to also include a `composite` array with the names of the Composite Attributes included in the `template` string. Doing so achieves the following benefits:
+
+1. ElectroDB will enforce that the template you have supplied actually resolves to the composite attributes specified in the array.
+
+2. If you use ElectroDB with TypeScript, supplying the `composite` array will ensure the indexes' Composite Attributes are typed just the same as if you had not used a composite template
+
+An example of using `template` while also using `composite`:
+
+```javascript
+{
+  indexes: {
+    locations: {
+      pk: {
+        field: "pk",
+        template: "sid_:storeId"
+        composite: ["storeId"]
+      },
+      sk: {
+        field: "sk",
+        template: "mid_:mallId#bid_:buildingId#uid_:unitId",
+        composite: ["mallId", "buildingId", "unitId"]
+      }
+    }
+  }
 }
 ```
 
@@ -2573,7 +2609,7 @@ Make sure you have spelled the identifier correctly or that you actually passed 
 *Code: 1003*
 
 *Why this occurred:*
-You are trying to use the custom Key Composite Attribute Template and the format you passed is invalid. 
+You are trying to use the custom Key Composite Attribute Template, and the format you passed is invalid. 
    
 *What to do about it:*
 Checkout the section on [Composite Attribute Templates](#composite attribute-templates) and verify your template conforms to the rules detailed there.
@@ -2730,13 +2766,22 @@ An Index in your model references the same field twice across indexes. The `fiel
 This is likely a typo, if not double check the names of the fields you assigned to be the PK and SK of your index, these field names must be unique.
 
 ### Duplicate Index Composite Attributes
-*Code: 1014*
+*Code: 1015*
 
 *Why this occurred:*
 Within one index you tried to use the same composite attribute in both the PK and SK. A composite attribute may only be used once within an index. With ElectroDB it is not uncommon to use the same value as both the PK and SK when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a composite attribute, checkout [this section](#collection-without-an-sk) for more information.
    
 *What to do about it:*
-Determine how you can change your access pattern to not duplicate the composite attribute. Remember that an empty array for an SK is valid.   
+Determine how you can change your access pattern to not duplicate the composite attribute. Remember that an empty array for an SK is valid.
+
+### Incompatible Key Composite Attribute Template
+*Code: 1017*
+
+*Why this occurred:*
+You are trying to use the custom Key Composite Attribute Template, and a Composite Attribute Array on your model, and they do not contain identical facets.
+
+*What to do about it:*
+Checkout the section on [Composite Attribute Templates](#composite attribute-templates) and verify your template conforms to the rules detailed there. Both properties must contain the same attributes and be provided in the same order.
 
 ### Missing Composite Attributes
 *Code: 2002*

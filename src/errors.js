@@ -109,6 +109,12 @@ const ErrorCodes = {
     name: "InvalidAttributeWatchDefinition",
     sym: ErrorCode
   },
+  IncompatibleKeyCompositeAttributeTemplate: {
+    code: 1017,
+    section: "incompatible-key-composite-attribute-template",
+    name: "IncompatibleKeyCompositeAttributeTemplate",
+    sym: ErrorCode,
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",
