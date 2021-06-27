@@ -25,7 +25,7 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch", "batchPut", "batchDelete", "batchGet"],
+		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
 	},
 	collection: {
 		name: "collection",
@@ -130,7 +130,36 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go"],
+		children: ["where", "params", "go"],
+	},
+	remove: {
+		name: "remove",
+		/* istanbul ignore next */
+		action(entity, state, facets = {}) {
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+				state.query.method = MethodTypes.remove;
+				state.query.type = QueryTypes.eq;
+				if (state.hasSortKey) {
+					let queryFacets = entity._buildQueryFacets(
+						facets,
+						state.query.facets.sk,
+					);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
+		},
+		children: ["where", "params", "go"],
 	},
 	put: {
 		name: "put",

@@ -1356,6 +1356,7 @@ describe("Entity", () => {
 			let value = "ahssfh";
 			let getParams = MallStores.get({id, mall, stores}).params();
 			let deleteParams = MallStores.delete({id, mall, stores}).params();
+			let removeParams = MallStores.remove({id, mall, stores}).params();
 			let updateParams = MallStores.update({id, mall, stores}).set({value}).params();
 			let patchParams = MallStores.patch({id, mall, stores}).set({value}).params();
 			let createParams = MallStores.create({id, mall, stores, value}).params();
@@ -1376,6 +1377,14 @@ describe("Entity", () => {
 					sort_key: '$mallstores#mall_defg#stores_1'
 				},
 				TableName: 'StoreDirectory'
+			});
+			expect(removeParams).to.deep.equal({
+				Key: {
+					parition_key: '$mallstoredirectory_1#id_abcd',
+					sort_key: '$mallstores#mall_defg#stores_1'
+				},
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
 			});
 			expect(updateParams).to.deep.equal({
 				UpdateExpression: 'SET #value = :value',

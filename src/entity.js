@@ -187,7 +187,7 @@ class Entity {
 		let index = "";
 		let options = {
 			params: {
-				ConditionExpression: this._makeCreateConditions(index)
+				ConditionExpression: this._makeItemDoesntExistConditions(index)
 			}
 		};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).create(attributes);
@@ -202,10 +202,20 @@ class Entity {
 		let index = "";
 		let options = {
 			params: {
-				ConditionExpression: this._makePatchConditions(index)
+				ConditionExpression: this._makeItemExistsConditions(index)
 			}
 		};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
+	}
+
+	remove(facets = {}) {
+		let index = "";
+		let options = {
+			params: {
+				ConditionExpression: this._makeItemExistsConditions(index)
+			}
+		};
+		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).remove(facets);
 	}
 
 	async go(method, parameters = {}, config = {}) {
@@ -695,7 +705,7 @@ class Entity {
 		return {parameters, config};
 	}
 
-	_makeCreateConditions(index) {
+	_makeItemDoesntExistConditions(index) {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
 		let pkField = this.model.indexes[accessPattern].pk.field;
@@ -707,7 +717,7 @@ class Entity {
 		return filter.join(" AND ");
 	}
 
-	_makePatchConditions(index) {
+	_makeItemExistsConditions(index) {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
 		let pkField = this.model.indexes[accessPattern].pk.field;
@@ -746,6 +756,7 @@ class Entity {
 		switch (method) {
 			case MethodTypes.get:
 			case MethodTypes.delete:
+			case MethodTypes.remove:
 				params = this._makeSimpleIndexParams(keys.pk, ...consolidatedQueryFacets);
 				break;
 			case MethodTypes.put:

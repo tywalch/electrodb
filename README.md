@@ -133,6 +133,7 @@ StoreLocations.query
     + [Batch Write Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
     + [Scan Records](#scan-records)
+    + [Remove Method](#remove-method)
     + [Patch Records](#patch-records)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
@@ -1335,7 +1336,7 @@ let stores = MallStores.query
 
 > The `where()` method is an improvement on the `filter()` method. Unlike `filter`, `where` will be compatible with upcoming features related to complex types.
 
-Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/put/create/delete action. 
+Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/put/create/delete/remove action. 
 
 ### FilterExpressions
 
@@ -2065,6 +2066,28 @@ await StoreLocations.scan
   },
   "FilterExpression": "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND (#category = :category_w1 OR #category = :category_w2) AND (#leaseEndDate between :leaseEndDate_w1 and :leaseEndDate_w2)"
 }
+```
+
+### Remove Method
+A convenience method for `delete` with ConditionExpression that the item being deleted exists. Provide all Table Index composite attributes in an object to the `remove` method to remove the record.
+
+```javascript
+await StoreLocations.remove({
+	storeId: "LatteLarrys", 
+	mallId: "EastPointe", 
+	buildingId: "F34", 
+	cityId: "Atlanta1"
+}).go();
+
+// Equivalent Params:
+// {
+//   Key: {
+//     pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+//     sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+//   },
+//   TableName: 'StoreDirectory'
+//   ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+// }
 ```
 
 ### Patch Records

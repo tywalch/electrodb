@@ -1936,3 +1936,8 @@ let getKeys = ((val) => {}) as GetKeys;
     complexService.collections
         .mycollection1({attr9: 123, attr6: 245})
         .page(nextPage, {})
+
+    complexService.entities
+        .entityWithSK.remove({attr1: "abc", attr2: "def"})
+        .where((attr, op) => op.eq(attr.attr9, 14))
+        .go();

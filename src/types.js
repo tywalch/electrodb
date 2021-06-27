@@ -28,6 +28,7 @@ const MethodTypes = {
 	scan: "scan",
 	update: "update",
 	delete: "delete",
+	remove: "remove",
 	scan: "scan",
 	patch: "patch",
 	create: "create",
