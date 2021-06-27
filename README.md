@@ -665,27 +665,27 @@ attributes: {
 
 #### Attribute Definition 
 
-| Property | Type | Required | Description |
-| -------- | :--: | :--: | ----------- |
-| `type`  | `string`, `ReadonlyArray<string>`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
-`required` | `boolean` | no | Flag an attribute as required to be present when creating a record. |
-`hidden` | `boolean` | no | Flag an attribute for removal upon retrieval. |
-`default` | `value`, `() => value` | no | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
-`validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
-`field` | `string` | no | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
-`readOnly` | `boolean` | no | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default.
-`label` | `string` | no | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
-`cast` | `"number"`, `"string"`, `"boolean"` | no | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
-`set` | `(attribute, schema) => value` | no | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put 
-`get` | `(attribute, schema) => value` | no | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
-`watch` | `Attribute[]` | no | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed.
+ Property  | Type                                                       | Required | Description
+ --------- | :--------------------------------------------------------: | :------: | -----------
+ `type`    | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
+`required` | `boolean`                                                  | no       | Flag an attribute as required to be present when creating a record. |
+`hidden`   | `boolean`                                                  | no       | Flag an attribute for removal upon retrieval. |
+`default`  | `value`, `() => value`                                     | no       | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
+`validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no       | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
+`field`    | `string`                                                   | no       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
+`readOnly` | `boolean`                                                  | no       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default.
+`label`    | `string`                                                   | no       | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
+`cast`     | `"number"`, `"string"`, `"boolean"`                        | no       | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
+`set`      | `(attribute, schema) => value`                             | no       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put 
+`get`      | `(attribute, schema) => value`                             | no       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
+`watch`    | `Attribute[]`                                              | no       | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed.
 
 ##### Attribute Getters and Setters
 Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both callbacks should be pure synchronous functions and may be invoked multiple times during one query. 
 
 The first argument in an attribute's `get` or `set` callback is the value received in the query. The second argument, called `"item"`, in an attribute's is an object containing the values of other attributes on the item as it was given or retrieved. If your attribute uses `watch`, the getter or setter of attribute being watched will be invoked _before_ your getter or setter and the updated value will be on the `"item"` argument instead of the original.            
 
-> Note: Using getters/setters on Composite Attribute Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.  
+> Note: Using getters/setters on Composite Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.  
 
 ElectroDB invokes an Attribute's `get` method in the following circumstances:
 1. If a field exists on an item after retrieval from DynamoDB, the attribute associated with that field will have its getter method invoked.
@@ -847,12 +847,12 @@ See: [Attribute Watching](#attribute-watching)
 
 #### Attribute Validation
 The `validation` property allows for multiple function/type signatures. Here the different combinations *ElectroDB* supports:
-| signature | behavior |
-| --------- | -------- |
-| `Regexp`  | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute 
-| `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. 
-| `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid. 
-| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query 
+signature               | behavior 
+----------------------- | -------- 
+`Regexp`                | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute 
+`(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. 
+`(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid. 
+`(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query 
 
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
@@ -865,17 +865,19 @@ Within these _AccessPatterns_, you define the PartitionKey and (optionally) Sort
 
 ```typescript
 indexes: {
-	<AccessPatternName>: {
-		"pk": {
-			"field": <string>
-			"composite attributes": <AttributeName[]>
+	[AccessPatternName]: {
+		pk: {
+			field: string; 
+			composite: AttributeName[];
+			template?: string;
 		},
-		"sk"?: {
-			"field": <string>
-			"composite attributes": <AttributesName[]>
+		sk?: {
+			field: string;
+			composite: AttributesName[];
+            template?: string;
 		},
-		"index"?: string
-		"collection"?: string
+		index?: string
+		collection?: string
 	}
 }
 ```
@@ -896,7 +898,7 @@ indexes: {
 ### Indexes Without Sort Keys
 When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail. 
 
-> Note: It is generally recommended to always use Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesn't _need_ an additional property to define a unique record, having an `sk` with no composite attributes still opens the door to many more query opportunities like [collections](#collections).
+> Note: It is generally recommended to always use Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesn't _need_ an additional property to define a unique record, having an `sk` with no defined composite attributes (e.g. an empty array) still opens the door to many more query opportunities like [collections](#collections).
 
 ```javascript
 // ElectroDB interprets as index *not having* an SK.
@@ -913,10 +915,10 @@ When using indexes without Sort Keys, that should be expressed as an index *with
 ```
 
 ### Indexes With Sort Keys
-When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the `sk` in your model, but it does exist on the table, simply use an empty for the `composite attributes` property. This is still useful as it opens the door to many more query opportunities like [collections](#collections).
+When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the Sort Key in your model, but it does exist on the table, simply use an empty for the `composite` property. An empty array is still very useful useful, and opens the door to more query opportunities and access patterns like [collections](#collections).
 
 ```javascript
-// ElectroDB interprets as index *having* SK, but this model doesnt attach any composite attributes to it.
+// ElectroDB interprets as index *having* SK, but this model doesnt assign any composite attributes to it.
 {
   indexes: {
     myIndex: {
@@ -937,21 +939,20 @@ When using indexes with Sort Keys, that should be expressed as an index *with* a
 
 As of version `0.11.1`, "Facets" have been renamed to "Composite Attributes", and all documentation has been updated to reflect that change. 
 
-To learn about the latest syntax, checkout [Composite Attributes](#composite-attributes).
-
-To learn about why this change was made in preparation for 1.0 checkout [Renaming Facets](#the-renaming-of-index-property-facets-to-composite-and-template).
+- To learn about the latest syntax, checkout [Composite Attributes](#composite-attributes).
+- To learn about why this change was made in preparation for 1.0 checkout [Renaming Facets](#the-renaming-of-index-property-facets-to-composite-and-template).
 
 
 ## Composite Attributes 
 A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key**, or a **Sort Key** key, which define an `index`.
 
-> Note: Only attributes with a type of `"string"`, `"number"`, or `"boolean"` can be used as a composite attribute.
+> Note: Only attributes with a type of `"string"`, `"number"`, `"boolean"`, or `string[]` (enum) can be used as composite attributes.
 
 There are two ways to provide composite:
-1. As a [Composite Attribute Array](#composite attribute-arrays)
-2. As a [Composite Attribute Template](#composite attribute-templates)
+1. As a [Composite Attribute Array](#composite-attribute-arrays)
+2. As a [Composite Attribute Template](#composite-attribute-templates)
 
-For example, in the following **Access Pattern**, "`locations`" is made up of the composite attributes `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the `schema`:
+For example, in the following **Access Pattern**, "`locations`" is made up of the composite attributes `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the [model](#model):
 ```
 // Input
 {
@@ -973,7 +974,7 @@ For `PK` values, the `service` and `version` values from the model are prefixed 
 For `SK` values, the `entity` value from the model is prefixed onto the key. 
 
 ### Composite Attribute Arrays
-In a Composite Attribute Array, each element is the name of the corresponding Attribute defined in the Model. 
+Within a Composite Attribute Array, each element is the name of the corresponding Attribute defined in the Model. The attributes chosen, and the order in which they are specified, will translate to how your composite keys will be built by ElectroDB. 
 
 > Note: If the Attribute has a `label` property, that will be used to prefix the composite attributes, otherwise the full Attribute name will be used.
 > 
@@ -1024,7 +1025,7 @@ indexes: {
 }
 ```
 ### Composite Attribute Templates
-In a Composite Attribute Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
+In a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
 Attributes are identified by via prefixed colon, and then the attributes name. For example, the syntax `:storeId`  will match `storeId` attribute in the `model`. 
 
@@ -1032,7 +1033,7 @@ Convention for a composing a key use the `#` symbol to separate attributes, and 
 
 > Note: ***ElectroDB*** will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit ***ElectroDB's*** ability to prevent leaking entities with some queries.
 
-Composite Attribute Templates have some "gotchas" to consider: 
+Composite Templates have some "gotchas" to consider: 
 
   1. Keys only allow for one instance of an attribute, the template `:prop1#:prop1` will be interpreted the same as `:prop1#`. 
 	
@@ -1648,35 +1649,39 @@ const MallStore = new Entity(schema, {table: "StoreDirectory"});
 ```
 
 #### Partition Key Composite Attributes
-All queries require (*at minimum*) the **Composite Attributes** included in its defined **Partition Key**, and **Composite Attributes** you have from the start of the **Sort Key**. 
-> *Important: Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern*** 
+All queries require (*at minimum*) the **Composite Attributes** included in its defined **Partition Key**. **Composite Attributes** you define on the **Sort Key** can be partially supplied, but must be supplied in the order they are defined.
+
+> *Important: Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern***. This is because your your composite attributes from a concatinated string, and if supplied out of order, will not resolve to a complete string.
+
 ```javascript
 const MallStore = new Entity({
-	model: {
-		service: "mallmgmt",
-		entity: "store", 
-		version: "1"
-	},
-	attributes: {
-		cityId: "string"
-		mallId: "string",
-		storeId: "string",
-		buildingId: "string",
-		unitId: "string",
-		name: "string",
-		description: "string",
-		category: "string"
-	},
-	indexes: {
-		pk: {
-			field: "pk",
-			composite: ["cityId", "mallId"]
-		},
-		sk: {
-			field: "sk",
-			composite: ["storeId", "unitId"]
-		}
-	}
+  model: {
+    service: "mallmgmt",
+    entity: "store", 
+    version: "1"
+  },
+  attributes: {
+    cityId: "string",
+    mallId: "string",
+    storeId: "string",
+    buildingId: "string",
+    unitId: "string",
+    name: "string",
+    description: "string",
+    category: "string"
+  },
+  indexes: {
+    stores: {
+      pk: {
+        field: "pk",
+        composite: ["cityId", "mallId"]
+      },
+      sk: {
+        field: "sk",
+        composite: ["storeId", "unitId"]
+      }
+    }
+  }
 }, {table: "StoreDirectory"});
 
 const cityId = "Atlanta1";
@@ -1688,8 +1693,11 @@ const buildingId = "F34";
 // Good: Includes at least the PK
 StoreLocations.query.stores({cityId, mallId});
 
-// Good: Includes at least the PK, and some of the SK
-StoreLocations.query.stores({cityId, mallId, buildingId});
+// Good: Includes at least the PK, and the first SK attribute
+StoreLocations.query.stores({cityId, mallId, storeId});
+
+// Good: Includes at least the PK, and the all SK attributes   
+StoreLocations.query.stores({cityId, mallId, storeId, unitId});
 
 // Bad: No PK composite attributes specified, will throw
 StoreLocations.query.stores();
@@ -1697,8 +1705,8 @@ StoreLocations.query.stores();
 // Bad: Not All PK Composite Attributes included (cityId), will throw
 StoreLocations.query.stores({mallId});
 
-// Bad: Composite Attributes not included in order, will NOT throw but will ignore `storeId` 
-StoreLocations.query.stores({cityId, mallId, storeId});
+// Bad: Composite Attributes not included in order, will NOT throw, but will ignore `unitId` because `storeId` was not supplied as well
+StoreLocations.query.stores({cityId, mallId, unitId});
 ```
 
 ### Sort Key Operations 
@@ -2036,7 +2044,7 @@ Elements of the `unprocessed` array are unlike results received from a query. In
 ### Update Record
 To update a record, pass all Table index composite attributes to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
 
-> Note: If your update includes changes to an attribute that is also a composite attribute for a global secondary index, you must provide all composite attributes for that index.
+> Note: If your update includes changes to an attribute that is also a composite attribute for a global secondary index, you must provide all composite attributes for that index. If this constraint did not exist, your keys would either get out of sync with the attributes in your model, or be partially updated at the time of writing because the other attributes in that index were not present at the time of key composition.  
 
 ```javascript
 await StoreLocations
@@ -2255,7 +2263,7 @@ Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this
 #### Begins With Queries
 One important consideration when using Sort Key Operations to make is when to use and not to use "begins". 
 
-It is possible to supply partially supply Sort Key composite attributes. While they do have to be in order, it's possible to provide only a subset of the Sort Key Composite Attributes to ElectroDB. By default, when you supply a partial Sort Key in the Access Pattern method, ElectroDB will create a `beginsWith` query. The difference between doing that and using .begins() is that ElectroDB will post-pend the next composite attribute's label onto the query.
+It is possible to supply partially supply Sort Key composite attributes. Sort Key attributes must be provided in the order they are defined, but it's possible to provide only a subset of the Sort Key Composite Attributes to ElectroDB. By default, when you supply a partial Sort Key in the Access Pattern method, ElectroDB will create a `beginsWith` query. The difference between that and using `.begins()` is that, with a `.begins()` query, ElectroDB will not post-pend the next composite attribute's label onto the query.
 
 The difference is nuanced and makes better sense with an example, but the rule of thumb is that data passed to the Access Pattern method should represent values you know strictly equal the value you want.  
 
@@ -2302,7 +2310,7 @@ For the above queries we see two different sort keys:
 1. `"$mallstore_1#buildingid_f34#unitid_"`
 2. `"$mallstore_1#buildingid_f34"`
 
-The first example shows how ElectroDB post-pends the label of the next composite attribute (unitId) on the SortKey to ensure that buildings such as `"f340"` are not included in the query. This is useful to prevent common issues with multi-composite attribute sort keys like accidental over-querying.
+The first example shows how ElectroDB post-pends the label of the next composite attribute (`unitId`) on the Sort Key to ensure that buildings such as `"f340"` are not included in the query. This is useful to prevent common issues with overloaded sort keys like accidental over-querying.
 
 The second example allows you to make queries that do include buildings such as `"f340"` or `"f3409"` or `"f340356346"`.
 
@@ -2906,7 +2914,7 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 _Likely_ you were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
 
 *What to do about it:*
-It is highly recommended that the query option, `{pager: "raw"}`, is applied while using the .page() method with *scan* operations. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+When paginating with *scan* queries, it is highly recommended that the query option, `{pager: "raw"}`. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
 ```javascript
 // example
 myModel.scan.page(null, {pager: "raw"});
