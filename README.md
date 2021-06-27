@@ -102,6 +102,7 @@ StoreLocations.query
   * [Indexes](#indexes)
     + [Indexes Without Sort Keys](#indexes-without-sort-keys)
     + [Indexes With Sort Keys](#indexes-with-sort-keys)
+  * [Facets](#facets)
   * [Composite Attributes](#composite-attributes)
     + [Composite Attribute Arrays](#composite-attribute-arrays)
     + [Composite Attribute Templates](#composite-attribute-templates)
@@ -928,6 +929,15 @@ When using indexes with Sort Keys, that should be expressed as an index *with* a
   }
 }
 ```
+
+## Facets
+
+As of version `0.11.1`, "Facets" have been renamed to "Composite Attributes", and all documentation has been updated to reflect that change. 
+
+To learn about the latest syntax, checkout [Composite Attributes](#composite-attributes).
+
+To learn about why this change was made in preparation for 1.0 checkout [Renaming Facets](#the-renaming-of-index-property-facets-to-composite-and-template).
+
 
 ## Composite Attributes 
 A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key** or a **Sort Key** key, which define an `index`.
