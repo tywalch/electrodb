@@ -62,35 +62,25 @@ const MaxDate = "9999-99-99";
 
 // Get unread comment replies
 export async function getUnreadComments(user: string) {
+    const start = {
+        createdAt: MinDate,
+        replyViewed: NotYetViewed
+    };
+    const end = {
+        createdAt: MaxDate,
+        replyViewed: NotYetViewed
+    };
     let [issues, pullRequests] = await Promise.all([
         store.entities
             .issueComments.query
             .replies({replyTo: user})
-            .between(
-                {
-                    createdAt: MinDate,
-                    replyViewed: NotYetViewed
-                },
-                {
-                    createdAt: MaxDate,
-                    replyViewed: NotYetViewed
-                }
-            )
+            .between(start, end)
             .go(),
 
         store.entities
             .pullRequestComments.query
             .replies({replyTo: user})
-            .between(
-                {
-                    createdAt: MinDate,
-                    replyViewed: NotYetViewed
-                },
-                {
-                    createdAt: MaxDate,
-                    replyViewed: NotYetViewed
-                }
-            )
+            .between(start, end)
             .go()
     ]);
 
