@@ -9,7 +9,9 @@
 
 *Please submit issues/feedback or reach out on Twitter [@tinkertamper](https://twitter.com/tinkertamper).*
 
-<h1 align="center">ElectroDB has now entered version 1.0!</h1>  
+<h1 align="center">ElectroDB has now entered version 1.0!</h1>
+
+ElectroDB now has a major version, and with that comes semantic versioning guarantees and improved CHANGELOG detail. To release 1.0 some breaking changes we're made to improve the longevity of the project. Please see the [ChangeLog](/CHANGELOG.md) for more information about relevant deprecations, changes, and new features.    
 
 ------------
 
@@ -598,22 +600,21 @@ const TasksModel = {
 
 ### Model Properties
 
-| Property | Description |
-| ----------- | ----------- |
-| model.service  | Name of the application using the entity, used to namespace all entities
-| model.entity   | Name of the entity that the schema represents 
-| model.version  | (optional) The version number of the schema, used to namespace keys    
-| attributes     | An object containing each attribute that makes up the schema  
-| indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
-| filters        | An object containing user defined filter template functions
-
+Property       | Description 
+-------------- | ----------- 
+model.service  | Name of the application using the entity, used to namespace all entities
+model.entity   | Name of the entity that the schema represents 
+model.version  | (optional) The version number of the schema, used to namespace keys    
+attributes     | An object containing each attribute that makes up the schema  
+indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
 
 ### Service Options
 Optional second parameter
-| Property | Description |
-| ----------- | ----------- |
-| table | Name of the dynamodb table in aws
-| client  | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.
+
+Property | Description 
+-------- | ----------- 
+table    | The name of the dynamodb table in aws.
+client   | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.
 
 ## Attributes
 **Attributes** define an **Entity** record. The `AttributeName` represents the value your code will use to represent an attribute. 
@@ -1099,7 +1100,7 @@ The example above shows indexes defined only with the `template` property. This 
 
 1. ElectroDB will enforce that the template you have supplied actually resolves to the composite attributes specified in the array.
 
-2. If you use ElectroDB with TypeScript, supplying the `composite` array will ensure the indexes' Composite Attributes are typed just the same as if you had not used a composite template
+2. If you use ElectroDB with TypeScript, supplying the `composite` array will ensure the indexes' Composite Attributes are typed just the same as if you had not used a composite template.
 
 An example of using `template` while also using `composite`:
 
@@ -1124,7 +1125,9 @@ An example of using `template` while also using `composite`:
 
 ## Numeric Keys
 
-If you have an index where the Partition or Sort Keys are expected to be numeric values, you can accomplish this with the `template` property on the index that requires numeric keys. Define the attribute used in the composite template as type "number", and then create a template string with only the attribute's name. For example, this model defines both the Partition and Sort Key as numeric:
+If you have an index where the Partition or Sort Keys are expected to be numeric values, you can accomplish this with the `template` property on the index that requires numeric keys. Define the attribute used in the composite template as type "number", and then create a template string with only the attribute's name. 
+
+For example, this model defines both the Partition and Sort Key as numeric:
 
 ```javascript
 const schema = {
