@@ -10,8 +10,8 @@ const e = require("./errors");
 
 class Entity {
 	constructor(model, config = {}) {
-		this.version = EntityVersions.v1;
 		this._validateModel(model);
+		this.version = EntityVersions.v1;
 		this.config = config;
 		this.client = config.client;
 		this.model = this._parseModel(model, config);
@@ -1403,15 +1403,6 @@ class Entity {
 				return impact;
 			})
 			.filter(({ missing }) => missing.length)
-			// .reduce((result, { missing }) => [...result, ...missing], []);
-
-		// let impactedKeyFields = [];
-		// for (let indexName of Object.keys(impactedIndexes)) {
-		// 	let keyFields = Object.keys(impactedIndexes[indexName])
-		// 		.map(keyType => this.model.translations.keys[indexName][keyType]);
-		// 	impactedKeyFields = [...impactedKeyFields, ...keyFields];
-		// }
-
 
 		let isIncomplete = !!incomplete.length;
 		let complete = {facets, indexes: completedIndexes, impactedIndexTypes};
@@ -1507,10 +1498,10 @@ class Entity {
 		}
 
 		/** start beta/v1 condition **/
-		if (modelVersion === ModelVersions.v1) {
-			sk = `${sk}_${version}`;
-		} else {
+		if (modelVersion === ModelVersions.beta) {
 			pk = `${pk}_${version}`;
+		} else {
+			sk = `${sk}_${version}`;
 		}
 		/** end beta/v1 condition **/
 

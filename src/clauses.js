@@ -76,6 +76,7 @@ let clauses = {
 				state.query.method = MethodTypes.get;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,
@@ -115,6 +116,7 @@ let clauses = {
 				state.query.method = MethodTypes.delete;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,
@@ -144,6 +146,7 @@ let clauses = {
 				state.query.method = MethodTypes.remove;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,
@@ -174,6 +177,7 @@ let clauses = {
 				state.query.method = MethodTypes.put;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(record, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						record,
 						state.query.facets.sk,
@@ -209,6 +213,7 @@ let clauses = {
 				state.query.method = MethodTypes.put;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(record, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						record,
 						state.query.facets.sk,
@@ -238,6 +243,7 @@ let clauses = {
 				state.query.method = MethodTypes.update;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,
@@ -266,6 +272,7 @@ let clauses = {
 				state.query.method = MethodTypes.update;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,

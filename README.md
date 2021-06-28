@@ -1034,17 +1034,13 @@ indexes: {
 ### Composite Attribute Templates
 In a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
-Attributes are identified by via prefixed colon, and then the attributes name. For example, the syntax `:storeId`  will match `storeId` attribute in the `model`. 
+Attributes are identified by surrounding the attribute with `${...}` braces. For example, the syntax `${storeId}`  will match `storeId` attribute in the model. 
 
-Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_:mallId#bid_:buildingId`. 
+Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_${mallId}#bid_${buildingId}`. 
 
 > Note: ***ElectroDB*** will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit ***ElectroDB's*** ability to prevent leaking entities with some queries.
 
-Composite Templates have some "gotchas" to consider: 
-
-  1. Keys only allow for one instance of an attribute, the template `:prop1#:prop1` will be interpreted the same as `:prop1#`. 
-	
-  2. ElectroDB will continue to always add a trailing delimiter to composite attributes with keys are partially supplied. The section on [BeginsWith Queries](#begins-with-queries) goes into more detail about how ***ElectroDB*** builds indexes from composite attributes.    
+ElectroDB will continue to always add a trailing delimiter to composite attributes with keys are partially supplied. The section on [BeginsWith Queries](#begins-with-queries) goes into more detail about how ***ElectroDB*** builds indexes from composite attributes.    
 
 ```javascript
 {
@@ -1071,11 +1067,11 @@ Composite Templates have some "gotchas" to consider:
       locations: {
           pk: {
               field: "pk",
-              template: "sid_:storeId"
+              template: "sid_${storeId}"
           },
           sk: {
               field: "sk",
-              template: "mid_:mallId#bid_:buildingId#uid_:unitId"
+              template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}"
           }
       }
   }
@@ -1113,12 +1109,12 @@ An example of using `template` while also using `composite`:
     locations: {
       pk: {
         field: "pk",
-        template: "sid_:storeId"
+        template: "sid_${storeId}"
         composite: ["storeId"]
       },
       sk: {
         field: "sk",
-        template: "mid_:mallId#bid_:buildingId#uid_:unitId",
+        template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}",
         composite: ["mallId", "buildingId", "unitId"]
       }
     }
@@ -1149,11 +1145,11 @@ const schema = {
     record: {
       pk: {
         field: "pk",
-        template: ":number1" // will build PK as numeric value 
+        template: "${number1}" // will build PK as numeric value 
       },
       sk: {
         field: "sk",
-        template: ":number2" // will build SK as numeric value
+        template: "${number2}" // will build SK as numeric value
       }
     }
   }

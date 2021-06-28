@@ -3,10 +3,6 @@ const { expect } = require("chai");
 const moment = require("moment");
 const uuidV4 = require("uuid/v4");
 
-/*
-	todo: add check for untilized SKs to then be converted to filters
-*/
-
 let schema = {
 	service: "MallStoreDirectory",
 	entity: "MallStores",
@@ -5787,9 +5783,45 @@ describe("Entity", () => {
 					}
 				}
 			}, {table: "table"});
-			console.log(
-				entity.get({attr1: "abc", attr2: "def"}).params()
-			)
+			let getParams = entity.get({attr1: "abc", attr2: "def"}).params();
+			expect(() => entity.get({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.delete({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.remove({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.update({attr1: "abc"}).set({attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.patch({attr1: "abc"}).set({attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.put({attr1: "abc", attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.create({attr1: "abc", attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+
+			// empty strings don't count
+			expect(() => entity.get({attr1: "abc", attr2: ""}).params()).to.not.throw;
+			expect(() => entity.delete({attr1: "abc", attr2: ""}).params()).to.not.throw;
+			expect(() => entity.remove({attr1: "abc", attr2: ""}).params()).to.not.throw;
+			expect(() => entity.update({attr1: "abc", attr2: ""}).set({attr3: "def"}).params()).to.not.throw;
+			expect(() => entity.patch({attr1: "abc", attr2: ""}).set({attr3: "def"}).params()).to.not.throw;
+			expect(() => entity.put({attr1: "abc", attr3: "def", attr2: ""}).params()).to.not.throw;
+			expect(() => entity.create({attr1: "abc", attr3: "def", attr2: ""}).params()).to.not.throw;
+
+			let queryParams1 = entity.query.record({attr1: "abc"}).params();
+			let queryParams2 = entity.query.record({attr1: "abc", attr2: "def"}).params();
+			expect(getParams).to.deep.equal({
+				Key: { pk: 'myprefix1_abc#mypostfix1', sk: 'myprefix2_def#mypostfix2' },
+				TableName: 'table'
+			});
+			expect(queryParams1).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'table',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: { ':pk': 'myprefix1_abc#mypostfix1', ':sk1': 'myprefix2_' }
+			});
+			expect(queryParams2).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'table',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: {
+					':pk': 'myprefix1_abc#mypostfix1',
+					':sk1': 'myprefix2_def#mypostfix2'
+				}
+			});
 		})
 		it("Should identify all composite attributes and labels for a given template", () => {
 			// `schema` used here does not (currently) impact the use of the `_parseComposedKey` method.
@@ -5802,12 +5834,60 @@ describe("Entity", () => {
 				allLabelNoValue: entity._parseTemplateKey("static_value"),
 				trailingLabel: entity._parseTemplateKey("label_${myAttribute}#trailing"),
 			};
-			console.log(JSON.stringify({
-				newTemplateSyntax
-			}, null, 4));
+			expect(newTemplateSyntax.loneValue).to.deep.equal( [{
+				"name": "myValue",
+				"label": ""
+			}]);
+			expect(newTemplateSyntax.allSquished).to.deep.equal([
+				{
+					"name": "myValue1",
+					"label": ""
+				},
+				{
+					"name": "myValue2",
+					"label": ""
+				},
+				{
+					"name": "myValue3",
+					"label": ""
+				}
+			]);
+			expect(newTemplateSyntax.labeledWithOneSquish).to.deep.equal([
+				{
+					"name": "myValue",
+					"label": "myLabel"
+				},
+				{
+					"name": "myOtherValue",
+					"label": ""
+				}
+			]);
+			expect(newTemplateSyntax.allLabeledWithDividers).to.deep.equal([
+				{
+					"name": "myValue",
+					"label": "mylabel_"
+				},
+				{
+					"name": "myOtherValue",
+					"label": "#other_"
+				}
+			]);
+			expect(newTemplateSyntax.allLabelNoValue).to.deep.equal([
+				{
+					"name": "",
+					"label": "static_value"
+				}
+			]);
+			expect(newTemplateSyntax.trailingLabel).to.deep.equal([
+				{
+					"name": "myAttribute",
+					"label": "label_"
+				},
+				{
+					"name": "",
+					"label": "#trailing"
+				}
+			]);
 		});
-		it("should just run", () => {
-
-		})
 	});
 });
