@@ -125,5 +125,3 @@ async function readReply(user: string, comment: any): Promise<boolean> {
         return false;
     }
 }
-
-store.collections.
