@@ -305,7 +305,7 @@ class Schema {
 			let isKey = !!facets.byIndex[""].all.find((facet) => facet.name === name);
 			let definition = {
 				name,
-				label: facets.labels[name] || attribute.label,
+				label: attribute.label,
 				required: !!attribute.required,
 				field: attribute.field || name,
 				default: attribute.default,
@@ -396,7 +396,7 @@ class Schema {
 			})
 			.map((facet) => `"${facet.type}: ${facet.name}"`);
 		if (missingFacetAttributes.length) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Invalid key composite attribute template. The following composite attribute attributes were described in the key composite attribute template but were not included model's attributes: ${missingFacetAttributes.join(", ")}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidKeyCompositeAttributeTemplate, `Invalid key composite attribute template. The following composite attribute attributes were described in the key composite attribute template but were not included model's attributes: ${missingFacetAttributes.join(", ")}`);
 		}
 		if (invalidProperties.length) {
 			let message = invalidProperties.map((prop) => `Schema Validation Error. Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`);

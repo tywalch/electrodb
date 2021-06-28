@@ -82,22 +82,22 @@ let schema = {
       index: "gsi1pk-gsi1sk-index",
       pk: {
         field: "gsi1pk",
-        facets: "mall_:mall",
+        facets: "mall_${mall}",
       },
       sk: {
         field: "gsi1sk",
-        facets: "b_:building#u_:unit#s_:store",
+        facets: "b_${building}#u_${unit}#s_${store}",
       },
     },
     leases: {
       index: "gsi2pk-gsi2sk-index",
       pk: {
         field: "gsi2pk",
-        facets: "m_:mall",
+        facets: "m_${mall}",
       },
       sk: {
         field: "gsi2sk",
-        facets: "l_:leaseEnd#s_:store#b_:building#u_:unit",
+        facets: "l_${leaseEnd}#s_${store}#b_${building}#u_${unit}",
       },
     },
     categories: {

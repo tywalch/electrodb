@@ -93,7 +93,7 @@ let schema = {
       },
       sk: {
         field: "gsi1sk",
-        facets: "b_:building#u_:unit#s_:store",
+        facets: "b_${building}#u_${unit}#s_${store}",
       },
     },
     leases: {
@@ -104,7 +104,7 @@ let schema = {
       },
       sk: {
         field: "gsi2sk",
-        facets: "l_:leaseEnd#s_:store#b_:building#u_:unit",
+        facets: "l_${leaseEnd}#s_${store}#b_${building}#u_${unit}",
       },
     },
     categories: {

@@ -76,6 +76,15 @@ const ElectroInstanceTypes = {
 
 const ModelVersions = {
 	beta: "beta",
+	v1: "v1",
+	v2: "v2"
+};
+
+const EntityVersions = {
+	v1: "v1"
+};
+
+const ServiceVersions = {
 	v1: "v1"
 };
 
@@ -110,6 +119,8 @@ module.exports = {
 	MaxBatchItems,
 	ModelVersions,
 	AttributeTypes,
+	EntityVersions,
+	ServiceVersions,
 	ExpressionTypes,
 	ElectroInstance,
 	UnprocessedTypes,

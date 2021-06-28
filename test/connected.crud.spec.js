@@ -3403,22 +3403,22 @@ describe("Entity", async () => {
 						index: "gsi1pk-gsi1sk-index",
 						pk: {
 							field: "gsi1pk",
-							facets: "mallz_:mall",
+							facets: "mallz_${mall}",
 						},
 						sk: {
 							field: "gsi1sk",
-							facets: "b_:building#u_:unit#s_:store",
+							facets: "b_${building}#u_${unit}#s_${store}",
 						},
 					},
 					leases: {
 						index: "gsi2pk-gsi2sk-index",
 						pk: {
 							field: "gsi2pk",
-							facets: "m_:mall",
+							facets: "m_${mall}",
 						},
 						sk: {
 							field: "gsi2sk",
-							facets: "l_:leaseEnd#s_:store#b_:building#u_:unit",
+							facets: "l_${leaseEnd}#s_${store}#b_${building}#u_${unit}",
 						},
 					},
 					categories: {
@@ -3700,36 +3700,36 @@ describe("Entity", async () => {
 					record: {
 						pk: {
 							field: "pk",
-							template: ":number1",
+							template: "${number1}",
 						},
 						sk: {
 							field: "sk",
-							template: ":number2"
+							template: "${number2}"
 						}
 					},
 					anotherRecord: {
 						index: "gsi1",
 						pk: {
 							field: "gsi1pk",
-							template: ":number2"
+							template: "${number2}"
 						},
 						sk: {
 							field: "gsi1sk",
-							template: ":number1"
+							template: "${number1}"
 						}
 					},
 					yetAnotherRecord: {
 						index: "gsi2",
 						pk: {
 							field: "gsi2pk",
-							template: ":number1"
+							template: "${number1}"
 						}
 					},
 					andAnotherOne: {
 						index: "gsi3",
 						pk: {
 							field: "gsi3pk",
-							template: ":number2"
+							template: "${number2}"
 						}
 					}
 				}

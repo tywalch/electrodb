@@ -1730,11 +1730,11 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#p1_:prop1`,
+							facets: 'id_${id}#p1_${prop1}',
 						},
 						sk: {
 							field: "sk",
-							facets: `d_:date#p2_:prop2`,
+							facets: 'd_${date}#p2_${prop2}',
 						},
 					},
 				},
@@ -2003,12 +2003,12 @@ describe("Entity", () => {
 						pk: {
 							field: "pk",
 							composite: ["attr1", "attr2"],
-							template: ":attr1#:attr2"
+							template: "${attr1}#${attr2}"
 						},
 						sk: {
 							field: "sk",
 							composite: ["attr3", "attr4"],
-							template: ":attr3#:attr4"
+							template: "${attr3}#${attr4}"
 						}
 					},
 					theseRecords: {
@@ -2016,7 +2016,7 @@ describe("Entity", () => {
 						pk: {
 							field: "gsi1pk",
 							composite: ["attr1", "attr2", "attr3", "attr4"],
-							template: ":attr1#:attr2#:attr3#:attr4"
+							template: "${attr1}#${attr2}#${attr3}#${attr4}"
 						},
 						sk: {
 							// empty properties
@@ -2030,7 +2030,7 @@ describe("Entity", () => {
 						pk: {
 							field: "gsi2pk",
 							composite: ["attr1", "attr2", "attr3", "attr4"],
-							template: ":attr1#:attr2#:attr3#:attr4"
+							template: "${attr1}#${attr2}#${attr3}#${attr4}"
 						},
 						// no pk
 					}
@@ -2063,12 +2063,12 @@ describe("Entity", () => {
 						pk: {
 							field: "pk",
 							composite: ["attr1", "attr2"],
-							template: ":attr2#:attr1"
+							template: "${attr2}#${attr1}"
 						},
 						sk: {
 							field: "sk",
 							composite: ["attr3", "attr4"],
-							template: ":attr3#:attr4"
+							template: "${attr3}#${attr4}"
 						}
 					}
 				}
@@ -2101,12 +2101,12 @@ describe("Entity", () => {
 						pk: {
 							field: "pk",
 							composite: ["attr2"],
-							template: ":attr2"
+							template: "${attr2}"
 						},
 						sk: {
 							field: "sk",
 							composite: ["attr3", "attr4"],
-							template: ":attr4#:attr3"
+							template: "${attr4}#${attr3}"
 						}
 					}
 				}
@@ -2164,25 +2164,25 @@ describe("Entity", () => {
 						},
 						sk: {
 							field: "gsi1sk",
-							template: `:date#p2_:prop2#propzduce_:prop2`,
+							template: "${date}#p2_${prop2}#propzduce_${prop2}",
 						},
 					},
 					justTemplate: {
 						index: "gsi2",
 						pk: {
 							field: "gsi2pk",
-							template: `idz_:id#:prop1#third_:prop3`,
+							template: 'idz_${id}#${prop1}#third_${prop3}',
 						},
 						sk: {
 							field: "gsi2sk",
-							facets: `:date|:prop2`
+							facets: '${date}|${prop2}'
 						},
 					},
 					moreMixed: {
 						index: "gsi3",
 						pk: {
 							field: "gsi3pk",
-							template: `:date#p2_:prop2#propz3_:prop3`,
+							template: "${date}#p2_${prop2}#propz3_${prop3}",
 						},
 						sk: {
 							field: "gsi3sk",
@@ -2200,7 +2200,7 @@ describe("Entity", () => {
 						index: "gsi5",
 						pk: {
 							field: "gsi5pk",
-							template: `:date#p2_:prop2#propz3_:prop3`,
+							template: '${date}#p2_${prop2}#propz3_${prop3}',
 						}
 					}
 				},
@@ -2238,7 +2238,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 				ExpressionAttributeValues: {
 					':pk': '$mallstoredirectory_1#i_identifier#p3_property3',
-					':sk1': '2020-11-16#propzduce_property2'
+					":sk1": "2020-11-16#p2_property2#propzduce_property2"
 				},
 				IndexName: 'gsi1'
 			});
@@ -2291,7 +2291,7 @@ describe("Entity", () => {
 					pk: "$mallstoredirectory_1#i_identifier#prop1_property1",
 					sk: "$mallstores#d_2020-11-16#prop2_property2#p3_property3",
 					gsi1pk: "$mallstoredirectory_1#i_identifier#p3_property3",
-					gsi1sk: "2020-11-16#propzduce_property2",
+					gsi1sk: "2020-11-16#p2_property2#propzduce_property2",
 					gsi2pk: "idz_identifier#property1#third_property3",
 					gsi2sk: "2020-11-16|property2",
 					gsi3pk: "2020-11-16#p2_property2#propz3_property3",
@@ -2329,11 +2329,11 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#:prop1`,
+							facets: 'id_${id}#${prop1}',
 						},
 						sk: {
 							field: "sk",
-							facets: `:date#p2_:prop2`,
+							facets: '${date}#p2_${prop2}'
 						},
 					},
 				},
@@ -2391,7 +2391,7 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#:prop1#wubba_:prop3`,
+							facets: "id_${id}#${prop1}#wubba_${prop3}",
 						},
 						sk: {
 							field: "sk",
@@ -2426,7 +2426,7 @@ describe("Entity", () => {
 				TableName: "StoreDirectory",
 			});
 		});
-		it("Should throw on invalid characters in composite attribute template (string)", () => {
+		it("Allow for static template values", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2452,7 +2452,7 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#p1_:prop1`,
+							facets: "id_${id}#p1_${prop1}",
 						},
 						sk: {
 							field: "sk",
@@ -2461,9 +2461,30 @@ describe("Entity", () => {
 					},
 				},
 			};
-			expect(() => new Entity(schema)).to.throw(
-				`Invalid key composite attribute template. No composite attributes provided, expected at least one composite attribute with the format ":attributeName". Received: dbsfhdfhsdshfshf`,
-			);
+			const entity = new Entity(schema);
+			const getParams = entity.get({id: "abc", prop1: "def"}).params();
+			const queryParams = entity.query.record({id: "abc", prop1: "def"}).params();
+			const deleteParams = entity.delete({id: "abc", prop1: "def"}).params();
+			const removeParams = entity.remove({id: "abc", prop1: "def"}).params();
+			expect(queryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: { ':pk': 'id_abc#p1_def', ':sk1': 'dbsfhdfhsdshfshf' }
+			});
+			expect(getParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory'
+			});
+			expect(deleteParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory'
+			});
+			expect(removeParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+			});
 		});
 		it("Should accept attributes with string values and interpret them as the attribute's `type`", () => {
 			const tests = [
@@ -2582,7 +2603,7 @@ describe("Entity", () => {
 						},
 						sk: {
 							field: "sk",
-							facets: `:date#p3_:prop3#p4_:prop4`,
+							facets: '${date}#p3_${prop3}#p4_${prop4}',
 						},
 					},
 				},
@@ -3224,7 +3245,7 @@ describe("Entity", () => {
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
-					model.indexes.thing.pk.facets = `$blablah#t_:type#o_:org`;
+					model.indexes.thing.pk.facets = '$blablah#t_${type}#o_${org}';
 					let entity = new Entity(model);
 					let params = entity.get(facets).params();
 					expect(params).to.deep.equal({
@@ -3292,7 +3313,7 @@ describe("Entity", () => {
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
-					model.indexes.thing.pk.facets = `$blablah#t_:type#o_:org`;
+					model.indexes.thing.pk.facets = '$blablah#t_${type}#o_${org}';
 					let entity = new Entity(model);
 					let params = entity.get(facets).params();
 					expect(params).to.deep.equal({
@@ -5647,36 +5668,36 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							template: ":number1",
+							template: "${number1}",
 						},
 						sk: {
 							field: "sk",
-							template: ":number2"
+							template: "${number2}"
 						}
 					},
 					anotherRecord: {
 						index: "gsi1",
 						pk: {
 							field: "gsi1pk",
-							template: ":number2"
+							template: "${number2}"
 						},
 						sk: {
 							field: "gsi1sk",
-							template: ":number1"
+							template: "${number1}"
 						}
 					},
 					yetAnotherRecord: {
 						index: "gsi2",
 						pk: {
 							field: "gsi2pk",
-							template: ":number1"
+							template: "${number1}"
 						}
 					},
 					andAnotherOne: {
 						index: "gsi3",
 						pk: {
 							field: "gsi3pk",
-							template: ":number2"
+							template: "${number2}"
 						}
 					}
 				}
@@ -5733,5 +5754,60 @@ describe("Entity", () => {
 				Key: { pk: 55, sk: 66 }
 			});
 		});
+	});
+	describe("Composite Key Templates", () => {
+		it("Should allow composite templates to have trailing labels", () => {
+			const entity = new Entity({
+				model: {
+					entity: "templates",
+					service: "test",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: "myprefix1_${attr1}#mypostfix1"
+						},
+						sk: {
+							field: "sk",
+							template: "myprefix2_${attr2}#mypostfix2"
+						}
+					}
+				}
+			}, {table: "table"});
+			console.log(
+				entity.get({attr1: "abc", attr2: "def"}).params()
+			)
+		})
+		it("Should identify all composite attributes and labels for a given template", () => {
+			// `schema` used here does not (currently) impact the use of the `_parseComposedKey` method.
+			const entity = new Entity(schema);
+			let newTemplateSyntax = {
+				loneValue: entity._parseTemplateKey("${myValue}"),
+				allSquished: entity._parseTemplateKey("${myValue1}${myValue2}${myValue3}"),
+				labeledWithOneSquish: entity._parseTemplateKey("myLabel${myValue}${myOtherValue}"),
+				allLabeledWithDividers: entity._parseTemplateKey("mylabel_${myValue}#other_${myOtherValue}"),
+				allLabelNoValue: entity._parseTemplateKey("static_value"),
+				trailingLabel: entity._parseTemplateKey("label_${myAttribute}#trailing"),
+			};
+			console.log(JSON.stringify({
+				newTemplateSyntax
+			}, null, 4));
+		});
+		it("should just run", () => {
+
+		})
 	});
 });

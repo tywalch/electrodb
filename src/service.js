@@ -1,6 +1,6 @@
 const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
-const { Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
+const { ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const { getInstanceType, getModelVersion, applyBetaModelOverrides } = require("./util");
@@ -97,6 +97,7 @@ class Service {
 	}
 
 	constructor(service = "", config = {}) {
+		this.version = ServiceVersions.v1;
 		let type = inferConstructorType(service);
 		switch(type) {
 			case ConstructorTypes.v1Map:
@@ -410,32 +411,30 @@ class Service {
 		let collectionDifferences = [];
 		let definitionIndexName = definition.index || "(Primary Index)";
 		let providedIndexName = providedIndex.index || "(Primary Index)";
-		for (let i = 0; i < definition.pk.facets.length; i++) {
-			let definitionFacet = definition.pk.facets[i];
-			let definitionLabel = definition.labels[definitionFacet] !== undefined
-				? definition.labels[definitionFacet]
-				: definitionFacet;
-			let providedFacet = providedIndex.pk.facets[i];
-			let providedLabel = providedIndex.labels[providedFacet] !== undefined
-				? providedIndex.labels[providedFacet]
-				: providedFacet;
-			let noLabels = definition.labels[definitionFacet] === undefined && providedIndex.labels[providedFacet] === undefined;
-			if (definitionLabel !== providedLabel) {
-				mismatchedFacetLabels.push({
-					definitionFacet,
-					definitionLabel,
-					providedFacet,
-					providedLabel,
-					type: noLabels ? "facet" : "label"
-				});
-			} else if (definitionFacet !== providedFacet) {
-				mismatchedFacetLabels.push({
-					definitionFacet,
-					definitionLabel,
-					providedFacet,
-					providedLabel,
-					type: "facet"
-				});
+		if (pkFacetLengthMatch) {
+			for (let i = 0; i < definition.pk.labels.length; i++) {
+				let definitionFacet = definition.pk.labels[i].name;
+				let definitionLabel = definition.pk.labels[i].label;
+				let providedFacet = providedIndex.pk.labels[i].name;
+				let providedLabel = providedIndex.pk.labels[i].label;
+				let noLabels = definition.pk.labels[i].label === definition.pk.labels[i].name && providedIndex.pk.labels[i].label === providedIndex.pk.labels[i].name;
+				if (definitionLabel !== providedLabel) {
+					mismatchedFacetLabels.push({
+						definitionFacet,
+						definitionLabel,
+						providedFacet,
+						providedLabel,
+						type: noLabels ? "facet" : "label"
+					});
+				} else if (definitionFacet !== providedFacet) {
+					mismatchedFacetLabels.push({
+						definitionFacet,
+						definitionLabel,
+						providedFacet,
+						providedLabel,
+						type: "facet"
+					});
+				}
 			}
 		}
 		if (!indexMatch) {
@@ -454,7 +453,6 @@ class Service {
 		// Else if used here because if they don't even have the same facet length then the data collected for the mismatched facets would include undefined values
 		// which would make the error messages even more confusing.
 		} else if (mismatchedFacetLabels.length > 0) {
-
 			for (let mismatch of mismatchedFacetLabels) {
 				if (mismatch.type === "facet") {
 					collectionDifferences.push(
@@ -503,18 +501,7 @@ class Service {
 
 	_processEntityKeys(definition = {}, providedIndex = {}) {
 		if (!Object.keys(definition).length) {
-			definition = {
-				index: providedIndex.index || "",
-				labels: providedIndex.labels || {},
-				pk: {
-					field: providedIndex.pk.field,
-					facets: providedIndex.pk.facets,
-				},
-				sk: {
-					field: providedIndex.sk.field,
-					facets: providedIndex.sk.facets,
-				},
-			};
+			definition = providedIndex;
 		}
 		let [invalidDefinition, invalidIndexMessages] = this._validateCollectionDefinition(definition, providedIndex);
 		if (invalidDefinition) {
