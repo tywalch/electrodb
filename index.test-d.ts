@@ -65,11 +65,11 @@ let entityWithSK = new Entity({
             collection: "mycollection2",
             pk: {
                 field: "pk",
-                facets: ["attr1"]
+                composite: ["attr1"]
             },
             sk: {
                 field: "sk",
-                facets: ["attr2"]
+                composite: ["attr2"]
             }
         },
         myIndex2: {
@@ -77,11 +77,11 @@ let entityWithSK = new Entity({
             index: "gsi1",
             pk: {
                 field: "gsipk1",
-                facets: ["attr6", "attr9"]
+                composite: ["attr6", "attr9"]
             },
             sk: {
                 field: "gsisk1",
-                facets: ["attr4", "attr5"]
+                composite: ["attr4", "attr5"]
             }
         },
         myIndex3: {
@@ -89,11 +89,11 @@ let entityWithSK = new Entity({
             index: "gsi2",
             pk: {
                 field: "gsipk2",
-                facets: ["attr5"]
+                composite: ["attr5"]
             },
             sk: {
                 field: "gsisk2",
-                facets: ["attr4", "attr3", "attr9"]
+                composite: ["attr4", "attr3", "attr9"]
             }
         }
     }
@@ -160,7 +160,7 @@ let entityWithoutSK = new Entity({
         myIndex: {
             pk: {
                 field: "pk",
-                facets: ["attr1"]
+                composite: ["attr1"]
             }
         },
         myIndex2: {
@@ -168,11 +168,11 @@ let entityWithoutSK = new Entity({
             collection: "mycollection1",
             pk: {
                 field: "gsipk1",
-                facets: ["attr6", "attr9"]
+                composite: ["attr6", "attr9"]
             },
             sk: {
                 field: "gsisk1",
-                facets: []
+                composite: []
             }
         },
         myIndex3: {
@@ -180,11 +180,11 @@ let entityWithoutSK = new Entity({
             index: "gsi2",
             pk: {
                 field: "gsipk2",
-                facets: ["attr5"]
+                composite: ["attr5"]
             },
             sk: {
                 field: "gsisk2",
-                facets: []
+                composite: []
             }
         }
     }
@@ -212,11 +212,11 @@ let standAloneEntity = new Entity({
         index1: {
             pk: {
                 field: "pk",
-                facets: ["prop1", "prop2"]
+                composite: ["prop1", "prop2"]
             },
             sk: {
                 field: "sk",
-                facets: ["prop3"]
+                composite: ["prop3"]
             }
         }
     }
@@ -252,11 +252,11 @@ let normalEntity1 = new Entity({
             collection: "normalcollection",
             pk: {
                 field: "pk",
-                facets: ["prop1", "prop2"]
+                composite: ["prop1", "prop2"]
             },
             sk: {
                 field: "sk",
-                facets: ["prop4"]
+                composite: ["prop4"]
             }
         }
     }
@@ -298,11 +298,11 @@ let normalEntity2 = new Entity({
             collection: "normalcollection",
             pk: {
                 field: "pk",
-                facets: ["prop1", "prop2"]
+                composite: ["prop1", "prop2"]
             },
             sk: {
                 field: "sk",
-                facets: ["prop5"]
+                composite: ["prop5"]
             }
         },
         anotherIndex: {
@@ -310,11 +310,11 @@ let normalEntity2 = new Entity({
             collection: "mycollection1",
             pk: {
                 field: "gsipk1",
-                facets: ["attr6", "attr9"]
+                composite: ["attr6", "attr9"]
             },
             sk: {
                 field: "gsisk1",
-                facets: []
+                composite: []
             }
         }
     }
@@ -362,34 +362,34 @@ const AttributeName = "" as AttributeNames;
 type OperationNames = "eq" | "ne" | "gt" | "lt" | "gte" | "lte" | "between" | "begins" | "exists" | "notExists" | "contains" | "notContains" | "value" | "name";
 
 
-type WithSKMyIndexFacets = {
+type WithSKMyIndexCompositeAttributes = {
     attr1: string;
     attr2: string;
 }
 
-type WithSKMyIndex2Facets = {
+type WithSKMyIndex2CompositeAttributes = {
     attr6: string;
     attr4?: string;
     attr5?: string;
 }
 
-type WithSKMyIndex3Facets = {
+type WithSKMyIndex3CompositeAttributes = {
     attr5: string;
     attr3?: "123" | "def" | "ghi";
     attr4?: string;
     attr9?: number;
 }
 
-type WithoutSKMyIndexFacets = {
+type WithoutSKMyIndexCompositeAttributes = {
     attr1: string;
 }
 
-type WithoutSKMyIndex2Facets = {
+type WithoutSKMyIndex2CompositeAttributes = {
     attr6: number;
     attr9: number;
 }
 
-type WithoutSKMyIndex3Facets = {
+type WithoutSKMyIndex3CompositeAttributes = {
     attr5: string;
 }
 
@@ -465,17 +465,17 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<GetSingleParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<GetSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectError<GetSingleGoParamsWithSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectError<GetSingleGoParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<GetSingleGoParamsWithSK>({concurrency: 10, unprocessed: "raw"});
+    expectError<GetSingleGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
-    expectError<GetSingleParamsParamsWithSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectError<GetSingleParamsParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<GetSingleParamsParamsWithSK>({concurrency: 10, unprocessed: "raw"});
+    expectError<GetSingleParamsParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
-    expectAssignable<GetBatchGoParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectAssignable<GetBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectAssignable<GetBatchGoParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+    expectAssignable<GetBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
-    expectAssignable<GetBatchParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectAssignable<GetBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectAssignable<GetBatchParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+    expectAssignable<GetBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
     // Results
     expectAssignable<Promise<Item>>(entityWithSK.get({attr1: "abc", attr2: "def"}).go());
@@ -483,8 +483,8 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<"paramtest">(entityWithSK.get({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.get({attr1: "abc"}).params<"paramtest">());
 
-    expectAssignable<Promise<[WithSKMyIndexFacets[], Item[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
-    expectAssignable<Promise<[WithoutSKMyIndexFacets[], ItemWithoutSK[]]>>(entityWithoutSK.get([{attr1: "abc"}]).go());
+    expectAssignable<Promise<[WithSKMyIndexCompositeAttributes[], Item[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
+    expectAssignable<Promise<[WithoutSKMyIndexCompositeAttributes[], ItemWithoutSK[]]>>(entityWithoutSK.get([{attr1: "abc"}]).go());
 
 // Delete
     // Single
@@ -564,17 +564,17 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<DeleteSingleParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<DeleteSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectError<DeleteSingleGoParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectError<DeleteSingleGoParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<DeleteSingleGoParams>({concurrency: 10, unprocessed: "raw"});
+    expectError<DeleteSingleGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
-    expectError<DeleteSingleParamsParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectError<DeleteSingleParamsParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<DeleteSingleParamsParams>({concurrency: 10, unprocessed: "raw"});
+    expectError<DeleteSingleParamsParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
-    expectAssignable<DeleteBatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectAssignable<DeleteBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectAssignable<DeleteBatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+    expectAssignable<DeleteBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
-    expectAssignable<DeleteBatchParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectAssignable<DeleteBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectAssignable<DeleteBatchParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+    expectAssignable<DeleteBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
     // Where
     entityWithSK.delete({attr1: "asbc", attr2: "gdd"}).where((attr, op) => {
@@ -598,7 +598,7 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<"paramtest">(entityWithSK.delete({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.delete({attr1: "abc"}).params<"paramtest">());
 
-    expectAssignable<Promise<WithoutSKMyIndexFacets[]>>(entityWithoutSK.delete([{attr1: "abc"}]).go());
+    expectAssignable<Promise<WithoutSKMyIndexCompositeAttributes[]>>(entityWithoutSK.delete([{attr1: "abc"}]).go());
 
 // Put
     let putItemFull = {attr1: "abnc", attr2: "dsg", attr3: "def", attr4: "abc", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: 24, attr10: true} as const;
@@ -681,17 +681,17 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<PutSingleParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<PutSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectError<PutSingleGoParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectError<PutSingleGoParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<PutSingleGoParams>({concurrency: 10, unprocessed: "raw"});
+    expectError<PutSingleGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
-    expectError<PutSingleParamsParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectError<PutSingleParamsParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<PutSingleParamsParams>({concurrency: 10, unprocessed: "raw"});
+    expectError<PutSingleParamsParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
-    expectAssignable<PutBatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectAssignable<PutBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectAssignable<PutBatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+    expectAssignable<PutBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
-    expectAssignable<PutBatchParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectAssignable<PutBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectAssignable<PutBatchParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+    expectAssignable<PutBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
     // Where
     entityWithSK.put(putItemFull).where((attr, op) => {
@@ -715,8 +715,8 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<"paramtest">(entityWithSK.put(putItemFull).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.put(putItemFull).params<"paramtest">());
 
-    expectAssignable<Promise<WithSKMyIndexFacets[]>>(entityWithSK.put([putItemFull]).go());
-    expectAssignable<Promise<WithoutSKMyIndexFacets[]>>(entityWithoutSK.put([putItemFull]).go());
+    expectAssignable<Promise<WithSKMyIndexCompositeAttributes[]>>(entityWithSK.put([putItemFull]).go());
+    expectAssignable<Promise<WithoutSKMyIndexCompositeAttributes[]>>(entityWithoutSK.put([putItemFull]).go());
 
 // Create
     let createItemFull = {attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
@@ -783,11 +783,11 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<CreateParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<CreateParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectError<CreateGoParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectError<CreateGoParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<CreateGoParams>({concurrency: 10, unprocessed: "raw"});
+    expectError<CreateGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
-    expectError<CreateParamsParams>({concurrency: 10, lastEvaluatedKeyRaw: true});
-    expectError<CreateParamsParamsWithoutSK>({concurrency: 10, lastEvaluatedKeyRaw: true});
+    expectError<CreateParamsParams>({concurrency: 10, unprocessed: "raw"});
+    expectError<CreateParamsParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
     // Where
     entityWithSK.create(putItemFull).where((attr, op) => {
@@ -985,54 +985,85 @@ let getKeys = ((val) => {}) as GetKeys;
 
     let findFinishers = entityWithSK.find({});
     let findFinishersWithoutSK = entityWithoutSK.find({});
+    let matchFinishers = entityWithSK.find({});
+    let matchFinishersWithoutSK = entityWithoutSK.find({});
 
     let findFinisherKeys = getKeys(findFinishers);
     let findFinisherKeysWithoutSK = getKeys(findFinishersWithoutSK);
+    let matchFinisherKeys = getKeys(matchFinishers);
+    let matchFinisherKeysWithoutSK = getKeys(matchFinishersWithoutSK);
 
     expectAssignable<FindParametersFinishers>(findFinisherKeys);
     expectAssignable<FindParametersFinishers>(findFinisherKeysWithoutSK);
+    expectAssignable<FindParametersFinishers>(matchFinisherKeys);
+    expectAssignable<FindParametersFinishers>(matchFinisherKeysWithoutSK);
 
     let findGo = findFinishers.go;
     let findGoWithoutSK = findFinishersWithoutSK.go;
+    let matchGo = matchFinishers.go;
+    let matchGoWithoutSK = matchFinishersWithoutSK.go;
 
     let findParams = findFinishers.params;
     let findParamsWithoutSK = findFinishersWithoutSK.params;
+    let matchParams = matchFinishers.params;
+    let matchParamsWithoutSK = matchFinishersWithoutSK.params;
 
     type FindGoParams = Parameter<typeof findGo>;
     type FindGoParamsWithoutSK = Parameter<typeof findGoWithoutSK>;
+    type MatchGoParams = Parameter<typeof matchGo>;
+    type MatchGoParamsWithoutSK = Parameter<typeof matchGoWithoutSK>;
 
     type FindParamsParams = Parameter<typeof findParams>;
     type FindParamsParamsWithoutSK = Parameter<typeof findParamsWithoutSK>;
+    type MatchParamsParams = Parameter<typeof findParams>;
+    type MatchParamsParamsWithoutSK = Parameter<typeof findParamsWithoutSK>;
 
     expectAssignable<FindGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<FindGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<MatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<MatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
     expectAssignable<FindParamsParams>({params: {}, table: "abc"});
     expectAssignable<FindParamsParamsWithoutSK>({params: {}, table: "abc"});
+    expectAssignable<MatchParamsParams>({params: {}, table: "abc"});
+    expectAssignable<MatchParamsParamsWithoutSK>({params: {}, table: "abc"});
 
 
     // Page
     let findPageFn = findFinishers.page;
     let findPageFnWithoutSK = findFinishersWithoutSK.page;
+    let matchPageFn = matchFinishers.page;
+    let matchPageFnWithoutSK = matchFinishersWithoutSK.page;
 
     type FindPageParams = Parameters<typeof findPageFn>;
     type FindPageParamsWithoutSK = Parameters<typeof findPageFnWithoutSK>;
+    type MatchPageParams = Parameters<typeof matchPageFn>;
+    type MatchPageParamsWithoutSK = Parameters<typeof matchPageFnWithoutSK>;
 
-    type FindPageReturn = Promise<[WithSKMyIndexFacets | null, Item[]]>;
-    type FindPageReturnWithoutSK = Promise<[WithoutSKMyIndexFacets | null, ItemWithoutSK[]]>;
+    type FindPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
+    type FindPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
+    type MatchPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
+    type MatchPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
 
     expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
     expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<MatchPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<MatchPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
 
     expectAssignable<FindPageParams>([null]);
     expectAssignable<FindPageParamsWithoutSK>([null]);
+    expectAssignable<MatchPageParams>([null]);
+    expectAssignable<MatchPageParamsWithoutSK>([null]);
 
     expectAssignable<FindPageParams>([]);
     expectAssignable<FindPageParamsWithoutSK>([]);
+    expectAssignable<MatchPageParams>([]);
+    expectAssignable<MatchPageParamsWithoutSK>([]);
 
     expectAssignable<FindPageReturn>(findPageFn());
     expectAssignable<FindPageReturnWithoutSK>(findPageFnWithoutSK());
-
+    expectAssignable<MatchPageReturn>(findPageFn());
+    expectAssignable<MatchPageReturnWithoutSK>(findPageFnWithoutSK());
 
 // Queries
     type AccessPatternNames = "myIndex" | "myIndex2" | "myIndex3";
@@ -1043,8 +1074,8 @@ let getKeys = ((val) => {}) as GetKeys;
     expectType<AccessPatternNames>(accessPatternNames);
     expectType<AccessPatternNames>(accessPatternNamesWithoutSK);
 
-    type MyIndexFacets = Parameter<typeof entityWithSK.query.myIndex>;
-    type MyIndexFacetsWithoutSK = Parameter<typeof entityWithoutSK.query.myIndex>;
+    type MyIndexCompositeAttributes = Parameter<typeof entityWithSK.query.myIndex>;
+    type MyIndexCompositeAttributesWithoutSK = Parameter<typeof entityWithoutSK.query.myIndex>;
 
     let myIndexBegins = entityWithSK.query.myIndex({attr1: "abc"}).begins;
     // Begins does not exist on Find because the user has tossed out knowledge of order/indexes
@@ -1052,31 +1083,31 @@ let getKeys = ((val) => {}) as GetKeys;
 
     type MyIndexRemaining = Parameter<typeof myIndexBegins>;
 
-    expectAssignable<MyIndexFacets>({attr1: "abd"});
-    expectAssignable<MyIndexFacetsWithoutSK>({attr1: "abd"});
+    expectAssignable<MyIndexCompositeAttributes>({attr1: "abd"});
+    expectAssignable<MyIndexCompositeAttributesWithoutSK>({attr1: "abd"});
 
-    expectAssignable<MyIndexFacets>({attr1: "abd", attr2: "def"});
-    expectAssignable<MyIndexFacetsWithoutSK>({attr1: "abd"});
+    expectAssignable<MyIndexCompositeAttributes>({attr1: "abd", attr2: "def"});
+    expectAssignable<MyIndexCompositeAttributesWithoutSK>({attr1: "abd"});
 
     expectAssignable<MyIndexRemaining>({});
     expectAssignable<MyIndexRemaining>({attr2: "abc"});
 
     // attr1 not supplied
-    expectError<MyIndexFacets>({attr2: "abc"});
-    expectError<MyIndexFacetsWithoutSK>({attr2: "abc"});
+    expectError<MyIndexCompositeAttributes>({attr2: "abc"});
+    expectError<MyIndexCompositeAttributesWithoutSK>({attr2: "abc"});
 
     // attr2 is a strin, not number
-    expectError<MyIndexFacets>({attr1: "abd", attr2: 133});
-    expectError<MyIndexFacetsWithoutSK>({attr1: 243});
+    expectError<MyIndexCompositeAttributes>({attr1: "abd", attr2: 133});
+    expectError<MyIndexCompositeAttributesWithoutSK>({attr1: 243});
 
     // attr3 is not a pk or sk
-    expectError<MyIndexFacets>({attr1: "abd", attr2: "def", attr3: "should_not_work"});
-    expectError<MyIndexFacetsWithoutSK>({attr1: "abd", attr2: "def", attr3: "should_not_work"});
+    expectError<MyIndexCompositeAttributes>({attr1: "abd", attr2: "def", attr3: "should_not_work"});
+    expectError<MyIndexCompositeAttributesWithoutSK>({attr1: "abd", attr2: "def", attr3: "should_not_work"});
 
     // attr1 was already used in the query method
     expectError<MyIndexRemaining>({attr1: "abd"});
 
-    // attr2 is a string not number (this tests the 'remaining' facets which should also enforce type)
+    // attr2 is a string not number (this tests the 'remaining' composite attributes which should also enforce type)
     expectError<MyIndexRemaining>({attr2: 1243});
 
     // require at least PK
@@ -1401,27 +1432,27 @@ let getKeys = ((val) => {}) as GetKeys;
     type SharedCollectionParameter1 = Parameter<typeof complexService.collections.mycollection>;
     // success
     complexService.collections.mycollection({attr5: "abc"});
-    // failure - no collection facets
+    // failure - no collection composite attributes
     expectError<SharedCollectionParameter1>({});
-    // failure - incorrect entity facet types
+    // failure - incorrect entity composite attribute types
     expectError<SharedCollectionParameter1>({attr5: 123});
-    // failure - incorrect entity facet properties
+    // failure - incorrect entity composite attribute properties
     expectError<SharedCollectionParameter1>({attr1: "123"});
 
     type SharedCollectionParameter2 = Parameter<typeof complexService.collections.normalcollection>;
     // success
     complexService.collections.normalcollection({prop2: "abc", prop1: "def"});
-    // failure - no collection facets
+    // failure - no collection composite attributes
     expectError<SharedCollectionParameter2>({});
-    // failure - incomplete facets
+    // failure - incomplete composite attributes
     expectError<SharedCollectionParameter2>({prop2: "abc"});
-    // failure - incomplete facets
+    // failure - incomplete composite attributes
     expectError<SharedCollectionParameter2>({prop1: "abc"});
-    // failure - incorrect entity facet types
+    // failure - incorrect entity composite attribute types
     expectError<SharedCollectionParameter2>({prop1: 35});
-    // failure - incorrect entity facet types
+    // failure - incorrect entity composite attribute types
     expectError<SharedCollectionParameter2>({prop2: 35});
-    // failure - incorrect entity facet properties
+    // failure - incorrect entity composite attribute properties
     expectError<SharedCollectionParameter2>({prop3: "35"});
 
     let chainMethods = complexService.collections.normalcollection({prop2: "abc", prop1: "def"});
@@ -1695,11 +1726,11 @@ let getKeys = ((val) => {}) as GetKeys;
                 collection: "collection1",
                 pk: {
                     field: "pk",
-                    facets: ["prop1"]
+                    composite: ["prop1"]
                 },
                 sk: {
                     field: "sk",
-                    facets: ["prop2"]
+                    composite: ["prop2"]
                 }
             }
         }
@@ -1731,11 +1762,11 @@ let getKeys = ((val) => {}) as GetKeys;
                 collection: "collection1",
                 pk: {
                     field: "pk",
-                    facets: ["prop1"]
+                    composite: ["prop1"]
                 },
                 sk: {
                     field: "sk",
-                    facets: ["prop2"]
+                    composite: ["prop2"]
                 }
             }
         }
@@ -1834,11 +1865,11 @@ let getKeys = ((val) => {}) as GetKeys;
                 collection: "collection1",
                 pk: {
                     field: "pk",
-                    facets: ["prop1"]
+                    composite: ["prop1"]
                 },
                 sk: {
                     field: "sk",
-                    facets: ["prop2"]
+                    composite: ["prop2"]
                 }
             }
         }
@@ -1936,3 +1967,8 @@ let getKeys = ((val) => {}) as GetKeys;
     complexService.collections
         .mycollection1({attr9: 123, attr6: 245})
         .page(nextPage, {})
+
+    complexService.entities
+        .entityWithSK.remove({attr1: "abc", attr2: "def"})
+        .where((attr, op) => op.eq(attr.attr9, 14))
+        .go();

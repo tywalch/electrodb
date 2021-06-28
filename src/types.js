@@ -28,6 +28,7 @@ const MethodTypes = {
 	scan: "scan",
 	update: "update",
 	delete: "delete",
+	remove: "remove",
 	scan: "scan",
 	patch: "patch",
 	create: "create",
@@ -75,6 +76,15 @@ const ElectroInstanceTypes = {
 
 const ModelVersions = {
 	beta: "beta",
+	v1: "v1",
+	v2: "v2"
+};
+
+const EntityVersions = {
+	v1: "v1"
+};
+
+const ServiceVersions = {
 	v1: "v1"
 };
 
@@ -94,6 +104,11 @@ const Pager = {
 	item: "item"
 }
 
+const UnprocessedTypes = {
+	raw: "raw",
+	item: "item"
+};
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -104,8 +119,11 @@ module.exports = {
 	MaxBatchItems,
 	ModelVersions,
 	AttributeTypes,
+	EntityVersions,
+	ServiceVersions,
 	ExpressionTypes,
 	ElectroInstance,
+	UnprocessedTypes,
 	ElectroInstanceTypes,
 	AttributeMutationMethods,
 };

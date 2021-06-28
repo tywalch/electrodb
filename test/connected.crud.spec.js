@@ -154,6 +154,10 @@ describe("Entity", async () => {
 		let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		let building = "BuildingZ";
 		let unit = "G1";
+		it("Should return null when item retrieved does not exist", async () => {
+			let data = await MallStores.get({sector: "does_not_exist", id: "also_does_not_exist"}).go();
+			expect(data).to.be.null;
+		})
 		it("Should return the created item", async () => {
 			let putOne = await MallStores.put({
 				sector,
@@ -275,7 +279,7 @@ describe("Entity", async () => {
 			let updatedStore = await MallStores.update(secondStore)
 				.set({ rent: newRent })
 				.go();
-			expect(updatedStore).to.deep.equal({});
+			expect(updatedStore).to.be.null;
 			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
@@ -614,7 +618,7 @@ describe("Entity", async () => {
 			let updatedStore = await MallStores.update(secondStore)
 				.set({ rent: newRent })
 				.go();
-			expect(updatedStore).to.deep.equal({});
+			expect(updatedStore).to.be.null;
 			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
@@ -928,7 +932,7 @@ describe("Entity", async () => {
 			await sleep(150);
 			let recordNoLongerExists = await record.get({ prop1, prop2 }).go();
 			expect(!!Object.keys(recordExists).length).to.be.true;
-			expect(!!Object.keys(recordNoLongerExists).length).to.be.false;
+			expect(recordNoLongerExists).to.be.null;
 		});
 	});
 
@@ -1006,7 +1010,7 @@ describe("Entity", async () => {
 				.update({ date, id })
 				.set({ prop1: updatedProp1 })
 				.go();
-			expect(updatedRecord).to.deep.equal({});
+			expect(updatedRecord).to.be.null;
 			let getUpdatedRecord = await db.get({ date, id }).go();
 			expect(getUpdatedRecord).to.deep.equal({
 				id,
@@ -1812,7 +1816,7 @@ describe("Entity", async () => {
 					{ value: "prop4", attr: "prop4", method: "set", watched: undefined },
 				]);
 			});
-			it("Should be possible to use a watcher as a facet", () => {
+			it("Should be possible to use a watcher as a composite attribute", () => {
 				const counter = new TriggerListener();
 				let entity = new Entity({
 					model: {
@@ -1934,7 +1938,7 @@ describe("Entity", async () => {
 				]);
 			});
 
-			it("Should be possible to use a watcher as a facet in the same index as another facet it is watching", () => {
+			it("Should be possible to use a watcher as a composite attribute in the same index as another composite attribute it is watching", () => {
 				const counter = new TriggerListener();
 				let entity = new Entity({
 					model: {
@@ -3085,7 +3089,7 @@ describe("Entity", async () => {
 				throw null;
 			} catch(err) {
 				expect(err).to.not.be.null;
-				expect(err.message).to.equal(`Incomplete facets: Without the facets "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`);
+				expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
 			}
 		});
 
@@ -3097,7 +3101,7 @@ describe("Entity", async () => {
 				throw null;
 			} catch(err) {
 				expect(err).to.not.be.null;
-				expect(err.message).to.equal(`Incomplete facets: Without the facets "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`);
+				expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
 			}
 		});
 
@@ -3321,8 +3325,8 @@ describe("Entity", async () => {
 			}
 		}).timeout(10000);
 	});
-	describe("template and facets arrays", async () => {
-		it("Should resolve facet labels at an index level", async () => {
+	describe("template and composite attribute arrays", async () => {
+		it("Should resolve composite attribute labels at an index level", async () => {
 			const SERVICE = "facettest";
 			const ENTITY = uuid();
 			let model = {
@@ -3399,22 +3403,22 @@ describe("Entity", async () => {
 						index: "gsi1pk-gsi1sk-index",
 						pk: {
 							field: "gsi1pk",
-							facets: "mallz_:mall",
+							facets: "mallz_${mall}",
 						},
 						sk: {
 							field: "gsi1sk",
-							facets: "b_:building#u_:unit#s_:store",
+							facets: "b_${building}#u_${unit}#s_${store}",
 						},
 					},
 					leases: {
 						index: "gsi2pk-gsi2sk-index",
 						pk: {
 							field: "gsi2pk",
-							facets: "m_:mall",
+							facets: "m_${mall}",
 						},
 						sk: {
 							field: "gsi2sk",
-							facets: "l_:leaseEnd#s_:store#b_:building#u_:unit",
+							facets: "l_${leaseEnd}#s_${store}#b_${building}#u_${unit}",
 						},
 					},
 					categories: {
@@ -3655,7 +3659,7 @@ describe("Entity", async () => {
 				prop4: "def"
 			};
 
-			let data = {};
+			let data = null;
 
 			let putResult = await entity.put(item).go();
 
@@ -3670,7 +3674,76 @@ describe("Entity", async () => {
 
 			expect(putResult).to.deep.equal(data);
 			expect(getResponse).to.deep.equal(data);
-			expect(queryResponse).to.deep.equal([data]);
+			expect(queryResponse).to.deep.equal([]);
 		});
-	})
+	});
+	describe("Numeric and boolean keys", () => {
+		it("Should create keys with primitive types other than strings if specified as a template without prefix", async () => {
+			const entity = new Entity({
+				model: {
+					entity: "nonstring_indexes",
+					service: "tests",
+					version: "1"
+				},
+				attributes: {
+					number1: {
+						type: "number"
+					},
+					number2: {
+						type: "number"
+					},
+					number3: {
+						type: "number"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: "${number1}",
+						},
+						sk: {
+							field: "sk",
+							template: "${number2}"
+						}
+					},
+					anotherRecord: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							template: "${number2}"
+						},
+						sk: {
+							field: "gsi1sk",
+							template: "${number1}"
+						}
+					},
+					yetAnotherRecord: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							template: "${number1}"
+						}
+					},
+					andAnotherOne: {
+						index: "gsi3",
+						pk: {
+							field: "gsi3pk",
+							template: "${number2}"
+						}
+					}
+				}
+			}, {table: "electro_nostringkeys", client});
+			let putRecord = await entity.put({number1: 55, number2: 66}).go();
+			let getRecord = await entity.get({number1: 55, number2: 66}).go();
+			let updateRecord = await entity.update({number1: 55, number2: 66}).set({number3: 77}).go();
+			let queryRecord = await entity.query.record({number1: 55}).go();
+			let deleteRecord = await entity.delete({number1: 55, number2: 66}).go();
+			expect(putRecord).to.deep.equal({ number1: 55, number2: 66 });
+			expect(getRecord).to.deep.equal({ number1: 55, number2: 66 });
+			expect(queryRecord).to.deep.equal([{ number1: 55, number2: 66, number3: 77 }]);
+			expect(updateRecord).to.be.null;
+			expect(deleteRecord).to.be.null;
+		});
+	});
 });

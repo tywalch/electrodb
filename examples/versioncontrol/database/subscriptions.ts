@@ -67,11 +67,11 @@ export const subscriptions = new Entity({
     indexes: {
         repository: {
             pk: {
-                facets: ["repoOwner", "repoName"],
+                composite: ["repoOwner", "repoName"],
                 field: "pk"
             },
             sk: {
-                facets: ["username", "ticketType", "ticketNumber"],
+                composite: ["username", "ticketType", "ticketNumber"],
                 field: "sk"
             }
         },
@@ -79,11 +79,11 @@ export const subscriptions = new Entity({
             collection: "watching",
             index: "gsi3pk-gsi3sk-index",
             pk: {
-                facets: ["username"],
+                composite: ["username"],
                 field: "gsi3pk"
             },
             sk: {
-                facets: ["ticketType", "ticketNumber"],
+                composite: ["ticketType", "ticketNumber"],
                 field: "gsi3sk"
             }
         },
@@ -91,11 +91,11 @@ export const subscriptions = new Entity({
             collection: "subscribers",
             index: "gsi4pk-gsi4sk-index",
             pk: {
-                facets: ["repoOwner", "repoName", "ticketNumber"],
+                composite: ["repoOwner", "repoName", "ticketNumber"],
                 field: "gsi4pk"
             },
             sk: {
-                facets: ["ticketType", "username"],
+                composite: ["ticketType", "username"],
                 field: "gsi4sk"
             }
         }

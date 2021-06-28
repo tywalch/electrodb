@@ -111,6 +111,7 @@ class WhereFactory {
 			case MethodTypes.update:
 			case MethodTypes.patch:
 			case MethodTypes.delete:
+			case MethodTypes.remove:
 				return ExpressionTypes.ConditionExpression
 			default:
 				return ExpressionTypes.FilterExpression

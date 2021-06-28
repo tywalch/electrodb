@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { EntityVersions, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const { clauses, initChainState } = require("./clauses");
@@ -11,6 +11,7 @@ const e = require("./errors");
 class Entity {
 	constructor(model, config = {}) {
 		this._validateModel(model);
+		this.version = EntityVersions.v1;
 		this.config = config;
 		this.client = config.client;
 		this.model = this._parseModel(model, config);
@@ -103,7 +104,7 @@ class Entity {
 		});
 	}
 
-	find(facets = {}) {
+	match(facets = {}) {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
 			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
@@ -114,7 +115,7 @@ class Entity {
 					}
 				}
 				return eqFilters.join(" AND");
-			})
+			});
 		} else {
 			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(
 				facets,
@@ -130,6 +131,15 @@ class Entity {
 		}
 	}
 
+	find(facets = {}) {
+		let match = this._findBestIndexKeyMatch(facets);
+		if (match.shouldScan) {
+			return this._makeChain("", this._clausesWithFilters, clauses.index).scan();
+		} else {
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(facets);
+		}
+	}
+
 	collection(collection = "", clauses = {}, facets = {}, {expressions = {}, parse} = {}) {
 		let options = {
 			parse,
@@ -137,8 +147,7 @@ class Entity {
 				names: expressions.names || {},
 				values: expressions.values || {},
 				expression: expressions.expression || ""
-			},
-			// lastEvaluatedKeyRaw: true,
+			}
 		};
 
 		let index = this.model.translations.collections.fromCollectionToIndex[collection];
@@ -187,7 +196,7 @@ class Entity {
 		let index = "";
 		let options = {
 			params: {
-				ConditionExpression: this._makeCreateConditions(index)
+				ConditionExpression: this._makeItemDoesntExistConditions(index)
 			}
 		};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).create(attributes);
@@ -202,10 +211,20 @@ class Entity {
 		let index = "";
 		let options = {
 			params: {
-				ConditionExpression: this._makePatchConditions(index)
+				ConditionExpression: this._makeItemExistsConditions(index)
 			}
 		};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
+	}
+
+	remove(facets = {}) {
+		let index = "";
+		let options = {
+			params: {
+				ConditionExpression: this._makeItemExistsConditions(index)
+			}
+		};
+		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).remove(facets);
 	}
 
 	async go(method, parameters = {}, config = {}) {
@@ -240,7 +259,6 @@ class Entity {
 	}
 
 	async _exec(method, parameters) {
-		// console.log(JSON.stringify({method, parameters}));
 		return this.client[method](parameters).promise().catch(err => {
 			err.__isAWSError = true;
 			throw err;
@@ -340,7 +358,7 @@ class Entity {
 				if (request.PutRequest) {
 					return this.formatResponse(index, request.PutRequest, config);
 				} else if (request.DeleteRequest) {
-					if (config.lastEvaluatedKeyRaw) {
+					if (config.unprocessed === UnprocessedTypes.raw) {
 						return request.DeleteRequest.Key;
 					} else {
 						return this._formatKeysToItem(index, request.DeleteRequest.Key);
@@ -363,7 +381,7 @@ class Entity {
 		}
 		if (response.UnprocessedKeys[table] && response.UnprocessedKeys[table].Keys && Array.isArray(response.UnprocessedKeys[table].Keys)) {
 			for (let value of response.UnprocessedKeys[table].Keys) {
-				if (config && config.lastEvaluatedKeyRaw) {
+				if (config && config.unprocessed === UnprocessedTypes.raw) {
 					unprocessed.push(value);
 				} else {
 					unprocessed.push(
@@ -400,16 +418,22 @@ class Entity {
 				if (response.Item) {
 					if (this.ownsItem(response.Item)) {
 						results = this.model.schema.formatItemForRetrieval(response.Item, config);
+						if (Object.keys(results).length === 0) {
+							results = null;
+						}
 					}
 				} else if (response.Items) {
 					results = [];
 					for (let item of response.Items) {
 						if (this.ownsItem(item)) {
-							results.push(
-								this.model.schema.formatItemForRetrieval(item, config)
-							);
+							let record = this.model.schema.formatItemForRetrieval(item, config);
+							if (Object.keys(record).length > 0) {
+								results.push(record);
+							}
 						}
 					}
+				} else {
+					results = null;
 				}
 			}
 
@@ -503,10 +527,9 @@ class Entity {
 		let names = [];
 		let types = [];
 		let pattern = `^${this._regexpEscape(prefix)}`;
-		let labels = this.model.facets.labels[index];
-		for (let facet of facets) {
-			let { name, type } = this.model.schema.attributes[facet];
-			let label = labels[facet];
+		let labels = this.model.facets.labels[index][keyType] || [];
+		for (let {name, label} of labels) {
+			let { type } = this.model.schema.attributes[name];
 			if (isCustom) {
 				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
 			} else {
@@ -519,19 +542,7 @@ class Entity {
 		let regex = RegExp(pattern);
 		let match = key.match(regex);
 		let results = {};
-		if (!match) {
-			if (Object.keys(backupFacets || {}).length === 0) {
-				// this can occur when a scan is performed but returns no results given the current filters or record timing
-				return {};
-			}
-			for (let facet of facets) {
-				if (backupFacets[facet] === undefined) {
-					throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, 'LastEvaluatedKey contains entity that does not match the entity used to query. Use {pager: "raw"} query option.');
-				} else {
-					results[facet] = backupFacets[facet];
-				}
-			}
-		} else {
+		if (match) {
 			for (let i = 0; i < names.length; i++) {
 				let key = names[i];
 				let value = match[i+1];
@@ -545,6 +556,18 @@ class Entity {
 						break;
 				}
 				results[key] = value;
+			}
+		} else {
+			if (Object.keys(backupFacets || {}).length === 0) {
+				// this can occur when a scan is performed but returns no results given the current filters or record timing
+				return {};
+			}
+			for (let facet of facets) {
+				if (backupFacets[facet] === undefined) {
+					throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, 'LastEvaluatedKey contains entity that does not match the entity used to query. Use {pager: "raw"} query option.');
+				} else {
+					results[facet] = backupFacets[facet];
+				}
 			}
 		}
 		return results;
@@ -616,6 +639,7 @@ class Entity {
 			concurrent: undefined,
 			parse: undefined,
 			pager: Pager.named,
+			unprocessed: UnprocessedTypes.item,
 			_isPagination: false
 		};
 
@@ -639,6 +663,7 @@ class Entity {
 			if (option.lastEvaluatedKeyRaw === true) {
 				config.lastEvaluatedKeyRaw = true;
 				config.pager = Pager.raw;
+				config.unprocessed = UnprocessedTypes.raw;
 			}
 
 			if (!isNaN(option.limit)) {
@@ -658,10 +683,18 @@ class Entity {
 			}
 
 			if (typeof option.pager === "string") {
-				if (Pager[option.pager] !== undefined) {
+				if (typeof Pager[option.pager] === "string") {
 					config.pager = option.pager;
 				} else {
-					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provider: "${option.pager}". Allowed values include ${utilities.commaSeparatedString(Object.keys(Pager))}.`)
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provided: "${option.pager}". Allowed values include ${utilities.commaSeparatedString(Object.keys(Pager))}.`);
+				}
+			}
+
+			if (typeof option.unprocessed === "string") {
+				if (typeof UnprocessedTypes[option.unprocessed] === "string") {
+					config.unproessed = UnprocessedTypes[option.unprocessed];
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "unprocessed" provided: "${option.unprocessed}". Allowed values include ${utilities.commaSeparatedString(Object.keys(UnprocessedTypes))}.`);
 				}
 			}
 
@@ -689,7 +722,7 @@ class Entity {
 		return {parameters, config};
 	}
 
-	_makeCreateConditions(index) {
+	_makeItemDoesntExistConditions(index) {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
 		let pkField = this.model.indexes[accessPattern].pk.field;
@@ -701,7 +734,7 @@ class Entity {
 		return filter.join(" AND ");
 	}
 
-	_makePatchConditions(index) {
+	_makeItemExistsConditions(index) {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
 		let pkField = this.model.indexes[accessPattern].pk.field;
@@ -740,6 +773,7 @@ class Entity {
 		switch (method) {
 			case MethodTypes.get:
 			case MethodTypes.delete:
+			case MethodTypes.remove:
 				params = this._makeSimpleIndexParams(keys.pk, ...consolidatedQueryFacets);
 				break;
 			case MethodTypes.put:
@@ -1133,7 +1167,7 @@ class Entity {
 	_makeBeginsWithQueryParams(options, index, filter, pk, sk) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
 		let KeyConditionExpression = "#pk = :pk";
-		if (this.model.lookup.indexHasSortKeys[index]) {
+		if (this.model.lookup.indexHasSortKeys[index] && keyExpressions.ExpressionAttributeNames["#sk1"] !== undefined) {
 			KeyConditionExpression = `${KeyConditionExpression} and begins_with(#sk1, :sk1)`;
 		}
 		let customExpressions = {
@@ -1207,8 +1241,8 @@ class Entity {
 		if (isIncomplete) {
 			let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index]);
 			let missingFacets = incomplete.reduce((result, { missing }) => [...result, ...missing], []);
-			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets,
-				`Incomplete facets: Without the facets ${utilities.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${utilities.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))} `,
+			throw new e.ElectroError(e.ErrorCodes.IncompleteCompositeAttributes,
+				`Incomplete composite attributes: Without the composite attributes ${utilities.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${utilities.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))} `,
 			);
 		}
 		return complete;
@@ -1369,15 +1403,6 @@ class Entity {
 				return impact;
 			})
 			.filter(({ missing }) => missing.length)
-			// .reduce((result, { missing }) => [...result, ...missing], []);
-
-		// let impactedKeyFields = [];
-		// for (let indexName of Object.keys(impactedIndexes)) {
-		// 	let keyFields = Object.keys(impactedIndexes[indexName])
-		// 		.map(keyType => this.model.translations.keys[indexName][keyType]);
-		// 	impactedKeyFields = [...impactedKeyFields, ...keyFields];
-		// }
-
 
 		let isIncomplete = !!incomplete.length;
 		let complete = {facets, indexes: completedIndexes, impactedIndexTypes};
@@ -1414,10 +1439,10 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_expectFacets(obj = {}, properties = [], type = "key facets") {
+	_expectFacets(obj = {}, properties = [], type = "key composite attributes") {
 		let [incompletePk, missing, matching] = this._expectProperties(obj, properties);
 		if (incompletePk) {
-			throw new e.ElectroError(e.ErrorCodes.IncompleteFacets, `Incomplete or invalid ${type} supplied. Missing properties: ${utilities.commaSeparatedString(missing)}`);
+			throw new e.ElectroError(e.ErrorCodes.IncompleteCompositeAttributes, `Incomplete or invalid ${type} supplied. Missing properties: ${utilities.commaSeparatedString(missing)}`);
 		} else {
 			return matching;
 		}
@@ -1473,10 +1498,10 @@ class Entity {
 		}
 
 		/** start beta/v1 condition **/
-		if (modelVersion === ModelVersions.v1) {
-			sk = `${sk}_${version}`;
-		} else {
+		if (modelVersion === ModelVersions.beta) {
 			pk = `${pk}_${version}`;
+		} else {
+			sk = `${sk}_${version}`;
 		}
 		/** end beta/v1 condition **/
 
@@ -1521,13 +1546,18 @@ class Entity {
 		if (!prefixes) {
 			throw new Error(`Invalid index: ${index}`);
 		}
-		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index], {excludeLabelTail: true});
+		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk, {excludeLabelTail: true});
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
-				sk.push(
-					this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index], {excludeLabelTail: true}),
-				);
+				let hasLabels = this.model.facets.labels[index] && Array.isArray(this.model.facets.labels[index].sk);
+				let labels = hasLabels
+					? this.model.facets.labels[index].sk
+					: []
+				let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, labels, {excludeLabelTail: true});
+				if (sortKey !== undefined) {
+					sk.push(sortKey);
+				}
 			}
 		}
 		return { pk, sk };
@@ -1544,33 +1574,48 @@ class Entity {
 		if (!prefixes) {
 			throw new Error(`Invalid index: ${index}`);
 		}
-		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index]);
+		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk);
 		let sk = [];
 		if (this.model.lookup.indexHasSortKeys[index]) {
 			for (let skFacet of skFacets) {
-				sk.push(
-					this._makeKey(prefixes.sk, facets.sk, skFacet, this.model.facets.labels[index]),
-				);
+				let hasLabels = this.model.facets.labels[index] && Array.isArray(this.model.facets.labels[index].sk);
+				let labels = hasLabels
+					? this.model.facets.labels[index].sk
+					: []
+				let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, labels);
+				if (sortKey !== undefined) {
+					sk.push(sortKey);
+				}
 			}
 		}
 		return { pk, sk };
 	}
 
+	_isNumericKey(isCustom, facets = [], labels = []) {
+		let attribute = this.model.schema.attributes[facets[0]];
+		let isSingleComposite = facets.length === 1;
+		let hasNoLabels = isCustom && labels.every(({label}) => !label);
+		let facetIsNonStringPrimitive = attribute && attribute.type === "number";
+		return isCustom && isSingleComposite && hasNoLabels && facetIsNonStringPrimitive
+	}
+
 	/* istanbul ignore next */
-	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = {}, {excludeLabelTail} = {}) {
+	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = [], {excludeLabelTail} = {}) {
+		if (this._isNumericKey(isCustom, facets, labels)) {
+			return supplied[facets[0]];
+		}
 		let key = prefix;
-		for (let i = 0; i < facets.length; i++) {
-			let facet = facets[i];
-			let { name } = this.model.schema.attributes[facet];
+		for (let i = 0; i < labels.length; i++) {
+			let {name, label} = labels[i];
 
 			if (supplied[name] === undefined && excludeLabelTail) {
 				break;
 			}
 
 			if (isCustom) {
-				key = `${key}${labels[facet] === undefined ? "" : labels[facet]}`;
+				key = `${key}${label}`;
 			} else {
-				key = `${key}#${labels[facet] === undefined ? name : labels[facet]}_`;
+				key = `${key}#${label}_`;
 			}
 			// Undefined facet value means we cant build any more of the key
 			if (supplied[name] === undefined) {
@@ -1634,38 +1679,114 @@ class Entity {
 
 	/* istanbul ignore next */
 	_parseComposedKey(key = "") {
-		let facets = {};
+		let attributes = {};
 		let names = key.match(/:[A-Z1-9]+/gi);
 		if (!names) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidKeyFacetTemplate, `Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: ${key}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidKeyCompositeAttributeTemplate, `Invalid key composite attribute template. No composite attributes provided, expected at least one composite attribute with the format ":attributeName". Received: ${key}`);
 		}
 		let labels = key.split(/:[A-Z1-9]+/gi);
 		for (let i = 0; i < names.length; i++) {
 			let name = names[i].replace(":", "");
 			let label = labels[i];
 			if (name !== "") {
-				facets[name] = label;
+				attributes[name] = attributes[name] || [];
+				attributes[name].push(label);
 			}
 		}
-		return facets;
+		return attributes;
+	}
+
+	_parseTemplateKey(template = "") {
+		let attributes = [];
+		let current = {
+			label: "",
+			name: ""
+		};
+		let type = "label";
+		for (let i = 0; i < template.length; i++) {
+			let char = template[i];
+			let last = template[i - 1];
+			let next = template[i + 1];
+			if (char === "{" && last === "$" && type === "label") {
+				type = "name";
+			} else if (char === "}" && type === "name") {
+				if (current.name.match(/^\s*$/)) {
+					throw new e.ElectroError(e.ErrorCodes.InvalidKeyCompositeAttributeTemplate, `Invalid key composite attribute template. Empty expression "\${${current.name}" provided. Expected attribute name.`);
+				}
+				attributes.push({name: current.name, label: current.label});
+				current.name = "";
+				current.label = "";
+				type = "label";
+			} else if (char === "$" && next === "{" && type === "label") {
+				continue;
+			} else {
+				current[type] += char;
+			}
+		}
+		if (current.name.length > 0 || current.label.length > 0) {
+			attributes.push({name: current.name, label: current.label});
+		}
+
+		return attributes;
 	}
 
 	_parseFacets(facets) {
-		let isCustom = !Array.isArray(facets);
-		if (isCustom) {
-			let facetLabels = this._parseComposedKey(facets);
+		let isCustom = !Array.isArray(facets) && typeof facets === "string";
+		if (isCustom && facets.length > 0) {
+			let labels = this._parseComposedKey(facets);
 			return {
 				isCustom,
-				facetLabels,
-				facetArray: Object.keys(facetLabels),
-			};
+				labels: [],
+				attributes: Object.keys(attributes),
+			}
+		} else if (isCustom && facets.length === 0) {
+			// treat like empty array sk
+			return {
+				isCustom: false,
+				labels: [],
+				attributes: []
+			}
 		} else {
 			return {
 				isCustom,
-				facetLabels: {},
-				facetArray: facets,
+				labels: [],
+				attributes: Object.keys(facets),
 			};
 		}
+	}
+
+	_parseTemplateAttributes(composite = []) {
+		let isCustom = !Array.isArray(composite) && typeof composite === "string";
+		if (isCustom && composite.length > 0) {
+			let labels = this._parseTemplateKey(composite);
+			return {
+				isCustom,
+				labels,
+				attributes: labels.map(({name}) => name).filter(name => !!name)
+			}
+		} else if (isCustom && composite.length === 0) {
+			// treat like empty array sk
+			return {
+				isCustom: false,
+				labels: [],
+				attributes: []
+			}
+		} else {
+			return {
+				isCustom,
+				labels: composite.map(name => ({name})),
+				attributes: composite,
+			};
+		}
+	}
+
+	_compositeTemplateAreCompatible(parsedAttributes, composite) {
+		if (!Array.isArray(composite) || !parsedAttributes || !parsedAttributes.isCustom) {
+			// not beholden to compatibility constraints
+			return true;
+		}
+
+		return validations.stringArrayMatch(composite, parsedAttributes.attributes);
 	}
 
 	_normalizeIndexes(indexes) {
@@ -1719,37 +1840,34 @@ class Entity {
 				sk: false,
 			};
 			indexHasSortKeys[indexName] = hasSk;
-			let parsedPKFacets = this._parseFacets(index.pk.facets);
-
-			let { facetArray, facetLabels } = parsedPKFacets;
-			customFacets.pk = parsedPKFacets.isCustom;
+			let parsedPKAttributes = this._parseTemplateAttributes(index.pk.facets);
+			customFacets.pk = parsedPKAttributes.isCustom;
 			// labels can be set via the attribute definition or as part of the facetTemplate.
-			facets.labels[indexName] = Object.assign({}, facets.labels[indexName] || {}, facetLabels);
-
+			facets.labels[indexName] = facets.labels[indexName] || {};
+			facets.labels[indexName]["pk"] = facets.labels[indexName]["pk"] || parsedPKAttributes;
+			facets.labels[indexName]["sk"] = facets.labels[indexName]["sk"] || this._parseTemplateAttributes();
 			let pk = {
-				accessPattern,
-				facetLabels,
+				facetLabels: parsedPKAttributes.labels,
 				index: indexName,
 				type: KeyTypes.pk,
 				field: index.pk.field || "",
-				facets: [...facetArray],
-				isCustom: parsedPKFacets.isCustom
+				facets: parsedPKAttributes.attributes,
+				isCustom: parsedPKAttributes.isCustom
 			};
 			let sk = {};
-			let parsedSKFacets = {};
+			let parsedSKAttributes = {};
 			if (hasSk) {
-				parsedSKFacets = this._parseFacets(index.sk.facets);
-				let { facetArray, facetLabels } = parsedSKFacets;
-				customFacets.sk = parsedSKFacets.isCustom;
-				facets.labels[indexName] = Object.assign({}, facets.labels[indexName] || {}, facetLabels);
+				parsedSKAttributes = this._parseTemplateAttributes(index.sk.facets);
+				customFacets.sk = parsedSKAttributes.isCustom;
+				facets.labels[indexName]["sk"] = parsedSKAttributes;
 				sk = {
-					facetLabels,
+					facetLabels: parsedSKAttributes.labels,
 					accessPattern,
 					index: indexName,
 					type: KeyTypes.sk,
 					field: index.sk.field || "",
-					facets: [...facetArray],
-					isCustom: parsedSKFacets.isCustom
+					facets: parsedSKAttributes.attributes,
+					isCustom: parsedSKAttributes.isCustom
 				};
 				facets.fields.push(sk.field);
 			}
@@ -1773,7 +1891,7 @@ class Entity {
 			if (Array.isArray(sk.facets)) {
 				let duplicates = pk.facets.filter(facet => sk.facets.includes(facet));
 				if (duplicates.length !== 0) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFacets, `The Access Pattern '${accessPattern}' contains duplicate references the facet(s): ${utilities.commaSeparatedString(duplicates)}. Facet attributes can only be used once within an index. If this leaves the Sort Key (sk) without any facets simply set this to be an empty array.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexCompositeAttributes, `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${utilities.commaSeparatedString(duplicates)}. Composite attributes may only be used once within an index. If this leaves the Sort Key (sk) without any composite attributes simply set this to be an empty array.`);
 				}
 			}
 
@@ -1851,6 +1969,18 @@ class Entity {
 				facets.bySlot[j] = facets.bySlot[j] || [];
 				facets.bySlot[j][i] = facet;
 			});
+
+			let pkTemplateIsCompatible = this._compositeTemplateAreCompatible(parsedPKAttributes, index.pk.composite);
+			if (!pkTemplateIsCompatible) {
+				throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible PK 'template' and 'composite' properties for defined on index "${indexName || "(Primary Index)"}". PK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedPKAttributes.attributes)} while PK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.pk.composite)}`);
+			}
+
+			if (index.sk !== undefined && Array.isArray(index.sk.composite) && typeof index.sk.template === "string") {
+				let skTemplateIsCompatible = this._compositeTemplateAreCompatible(parsedSKAttributes, index.sk.composite);
+				if (!skTemplateIsCompatible) {
+					throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible SK 'template' and 'composite' properties for defined on index "${indexName || "(Primary Index)"}". SK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedSKAttributes.attributes)} while SK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.sk.composite)}`);
+				}
+			}
 		}
 
 		if (facets.byIndex[""] === undefined) {
@@ -1892,6 +2022,81 @@ class Entity {
 		return prefixes;
 	}
 
+	_applyCompositeToFacetConversion(model) {
+		for (let accessPattern of Object.keys(model.indexes)) {
+			let index = model.indexes[accessPattern];
+			let invalidPK = index.pk.facets === undefined && index.pk.composite === undefined && index.pk.template === undefined;
+			let invalidSK = index.sk && (index.sk.facets === undefined && index.sk.composite === undefined && index.sk.template === undefined);
+			if (invalidPK) {
+				throw new Error("Missing Index Composite Attributes!");
+			} else if (invalidSK) {
+				throw new Error("Missing Index Composite Attributes!");
+			}
+
+
+			if (Array.isArray(index.pk.composite)) {
+				index.pk = {
+					...index.pk,
+					facets: index.pk.composite
+				}
+			}
+
+			if (typeof index.pk.template === "string") {
+				index.pk = {
+					...index.pk,
+					facets: index.pk.template
+				}
+		    }
+
+			// SK may not exist on index
+			if (index.sk && Array.isArray(index.sk.composite)) {
+				index.sk = {
+					...index.sk,
+					facets: index.sk.composite
+				}
+			}
+
+			if (index.sk && typeof index.sk.template === "string") {
+				index.sk = {
+					...index.sk,
+					facets: index.sk.template
+				}
+			}
+
+			model.indexes[accessPattern] = index;
+		}
+		return model;
+	}
+
+	_mergeKeyDefinitions(fromIndex, fromModel) {
+		let definitions = {};
+		for (let indexName of Object.keys(fromIndex)) {
+			let pk = fromIndex[indexName].pk;
+			let sk = fromIndex[indexName].sk || {labels: []};
+			definitions[indexName] = {
+				pk: [],
+				sk: []
+			};
+
+			for (let {name, label} of pk.labels) {
+				if (pk.isCustom) {
+					definitions[indexName].pk.push({name, label});
+				} else {
+					definitions[indexName].pk.push({name, label: fromModel[name] || name});
+				}
+			}
+			for (let {name, label} of sk.labels) {
+				if (sk.isCustom) {
+					definitions[indexName].sk.push({name, label});
+				} else {
+					definitions[indexName].sk.push({name, label: fromModel[name] || name});
+				}
+			}
+		}
+
+		return definitions;
+	}
+
 	_parseModel(model, config = {}) {
 		/** start beta/v1 condition **/
 		let modelVersion = utilities.getModelVersion(model);
@@ -1914,6 +2119,8 @@ class Entity {
 			default:
 				throw new Error("Invalid model");
 		}
+
+		model = this._applyCompositeToFacetConversion(model);
 		/** end beta/v1 condition **/
 
 		let {
@@ -1930,10 +2137,11 @@ class Entity {
 		let prefixes = this._normalizePrefixes(service, entity, version, indexes, modelVersion);
 
 		// apply model defined labels
-		let modelLabels = schema.getLabels();
+		let schemaDefinedLabels = schema.getLabels();
+		facets.labels = this._mergeKeyDefinitions(facets.labels, schemaDefinedLabels);
 		for (let indexName of Object.keys(facets.labels)) {
-			facets.labels[indexName] = Object.assign({}, modelLabels, facets.labels[indexName]);
-			indexes[indexAccessPattern.fromIndexToAccessPattern[indexName]].labels = facets.labels[indexName];
+			indexes[indexAccessPattern.fromIndexToAccessPattern[indexName]].pk.labels = facets.labels[indexName].pk;
+			indexes[indexAccessPattern.fromIndexToAccessPattern[indexName]].sk.labels = facets.labels[indexName].sk;
 		}
 
 		return {

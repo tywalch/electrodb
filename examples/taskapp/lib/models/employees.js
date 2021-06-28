@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 const uuid = require("uuid").v4;
 const moment = require("moment");
 
@@ -60,11 +62,11 @@ module.exports = {
 		employee: {
 			pk: {
 				field: "pk",
-				facets: ["employee"],
+				composite: ["employee"],
 			},
 			sk: {
 				field: "sk",
-				facets: [],
+				composite: [],
 			},
 		},
 		coworkers: {
@@ -72,22 +74,22 @@ module.exports = {
 			collection: "workplaces",
 			pk: {
 				field: "gsi1pk",
-				facets: ["office"],
+				composite: ["office"],
 			},
 			sk: {
 				field: "gsi1sk",
-				facets: ["team", "title", "employee"],
+				composite: ["team", "title", "employee"],
 			},
 		},
 		teams: {
 			index: "gsi2pk-gsi2sk-index",
 			pk: {
 				field: "gsi2pk",
-				facets: ["team"],
+				composite: ["team"],
 			},
 			sk: {
 				field: "gsi2sk",
-				facets: ["dateHired", "title"],
+				composite: ["dateHired", "title"],
 			},
 		},
 		employeeLookup: {
@@ -95,33 +97,33 @@ module.exports = {
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
 				field: "gsi3pk",
-				facets: ["employee"],
+				composite: ["employee"],
 			},
 			sk: {
 				field: "gsi3sk",
-				facets: [],
+				composite: [],
 			},
 		},
 		roles: {
 			index: "gsi4pk-gsi4sk-index",
 			pk: {
 				field: "gsi4pk",
-				facets: ["title"],
+				composite: ["title"],
 			},
 			sk: {
 				field: "gsi4sk",
-				facets: ["salary"],
+				composite: ["salary"],
 			},
 		},
 		directReports: {
 			index: "gsi5pk-gsi5sk-index",
 			pk: {
 				field: "gsi5pk",
-				facets: ["manager"],
+				composite: ["manager"],
 			},
 			sk: {
 				field: "gsi5sk",
-				facets: ["team", "office"],
+				composite: ["team", "office"],
 			},
 		},
 	}

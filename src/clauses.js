@@ -25,7 +25,7 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "patch", "batchPut", "batchDelete", "batchGet"],
+		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
 	},
 	collection: {
 		name: "collection",
@@ -36,7 +36,7 @@ let clauses = {
 			}
 			try {
 				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
+				entity._expectFacets(facets, Object.keys(facets), `"query" composite attributes`);
 				state.query.collection = collection;
 				state.query.method = MethodTypes.query;
 				state.query.type = QueryTypes.collection;
@@ -76,6 +76,7 @@ let clauses = {
 				state.query.method = MethodTypes.get;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,
@@ -115,6 +116,7 @@ let clauses = {
 				state.query.method = MethodTypes.delete;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,
@@ -130,7 +132,37 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go"],
+		children: ["where", "params", "go"],
+	},
+	remove: {
+		name: "remove",
+		/* istanbul ignore next */
+		action(entity, state, facets = {}) {
+			if (state.error !== null) {
+				return state;
+			}
+			try {
+				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
+				state.query.method = MethodTypes.remove;
+				state.query.type = QueryTypes.eq;
+				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
+					let queryFacets = entity._buildQueryFacets(
+						facets,
+						state.query.facets.sk,
+					);
+					state.query.keys.sk.push({
+						type: state.query.type,
+						facets: queryFacets,
+					});
+				}
+				return state;
+			} catch(err) {
+				state.error = err;
+				return state;
+			}
+		},
+		children: ["where", "params", "go"],
 	},
 	put: {
 		name: "put",
@@ -145,6 +177,7 @@ let clauses = {
 				state.query.method = MethodTypes.put;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(record, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						record,
 						state.query.facets.sk,
@@ -180,6 +213,7 @@ let clauses = {
 				state.query.method = MethodTypes.put;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(record, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						record,
 						state.query.facets.sk,
@@ -209,6 +243,7 @@ let clauses = {
 				state.query.method = MethodTypes.update;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,
@@ -237,6 +272,7 @@ let clauses = {
 				state.query.method = MethodTypes.update;
 				state.query.type = QueryTypes.eq;
 				if (state.hasSortKey) {
+					entity._expectFacets(facets, state.query.facets.sk);
 					let queryFacets = entity._buildQueryFacets(
 						facets,
 						state.query.facets.sk,
@@ -316,7 +352,7 @@ let clauses = {
 			}
 			try {
 				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				entity._expectFacets(facets, Object.keys(facets), `"query" facets`);
+				entity._expectFacets(facets, Object.keys(facets), `"query" composite attributes`);
 				state.query.method = MethodTypes.query;
 				state.query.type = QueryTypes.is;
 				if (state.query.facets.sk) {
@@ -344,12 +380,12 @@ let clauses = {
 				entity._expectFacets(
 					startingFacets,
 					Object.keys(startingFacets),
-					`"between" facets`,
+					`"between" composite attributes`,
 				);
 				entity._expectFacets(
 					endingFacets,
 					Object.keys(endingFacets),
-					`"and" facets`,
+					`"and" composite attributes`,
 				);
 				state.query.type = QueryTypes.between;
 				let queryEndingFacets = entity._buildQueryFacets(
@@ -383,7 +419,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
+				entity._expectFacets(facets, Object.keys(facets), `"gt" composite attributes`);
 				state.query.type = QueryTypes.begins;
 				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 				state.query.keys.sk.push({
@@ -405,7 +441,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				entity._expectFacets(facets, Object.keys(facets), `"gt" facets`);
+				entity._expectFacets(facets, Object.keys(facets), `"gt" composite attributes`);
 				state.query.type = QueryTypes.gt;
 				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 				state.query.keys.sk.push({
@@ -427,7 +463,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				entity._expectFacets(facets, Object.keys(facets), `"gte" facets`);
+				entity._expectFacets(facets, Object.keys(facets), `"gte" composite attributes`);
 				state.query.type = QueryTypes.gte;
 				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 				state.query.keys.sk.push({
@@ -449,7 +485,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				entity._expectFacets(facets, Object.keys(facets), `"lt" facets`);
+				entity._expectFacets(facets, Object.keys(facets), `"lt" composite attributes`);
 				state.query.type = QueryTypes.lt;
 				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 				state.query.keys.sk.push({
@@ -471,7 +507,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				entity._expectFacets(facets, Object.keys(facets), `"lte" facets`);
+				entity._expectFacets(facets, Object.keys(facets), `"lte" composite attributes`);
 				state.query.type = QueryTypes.lte;
 				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
 				state.query.keys.sk.push({

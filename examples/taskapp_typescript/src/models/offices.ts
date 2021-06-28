@@ -28,11 +28,11 @@ const schema = {
 		"locations": {
 			"pk": {
 				"field": "pk",
-				"facets": ["country", "state"]
+				"composite": ["country", "state"]
 			},
 			"sk": {
 				"field": "sk",
-				"facets": ["city", "zip", "office"]
+				"composite": ["city", "zip", "office"]
 			}
 		},
 		"office": {
@@ -40,11 +40,11 @@ const schema = {
 			"collection": "workplaces",
 			"pk": {
 				"field": "gsi1pk",
-				"facets": ["office"]
+				"composite": ["office"]
 			},
 			"sk": {
 				"field": "gsi1sk",
-				"facets": []
+				"composite": []
 			}
 		}
 	}

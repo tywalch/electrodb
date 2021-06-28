@@ -968,7 +968,7 @@ describe("Service Offline", async () => {
 		database
 			.join(entityOne)
 
-		expect(() => database.join(entityTwo)).to.throw("Partition Key Facets provided [\"prop1\"] for index \"(Primary Index)\" do not match established facets [\"prop1\", \"prop7\"] on established index \"(Primary Index)\" - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
+		expect(() => database.join(entityTwo)).to.throw("Partition Key composite attributes provided [\"prop1\"] for index \"(Primary Index)\" do not match established composite attributes [\"prop1\", \"prop7\"] on established index \"(Primary Index)\" - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
 	});
 	it("Should require all PK values", () => {
 		let entityOne = {
@@ -1044,7 +1044,7 @@ describe("Service Offline", async () => {
 			.join(entityOne)
 			.join(entityTwo);
 
-		expect(() => database.collections.collectionA({prop1: "abc",}).params()).to.throw('Incomplete or invalid key facets supplied. Missing properties: "prop7"');
+		expect(() => database.collections.collectionA({prop1: "abc",}).params()).to.throw('Incomplete or invalid key composite attributes supplied. Missing properties: "prop7"');
 		expect(database.collections.collectionA({prop1: "abc", prop7: "def", prop2: "hij"}).params()).to.deep.equal({
 			KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 			TableName: 'electro',
@@ -1339,7 +1339,7 @@ describe("Misconfiguration exceptions", () => {
 		expect(() => database.join(entityTwo)).to.throw(`Collection defined on provided index "different-index-than-entity-one" does not match collection established index "(Primary Index)". Collections must be defined on the same index across all entities within a service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 		// expect(() => database.join(entityTwo)).to.throw("You cant do that");
 	});
-	it("Should validate the PK facets match on all added schemas", () => {
+	it("Should validate the PK composite attributes match on all added schemas", () => {
 		let entityOne = {
 			entity: "entityOne",
 			attributes: {
@@ -1400,9 +1400,9 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Partition Key facets provided for index "(Primary Index)" do not match established facet "prop1" on established index "(Primary Index)": "prop1" != "prop4"; Facet definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these facet definitions are identical for all entities associated with this service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided for index "(Primary Index)" do not match established composite attribute "prop1" on established index "(Primary Index)": "prop1" != "prop4"; Composite attribute definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these composite attribute definitions are identical for all entities associated with this service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 	});
-	it("Should validate the PK facet labels match on all added schemas and throw when incorrect", () => {
+	it("Should validate the PK composite attribute labels match on all added schemas and throw when incorrect", () => {
 		let entityOne = {
 			entity: "entityOne",
 			attributes: {
@@ -1464,9 +1464,9 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Partition Key facets provided for index "(Primary Index)" contain conflicting facet labels for established facet "prop1" on established index "(Primary Index)". Established facet "prop1" on established index "(Primary Index)" was defined with label "rop" while provided facet "prop1" on provided index "(Primary Index)" is defined with label "prop1". Facet labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided for index "(Primary Index)" contain conflicting composite attribute labels for established composite attribute "prop1" on established index "(Primary Index)". Established composite attribute "prop1" on established index "(Primary Index)" was defined with label "rop" while provided composite attribute "prop1" on provided index "(Primary Index)" is defined with label "prop1". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 	});
-	it("Should validate the PK facet labels match on all added schemas and not throw when they do match", () => {
+	it("Should validate the PK composite attribute labels match on all added schemas and not throw when they do match", () => {
 		let entityOne = {
 			entity: "entityOne",
 			attributes: {
@@ -1657,7 +1657,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);		
-		expect(() => database.join(entityTwo)).to.throw(`Partition Key facets provided "pkz" for index "(Primary Index)" do not match established field "pk" on established index "(Primary Index)" - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided "pkz" for index "(Primary Index)" do not match established field "pk" on established index "(Primary Index)" - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 	});
 	it("Should validate the attributes with matching names have matching fields on all added schemas", () => {
 		let entityOne = {

@@ -85,13 +85,25 @@ const Index = {
 					items: {
 						type: "string",
 					},
-					required: true,
+					required: false,
+				},
+				composite: {
+					type: ["array"],
+					minItems: 1,
+					items: {
+						type: "string",
+					},
+					required: false,
+				},
+				template: {
+					type: "string",
+					required: false,
 				},
 			},
 		},
 		sk: {
 			type: "object",
-			required: ["field", "facets"],
+			required: ["field"],
 			properties: {
 				field: {
 					type: "string",
@@ -99,16 +111,30 @@ const Index = {
 				},
 				facets: {
 					type: ["array", "string"],
-					required: true,
+					required: false,
 					items: {
 						type: "string",
 					},
+				},
+				composite: {
+					type: ["array"],
+					required: false,
+					items: {
+						type: "string",
+					},
+				},
+				template: {
+					type: "string",
+					required: false,
 				},
 			},
 		},
 		index: {
 			type: "string",
 		},
+		collection: {
+			type: "string"
+		}
 	},
 };
 
@@ -286,6 +312,18 @@ function isFunction(value) {
 	return typeof value === "function";
 }
 
+function stringArrayMatch(arr1, arr2) {
+	let areArrays = Array.isArray(arr1) && Array.isArray(arr2);
+	let match = areArrays && arr1.length === arr2.length;
+	for (let i = 0; i < arr1.length; i++) {
+		if (!match) {
+			break;
+		}
+		match = isStringHasLength(arr1[i]) && arr1[i] === arr2[i];
+	}
+	return match;
+}
+
 module.exports = {
 	model: validateModel,
 	testModel,
@@ -293,6 +331,7 @@ module.exports = {
 	isNameModelRecordType,
 	isStringHasLength,
 	isObjectHasLength,
+	stringArrayMatch,
 	isFunction,
 	isBetaServiceConfig,
 	isNameEntityRecordType

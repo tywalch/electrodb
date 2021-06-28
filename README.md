@@ -1,30 +1,32 @@
-# ElectroDB  
+# ElectroDB
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
-[![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb) 
+[![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
 ![npm bundle size](https://img.shields.io/bundlephobia/min/electrodb) [![Build Status](https://travis-ci.org/tywalch/electrodb.svg?branch=master)](https://travis-ci.org/tywalch/electrodb)
 [![Runkit Demo](https://img.shields.io/badge/runkit-electrodb-db4792)](https://runkit.com/tywalch/creating-and-querying-an-electrodb-service)
 
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb-drk.png?raw=true)
-***ElectroDB*** is a dynamodb library to ease the use of having multiple entities and complex hierarchical relationships in a single dynamodb table. 
+***ElectroDB*** is a DynamoDB library to ease the use of having multiple entities and complex hierarchical relationships in a single DynamoDB table.
 
-*This library is a work in progress, please submit issues/feedback or reach out on twitter [@tinkertamper](https://twitter.com/tinkertamper)*. 
+*Please submit issues/feedback or reach out on Twitter [@tinkertamper](https://twitter.com/tinkertamper).*
+
+<h1 align="center">ElectroDB has now entered version 1.0!</h1>
+
+> ElectroDB now has a major version, and with that comes semantic versioning guarantees and improved CHANGELOG detail. To release 1.0 some breaking changes we're made to improve the longevity of the project. Please see the [ChangeLog](/CHANGELOG.md) for more information about relevant deprecations, changes, and new features.
 
 ------------
 
-> ### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
-------------
-
-## Features  
+## Features
 - [**Attribute Schema Enforcement**](#attributes) - Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
-- [**Easily Compose Hierarchical Access Patterns**](#facets) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
-- [**Single Table Entity Segregation**](#model) - Entities created with **ElectroDB** will not conflict with other entities when using a single table.   
+- [**Easily Compose Hierarchical Access Patterns**](#composite-attributes) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
+- [**Single Table Entity Segregation**](#model) - Entities created with **ElectroDB** will not conflict with other entities when using a single table.
 - [**Simplified Sort Key Condition Querying**](#building-queries) - Write efficient sort key queries by easily building compose keys.
-- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`. 
+- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`.
 - [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/idiomatic queries that return multiple entities in a single request.
-- [**Automatic Index Selection**](#find-records) - Use `.find()` method to dynamically and efficiently query based on defined sort key structures. 
+- [**Automatic Index Selection**](#find-records) - Use `.find()` or `.match()` methods to dynamically and efficiently query based on defined sort key structures.
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
-- [**Use With Your Existing Solution**](#facet-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Facet Templates to leverage your existing key structures.
+- [**Use With Your Existing Solution**](#composite-attribute-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Composite Attribute Templates to leverage your existing key structures.
 - [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services now in Beta.
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
 - [**Stand Up Rest Server for Entities**](#electro-cli) - Stand up a REST Server to interact with your `Entities`, `Services`, `Models` for easier prototyping.
@@ -65,9 +67,7 @@ StoreLocations.query
 
 ------------
 
-> ### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
-
-------------
+### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ## Table of Contents
 
@@ -78,9 +78,9 @@ StoreLocations.query
 - [Usage](#usage)
   * [TypeScript Support](#typescript-support)
     + [Exported Types](#exported-types)
-      - [EntityItem](#entityitem)
-      - [CreateEntityItem](#createentityitem)
-      - [CreateEntityItem](#createentityitem-1)
+      - [EntityItem](#entityitem-type)
+      - [CreateEntityItem](#createentityitem-type)
+      - [UpdateEntityItem](#updateentityitem-type)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
@@ -103,9 +103,12 @@ StoreLocations.query
     + [Indexes Without Sort Keys](#indexes-without-sort-keys)
     + [Indexes With Sort Keys](#indexes-with-sort-keys)
   * [Facets](#facets)
-    + [Facet Arrays](#facet-arrays)
-    + [Facet Templates](#facet-templates)
-  * [Facet and Index Considerations](#facet-and-index-considerations)
+  * [Composite Attributes](#composite-attributes)
+    + [Composite Attribute Arrays](#composite-attribute-arrays)
+    + [Composite Attribute Templates](#composite-attribute-templates)
+      - [Templates and Composite Attribute Arrays](#templates-and-composite-attribute-arrays)
+  * [Numeric Keys](#numeric-keys)
+  * [Composite Attribute and Index Considerations](#composite-attribute-and-index-considerations)
   * [Collections](#collections)
   * [Filters](#filters)
     + [Defined on the model](#defined-on-the-model)
@@ -117,10 +120,10 @@ StoreLocations.query
     + [Attributes and Operations](#attributes-and-operations)
     + [Multiple Where Clauses](#multiple-where-clauses)
 - [Building Queries](#building-queries)
-  + [Using facets to make hierarchical keys](#using-facets-to-make-hierarchical-keys)
+  + [Using composite attributes to make hierarchical keys](#using-composite-attributes-to-make-hierarchical-keys)
     - [Shopping Mall Stores](#shopping-mall-stores)
   + [Query App Records](#query-app-records)
-    - [Partition Key Facets](#partition-key-facets)
+    - [Partition Key Composite Attributes](#partition-key-composite-attributes)
   + [Sort Key Operations](#sort-key-operations)
   * [Query Chains](#query-chains)
     + [Get Method](#get-method)
@@ -131,9 +134,11 @@ StoreLocations.query
     + [Batch Write Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
     + [Scan Records](#scan-records)
+    + [Remove Method](#remove-method)
     + [Patch Records](#patch-records)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
+    + [Match Records](#match-records)
     + [Access Pattern Queries](#access-pattern-queries)
       - [Begins With Queries](#begins-with-queries)
   * [Collection Chains](#collection-chains)
@@ -150,7 +155,7 @@ StoreLocations.query
 - [Errors:](#errors-)
   + [No Client Defined On Model](#no-client-defined-on-model)
   + [Invalid Identifier](#invalid-identifier)
-  + [Invalid Key Facet Template](#invalid-key-facet-template)
+  + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
   + [Duplicate Indexes](#duplicate-indexes)
   + [Collection Without An SK](#collection-without-an-sk)
   + [Duplicate Collections](#duplicate-collections)
@@ -159,8 +164,9 @@ StoreLocations.query
   + [Invalid Model](#invalid-model)
   + [Invalid Options](#invalid-options)
   + [Duplicate Index Fields](#duplicate-index-fields)
-  + [Duplicate Index Facets](#duplicate-index-facets)
-  + [Missing Facets](#missing-facets)
+  + [Duplicate Index Composite Attributes](#duplicate-index-composite-attributes)
+  + [Incompatible Key Composite Attribute Template](#incompatible-key-composite-attribute-template)
+  + [Missing Composite Attributes](#missing-composite-attributes)
   + [Missing Table](#missing-table)
   + [Invalid Concurrency Option](#invalid-concurrency-option)
   + [aws-error](#aws-error)
@@ -203,21 +209,23 @@ StoreLocations.query
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
 - [Electro CLI](#electro-cli)
 - [Version 1 Migration](#version-1-migration)
+  * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
+  * [The renaming of index property Facets to Composite and Template](#the-renaming-of-index-property-facets-to-composite-and-template)
+  * [Get Method to Return null](#get-method-to-return-null)
 - [Coming Soon](#coming-soon)
 
 ----------
 
-# Installation    
+# Installation
 
-Install from NPM  
+Install from NPM
 
 ```bash  
 npm install electrodb --save
 ```
 
-
 # Usage
-Require/import `Entity` and/or `Service` from `electrodb`:    
+Require/import `Entity` and/or `Service` from `electrodb`:
 ```javascript  
 const {Entity, Service} = require("electrodb");
 // or 
@@ -226,22 +234,23 @@ import {Entity, Service} from "electrodb";
 
 ## TypeScript Support
 
-Previously it was possible to generate type definition files (`.d.ts`) for you Models, Entities, and Services with the [Electro CLI](#electro-cli). New with version `0.10.0` is TypeScript support for Entities and Services. 
+Previously it was possible to generate type definition files (`.d.ts`) for you Models, Entities, and Services with the [Electro CLI](#electro-cli). New with version `0.10.0` is TypeScript support for Entities and Services.
 
 As of writing this, this functionality is still a work in progress, and enforcement of some of ElectroDB's query constraints have still not been written into the type checks. Most notably are the following constraints not yet enforced by the type checker, but are enforced at query runtime:
 
-- Put/Create/Update/Patch operations that partially impact index facets are not statically typed. When performing a `put` or `update` type operation that impacts a facet of a secondary index, ElectroDB performs a check at runtime to ensure all facets of that key are included. This is detailed more in the section [Facet and Index Considerations](#facet-and-index-considerations). 
-- Sort Key Facet order is not strongly typed. Sort Key Facets must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about facet ordering see the section on [Facets](#facets).
+
+- Sort Key Composite Attribute order is not strongly typed. Sort Key Composite Attributes must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about composite attribute ordering see the section on [Composite Attributes](#composite-attributes).
+- Put/Create/Update/Patch/Delete/Create operations that partially impact index composite attributes are not statically typed. When performing a `put` or `update` type operation that impacts a composite attribute of a secondary index, ElectroDB performs a check at runtime to ensure all composite attributes of that key are included. This is detailed more in the section [Composite Attribute and Index Considerations](#composite-attribute-and-index-considerations).
 - Use of the `params` method does not yet return strict types.
 - Use of the `raw` or `includeKeys` query options do not yet impact the returned types.
 
-If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a github issue, and it can be addressed.
+If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a GitHub issue, and it can be addressed.
 
 ### Exported Types
 
 The following types are exported for easier use while using ElectroDB with TypeScript:
 
-#### EntityItem
+#### EntityItem Type
 
 This type represents an item as it's returned from a query to DynamoDB.
 
@@ -260,9 +269,9 @@ _Use:_
 type Thing = EntityItem<typeof YourEntityInstance>;
 ```
 
-#### CreateEntityItem
+#### CreateEntityItem Type
 
-This type represents an item that you would pass your entity's `put` or `create` method 
+This type represents an item that you would pass your entity's `put` or `create` method
 
 _Definition:_
 
@@ -279,9 +288,9 @@ _Use:_
 type NewThing = CreateEntityItem<typeof YourEntityInstance>;
 ```
 
-#### CreateEntityItem
+#### UpdateEntityItem Type
 
-This type represents an item that you would pass your entity's `create` or `update` method to `set`  
+This type represents an item that you would pass your entity's `create` or `update` method to `set`
 
 _Definition:_
 
@@ -301,17 +310,17 @@ type UpdateProperties = UpdateEntityItem<typeof YourEntityInstance>;
 # Entities and Services
 > To see full examples of ***ElectroDB*** in action, go to the [Examples](#examples) section.
 
-`Entity` allows you to create separate and individual business objects in a *DynamoDB* table. When queried, your results will not include other Entities that also exist the same table. This allows you to easily achieve single table design as recommended by AWS. For more detail, read [Entities](#entities). 
+`Entity` allows you to create separate and individual business objects in a *DynamoDB* table. When queried, your results will not include other Entities that also exist the same table. This allows you to easily achieve single table design as recommended by AWS. For more detail, read [Entities](#entities).
 
 `Service` allows you to build relationships across Entities. A service imports Entity [Models](#model), builds individual Entities, and creates [Collections](#collections) to allow cross Entity querying. For more detail, read [Services](#services).
 
 You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, If you intend to make queries that `join` or span multiple Entities you will need to use a Service.
 
-# Entities  
+# Entities
 
-In ***ElectroDB*** an `Entity` is represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and or a Task that is assigned to an employee. 
+In ***ElectroDB*** an `Entity` is represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and or a Task that is assigned to an employee.
 
-Require or import `Entity` from `electrodb`:    
+Require or import `Entity` from `electrodb`:
 ```javascript  
 const {Entity} = require("electrodb");
 // or
@@ -323,7 +332,7 @@ import {Entity} from "electrodb";
 # Services
 In ***ElectroDB*** a `Service` represents a collection of related Entities. Services allow you to build queries span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that `join` multiple Entities.
 
-Require:    
+Require:
 ```javascript  
 const {Service} = require("electrodb");
 // or
@@ -342,12 +351,14 @@ const TaskApp = new Service({employees, tasks});
 
 The property name you assign the entity will then be "alias", or name, you can reference that entity by through the Service. Aliases can be useful if you are building a service with multiple versions of the same entity or wish to change the reference name of an entity without impacting the schema/key names of that entity.
 
-Services take an optional second parameter, similar to Entities, with a `client` and `table`. Using this constructor interface, the Service will utilize the values from those entities, if they were provided, or be passed values to override the `client` or `table` name on the individual entities. 
+Services take an optional second parameter, similar to Entities, with a `client` and `table`. Using this constructor interface, the Service will utilize the values from those entities, if they were provided, or be passed values to override the `client` or `table` name on the individual entities.
 
 Not yet available for TypeScript, this pattern will also accept Models, or a mix of Entities and Models, in the same object literal format.
 
-## Join 
-When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service. See [TypeScript Services](#typescript-services) to learn how to "join" entities in TypeScript.
+## Join
+When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service.
+
+If using TypeScript, see [TypeScript Services](#typescript-services) to learn how to "join" entities for use in a TypeScript project.
 
 ```javascript
 // Independent Models
@@ -377,21 +388,29 @@ TaskApp
 let TaskApp = new Service("TaskApp", { client, table });
 TaskApp
     .join("personnel", EmployeesModel) // available at TaskApp.entities.personnel
-    .join("directives", tasks); // available at TaskApp.entities.directives
+    .join("directives", TasksModel); // available at TaskApp.entities.directives
 ```
- 
+
+```typescript
+// Joining Entities at Service construction for TypeScript
+let TaskApp = new Service({
+	personnel: EmployeesModel, // available at TaskApp.entities.personnel
+	directives: TasksModel, // available at TaskApp.entities.directives
+});
+```
+
 When joining a Model/Entity to a Service, ElectroDB will perform a number of validations to ensure that Entity conforms to expectations collectively established by all joined Entities.
 
 - [Entity](#entities) names must be unique across a Service.
 - [Collection](#collections) names must be unique across a Service.
 - All [Collections](#collections) map to on the same DynamoDB indexes with the same index field names. See [Indexes](#indexes).
-- Partition Key [Facets](#facet-arrays) on a [Collection](#collections) must have the same attribute names and labels (if applicable). See [Attribute Definitions](#attribute-definition).  
+- Partition Key [Composite Attributes](#composite attribute-arrays) on a [Collection](#collections) must have the same attribute names and labels (if applicable). See [Attribute Definitions](#attribute-definition).
 - The [name of the Service in the Model](#model-properties) must match the Name defined on the [Service](#services) instance.
 - Joined instances must be type [Model](#model) or [Entity](#entities).
 - If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching [attribute definitions](#attributes).
 - All models conform to the same model format. If you created your model prior to ElectroDB version 0.9.19 see section [Version 1 Migration](#version-1-migration).
 
-## Model 
+## Model
 
 Create an Entity's schema. In the below example.
 
@@ -450,11 +469,11 @@ const EmployeesModel = {
 		employee: {
 			pk: {
 				field: "pk",
-				facets: ["employee"],
+				composite: ["employee"],
 			},
 			sk: {
 				field: "sk",
-				facets: [],
+				composite: [],
 			},
 		},
 		coworkers: {
@@ -462,22 +481,22 @@ const EmployeesModel = {
 			collection: "workplaces",
 			pk: {
 				field: "gsi1pk",
-				facets: ["office"],
+				composite: ["office"],
 			},
 			sk: {
 				field: "gsi1sk",
-				facets: ["team", "title", "employee"],
+				composite: ["team", "title", "employee"],
 			},
 		},
 		teams: {
 			index: "gsi2pk-gsi2sk-index",
 			pk: {
 				field: "gsi2pk",
-				facets: ["team"],
+				composite: ["team"],
 			},
 			sk: {
 				field: "gsi2sk",
-				facets: ["title", "salary", "employee"],
+				composite: ["title", "salary", "employee"],
 			},
 		},
 		employeeLookup: {
@@ -485,33 +504,33 @@ const EmployeesModel = {
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
 				field: "gsi3pk",
-				facets: ["employee"],
+				composite: ["employee"],
 			},
 			sk: {
 				field: "gsi3sk",
-				facets: [],
+				composite: [],
 			},
 		},
 		roles: {
 			index: "gsi4pk-gsi4sk-index",
 			pk: {
 				field: "gsi4pk",
-				facets: ["title"],
+				composite: ["title"],
 			},
 			sk: {
 				field: "gsi4sk",
-				facets: ["salary", "employee"],
+				composite: ["salary", "employee"],
 			},
 		},
 		directReports: {
 			index: "gsi5pk-gsi5sk-index",
 			pk: {
 				field: "gsi5pk",
-				facets: ["manager"],
+				composite: ["manager"],
 			},
 			sk: {
 				field: "gsi5sk",
-				facets: ["team", "office", "employee"],
+				composite: ["team", "office", "employee"],
 			},
 		},
 	},
@@ -551,22 +570,22 @@ const TasksModel = {
 		task: {
 			pk: {
 				field: "pk",
-				facets: ["task"],
+				composite: ["task"],
 			},
 			sk: {
 				field: "sk",
-				facets: ["project", "employee"],
+				composite: ["project", "employee"],
 			},
 		},
 		project: {
 			index: "gsi1pk-gsi1sk-index",
 			pk: {
 				field: "gsi1pk",
-				facets: ["project"],
+				composite: ["project"],
 			},
 			sk: {
 				field: "gsi1sk",
-				facets: ["employee", "task"],
+				composite: ["employee", "task"],
 			},
 		},
 		assigned: {
@@ -574,11 +593,11 @@ const TasksModel = {
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
 				field: "gsi3pk",
-				facets: ["employee"],
+				composite: ["employee"],
 			},
 			sk: {
 				field: "gsi3sk",
-				facets: ["project", "task"],
+				composite: ["project", "task"],
 			},
 		},
 	},
@@ -587,28 +606,27 @@ const TasksModel = {
 
 ### Model Properties
 
-| Property | Description |
-| ----------- | ----------- |
-| model.service  | Name of the application using the entity, used to namespace all entities
-| model.entity   | Name of the entity that the schema represents 
-| model.version  | (optional) The version number of the schema, used to namespace keys    
-| attributes     | An object containing each attribute that makes up the schema  
-| indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
-| filters        | An object containing user defined filter template functions
-
+Property       | Description
+-------------- | ----------- 
+model.service  | Name of the application using the entity, used to namespace all entities
+model.entity   | Name of the entity that the schema represents
+model.version  | (optional) The version number of the schema, used to namespace keys
+attributes     | An object containing each attribute that makes up the schema
+indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
 
 ### Service Options
 Optional second parameter
-| Property | Description |
-| ----------- | ----------- |
-| table | Name of the dynamodb table in aws
-| client  | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.
+
+Property | Description
+-------- | ----------- 
+table    | The name of the dynamodb table in aws.
+client   | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.
 
 ## Attributes
-**Attributes** define an **Entity** record. The `AttributeName` represents the value your code will use to represent an attribute. 
+**Attributes** define an **Entity** record. The `AttributeName` represents the value your code will use to represent an attribute.
 
 > **Pro-Tip:**
-> Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. For example, you may refer to an attribute as `organization` but want to save the attribute with a field name of `org` in DynamoDB. 
+> Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. For example, you may refer to an attribute as `organization` but want to save the attribute with a field name of `org` in DynamoDB.
 
 ### Simple Syntax
 Assign just the `type` of the attribute directly to the attribute name. Types currently supported options are "string", "number", "boolean", an array of strings representing a fixed set of possible values, or "any" which disables value type checking on that attribute.
@@ -626,7 +644,7 @@ attributes: {
 		type: string | ReadonlyArray<string>;
 		required?: boolean;
 		default?: value|() => value;
-		validate?: RegExp|(value: any) => void|string;
+		validate?: RegExp | (value: any) => void | string;
 		field?: string;
 		readOnly?: boolean;
 		label?: string;
@@ -641,7 +659,7 @@ attributes: {
 
 When using TypeScript, if you wish to also enforce this type make sure to us the `as const` syntax. If TypeScript is not told this array is Readonly, even when your model is passed directly to the Entity constructor, it will not resolve the unique values within that array. This may be desirable, however, as enforcing the type value can require consumers of your model to do more work to resolve the type beyond just the type `string`.
 
-> Note: Regardless of using TypeScript or JavaScript, ElectroDB will enforce values supplied match the supplied array of values at runtime. 
+> Note: Regardless of using TypeScript or JavaScript, ElectroDB will enforce values supplied match the supplied array of values at runtime.
 
 The following example shows the differences in how TypeScript may enforce your enum value:
 ```typescript
@@ -659,29 +677,29 @@ attributes: {
 }
 ```
 
-#### Attribute Definition 
+#### Attribute Definition
 
-| Property | Type | Required | Description |
-| -------- | :--: | :--: | ----------- |
-| `type`  | `string`, `ReadonlyArray<string>`, `string[]` | yes | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
-`required` | `boolean` | no | Flag an attribute as required to be present when creating a record. |
-`hidden` | `boolean` | no | Flag an attribute for removal upon retrieval. |
-`default` | `value`, `() => value` | no | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
-`validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
-`field` | `string` | no | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
-`readOnly` | `boolean` | no | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default.
-`label` | `string` | no | Used in index composition to prefix key facets. By default, the `AttributeName` is used as the label.
-`cast` | `"number"`, `"string"`, `"boolean"` | no | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
-`set` | `(attribute, schema) => value` | no | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put 
-`get` | `(attribute, schema) => value` | no | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
-`watch` | `Attribute[]` | no | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed.
+Property  | Type                                                       | Required | Description
+ --------- | :--------------------------------------------------------: | :------: | -----------
+`type`    | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
+`required` | `boolean`                                                  | no       | Flag an attribute as required to be present when creating a record. |
+`hidden`   | `boolean`                                                  | no       | Flag an attribute for removal upon retrieval. |
+`default`  | `value`, `() => value`                                     | no       | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
+`validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no       | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
+`field`    | `string`                                                   | no       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
+`readOnly` | `boolean`                                                  | no       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default.
+`label`    | `string`                                                   | no       | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
+`cast`     | `"number"`, `"string"`, `"boolean"`                        | no       | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
+`set`      | `(attribute, schema) => value`                             | no       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
+`get`      | `(attribute, schema) => value`                             | no       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
+`watch`    | `Attribute[]`                                              | no       | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed.
 
-##### Attribute Getters and Setters
-Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both callbacks should be pure synchronous functions and may be invoked multiple times during one query. 
+#### Attribute Getters and Setters
+Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both callbacks should be pure synchronous functions and may be invoked multiple times during one query.
 
-The first argument in an attribute's `get` or `set` callback is the value received in the query. The second argument, called `"item"`, in an attribute's is an object containing the values of other attributes on the item as it was given or retrieved. If your attribute uses `watch`, the getter or setter of attribute being watched will be invoked _before_ your getter or setter and the updated value will be on the `"item"` argument instead of the original.            
+The first argument in an attribute's `get` or `set` callback is the value received in the query. The second argument, called `"item"`, in an attribute's is an object containing the values of other attributes on the item as it was given or retrieved. If your attribute uses `watch`, the getter or setter of attribute being watched will be invoked _before_ your getter or setter and the updated value will be on the `"item"` argument instead of the original.
 
-> Note: Using getters/setters on Facet Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Facet Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.  
+> Note: Using getters/setters on Composite Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.
 
 ElectroDB invokes an Attribute's `get` method in the following circumstances:
 1. If a field exists on an item after retrieval from DynamoDB, the attribute associated with that field will have its getter method invoked.
@@ -693,14 +711,14 @@ ElectroDB invokes an Attribute's `set` callback in the following circumstances:
 2. Setters will only be invoked when an Attribute is modified when performing a `patch` or `update` operation.
 3. When using ElectroDB's [attribute watching](#attribute-watching) functionality, an attribute will have its setter callback invoked whenever the setter callback of any "watched" attributes are invoked. Note: The setter of an Attribute Watcher will always be applied _after_ the setters for the attributes it watches.
 
-##### Attribute Watching 
+#### Attribute Watching
 Attribute watching is a powerful feature in ElectroDB that can be used to solve many unique challenges with DynamoDB. In short, you can define a column to have its getter/setter callbacks called whenever another attribute's getter or setter callbacks are called. If you haven't read the section on [Attribute Getters and Setters](#attribute-getters-and-setters), it will provide you with more context about when an attribute's mutation callbacks are called.
 
 Because DynamoDB allows for a flexible schema, and ElectroDB allows for optional attributes, it is possible for items belonging to an entity to not have all attributes when setting or getting records. Sometimes values or changes to other attributes will require corresponding changes to another attribute. Sometimes, to fully leverage some advanced model denormalization or query access patterns,  it is necessary to duplicate some attribute values with similar or identical values. This functionality has many uses; below are just a few examples of how you can use `watch`:
 
-> Note: Using the `watch` property impacts the order of which getters and setters are called. You cannot `watch` another attribute that also uses `watch`, so ElectroDB first invokes the getters or setters of attributes without the `watch` property, then subsequently invokes the getters or setters of attributes who use `watch`.     
+> Note: Using the `watch` property impacts the order of which getters and setters are called. You cannot `watch` another attribute that also uses `watch`, so ElectroDB first invokes the getters or setters of attributes without the `watch` property, then subsequently invokes the getters or setters of attributes who use `watch`.
 
-**Example 1 - A calculated attribute that depends on the value of another attribute:** 
+**Example 1 - A calculated attribute that depends on the value of another attribute:**
 
 In this example, we have an attribute `"fee"` that needs to be updated any time an item's `"price"` attribute is updated. The attribute `"fee"` uses `watch` to have its setter callback called any time `"price"` is updated via a `put`, `create`, `update`, or `patch` operation.
 
@@ -731,18 +749,18 @@ In this example, we have an attribute `"fee"` that needs to be updated any time 
     pricing: {
       pk: {
         field: "pk",
-        facets: ["service"]
+        composite: ["service"]
       },
       sk: {
         field: "sk",
-        facets: []
+        composite: []
       }
     }
   }
 }
 ```
 
-**Example 2 - Making a virtual attribute that never persists to the database:**  
+**Example 2 - Making a virtual attribute that never persists to the database:**
 
 In this example we have an attribute `"displayPrice"` that needs its getter called anytime an item's `"price"` attribute is retrieved.  The attribute `"displayPrice"` uses `watch` to return a formatted price string based whenever an item with a `"price"` attribute is queried.  Additionally, `"displayPrice"` always returns `undefined` from its setter callback to ensure that it will never write data back to the table.
 
@@ -774,18 +792,18 @@ In this example we have an attribute `"displayPrice"` that needs its getter call
     pricing: {
       pk: {
         field: "pk",
-        facets: ["service"]
+        composite: ["service"]
       },
       sk: {
         field: "sk",
-        facets: []
+        composite: []
       }
     }
   }
 }
 ```
 
-**Example 3 - Creating a more filter-friendly version of an attribute without impacting the original attribute:**  
+**Example 3 - Creating a more filter-friendly version of an attribute without impacting the original attribute:**
 
 In this example we have an attribute `"descriptionSearch"` which will help our users easily filter for transactions by `"description"`. To ensure our filters will not take into account a description's character casing, `descriptionSearch` duplicates the value of `"description"` so it can be used in filters without impacting the original `"description"` value. Without ElectroDB's `watch` functionality, to accomplish this you would either have to duplicate this logic or cause permanent modification to the property itself. Additionally, the `"descriptionSearch"` attribute has used `hidden:true` to ensure this value will not be presented to the user.
 
@@ -824,31 +842,31 @@ In this example we have an attribute `"descriptionSearch"` which will help our u
     transactions: {
       pk: {
         field: "pk",
-        facets: ["accountNumber"]
+        composite: ["accountNumber"]
       },
       sk: {
         field: "sk",
-        facets: ["transactionId"]
+        composite: ["transactionId"]
       }
     }
   }
 }
 ```
 
-##### Calculated Attributes
-See: [Attribute Watching](#attribute-watching)
+#### Calculated Attributes
+See: [Attribute Watching](#attribute-watching).
 
-##### Virtual Attributes
-See: [Attribute Watching](#attribute-watching)
+#### Virtual Attributes
+See: [Attribute Watching](#attribute-watching).
 
 #### Attribute Validation
 The `validation` property allows for multiple function/type signatures. Here the different combinations *ElectroDB* supports:
-| signature | behavior |
-| --------- | -------- |
-| `Regexp`  | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute |
-| `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. |
-| `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid. |
-| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query |
+signature               | behavior
+----------------------- | --------
+`Regexp`                | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute
+`(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message.
+`(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid.
+`(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query
 
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
@@ -857,40 +875,44 @@ All DynamoDB table start with at least a PartitionKey with an optional SortKey, 
 
 In your model, the _Table Index_ this is expressed as an _Access Pattern_ *without* an `index` property. For Secondary Indexes, use the `index` property to define the name of the index as defined on your DynamoDB table.
 
-Within these _AccessPatterns_, you define the PartitionKey and (optionally) SortKeys that are present on your DynamoDB table and map the key's name on the table with the `field` property.          
+Within these _AccessPatterns_, you define the PartitionKey and (optionally) SortKeys that are present on your DynamoDB table and map the key's name on the table with the `field` property.
 
 ```typescript
 indexes: {
-	<AccessPatternName>: {
-		"pk": {
-			"field": <string>
-			"facets": <AttributeName[]>
+	[AccessPatternName]: {
+		pk: {
+			field: string; 
+			composite: AttributeName[];
+			template?: string;
 		},
-		"sk"?: {
-			"field": <string>
-			"facets": <AttributesName[]>
+		sk?: {
+			field: string;
+			composite: AttributesName[];
+            template?: string;
 		},
-		"index"?: string
-		"collection"?: string
+		index?: string
+		collection?: string
 	}
 }
 ```
 
-| Property | Type | Required | Description |
-| -------- | :--: | :--: | ----------- |
-| `pk`  | `object` | yes | Configuration for the pk of that index or table |
-`pk.facets` | `boolean` | no | An array that represents the order in which attributes are concatenated to facets the key (see [Facets](#facets) below for more on this functionality). |  
-`pk.field` | `string` | yes | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. | 
-| `sk`  | `object` | no | Configuration for the sk of that index or table |  
-`sk.facets` | `array | string` | no | Either an Array that represents the order in which attributes are concatenated to facets the key, or a String for a facet template. (see [Facets](#facets) below for more on this functionality). |  
-`sk.field` | `string` | yes | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. |  
-`index` | `string` | no | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index. |
-`collection` | `string` | no | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality). 
+| Property       | Type             | Required | Description |
+| -------------- | :--------------: | :------: | ----------- |
+| `pk`           | `object`         | yes      | Configuration for the pk of that index or table
+| `pk.composite` | `array | string` | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `pk.template`  | `string`         | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
+| `pk.field`     | `string`         | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `sk`           | `object`         | no       | Configuration for the sk of that index or table
+| `sk.composite` | `array | string` | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `sk.template`  | `string`         | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
+| `sk.field`     | `string`         | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `index`        | `string`         | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
+| `collection`   | `string`         | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
 
 ### Indexes Without Sort Keys
-When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail. 
+When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail.
 
-> Note: It is generally recommended to always use Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesn't _need_ an additional property to define a unique record, having an `sk` with no facets still opens the door to many more query opportunities like [collections](#collections).
+> Note: It is generally recommended to always use Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesn't _need_ an additional property to define a unique record, having an `sk` with no defined composite attributes (e.g. an empty array) still opens the door to many more query opportunities like [collections](#collections).
 
 ```javascript
 // ElectroDB interprets as index *not having* an SK.
@@ -899,7 +921,7 @@ When using indexes without Sort Keys, that should be expressed as an index *with
     myIndex: {
       pk: {
         field: "pk",
-        facets: ["id"]
+        composite: ["id"]
       }
     }
   }
@@ -907,36 +929,44 @@ When using indexes without Sort Keys, that should be expressed as an index *with
 ```
 
 ### Indexes With Sort Keys
-When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the `sk` in your model, but it does exist on the table, simply use an empty for the `facets` property. This is still useful as it opens the door to many more query opportunities like [collections](#collections).
+When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the Sort Key in your model, but it does exist on the table, simply use an empty for the `composite` property. An empty array is still very useful, and opens the door to more query opportunities and access patterns like [collections](#collections).
 
 ```javascript
-// ElectroDB interprets as index *having* SK, but this model doesnt attach any facets to it.
+// ElectroDB interprets as index *having* SK, but this model doesnt assign any composite attributes to it.
 {
   indexes: {
     myIndex: {
       pk: {
         field: "pk",
-        facets: ["id"]
+        composite: ["id"]
       },
       sk: {
         field: "sk",
-        facets: []
+        composite: []
       }
     }
   }
 }
 ```
 
-## Facets 
-A **Facet** is a segment of a key based on one of the attributes. **Facets** are concatenated together from either a **Partition Key** or a **Sort Key** key, which define an `index`.
+## Facets
 
-> Note: Only attributes with a type of `"string"`, `"number"`, or `"boolean"` can be used as a facet.
+As of version `0.11.1`, "Facets" have been renamed to "Composite Attributes", and all documentation has been updated to reflect that change.
 
-There are two ways to provide facets:
-1. As a [Facet Array](#facet-arrays)
-2. As a [Facet Template](#facet-templates)
+- To learn about the latest syntax, checkout [Composite Attributes](#composite-attributes).
+- To learn about why this change was made in preparation for 1.0 checkout [Renaming Facets](#the-renaming-of-index-property-facets-to-composite-and-template).
 
-For example, in the following **Access Pattern**, "`locations`" is made up of the facets `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the `schema`:
+
+## Composite Attributes
+A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key**, or a **Sort Key** key, which define an `index`.
+
+> Note: Only attributes with a type of `"string"`, `"number"`, `"boolean"`, or `string[]` (enum) can be used as composite attributes.
+
+There are two ways to provide composite:
+1. As a [Composite Attribute Array](#composite-attribute-arrays)
+2. As a [Composite Attribute Template](#composite-attribute-templates)
+
+For example, in the following **Access Pattern**, "`locations`" is made up of the composite attributes `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the [model](#model):
 ```
 // Input
 {
@@ -955,13 +985,13 @@ For example, in the following **Access Pattern**, "`locations`" is made up of th
 
 For `PK` values, the `service` and `version` values from the model are prefixed onto the key.
 
-For `SK` values, the `entity` value from the model is prefixed onto the key. 
+For `SK` values, the `entity` value from the model is prefixed onto the key.
 
-### Facet Arrays
-In a Facet Array, each element is the name of the corresponding Attribute defined in the Model. 
+### Composite Attribute Arrays
+Within a Composite Attribute Array, each element is the name of the corresponding Attribute defined in the Model. The attributes chosen, and the order in which they are specified, will translate to how your composite keys will be built by ElectroDB.
 
-> Note: If the Attribute has a `label` property, that will be used to prefix the facets, otherwise the full Attribute name will be used.
-> 
+> Note: If the Attribute has a `label` property, that will be used to prefix the composite attributes, otherwise the full Attribute name will be used.
+>
 ```javascript
 attributes: {
 	storeId: {
@@ -985,11 +1015,11 @@ indexes: {
 	locations: {
 		pk: {
 			field: "pk",
-			facets: ["storeId"]
+			composite: ["storeId"]
 		},
 		sk: {
 			field: "sk",
-			facets: ["mallId", "buildingId", "unitId"]
+			composite: ["mallId", "buildingId", "unitId"]
 		}
 	}
 }
@@ -1008,47 +1038,50 @@ indexes: {
 	sk: '$mallstores#mid_mallvalue#bid_buildingvalue#uid_unitvalue'
 }
 ```
-### Facet Templates
-In a Facet Template, you provide a formatted template for ElectroDB to use when making keys. Facet Templates allow for potential ElectroDB adoption on already established tables and records.
+### Composite Attribute Templates
+In a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
-Attributes are identified by a prefixed colon and the attributes name. For example, the syntax `:storeId`  will matches `storeId` attribute in the `model`. 
+Attributes are identified by surrounding the attribute with `${...}` braces. For example, the syntax `${storeId}`  will match `storeId` attribute in the model.
 
-Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_:mallId#bid_:buildingId`. 
+Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_${mallId}#bid_${buildingId}`.
 
 > Note: ***ElectroDB*** will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit ***ElectroDB's*** ability to prevent leaking entities with some queries.
 
-Facet Templates have some "gotchas" to consider: 
-
-  1. Keys only allow for one instance of an attribute, the template `:prop1#:prop1` will be interpreted the same as `:prop1#`. 
-	
-  2. ElectroDB will continue to always add a trailing delimiter to facets with keys are partially supplied. The section on [BeginsWith Queries](#begins-with-queries) goes into more detail about how ***ElectroDB*** builds indexes from facets.    
+ElectroDB will continue to always add a trailing delimiter to composite attributes with keys are partially supplied. The section on [BeginsWith Queries](#begins-with-queries) goes into more detail about how ***ElectroDB*** builds indexes from composite attributes.
 
 ```javascript
-attributes: {
-	storeId: {
-		type: "string"
-	},
-	mallId: {
-		type: "string"
-	},
-	buildingId: {
-		type: "string"
-	},
-	unitId: {
-		type: "string"
-	}
-},
-indexes: {
-	locations: {
-		pk: {
-			field: "pk",
-			facets: "sid_:storeId"
-		},
-		sk: {
-			field: "sk",
-			facets: "mid_:mallId#bid_:buildingId#uid_:unitId"
-		}
-	}
+{
+    model: {
+        entity: "MallStoreCustom",
+        version: "1",
+        service: "mallstoredirectory"
+    },
+  attributes: {
+      storeId: {
+          type: "string"
+      },
+      mallId: {
+          type: "string"
+      },
+      buildingId: {
+          type: "string"
+      },
+      unitId: {
+          type: "string"
+      }
+  },
+  indexes: {
+      locations: {
+          pk: {
+              field: "pk",
+              template: "sid_${storeId}"
+          },
+          sk: {
+              field: "sk",
+              template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}"
+          }
+      }
+  }
 }
 
 
@@ -1067,33 +1100,101 @@ indexes: {
 }
 ```
 
-## Facet and Index Considerations
+#### Templates and Composite Attribute Arrays
 
-As described in the above two sections ([Facets](#facets), [Indexes](#indexes)), ElectroDB builds your keys using the attribute values defined in your model and provided on your query. Here are a few considerations to take into account when thinking about how to model your indexes:
+The example above shows indexes defined only with the `template` property. This property alone is enough to work with ElectroDB, however it can be useful to also include a `composite` array with the names of the Composite Attributes included in the `template` string. Doing so achieves the following benefits:
 
-- Your table's primary Partition and Sort Keys cannot be changed after a record has been created. Be mindful of **not** to use Attributes that have values that can change as facets for your primary table index.
+1. ElectroDB will enforce that the template you have supplied actually resolves to the composite attributes specified in the array.
 
-- When updating/patching an Attribute that is also a facet for secondary index, ElectroDB will perform a runtime check that the operation will leave a key in a partially built state. For example: if a Sort Key is defined as having the Facets `["prop1", "prop2", "prop3"]`, than an update to the `prop1` Attribute will require supplying the `prop2` and `prop3` Attributes as well. This prevents a loss of key fidelity because ElectroDB is not able to update a key partially in place with its existing values.
+2. If you use ElectroDB with TypeScript, supplying the `composite` array will ensure the indexes' Composite Attributes are typed just the same as if you had not used a composite template.
 
-- As described and detailed in [Facet Arrays](#facet-arrays), you can use the `label` property on an Attribute shorten a facet's prefix on a key. This can allow trim down the length of your keys.   
+An example of using `template` while also using `composite`:
+
+```javascript
+{
+  indexes: {
+    locations: {
+      pk: {
+        field: "pk",
+        template: "sid_${storeId}"
+        composite: ["storeId"]
+      },
+      sk: {
+        field: "sk",
+        template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}",
+        composite: ["mallId", "buildingId", "unitId"]
+      }
+    }
+  }
+}
+```
+
+## Numeric Keys
+
+If you have an index where the Partition or Sort Keys are expected to be numeric values, you can accomplish this with the `template` property on the index that requires numeric keys. Define the attribute used in the composite template as type "number", and then create a template string with only the attribute's name.
+
+For example, this model defines both the Partition and Sort Key as numeric:
+
+```javascript
+const schema = {
+  model: {
+    entity: "numeric",
+    service: "example",
+    version: "1"
+  },
+  attributes: {
+    number1: {
+      type: "number" // defined as number
+    },
+    number2: {
+      type: "number"  // defined as number
+    }
+  },
+  indexes: {
+    record: {
+      pk: {
+        field: "pk",
+        template: "${number1}" // will build PK as numeric value 
+      },
+      sk: {
+        field: "sk",
+        template: "${number2}" // will build SK as numeric value
+      }
+    }
+  }
+}
+```
+
+## Composite Attribute and Index Considerations
+
+As described in the above two sections ([Composite Attributes](#composite-attributes), [Indexes](#indexes)), ElectroDB builds your keys using the attribute values defined in your model and provided on your query. Here are a few considerations to take into account when thinking about how to model your indexes:
+
+- Your table's primary Partition and Sort Keys cannot be changed after a record has been created. Be mindful of **not** to use Attributes that have values that can change as composite attributes for your primary table index.
+
+- When updating/patching an Attribute that is also a composite attribute for secondary index, ElectroDB will perform a runtime check that the operation will leave a key in a partially built state. For example: if a Sort Key is defined as having the Composite Attributes `["prop1", "prop2", "prop3"]`, than an update to the `prop1` Attribute will require supplying the `prop2` and `prop3` Attributes as well. This prevents a loss of key fidelity because ElectroDB is not able to update a key partially in place with its existing values.
+
+- As described and detailed in [Composite Attribute Arrays](#composite attribute-arrays), you can use the `label` property on an Attribute shorten a composite attribute's prefix on a key. This can allow trim down the length of your keys.
 
 ## Collections
-A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities. 
+A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities.
 
-Collections are defined on an Index and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
+Collections are defined on an Index, and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
 
-> **Note**: `collection` should be unique to a single common index across entities. 
+> **Note**: A `collection` name should be unique to a single common index across entities.
 
 Using the TaskApp Models defined in [Models](#model), these models share a `collection` called `assignments` on the index `gsi3pk-gsi3sk-index`
 ```javascript
-let TaskApp =  new  Service("projectmanagement", { client, table: "projectmanagement" }); 
-TaskApp
-	.join(EmployeesModel) // TaskApp.entities.employees
-	.join(TasksModel);    // TaskApp.entities.tasks
+const config = {client, table: "projectmanagement"} 
+const TaskApp = new Service({
+	employees: EmployeesModel, // TaskApp.entities.employees
+	tasks: TasksModel          // TaskApp.entities.tasks
+}, config); 
 
-TaskApp.collections.assignments({employee: "JExotic"}).params();
+TaskApp.collections
+	.assignments({employee: "JExotic"})
+	.go();
 
-// Results
+// Equivalent Parameters
 {
   TableName: 'projectmanagement',
   ExpressionAttributeNames: { '#pk': 'gsi3pk', '#sk1': 'gsi3sk' },
@@ -1103,7 +1204,7 @@ TaskApp.collections.assignments({employee: "JExotic"}).params();
 }
 ```
 
-## Filters 
+## Filters
 
 > Filters are no longer the preferred way to add FilterExpressions. Checkout the [Where](#where) section to find out about how to apply FilterExpressions and ConditionExpressions.
 
@@ -1132,7 +1233,10 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 }
 ```
 ### Defined on the model
-Filters can defined on the model and used in your query chain.  
+
+> Deprecated but functional as with 1.0.
+
+Filters can be defined on the model and used in your query chain.
 
 ```javascript
 /**
@@ -1154,13 +1258,13 @@ let StoreLocations  =  new Entity(model, {table: "StoreDirectory"});
 let maxRent = "5000.00";
 let minRent = "2000.00";
 let promotion = "1000.00";
-let stores  =  MallStores.query
+let stores = await MallStores.query
 	.stores({ mallId: "EastPointe" })
 	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
 	.rentPromotions(minRent, maxRent, promotion)
-	.params();
+	.go();
 
-// Results
+// Equivalent Parameters
 {
   IndexName: 'idx2',
   TableName: 'StoreDirectory',
@@ -1182,7 +1286,7 @@ let stores  =  MallStores.query
   FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
 }
 ```
-### Defined via Filter method after query operators 
+### Defined via Filter method after query operators
 The easiest way to use filters is to use them inline in your query chain.
 
 ```javascript
@@ -1190,15 +1294,15 @@ let StoreLocations  =  new Entity(model, {table: "StoreDirectory"});
 let maxRent = "5000.00";
 let minRent = "2000.00";
 let promotion = "1000.00";
-let stores  =  StoreLocations.query
+let stores  =  await StoreLocations.query
 	.leases({ mallId: "EastPointe" })
 	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
 	.filter(({rent, discount}) => `
 		${rent.between(minRent, maxRent)} AND ${discount.lte(promotion)}
 	`)
-	.params();
+	.go();
 
-// Results
+// Equivalent Parameters
 {
   IndexName: 'idx2',
   TableName: 'StoreDirectory',
@@ -1221,7 +1325,7 @@ let stores  =  StoreLocations.query
 }
 ```
 
-Filter functions allow you to write a `FilterExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions. This object contains every Attribute defined in the Entity's Model with the following operators as methods: 
+Filter functions allow you to write a `FilterExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions. This object contains every Attribute defined in the Entity's Model with the following operators as methods:
 
 operator | example | result
 | ----------- | ----------- | ----------- |  
@@ -1247,7 +1351,7 @@ It is possible to chain together multiple filters. The resulting FilterExpressio
 
 ```javascript
 let MallStores = new Entity(model, {table: "StoreDirectory"});
-let stores = MallStores.query
+let stores = await MallStores.query
 	.leases({ mallId: "EastPointe" })
 	.between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
 	.filter(({ rent, discount }) => `
@@ -1256,9 +1360,9 @@ let stores = MallStores.query
 	.filter(({ category }) => `
 		${category.eq("food/coffee")}
 	`)
-	.params();
+	.go();
 
-// Results
+// Equivalent Parameters
 {
   TableName: 'StoreDirectory',
   ExpressionAttributeNames: {
@@ -1283,11 +1387,11 @@ let stores = MallStores.query
 }
 ```
 
-## Where 
+## Where
 
 > The `where()` method is an improvement on the `filter()` method. Unlike `filter`, `where` will be compatible with upcoming features related to complex types.
 
-Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/put/create/delete action. 
+Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/put/create/delete/remove action.
 
 ### FilterExpressions
 
@@ -1320,7 +1424,7 @@ animals.query
 		.where(({animal, dangerous}, {value, name, between}) => `
 			${name(animal)} = ${value(animal, "Warthog")} AND ${between(dangerous, "2020-09-25", "2020-09-28")}
 		`)
-		.params()
+		.go()
 ```
 
 ### ConditionExpressions
@@ -1351,7 +1455,7 @@ animals.update({habitat: "Africa", enclosure: "5b"})
 	.where(({animal, dangerous}, {value, name, eq}) => `
 		${name(animal)} = ${value(animal, "Zebra")} AND ${eq(dangerous)}
 	`)
-	.params()
+	.go()
 ```
 
 
@@ -1364,7 +1468,7 @@ Where functions allow you to write a `FilterExpression` or `ConditionExpression`
 animals.update({habitat: "Africa", enclosure: "5b"})
 	.set({keeper: "Joe Exotic"})
 	.where((attr, op) => op.eq(attr.dangerous, true))
-	.params();
+	.go();
 
 // Multiple conditions
 animals.update({habitat: "Africa", enclosure: "5b"})
@@ -1372,10 +1476,10 @@ animals.update({habitat: "Africa", enclosure: "5b"})
 	.where((attr, op) => `
 		${op.eq(attr.dangerous, true)} AND ${op.contains(attr.diet, "meat")}
 	`)
-	.params();
+	.go();
 ```
 
-The `attributes` object contains every Attribute defined in the Entity's Model. The `operations` object contains the following methods: 
+The `attributes` object contains every Attribute defined in the Entity's Model. The `operations` object contains the following methods:
 
 operator | example | result
 | ----------- | ----------- | ----------- |  
@@ -1399,7 +1503,7 @@ It is possible to include chain multiple where clauses. The resulting FilterExpr
 
 ```javascript
 let MallStores = new Entity(model, {table: "StoreDirectory"});
-let stores = MallStores.query
+let stores = await MallStores.query
 	.leases({ mallId: "EastPointe" })
 	.between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
 	.where(({ rent, discount }, {between, eq}) => `
@@ -1408,9 +1512,9 @@ let stores = MallStores.query
 	.where(({ category }, {eq}) => `
 		${eq(category, "food/coffee")}
 	`)
-	.params();
+	.go();
 
-// Results
+// Equivalent Parameters
 {
   TableName: 'StoreDirectory',
   ExpressionAttributeNames: {
@@ -1443,8 +1547,8 @@ Forming a composite **Partition Key** and **Sort Key** is a critical step in pla
 2. You currently only have the following operators available on a **Sort Key**: `begins_with`, `between`, `>`, `>=`, `<`, `<=`, and `Equals`.
 3. To act on single record, you will need to know the full  **Partition Key** and **Sort Key** for that record.
 
-### Using facets to make hierarchical keys
-Carefully considering your **Facet** order will allow **ElectroDB** to express hierarchical relationships and unlock more available **Access Patterns** for your application. 
+### Using composite attributes to make hierarchical keys
+Carefully considering your **Composite Attribute** order will allow **ElectroDB** to express hierarchical relationships and unlock more available **Access Patterns** for your application.
 
 For example, let's say you have a `StoreLocations` Entity that represents Store Locations inside Malls:
 
@@ -1509,33 +1613,33 @@ let schema = {
 	    stores: {  
 			pk: {
 				field: "pk",
-				facets: ["cityId", "mallId"]
+				composite: ["cityId", "mallId"]
 			}, 
 			sk: {
 				field: "sk",
-				facets: ["buildingId", "storeId"]
+				composite: ["buildingId", "storeId"]
 			}  
 		},  
 		units: {  
 			index: "gis1pk-gsi1sk-index",  
 			pk: {
 				field: "gis1pk",
-				facets: ["mallId"]
+				composite: ["mallId"]
 			},  
 			sk: {
 				field: "gsi1sk",
-				facets: ["buildingId", "unitId"]
+				composite: ["buildingId", "unitId"]
 			}  
 		},
 		leases: {
 			index: "gis2pk-gsi2sk-index",
 			pk: {
 				field: "gis2pk",
-				facets: ["storeId"]
+				composite: ["storeId"]
 			},  
 			sk: {
 				field: "gsi2sk",
-				facets: ["leaseEndDate"]
+				composite: ["leaseEndDate"]
 			}  
 		}
 	},
@@ -1553,7 +1657,7 @@ const StoreLocations = new Entity(schema, {table: "StoreDirectory"});
 
 > Examples in this section using the `MallStore` schema defined [above](#shopping-mall-stores), and available for interacting with here: https://runkit.com/tywalch/electrodb-building-queries
 
-All queries start from the Access Pattern defined in the schema. 
+All queries start from the Access Pattern defined in the schema.
 
 ```javascript
 const MallStore = new Entity(schema, {table: "StoreDirectory"}); 
@@ -1562,36 +1666,40 @@ const MallStore = new Entity(schema, {table: "StoreDirectory"});
 // MallStore.query.malls()
 ```
 
-#### Partition Key Facets
-All queries require (*at minimum*) the **Facets** included in its defined **Partition Key**, and **Facets** you have from the start of the **Sort Key**. 
-> *Important: Facets must be supplied in the order they are composed when invoking the **Access Pattern*** 
+#### Partition Key Composite Attributes
+All queries require (*at minimum*) the **Composite Attributes** included in its defined **Partition Key**. **Composite Attributes** you define on the **Sort Key** can be partially supplied, but must be supplied in the order they are defined.
+
+> *Important: Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern***. This is because composite attributes are used to form a concatenated key string, and if attributes supplied out of order, it is not possible to fill the gaps in that concatenation.
+
 ```javascript
 const MallStore = new Entity({
-	model: {
-		service: "mallmgmt"
-		entity: "store", 
-		version: "1"
-	},
-	attributes: {
-		cityId: "string"
-		mallId: "string",
-		storeId: "string",
-		buildingId: "string",
-		unitId: "string",
-		name: "string",
-		description: "string",
-		category: "string"
-	},
-	indexes: {
-		pk: {
-			field: "pk",
-			facets: ["cityId", "mallId"]
-		},
-		sk: {
-			field: "sk",
-			facets: ["storeId", "unitId"]
-		}
-	}
+  model: {
+    service: "mallmgmt",
+    entity: "store", 
+    version: "1"
+  },
+  attributes: {
+    cityId: "string",
+    mallId: "string",
+    storeId: "string",
+    buildingId: "string",
+    unitId: "string",
+    name: "string",
+    description: "string",
+    category: "string"
+  },
+  indexes: {
+    stores: {
+      pk: {
+        field: "pk",
+        composite: ["cityId", "mallId"]
+      },
+      sk: {
+        field: "sk",
+        composite: ["storeId", "unitId"]
+      }
+    }
+  }
 }, {table: "StoreDirectory"});
 
 const cityId = "Atlanta1";
@@ -1603,20 +1711,23 @@ const buildingId = "F34";
 // Good: Includes at least the PK
 StoreLocations.query.stores({cityId, mallId});
 
-// Good: Includes at least the PK, and some of the SK
-StoreLocations.query.stores({cityId, mallId, buildingId});
+// Good: Includes at least the PK, and the first SK attribute
+StoreLocations.query.stores({cityId, mallId, storeId});
 
-// Bad: No PK facets specified, will throw
+// Good: Includes at least the PK, and the all SK attributes   
+StoreLocations.query.stores({cityId, mallId, storeId, unitId});
+
+// Bad: No PK composite attributes specified, will throw
 StoreLocations.query.stores();
 
-// Bad: Not All PK Facets included (cityId), will throw
+// Bad: Not All PK Composite Attributes included (cityId), will throw
 StoreLocations.query.stores({mallId});
 
-// Bad: Facets not included in order, will NOT throw but will ignore `storeId` 
-StoreLocations.query.stores({cityId, mallId, storeId});
+// Bad: Composite Attributes not included in order, will NOT throw, but will ignore `unitId` because `storeId` was not supplied as well
+StoreLocations.query.stores({cityId, mallId, unitId});
 ```
 
-### Sort Key Operations 
+### Sort Key Operations
 | operator | use case |
 | ---: | ----------- |
 | `begins` | Keys starting with a particular set of characters.
@@ -1626,9 +1737,9 @@ StoreLocations.query.stores({cityId, mallId, storeId});
 | `lt` | Keys greater than some value |
 | `lte` | Keys greater than or equal to some value |
 
-Each record represents one Store location. All Stores are located in Malls we manage. 
+Each record represents one Store location. All Stores are located in Malls we manage.
 
-To satisfy requirements for searching based on location, you could use the following keys: Each `StoreLocations` record would have a **Partition Key**  with the store's `storeId`. This key alone is not enough to identify a particular store. To solve this, compose a **Sort Key** for the store's location attribute ordered hierarchically (mall/building/unit): `["mallId", "buildingId", "unitId"]`. 
+To satisfy requirements for searching based on location, you could use the following keys: Each `StoreLocations` record would have a **Partition Key**  with the store's `storeId`. This key alone is not enough to identify a particular store. To solve this, compose a **Sort Key** for the store's location attribute ordered hierarchically (mall/building/unit): `["mallId", "buildingId", "unitId"]`.
 
 The `StoreLocations` entity above, using just the `stores` **Index** alone enables four **Access Patterns**:
 1. All `LatteLarrys` locations in all *Malls*
@@ -1637,14 +1748,17 @@ The `StoreLocations` entity above, using just the `stores` **Index** alone enabl
 4. A specific `LatteLarrys` inside of a *Mall* and *Building*
 
 ## Query Chains
-Queries in ***ElectroDB*** are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Facets** to create performant lookups. To accomplish this, ***ElectroDB*** offers a predictable chainable API.
+Queries in ***ElectroDB*** are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Composite Attributes** to create performant lookups. To accomplish this, ***ElectroDB*** offers a predictable chainable API.
 
-> Examples in this section using the `StoreLocations` schema defined [above](#shopping-mall-stores) and can be directly experiment with on runkit: https://runkit.com/tywalch/electrodb-building-queries 
+> Examples in this section using the `StoreLocations` schema defined [above](#shopping-mall-stores) and can be directly experiment with on runkit: https://runkit.com/tywalch/electrodb-building-queries
 
-The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all facets described in the Entities' primary `PK` and `SK`.  
+The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all composite attributes described in the Entities' primary `PK` and `SK`.
 
 ### Get Method
-Provide all Table Index facets in an object to the `get` method
+Provide all Table Index composite attributes in an object to the `get` method. In the event no record is found, a value of `null` will be returned.
+
+> Note: As part of ElectroDB's roll out of 1.0.0, a breaking change was made to the `get` method. Prior to 1.0.0, the `get` method would return an empty object if a record was not found. This has been changed to now return a value of `null` in this case.
+
 ```javascript
 let results = await StoreLocations.get({
 	storeId: "LatteLarrys", 
@@ -1664,20 +1778,20 @@ let results = await StoreLocations.get({
 ```
 
 ### Batch Get
-Provide all Table Index facets in an array of objects to the `get` method to perform a BatchGet query. 
+Provide all Table Index composite attributes in an array of objects to the `get` method to perform a BatchGet query.
 
-> Note: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below. 
-> Additionally, when performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet queries larger than the docClient's limit of 100 records.  
+> Note: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below.
+> Additionally, when performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet queries larger than the docClient's limit of 100 records.
 
-If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously. 
+If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
 
-For example, 150 records (50 records over the DynamoDB maximum): 
+For example, 150 records (50 records over the DynamoDB maximum):
 
 The default value of `concurrent` will be `1`. ElectroDB will execute a BatchGet request of 100, then after that request has responded, make another BatchGet request for 50 records.
 
 If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB will execute a BatchGet request of 100 records, and another BatchGet request for 50 records without waiting for the first request to finish.
 
-It is important to consider your Table's throughput considerations when setting this value.   
+It is important to consider your Table's throughput considerations when setting this value.
 
 ```javascript
 let [results, unprocessed] = await StoreLocations.get([
@@ -1714,14 +1828,14 @@ let [results, unprocessed] = await StoreLocations.get([
 // }
 ```
 
-The two-dimensional array returned by batch get most easily used when deconstructed into two variables, in the above case: `results` and `unprocessed`. 
+The two-dimensional array returned by batch get most easily used when deconstructed into two variables, in the above case: `results` and `unprocessed`.
 
 The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as other ElectroDB queries.
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.    
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Delete Method
-Provide all Table Index facets in an object to the `delete` method to delete a record.
+Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
 
 ```javascript
 await StoreLocations.delete({
@@ -1742,14 +1856,14 @@ await StoreLocations.delete({
 ```
 
 ### Batch Write Delete Records
-Provide all table index facets in an array of objects to the `delete` method to batch delete records.
+Provide all table index composite attributes in an array of objects to the `delete` method to batch delete records.
 
 > Note: Performing a Batch Delete will return an array of "unprocessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options).
 > Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
 
-If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously. 
+If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
 
-For example, 75 records (50 records over the DynamoDB maximum): 
+For example, 75 records (50 records over the DynamoDB maximum):
 
 The default value of `concurrent` will be `1`. ElectroDB will execute a BatchWrite request of 25, then after that request has responded, make another BatchWrite request for 25 records, and then another.
 
@@ -1798,7 +1912,7 @@ let unprocessed = await StoreLocations.delete([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
 Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
@@ -1852,14 +1966,14 @@ await StoreLocations
 ```
 
 ### Batch Write Put Records
-Provide all *required* Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.    
+Provide all *required* Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
 
 > Note: Performing a Batch Put will return an array of "unprocessed" records. An empty array signifies all records returned were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options).
 > Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
 
-If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously. 
+If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
 
-For example, 75 records (50 records over the DynamoDB maximum): 
+For example, 75 records (50 records over the DynamoDB maximum):
 
 The default value of `concurrent` will be `1`. ElectroDB will execute a BatchWrite request of 25, then after that request has responded, make another BatchWrite request for 25 records, and then another.
 
@@ -1946,12 +2060,12 @@ let unprocessed = await StoreLocations.put([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the facets defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as facets but you can pass the [query option](#query-options) `{lastEvaluatedKeyRaw:true}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Update Record
-To update a record, pass all Table index facets to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
+To update a record, pass all Table index composite attributes to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
 
-> Note: If your update includes changes to an attribute that is also a facet for a global secondary index, you must provide all facets for that index.
+> Note: If your update includes changes to an attribute that is also a composite attribute for a global secondary index, you must provide all composite attributes for that index. If this constraint did not exist, your keys would either get out of sync with the attributes in your model, or be partially updated at the time of writing because the other attributes in that index were not present at the time of key composition.
 
 ```javascript
 await StoreLocations
@@ -2019,9 +2133,31 @@ await StoreLocations.scan
 }
 ```
 
+### Remove Method
+A convenience method for `delete` with ConditionExpression that the item being deleted exists. Provide all Table Index composite attributes in an object to the `remove` method to remove the record.
+
+```javascript
+await StoreLocations.remove({
+	storeId: "LatteLarrys", 
+	mallId: "EastPointe", 
+	buildingId: "F34", 
+	cityId: "Atlanta1"
+}).go();
+
+// Equivalent Params:
+// {
+//   Key: {
+//     pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+//     sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+//   },
+//   TableName: 'StoreDirectory'
+//   ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+// }
+```
+
 ### Patch Records
 
-In DynamoDB, `update` operations by default will insert a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not inserted when updating. 
+In DynamoDB, `update` operations by default will insert a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not inserted when updating.
 
 ```javascript
 await StoreLocations
@@ -2051,7 +2187,7 @@ await StoreLocations
 
 ### Create Records
 
-In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table. 
+In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table.
 
 ```javascript
 await StoreLocations
@@ -2102,7 +2238,41 @@ await StoreLocations
 
 ### Find Records
 
-DynamoDB offers three methods to find records: `get`, `query`, and `scan`. In **_ElectroDB_**, there is a fourth type: `find`. Unlike `get` and `query`, the `find` method does not require you to provide keys, but under the covers it will leverage the attributes provided to find the best index to query on. Provide the `find` method will all properties known to match a record and **_ElectroDB_** will generate the most performant query it can to locate the results. This can be helpful with highly dynamic querying needs. If an index cannot be satisfied with the attributes provided, `scan` will be used as a last resort.
+DynamoDB offers three methods to query records: `get`, `query`, and `scan`. In **_ElectroDB_**, there is a fourth type: `find`. Unlike `get` and `query`, the `find` method does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on. Provide the `find` method will all properties known to match a record and **_ElectroDB_** will generate the most performant query it can to locate the results. This can be helpful with highly dynamic querying needs. If an index cannot be satisfied with the attributes provided, `scan` will be used as a last resort.
+
+> Note: The Find method is similar to the Match method with one exception: The attributes you supply directly to the `.find()` method will only be used to identify and fulfill your index access patterns. Any values supplied that do not contribute to a composite key will not be applied as query filters. Furthermore, if the values you provide do not resolve to an index access pattern, then a table scan will be performed. Use the `where()` chain method to further filter beyond keys, or use [Match](#match) for the convenience of automatic filtering based on the values given directly to that method.
+
+```javascript
+await StoreLocations.find({
+    mallId: "EastPointe",
+    buildingId: "BuildingA1",
+}).go()
+
+// Equivalent Params:
+{
+  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+  "TableName": "StoreDirectory",
+  "ExpressionAttributeNames": {
+    "#mallId": "mallId",
+    "#buildingId": "buildingId",
+    "#pk": "gis1pk",
+    "#sk1": "gsi1sk"
+  },
+  "ExpressionAttributeValues": {
+    ":mallId1": "EastPointe",
+    ":buildingId1": "BuildingA1",
+    ":pk": "$mallstoredirectory#mallid_eastpointe",
+    ":sk1": "$mallstore_1#buildingid_buildinga1#unitid_"
+  },
+  "IndexName": "gis1pk-gsi1sk-index",
+}
+```
+
+### Match Records
+
+Match is a convenience method based off of ElectroDB's [find](#find-records) method. Similar to Find, Match does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on.
+
+Match differs from [Find](#find-records) in that it will also include all supplied values into a query filter.
 
 ```javascript
 await StoreLocations.find({
@@ -2135,35 +2305,43 @@ await StoreLocations.find({
   "IndexName": "gis1pk-gsi1sk-index",
   "FilterExpression": "#mallId = :mallId1 AND#buildingId = :buildingId1 AND#leaseEndDate = :leaseEndDate1 AND#rent = :rent1"
 }
+
 ```
-After invoking the **Access Pattern** with the required **Partition Key** **Facets**, you can now choose what **Sort Key Facets** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
+After invoking the **Access Pattern** with the required **Partition Key** **Composite Attributes**, you can now choose what **Sort Key Composite Attributes** are applicable to your query. Examine the table in [Sort Key Operations](#sort-key-operations) for more information on the available operations on a **Sort Key**.
 
 ### Access Pattern Queries
-When you define your [indexes](#indexes) in your model, you are defining the Access Patterns of your entity. The [facets](#facets) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
+When you define your [indexes](#indexes) in your model, you are defining the Access Patterns of your entity. The [composite attributes](#composite-attributes) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
 
-Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this to multiply our available access patterns and use the Sort Key Operations: `begins`, `between`, `lt`, `lte`, `gt`, and `gte`. These queries are more performant and cost effective than filters. The costs associated with DynamoDB directly correlate to how effectively you leverage Sort Key Operations. 
+Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this to multiply our available access patterns and use the Sort Key Operations: `begins`, `between`, `lt`, `lte`, `gt`, and `gte`. These queries are more performant and cost-effective than filters. The costs associated with DynamoDB directly correlate to how effectively you leverage Sort Key Operations.
 
 > For a comprehensive and interactive guide to build queries please visit this runkit: https://runkit.com/tywalch/electrodb-building-queries.
 
 #### Begins With Queries
-One important consideration when using Sort Key Operations to make is when to use and not to use "begins". 
+One important consideration when using Sort Key Operations to make is when to use and not to use "begins".
 
-It is possible to supply partially supply Sort Key facets. While they do have to be in order, it's possible to provide only a subset of the Sort Key Facets to ElectroDB. By default, when you supply a partial Sort Key in the Access Pattern method, ElectroDB will create a `beginsWith` query. The difference between doing that and using .begins() is that ElectroDB will post-pend the next facet's label onto the query.
+It is possible to supply partially supply Sort Key composite attributes. Sort Key attributes must be provided in the order they are defined, but it's possible to provide only a subset of the Sort Key Composite Attributes to ElectroDB. By default, when you supply a partial Sort Key in the Access Pattern method, ElectroDB will create a `beginsWith` query. The difference between that and using `.begins()` is that, with a `.begins()` query, ElectroDB will not post-pend the next composite attribute's label onto the query.
 
-The difference is nuanced and makes better sense with an example, but the rule of thumb is that data passed to the Access Pattern method should represent values you know strictly equal the value you want.  
+The difference is nuanced and makes better sense with an example, but the rule of thumb is that data passed to the Access Pattern method should represent values you know strictly equal the value you want.
 
 The following examples will use the following Access Pattern definition for `units`:
 ```json
-"units": {  
-    "index": "gis1pk-gsi1sk-index",  
+{
+  "units": {
+    "index": "gis1pk-gsi1sk-index",
     "pk": {
-        "field": "gis1pk",
-        "facets": ["mallId"]
-    },  
+      "field": "gis1pk",
+      "composite attributes": [
+        "mallId"
+      ]
+    },
     "sk": {
-        "field": "gsi1sk",
-        "facets": ["buildingId", "unitId"]
-    }  
+      "field": "gsi1sk",
+      "composite attributes": [
+        "buildingId",
+        "unitId"
+      ]
+    }
+  }
 }
 ```
 The names you have given to your indexes on your entity model/schema express themselves as "Access Pattern" methods on your Entity's `query` object:
@@ -2173,7 +2351,7 @@ StoreLocations.query.units({mallId, buildingId}).go();
 // -----------------------^^^^^^^^^^^^^^^^^^^^^^
 ```
 
-Data passed to the Access Pattern method is considered to be full, known, data. In the above example, we are saying we *know* the `mallId`, `buildingId` and `unitId`.  
+Data passed to the Access Pattern method is considered to be full, known, data. In the above example, we are saying we *know* the `mallId`, `buildingId` and `unitId`.
 
 Alternatively, if you only know the start of a piece of data, use .begins():
 ```javascript
@@ -2188,7 +2366,7 @@ For the above queries we see two different sort keys:
 1. `"$mallstore_1#buildingid_f34#unitid_"`
 2. `"$mallstore_1#buildingid_f34"`
 
-The first example shows how ElectroDB post-pends the label of the next facet (unitId) on the SortKey to ensure that buildings such as `"f340"` are not included in the query. This is useful to prevent common issues with multi-facet sort keys like accidental over-querying.
+The first example shows how ElectroDB post-pends the label of the next composite attribute (`unitId`) on the Sort Key to ensure that buildings such as `"f340"` are not included in the query. This is useful to prevent common issues with overloaded sort keys like accidental over-querying.
 
 The second example allows you to make queries that do include buildings such as `"f340"` or `"f3409"` or `"f340356346"`.
 
@@ -2221,7 +2399,7 @@ TaskApp.collections.assignments({employee: "JExotic"}).params();
 }
 ```
 
-Collections do not have the same `query` functionality and as an Entity, though it does allow for inline filters like an Entity. The `attributes` available on the filter object include **all** attributes across entities. 
+Collections do not have the same `query` functionality and as an Entity, though it does allow for inline filters like an Entity. The `attributes` available on the filter object include **all** attributes across entities.
 ```javascript
 TaskApp.collections
 	.assignments({employee: "CBaskin"})
@@ -2250,7 +2428,7 @@ Lastly, all query chains end with either a `.go()` or a `.params()` method invoc
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
 
 ### Params
-The `params` method _ends_ a query chain, and synchronously formats your query into an object ready for the DynamoDB docClient. 
+The `params` method _ends_ a query chain, and synchronously formats your query into an object ready for the DynamoDB docClient.
 
 > For more information on the options available in the `config` object, checkout the section [Query Options](#query-options).
 
@@ -2281,7 +2459,7 @@ let stores = MallStores.query
 ```
 
 ### Go
-The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. 
+The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model.
 
 > For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
 
@@ -2299,11 +2477,11 @@ let stores = MallStores.query
 
 ### Page
 
-> As of September 29th 2020 the `.page()` now returns the facets that make up the `ExclusiveStartKey` instead of the `ExclusiveStartKey` itself. To get back only the `ExclusiveStartKey`, add the [query option](#query-options) `{pager: "raw"}` to your query options. If you treated this value opaquely no changes are needed, or if you used the `raw` flag. 
+> As of September 29th 2020 the `.page()` now returns the composite attributes that make up the `ExclusiveStartKey` instead of the `ExclusiveStartKey` itself. To get back only the `ExclusiveStartKey`, add the [query option](#query-options) `{pager: "raw"}` to your query options. If you treated this value opaquely no changes are needed, or if you used the `raw` flag.
 
-The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tuple. 
+The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tuple.
 
-The first element for a page query is the "pager": an object contains the facets that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some facets are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the facets yourself.
+The first element for a page query is the "pager": an object contains the composite attributes that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some composite attributes are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the composite attributes yourself.
 
 The "pager" includes the associated entity's Identifiers.
 
@@ -2360,13 +2538,15 @@ let [pageTwo, moreStores] = await MallStores.query
 ```
 
 #### Service Pagination
-Pagination with services is also possible. Similar to [Entity Pagination](#entity-pagination), calling the `.page()` method returns a `[pager, results]` tuple. Also similar to pagination on Entities, the pager object returned by default is a deconstruction of the returned LastEvaluatedKey.     
+Pagination with services is also possible. Similar to [Entity Pagination](#entity-pagination), calling the `.page()` method returns a `[pager, results]` tuple. Also, similar to pagination on Entities, the pager object returned by default is a deconstruction of the returned LastEvaluatedKey.
 
 #### Pager Query Options
 
 The `.page()` method also accepts [Query Options](#query-options) just like the `.go()` and `.params()` methods. Unlike those methods, however, the `.page()` method accepts Query Options as the _second_ parameter (the first parameter is reserved for the "pager").
 
 A notable Query Option, that is available only to the `.page()` method, is an option called `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
+
+> Note: Because the "pager" object is destructured from the keys DynamoDB returns as the `LastEvaluatedKey`, these composite attributes differ from the record's actual attribute values in one important way: Their string values will all be lowercase. If you intend to use these attributes in ways where their casing _will_ matter (e.g. in a `where` filter), keep in mind this may result in unexpected outcomes.
 
 The three options for the query option `pager` are as follows:
 
@@ -2380,7 +2560,7 @@ The three options for the query option `pager` are as follows:
 }
 ```
 
-**"named" (default):** By default, ElectroDB will deconstruct the LastEvaluatedKey returned by the DocClient into it's individual facet parts. The "named" option, chosen by default, also includes the Entity's column "identifiers" -- this is useful with Services where destructured pagers may be identical between more than one Entity in that Service.      
+**"named" (default):** By default, ElectroDB will deconstruct the LastEvaluatedKey returned by the DocClient into it's individual composite attribute parts. The "named" option, chosen by default, also includes the Entity's column "identifiers" -- this is useful with Services where destructured pagers may be identical between more than one Entity in that Service.
 
 ```javascript
 // {pager: "named"} | {pager: undefined} 
@@ -2395,7 +2575,7 @@ The three options for the query option `pager` are as follows:
 }
 ```
 
-**"item":**  Similar to "named", however without the Entity's "identifiers". If two Entities with a service have otherwise identical index definitions, using the "item" pager option can result in errors while paginating a Collection. If this is not a concern with your Service, or you are paginating with only an Entity, this option could be preferable because it has fewer properties.       
+**"item":**  Similar to "named", however without the Entity's "identifiers". If two Entities with a service have otherwise identical index definitions, using the "item" pager option can result in errors while paginating a Collection. If this is not a concern with your Service, or you are paginating with only an Entity, this option could be preferable because it has fewer properties.
 
 ```javascript
 // {pager: "item"} 
@@ -2408,7 +2588,7 @@ The three options for the query option `pager` are as follows:
 }
 ```
 
-**"raw":** The `"raw"` option returns the LastEvaluatedKey as it was returned by the DynamoDB DocClient. 
+**"raw":** The `"raw"` option returns the LastEvaluatedKey as it was returned by the DynamoDB DocClient.
 
 ```javascript
 // {pager: "raw"} 
@@ -2419,7 +2599,7 @@ The three options for the query option `pager` are as follows:
   gsi1sk: '$workplaces#offices_1'
 }
 ```
-  
+
 ##### Pagination Example
 
 Simple pagination example:
@@ -2515,25 +2695,27 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 
 ```typescript
 {
-    params?: object
-    table?: string
-    raw?: boolean
-    includeKeys?: boolean
-    pager?: "raw" | "named" | "item"	
-    originalErr?: boolean
-    concurrent?: number
+  params?: object;
+  table?: string;
+  raw?: boolean;
+  includeKeys?: boolean;
+  pager?: "raw" | "named" | "item";
+  originalErr?: boolean;
+  concurrent?: number;
+  unprocessed?: "raw" | "item"   
 };
 ```
 
-| Option      | Default              | Description |  
-| ----------- | :------------------: | ----------- |  
-| params      | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here. |
-| table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options) |
-| raw         | `false`              | Returns query results as they were returned by the docClient.  
-| includeKeys | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response. |
-| pager       | `"named"`            | Used in batch processing and `.pages()` calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` or the `Unprocessed` records into facets. See more detail about this in the sections for [Pager Query Options](#pager-query-options), [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records). |
-| originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged. |
-| concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations |
+Option      | Default              | Description
+----------- | :------------------: | -----------   
+params      | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
+table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
+raw         | `false`              | Returns query results as they were returned by the docClient.
+includeKeys | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
+pager       | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
+originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
+concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
+unprocessed | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
 
 # Errors:
 | Error Code | Description |
@@ -2565,27 +2747,27 @@ new Service("", {client});
 
 *Why this occurred:*
 You tried to modify the entity identifier on an Entity.
-   
+
 *What to do about it:*
 Make sure you have spelled the identifier correctly or that you actually passed a replacement.
 
-### Invalid Key Facet Template
+### Invalid Key Composite Attribute Template
 *Code: 1003*
 
 *Why this occurred:*
-You are trying to use the custom Key Facet Template and the format you passed is invalid. 
-   
+You are trying to use the custom Key Composite Attribute Template, and the format you passed is invalid.
+
 *What to do about it:*
-Checkout the section on [Facet Templates](#facet-templates) and verify your template conforms to the rules detailed there.
+Checkout the section on [Composite Attribute Templates](#composite attribute-templates) and verify your template conforms to the rules detailed there.
 
 ### Duplicate Indexes
 *Code: 1004*
 
 *Why this occurred:*
 Your model contains duplicate indexes. This could be because you accidentally included an index twice or even forgot to add an index name on a secondary index, which would be interpreted as "duplicate" to the Table's Primary index.
-   
+
 *What to do about it:*
-Double check the index names on your model for duplicate indexes. The error should specify which index has been duplicated. It is also possible that you have forgotten to include an index name. Each table must have at least one Table Index (which does not include an `index` property in ElectroDB), but all Secondary and Local indexes must include an `index` property with the name of that index as defined on the table. 
+Double-check the index names on your model for duplicate indexes. The error should specify which index has been duplicated. It is also possible that you have forgotten to include an index name. Each table must have at least one Table Index (which does not include an `index` property in ElectroDB), but all Secondary and Local indexes must include an `index` property with the name of that index as defined on the table.
 ```javascript
 {
   indexes: {
@@ -2607,10 +2789,10 @@ Double check the index names on your model for duplicate indexes. The error shou
 *Code: 1005*
 
 *Why this occurred:*
-You have added a `collection` to an index that does not have an SK. Because Collections are used to help query across entities via the Sort Key, not having a Sort Key on an index defeats the purpose of a Collection.  
-   
+You have added a `collection` to an index that does not have an SK. Because Collections are used to help query across entities via the Sort Key, not having a Sort Key on an index defeats the purpose of a Collection.
+
 *What to do about it:*
-If your index _does_ have a Sort Key but you are unsure of how to inform electro without setting facets to the SK, add the SK object to the index and use an empty array for Facets:
+If your index _does_ have a Sort Key, but you are unsure of how to inform electro without setting composite attributes to the SK, add the SK object to the index and use an empty array for Composite Attributes:
 ```javascript
 // ElectroDB interprets as index *not having* an SK.
 {
@@ -2618,23 +2800,23 @@ If your index _does_ have a Sort Key but you are unsure of how to inform electro
     myIndex: {
       pk: {
         field: "pk",
-        facets: ["id"]
+        composite: ["id"]
       }
     }
   }
 }
 
-// ElectroDB interprets as index *having* SK, but this model doesnt attach any facets to it.
+// ElectroDB interprets as index *having* SK, but this model doesnt attach any composite attributes to it.
 {
   indexes: {
     myIndex: {
       pk: {
         field: "pk",
-        facets: ["id"]
+        composite: ["id"]
       },
       sk: {
         field: "sk",
-        facets: []
+        composite: []
       }
     }
   }
@@ -2645,8 +2827,8 @@ If your index _does_ have a Sort Key but you are unsure of how to inform electro
 *Code: 1006*
 
 *Why this occurred:*
-You have assigned the same collection name to multiple indexes. This is not allowed because collection names must be unique. 
-   
+You have assigned the same collection name to multiple indexes. This is not allowed because collection names must be unique.
+
 *What to do about it:*
 Determine a new naming scheme
 
@@ -2654,10 +2836,10 @@ Determine a new naming scheme
 *Code: 1007*
 
 *Why this occurred:*
-DynamoDB requires the definition of at least one Primary Index on the table. In Electro this is defined as an Index _without_ an `index` property. Each model needs at least one, and the facets used for this index must ensure each composite represents a unique record. 
-   
+DynamoDB requires the definition of at least one Primary Index on the table. In Electro this is defined as an Index _without_ an `index` property. Each model needs at least one, and the composite attributes used for this index must ensure each composite represents a unique record.
+
 *What to do about it:*
-Identify the index you're using as the Primary Index and ensure it _does not_ have an index property on it's definition.
+Identify the index you're using as the Primary Index and ensure it _does not_ have an index property on its definition.
 ```javascript
 // ElectroDB interprets as the Primary Index because it lacks an `index` property.
 {
@@ -2665,11 +2847,11 @@ Identify the index you're using as the Primary Index and ensure it _does not_ ha
     myIndex: {
       pk: {
         field: "pk",
-        facets: ["org"]
+        composite: ["org"]
       },
       sk: {
         field: "sk",
-        facets: ["id"]
+        composite: ["id"]
       }
     }
   }
@@ -2682,11 +2864,11 @@ Identify the index you're using as the Primary Index and ensure it _does not_ ha
       index: "gsi1"
       pk: {
         field: "gsipk1",
-        facets: ["org"]
+        composite: ["org"]
       },
       sk: {
         field: "gsisk1",
-        facets: ["id"]
+        composite: ["id"]
       }
     }
   }
@@ -2697,26 +2879,26 @@ Identify the index you're using as the Primary Index and ensure it _does not_ ha
 *Code: 1008*
 
 *Why this occurred:*
-Some attribute on your model has an invalid configuration.   
-   
+Some attribute on your model has an invalid configuration.
+
 *What to do about it:*
-Use the error to identify which column needs to examined, double check the properties on that attribute. Checkout the section on [Attributes](#attributes) for more information on how they are structured.
+Use the error to identify which column needs to examined, double-check the properties on that attribute. Checkout the section on [Attributes](#attributes) for more information on how they are structured.
 
 ### Invalid Model
 *Code: 1009*
 
 *Why this occurred:*
-Some properties on your model are missing or invalid.  
-   
+Some properties on your model are missing or invalid.
+
 *What to do about it:*
-Checkout the section on [Models](#model) to verify your model against what is expected.  
+Checkout the section on [Models](#model) to verify your model against what is expected.
 
 ### Invalid Options
 *Code: 1010*
 
 *Why this occurred:*
-Some properties on your options object are missing or invalid.  
-   
+Some properties on your options object are missing or invalid.
+
 *What to do about it:*
 Checkout the section on [Model/Service Options](#service-options) to verify your model against what is expected.
 
@@ -2724,28 +2906,37 @@ Checkout the section on [Model/Service Options](#service-options) to verify your
 *Code: 1014*
 
 *Why this occurred:*
-An Index in your model references the same field twice across indexes. The `field` property in the definition of an index is a mapping to the name of the field assigned to the PK or SK of an index. 
-   
-*What to do about it:*
-This is likely a typo, if not double check the names of the fields you assigned to be the PK and SK of your index, these field names must be unique.
+An Index in your model references the same field twice across indexes. The `field` property in the definition of an index is a mapping to the name of the field assigned to the PK or SK of an index.
 
-### Duplicate Index Facets
-*Code: 1014*
+*What to do about it:*
+This is likely a typo, if not double-check the names of the fields you assigned to be the PK and SK of your index, these field names must be unique.
+
+### Duplicate Index Composite Attributes
+*Code: 1015*
 
 *Why this occurred:*
-Within one index you tried to use the same facet in both the PK and SK. A facet may only be used once within an index. With ElectroDB it is not uncommon to use the same value as both the PK and SK when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a facet, checkout [this section](#collection-without-an-sk) for more information.
-   
-*What to do about it:*
-Determine how you can change your access pattern to not duplicate the facet. Remember that an empty array for an SK is valid.   
+Within one index you tried to use the same composite attribute in both the PK and SK. A composite attribute may only be used once within an index. With ElectroDB it is not uncommon to use the same value as both the PK and SK when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a composite attribute, checkout [this section](#collection-without-an-sk) for more information.
 
-### Missing Facets
+*What to do about it:*
+Determine how you can change your access pattern to not duplicate the composite attribute. Remember that an empty array for an SK is valid.
+
+### Incompatible Key Composite Attribute Template
+*Code: 1017*
+
+*Why this occurred:*
+You are trying to use the custom Key Composite Attribute Template, and a Composite Attribute Array on your model, and they do not contain identical composite attributes.
+
+*What to do about it:*
+Checkout the section on [Composite Attribute Templates](#composite attribute-templates) and verify your template conforms to the rules detailed there. Both properties must contain the same attributes and be provided in the same order.
+
+### Missing Composite Attributes
 *Code: 2002*
 
 *Why this occurred:*
-The current request is missing some facets to complete the query based on the model definition. Facets are used to create the Partition and Sort keys. In DynamoDB Partition keys cannot be partially included, and Sort Keys can be partially include they must be at least passed in the order they are defined on the model.   
-   
+The current request is missing some composite attributes to complete the query based on the model definition. Composite Attributes are used to create the Partition and Sort keys. In DynamoDB Partition keys cannot be partially included, and Sort Keys can be partially include they must be at least passed in the order they are defined on the model.
+
 *What to do about it:*
-The error should describe the missing facets, ensure those facets are included in the query or update the model to reflect the needs of the access pattern.
+The error should describe the missing composite attributes, ensure those composite attributes are included in the query or update the model to reflect the needs of the access pattern.
 
 ### Missing Table
 *Code: 2003*f
@@ -2754,7 +2945,7 @@ The error should describe the missing facets, ensure those facets are included i
 You never specified a Table for DynamoDB to use.
 
 *What to do about it:*
-Tables can be defined on the [Service Options](#service-options) object when you create a Entity or Service, or if that is not known at the time of creation, it can be supplied as a [Query Option](#query-options) and supplied on each query individually. If can be supplied on both, in that case the Query Option will override the Service Option.
+Tables can be defined on the [Service Options](#service-options) object when you create an Entity or Service, or if that is not known at the time of creation, it can be supplied as a [Query Option](#query-options) and supplied on each query individually. If can be supplied on both, in that case the Query Option will override the Service Option.
 
 ### Invalid Concurrency Option
 *Code: 2004*
@@ -2763,14 +2954,14 @@ Tables can be defined on the [Service Options](#service-options) object when you
 When performing a bulk operation ([Batch Get](#batch-get), [Batch Delete Records](#batch-write-delete-records), [Batch Put Records](#batch-write-put-records)) you can pass a [Query Options](#query-options) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 *What to do about it:*   
-Expect this error only if youre providing a concurrency value. Double check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
+Expect this error only if you're providing a concurrency value. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### aws-error
 *Code: 4001*
 
 *Why this occurred:*
 DynamoDB did not like something about your query.
-   
+
 *What to do about it:*
 By default ElectroDB tries to keep the stack trace close to your code, ideally this can help you identify what might be going on. A tip to help with troubleshooting: use `.params()` to get more insight into how your query is converted to DocClient params.
 
@@ -2780,10 +2971,10 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 *Code: 5003*
 
 *Why this occurred:*
-_Likely_ you were were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
+_Likely_ you were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
 
 *What to do about it:*
-It is highly recommended to use the query option, `{pager: "raw"}`, when using the .page() method with *scans*. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+When paginating with *scan* queries, it is highly recommended that the query option, `{pager: "raw"}`. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
 ```javascript
 // example
 myModel.scan.page(null, {pager: "raw"});
@@ -2793,7 +2984,7 @@ myModel.scan.page(null, {pager: "raw"});
 *Code: 5004*
 
 *Why this occurred:*
-When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied pager. This error can occur when you supply an invalid pager, or when you are using a different [pager option](#pager-query-options) to a pager than what was used when retrieving it. Consult the section on [Pagination](#page) to learn more.  
+When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied pager. This error can occur when you supply an invalid pager, or when you are using a different [pager option](#pager-query-options) to a pager than what was used when retrieving it. Consult the section on [Pagination](#page) to learn more.
 
 *What to do about it:*
 If you are sure the pager you are passing to `.page()` is the same you received from `.page()` this could be an unexpected error. To mitigate the issue use the Query Option `{pager: "raw"}` and please open a support issue.
@@ -2803,7 +2994,7 @@ If you are sure the pager you are passing to `.page()` is the same you received 
 *Code: 5005*
 
 *Why this occurred:*
-When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied [pager option](#pager-query-options). This error can occur when you supply a pager that resolves to more than one Entity. This can happen if your entities share the same facets for the index you are querying on, and you are using the Query Option `{pager: "item""}`.
+When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied [pager option](#pager-query-options). This error can occur when you supply a pager that resolves to more than one Entity. This can happen if your entities share the same composite attributes for the index you are querying on, and you are using the Query Option `{pager: "item""}`.
 
 *What to do about it:*
 Because this scenario is possible with otherwise well considered/thoughtful entity models, the default `pager` type used by ElectroDB is `"named"`. To avoid this error, you will need to use either the `"raw"` or `"named"` [pager options](#pager-query-options) for any index that could result in an ambiguous Entity owner.
@@ -2821,9 +3012,9 @@ For an example, lets look at the needs of application used to manage Employees. 
 2. As a Regional Manager, I need to see all details about an office and its employees
 3. As an Employee, I need to see all my Tasks.
 4. As a Product Manager, I need to see all the tasks for a project.
-5. As a Client, I need to find a physical office close to me. 
-6. As a Hiring manager, I need to find employees with comparable salaries.  
-7. As HR, I need to find upcoming employee birthdays/anniversaries 
+5. As a Client, I need to find a physical office close to me.
+6. As a Hiring manager, I need to find employees with comparable salaries.
+7. As HR, I need to find upcoming employee birthdays/anniversaries
 8. As HR, I need to find all the employees that report to a specific manager
 
 ### App Entities
@@ -2850,11 +3041,11 @@ const EmployeesModel = {
 		employee: {
 			pk: {
 				field: "pk",
-				facets: ["employee"],
+				composite: ["employee"],
 			},
 			sk: {
 				field: "sk",
-				facets: [],
+				composite: [],
 			},
 		},
 		coworkers: {
@@ -2862,22 +3053,22 @@ const EmployeesModel = {
 			collection: "workplaces",
 			pk: {
 				field: "gsi1pk",
-				facets: ["office"],
+				composite: ["office"],
 			},
 			sk: {
 				field: "gsi1sk",
-				facets: ["team", "title", "employee"],
+				composite: ["team", "title", "employee"],
 			},
 		},
 		teams: {
 			index: "gsi2pk-gsi2sk-index",
 			pk: {
 				field: "gsi2pk",
-				facets: ["team"],
+				composite: ["team"],
 			},
 			sk: {
 				field: "gsi2sk",
-				facets: ["title", "salary", "employee"],
+				composite: ["title", "salary", "employee"],
 			},
 		},
 		employeeLookup: {
@@ -2885,33 +3076,33 @@ const EmployeesModel = {
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
 				field: "gsi3pk",
-				facets: ["employee"],
+				composite: ["employee"],
 			},
 			sk: {
 				field: "gsi3sk",
-				facets: [],
+				composite: [],
 			},
 		},
 		roles: {
 			index: "gsi4pk-gsi4sk-index",
 			pk: {
 				field: "gsi4pk",
-				facets: ["title"],
+				composite: ["title"],
 			},
 			sk: {
 				field: "gsi4sk",
-				facets: ["salary", "employee"],
+				composite: ["salary", "employee"],
 			},
 		},
 		directReports: {
 			index: "gsi5pk-gsi5sk-index",
 			pk: {
 				field: "gsi5pk",
-				facets: ["manager"],
+				composite: ["manager"],
 			},
 			sk: {
 				field: "gsi5sk",
-				facets: ["team", "office", "employee"],
+				composite: ["team", "office", "employee"],
 			},
 		},
 	},
@@ -2942,22 +3133,22 @@ const TasksModel = {
 		task: {
 			pk: {
 				field: "pk",
-				facets: ["task"],
+				composite: ["task"],
 			},
 			sk: {
 				field: "sk",
-				facets: ["project", "employee"],
+				composite: ["project", "employee"],
 			},
 		},
 		project: {
 			index: "gsi1pk-gsi1sk-index",
 			pk: {
 				field: "gsi1pk",
-				facets: ["project"],
+				composite: ["project"],
 			},
 			sk: {
 				field: "gsi1sk",
-				facets: ["employee", "task"],
+				composite: ["employee", "task"],
 			},
 		},
 		assigned: {
@@ -2965,11 +3156,11 @@ const TasksModel = {
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
 				field: "gsi3pk",
-				facets: ["employee"],
+				composite: ["employee"],
 			},
 			sk: {
 				field: "gsi3sk",
-				facets: ["project", "task"],
+				composite: ["project", "task"],
 			},
 		},
 	},
@@ -2993,11 +3184,11 @@ const OfficesModel = {
 		locations: {
 			pk: {
 				field: "pk",
-				facets: ["country", "state"],
+				composite: ["country", "state"],
 			},
 			sk: {
 				field: "sk",
-				facets: ["city", "zip", "office"],
+				composite: ["city", "zip", "office"],
 			},
 		},
 		office: {
@@ -3005,11 +3196,11 @@ const OfficesModel = {
 			collection: "workplaces",
 			pk: {
 				field: "gsi1pk",
-				facets: ["office"],
+				composite: ["office"],
 			},
 			sk: {
 				field: "gsi1sk",
-				facets: [],
+				composite: [],
 			},
 		},
 	},
@@ -3029,7 +3220,7 @@ EmployeeApp
 	.join(OfficesModel);  // EmployeeApp.entities.tasks
 ```
 ### Query Records
-#### All tasks and employee information for a given employee 
+#### All tasks and employee information for a given employee
 Fulfilling [Requirement #1](#employee-app-requirements).
 
 ```javascript
@@ -3049,7 +3240,7 @@ Returns the following:
 		manager: "",
 		dateHired: "1992-11-04",
 		birthday: "1961-06-06",
-	}].
+	}],
 	tasks: [{
 		task: "Feed tigers",
 		description: "Prepare food for tigers to eat",
@@ -3064,7 +3255,7 @@ Returns the following:
 }
 ```
 
-#### Find all employees and office details for a given office 
+#### Find all employees and office details for a given office
 Fulfilling [Requirement #2](#employee-app-requirements).
 ```javascript
 EmployeeApp.collections.workplaces({office: "big cat rescue"}).go()
@@ -3089,14 +3280,14 @@ Returns the following:
 		office: "big cat rescue",
 		country: "usa",
 		state: "florida",
-		city: "tampa"
-		zip: "12345"
+		city: "tampa",
+		zip: "12345",
 		address: "123 Kitty Cat Lane"
 	}]
 }
 ```
 
-#### Tasks for a given employee 
+#### Tasks for a given employee
 Fulfilling [Requirement #3](#employee-app-requirements).
 
 ```javascript
@@ -3118,7 +3309,7 @@ Returns the following:
 	}
 ]
 ```
-#### Tasks for a given project 
+#### Tasks for a given project
 Fulfilling [Requirement #4](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.tasks.query.project({project: "Murder Carol"}).go();
@@ -3135,7 +3326,7 @@ Returns the following:
 ];
 ```
 
-#### Find office locations 
+#### Find office locations
 Fulfilling [Requirement #5](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.office.locations({country: "usa", state: "florida"}).go()
@@ -3147,14 +3338,14 @@ Returns the following:
 		office: "big cat rescue",
 		country: "usa",
 		state: "florida",
-		city: "tampa"
-		zip: "12345"
+		city: "tampa",
+		zip: "12345",
 		address: "123 Kitty Cat Lane"
 	}
 ]
 ```
 
-#### Find employee salaries and titles 
+#### Find employee salaries and titles
 Fulfilling [Requirement #6](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.employees
@@ -3205,7 +3396,7 @@ Returns the following:
 	}
 ]
 ```
-#### Find direct reports 
+#### Find direct reports
 Fulfilling [Requirement #8](#employee-app-requirements).
 ```javascript
 EmployeeApp.entities.employees
@@ -3238,7 +3429,7 @@ For an example, lets look at the needs of application used to manage Shopping Ma
 2. As a Helpdesk Employee I need to locate related stores in Mall locations by Store Category.
 3. As a Property Manager I need to identify upcoming leases in need of renewal.
 
-Create a new Entity using the `StoreLocations` schema defined [above](#shopping-mall-stores) 
+Create a new Entity using the `StoreLocations` schema defined [above](#shopping-mall-stores)
 
 ```javascript
 const DynamoDB = require("aws-sdk/clients/dynamodb");
@@ -3246,7 +3437,7 @@ const client = new DynamoDB.DocumentClient();
 const StoreLocations = new Entity(model, {client, table: "StoreLocations"});
 ```
 
-### Access Patterns are accessible on the StoreLocation 
+### Access Patterns are accessible on the StoreLocation
 
 ### PUT Record
 #### Add a new Store to the Mall
@@ -3271,13 +3462,13 @@ Returns the following:
 	"category": "spite store",
 	"leaseEndDate": "2020-02-29",
 	"rent": "5000.00",
-	"discount": "0.00",
+	"discount": "0.00"
 }
 ```
 ---
 ### UPDATE Record
 #### Change the Stores Lease Date
->When updating a record, you must include all **Facets** associated with the table's *primary* **PK** and **SK**.
+>When updating a record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
 ```javascript
 let storeId = "LatteLarrys";
 let mallId = "EastPointe";
@@ -3296,7 +3487,7 @@ Returns the following:
 
 ### GET Record
 #### Retrieve a specific Store in a Mall
->When retrieving a specific record, you must include all **Facets** associated with the table's *primary* **PK** and **SK**.
+>When retrieving a specific record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
 ```javascript
 let storeId = "LatteLarrys";
 let mallId = "EastPointe";
@@ -3320,7 +3511,7 @@ Returns the following:
 
 ### DELETE Record
 #### Remove a Store location from the Mall
->When removing a specific record, you must include all **Facets** associated with the table's *primary* **PK** and **SK**.
+>When removing a specific record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
 ```javascript
 let storeId = "LatteLarrys";
 let mallId = "EastPointe";
@@ -3336,14 +3527,14 @@ Returns the following:
 
 ### Query Mall Records
 
-####  All Stores in a particular mall 
+####  All Stores in a particular mall
 Fulfilling [Requirement #1](#shopping-mall-requirements).
 ```javascript
 
 let mallId = "EastPointe";
 let stores = await StoreLocations.malls({mallId}).query().go();
 ```
-#### All Stores in a particular mall building 
+#### All Stores in a particular mall building
 Fulfilling [Requirement #1](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
@@ -3351,7 +3542,7 @@ let buildingId = "BuildingA1";
 let stores = await StoreLocations.malls({mallId}).query({buildingId}).go();
 ```
 
-#### Find the store located in unit B47 
+#### Find the store located in unit B47
 Fulfilling [Requirement #1](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
@@ -3359,21 +3550,21 @@ let buildingId = "BuildingA1";
 let unitId = "B47";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, unitId}).go();
 ```
-#### Stores by Category at Mall 
+#### Stores by Category at Mall
 Fulfilling [Requirement #2](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let category = "food/coffee";
 let stores = await StoreLocations.malls({mallId}).byCategory(category).go();
 ```
-#### Stores by upcoming lease 
+#### Stores by upcoming lease
 Fulfilling [Requirement #3](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
 let q2StartDate = "2020-04-01";
 let stores = await StoreLocations.leases({mallId}).lt({leaseEndDate: q2StateDate}).go();
 ```
-#### Stores will renewals for Q4 
+#### Stores will renewals for Q4
 Fulfilling [Requirement #3](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
@@ -3385,7 +3576,7 @@ let stores = await StoreLocations.leases(mallId)
       {leaseEndDate: q4EndDate})
     .go();
 ```
-#### Spite-stores with release renewals this year  
+#### Spite-stores with release renewals this year
 Fulfilling [Requirement #3](#shopping-mall-requirements).
 ```javascript
 let mallId = "EastPointe";
@@ -3420,16 +3611,16 @@ Electro is a CLI utility toolbox for extending the functionality of **ElectroDB*
 For usage and installation details you can learn more [here](https://github.com/tywalch/electrocli).
 
 # Version 1 Migration
-This section is to detail any breaking changes made on the journey to a stable 1.0 product. 
+This section is to detail any breaking changes made on the journey to a stable 1.0 product.
 
 ## New schema format/breaking key format change
-It became clear when I added the concept of a Service that the "version" paradigm of having the version in the PK wasn't going to work. This is because collection queries use the same PK for all entities and this would prevent some entities in a Service to change versions without impacting the service as a whole. The better more is the place the version in the SK _after_ the entity name so that all version of an entity can be queried. This will work nicely into the migration feature I have planned that will help migrate between model versions.  
+It became clear when I added the concept of a Service that the "version" paradigm of having the version in the PK wasn't going to work. This is because collection queries use the same PK for all entities and this would prevent some entities in a Service to change versions without impacting the service as a whole. The better more is the place the version in the SK _after_ the entity name so that all version of an entity can be queried. This will work nicely into the migration feature I have planned that will help migrate between model versions.
 
 To address this change, I decide it would be best to change the structure for defining a model, which is then used as heuristic to determine where to place the version in the key (PK or SK). This has the benefit of not breaking existing models, but does increase some complexity in the underlying code.
 
 Additionally, a change was made to the Service class. New Services would take a string of the service name instead of an object as before.
 
-In the *old* scheme, version came after the service name (see `^`). 
+In the *old* scheme, version came after the service name (see `^`).
 ```
 pk: $mallstoredirectory_1#mall_eastpointe
                         ^
@@ -3459,8 +3650,8 @@ let old_schema = {
   service: "service_name",
   version: "1",
   table: table,
-  attributes: {},
-  indexes: {}
+  attributes: {...},
+  indexes: {...}
 };
 new Entity(old_schema, {client});
 
@@ -3471,12 +3662,12 @@ let new_schema = {
     service: "service_name",
     version: "1",
   },
-  attributes: {},
-  indexes: {}
+  attributes: {...},
+  indexes: {...}
 };
 new Entity(new_schema, {client, table});
 ```    
-  
+
 Changes to usage of `Service` would look like this:
 ```javascript
 const  DynamoDB  =  require("aws-sdk/clients/dynamodb");
@@ -3493,7 +3684,24 @@ new Service({
 
 // new way
 new Service("service_name", {client, table});
+
+// new way (for better TypeScript support)
+new Service({entity1, entity2, ...})
 ```
+
+## The renaming of index property Facets to Composite and Template
+
+In preparation of moving the codebase to version 1.0, ElectroDB will now accept the `facets` property as either the `composite` and/or `template` properties. Using the `facets` property is still accepted by ElectroDB but will be deprecated sometime in the future (tbd).
+
+This change stems from the fact the `facets` is already a defined term in the DynamoDB space and that definition does not fit the use-case of how ElectroDB uses the term. To avoid confusion from new developers, the `facets` property shall now be called `composite` (as in Composite Attributes) when supplying an Array of attributes, and `template` while supplying a string. These are two independent fields for two reasons:
+
+1. ElectroDB will validate the Composite Attributes provided map to those in the template (more validation is always nice).
+
+2. Allowing for the `composite` array to be supplied independently will allow for Composite Attributes to remained typed even when using a Composite Attribute Template.
+
+## Get Method to Return null
+
+1.0.0 brings back a `null` response from the `get()` method when a record could not be found. Prior to `1.0.0` ElectroDB returned an empty object.
 
 # Coming Soon
 - Default query options defined on the `model` to give more general control of interactions with the Entity.

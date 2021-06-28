@@ -3,10 +3,6 @@ const { expect } = require("chai");
 const moment = require("moment");
 const uuidV4 = require("uuid/v4");
 
-/*
-	todo: add check for untilized SKs to then be converted to filters
-*/
-
 let schema = {
 	service: "MallStoreDirectory",
 	entity: "MallStores",
@@ -191,7 +187,7 @@ describe("Entity", () => {
 				}
 			})).to.throw("Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index")
 		});
-		it("Should validate an attribute's type when evaluating a facet. Supported facet types should be a string, number, boolean, or enum", () => {
+		it("Should validate an attribute's type when evaluating a composite attribute. Supported composite attribute types should be a string, number, boolean, or enum", () => {
 			let tests = [
 				{
 					input: "string",
@@ -208,19 +204,19 @@ describe("Entity", () => {
 				},{
 					input: "set",
 					fail: true,
-					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "set" but is a facet of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "set" but is a composite attribute of the the following indexes: Table Index`
 				},{
 					input: "list",
 					fail: true,
-					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "list" but is a facet of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "list" but is a composite attribute of the the following indexes: Table Index`
 				},{
 					input: "map",
 					fail: true,
-					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "map" but is a facet of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "map" but is a composite attribute of the the following indexes: Table Index`
 				},{
 					input: "any",
 					fail: true,
-					message: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "any" but is a facet of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "any" but is a composite attribute of the the following indexes: Table Index`
 				}
 			];
 			let schema = {
@@ -517,7 +513,7 @@ describe("Entity", () => {
 							},
 						},
 					}),
-			).to.throw(`Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a facet of the the following indexes: Table Index`);
+			).to.throw(`Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a composite attribute of the the following indexes: Table Index`);
 		});
 		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", async () => {
 			let id = uuidV4();
@@ -1170,7 +1166,7 @@ describe("Entity", () => {
 					"$MallStores#category_coffee#building_BuildingA#unit_B54#store_LatteLarrys".toLowerCase(),
 				);
 		});
-		it("Should identify when a facet cannot be made based on the data provided", () => {
+		it("Should identify when a composite attribute cannot be made based on the data provided", () => {
 			let schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -1273,7 +1269,7 @@ describe("Entity", () => {
 						mall: "Washington Square",
 						stores: undefined
 					},
-					output: `Without the facets "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`
+					output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
 				},
 				{
 					happy: false,
@@ -1290,7 +1286,7 @@ describe("Entity", () => {
 						id: "12345",
 						mall
 					},
-					output: `Without the facets "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets`
+					output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
 				},
 			]
 			for (let test of tests) {
@@ -1356,6 +1352,7 @@ describe("Entity", () => {
 			let value = "ahssfh";
 			let getParams = MallStores.get({id, mall, stores}).params();
 			let deleteParams = MallStores.delete({id, mall, stores}).params();
+			let removeParams = MallStores.remove({id, mall, stores}).params();
 			let updateParams = MallStores.update({id, mall, stores}).set({value}).params();
 			let patchParams = MallStores.patch({id, mall, stores}).set({value}).params();
 			let createParams = MallStores.create({id, mall, stores, value}).params();
@@ -1376,6 +1373,14 @@ describe("Entity", () => {
 					sort_key: '$mallstores#mall_defg#stores_1'
 				},
 				TableName: 'StoreDirectory'
+			});
+			expect(removeParams).to.deep.equal({
+				Key: {
+					parition_key: '$mallstoredirectory_1#id_abcd',
+					sort_key: '$mallstores#mall_defg#stores_1'
+				},
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
 			});
 			expect(updateParams).to.deep.equal({
 				UpdateExpression: 'SET #value = :value',
@@ -1465,7 +1470,7 @@ describe("Entity", () => {
 				FilterExpression: 'begins_with(#parition_key, :parition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
 			});
 		});
-		it("Should stop making a key early when there is a gap in the supplied facets", () => {
+		it("Should stop making a key early when there is a gap in the supplied composite attributes", () => {
 			let index = schema.indexes.categories.index;
 			let { pk, sk } = MallStores._makeIndexKeys(
 				index,
@@ -1500,6 +1505,7 @@ describe("Entity", () => {
 			let scanParams = MallStores.scan.filter(attr => attr.id.eq(id)).params();
 			let queryParams = MallStores.query.store({id}).params();
 			let findParams = MallStores.find({id}).params();
+			let matchParams = MallStores.match({id}).params();
 			const PK = "$mallstoredirectory_1$mallstores#id_12345";
 			expect(getParams.Key.pk).to.equal(PK);
 			expect(getParams.Key.sk).to.be.undefined;
@@ -1517,6 +1523,8 @@ describe("Entity", () => {
 			expect(scanParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
 			expect(findParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(findParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
+			expect(matchParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(matchParams.ExpressionAttributeValues[":sk"]).to.be.undefined;
 		});
 		it("Should create the correct key structure when a table has a PK and an SK", () => {
 			let schema = {
@@ -1617,8 +1625,10 @@ describe("Entity", () => {
 			let scanParams = MallStores.scan.filter(attr => attr.id.eq(id)).params();
 			let queryParams = MallStores.query.store({id, mall}).params();
 			let findParams = MallStores.find({id, mall}).params();
+			let matchParams = MallStores.find({id, mall}).params();
 			let partialQueryParams = MallStores.query.store({id}).params();
 			let partialFindParams = MallStores.find({id}).params();
+			let partialMatchParams = MallStores.find({id}).params();
 			const PK = "$mallstoredirectory_1#id_12345";
 			const SK = "$mallstores#mall_eastpointe";
 			expect(getParams.Key.pk).to.equal(PK);
@@ -1637,10 +1647,14 @@ describe("Entity", () => {
 			expect(scanParams.ExpressionAttributeValues[":sk"]).to.equal(SK.replace(mall.toLowerCase(), ""))
 			expect(findParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(findParams.ExpressionAttributeValues[":sk1"]).to.equal(SK);
+			expect(matchParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(matchParams.ExpressionAttributeValues[":sk1"]).to.equal(SK);
 			expect(partialQueryParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(partialQueryParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
 			expect(partialFindParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
 			expect(partialFindParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
+			expect(partialMatchParams.ExpressionAttributeValues[":pk"]).to.equal(PK);
+			expect(partialMatchParams.ExpressionAttributeValues[":sk1"]).to.equal(SK.replace(mall.toLowerCase(), ""));
 		});
 		it("Should return the approprate pk and multiple sks when given multiple", () => {
 			let index = schema.indexes.shops.index;
@@ -1686,7 +1700,7 @@ describe("Entity", () => {
 			);
 		});
 
-		it("Should allow facets to be a facet template (string)", () => {
+		it("Should allow composite attributes to be a composite attribute template (string)", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -1712,11 +1726,11 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#p1_:prop1`,
+							facets: 'id_${id}#p1_${prop1}',
 						},
 						sk: {
 							field: "sk",
-							facets: `d_:date#p2_:prop2`,
+							facets: 'd_${date}#p2_${prop2}',
 						},
 					},
 				},
@@ -1959,49 +1973,143 @@ describe("Entity", () => {
 				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
 			})
 		});
-
-		/* This test was removed because facet templates was refactored to remove all electrodb opinions. */
-		//
-		// it("Should throw on invalid characters in facet template (string)", () => {
-		// 	const schema = {
-		// 		service: "MallStoreDirectory",
-		// 		entity: "MallStores",
-		// 		table: "StoreDirectory",
-		// 		version: "1",
-		// 		attributes: {
-		// 			id: {
-		// 				type: "string",
-		// 				field: "storeLocationId",
-		// 			},
-		// 			date: {
-		// 				type: "string",
-		// 				field: "dateTime",
-		// 			},
-		// 			prop1: {
-		// 				type: "string",
-		// 			},
-		// 			prop2: {
-		// 				type: "string",
-		// 			},
-		// 		},
-		// 		indexes: {
-		// 			record: {
-		// 				pk: {
-		// 					field: "pk",
-		// 					facets: `id_:id#p1_:prop1`,
-		// 				},
-		// 				sk: {
-		// 					field: "sk",
-		// 					facets: `d_:date|p2_:prop2`,
-		// 				},
-		// 			},
-		// 		},
-		// 	};
-		// 	expect(() => new Entity(schema)).to.throw(
-		// 		`Invalid key facet template. Allowed characters include only "A-Z", "a-z", "1-9", ":", "_", "#". Received: d_:date|p2_:prop2`,
-		// 	);
-		// });
-		it("Should allow for custom labels for facets", () => {
+		it("Should allow for both a composite attribute array and a composite attribute template to be passed", () => {
+			const entity = new Entity({
+				model: {
+					entity: "test",
+					service: "tester",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					},
+					attr4: {
+						type: "string"
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							composite: ["attr1", "attr2"],
+							template: "${attr1}#${attr2}"
+						},
+						sk: {
+							field: "sk",
+							composite: ["attr3", "attr4"],
+							template: "${attr3}#${attr4}"
+						}
+					},
+					theseRecords: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							composite: ["attr1", "attr2", "attr3", "attr4"],
+							template: "${attr1}#${attr2}#${attr3}#${attr4}"
+						},
+						sk: {
+							// empty properties
+							field: "gsi1sk",
+							composite: [],
+							template: ""
+						}
+					},
+					thoseRecords: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							composite: ["attr1", "attr2", "attr3", "attr4"],
+							template: "${attr1}#${attr2}#${attr3}#${attr4}"
+						},
+						// no pk
+					}
+				}
+			})
+		});
+		it("Should throw when a supplied composite attribute array does not match a composite attribute template's parsed attributes - On PK Definition", () => {
+			const schema ={
+				model: {
+					entity: "test",
+					service: "tester",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					},
+					attr4: {
+						type: "string"
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							composite: ["attr1", "attr2"],
+							template: "${attr2}#${attr1}"
+						},
+						sk: {
+							field: "sk",
+							composite: ["attr3", "attr4"],
+							template: "${attr3}#${attr4}"
+						}
+					}
+				}
+			};
+			expect(() => new Entity(schema)).to.throw(`Incompatible PK 'template' and 'composite' properties for defined on index "(Primary Index)". PK "template" string is defined as having composite attributes "attr2", "attr1" while PK "composite" array is defined with composite attributes "attr1", "attr2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incompatible-key-composite-attribute-template`);
+		});
+		it("Should throw when a supplied composite attribute array does not match a composite attribute template's parsed attributes - On SK Definition", () => {
+			const schema ={
+				model: {
+					entity: "test",
+					service: "tester",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					},
+					attr4: {
+						type: "string"
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							composite: ["attr2"],
+							template: "${attr2}"
+						},
+						sk: {
+							field: "sk",
+							composite: ["attr3", "attr4"],
+							template: "${attr4}#${attr3}"
+						}
+					}
+				}
+			};
+			expect(() => new Entity(schema)).to.throw(`Incompatible SK 'template' and 'composite' properties for defined on index "(Primary Index)". SK "template" string is defined as having composite attributes "attr4", "attr3" while SK "composite" array is defined with composite attributes "attr3", "attr4" - For more detail on this error reference: https://github.com/tywalch/electrodb#incompatible-key-composite-attribute-template`);
+		});
+		it("Should allow for custom labels for composite attributes", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2052,25 +2160,25 @@ describe("Entity", () => {
 						},
 						sk: {
 							field: "gsi1sk",
-							facets: `:date#p2_:prop2#propzduce_:prop2`,
+							template: "${date}#p2_${prop2}#propzduce_${prop2}",
 						},
 					},
 					justTemplate: {
 						index: "gsi2",
 						pk: {
 							field: "gsi2pk",
-							facets: `idz_:id#:prop1#third_:prop3`,
+							template: 'idz_${id}#${prop1}#third_${prop3}',
 						},
 						sk: {
 							field: "gsi2sk",
-							facets: `:date|:prop2`
+							facets: '${date}|${prop2}'
 						},
 					},
 					moreMixed: {
 						index: "gsi3",
 						pk: {
 							field: "gsi3pk",
-							facets: `:date#p2_:prop2#propz3_:prop3`,
+							template: "${date}#p2_${prop2}#propz3_${prop3}",
 						},
 						sk: {
 							field: "gsi3sk",
@@ -2088,7 +2196,7 @@ describe("Entity", () => {
 						index: "gsi5",
 						pk: {
 							field: "gsi5pk",
-							facets: `:date#p2_:prop2#propz3_:prop3`,
+							template: '${date}#p2_${prop2}#propz3_${prop3}',
 						}
 					}
 				},
@@ -2126,7 +2234,7 @@ describe("Entity", () => {
 				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 				ExpressionAttributeValues: {
 					':pk': '$mallstoredirectory_1#i_identifier#p3_property3',
-					':sk1': '2020-11-16#propzduce_property2'
+					":sk1": "2020-11-16#p2_property2#propzduce_property2"
 				},
 				IndexName: 'gsi1'
 			});
@@ -2179,7 +2287,7 @@ describe("Entity", () => {
 					pk: "$mallstoredirectory_1#i_identifier#prop1_property1",
 					sk: "$mallstores#d_2020-11-16#prop2_property2#p3_property3",
 					gsi1pk: "$mallstoredirectory_1#i_identifier#p3_property3",
-					gsi1sk: "2020-11-16#propzduce_property2",
+					gsi1sk: "2020-11-16#p2_property2#propzduce_property2",
 					gsi2pk: "idz_identifier#property1#third_property3",
 					gsi2sk: "2020-11-16|property2",
 					gsi3pk: "2020-11-16#p2_property2#propz3_property3",
@@ -2191,7 +2299,7 @@ describe("Entity", () => {
 			});
 
 		});
-		it("Should default labels to facet attribute names in facet template (string)", () => {
+		it("Should default labels to composite attribute attribute names in composite attribute template (string)", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2217,11 +2325,11 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#:prop1`,
+							facets: 'id_${id}#${prop1}',
 						},
 						sk: {
 							field: "sk",
-							facets: `:date#p2_:prop2`,
+							facets: '${date}#p2_${prop2}'
 						},
 					},
 				},
@@ -2250,7 +2358,7 @@ describe("Entity", () => {
 			});
 		});
 
-		it("Should allow for mixed custom/composed facets, and adding collection prefixes when defined", () => {
+		it("Should allow for mixed custom/composed composite attributes, and adding collection prefixes when defined", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2279,7 +2387,7 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#:prop1#wubba_:prop3`,
+							facets: "id_${id}#${prop1}#wubba_${prop3}",
 						},
 						sk: {
 							field: "sk",
@@ -2314,7 +2422,7 @@ describe("Entity", () => {
 				TableName: "StoreDirectory",
 			});
 		});
-		it("Should throw on invalid characters in facet template (string)", () => {
+		it("Allow for static template values", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2340,7 +2448,7 @@ describe("Entity", () => {
 					record: {
 						pk: {
 							field: "pk",
-							facets: `id_:id#p1_:prop1`,
+							facets: "id_${id}#p1_${prop1}",
 						},
 						sk: {
 							field: "sk",
@@ -2349,9 +2457,30 @@ describe("Entity", () => {
 					},
 				},
 			};
-			expect(() => new Entity(schema)).to.throw(
-				`Invalid key facet template. No facets provided, expected at least one facet with the format ":attributeName". Received: dbsfhdfhsdshfshf`,
-			);
+			const entity = new Entity(schema);
+			const getParams = entity.get({id: "abc", prop1: "def"}).params();
+			const queryParams = entity.query.record({id: "abc", prop1: "def"}).params();
+			const deleteParams = entity.delete({id: "abc", prop1: "def"}).params();
+			const removeParams = entity.remove({id: "abc", prop1: "def"}).params();
+			expect(queryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: { ':pk': 'id_abc#p1_def', ':sk1': 'dbsfhdfhsdshfshf' }
+			});
+			expect(getParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory'
+			});
+			expect(deleteParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory'
+			});
+			expect(removeParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+			});
 		});
 		it("Should accept attributes with string values and interpret them as the attribute's `type`", () => {
 			const tests = [
@@ -2397,7 +2526,7 @@ describe("Entity", () => {
 				},{
 					success: false,
 					output: {
-						err: `Invalid facet definition: Facets must be one of the following: string, number, boolean, enum. The attribute "prop1" is defined as being type "invalid_value" but is a facet of the the following indexes: Table Index`
+						err: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "prop1" is defined as being type "invalid_value" but is a composite attribute of the the following indexes: Table Index`
 					},
 					input: {
 						model: {
@@ -2440,7 +2569,7 @@ describe("Entity", () => {
 				}
 			}
 		});
-		it("Should throw when defined facets are not in attributes: facet template and facet array", () => {
+		it("Should throw when defined composite attributes are not in attributes: composite attribute template and composite attribute array", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2470,18 +2599,18 @@ describe("Entity", () => {
 						},
 						sk: {
 							field: "sk",
-							facets: `:date#p3_:prop3#p4_:prop4`,
+							facets: '${date}#p3_${prop3}#p4_${prop4}',
 						},
 					},
 				},
 			};
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid key facet template. The following facet attributes were described in the key facet template but were not included model's attributes: "pk: prop5", "sk: prop3", "sk: prop4"`,
+				`Invalid key composite attribute template. The following composite attribute attributes were described in the key composite attribute template but were not included model's attributes: "pk: prop5", "sk: prop3", "sk: prop4"`,
 			);
 		});
 	});
 
-	describe("Identifying indexes by facets", () => {
+	describe("Identifying indexes by composite attributes", () => {
 		let MallStores = new Entity(schema);
 		let mall = "123";
 		let store = "123";
@@ -2490,9 +2619,9 @@ describe("Entity", () => {
 		let category = "123";
 		let unit = "123";
 		let leaseEnd = "123";
-		it("Should decide to scan", () => {
+		it("Should decide to scan with Match method", () => {
 			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
-			let params = MallStores.find({leaseEnd}).params();
+			let params = MallStores.match({leaseEnd}).params();
 			expect(params).to.be.deep.equal({
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
@@ -2508,10 +2637,27 @@ describe("Entity", () => {
 			expect(keys).to.be.deep.equal([]);
 			expect(index).to.be.equal("");
 		});
-		it("Should decide to scan and not add undefined values to the query filters", () => {
+		it("Should decide to scan with Find method", () => {
+			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
+			let params = MallStores.find({leaseEnd}).params();
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#pk': 'pk' },
+				ExpressionAttributeValues: {
+					":__edb_e__": "MallStores",
+					":__edb_v__": "1",
+					':pk': '$mallstoredirectory_1$mallstores#id_'
+				},
+				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__"
+			});
+			expect(shouldScan).to.be.true;
+			expect(keys).to.be.deep.equal([]);
+			expect(index).to.be.equal("");
+		});
+		it("Should decide to scan and not add undefined values to the query filters with Match method", () => {
 			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
 			let mallId = undefined;
-			let params = MallStores.find({leaseEnd, mallId})
+			let params = MallStores.match({leaseEnd, mallId})
 				.where(() => "")
 				.params();
 			expect(params).to.be.deep.equal({
@@ -2529,9 +2675,29 @@ describe("Entity", () => {
 			expect(keys).to.be.deep.equal([]);
 			expect(index).to.be.equal("");
 		});
-		it("Should match on the primary index", () => {
+		it("Should decide to scan and not add undefined values to the query filters for Find", () => {
+			let { index, keys, shouldScan} = MallStores._findBestIndexKeyMatch({ leaseEnd });
+			let mallId = undefined;
+			let params = MallStores.find({leaseEnd, mallId})
+				.where(() => "")
+				.params();
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#pk': 'pk' },
+				ExpressionAttributeValues: {
+					":__edb_e__": "MallStores",
+					":__edb_v__": "1",
+					':pk': '$mallstoredirectory_1$mallstores#id_'
+				},
+				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__"
+			});
+			expect(shouldScan).to.be.true;
+			expect(keys).to.be.deep.equal([]);
+			expect(index).to.be.equal("");
+		});
+		it("Should match on the primary index with Match method", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
-			let params = MallStores.find({id}).params();
+			let params = MallStores.match({id}).params();
 			expect(params).to.be.deep.equal({
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk'},
@@ -2545,13 +2711,27 @@ describe("Entity", () => {
 			expect(keys).to.be.deep.equal([{ name: "id", type: "pk" }]);
 			expect(index).to.be.equal("");
 		});
-		it("Should match on gsi1pk-gsi1sk-index", () => {
+		it("Should match on the primary index with Find method", () => {
+			let { index, keys } = MallStores._findBestIndexKeyMatch({ id });
+			let params = MallStores.find({id}).params();
+			expect(params).to.be.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'pk'},
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1$mallstores#id_123',
+				},
+				KeyConditionExpression: '#pk = :pk',
+			});
+			expect(keys).to.be.deep.equal([{ name: "id", type: "pk" }]);
+			expect(index).to.be.equal("");
+		});
+		it("Should match on gsi1pk-gsi1sk-index with Match method", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({
 				mall,
 				building,
 				unit,
 			});
-			let params = MallStores.find({mall, building, unit}).params();
+			let params = MallStores.match({mall, building, unit}).params();
 			expect(params).to.be.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
@@ -2571,6 +2751,33 @@ describe("Entity", () => {
 				},
 				IndexName: 'gsi1pk-gsi1sk-index',
 				FilterExpression: '#mall = :mall1 AND#building = :building1 AND#unit = :unit1'
+			});
+			expect(keys).to.be.deep.equal([
+				{ name: "mall", type: "pk" },
+				{ name: "building", type: "sk" },
+				{ name: "unit", type: "sk" },
+			]);
+			expect(index).to.be.deep.equal(schema.indexes.units.index);
+		});
+		it("Should match on gsi1pk-gsi1sk-index with Find method", () => {
+			let { index, keys } = MallStores._findBestIndexKeyMatch({
+				mall,
+				building,
+				unit,
+			});
+			let params = MallStores.find({mall, building, unit}).params();
+			expect(params).to.be.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: {
+					'#pk': 'gsi1pk',
+					'#sk1': 'gsi1sk'
+				},
+				ExpressionAttributeValues: {
+					':pk': '$mallstoredirectory_1#mall_123',
+					':sk1': '$mallstores#building_123#unit_123#store_'
+				},
+				IndexName: 'gsi1pk-gsi1sk-index',
 			});
 			expect(keys).to.be.deep.equal([
 				{ name: "mall", type: "pk" },
@@ -2676,7 +2883,7 @@ describe("Entity", () => {
 					"sort keys",
 				);
 			expect(allMatches).to.throw(
-				'Incomplete or invalid key facets supplied. Missing properties: "mall", "building", "unit"',
+				'Incomplete or invalid key composite attributes supplied. Missing properties: "mall", "building", "unit"',
 			);
 			expect(pkMatches).to.throw(
 				'Incomplete or invalid partition keys supplied. Missing properties: "mall"',
@@ -3034,7 +3241,7 @@ describe("Entity", () => {
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
-					model.indexes.thing.pk.facets = `$blablah#t_:type#o_:org`;
+					model.indexes.thing.pk.facets = '$blablah#t_${type}#o_${org}';
 					let entity = new Entity(model);
 					let params = entity.get(facets).params();
 					expect(params).to.deep.equal({
@@ -3102,7 +3309,7 @@ describe("Entity", () => {
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
-					model.indexes.thing.pk.facets = `$blablah#t_:type#o_:org`;
+					model.indexes.thing.pk.facets = '$blablah#t_${type}#o_${org}';
 					let entity = new Entity(model);
 					let params = entity.get(facets).params();
 					expect(params).to.deep.equal({
@@ -4253,7 +4460,7 @@ describe("Entity", () => {
 			}
 	});
 	describe("Attribute getters and setters", () => {
-		it("Should npt call the attribute setters for a facet when building a table key", () => {
+		it("Should npt call the attribute setters for a composite attribute when building a table key", () => {
 			let setCalls = {
 				prop1: 0,
 				prop2: 0,
@@ -4407,7 +4614,7 @@ describe("Entity", () => {
 				IndexName: 'gsi1'
 			});
 		});
-		it("Should not call the attribute setters for a facet when building tables keys that index doesnt have a sort key", () => {
+		it("Should not call the attribute setters for a composite attribute when building tables keys that index doesnt have a sort key", () => {
 			let setCalls = {
 				prop1: 0,
 				prop2: 0,
@@ -5432,6 +5639,255 @@ describe("Entity", () => {
 				},
 				TableName: 'test',
 			});
+		});
+	});
+	describe("Numeric and boolean keys", () => {
+		it("Should create keys with primitive types other than strings if specified as a template without prefix", () => {
+			const entity = new Entity({
+				model: {
+					entity: "nonstring_indexes",
+					service: "tests",
+					version: "1"
+				},
+				attributes: {
+					number1: {
+						type: "number"
+					},
+					number2: {
+						type: "number"
+					},
+					number3: {
+						type: "number"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: "${number1}",
+						},
+						sk: {
+							field: "sk",
+							template: "${number2}"
+						}
+					},
+					anotherRecord: {
+						index: "gsi1",
+						pk: {
+							field: "gsi1pk",
+							template: "${number2}"
+						},
+						sk: {
+							field: "gsi1sk",
+							template: "${number1}"
+						}
+					},
+					yetAnotherRecord: {
+						index: "gsi2",
+						pk: {
+							field: "gsi2pk",
+							template: "${number1}"
+						}
+					},
+					andAnotherOne: {
+						index: "gsi3",
+						pk: {
+							field: "gsi3pk",
+							template: "${number2}"
+						}
+					}
+				}
+			}, {table: "electro_nostringkeys"});
+			let putParams = entity.put({number1: 55, number2: 66}).params();
+			let getParams = entity.get({number1: 55, number2: 66}).params();
+			let deleteParams = entity.delete({number1: 55, number2: 66}).params();
+			let updateParams = entity.update({number1: 55, number2: 66}).set({number3: 77}).params();
+			let queryParams = entity.query.record({number1: 55}).params();
+			expect(putParams).to.deep.equal({
+				Item: {
+					number1: 55,
+					number2: 66,
+					pk: 55,
+					sk: 66,
+					gsi1pk: 66,
+					gsi1sk: 55,
+					gsi2pk: 55,
+					gsi3pk: 66,
+					__edb_e__: 'nonstring_indexes',
+					__edb_v__: '1'
+				},
+				TableName: 'electro_nostringkeys'
+			});
+
+			expect(getParams).to.deep.equal({
+				Key: {
+					pk: 55,
+					sk: 66
+				},
+				TableName: 'electro_nostringkeys'
+			});
+
+			expect(queryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk',
+				TableName: 'electro_nostringkeys',
+				ExpressionAttributeNames: { '#pk': 'pk' },
+				ExpressionAttributeValues: { ':pk': 55 }
+			});
+
+			expect(deleteParams).to.deep.equal({
+				Key: {
+					pk: 55,
+					sk: 66
+				},
+				TableName: 'electro_nostringkeys'
+			});
+
+			expect(updateParams).to.deep.equal({
+				UpdateExpression: 'SET #number3 = :number3',
+				ExpressionAttributeNames: { '#number3': 'number3' },
+				ExpressionAttributeValues: { ':number3': 77 },
+				TableName: 'electro_nostringkeys',
+				Key: { pk: 55, sk: 66 }
+			});
+		});
+	});
+	describe("Composite Key Templates", () => {
+		it("Should allow composite templates to have trailing labels", () => {
+			const entity = new Entity({
+				model: {
+					entity: "templates",
+					service: "test",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: "myprefix1_${attr1}#mypostfix1"
+						},
+						sk: {
+							field: "sk",
+							template: "myprefix2_${attr2}#mypostfix2"
+						}
+					}
+				}
+			}, {table: "table"});
+			let getParams = entity.get({attr1: "abc", attr2: "def"}).params();
+			expect(() => entity.get({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.delete({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.remove({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.update({attr1: "abc"}).set({attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.patch({attr1: "abc"}).set({attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.put({attr1: "abc", attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.create({attr1: "abc", attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+
+			// empty strings don't count
+			expect(() => entity.get({attr1: "abc", attr2: ""}).params()).to.not.throw;
+			expect(() => entity.delete({attr1: "abc", attr2: ""}).params()).to.not.throw;
+			expect(() => entity.remove({attr1: "abc", attr2: ""}).params()).to.not.throw;
+			expect(() => entity.update({attr1: "abc", attr2: ""}).set({attr3: "def"}).params()).to.not.throw;
+			expect(() => entity.patch({attr1: "abc", attr2: ""}).set({attr3: "def"}).params()).to.not.throw;
+			expect(() => entity.put({attr1: "abc", attr3: "def", attr2: ""}).params()).to.not.throw;
+			expect(() => entity.create({attr1: "abc", attr3: "def", attr2: ""}).params()).to.not.throw;
+
+			let queryParams1 = entity.query.record({attr1: "abc"}).params();
+			let queryParams2 = entity.query.record({attr1: "abc", attr2: "def"}).params();
+			expect(getParams).to.deep.equal({
+				Key: { pk: 'myprefix1_abc#mypostfix1', sk: 'myprefix2_def#mypostfix2' },
+				TableName: 'table'
+			});
+			expect(queryParams1).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'table',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: { ':pk': 'myprefix1_abc#mypostfix1', ':sk1': 'myprefix2_' }
+			});
+			expect(queryParams2).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'table',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: {
+					':pk': 'myprefix1_abc#mypostfix1',
+					':sk1': 'myprefix2_def#mypostfix2'
+				}
+			});
+		})
+		it("Should identify all composite attributes and labels for a given template", () => {
+			// `schema` used here does not (currently) impact the use of the `_parseComposedKey` method.
+			const entity = new Entity(schema);
+			let newTemplateSyntax = {
+				loneValue: entity._parseTemplateKey("${myValue}"),
+				allSquished: entity._parseTemplateKey("${myValue1}${myValue2}${myValue3}"),
+				labeledWithOneSquish: entity._parseTemplateKey("myLabel${myValue}${myOtherValue}"),
+				allLabeledWithDividers: entity._parseTemplateKey("mylabel_${myValue}#other_${myOtherValue}"),
+				allLabelNoValue: entity._parseTemplateKey("static_value"),
+				trailingLabel: entity._parseTemplateKey("label_${myAttribute}#trailing"),
+			};
+			expect(newTemplateSyntax.loneValue).to.deep.equal( [{
+				"name": "myValue",
+				"label": ""
+			}]);
+			expect(newTemplateSyntax.allSquished).to.deep.equal([
+				{
+					"name": "myValue1",
+					"label": ""
+				},
+				{
+					"name": "myValue2",
+					"label": ""
+				},
+				{
+					"name": "myValue3",
+					"label": ""
+				}
+			]);
+			expect(newTemplateSyntax.labeledWithOneSquish).to.deep.equal([
+				{
+					"name": "myValue",
+					"label": "myLabel"
+				},
+				{
+					"name": "myOtherValue",
+					"label": ""
+				}
+			]);
+			expect(newTemplateSyntax.allLabeledWithDividers).to.deep.equal([
+				{
+					"name": "myValue",
+					"label": "mylabel_"
+				},
+				{
+					"name": "myOtherValue",
+					"label": "#other_"
+				}
+			]);
+			expect(newTemplateSyntax.allLabelNoValue).to.deep.equal([
+				{
+					"name": "",
+					"label": "static_value"
+				}
+			]);
+			expect(newTemplateSyntax.trailingLabel).to.deep.equal([
+				{
+					"name": "myAttribute",
+					"label": "label_"
+				},
+				{
+					"name": "",
+					"label": "#trailing"
+				}
+			]);
 		});
 	});
 });

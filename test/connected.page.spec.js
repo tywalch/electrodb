@@ -306,7 +306,7 @@ describe("Page", async () => {
     } while(page !== null);
   }).timeout(10000);
 
-  it("Paginate without overlapping values with lastEvaluatedKeyRaw enabled", async () => {
+  it("Paginate without overlapping values with pager='raw'", async () => {
     let limit = 30;
     let count = 0;
     let page = null;
@@ -315,7 +315,7 @@ describe("Page", async () => {
     do {
       count++;
       let keys = new Set();
-      let [next, items] = await tasks.query.projects({project: Tasks.projects[0]}).page(page, {limit, lastEvaluatedKeyRaw: true});
+      let [next, items] = await tasks.query.projects({project: Tasks.projects[0]}).page(page, {limit, pager: "raw"});
       if (next !== null && count > 1) {
         expect(next).to.have.keys(["sk", "pk", "gsi1sk", "gsi1pk"]);
       }
@@ -332,7 +332,7 @@ describe("Page", async () => {
     } while(page !== null);
   }).timeout(10000);
 
-  it("Should not accept incomplete page facets", async () => {
+  it("Should not accept incomplete page composite attributes", async () => {
     let tests = [
       {
         type: "query",
@@ -342,7 +342,7 @@ describe("Page", async () => {
           page: {task: "1234", project: undefined}
         },
         output: {
-          error: 'Incomplete or invalid key facets supplied. Missing properties: "project" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
+          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
         },
       }, {
         type: "query",
@@ -352,7 +352,7 @@ describe("Page", async () => {
           page: {task: "1234", project: "anc"}
         },
         output: {
-          error: 'Incomplete or invalid key facets supplied. Missing properties: "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
+          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
         },
       }, {
         type: "scan",
@@ -360,7 +360,7 @@ describe("Page", async () => {
           page: {task: "1234", project: undefined}
         },
         output: {
-          error: 'Incomplete or invalid key facets supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets'
+          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
         },
       }
     ];
@@ -388,8 +388,8 @@ describe("Page", async () => {
     }
   }).timeout(10000);
 
-  it("Should paginate and return normal results but the real lastEvaluated key as received via lastEvaluatedKeyRaw", async () => {
-    let results = await tasks.scan.page(null, {lastEvaluatedKeyRaw: true});
+  it("Should paginate and return normal results but the real lastEvaluated key as received via pager='raw'", async () => {
+    let results = await tasks.scan.page(null, {pager: "raw"});
     expect(results).to.be.an("array").and.have.length(2);
     let [page, items] = results;
     expect(items).to.be.an("array");

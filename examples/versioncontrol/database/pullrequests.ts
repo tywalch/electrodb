@@ -52,11 +52,11 @@ export const pullRequests = new Entity({
     pullRequest: {
       collection: "PRReview",
       pk: {
-        facets: ["repoOwner", "repoName", "pullRequestNumber"],
+        composite: ["repoOwner", "repoName", "pullRequestNumber"],
         field: "pk"
       },
       sk: {
-        facets: [],
+        composite: [],
         field: "sk"
       }
     },
@@ -65,11 +65,11 @@ export const pullRequests = new Entity({
       index: "gsi1pk-gsi1sk-index",
       pk: {
         field: "gsi1pk",
-        facets: ["username"]
+        composite: ["username"]
       },
       sk: {
         field: "gsi1sk",
-        facets: ["status", "repoOwner", "repoName"]
+        composite: ["status", "repoOwner", "repoName"]
       }
     },
     enhancements: {
@@ -77,11 +77,11 @@ export const pullRequests = new Entity({
       index: "gsi2pk-gsi2sk-index",
       pk: {
         field: "gsi2pk",
-        facets: ["repoOwner", "repoName"],
+        composite: ["repoOwner", "repoName"],
       },
       sk: {
         field: "gsi2sk",
-        facets: ["status", "createdAt"],
+        composite: ["status", "createdAt"],
         
       }
     },
@@ -89,11 +89,11 @@ export const pullRequests = new Entity({
       collection: "subscribers",
       index: "gsi4pk-gsi4sk-index",
       pk: {
-        facets: ["repoOwner", "repoName", "ticketNumber"],
+        composite: ["repoOwner", "repoName", "ticketNumber"],
         field: "gsi4pk"
       },
       sk: {
-        facets: [],
+        composite: [],
         field: "gsi4sk"
       }
     }
@@ -149,11 +149,11 @@ export const pullRequestComments = new Entity({
     comments: {
       collection: "PRReview",
       pk: {
-        facets: ["repoOwner", "repoName", "pullRequestNumber"],
+        composite: ["repoOwner", "repoName", "pullRequestNumber"],
         field: "pk"
       },
       sk: {
-        facets: ["commentId"],
+        composite: ["commentId"],
         field: "sk"
       }
     },
@@ -162,22 +162,22 @@ export const pullRequestComments = new Entity({
       index: "gsi1pk-gsi1sk-index",
       pk: {
         field: "gsi1pk",
-        facets: ["username"]
+        composite: ["username"]
       },
       sk: {
         field: "gsi1sk",
-        facets: ["repoOwner", "repoName"]
+        composite: ["repoOwner", "repoName"]
       }
     },
     replies: {
       collection: "inbox",
       index: "gsi2pk-gsi2sk-index",
       pk: {
-        facets: ["replyTo"],
+        composite: ["replyTo"],
         field: "gsi2pk"
       },
       sk: {
-        facets: ["createdAt", "replyViewed"],
+        composite: ["createdAt", "replyViewed"],
         field: "gsi2sk"
       }
     },

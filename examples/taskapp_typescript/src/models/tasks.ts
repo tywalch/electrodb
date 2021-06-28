@@ -36,22 +36,22 @@ const schema = {
 		"task": {
 			"pk": {
 				"field": "pk",
-				"facets": ["task"]
+				"composite": ["task"]
 			},
 			"sk": {
 				"field": "sk",
-				"facets": ["project", "employee"]
+				"composite": ["project", "employee"]
 			}
 		},
 		"project": {
 			"index": "gsi1pk-gsi1sk-index",
 			"pk": {
 				"field": "gsi1pk",
-				"facets": ["project"]
+				"composite": ["project"]
 			},
 			"sk": {
 				"field": "gsi1sk",
-				"facets": ["employee", "status"]
+				"composite": ["employee", "status"]
 			}
 		},
 		"assigned": {
@@ -59,22 +59,22 @@ const schema = {
 			"index": "gsi3pk-gsi3sk-index",
 			"pk": {
 				"field": "gsi3pk",
-				"facets": ["employee"]
+				"composite": ["employee"]
 			},
 			"sk": {
 				"field": "gsi3sk",
-				"facets": ["project", "status"]
+				"composite": ["project", "status"]
 			}
 		},
 		"statuses": {
 			"index": "gsi4pk-gsi4sk-index",
 			"pk": {
 				"field": "gsi4pk",
-				"facets": ["status"]
+				"composite": ["status"]
 			},
 			"sk": {
 				"field": "gsi4sk",
-				"facets": ["project", "employee"]
+				"composite": ["project", "employee"]
 			}
 		}
 	}

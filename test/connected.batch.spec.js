@@ -93,7 +93,7 @@ let schema = {
       },
       sk: {
         field: "gsi1sk",
-        facets: "b_:building#u_:unit#s_:store",
+        facets: "b_${building}#u_${unit}#s_${store}",
       },
     },
     leases: {
@@ -104,7 +104,7 @@ let schema = {
       },
       sk: {
         field: "gsi2sk",
-        facets: "l_:leaseEnd#s_:store#b_:building#u_:unit",
+        facets: "l_${leaseEnd}#s_${store}#b_${building}#u_${unit}",
       },
     },
     categories: {
@@ -235,9 +235,9 @@ describe("BatchWrite", async () => {
       MallStores.get(record2).go(),
       MallStores.get(record3).go(),
     ]);
-    expect(getRecord1).to.be.an("object").that.is.empty;
+    expect(getRecord1).to.be.null;
     expect(getRecord2).to.be.deep.equal(record2);
-    expect(getRecord3).to.be.an("object").that.is.empty;
+    expect(getRecord3).to.be.null;
   }).timeout(5000);
 });
 
@@ -355,7 +355,7 @@ describe("BatchGet", async () => {
       }
     ]);
   });
-  it("Should allow for config lastEvaluatedKeyRaw with UnprocessedKeys", () => {
+  it("Should allow for config unprocessed='raw' with UnprocessedKeys", () => {
     let response = {
       "Responses": {
         "electro": [
@@ -399,7 +399,7 @@ describe("BatchGet", async () => {
         }
       }
     }
-    let results = MallStores.formatBulkGetResponse(undefined, response, {lastEvaluatedKeyRaw: true});
+    let results = MallStores.formatBulkGetResponse(undefined, response, {unprocessed: "raw"});
     expect(results[1]).to.be.an("array").with.length(2);
     expect(results[1]).to.deep.equal([
       {
@@ -483,8 +483,8 @@ describe("BatchGet", async () => {
       "gsi2pk":"m_washingtonsquare"
     });
   });
-  it("Should throw on invalid get facets", () => {
-    expect(() => MallStores.get([record1, record2, record3, {}]).params()).to.throw('Incomplete or invalid key facets supplied. Missing properties: "sector" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-facets');
+  it("Should throw on invalid get composite attributes", () => {
+    expect(() => MallStores.get([record1, record2, record3, {}]).params()).to.throw('Incomplete or invalid key composite attributes supplied. Missing properties: "sector" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes');
   });
   it("Should create params", () => {
     let params = MallStores.get([record1, record2, record3]).params();
