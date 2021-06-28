@@ -1269,7 +1269,7 @@ describe("Entity", () => {
 						mall: "Washington Square",
 						stores: undefined
 					},
-					output: `Without the composite attributes "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+					output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
 				},
 				{
 					happy: false,
@@ -1286,7 +1286,7 @@ describe("Entity", () => {
 						id: "12345",
 						mall
 					},
-					output: `Without the composite attributes "stores" the following access patterns cannot be updated: "store"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+					output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
 				},
 			]
 			for (let test of tests) {
