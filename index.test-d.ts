@@ -1972,3 +1972,143 @@ let getKeys = ((val) => {}) as GetKeys;
         .entityWithSK.remove({attr1: "abc", attr2: "def"})
         .where((attr, op) => op.eq(attr.attr9, 14))
         .go();
+
+
+const entityWithMultipleCollections1 = new Entity({
+    model: {
+        entity: "abc",
+        service: "myservice",
+        version: "myversion"
+    },
+    attributes: {
+        attr1: {
+            type: "string",
+        },
+        attr2: {
+            type: "string",
+        }
+    },
+    indexes: {
+        myIndex: {
+            collection: ["outercollection", "innercollection"] as const,
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["attr2"]
+            }
+        },
+    }
+})
+
+const entityWithMultipleCollections2 = new Entity({
+    model: {
+        entity: "abc",
+        service: "myservice",
+        version: "myversion"
+    },
+    attributes: {
+        attr1: {
+            type: "string",
+        },
+        attr2: {
+            type: "string",
+        }
+    },
+    indexes: {
+        myIndex: {
+            collection: ["outercollection", "innercollection"] as const,
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["attr2"]
+            }
+        },
+        myIndex2: {
+            collection: ["extracollection"] as const,
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["attr2"]
+            }
+        },
+    }
+});
+
+const entityWithMultipleCollections3 = new Entity({
+    model: {
+        entity: "abc",
+        service: "myservice",
+        version: "myversion"
+    },
+    attributes: {
+        attr1: {
+            type: "string",
+        },
+        attr2: {
+            type: "string",
+        }
+    },
+    indexes: {
+        myIndex: {
+            collection: "outercollection" as const,
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["attr2"]
+            }
+        },
+        myIndex2: {
+            collection: "extracollection" as const,
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["attr2"]
+            }
+        },
+    }
+});
+
+const serviceWithMultipleCollections = new Service({entityWithMultipleCollections3, entityWithMultipleCollections1, entityWithMultipleCollections2});
+
+type OuterCollectionEntities = "entityWithMultipleCollections2" | "entityWithMultipleCollections3" | "entityWithMultipleCollections1";
+type InnerCollectionEntities = "entityWithMultipleCollections1" | "entityWithMultipleCollections2";
+type ExtraCollectionEntities = "entityWithMultipleCollections2" | "entityWithMultipleCollections3";
+
+serviceWithMultipleCollections.collections
+    .outercollection({attr1: "abc"})
+    .go()
+    .then(values => {
+        const keys = "" as keyof typeof values;
+        expectType<OuterCollectionEntities>(keys);
+    })
+
+serviceWithMultipleCollections.collections
+    .innercollection({attr1: "abc"})
+    .go()
+    .then(values => {
+        const keys = "" as keyof typeof values;
+        expectType<InnerCollectionEntities>(keys);
+    })
+
+serviceWithMultipleCollections.collections
+    .extracollection({attr1: "abc"})
+    .go()
+    .then(values => {
+        const keys = "" as keyof typeof values;
+        expectType<ExtraCollectionEntities>(keys);
+    })

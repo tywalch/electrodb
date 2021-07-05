@@ -74,7 +74,6 @@ type Attribute = BooleanAttribute | NumberAttribute | StringAttribute | EnumAttr
 
 type SecondaryIndex = {
     readonly index: string;
-    readonly collection?: string;
     readonly pk: {
         readonly field: string;
         readonly composite: ReadonlyArray<string>;
@@ -95,9 +94,7 @@ type IndexWithSortKey = {
     }
 }
 
-type IndexWithCollection = {
-    collection: string;
-}
+type AccessPatternCollection<C extends string> = C | ReadonlyArray<C>;
 
 type Schema<A extends string, F extends A, C extends string> = {
     readonly model: {
@@ -111,7 +108,7 @@ type Schema<A extends string, F extends A, C extends string> = {
     readonly indexes: {
         [accessPattern: string]: {
             readonly index?: string;
-            readonly collection?: C;
+            readonly collection?: C | ReadonlyArray<C>;
             readonly pk: {
                 readonly field: string;
                 readonly composite: ReadonlyArray<F>;
@@ -126,37 +123,22 @@ type Schema<A extends string, F extends A, C extends string> = {
     }
 };
 
-// type SchemaIdentifiers = {
-//     readonly identifiers: {
-//         readonly name: string;
-//         readonly version: string;
-//     }
-// }
-//
-// type DefaultIdentifiers = {
-//     readonly name: "__edb_e__"
-//     readonly version: "__edb_v__"
-// }
-//
-// type Identifiers<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-//     S extends SchemaIdentifiers
-//         ? S["identifiers"]
-//         : DefaultIdentifiers;
-//
-// type EntityIdentifiers<E extends Entity<any, any, any, any>> =
-//     E["schema"] extends SchemaIdentifiers
-//         ? E["schema"]["identifiers"]
-//         : DefaultIdentifiers;
-//
-// type EntityIdentifierItem<E extends Entity<any, any, any, any>> = {
-//     [key in keyof EntityIdentifiers<E>]: {
-//         [name in EntityIdentifiers<E>[key]]: string;
-//     };
-// }
-//
-// type IdentifierItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
-//     [key in Identifiers<A,F,C,S>["name"] | Identifiers<A,F,C,S>["version"]]: string;
-// }
+type IndexCollections<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
+    [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends
+        AccessPatternCollection<infer Name>
+            ? Name
+            : never
+}[keyof S["indexes"]];
+
+type EntityCollections<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
+    [N in IndexCollections<A,F,C,S>]: {
+        [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends AccessPatternCollection<infer Name>
+            ? Name extends N
+                ? i
+                : never
+            : never
+    }[keyof S["indexes"]];
+}
 
 type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [a in keyof S["attributes"]]: S["attributes"][a]["type"] extends infer R
@@ -203,28 +185,6 @@ type TableIndexes<A extends string, F extends A, C extends string, S extends Sch
             : "table"
         : never;
 };
-
-type IndexCollections<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
-    [i in keyof S["indexes"]]: S["indexes"][i] extends infer I
-        ? I extends IndexWithCollection
-            ? S["indexes"][i]["collection"] extends infer Name ? Name : never
-            : never
-        : never;
-}[keyof S["indexes"]];
-
-type EntityCollections<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
-    [N in IndexCollections<A,F,C,S>]: {
-        [i in keyof S["indexes"]]: S["indexes"][i] extends infer I
-            ? I extends IndexWithCollection
-                ? S["indexes"][i]["collection"] extends infer Name
-                        ? Name extends N
-                            ? i
-                        : never
-                    : never
-                : never
-            : never
-    }[keyof S["indexes"]];
-}
 
 type TableIndexName<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<TableIndexes<A,F,C,S>, "table">;
 
@@ -476,7 +436,18 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     setIdentifier(type: "entity" | "version", value: string): void;
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>
     query: Queries<A,F,C,S>;
+    c: IndexCollections<A,F,C,S>
+    e: EntityCollections<A,F,C,S>
 }
+
+type TestCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Name in keyof E]:
+        E[Name] extends Entity<infer A, infer F, infer C, infer S>
+            ? {
+                [Collection in keyof EntityCollections<A,F,C,S>]: Collection
+            }[keyof EntityCollections<A,F,C,S>]
+            : never
+};
 
 type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Name in keyof E]:
@@ -622,6 +593,31 @@ type Spread<L, R> = Id<
     // Properties in R, with types that include undefined, that exist in L
     & SpreadProperties<L, R, OptionalPropertyNames<R> & keyof L>
     >;
+
+// type WTF<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
+//     [Collection in keyof Collections]: {
+//         [EntityName in keyof E]:
+//             EntityName extends Collections[Collection]
+//                 ? {
+//                     query: E[EntityName]["query"][
+//                         E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+//                             ? Collection extends keyof EntityCollections<A, F, C, S>
+//                             ? EntityCollections<A, F, C, S>[Collection]
+//                             : never
+//                             : never
+//                         ]
+//                     go: {
+//                         [EntityResultName in Collections[Collection]]:
+//                         EntityResultName extends keyof E
+//                             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+//                             ? ResponseItem<A,F,C,S>[]
+//                             : never
+//                             : never
+//                     }
+//                 }
+//                 : never
+//     }
+// }
 
 type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
