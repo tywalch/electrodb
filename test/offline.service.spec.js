@@ -1894,4 +1894,426 @@ describe("Misconfiguration exceptions", () => {
 	});
 });
 
+describe("Sub Collections", () => {
+	const entityWithMultipleCollections1 = new Entity({
+		model: {
+			entity: "abc",
+			service: "myservice",
+			version: "myversion"
+		},
+		attributes: {
+			attr1: {
+				type: "string",
+			},
+			attr2: {
+				type: "string",
+			},
+			attr3: {
+				type: "string"
+			}
+		},
+		indexes: {
+			myIndex: {
+				collection: ["outercollection", "innercollection"],
+				pk: {
+					field: "pk",
+					composite: ["attr1"]
+				},
+				sk: {
+					field: "sk",
+					composite: ["attr2"]
+				}
+			},
+		}
+	})
+
+	const entityWithMultipleCollections2 = new Entity({
+		model: {
+			entity: "abc",
+			service: "myservice",
+			version: "myversion"
+		},
+		attributes: {
+			attr1: {
+				type: "string",
+			},
+			attr2: {
+				type: "string",
+			},
+			attr3: {
+				type: "string"
+			}
+		},
+		indexes: {
+			myIndex: {
+				collection: ["outercollection", "innercollection"],
+				pk: {
+					field: "pk",
+					composite: ["attr1"]
+				},
+				sk: {
+					field: "sk",
+					composite: ["attr2"]
+				}
+			},
+			myIndex2: {
+				index: "index2",
+				collection: ["extracollection", "superextracollection"],
+				pk: {
+					field: "index2pk",
+					composite: ["attr2"]
+				},
+				sk: {
+					field: "index2sk",
+					composite: ["attr3"]
+				}
+			},
+		}
+	});
+
+	const entityWithMultipleCollections3 = new Entity({
+		model: {
+			entity: "abc",
+			service: "myservice",
+			version: "myversion"
+		},
+		attributes: {
+			attr1: {
+				type: "string",
+			},
+			attr2: {
+				type: "string",
+			},
+			attr3: {
+				type: "string"
+			}
+		},
+		indexes: {
+			myIndex: {
+				collection: "outercollection",
+				pk: {
+					field: "pk",
+					composite: ["attr1"]
+				},
+				sk: {
+					field: "sk",
+					composite: ["attr2"]
+				}
+			},
+			myIndex2: {
+				index: "index2",
+				collection: "extracollection",
+				pk: {
+					field: "index2pk",
+					composite: ["attr2"]
+				},
+				sk: {
+					field: "index2sk",
+					composite: ["attr3"]
+				}
+			},
+		}
+	});
+
+	const serviceWithMultipleCollections = new Service({entityWithMultipleCollections3, entityWithMultipleCollections1, entityWithMultipleCollections2}, {table: "subcollection_table"});
+
+	it("Should have all collections across all entities", () => {
+		expect(Object.keys(serviceWithMultipleCollections.collections)).to.deep.equal([
+			"outercollection",
+			"extracollection",
+			"innercollection",
+			"superextracollection",
+		]);
+	});
+	it("Should create collections based on presence in array", () => {
+		const tests = [
+			{
+				input: {attr1: "abc"},
+				collection: "outercollection",
+				output: {
+					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+					TableName: 'subcollection_table',
+					ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+					ExpressionAttributeValues: { ':pk': '$myservice#attr1_abc', ':sk1': '$outercollection' }
+				}
+			},
+			{
+				input: {attr1: "abc"},
+				collection: "innercollection",
+				output: {
+					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+					TableName: 'subcollection_table',
+					ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+					ExpressionAttributeValues: {
+						':pk': '$myservice#attr1_abc',
+						':sk1': '$outercollection#innercollection'
+					}
+				}
+			},
+			{
+				input: {attr2: "def"},
+				collection: "extracollection",
+				output: {
+					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+					TableName: 'subcollection_table',
+					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk' },
+					ExpressionAttributeValues: { ':pk': '$myservice#attr2_def', ':sk1': '$extracollection' },
+					IndexName: 'index2'
+				}
+			},
+			{
+				input: {attr2: "def"},
+				collection: "superextracollection",
+				output: {
+					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+					TableName: 'subcollection_table',
+					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk' },
+					ExpressionAttributeValues: {
+						':pk': '$myservice#attr2_def',
+						':sk1': '$extracollection#superextracollection'
+					},
+					IndexName: 'index2'
+				}
+			}
+		];
+		for (const test of tests) {
+			let params = serviceWithMultipleCollections.collections[test.collection]({...test.input}).params();
+			expect(params).to.deep.equal(test.output)
+		}
+	});
+
+	it("Should validate collections match between entities", () => {
+		const tests = [
+			{
+				input: [
+					"collectionA",
+					"collectionA",
+					"my_entity",
+					"collectionA"
+				],
+				output: 0,
+				success: true
+			},
+			{
+				input: [
+					"collectionA",
+					"collectionB",
+					"my_entity",
+					"collectionA"
+				],
+				output: `Collection "collectionA" does not exist on Entity "my_entity".`,
+				success: false
+			},
+			{
+				input: [
+					"collectionA",
+					undefined,
+					"my_entity",
+					"collectionA"
+				],
+				output: `Collection "collectionA" does not exist on Entity "my_entity".`,
+				success: false
+			},
+			{
+				input: [
+					"collectionA",
+					["collectionA", "collectionB"],
+					"my_entity",
+					"collectionA"
+				],
+				output: 0,
+				success: true
+			},
+			{
+				input: [
+					["collectionA", "collectionB"],
+					"collectionA",
+					"my_entity",
+					"collectionA"
+				],
+				output: 0,
+				success: true
+			},
+			{
+				input: [
+					"collectionA",
+					["collectionA", "collectionB"],
+					"my_entity",
+					"collectionB"
+				],
+				output: 1,
+				success: true
+			},
+			{
+				input: [
+					"collectionA",
+					["collectionA", "collectionB", "collectionC"],
+					"my_entity",
+					"collectionC"
+				],
+				output: 2,
+				success: true
+			},
+			{
+				input: [
+					["collectionA", "collectionB"],
+					["collectionA", "collectionB"],
+					"my_entity",
+					"collectionB"
+				],
+				output: 1,
+				success: true
+			},
+			{
+				input: [
+					["collectionA", "collectionB"],
+					["collectionA", "collectionB", "collectionC"],
+					"my_entity",
+					"collectionC"
+				],
+				output: 2,
+				success: true
+			},
+			{
+				input: [
+					"collectionB",
+					["collectionA", "collectionB", "collectionC"],
+					"my_entity",
+					"collectionC"
+				],
+				output: `The collection definition for Collection "collectionC", on Entity "my_entity", does not match the established sub-collection order for this service. The collection name provided in slot 1, "collectionA", on Entity "my_entity", does not match the established collection name in slot 1, "collectionB". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`,
+				success: false
+			},
+			{
+				input: [
+					"collectionB",
+					["collectionA", "collectionB", "collectionC"],
+					"my_entity",
+					"collectionA"
+				],
+				output: `The collection definition for Collection "collectionA", on Entity "my_entity", does not match the established sub-collection order for this service. The collection name provided in slot 1, "collectionA", on Entity "my_entity", does not match the established collection name in slot 1, "collectionB". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`,
+				success: false
+			},
+			{
+				input: [
+					"collectionB",
+					["collectionA", "collectionB", "collectionC"],
+					"my_entity",
+					"collectionB"
+				],
+				output: `he collection definition for Collection "collectionB", on Entity "my_entity", does not match the established sub-collection order for this service. The collection name provided in slot 2, "collectionA", on Entity "my_entity", does not match the established collection name in slot 1, "collectionB". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`,
+				success: false
+			},
+			{
+				input: [
+					["collectionA", "collectionB", "collectionD", "collectionC"],
+					["collectionA", "collectionB", "collectionC"],
+					"my_entity",
+					"collectionC"
+				],
+				output: `The collection definition for Collection "collectionC", on Entity "my_entity", does not match the established sub-collection order for this service. The collection name provided in slot 3, (not found), on Entity "my_entity", does not match the established collection name in slot 4, "collectionC". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`,
+				success: false
+			},
+			{
+				input: [
+					["collectionA", "collectionD", "collectionC"],
+					["collectionA", "collectionB", "collectionC"],
+					"my_entity",
+					"collectionC"
+				],
+				output: `The collection definition for Collection "collectionC", on Entity "my_entity", does not match the established sub-collection order for this service. The collection name provided in slot 2, "collectionB", on Entity "my_entity", does not match the established collection name in slot 2, "collectionD". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`,
+				success: false
+			},
+			{
+				input: [
+					[],
+					"collectionA",
+					"my_entity",
+					"collectionA"
+				],
+				output: 0,
+				success: true
+			},
+		];
+		for (const test of tests) {
+			if (test.success) {
+				let result = serviceWithMultipleCollections._processSubCollections(...test.input);
+				expect(result).equals(test.output, JSON.stringify(test.input));
+			} else {
+				expect(() => {
+					serviceWithMultipleCollections._processSubCollections(...test.input);
+				}).to.throw(test.output, JSON.stringify(test.input));
+			}
+		}
+	});
+
+	it("Should validate that second slot collections require the first slot as well", () => {
+		const entity1 = new Entity({
+			model: {
+				entity: "abc",
+				service: "myservice",
+				version: "myversion"
+			},
+			attributes: {
+				attr1: {
+					type: "string",
+				},
+				attr2: {
+					type: "string",
+				},
+				attr3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				myIndex: {
+					collection: ["outercollection", "innercollection"],
+					pk: {
+						field: "pk",
+						composite: ["attr1"]
+					},
+					sk: {
+						field: "sk",
+						composite: ["attr2"]
+					}
+				},
+			}
+		});
+
+		const entity2 = new Entity({
+			model: {
+				entity: "abc",
+				service: "myservice",
+				version: "myversion"
+			},
+			attributes: {
+				attr1: {
+					type: "string",
+				},
+				attr2: {
+					type: "string",
+				},
+				attr3: {
+					type: "string"
+				}
+			},
+			indexes: {
+				myIndex: {
+					collection: ["innercollection"],
+					pk: {
+						field: "pk",
+						composite: ["attr1"]
+					},
+					sk: {
+						field: "sk",
+						composite: ["attr2"]
+					}
+				},
+			}
+		});
+
+		expect(() => new Service({entity1, entity2})).to.throw(`The collection definition for Collection "innercollection", on Entity "entity2", does not match the established sub-collection order for this service. The collection name provided in slot 1, (not found), on Entity "entity2", does not match the established collection name in slot 2, "innercollection". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
+	});
+})
+
 

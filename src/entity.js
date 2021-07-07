@@ -1323,7 +1323,6 @@ class Entity {
 			{ ...set },
 			{ ...keyAttributes },
 		);
-
 		// complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
 		if (completeFacets.impactedIndexTypes[updateIndex] === undefined) {
 			completeFacets.impactedIndexTypes[updateIndex] = {
@@ -1341,16 +1340,29 @@ class Entity {
 				if (sk) {
 					indexKey[sk] = keys.sk[0];
 				}
+			} else {
+				// This block is for when Sort Keys used in sparse indexes never get made because they don't actually
+				// have any composite attributes. Without this the PK would be made for the GSI but the SK would always
+				// be blank, and therefore, not queryable.
+				let noImpactSk = Array.isArray(keys.sk) && keys.sk.length === 0;
+				let noAttributeSk = this.model.facets.byIndex[index].sk.length === 0;
+				let hasPrefix = this.model.prefixes[index].sk.prefix !== undefined;
+				if (noImpactSk && noAttributeSk && hasPrefix) {
+					keys.sk.push(this.model.prefixes[index].sk.prefix);
+				}
 			}
+
 			if (keys.pk) {
 				updatedKeys[pk] = keys.pk;
 			}
+
 			if (sk && keys.sk[0]) {
 				updatedKeys[sk] = keys.sk[0];
 			}
 		}
 		return { indexKey, updatedKeys };
 	}
+
 	/* istanbul ignore next */
 	_getIndexImpact(attributes = {}, included = {}) {
 		let includedFacets = Object.keys(included);
@@ -1491,10 +1503,11 @@ class Entity {
 		let sk = "";
 
 		// If the index is in a collections, prepend the sk;
-		if (tableIndex.collection) {
-			sk = `$${tableIndex.collection}#${entity}`
+		let collectionPrefix = this._makeCollectionPrefix(tableIndex.collection);
+		if (validations.isStringHasLength(collectionPrefix)) {
+			sk = `${collectionPrefix}#${entity}`;
 		} else {
-			sk = `$${entity}`
+			sk = `$${entity}`;
 		}
 
 		/** start beta/v1 condition **/
@@ -1527,12 +1540,26 @@ class Entity {
 		}
 	}
 
-	_getCollectionSk(collection) {
-		if (typeof collection === "string" && collection.length) {
-			return `$${collection}`.toLowerCase();
-		} else {
-			return "";
+	_getCollectionSk(collection = "") {
+		let subCollections = this.model.subCollections[collection];
+		return this._makeCollectionPrefix(subCollections);
+	}
+
+	_makeCollectionPrefix(collection = []) {
+		let prefix = "";
+		if (validations.isArrayHasLength(collection)) {
+			for (let i = 0; i < collection.length; i++) {
+				let subCollection = collection[i];
+				if (i === 0) {
+					prefix += `$${subCollection}`;
+				} else {
+					prefix += `#${subCollection}`;
+				}
+			}
+		} else if (validations.isStringHasLength(collection)) {
+			prefix = `$${collection}`;
 		}
+		return prefix.toLowerCase();
 	}
 
 	/* istanbul ignore next */
@@ -1793,6 +1820,7 @@ class Entity {
 		let normalized = {};
 		let indexFieldTranslation = {};
 		let indexHasSortKeys = {};
+		let indexHasSubCollections = {};
 		let indexAccessPatternTransaction = {
 			fromAccessPatternToIndex: {},
 			fromIndexToAccessPattern: {},
@@ -1801,6 +1829,7 @@ class Entity {
 			fromCollectionToIndex: {},
 			fromIndexToCollection: {},
 		};
+		let subCollections = {};
 		let collections = {};
 		let facets = {
 			byIndex: {},
@@ -1903,18 +1932,25 @@ class Entity {
 				index: indexName,
 			};
 
+			indexHasSubCollections[indexName] = inCollection && Array.isArray(collection);
+
 			if (inCollection) {
-				if (collections[collection] !== undefined) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateCollections, `Duplicate collection, "${collection}" is defined across multiple indexes "${collections[collection]}" and "${accessPattern}". Collections must be unique names across indexes for an Entity.`,);
-				} else {
-					collections[collection] = accessPattern;
+				let collectionArray = this._toSubCollectionArray(collection);
+
+				for (let collectionName of collectionArray) {
+					if (collections[collectionName] !== undefined) {
+						throw new e.ElectroError(e.ErrorCodes.DuplicateCollections, `Duplicate collection, "${collectionName}" is defined across multiple indexes "${collections[collectionName]}" and "${accessPattern}". Collections must be unique names across indexes for an Entity.`,);
+					} else {
+						collections[collectionName] = accessPattern;
+					}
+					collectionIndexTranslation.fromCollectionToIndex[collectionName] = indexName;
+					collectionIndexTranslation.fromIndexToCollection[indexName] = collectionIndexTranslation.fromIndexToCollection[indexName] || [];
+					collectionIndexTranslation.fromIndexToCollection[indexName].push(collection);
 				}
-				collectionIndexTranslation.fromCollectionToIndex[
-					collection
-				] = indexName;
-				collectionIndexTranslation.fromIndexToCollection[
-					indexName
-				] = collection;
+				subCollections = {
+					...subCollections,
+					...this._normalizeSubCollections(collectionArray)
+				};
 			}
 
 			let attributes = [
@@ -1954,6 +1990,8 @@ class Entity {
 				sk: sk.facets,
 				all: attributes,
 				collection: index.collection,
+				hasSortKeys: !!indexHasSortKeys[indexName],
+				hasSubCollections: !!indexHasSubCollections[indexName]
 			};
 
 			attributes.forEach(({index, type, name}, j) => {
@@ -1989,7 +2027,9 @@ class Entity {
 
 		return {
 			facets,
+			subCollections,
 			indexHasSortKeys,
+			indexHasSubCollections,
 			indexes: normalized,
 			indexField: indexFieldTranslation,
 			indexAccessPattern: indexAccessPatternTransaction,
@@ -2020,6 +2060,30 @@ class Entity {
 			prefixes[item.index] = this._makeKeyPrefixes(service, entity, version, item, modelVersion);
 		}
 		return prefixes;
+	}
+
+	_normalizeSubCollections(collections = []) {
+		let lookup = {};
+		for (let i = collections.length -1; i >= 0; i--) {
+			let subCollection = collections[i];
+			lookup[subCollection] = lookup[subCollection] || [];
+			for (let j = 0; j <= i; j++) {
+				lookup[subCollection].push(collections[j]);
+			}
+		}
+		return lookup;
+	}
+
+	_toSubCollectionArray(collection) {
+		let collectionArray = [];
+		if (Array.isArray(collection) && collection.every(col => validations.isStringHasLength(col))) {
+			collectionArray = collection;
+		} else if (validations.isStringHasLength(collection)) {
+			collectionArray.push(collection);
+		} else {
+			throw new Error("Invalid collection definition");
+		}
+		return collectionArray;
 	}
 
 	_applyCompositeToFacetConversion(model) {
@@ -2128,9 +2192,11 @@ class Entity {
 			indexes,
 			indexField,
 			collections,
+			subCollections,
+			indexCollection,
 			indexHasSortKeys,
 			indexAccessPattern,
-			indexCollection,
+			indexHasSubCollections,
 		} = this._normalizeIndexes(model.indexes);
 		let schema = new Schema(model.attributes, facets);
 		let filters = this._normalizeFilters(model.filters);
@@ -2157,8 +2223,10 @@ class Entity {
 			prefixes,
 			collections,
 			modelVersion,
+			subCollections,
 			lookup: {
 				indexHasSortKeys,
+				indexHasSubCollections
 			},
 			translations: {
 				keys: indexField,

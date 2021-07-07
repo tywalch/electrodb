@@ -1976,7 +1976,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
 const entityWithMultipleCollections1 = new Entity({
     model: {
-        entity: "abc",
+        entity: "entity1",
         service: "myservice",
         version: "myversion"
     },
@@ -2005,7 +2005,7 @@ const entityWithMultipleCollections1 = new Entity({
 
 const entityWithMultipleCollections2 = new Entity({
     model: {
-        entity: "abc",
+        entity: "entity2",
         service: "myservice",
         version: "myversion"
     },
@@ -2030,13 +2030,14 @@ const entityWithMultipleCollections2 = new Entity({
             }
         },
         myIndex2: {
+            index: "index2",
             collection: ["extracollection"] as const,
             pk: {
-                field: "pk",
+                field: "index2pk",
                 composite: ["attr1"]
             },
             sk: {
-                field: "sk",
+                field: "index2sk",
                 composite: ["attr2"]
             }
         },
@@ -2045,7 +2046,7 @@ const entityWithMultipleCollections2 = new Entity({
 
 const entityWithMultipleCollections3 = new Entity({
     model: {
-        entity: "abc",
+        entity: "entity3",
         service: "myservice",
         version: "myversion"
     },
@@ -2070,13 +2071,14 @@ const entityWithMultipleCollections3 = new Entity({
             }
         },
         myIndex2: {
+            index: "index2",
             collection: "extracollection" as const,
             pk: {
-                field: "pk",
+                field: "index2pk",
                 composite: ["attr1"]
             },
             sk: {
-                field: "sk",
+                field: "index2sk",
                 composite: ["attr2"]
             }
         },

@@ -758,6 +758,103 @@ describe("Entity", async () => {
 			expect(beginsWithIsle).to.be.deep.equal([item1, item2]);
 			expect(specificIsle).to.be.an("array").with.lengthOf(1);
 			expect(specificIsle).to.be.deep.equal([item1]);
+		});
+
+		it("Should update 'empty' composite sort keys when a GSI Partition Key is updated", async () => {
+			const entity = new Entity({
+				model: {
+					service: "inventory",
+					entity: "items",
+					version: "1",
+				},
+				attributes: {
+					section: {
+						type: "string"
+					},
+					isle: {
+						type: "string"
+					},
+					name: {
+						type: "string"
+					},
+				},
+				indexes: {
+					isles: {
+						pk: {
+							field: "pk",
+							composite: ["section"]
+						},
+						sk: {
+							field: "sk",
+							composite: ["isle"]
+						}
+					},
+					location: {
+						index: "gsi1pk-gsi1sk-index",
+						pk: {
+							field: "gsi1pk",
+							composite: ["name"],
+						},
+						sk: {
+							field: "gsi1sk",
+							composite: [],
+						},
+					}
+				}
+			}, {table, client});
+			const section = uuid();
+			const isle = "14";
+			const name = "cookies";
+			const putParamsWithSparseSK = entity.put({section, isle}).params();
+			const updateParamsWithSparseSK = entity.update({section, isle}).set({name}).params();
+			const queryParamsWithSparseSK = entity.query.location({name}).params();
+			expect(putParamsWithSparseSK).to.deep.equal({
+				"Item": {
+					"section": section,
+					"isle": "14",
+					"pk": `$inventory#section_${section}`,
+					"sk": "$items_1#isle_14",
+					"__edb_e__": "items",
+					"__edb_v__": "1"
+				},
+				"TableName": "electro"
+			});
+			expect(updateParamsWithSparseSK).to.deep.equal({
+				"UpdateExpression": "SET #name = :name, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk",
+				"ExpressionAttributeNames": {
+					"#name": "name",
+					"#gsi1pk": "gsi1pk",
+					"#gsi1sk": "gsi1sk"
+				},
+				"ExpressionAttributeValues": {
+					":name": "cookies",
+					":gsi1pk": "$inventory#name_cookies",
+					":gsi1sk": "$items_1"
+				},
+				"TableName": "electro",
+				"Key": {
+					"pk": `$inventory#section_${section}`,
+					"sk": "$items_1#isle_14"
+				}
+			});
+			expect(queryParamsWithSparseSK).to.deep.equal({
+				"KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+				"TableName": "electro",
+				"ExpressionAttributeNames": {
+					"#pk": "gsi1pk",
+					"#sk1": "gsi1sk"
+				},
+				"ExpressionAttributeValues": {
+					":pk": "$inventory#name_cookies",
+					":sk1": "$items_1"
+				},
+				"IndexName": "gsi1pk-gsi1sk-index"
+			});
+
+			await entity.put({section, isle}).go();
+			await entity.update({section, isle}).set({name}).go();
+			const queryRecordWithSparseSK = await entity.query.location({name}).go();
+			expect(queryRecordWithSparseSK).to.deep.equal([{section, isle, name}]);
 		})
 	});
 

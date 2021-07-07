@@ -272,7 +272,7 @@ class Service {
 
 	findItemPagerOwner(collection, pager = {}) {
 		if (this.collectionSchema[collection] === undefined) {
-			throw new Error("Invalid collection")
+			throw new Error("Invalid collection");
 		}
 		let matchingEntities = [];
 		if (pager === null) {
@@ -511,9 +511,70 @@ class Service {
 	}
 
 	_getEntityIndexFromCollectionName(collection, entity) {
+		for (let index of Object.values(entity.model.indexes)) {
+			let names = [];
+			if (v.isArrayHasLength(index.collection)) {
+				names = index.collection;
+			} else {
+				names.push(index.collection);
+			}
+
+			for (let name of names) {
+				if (v.isStringHasLength(name) && name === collection) {
+					return index;
+				}
+			}
+		}
 		return Object.values(entity.model.indexes).find(
-			(index) => index.collection === collection,
+			(index) => {
+				if (v.isStringHasLength(index.collection)) {
+					return index.collection === collection;
+				} else if (v.isArrayHasLength(index.collection)) {
+					return index.collection.indexOf(collection) > 0;
+				}
+			},
 		);
+	}
+
+	_processSubCollections(existing, provided, entityName, collectionName) {
+		let existingSubCollections;
+		let providedSubCollections;
+		if (v.isArrayHasLength(existing)) {
+			existingSubCollections = existing;
+		} else {
+			existingSubCollections = [existing];
+		}
+		if (v.isArrayHasLength(provided)) {
+			providedSubCollections = provided
+		} else {
+			providedSubCollections = [provided];
+		}
+
+		const existingRequiredIndex = existingSubCollections.indexOf(collectionName);
+		const providedRequiredIndex = providedSubCollections.indexOf(collectionName);
+		if (providedRequiredIndex < 0) {
+			throw new Error(`The collection definition for Collection "${collectionName}" does not exist on Entity "${entityName}".`);
+		}
+		if (existingRequiredIndex >= 0 && existingRequiredIndex !== providedRequiredIndex) {
+			throw new Error(`The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${providedRequiredIndex + 1}, ${providedSubCollections[existingRequiredIndex] === undefined ? '(not found)' : `"${providedSubCollections[existingRequiredIndex]}"`}, on Entity "${entityName}", does not match the established collection name in slot ${existingRequiredIndex + 1}, "${collectionName}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
+		}
+		let length = Math.max(existingRequiredIndex, providedRequiredIndex);
+		for (let i = 0; i <= length; i++) {
+			let existingCollection = existingSubCollections[i];
+			let providedCollection = providedSubCollections[i];
+			if (v.isStringHasLength(existingCollection)) {
+				if (existingCollection === providedCollection && providedCollection === collectionName) {
+					return i;
+				}
+				if (existingCollection !== providedCollection) {
+					throw new Error(`The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${i+1}, "${providedCollection}", on Entity "${entityName}", does not match the established collection name in slot ${i + 1}, "${existingCollection}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
+				}
+			} else if (v.isStringHasLength(providedCollection)) {
+				if (providedCollection === collectionName) {
+					return i;
+				}
+			}
+		}
 	}
 
 	_addCollectionEntity(collection = "", name = "", entity = {}) {
@@ -521,6 +582,7 @@ class Service {
 			collection,
 			entity,
 		);
+
 		this.collectionSchema[collection] = this.collectionSchema[collection] || {
 			entities: {},
 			keys: {},
@@ -531,7 +593,8 @@ class Service {
 				expression: ""
 			},
 			index: undefined,
-			table: ""
+			table: "",
+			collection: []
 		};
 		if (this.collectionSchema[collection].entities[name] !== undefined) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Entity with name '${name}' has already been joined to this service.`);
@@ -544,12 +607,13 @@ class Service {
 		} else {
 			this.collectionSchema[collection].table = entity._getTableName();
 		}
-
 		this.collectionSchema[collection].keys = this._processEntityKeys(this.collectionSchema[collection].keys, providedIndex);
 		this.collectionSchema[collection].attributes = this._processEntityAttributes(this.collectionSchema[collection].attributes, entity.model.schema.attributes);
 		this.collectionSchema[collection].entities[name] = entity;
 		this.collectionSchema[collection].identifiers = this._processEntityIdentifiers(this.collectionSchema[collection].identifiers, entity.getIdentifierExpressions(name));
 		this.collectionSchema[collection].index = this._processEntityCollectionIndex(this.collectionSchema[collection].index, providedIndex.index, name, collection);
+		let collectionIndex = this._processSubCollections(this.collectionSchema[collection].collection, providedIndex.collection, name, collection);
+		this.collectionSchema[collection].collection[collectionIndex] = collection;
 	}
 
 	_processEntityCollectionIndex(existing, provided, name, collection) {

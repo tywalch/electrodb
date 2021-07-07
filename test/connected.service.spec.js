@@ -6,6 +6,7 @@ const { expect } = require("chai");
 const moment = require("moment");
 const uuid = require("uuid").v4;
 const DynamoDB = require("aws-sdk/clients/dynamodb");
+const table = "electro";
 
 const client = new DynamoDB.DocumentClient({
 	region: "us-east-1",
@@ -260,8 +261,8 @@ let modelThree = {
 
 let database = new Service(
 	{
+		table,
 		version: "1",
-		table: "electro",
 		service: "electrotest",
 	},
 	{ client },
@@ -844,7 +845,7 @@ describe("Entities with custom identifiers and versions", () => {
 			entityTwo,
 			entityThree,
 			entityThreeV2
-		}, {table: "electro", client});
+		}, {table, client});
 		let prop1 = uuid()
 		await entityOne.put({
 			uniqueToModelOne: "uniqueToModelOneValue",
@@ -909,7 +910,7 @@ describe("Entities with custom identifiers and versions", () => {
 			entityTwo,
 			entityThree,
 			entityThreeV2
-		}, {table: "electro", client});
+		}, {table, client});
 
 		let prop1 = uuid();
 		let prop3 = uuid();
@@ -1098,7 +1099,7 @@ describe("Entities with custom identifiers and versions", () => {
 			entityTwo,
 			entityThree,
 			entityThreeV2
-		}, {table: "electro", client});
+		}, {table, client});
 
 		let collectionA = await service.collections
 			.collectionA({prop1})
@@ -1309,7 +1310,7 @@ describe("Entities with custom identifiers and versions", () => {
 		let service = new Service({
 			entityOne,
 			entityTwo,
-		},{table: "electro", client});
+		},{table, client});
 		let params = service.collections
 			.collectionA({prop1: "abc"})
 			.where(({uniqueToModelTwo, uniqueToModelOne}, {eq}) => {
@@ -1420,7 +1421,7 @@ describe("Entities with custom identifiers and versions", () => {
 		let service = new Service({
 			entityOne,
 			entityTwo,
-		},{table: "electro", client});
+		},{table, client});
 		let prop1 = uuid();
 		await Promise.all([
 			entityOne.put({
@@ -1479,6 +1480,175 @@ describe("Entities with custom identifiers and versions", () => {
 					"prop3": "prop3Value_entityTwo_fromEntityTwoGetter"
 				}
 			]
+		});
+	});
+});
+
+describe("Sub-Collections", async () => {
+	const entity1 = new Entity({
+		model: {
+			entity: "entity1",
+			service: "myservice",
+			version: "myversion"
+		},
+		attributes: {
+			attr1: {
+				type: "string",
+			},
+			attr2: {
+				type: "string",
+			},
+			attr3: {
+				type: "string",
+				default: () => "entity1_" + uuid()
+			}
+		},
+		indexes: {
+			myIndex: {
+				collection: ["outercollection", "innercollection"],
+				pk: {
+					field: "pk",
+					composite: ["attr1"]
+				},
+				sk: {
+					field: "sk",
+					composite: ["attr2"]
+				}
+			},
+		}
+	})
+
+	const entity2 = new Entity({
+		model: {
+			entity: "entity2",
+			service: "myservice",
+			version: "myversion"
+		},
+		attributes: {
+			attr1: {
+				type: "string",
+			},
+			attr2: {
+				type: "string",
+			},
+			attr3: {
+				type: "string",
+				default: () => "entity2_" + uuid()
+			}
+		},
+		indexes: {
+			myIndex: {
+				collection: ["outercollection", "innercollection"],
+				pk: {
+					field: "pk",
+					composite: ["attr1"]
+				},
+				sk: {
+					field: "sk",
+					composite: ["attr2"]
+				}
+			},
+			myIndex2: {
+				index: "gsi1pk-gsi1sk-index",
+				collection: ["extracollection"],
+				pk: {
+					field: "gsi1pk",
+					composite: ["attr1"]
+				},
+				sk: {
+					field: "gsi1sk",
+					composite: ["attr2"]
+				}
+			},
+		}
+	});
+
+	const entity3 = new Entity({
+		model: {
+			entity: "entity3",
+			service: "myservice",
+			version: "myversion"
+		},
+		attributes: {
+			attr1: {
+				type: "string",
+			},
+			attr2: {
+				type: "string",
+			},
+			attr3: {
+				type: "string",
+				default: () => "entity3_" + uuid()
+			}
+		},
+		indexes: {
+			myIndex: {
+				collection: "outercollection",
+				pk: {
+					field: "pk",
+					composite: ["attr1"]
+				},
+				sk: {
+					field: "sk",
+					composite: ["attr2"]
+				}
+			},
+			myIndex2: {
+				index: "gsi1pk-gsi1sk-index",
+				collection: "extracollection",
+				pk: {
+					field: "gsi1pk",
+					composite: ["attr1"]
+				},
+				sk: {
+					field: "gsi1sk",
+					composite: ["attr2"]
+				}
+			},
+		}
+	});
+	const service = new Service({entity1, entity2, entity3}, {table, client});
+	it("Should allow for sub-collections", async () => {
+		const record = {
+			attr1: uuid(),
+			attr2: uuid()
+		};
+		let [
+			entity1Record,
+			entity2Record,
+			entity3Record,
+		] = await Promise.all([
+			entity1.put(record).go(),
+			entity2.put(record).go(),
+			entity3.put(record).go(),
+		]);
+		let [
+			innercollection,
+			outercollection,
+			extracollection
+		] = await Promise.all([
+			service.collections.innercollection(record).go(),
+			service.collections.outercollection(record).go(),
+			service.collections.extracollection(record).go()
+		]);
+
+		expect(innercollection).to.have.keys("entity1", "entity2");
+		expect(innercollection).to.deep.equal({
+			entity1: [entity1Record],
+			entity2: [entity2Record]
+		});
+
+		expect(outercollection).to.have.keys("entity1", "entity2", "entity3");
+		expect(outercollection).to.deep.equal({
+			entity1: [entity1Record],
+			entity2: [entity2Record],
+			entity3: [entity3Record]
+		});
+
+		expect(extracollection).to.have.keys("entity2", "entity3");
+		expect(extracollection).to.deep.equal({
+			entity2: [entity2Record],
+			entity3: [entity3Record]
 		});
 	});
 });
