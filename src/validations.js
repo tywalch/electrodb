@@ -133,7 +133,7 @@ const Index = {
 			type: "string",
 		},
 		collection: {
-			type: "string"
+			type: ["array", "string"]
 		}
 	},
 };
