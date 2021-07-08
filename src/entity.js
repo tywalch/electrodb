@@ -1345,8 +1345,9 @@ class Entity {
 				// have any composite attributes. Without this the PK would be made for the GSI but the SK would always
 				// be blank, and therefore, not queryable.
 				let noImpactSk = Array.isArray(keys.sk) && keys.sk.length === 0;
-				let noAttributeSk = this.model.facets.byIndex[index].sk.length === 0;
-				let hasPrefix = this.model.prefixes[index].sk.prefix !== undefined;
+				let indexHasSk = this.model.lookup.indexHasSortKeys[index];
+				let noAttributeSk = indexHasSk && this.model.facets.byIndex[index].sk.length === 0;
+				let hasPrefix = indexHasSk && this.model.prefixes[index].sk.prefix !== undefined;
 				if (noImpactSk && noAttributeSk && hasPrefix) {
 					keys.sk.push(this.model.prefixes[index].sk.prefix);
 				}

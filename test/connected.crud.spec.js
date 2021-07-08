@@ -852,9 +852,97 @@ describe("Entity", async () => {
 			});
 
 			await entity.put({section, isle}).go();
-			await entity.update({section, isle}).set({name}).go();
 			const queryRecordWithSparseSK = await entity.query.location({name}).go();
-			expect(queryRecordWithSparseSK).to.deep.equal([{section, isle, name}]);
+			expect(queryRecordWithSparseSK).to.deep.equal([]);
+			await entity.update({section, isle}).set({name}).go();
+			const queryRecordWithSK = await entity.query.location({name}).go();
+			expect(queryRecordWithSK).to.deep.equal([{section, isle, name}]);
+		});
+
+		it("Should not update sort keys when a GSI Partition Key is updated on an index without an sk", async () => {
+			const table = "electro_nosort";
+			const entity = new Entity({
+				model: {
+					service: "inventory",
+					entity: "items",
+					version: "1",
+				},
+				attributes: {
+					section: {
+						type: "string"
+					},
+					isle: {
+						type: "string"
+					},
+					name: {
+						type: "string"
+					},
+				},
+				indexes: {
+					isles: {
+						pk: {
+							field: "partition_key",
+							composite: ["section", "isle"]
+						}
+					},
+					location: {
+						index: "idx2",
+						pk: {
+							field: "partition_key_idx2",
+							composite: ["name"],
+						}
+					}
+				}
+			}, {table, client});
+			const section = uuid();
+			const isle = "14";
+			const name = "cookies";
+			const putParamsWithSparseSK = entity.put({section, isle}).params();
+			const updateParamsWithSparseSK = entity.update({section, isle}).set({name}).params();
+			const queryParamsWithSparseSK = entity.query.location({name}).params();
+			expect(putParamsWithSparseSK).to.deep.equal({
+				"Item": {
+					"section": section,
+					"isle": "14",
+					"partition_key": `$inventory$items_1#section_${section}#isle_14`,
+					"__edb_e__": "items",
+					"__edb_v__": "1"
+				},
+				"TableName": table
+			});
+			expect(updateParamsWithSparseSK).to.deep.equal({
+				"UpdateExpression": "SET #name = :name, #partition_key_idx2 = :partition_key_idx2",
+				"ExpressionAttributeNames": {
+					"#name": "name",
+					"#partition_key_idx2": "partition_key_idx2"
+				},
+				"ExpressionAttributeValues": {
+					":name": "cookies",
+					":partition_key_idx2": "$inventory$items_1#name_cookies",
+				},
+				"TableName": table,
+				"Key": {
+					"partition_key": `$inventory$items_1#section_${section}#isle_14`,
+				}
+			});
+			expect(queryParamsWithSparseSK).to.deep.equal({
+				"KeyConditionExpression": "#pk = :pk",
+				"TableName": table,
+				"ExpressionAttributeNames": {
+					"#pk": "partition_key_idx2"
+				},
+				"ExpressionAttributeValues": {
+					":pk": "$inventory$items_1#name_cookies"
+				},
+				"IndexName": "idx2"
+			});
+
+			await entity.put({section, isle}).go();
+			const queryRecordWithSparseSK = await entity.query.location({name}).go();
+			expect(queryRecordWithSparseSK).to.deep.equal([]);
+			await entity.update({section, isle}).set({name}).go();
+			const queryRecordWithSK = await entity.query.location({name}).go();
+			expect(queryRecordWithSK).to.deep.equal([{section, isle, name}]);
 		})
 	});
 
