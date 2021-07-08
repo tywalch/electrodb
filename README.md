@@ -1370,7 +1370,7 @@ let results = await TaskApp.collections
         .go();
 
 {
-    tasks: [...], // tasks for employeeId "JExotic" 
+    tasks: [...],    // tasks for employeeId "JExotic" 
     employees: [...] // employee record(s) with employeeId "JExpotic"
 }
 ```
@@ -1421,7 +1421,7 @@ const results = await TaskApp.collections
 	.go();
 ```
 
-The advantage to using a string array to define collections is the ability to express sub-collections. Below is an example of three entities using sub-collections, followed by an explanation their sub-collection definitions:
+The advantage to using a string array to define collections is the ability to express sub-collections. Below is an example of three entities using sub-collections, followed by an explanation of their sub-collection definitions:
 
 #### Sub-Collection Entities
 ```typescript
@@ -1573,13 +1573,11 @@ const projectMembers = new Entity({
 const TaskApp = new Service({employees, tasks, projectMembers});
 ```
 
-The above models are an iteration on the models first shown in the section on [Collections](#collections); The key difference here is that these models use sub-collections.
-
 > TypeScript Note: Use `as const` syntax when defining `collection` as a string array for improved type support
 
-The last line above creates a Service using each entity we created above. By creating a Service, ElectroDB will identify and validate the sub-collections defined across all three models. The result in this case are four unique collections: "overview", "contributions", and "assignments". 
+The last line of the code block above creates a Service called `TaskApp` using the Entity instances created above its declaration. By creating a Service, ElectroDB will identify and validate the sub-collections defined across all three models. The result in this case are four unique collections: "overview", "contributions", and "assignments". 
 
-The simplest collection to understand is `overview`. This collection is defined on the table's Primary Index, composed of just a "projectId" in the Partition Key, and is _currently_ implemented by two Entities: `tasks` and `projectMembers`. If another entity were to be added to our service, it could join this collection by implementing an identical PK composite and labeling itself as part of the "overview" collection. The following is an example of using the `overview` collection:
+The simplest collection to understand is `overview`. This collection is defined on the table's Primary Index, composed of a `projectId` in the Partition Key, and is _currently_ implemented by two Entities: `tasks` and `projectMembers`. If another entity were to be added to our service, it could "join" this collection by implementing an identical Partition Key composite (`projectId`) and labeling itself as part of the `overview` collection. The following is an example of using the `overview` collection:
 
 ```typescript
 // overview
@@ -1589,7 +1587,7 @@ const results = await TaskApp.collections
 
 // results 
 { 
-  tasks: [...],  // tasks associated with projectId "SD-204
+  tasks: [...],         // tasks associated with projectId "SD-204
   projectMembers: [...] // employees of project "SD-204"
 }
 
@@ -1638,7 +1636,7 @@ const results = await TaskApp.collections
 
 // results 
 {
-  tasks: [...], // tasks assigned to employeeId "JExotic" 
+  tasks: [...],          // tasks assigned to employeeId "JExotic" 
   projectMembers: [...], // projects with employeeId "JExotic"
 }
 
@@ -1681,9 +1679,9 @@ staff: {
 
 This Access Pattern is defined on the table's Primary Index (note the lack of an `index` property), is given the name `staff`, and is composed of an `organiztionId` and an `employeeId`.
 
-When deciding on an Access Pattern name, ask yourself, "What would the array of items returned represent if I only supplied the Partition Key". This example case, the entity defines an "Employee" that is uniquely defined by its `organizationId` and `employeeId`. If you performed a query against this index, and only provided `organizationId` you could then expect to receive all Employees for that Organization. From there, the name `staff` was chosen because the focus becomes "What _are_ these Employees _to_ that Organization?". 
+When deciding on an Access Pattern name, ask yourself, "What would the array of items returned represent if I only supplied the Partition Key". In this example case, the entity defines an "Employee" by its `organizationId` and `employeeId`. If you performed a query against this index, and only provided `organizationId` you would then expect to receive all Employees for that Organization. From there, the name `staff` was chosen because the focus becomes "What _are_ these Employees _to_ that Organization?". 
 
-This also becomes evident when you consider Access Pattern name becomes the name of the method you use query that index.
+This convention also becomes evident when you consider Access Pattern name becomes the name of the method you use query that index.
 
 ```typescript
 await employee.query.staff({organizationId: "nike"}).go();
@@ -1738,9 +1736,9 @@ projects: {
 
 In the case of the entities above, we see an example of a [sub-collection](#sub-collections). ElectroDB will use the above definitions to generate two collections: `contributions`, `assignments`.
 
-The considerations for naming a collection are nearly identical to the considerations for [naming an index](#index-naming-conventions): What do the results from supplying just the Partition Key represent? In the case of collections you must also consider what the results represent across _all_ of the involved entities, and entities that may be added in the future.
+The considerations for naming a collection are nearly identical to the considerations for [naming an index](#index-naming-conventions): What do the query results from supplying just the Partition Key represent? In the case of collections you must also consider what the results represent across _all_ of the involved entities and the entities that may be added in the future.
 
-For example, the `contributions` collection is named such because when given an employeeId we receive the employee's details, the tasks the that employee, and the projects where they are currently a member.
+For example, the `contributions` collection is named such because when given an `employeeId` we receive the employee's details, the tasks the that employee, and the projects where they are currently a member.
 
 In the case of `assignments`, we receive a subset of `contributions` when supplying an `employeeId`: Only the tasks and projects they are "assigned" are returned.
 
