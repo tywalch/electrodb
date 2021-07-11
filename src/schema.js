@@ -1,4 +1,4 @@
-const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods } = require("./types");
+const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods, WatchAll } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
@@ -17,19 +17,21 @@ class Attribute {
 		this.get = this._makeGet(definition.name, definition.get);
 		this.set = this._makeSet(definition.name, definition.set);
 		this.indexes = [...(definition.indexes || [])];
-		let {isWatched, isWatcher, watchedBy, watching} = Attribute._destructureWatcher(definition);
+		let {isWatched, isWatcher, watchedBy, watching, watchAll} = Attribute._destructureWatcher(definition);
 		this._isWatched = isWatched
 		this._isWatcher = isWatcher;
 		this.watchedBy = watchedBy;
 		this.watching = watching;
+		this.watchAll = watchAll;
 		let { type, enumArray } = this._makeType(this.name, definition.type);
 		this.type = type;
 		this.enumArray = enumArray;
 	}
 
 	static _destructureWatcher(definition) {
+		let watchAll = !!definition.watchAll;
+		let watchingArr = watchAll ? []: [...(definition.watching || [])];
 		let watchedByArr = [...(definition.watchedBy || [])];
-		let watchingArr = [...(definition.watching || [])];
 		let isWatched = watchedByArr.length > 0;
 		let isWatcher = watchingArr.length > 0;
 		let watchedBy = {};
@@ -44,10 +46,11 @@ class Attribute {
 		}
 
 		return {
-			isWatched,
-			isWatcher,
+			watchAll,
+			watching,
 			watchedBy,
-			watching
+			isWatched,
+			isWatcher
 		}
 	}
 
@@ -260,11 +263,15 @@ class Schema {
 	_formatWatchTranslations(attributes) {
 		let watchersToAttributes = {};
 		let attributesToWatchers = {};
+		let watchAllAttributes = {};
 		let hasWatchers = false;
 		for (let name of Object.keys(attributes)) {
 			if (attributes[name].isWatcher()) {
 				hasWatchers = true;
 				watchersToAttributes[name] = attributes[name].watching;
+			} else if (attributes[name].watchAll) {
+				hasWatchers = true;
+				watchAllAttributes[name] = name;
 			} else {
 				attributesToWatchers[name] = attributesToWatchers[name] || {};
 				attributesToWatchers[name] = attributes[name].watchedBy;
@@ -272,6 +279,7 @@ class Schema {
 		}
 		return {
 			hasWatchers,
+			watchAllAttributes,
 			watchersToAttributes,
 			attributesToWatchers
 		};
@@ -318,6 +326,19 @@ class Schema {
 				set: attribute.set,
 				watching: Array.isArray(attribute.watch) ? attribute.watch : []
 			};
+
+			if (attribute.watch !== undefined) {
+				if (attribute.watch === WatchAll) {
+					definition.watchAll = true;
+					definition.watching = [];
+				} else if (Array.isArray(attribute.watch)) {
+					definition.watching = attribute.watch;
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.InvalidAttributeWatchDefinition, `Attribute Validation Error. The attribute '${name}' is defined to "watch" an invalid value of: '${attribute.watch}'. The watch property must either be a an array of attribute names, or the single string value of "${WatchAll}".`);
+				}
+			} else {
+				definition.watching = [];
+			}
 
 			if (definition.readOnly) {
 				readOnlyAttributes.add(name);
@@ -484,7 +505,8 @@ class Schema {
 		let watchersToTrigger = {};
 		// include: payload               | We want to hit the getters/setters for any attributes coming in to be changed
 		// avoid: watchersToAttributes    | We want to avoid anything that is a watcher, even if it was included
-		let data = this._applyAttributeMutation(method, payload, this.translationForWatching.watchersToAttributes, payload);
+		let avoid = {...this.translationForWatching.watchersToAttributes, ...this.translationForWatching.watchAllAttributes};
+		let data = this._applyAttributeMutation(method, payload, avoid, payload);
 		// `data` here will include all the original payload values, but with the mutations applied to on non-watchers
 		if (!this.translationForWatching.hasWatchers) {
 			// exit early, why not
@@ -497,9 +519,11 @@ class Schema {
 				watchersToTrigger = {...watchersToTrigger, ...watchers}
 			}
 		}
+
 		// include: ...data, ...watchersToTrigger | We want to hit attributes that were watching an attribute included in data, and include an properties that were skipped because they were a watcher
 		// avoid: attributesToWatchers            | We want to avoid hit anything that was not a watcher because they were already hit once above
-		return this._applyAttributeMutation(method, {...data, ...watchersToTrigger}, this.translationForWatching.attributesToWatchers, data);
+		let include = {...data, ...watchersToTrigger, ...this.translationForWatching.watchAllAttributes};
+		return this._applyAttributeMutation(method, include, this.translationForWatching.attributesToWatchers, data);
 	}
 
 	applyAttributeGetters(payload = {}) {

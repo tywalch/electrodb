@@ -11,7 +11,7 @@ type BooleanAttribute = {
     readonly validate?: ((val: boolean) => boolean) | ((val: boolean) => void) | ((val: boolean) => string | void);
     readonly field?: string;
     readonly label?: string;
-    readonly watch?: ReadonlyArray<string>;
+    readonly watch?: ReadonlyArray<string> | "*";
 }
 
 type NumberAttribute = {
@@ -25,7 +25,7 @@ type NumberAttribute = {
     readonly validate?: ((val: number) => boolean) | ((val: number) => void) | ((val: number) => string | void);
     readonly field?: string;
     readonly label?: string;
-    readonly watch?: ReadonlyArray<string>;
+    readonly watch?: ReadonlyArray<string> | "*";
 }
 
 type StringAttribute = {
@@ -39,7 +39,7 @@ type StringAttribute = {
     readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
     readonly field?: string;
     readonly label?: string;
-    readonly watch?: ReadonlyArray<string>;
+    readonly watch?: ReadonlyArray<string> | "*";
 }
 
 type EnumAttribute = {
@@ -53,7 +53,7 @@ type EnumAttribute = {
     readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
     readonly field?: string;
     readonly label?: string;
-    readonly watch?: ReadonlyArray<string>;
+    readonly watch?: ReadonlyArray<string> | "*";
 }
 
 type AnyAttribute = {
@@ -67,7 +67,7 @@ type AnyAttribute = {
     readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly label?: string;
-    readonly watch?: ReadonlyArray<string>;
+    readonly watch?: ReadonlyArray<string> | "*";
 }
 
 type Attribute = BooleanAttribute | NumberAttribute | StringAttribute | EnumAttribute | AnyAttribute;

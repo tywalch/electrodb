@@ -109,12 +109,15 @@ const UnprocessedTypes = {
 	item: "item"
 };
 
+const WatchAll = "*";
+
 module.exports = {
 	Pager,
 	KeyTypes,
+	WatchAll,
+	CastTypes,
 	QueryTypes,
 	MethodTypes,
-	CastTypes,
 	Comparisons,
 	MaxBatchItems,
 	ModelVersions,
