@@ -96,8 +96,11 @@ StoreLocations.query
       - [Attribute Definition](#attribute-definition)
       - [Attribute Getters and Setters](#attribute-getters-and-setters)
       - [Attribute Watching](#attribute-watching)
+        * [Attribute Watching: Watch All](#attribute-watching-watch-all)
+        * [Attribute Watching Examples](#attribute-watching-examples)
       - [Calculated Attributes](#calculated-attributes)
       - [Virtual Attributes](#virtual-attributes)
+      - [CreatedAt and UpdatedAt Attributes](#createdat-and-updatedat-attributes)
       - [Attribute Validation](#attribute-validation)
   * [Indexes](#indexes)
     + [Indexes Without Sort Keys](#indexes-without-sort-keys)
@@ -686,20 +689,20 @@ attributes: {
 
 #### Attribute Definition
 
-Property  | Type                                                       | Required | Description
+Property   | Type                                                       | Required | Description
  --------- | :--------------------------------------------------------: | :------: | -----------
-`type`    | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
+`type`     | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
 `required` | `boolean`                                                  | no       | Flag an attribute as required to be present when creating a record. |
 `hidden`   | `boolean`                                                  | no       | Flag an attribute for removal upon retrieval. |
 `default`  | `value`, `() => value`                                     | no       | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
 `validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no       | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
 `field`    | `string`                                                   | no       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
-`readOnly` | `boolean`                                                  | no       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default.
+`readOnly` | `boolean`                                                  | no       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail. 
 `label`    | `string`                                                   | no       | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
 `cast`     | `"number"`, `"string"`, `"boolean"`                        | no       | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
 `set`      | `(attribute, schema) => value`                             | no       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
 `get`      | `(attribute, schema) => value`                             | no       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
-`watch`    | `Attribute[]`                                              | no       | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed.
+`watch`    | `Attribute[], "*"`                                         | no       | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed.
 
 #### Attribute Getters and Setters
 Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both callbacks should be pure synchronous functions and may be invoked multiple times during one query.
@@ -724,6 +727,41 @@ Attribute watching is a powerful feature in ElectroDB that can be used to solve 
 Because DynamoDB allows for a flexible schema, and ElectroDB allows for optional attributes, it is possible for items belonging to an entity to not have all attributes when setting or getting records. Sometimes values or changes to other attributes will require corresponding changes to another attribute. Sometimes, to fully leverage some advanced model denormalization or query access patterns,  it is necessary to duplicate some attribute values with similar or identical values. This functionality has many uses; below are just a few examples of how you can use `watch`:
 
 > Note: Using the `watch` property impacts the order of which getters and setters are called. You cannot `watch` another attribute that also uses `watch`, so ElectroDB first invokes the getters or setters of attributes without the `watch` property, then subsequently invokes the getters or setters of attributes who use `watch`.
+
+```typescript
+myAttr: { 
+  type: "string",
+  watch: ["otherAttr"],
+  set: (myAttr, {otherAttr}) => {
+    // Whenever "myAttr" or "otherAttr" are updated from an `update` or `patch` operation, this callback will be fired. 
+    // Note: myAttr or otherAttr could be indendently undefined because either attribute could have triggered this callback  
+  },
+  get: (myAttr, {otherAttr}) => {
+    // Whenever "myAttr" or "otherAttr" are retrieved from a `query` or `get` operation, this callback will be fired. 
+    // Note: myAttr or otherAttr could be indendently undefined because either attribute could have triggered this callback.
+  } 
+}
+```
+
+##### Attribute Watching: Watch All
+
+If your attributes needs to watch for any changes to an item, you can model this by supplying the watch property a string value of `"*"`  
+```typescript
+myAttr: { 
+  type: "string",
+  watch: "*", // "watch all"
+  set: (myAttr, allAttributes) => {
+    // Whenever an `update` or `patch` operation is performed, this callback will be fired. 
+    // Note: myAttr or the attributes under `allAttributes` could be indendently undefined because either attribute could have triggered this callback  
+  },
+  get: (myAttr, allAttributes) => {
+    // Whenever a `query` or `get` operation is performed, this callback will be fired. 
+    // Note: myAttr or the attributes under `allAttributes` could be indendently undefined because either attribute could have triggered this callback
+  } 
+}
+```
+
+##### Attribute Watching Examples
 
 **Example 1 - A calculated attribute that depends on the value of another attribute:**
 
@@ -860,11 +898,67 @@ In this example we have an attribute `"descriptionSearch"` which will help our u
 }
 ```
 
+**Example 4 - Creating an `updatedAt` property:**
+
+In this example we can easily create both `updatedAt` and `createdAt` attributes on our model. `createdAt` will use ElectroDB's `set` and `readOnly` attribute properties, while `updatedAt` will make use of `readOnly`, and `watch` with the "watchAll" syntax: `{watch: "*"}`. By supplying an asterisk, instead of an array of attribute names, attributes can be defined to watch _all_ changes to _all_ attributes.
+
+Using `watch` in conjunction with `readOnly` is another powerful modeling technique. This combination allows you to model attributes that can only be modified via the model and not via the user. This is useful for attributes that need to be locked down and/or strictly calculated. 
+
+Notable about this example is that both `updatedAt` and `createdAt` use the `set` property without using its arguments. The `readOnly` only prevents modification of an attributes on `update`, and `patch`. By disregarding the arguments passed to `set`, the `updatedAt` and `createdAt` attributes are then effectively locked down from user influence/manipulation.        
+
+```javascript
+{
+  model: {
+    entity: "transaction",
+    service: "bank",
+    version: "1"
+  },
+  attributes: {
+    accountNumber: {
+      type: "string"
+    },
+    transactionId: {
+      type: "string"
+    },
+    description: {
+      type: "string",
+    },
+    createdAt: {
+      type: "number",
+      readOnly: true,
+      set: () => Date.now()
+    },
+    updatedAt: {
+      type: "number",
+      readOnly: true,
+      watch: "*",
+      set: () => Date.now()
+    },
+    
+  },
+  indexes: {
+    transactions: {
+      pk: {
+        field: "pk",
+        facets: ["accountNumber"]
+      },
+      sk: {
+        field: "sk",
+        facets: ["transactionId"]
+      }
+    }
+  }
+}
+```
+
 #### Calculated Attributes
-See: [Attribute Watching](#attribute-watching).
+See: [Attribute Watching (Example 1)](#attribute-watching).
 
 #### Virtual Attributes
-See: [Attribute Watching](#attribute-watching).
+See: [Attribute Watching (Example 2)](#attribute-watching).
+
+#### CreatedAt and UpdatedAt Attributes
+See: [Attribute Watching (Example 4)](#attribute-watching).
 
 #### Attribute Validation
 The `validation` property allows for multiple function/type signatures. Here the different combinations *ElectroDB* supports:

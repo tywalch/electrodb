@@ -30,7 +30,7 @@ const Attribute = {
 			type: "boolean"
 		},
 		watch: {
-			type: "array",
+			type: ["array", "string"],
 			items: {
 				type: "string",
 			}

@@ -939,7 +939,7 @@ class Entity {
 
 	/* istanbul ignore next */
 	_makeUpdateParams({ set } = {}, pk = {}, sk = {}) {
-		let withoutKeyFacets = this._removeAttributes(set, {...pk, ...sk});
+		let withoutKeyFacets = this._removeAttributes(set, {...pk, ...sk, ...this.model.schema.getReadOnly()});
 		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
 		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
 		// should only happen when an attribute is changed.
@@ -986,7 +986,11 @@ class Entity {
 	_updateExpressionBuilder(data) {
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[""]
 		let skip = [
-			...this.model.schema.getReadOnly(),
+			// Removing readOnly from here because this should have been validated earlier in the process. Not checking
+			// readOnly here also allows `watch` properties to circumnavigate the readOnly check for attributes that
+			// should be calculated but not updatable by the user.
+			// ...this.model.schema.getReadOnly(),
+
 			// ...this.model.facets.fields,
 			this.model.indexes[accessPattern].pk.field,
 			this.model.indexes[accessPattern].sk.field

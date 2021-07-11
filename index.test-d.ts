@@ -2114,3 +2114,38 @@ serviceWithMultipleCollections.collections
         const keys = "" as keyof typeof values;
         expectType<ExtraCollectionEntities>(keys);
     })
+
+const entityWithWatchAll = new Entity({
+    model: {
+        entity: "withwatchall",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string"
+        },
+        prop2: {
+            type: "string"
+        },
+        prop3: {
+            type: "string",
+            watch: "*",
+            set: (value) => {
+                return value;
+            }
+        },
+    },
+    indexes: {
+        record: {
+            pk: {
+                field: "pk",
+                composite: ["prop1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop2"]
+            }
+        }
+    }
+});

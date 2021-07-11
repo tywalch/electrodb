@@ -1495,6 +1495,177 @@ describe("Entity", async () => {
 				expect(putRecord).to.deep.equal(transaction);
 				expect(queryRecord1).to.deep.equal([transaction]);
 			});
+
+			it("Should test Attribute Watching 'Example 4' from the readme", async () => {
+				let createdAtCount = 0;
+				let updatedAtCount = 0;
+				let createdAt;
+				let updatedAt;
+				let entity = new Entity({
+					model: {
+						entity: "transaction",
+						service: "bank",
+						version: "1"
+					},
+					attributes: {
+						accountNumber: {
+							type: "string"
+						},
+						transactionId: {
+							type: "string"
+						},
+						description: {
+							type: "string",
+						},
+						createdAt: {
+							type: "number",
+							default: () => {
+								createdAtCount++;
+								createdAt = Date.now();
+								return createdAt;
+							},
+							readOnly: true,
+						},
+						updatedAt: {
+							type: "number",
+							watch: "*",
+							set: () => {
+								updatedAtCount++;
+								updatedAt = Date.now();
+								return updatedAt;
+							},
+							readOnly: true
+						}
+					},
+					indexes: {
+						transactions: {
+							pk: {
+								field: "pk",
+								facets: ["accountNumber"]
+							},
+							sk: {
+								field: "sk",
+								facets: ["transactionId"]
+							}
+						}
+					}
+				}, {table, client});
+
+				let accountNumber = uuid();
+				let transactionId = uuid();
+				let initialDescription = "My Initial Description";
+				let updatedDescription = "My Updated Description";
+
+				let initialTransaction = {
+					accountNumber,
+					transactionId,
+					description: initialDescription
+				}
+				let putRecord = await entity.put(initialTransaction).go();
+				expect(createdAtCount).to.equal(1, "createdAt not updated");
+				expect(updatedAtCount).to.equal(1, "updatedAt not updated");
+				let queryRecord1 = await entity.query
+					.transactions({accountNumber, transactionId})
+					.go();
+
+				// createdAt and updatedAt should have changed
+				let afterPutTransaction = {
+					...initialTransaction,
+					createdAt,
+					updatedAt
+				}
+
+				expect(putRecord).to.deep.equal(afterPutTransaction);
+				expect(queryRecord1).to.deep.equal([afterPutTransaction]);
+				await entity.update({accountNumber, transactionId}).set({description: updatedDescription}).go();
+				expect(createdAtCount).to.equal(1, "createdAt shouldnt update");
+				expect(updatedAtCount).to.equal(2, "updatedAt not updated");
+				// createdAt should have remained the same
+				let afterUpdateTransaction = {
+					...afterPutTransaction,
+					updatedAt,
+					description: updatedDescription
+				};
+
+				let queryRecord2 = await entity.query.transactions({accountNumber, transactionId}).go();
+				expect(queryRecord2).to.deep.equal([afterUpdateTransaction]);
+			});
+
+			it("Should be able to use watch property to bypass readOnly", async () => {
+				let updatedAtCount = 0;
+				let updatedAt;
+				let entity = new Entity({
+					model: {
+						entity: "transaction",
+						service: "bank",
+						version: "1"
+					},
+					attributes: {
+						accountNumber: {
+							type: "string"
+						},
+						transactionId: {
+							type: "string"
+						},
+						description: {
+							type: "string",
+						},
+						updatedAt: {
+							type: "number",
+							watch: "*",
+							set: () => {
+								updatedAtCount++;
+								updatedAt = Date.now();
+								return updatedAt;
+							},
+							readOnly: true
+						}
+					},
+					indexes: {
+						transactions: {
+							pk: {
+								field: "pk",
+								facets: ["accountNumber"]
+							},
+							sk: {
+								field: "sk",
+								facets: ["transactionId"]
+							}
+						}
+					}
+				}, {table, client});
+
+				let accountNumber = uuid();
+				let transactionId = uuid();
+				let description = "My Description";
+
+				let updateParams = entity.update({accountNumber, transactionId}).set({description}).params();
+				expect(updatedAtCount).to.equal(1, "updatedAt was not called the expected amount");
+				expect(updateParams).to.deep.equal({
+					"UpdateExpression": "SET #description = :description, #updatedAt = :updatedAt",
+					"ExpressionAttributeNames": {
+						"#description": "description",
+						"#updatedAt": "updatedAt"
+					},
+					"ExpressionAttributeValues": {
+						":description": "My Description",
+						":updatedAt": updatedAt
+					},
+					"TableName": table,
+					"Key": {
+						"pk": `$bank#accountnumber_${accountNumber}`,
+						"sk": `$transaction_1#transactionid_${transactionId}`
+					}
+				});
+
+				const readOnlyUpdate = () => entity.update({accountNumber, transactionId}).set({updatedAt: Date.now()}).params();
+				expect(readOnlyUpdate).to.throw("Attribute updatedAt is Read-Only and cannot be updated");
+				const [success, result] = await entity.update({accountNumber, transactionId}).set({updatedAt: Date.now()}).go()
+					.then((res) => [true, res])
+					.catch(err => [false, err])
+				expect(success).to.be.false;
+				expect(result.message).to.equal("Attribute updatedAt is Read-Only and cannot be updated");
+			});
 		});
 		describe("Setter Triggers", async () => {
 			const counter = new TriggerListener();
