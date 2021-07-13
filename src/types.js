@@ -57,8 +57,10 @@ const AttributeTypes = {
 };
 
 const ExpressionTypes = {
+	FilterExpression: "FilterExpression",
+	UpdateExpression: "UpdateExpression",
 	ConditionExpression: "ConditionExpression",
-	FilterExpression: "FilterExpression"
+	KeyConditionExpression: "KeyConditionExpression"
 };
 
 const ElectroInstance = {
@@ -111,6 +113,14 @@ const UnprocessedTypes = {
 
 const WatchAll = "*";
 
+const ItemOperations = {
+	"SET": "SET",
+	"DELETE": "DELETE",
+	"REMOVE": "REMOVE",
+	"ADD": "ADD",
+	"SUBTRACT": "SUBTRACT",
+};
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -123,6 +133,7 @@ module.exports = {
 	ModelVersions,
 	AttributeTypes,
 	EntityVersions,
+	ItemOperations,
 	ServiceVersions,
 	ExpressionTypes,
 	ElectroInstance,

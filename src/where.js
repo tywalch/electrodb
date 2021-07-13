@@ -1,75 +1,11 @@
-const __is_clause__ = Symbol("IsWhereClause");
 const {MethodTypes, ExpressionTypes} = require("./types");
 const e = require("./errors");
-
-function attributeProxy(path, attr, setName) {
-  return new Proxy(() => ({path, attr}), {
-    get: (target, prop, receiver) => {
-      if (prop === "__is_clause__") {
-        return __is_clause__
-      } else if (isNaN(prop)) {
-        setName(`#${prop}`, prop);
-        return attributeProxy(`${path}.#${prop}`, attr, setName);
-      } else {
-        return attributeProxy(`${path}[${prop}]`, attr, setName);
-      }
-    }
-  });
-}
+const {AttributeOperationProxy} = require("./operations")
 
 class WhereFactory {
   constructor(attributes = {}, filterTypes = {}) {
     this.attributes = {...attributes};
     this.filters = {...filterTypes};
-  }
-
-  _buildAttributes(setName) {
-    let attributes = {};
-		for (let [name, attr] of Object.entries(this.attributes)) {
-      Object.defineProperty(attributes, name, {
-        get: () => {
-          let path = `#${name}`;
-          setName(path, attr.field);
-          return attributeProxy(path, name, setName);
-        }
-      })
-    }
-    return attributes;
-  }
-
-  _buildOperations(setName, setValue, getValueCount) {
-    let operations = {};
-    for (let type of Object.keys(this.filters)) {
-      let {template} = this.filters[type];
-      Object.defineProperty(operations, type, {
-        get: () => {
-          return (property, ...values) => {
-						if (property === undefined) {
-							throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid/Unknown property passed in where clause passed to operation: '${type}'`);
-						}
-            if (property.__is_clause__ === __is_clause__) {
-              let {path, attr} = property();
-              let attrValues = [];
-              for (let value of values) {
-					let valueCount = getValueCount(attr);
-					let attrValue = `:${attr}_w${valueCount}`;
-					if (template.length > 1) {
-						setValue(attrValue, value);
-						attrValues.push(attrValue);
-					}
-				}
-              let expression = template(path, ...attrValues);
-              return expression.trim();
-            // } else if (typeof property === "string") {
-            //   // todo: parse string
-            } else {
-              throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid Attribute in where clause passed to operation '${type}'. Use injected attributes only.`);
-            }
-          }
-        }
-      })
-    }
-    return operations;
   }
 
   _cleanUpExpression(value) {
@@ -120,28 +56,17 @@ class WhereFactory {
 
   buildClause(filterFn) {
 		return (entity, state, ...params) => {
-			let expressionType = this.getExpressionType(state.query.method);
-			state.query.filter.ExpressionAttributeNames = state.query.filter.ExpressionAttributeNames || {};
-			state.query.filter.ExpressionAttributeValues = state.query.filter.ExpressionAttributeValues || {};
-			state.query.filter.valueCount = state.query.filter.valueCount || {};
-			let getValueCount = name => {
-				if (state.query.filter.valueCount[name] === undefined) {
-					state.query.filter.valueCount[name] = 1;
-				}
-				return state.query.filter.valueCount[name]++;
-			};
-			let setName = (name, value) => (state.query.filter.ExpressionAttributeNames[name] = value);
-			let setValue = (name, value) => (state.query.filter.ExpressionAttributeValues[name] = value);
-      let attributes = this._buildAttributes(setName);
-      let operations = this._buildOperations(setName, setValue, getValueCount);
-			let expression = filterFn(attributes, operations, ...params);
-			if (typeof expression !== "string") {
+			const proxy = new AttributeOperationProxy(state, this.attributes, this.filters);
+			const results = proxy.invokeCallback(filterFn, ...params);
+			if (typeof results !== "string") {
 				throw new e.ElectroError(e.ErrorCodes.InvalidWhere, "Invalid response from where clause callback. Expected return result to be of type string");
 			}
-			state.query.filter[expressionType] = this._concatFilterExpression(
-				state.query.filter[expressionType],
-				expression,
-			);
+			const type = this.getExpressionType(state.query.method);
+			const expression = this._concatFilterExpression(
+				state.expressions.getExpression(type),
+				results,
+			)
+			state.expressions.setExpression(type, expression);
 			return state;
 		};
   }

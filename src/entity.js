@@ -1,12 +1,13 @@
 "use strict";
 const { Schema } = require("./schema");
-const { EntityVersions, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
-const { FilterFactory, FilterTypes } = require("./filters");
+const { ItemOperations, EntityVersions, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { FilterFactory } = require("./filters");
 const { WhereFactory } = require("./where");
-const { clauses, initChainState } = require("./clauses");
+const { clauses, ChainState } = require("./clauses");
 const validations = require("./validations");
 const utilities = require("./util");
 const e = require("./errors");
+const {WhereOperations} = require("./operations");
 
 class Entity {
 	constructor(model, config = {}) {
@@ -18,8 +19,8 @@ class Entity {
 		/** start beta/v1 condition **/
 		this.config.table = config.table || model.table;
 		/** end beta/v1 condition **/
-		this._filterBuilder = new FilterFactory(this.model.schema.attributes, FilterTypes);
-		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterTypes);
+		this._filterBuilder = new FilterFactory(this.model.schema.attributes, WhereOperations);
+		this._whereBuilder = new WhereFactory(this.model.schema.attributes, WhereOperations);
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(clauses, this.model.filters);
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
 		this.scan = this._makeChain("", this._clausesWithFilters, clauses.index).scan();
@@ -481,27 +482,28 @@ class Entity {
 		}
 	}
 
-	_chain(state, clauses, clause) {
-		let current = {};
-		for (let child of clause.children) {
-			current[child] = (...args) => {
-				state.prev = state.self;
-				state.self = child;
-				let results = clauses[child].action(this, state, ...args);
-				if (clauses[child].children.length) {
-					return this._chain(results, clauses, clauses[child]);
-				} else {
-					return results;
-				}
-			};
-		}
-		return current;
-	}
+	// _chain(state, clauses, clause) {
+	// 	let current = {};
+	// 	for (let child of clause.children) {
+	// 		current[child] = (...args) => {
+	// 			state.prev = state.self;
+	// 			state.self = child;
+	// 			let results = clauses[child].action(this, state, ...args);
+	// 			if (clauses[child].children.length) {
+	// 				return this._chain(results, clauses, clauses[child]);
+	// 			} else {
+	// 				return results;
+	// 			}
+	// 		};
+	// 	}
+	// 	return current;
+	// }
+
 	/* istanbul ignore next */
 	_makeChain(index = "", clauses, rootClause, options = {}) {
 		let facets = this.model.facets.byIndex[index];
-		let state = initChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
-		return this._chain(state, clauses, rootClause);
+		let state = new ChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
+		return state.walk(this, clauses, rootClause);
 	}
 
 	_regexpEscape(string) {
@@ -747,27 +749,30 @@ class Entity {
 		return filter.join(" AND ");
 	}
 
-	_applyParameterExpressionTypes(params, filter) {
-		if (typeof filter[ExpressionTypes.ConditionExpression] === "string" && filter[ExpressionTypes.ConditionExpression].length > 0) {
+	_applyParameterExpressionTypes(params, expressions) {
+		const ConditionExpression = expressions.getExpression(ExpressionTypes.ConditionExpression);
+		const ExpressionAttributeNames = expressions.getNames();
+		const ExpressionAttributeValues = expressions.getValues();
+		if (typeof ConditionExpression === "string" && ConditionExpression.length > 0) {
 			if (typeof params[ExpressionTypes.ConditionExpression] === "string" && params[ExpressionTypes.ConditionExpression].length > 0) {
-				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${filter[ExpressionTypes.ConditionExpression]}`
+				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${ConditionExpression}`
 			} else {
-				params[ExpressionTypes.ConditionExpression] = filter[ExpressionTypes.ConditionExpression];
+				params[ExpressionTypes.ConditionExpression] = ConditionExpression;
 			}
-			if (Object.keys(filter.ExpressionAttributeNames).length > 0) {
+			if (Object.keys(ExpressionAttributeNames).length > 0) {
 				params.ExpressionAttributeNames = params.ExpressionAttributeNames || {};
-				params.ExpressionAttributeNames = Object.assign({}, filter.ExpressionAttributeNames, params.ExpressionAttributeNames);
+				params.ExpressionAttributeNames = Object.assign({}, ExpressionAttributeNames, params.ExpressionAttributeNames);
 			}
-			if (Object.keys(filter.ExpressionAttributeValues).length > 0) {
+			if (Object.keys(ExpressionAttributeValues).length > 0) {
 				params.ExpressionAttributeValues = params.ExpressionAttributeValues || {};
-				params.ExpressionAttributeValues = Object.assign({}, filter.ExpressionAttributeValues, params.ExpressionAttributeValues);
+				params.ExpressionAttributeValues = Object.assign({}, ExpressionAttributeValues, params.ExpressionAttributeValues);
 			}
 		}
 		return params;
 	}
 	/* istanbul ignore next */
 	_params(state, config = {}) {
-		let { keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} } = state.query;
+		let { keys = {}, method = "", put = {}, update = {}, options = {} } = state.query;
 		let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
@@ -789,21 +794,21 @@ class Entity {
 				);
 				break;
 			case MethodTypes.scan:
-				params = this._makeScanParam(filter);
+				params = this._makeScanParam(state.expressions);
 				break;
 			/* istanbul ignore next */
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
 		let applied = this._applyParameterOptions(params, options, config);
-		return this._applyParameterExpressionTypes(applied.parameters, filter);
+		return this._applyParameterExpressionTypes(applied.parameters, state.expressions);
 	}
 
 	_batchGetParams(state, config = {}) {
 		let table = config.table || this._getTableName();
 		let userDefinedParams = config.params || {};
 		let records = [];
-		for (let itemState of state.batch.items) {
+		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			if (method === MethodTypes.get) {
@@ -827,7 +832,7 @@ class Entity {
 	_batchWriteParams(state, config = {}) {
 		let table = config.table || this._getTableName();
 		let records = [];
-		for (let itemState of state.batch.items) {
+		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			switch (method) {
@@ -885,7 +890,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeScanParam(filter = {}) {
+	_makeScanParam(expressions) {
 		let indexBase = "";
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
@@ -897,11 +902,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				expressions.getNames(),
 				keyExpressions.ExpressionAttributeNames
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				expressions.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			FilterExpression: `begins_with(#${pkField}, :${pkField})`,
@@ -915,8 +920,8 @@ class Entity {
 			let skField = this.model.indexes[accessPattern].sk.field;
 			params.FilterExpression = `${params.FilterExpression} AND begins_with(#${skField}, :${skField})`;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = `${params.FilterExpression} AND ${filter.FilterExpression}`;
+		if (expressions.getExpression(ExpressionTypes.FilterExpression)) {
+			params.FilterExpression = `${params.FilterExpression} AND ${expressions.getExpression(ExpressionTypes.FilterExpression)}`;
 		}
 		return params;
 	}
@@ -995,7 +1000,7 @@ class Entity {
 			this.model.indexes[accessPattern].pk.field,
 			this.model.indexes[accessPattern].sk.field
 		];
-		return this._expressionAttributeBuilder(data, { skip });
+		return this._expressionAttributeBuilder(data, ItemOperations.SET, { skip });
 	}
 
 	_queryKeyExpressionAttributeBuilder(index, pk, ...sks) {
@@ -1009,7 +1014,7 @@ class Entity {
 			restrict.push(id);
 			translate[id] = translate["sk"];
 		}
-		let keyExpressions = this._expressionAttributeBuilder(keys, {
+		let keyExpressions = this._expressionAttributeBuilder(keys, ItemOperations.SET, {
 			translate,
 			restrict,
 		});
@@ -1021,7 +1026,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_expressionAttributeBuilder(item = {}, options = {}) {
+	_expressionAttributeBuilder(item = {}, operation, options = {}) {
 		let {
 			require = [],
 			reject = [],
@@ -1075,7 +1080,7 @@ class Entity {
 			expressions.ExpressionAttributeNames[nameProp] = name;
 			expressions.ExpressionAttributeValues[valProp] = value;
 		}
-		expressions.UpdateExpression = `SET ${expressions.UpdateExpression.join(
+		expressions.UpdateExpression = `${operation} ${expressions.UpdateExpression.join(
 			", ",
 		)}`;
 		return expressions;
@@ -1099,7 +1104,7 @@ class Entity {
 				parameters = this._makeBeginsWithQueryParams(
 					state.query.options,
 					state.query.index,
-					state.query.filter,
+					state.expressions,
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1108,7 +1113,7 @@ class Entity {
 				parameters = this._makeBeginsWithQueryParams(
 					state.query.options,
 					state.query.index,
-					state.query.filter,
+					state.expressions,
 					indexKeys.pk,
 					this._getCollectionSk(state.query.collection),
 				);
@@ -1116,7 +1121,7 @@ class Entity {
 			case QueryTypes.between:
 				parameters = this._makeBetweenQueryParams(
 					state.query.index,
-					state.query.filter,
+					state.expressions,
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1128,7 +1133,7 @@ class Entity {
 				parameters = this._makeComparisonQueryParams(
 					state.query.index,
 					state.query.type,
-					state.query.filter,
+					state.expressions,
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1140,7 +1145,7 @@ class Entity {
 		return applied.parameters;
 	}
 
-	_makeBetweenQueryParams(index, filter, pk, ...sk) {
+	_makeBetweenQueryParams(index, expressions, pk, ...sk) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
 			index,
 			pk,
@@ -1150,11 +1155,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				expressions.getNames(),
 				keyExpressions.ExpressionAttributeNames,
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				expressions.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			KeyConditionExpression: `#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2`,
@@ -1162,13 +1167,13 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = filter.FilterExpression;
+		if (expressions.getExpression(ExpressionTypes.FilterExpression)) {
+			params.FilterExpression = expressions.getExpression(ExpressionTypes.FilterExpression);
 		}
 		return params;
 	}
 
-	_makeBeginsWithQueryParams(options, index, filter, pk, sk) {
+	_makeBeginsWithQueryParams(options, index, expressions, pk, sk) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
 		let KeyConditionExpression = "#pk = :pk";
 		if (this.model.lookup.indexHasSortKeys[index] && keyExpressions.ExpressionAttributeNames["#sk1"] !== undefined) {
@@ -1182,15 +1187,15 @@ class Entity {
 		let params = {
 			KeyConditionExpression,
 			TableName: this._getTableName(),
-			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.ExpressionAttributeNames, keyExpressions.ExpressionAttributeNames, customExpressions.names),
-			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.ExpressionAttributeValues, keyExpressions.ExpressionAttributeValues, customExpressions.values),
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(expressions.getNames(), keyExpressions.ExpressionAttributeNames, customExpressions.names),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(expressions.getValues(), keyExpressions.ExpressionAttributeValues, customExpressions.values),
 		};
 		if (index) {
 			params["IndexName"] = index;
 		}
-		let expressions = [customExpressions.expression, filter.FilterExpression].filter(Boolean).join(" AND ");
-		if (expressions.length) {
-			params.FilterExpression = expressions;
+		let allExpressions = [customExpressions.expression, expressions.getExpression(ExpressionTypes.FilterExpression)].filter(Boolean).join(" AND ");
+		if (allExpressions.length) {
+			params.FilterExpression = allExpressions;
 		}
 		return params;
 	}
@@ -1206,7 +1211,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeComparisonQueryParams(index = "", comparison = "", filter = {}, pk = {}, sk = {}) {
+	_makeComparisonQueryParams(index = "", comparison = "", expressions = {}, pk = {}, sk = {}) {
 		let operator = Comparisons[comparison];
 		if (!operator) {
 			throw new Error(`Unexpected comparison operator "${comparison}", expected ${utilities.commaSeparatedString(Object.values(Comparisons))}`);
@@ -1219,11 +1224,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				expressions.getNames(),
 				keyExpressions.ExpressionAttributeNames,
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				expressions.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			KeyConditionExpression: `#pk = :pk and #sk1 ${operator} :sk1`,
@@ -1231,8 +1236,8 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = filter.FilterExpression;
+		if (expressions.getExpression(ExpressionTypes.FilterExpression)) {
+			params.FilterExpression = expressions.getExpression(ExpressionTypes.FilterExpression);
 		}
 		return params;
 	}
