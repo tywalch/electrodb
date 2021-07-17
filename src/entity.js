@@ -1,7 +1,8 @@
 "use strict";
 const { Schema } = require("./schema");
 const { EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
-const { FilterFactory, FilterTypes } = require("./filters");
+const { FilterFactory } = require("./filters");
+const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
 const { clauses, ChainState } = require("./clauses");
 const validations = require("./validations");
@@ -18,8 +19,8 @@ class Entity {
 		/** start beta/v1 condition **/
 		this.config.table = config.table || model.table;
 		/** end beta/v1 condition **/
-		this._filterBuilder = new FilterFactory(this.model.schema.attributes, FilterTypes);
-		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterTypes);
+		this._filterBuilder = new FilterFactory(this.model.schema.attributes, FilterOperations);
+		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterOperations);
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(clauses, this.model.filters);
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
 		this.scan = this._makeChain("", this._clausesWithFilters, clauses.index).scan();

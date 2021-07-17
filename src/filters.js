@@ -1,93 +1,6 @@
 const e = require("./errors");
 const {MethodTypes, ExpressionTypes} = require("./types");
 
-let FilterTypes = {
-	ne: {
-		template: function eq(name, value) {
-			return `${name} <> ${value}`;
-		},
-		strict: false,
-	},
-	eq: {
-		template: function eq(name, value) {
-			return `${name} = ${value}`;
-		},
-		strict: false,
-	},
-	gt: {
-		template: function gt(name, value) {
-			return `${name} > ${value}`;
-		},
-		strict: false
-	},
-	lt: {
-		template: function lt(name, value) {
-			return `${name} < ${value}`;
-		},
-		strict: false
-	},
-	gte: {
-		template: function gte(name, value) {
-			return `${name} >= ${value}`;
-		},
-		strict: false
-	},
-	lte: {
-		template: function lte(name, value) {
-			return `${name} <= ${value}`;
-		},
-		strict: false
-	},
-	between: {
-		template: function between(name, value1, value2) {
-			return `(${name} between ${value1} and ${value2})`;
-		},
-		strict: false
-	},
-	begins: {
-		template: function begins(name, value) {
-			return `begins_with(${name}, ${value})`;
-		},
-		strict: false
-	},
-	exists: {
-		template: function exists(name) {
-			return `attribute_exists(${name})`;
-		},
-		strict: false
-	},
-	notExists: {
-		template: function notExists(name) {
-			return `attribute_not_exists(${name})`;
-		},
-		strict: false
-	},
-	contains: {
-		template: function contains(name, value) {
-			return `contains(${name}, ${value})`;
-		},
-		strict: false
-	},
-	notContains: {
-		template: function notContains(name, value) {
-			return `not contains(${name}, ${value})`;
-		},
-		strict: false
-	},
-	value: {
-		template: function(name, value) {
-			return value;
-		},
-		strict: false
-	},
-	name: {
-		template: function(name) {
-			return name;
-		},
-		strict: false
-	}
-};
-
 class FilterFactory {
 	constructor(attributes = {}, filterTypes = {}) {
 		this.attributes = { ...attributes };
@@ -244,4 +157,4 @@ class FilterFactory {
 	}
 }
 
-module.exports = { FilterFactory, FilterTypes };
+module.exports = { FilterFactory };

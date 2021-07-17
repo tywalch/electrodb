@@ -1,7 +1,8 @@
 const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
 const { ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
-const { FilterFactory, FilterTypes } = require("./filters");
+const { FilterFactory } = require("./filters");
+const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
 const { getInstanceType, getModelVersion, applyBetaModelOverrides } = require("./util");
 const v = require("./validations");
@@ -370,8 +371,8 @@ class Service {
 	}
 
 	_makeCollectionChain(name = "", attributes = {}, initialClauses = {}, expressions = {}, entities = {}, entity = {}, facets = {}) {
-		let filterBuilder = new FilterFactory(attributes, FilterTypes);
-		let whereBuilder = new WhereFactory(attributes, FilterTypes);
+		let filterBuilder = new FilterFactory(attributes, FilterOperations);
+		let whereBuilder = new WhereFactory(attributes, FilterOperations);
 
 		let pageClause = {...initialClauses.page};
 		let pageAction = initialClauses.page.action;

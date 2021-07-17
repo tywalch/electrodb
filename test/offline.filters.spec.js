@@ -2,7 +2,8 @@ const moment = require("moment");
 const uuidV4 = require("uuid/v4");
 const { expect } = require("chai");
 let { Entity } = require("../src/entity");
-let { FilterFactory, FilterTypes } = require("../src/filters");
+let { FilterFactory } = require("../src/filters");
+const {FilterOperations} = require("../src/operations");
 
 let model = {
 	service: "MallStoreDirectory",
@@ -163,7 +164,7 @@ describe("Filter", () => {
 			}
 			let filter = new FilterFactory(
 				MallStores.model.schema.attributes,
-				FilterTypes,
+				FilterOperations,
 			);
 			let clause = filter.buildClause(rentsLeaseEndFilter);
 			let lowRent = "20.00";
@@ -202,7 +203,7 @@ describe("Filter", () => {
 			}
 			let filter = new FilterFactory(
 				MallStores.model.schema.attributes,
-				FilterTypes,
+				FilterOperations,
 			);
 			let clause = filter.buildClause(byCategory);
 			let category = "food";
