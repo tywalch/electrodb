@@ -108,27 +108,29 @@ class Entity {
 	match(facets = {}) {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
-			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
-				let eqFilters = [];
-				for (let facet of Object.keys(facets)) {
-					if (attr[facet] !== undefined && facets[facet] !== undefined) {
-						eqFilters.push(attr[facet].eq(facets[facet]));
+			return this._makeChain("", this._clausesWithFilters, clauses.index)
+				.scan()
+				.filter(attr => {
+					let eqFilters = [];
+					for (let facet of Object.keys(facets)) {
+						if (attr[facet] !== undefined && facets[facet] !== undefined) {
+							eqFilters.push(attr[facet].eq(facets[facet]));
+						}
 					}
-				}
 				return eqFilters.join(" AND");
 			});
 		} else {
-			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(
-				facets,
-			).filter(attr => {
-				let eqFilters = [];
-				for (let facet of Object.keys(facets)) {
-					if (attr[facet] !== undefined && facets[facet] !== undefined) {
-						eqFilters.push(attr[facet].eq(facets[facet]));
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index)
+				.query(facets)
+				.filter(attr => {
+					let eqFilters = [];
+					for (let facet of Object.keys(facets)) {
+						if (attr[facet] !== undefined && facets[facet] !== undefined) {
+							eqFilters.push(attr[facet].eq(facets[facet]));
+						}
 					}
-				}
-				return eqFilters.join(" AND");
-			});
+					return eqFilters.join(" AND");
+				});
 		}
 	}
 
@@ -749,19 +751,20 @@ class Entity {
 	}
 
 	_applyParameterExpressionTypes(params, filter) {
-		if (typeof filter[ExpressionTypes.ConditionExpression] === "string" && filter[ExpressionTypes.ConditionExpression].length > 0) {
+		const conditions = filter[ExpressionTypes.ConditionExpression];
+		if (conditions.getExpression().length > 0) {
 			if (typeof params[ExpressionTypes.ConditionExpression] === "string" && params[ExpressionTypes.ConditionExpression].length > 0) {
-				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${filter[ExpressionTypes.ConditionExpression]}`
+				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${conditions.getExpression()}`
 			} else {
-				params[ExpressionTypes.ConditionExpression] = filter[ExpressionTypes.ConditionExpression];
+				params[ExpressionTypes.ConditionExpression] = conditions.getExpression();
 			}
-			if (Object.keys(filter.ExpressionAttributeNames).length > 0) {
+			if (Object.keys(conditions.getNames()).length > 0) {
 				params.ExpressionAttributeNames = params.ExpressionAttributeNames || {};
-				params.ExpressionAttributeNames = Object.assign({}, filter.ExpressionAttributeNames, params.ExpressionAttributeNames);
+				params.ExpressionAttributeNames = Object.assign({}, conditions.getNames(), params.ExpressionAttributeNames);
 			}
-			if (Object.keys(filter.ExpressionAttributeValues).length > 0) {
+			if (Object.keys(conditions.getValues()).length > 0) {
 				params.ExpressionAttributeValues = params.ExpressionAttributeValues || {};
-				params.ExpressionAttributeValues = Object.assign({}, filter.ExpressionAttributeValues, params.ExpressionAttributeValues);
+				params.ExpressionAttributeValues = Object.assign({}, conditions.getValues(), params.ExpressionAttributeValues);
 			}
 		}
 		return params;
@@ -790,7 +793,7 @@ class Entity {
 				);
 				break;
 			case MethodTypes.scan:
-				params = this._makeScanParam(filter);
+				params = this._makeScanParam(filter[ExpressionTypes.FilterExpression]);
 				break;
 			/* istanbul ignore next */
 			default:
@@ -898,11 +901,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				filter.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			FilterExpression: `begins_with(#${pkField}, :${pkField})`,
@@ -916,8 +919,8 @@ class Entity {
 			let skField = this.model.indexes[accessPattern].sk.field;
 			params.FilterExpression = `${params.FilterExpression} AND begins_with(#${skField}, :${skField})`;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = `${params.FilterExpression} AND ${filter.FilterExpression}`;
+		if (filter.getExpression()) {
+			params.FilterExpression = `${params.FilterExpression} AND ${filter.getExpression()}`;
 		}
 		return params;
 	}
@@ -1101,7 +1104,7 @@ class Entity {
 				parameters = this._makeBeginsWithQueryParams(
 					state.query.options,
 					state.query.index,
-					state.query.filter,
+					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1110,7 +1113,7 @@ class Entity {
 				parameters = this._makeBeginsWithQueryParams(
 					state.query.options,
 					state.query.index,
-					state.query.filter,
+					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					this._getCollectionSk(state.query.collection),
 				);
@@ -1118,7 +1121,7 @@ class Entity {
 			case QueryTypes.between:
 				parameters = this._makeBetweenQueryParams(
 					state.query.index,
-					state.query.filter,
+					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1130,7 +1133,7 @@ class Entity {
 				parameters = this._makeComparisonQueryParams(
 					state.query.index,
 					state.query.type,
-					state.query.filter,
+					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1152,11 +1155,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames,
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				filter.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			KeyConditionExpression: `#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2`,
@@ -1164,8 +1167,8 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = filter.FilterExpression;
+		if (filter.getExpression()) {
+			params.FilterExpression = filter.getExpression();
 		}
 		return params;
 	}
@@ -1184,13 +1187,13 @@ class Entity {
 		let params = {
 			KeyConditionExpression,
 			TableName: this._getTableName(),
-			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.ExpressionAttributeNames, keyExpressions.ExpressionAttributeNames, customExpressions.names),
-			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.ExpressionAttributeValues, keyExpressions.ExpressionAttributeValues, customExpressions.values),
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.getNames(), keyExpressions.ExpressionAttributeNames, customExpressions.names),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.getValues(), keyExpressions.ExpressionAttributeValues, customExpressions.values),
 		};
 		if (index) {
 			params["IndexName"] = index;
 		}
-		let expressions = [customExpressions.expression, filter.FilterExpression].filter(Boolean).join(" AND ");
+		let expressions = [customExpressions.expression, filter.getExpression()].filter(Boolean).join(" AND ");
 		if (expressions.length) {
 			params.FilterExpression = expressions;
 		}
@@ -1221,11 +1224,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames,
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				filter.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			KeyConditionExpression: `#pk = :pk and #sk1 ${operator} :sk1`,
@@ -1233,8 +1236,8 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = filter.FilterExpression;
+		if (filter.getExpression()) {
+			params.FilterExpression = filter.getExpression();
 		}
 		return params;
 	}

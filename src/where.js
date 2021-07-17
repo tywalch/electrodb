@@ -1,5 +1,6 @@
 const __is_clause__ = Symbol("IsWhereClause");
 const {MethodTypes, ExpressionTypes} = require("./types");
+const {AttributeOperationProxy} = require("./operations");
 const e = require("./errors");
 
 function attributeProxy(path, attr, setName) {
@@ -18,9 +19,9 @@ function attributeProxy(path, attr, setName) {
 }
 
 class WhereFactory {
-  constructor(attributes = {}, filterTypes = {}) {
+  constructor(attributes = {}, operations = {}) {
     this.attributes = {...attributes};
-    this.filters = {...filterTypes};
+    this.operations = {...operations};
   }
 
   _buildAttributes(setName) {
@@ -118,33 +119,58 @@ class WhereFactory {
 		}
 	}
 
-  buildClause(filterFn) {
+	buildClause(cb) {
+		if (typeof cb !== "function") {
+			throw new e.ElectroError(e.ErrorCodes.InvalidWhere, 'Where callback must be of type "function"');
+		}
 		return (entity, state, ...params) => {
-			let expressionType = this.getExpressionType(state.query.method);
-			state.query.filter.ExpressionAttributeNames = state.query.filter.ExpressionAttributeNames || {};
-			state.query.filter.ExpressionAttributeValues = state.query.filter.ExpressionAttributeValues || {};
-			state.query.filter.valueCount = state.query.filter.valueCount || {};
-			let getValueCount = name => {
-				if (state.query.filter.valueCount[name] === undefined) {
-					state.query.filter.valueCount[name] = 1;
-				}
-				return state.query.filter.valueCount[name]++;
-			};
-			let setName = (name, value) => (state.query.filter.ExpressionAttributeNames[name] = value);
-			let setValue = (name, value) => (state.query.filter.ExpressionAttributeValues[name] = value);
-      let attributes = this._buildAttributes(setName);
-      let operations = this._buildOperations(setName, setValue, getValueCount);
-			let expression = filterFn(attributes, operations, ...params);
-			if (typeof expression !== "string") {
+			const type = this.getExpressionType(state.query.method);
+			const filter = state.query.filter[type];
+			const proxy = new AttributeOperationProxy({
+				expressions: filter,
+				attributes: this.attributes,
+				operations: this.operations
+			});
+			const results = proxy.invokeCallback(cb, ...params);
+			if (typeof results !== "string") {
 				throw new e.ElectroError(e.ErrorCodes.InvalidWhere, "Invalid response from where clause callback. Expected return result to be of type string");
 			}
-			state.query.filter[expressionType] = this._concatFilterExpression(
-				state.query.filter[expressionType],
-				expression,
-			);
+			const expression = this._concatFilterExpression(
+				filter.getExpression(),
+				results,
+			)
+			filter.setExpression(expression);
 			return state;
 		};
-  }
+	}
+
+  // buildClause(filterFn) {
+	// 	return (entity, state, ...params) => {
+	// 		let expressionType = this.getExpressionType(state.query.method);
+	// 		state.query.filter.ExpressionAttributeNames = state.query.filter.ExpressionAttributeNames || {};
+	// 		state.query.filter.ExpressionAttributeValues = state.query.filter.ExpressionAttributeValues || {};
+	// 		state.query.filter.valueCount = state.query.filter.valueCount || {};
+	// 		let getValueCount = name => {
+	// 			if (state.query.filter.valueCount[name] === undefined) {
+	// 				state.query.filter.valueCount[name] = 1;
+	// 			}
+	// 			return state.query.filter.valueCount[name]++;
+	// 		};
+	// 		let setName = (name, value) => (state.query.filter.ExpressionAttributeNames[name] = value);
+	// 		let setValue = (name, value) => (state.query.filter.ExpressionAttributeValues[name] = value);
+	// 		let attributes = this._buildAttributes(setName);
+	// 		let operations = this._buildOperations(setName, setValue, getValueCount);
+	// 		let expression = filterFn(attributes, operations, ...params);
+	// 		if (typeof expression !== "string") {
+	// 			throw new e.ElectroError(e.ErrorCodes.InvalidWhere, "Invalid response from where clause callback. Expected return result to be of type string");
+	// 		}
+	// 		state.query.filter[expressionType] = this._concatFilterExpression(
+	// 			state.query.filter[expressionType],
+	// 			expression,
+	// 		);
+	// 		return state;
+	// 	};
+  // }
 
   injectWhereClauses(clauses = {}, filters = {}) {
 		let injected = { ...clauses };

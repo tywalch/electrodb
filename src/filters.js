@@ -26,7 +26,7 @@ class FilterFactory {
 		let attributes = {};
 		for (let [name, attribute] of Object.entries(this.attributes)) {
 			let filterAttribute = {};
-			for (let [type, {strict, template}] of Object.entries(this.filters)) {
+			for (let [type, {template}] of Object.entries(this.filters)) {
 				Object.defineProperty(filterAttribute, type, {
 					get: () => {
 						return (...values) => {
@@ -41,8 +41,8 @@ class FilterFactory {
 									attrValues.push(attrValue);
 								}
 							}
-							let expression = template(attrName, ...attrValues);
-								return expression.trim();
+							let expression = template(attribute, attrName, ...attrValues);
+							return expression.trim();
 						};
 					},
 				});
@@ -88,36 +88,25 @@ class FilterFactory {
 
 	buildClause(filterFn) {
 		return (entity, state, ...params) => {
-			let expressionType = this.getExpressionType(state.query.method);
-			state.query.filter.ExpressionAttributeNames =
-				state.query.filter.ExpressionAttributeNames || {};
-			state.query.filter.ExpressionAttributeValues =
-				state.query.filter.ExpressionAttributeValues || {};
-			state.query.filter.valueCount = state.query.filter.valueCount || {};
-			let getValueCount = name => {
-				if (state.query.filter.valueCount[name] === undefined) {
-					state.query.filter.valueCount[name] = 1;
-				}
-				return state.query.filter.valueCount[name]++;
-			};
-			let setName = (name, value) => {
-					state.query.filter.ExpressionAttributeNames[name] = value
-			};
-			let setValue = (name, value) =>
-				(state.query.filter.ExpressionAttributeValues[name] = value);
+			const type = this.getExpressionType(state.query.method);
+			const filter = state.query.filter[type];
+			let getValueCount = (name) => filter.incrementName(name);
+			let setName = (name, value, path) => filter.setName(name, value, path);
+			let setValue = (name, value, path) => filter.setValue(name, value, path);
 			let attributes = this._buildFilterAttributes(
 				setName,
 				setValue,
 				getValueCount,
 			);
-			let expression = filterFn(attributes, ...params);
-			if (typeof expression !== "string") {
+			let result = filterFn(attributes, ...params);
+			if (typeof result !== "string") {
 				throw new e.ElectroError(e.ErrorCodes.InvalidFilter, "Invalid filter response. Expected result to be of type string");
 			}
-			state.query.filter[expressionType] = this._concatFilterExpression(
-				state.query.filter[expressionType],
-				expression,
-			);
+			const expression = this._concatFilterExpression(
+				filter.getExpression(),
+				result,
+			)
+			filter.setExpression(expression);
 			return state;
 		};
 	}

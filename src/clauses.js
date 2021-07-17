@@ -1,4 +1,5 @@
 const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes } = require("./types");
+const {ExpressionState} = require("./operations");
 const v = require("./validations");
 const e = require("./errors");
 const u = require("./util");
@@ -554,7 +555,8 @@ class ChainState {
 				sk: [],
 			},
 			filter: {
-
+				[ExpressionTypes.ConditionExpression]: new ExpressionState(),
+				[ExpressionTypes.FilterExpression]: new ExpressionState()
 			},
 			options,
 		};

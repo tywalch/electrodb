@@ -1,4 +1,5 @@
 const {AttributeTypes, ItemOperations, AttributeProxySymbol} = require("./types");
+const e = require("./errors");
 
 const deleteOperations = {
     template: function del(attr, path, value) {
@@ -118,85 +119,85 @@ const UpdateOperations = {
 
 const FilterOperations = {
     ne: {
-        template: function eq(name, value) {
+        template: function eq(attr, name, value) {
             return `${name} <> ${value}`;
         },
         strict: false,
     },
     eq: {
-        template: function eq(name, value) {
+        template: function eq(attr, name, value) {
             return `${name} = ${value}`;
         },
         strict: false,
     },
     gt: {
-        template: function gt(name, value) {
+        template: function gt(attr, name, value) {
             return `${name} > ${value}`;
         },
         strict: false
     },
     lt: {
-        template: function lt(name, value) {
+        template: function lt(attr, name, value) {
             return `${name} < ${value}`;
         },
         strict: false
     },
     gte: {
-        template: function gte(name, value) {
+        template: function gte(attr, name, value) {
             return `${name} >= ${value}`;
         },
         strict: false
     },
     lte: {
-        template: function lte(name, value) {
+        template: function lte(attr, name, value) {
             return `${name} <= ${value}`;
         },
         strict: false
     },
     between: {
-        template: function between(name, value1, value2) {
+        template: function between(attr, name, value1, value2) {
             return `(${name} between ${value1} and ${value2})`;
         },
         strict: false
     },
     begins: {
-        template: function begins(name, value) {
+        template: function begins(attr, name, value) {
             return `begins_with(${name}, ${value})`;
         },
         strict: false
     },
     exists: {
-        template: function exists(name) {
+        template: function exists(attr, name) {
             return `attribute_exists(${name})`;
         },
         strict: false
     },
     notExists: {
-        template: function notExists(name) {
+        template: function notExists(attr, name) {
             return `attribute_not_exists(${name})`;
         },
         strict: false
     },
     contains: {
-        template: function contains(name, value) {
+        template: function contains(attr, name, value) {
             return `contains(${name}, ${value})`;
         },
         strict: false
     },
     notContains: {
-        template: function notContains(name, value) {
+        template: function notContains(attr, name, value) {
             return `not contains(${name}, ${value})`;
         },
         strict: false
     },
     value: {
-        template: function(name, value) {
+        template: function(attr, name, value) {
             return value;
         },
         strict: false
     },
     name: {
-        template: function(name) {
+        template: function(attr, name) {
             return name;
         },
         strict: false
@@ -245,6 +246,14 @@ class ExpressionState {
     getPaths() {
         return this.paths;
     }
+
+    setExpression(expression) {
+        this.expression = expression;
+    }
+
+    getExpression() {
+        return this.expression;
+    }
 }
 
 class AttributeOperationProxy {
@@ -256,7 +265,6 @@ class AttributeOperationProxy {
         this.expressions = expressions;
         this.attributes = AttributeOperationProxy.buildAttributes(expressions, attributes);
         this.operations = AttributeOperationProxy.buildOperations(expressions, operations, operationProxy);
-        this.sym = AttributeProxySymbol
     }
 
     invokeCallback(op, ...params) {
@@ -273,7 +281,7 @@ class AttributeOperationProxy {
                         if (property === undefined) {
                             throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid/Unknown property passed in where clause passed to operation: '${operation}'`);
                         }
-                        if (property.__is_clause__ === this.sym) {
+                        if (property.__is_clause__ === AttributeProxySymbol) {
                             const {path, name, attr, jsonPath} = property();
                             const target = attr.type === "any"
                                 ? attr
@@ -285,7 +293,6 @@ class AttributeOperationProxy {
                                 let attrValue = `:${name}_w${valueCount}`;
                                 // op.length is to see if function takes value argument
                                 if (template.length > 1) {
-                                    expressions.setAttribute(this.type, operation, target.path, value);
                                     expressions.setValue(attrValue, value, operation, jsonPath);
                                     attrValues.push(attrValue);
                                 }
@@ -310,7 +317,7 @@ class AttributeOperationProxy {
         return new Proxy(() => ({path, name, attr, jsonPath}), {
             get: (target, prop) => {
                 if (prop === "__is_clause__") {
-                    return this.sym
+                    return AttributeProxySymbol
                 } else if (isNaN(prop)) {
                     jsonPath = `${jsonPath}.${prop}`;
                     expressions.setName(`#${prop}`, prop, jsonPath);
@@ -325,12 +332,12 @@ class AttributeOperationProxy {
 
     static buildAttributes(expressions, attributes) {
         let attr = {};
-        for (let [name, attr] of Object.entries(attributes)) {
+        for (let [name, attribute] of Object.entries(attributes)) {
             Object.defineProperty(attr, name, {
                 get: () => {
                     let path = `#${name}`;
-                    expressions.setName(path, attr.field, name);
-                    return AttributeOperationProxy.pathProxy(path, name, attr, name, expressions);
+                    expressions.setName(path, attribute.field, name);
+                    return AttributeOperationProxy.pathProxy(path, name, attribute, name, expressions);
                 }
             })
         }
@@ -338,4 +345,4 @@ class AttributeOperationProxy {
     }
 }
 
-module.exports = {UpdateOperations, FilterOperations};
+module.exports = {UpdateOperations, FilterOperations, ExpressionState, AttributeOperationProxy};
