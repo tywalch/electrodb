@@ -115,12 +115,19 @@ const UnprocessedTypes = {
 	item: "item"
 };
 
-const WatchAll = "*";
+const AttributeWildCard = "*";
+
+const ItemOperations = {
+	"set": "set",
+	"delete": "delete",
+	"remove": "remove",
+	"add": "add",
+	"subtract": "subtract",
+};
 
 module.exports = {
 	Pager,
 	KeyTypes,
-	WatchAll,
 	CastTypes,
 	PathTypes,
 	QueryTypes,
@@ -128,12 +135,14 @@ module.exports = {
 	Comparisons,
 	MaxBatchItems,
 	ModelVersions,
+	ItemOperations,
 	AttributeTypes,
 	EntityVersions,
 	ServiceVersions,
 	ExpressionTypes,
 	ElectroInstance,
 	UnprocessedTypes,
+	AttributeWildCard,
 	ElectroInstanceTypes,
 	AttributeMutationMethods,
 };

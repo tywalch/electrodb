@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { EntityVersions, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
 const { clauses, ChainState } = require("./clauses");
@@ -938,7 +938,8 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeUpdateParams({ set } = {}, pk = {}, sk = {}) {
+	_makeUpdateParams(update = {}, pk = {}, sk = {}) {
+		const set = update[ItemOperations.set] || {};
 		let withoutKeyFacets = this._removeAttributes(set, {...pk, ...sk, ...this.model.schema.getReadOnly()});
 		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
 		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
@@ -995,7 +996,7 @@ class Entity {
 			this.model.indexes[accessPattern].pk.field,
 			this.model.indexes[accessPattern].sk.field
 		];
-		return this._expressionAttributeBuilder(data, { skip });
+		return this._expressionAttributeBuilder(data, ItemOperations.set, { skip });
 	}
 
 	_queryKeyExpressionAttributeBuilder(index, pk, ...sks) {
@@ -1009,7 +1010,7 @@ class Entity {
 			restrict.push(id);
 			translate[id] = translate["sk"];
 		}
-		let keyExpressions = this._expressionAttributeBuilder(keys, {
+		let keyExpressions = this._expressionAttributeBuilder(keys, ItemOperations.set, {
 			translate,
 			restrict,
 		});
@@ -1021,7 +1022,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_expressionAttributeBuilder(item = {}, options = {}) {
+	_expressionAttributeBuilder(item = {}, operation = "", options = {}) {
 		let {
 			require = [],
 			reject = [],
@@ -1075,7 +1076,7 @@ class Entity {
 			expressions.ExpressionAttributeNames[nameProp] = name;
 			expressions.ExpressionAttributeValues[valProp] = value;
 		}
-		expressions.UpdateExpression = `SET ${expressions.UpdateExpression.join(
+		expressions.UpdateExpression = `${operation.toUpperCase()} ${expressions.UpdateExpression.join(
 			", ",
 		)}`;
 		return expressions;

@@ -1,4 +1,4 @@
-const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods, WatchAll, PathTypes } = require("./types");
+const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
@@ -361,7 +361,7 @@ class Schema {
 			};
 
 			if (attribute.watch !== undefined) {
-				if (attribute.watch === WatchAll) {
+				if (attribute.watch === AttributeWildCard) {
 					definition.watchAll = true;
 					definition.watching = [];
 				} else if (Array.isArray(attribute.watch)) {
