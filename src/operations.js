@@ -208,7 +208,8 @@ class ExpressionState {
     constructor() {
         this.names = {};
         this.values = {};
-        this.paths = {};
+        this.pathNames = {};
+        this.pathValues = {};
         this.counts = {};
         this.expression = "";
     }
@@ -220,31 +221,35 @@ class ExpressionState {
         return this.counts[name]++;
     }
 
-    setName(name, value, path) {
+    setName(name, value) {
         this.names[name] = value;
-        this.setPath(path, "name", name);
     }
 
     getNames() {
         return this.names;
     }
 
-    setValue(name, value, path) {
+    setValue(name, value) {
         this.values[name] = value;
-        this.setPath(path, "value", name);
     }
 
     getValues() {
         return this.values;
     }
 
-    setPath(path, type, name) {
-        this.paths[path] = this.paths[path] || {};
-        this.paths[path][type] = name;
+    setPathName(path, name) {
+        this.pathNames[path] = name;
+    }
+
+    setPathValue(path, name) {
+        this.pathValues[path] = name;
     }
 
     getPaths() {
-        return this.paths;
+        return {
+            names: this.pathNames,
+            values: this.pathValues
+        };
     }
 
     setExpression(expression) {
@@ -271,7 +276,7 @@ class AttributeOperationProxy {
         return op(this.attributes, this.operations, ...params);
     }
 
-    static buildOperations(expressions, operations, operationProxy) {
+    static buildOperations(expression, operations, operationProxy) {
         let ops = {};
         for (let operation of Object.keys(operations)) {
             let {template} = operations[operation];
@@ -289,18 +294,29 @@ class AttributeOperationProxy {
 
                             const attrValues = [];
                             for (const value of values) {
-                                let valueCount = expressions.incrementName(name);
+                                let valueCount = expression.incrementName(name);
                                 let attrValue = `:${name}_w${valueCount}`;
                                 // op.length is to see if function takes value argument
                                 if (template.length > 1) {
-                                    expressions.setValue(attrValue, value, operation, jsonPath);
+                                    expression.setValue(attrValue, value);
+                                    expression.setPathValue(jsonPath, value);
                                     attrValues.push(attrValue);
                                 }
                             }
 
+                            const result = template(target, path, ...attrValues);
+                            expression.setPathValue(jsonPath, result);
+
                             return operationProxy(
-                                template(target, path, ...attrValues)
-                            )
+                                result,
+                                {
+                                    expressionPath: path,
+                                    jsonPath,
+                                    target,
+                                    values: attrValues,
+                                    attribute: attr,
+                                }
+                            );
                             // } else if (typeof property === "string") {
                             //   // todo: parse string
                         } else {
@@ -320,7 +336,7 @@ class AttributeOperationProxy {
                     return AttributeProxySymbol
                 } else if (isNaN(prop)) {
                     jsonPath = `${jsonPath}.${prop}`;
-                    expressions.setName(`#${prop}`, prop, jsonPath);
+                    expressions.setName(`#${prop}`, prop);
                     return AttributeOperationProxy.pathProxy(`${path}.#${prop}`, name, attr, jsonPath, expressions);
                 } else {
                     jsonPath = `${jsonPath}[*]`;
@@ -336,7 +352,7 @@ class AttributeOperationProxy {
             Object.defineProperty(attr, name, {
                 get: () => {
                     let path = `#${name}`;
-                    expressions.setName(path, attribute.field, name);
+                    expressions.setName(path, attribute.field);
                     return AttributeOperationProxy.pathProxy(path, name, attribute, name, expressions);
                 }
             })
