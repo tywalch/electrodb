@@ -1,10 +1,24 @@
-const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods, WatchAll } = require("./types");
+const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods, WatchAll, PathTypes } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
 
+class AttributeTraverser {
+	constructor() {
+		this.paths = new Map();
+	}
+
+	setPath(path, attribute) {
+		this.paths.set(path, attribute);
+	}
+
+	getAttribute(path) {
+		return this.paths.get(path);
+	}
+}
+
 class Attribute {
-	constructor(definition = {}) {
+	constructor(definition = {}, parent = null) {
 		this.name = definition.name;
 		this.field = definition.field || definition.name;
 		this.label = definition.label;
@@ -26,6 +40,33 @@ class Attribute {
 		let { type, enumArray } = this._makeType(this.name, definition.type);
 		this.type = type;
 		this.enumArray = enumArray;
+		this.parentType = definition.parentType;
+		const pathType = this.getPathType(this.type, this.parentType);
+		const path = Attribute.buildPath(this.name, pathType, this.parentType);
+		this.path = path;
+		this.traverser = definition.traverser;
+		if (definition.traverser) {
+			this.traverser.setPath(path, this);
+		}
+	}
+
+	static buildPath(name, type, parentPath) {
+		if (!parentPath) return name;
+		switch(type) {
+			case AttributeTypes.string:
+			case AttributeTypes.number:
+			case AttributeTypes.boolean:
+			case AttributeTypes.map:
+			case AttributeTypes.set:
+			case AttributeTypes.list:
+			case AttributeTypes.enum:
+				return `${parentPath}.${name}`;
+			case PathTypes.item:
+				return `${parentPath}[*]`;
+			case AttributeTypes.any:
+			default:
+				return `${parentPath}.*`;
+		}
 	}
 
 	static _destructureWatcher(definition) {
@@ -51,6 +92,19 @@ class Attribute {
 			watchedBy,
 			isWatched,
 			isWatcher
+		}
+	}
+
+	getPathType(type, parentType) {
+		if (parentType === AttributeTypes.list || parentType === AttributeTypes.set) {
+			return PathTypes.item;
+		}
+		return type;
+	}
+
+	getAttribute(path) {
+		if (this.traverser) {
+			return this.traverser.getAttribute(path);
 		}
 	}
 

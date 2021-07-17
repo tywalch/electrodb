@@ -3,7 +3,7 @@ const { Schema } = require("./schema");
 const { EntityVersions, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory, FilterTypes } = require("./filters");
 const { WhereFactory } = require("./where");
-const { clauses, initChainState } = require("./clauses");
+const { clauses, ChainState } = require("./clauses");
 const validations = require("./validations");
 const utilities = require("./util");
 const e = require("./errors");
@@ -500,8 +500,8 @@ class Entity {
 	/* istanbul ignore next */
 	_makeChain(index = "", clauses, rootClause, options = {}) {
 		let facets = this.model.facets.byIndex[index];
-		let state = initChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
-		return this._chain(state, clauses, rootClause);
+		let state = new ChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
+		return state.init(this, clauses, rootClause);
 	}
 
 	_regexpEscape(string) {
@@ -803,7 +803,7 @@ class Entity {
 		let table = config.table || this._getTableName();
 		let userDefinedParams = config.params || {};
 		let records = [];
-		for (let itemState of state.batch.items) {
+		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			if (method === MethodTypes.get) {
@@ -827,7 +827,7 @@ class Entity {
 	_batchWriteParams(state, config = {}) {
 		let table = config.table || this._getTableName();
 		let records = [];
-		for (let itemState of state.batch.items) {
+		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			switch (method) {

@@ -56,6 +56,12 @@ const AttributeTypes = {
 	any: "any",
 };
 
+const PathTypes = {
+	...AttributeTypes,
+	item: "item"
+};
+
+
 const ExpressionTypes = {
 	ConditionExpression: "ConditionExpression",
 	FilterExpression: "FilterExpression"
@@ -116,6 +122,7 @@ module.exports = {
 	KeyTypes,
 	WatchAll,
 	CastTypes,
+	PathTypes,
 	QueryTypes,
 	MethodTypes,
 	Comparisons,
