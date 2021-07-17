@@ -299,9 +299,9 @@ class Attribute {
 }
 
 class Schema {
-	constructor(properties = {}, facets = {}) {
+	constructor(properties = {}, facets = {}, traverser = new AttributeTraverser()) {
 		this._validateProperties(properties);
-		let schema = this._normalizeAttributes(properties, facets);
+		let schema = Schema.normalizeAttributes(properties, facets, traverser);
 		this.attributes = schema.attributes;
 		this.enums = schema.enums;
 		this.translationForTable = schema.translationForTable;
@@ -310,36 +310,10 @@ class Schema {
 		this.readOnlyAttributes = schema.readOnlyAttributes;
 		this.requiredAttributes = schema.requiredAttributes;
 		this.translationForWatching = this._formatWatchTranslations(this.attributes);
+		this.traverser = traverser;
 	}
 
-	_validateProperties() {}
-
-	_formatWatchTranslations(attributes) {
-		let watchersToAttributes = {};
-		let attributesToWatchers = {};
-		let watchAllAttributes = {};
-		let hasWatchers = false;
-		for (let name of Object.keys(attributes)) {
-			if (attributes[name].isWatcher()) {
-				hasWatchers = true;
-				watchersToAttributes[name] = attributes[name].watching;
-			} else if (attributes[name].watchAll) {
-				hasWatchers = true;
-				watchAllAttributes[name] = name;
-			} else {
-				attributesToWatchers[name] = attributesToWatchers[name] || {};
-				attributesToWatchers[name] = attributes[name].watchedBy;
-			}
-		}
-		return {
-			hasWatchers,
-			watchAllAttributes,
-			watchersToAttributes,
-			attributesToWatchers
-		};
-	}
-
-	_normalizeAttributes(attributes = {}, facets = {}) {
+	static normalizeAttributes(attributes = {}, facets = {}, traverser) {
 		let invalidProperties = [];
 		let normalized = {};
 		let usedAttrs = {};
@@ -358,15 +332,16 @@ class Schema {
 					type: attribute
 				};
 			}
-			if (facets.fields.includes(name)) {
+			if (facets.fields && facets.fields.includes(name)) {
 				continue;
 			}
 			if (attribute.field && facets.fields.includes(attribute.field)) {
 				continue;
 			}
-			let isKey = !!facets.byIndex[""].all.find((facet) => facet.name === name);
+			let isKey = !!facets.byIndex && facets.byIndex[""].all.find((facet) => facet.name === name);
 			let definition = {
 				name,
+				traverser,
 				label: attribute.label,
 				required: !!attribute.required,
 				field: attribute.field || name,
@@ -374,11 +349,15 @@ class Schema {
 				validate: attribute.validate,
 				readOnly: !!attribute.readOnly || isKey,
 				hidden: !!attribute.hidden,
-				indexes: facets.byAttr[name] || [],
+				indexes: (facets.byAttr && facets.byAttr[name]) || [],
 				type: attribute.type,
 				get: attribute.get,
 				set: attribute.set,
-				watching: Array.isArray(attribute.watch) ? attribute.watch : []
+				watching: Array.isArray(attribute.watch) ? attribute.watch : [],
+				items: attribute.items,
+				properties: attribute.properties,
+				parentPath: attribute.parentPath,
+				parentType: attribute.parentType
 			};
 
 			if (attribute.watch !== undefined) {
@@ -406,11 +385,11 @@ class Schema {
 				requiredAttributes[name] = name;
 			}
 
-			if (facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
+			if (facets.byAttr && facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
 				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
 				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid composite attribute definition: Composite attributes must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a composite attribute of the the following indexes: ${assignedIndexes.join(", ")}`);
 			}
-			
+
 			if (usedAttrs[definition.field] || usedAttrs[name]) {
 				invalidProperties.push({
 					name,
@@ -423,7 +402,7 @@ class Schema {
 			} else {
 				usedAttrs[definition.field] = definition.name;
 			}
-			
+
 			translationForTable[definition.name] = definition.field;
 			translationForRetrieval[definition.field] = definition.name;
 
@@ -465,15 +444,15 @@ class Schema {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeWatchDefinition, `Attribute Validation Error. Attributes may only "watch" other attributes also watch attributes. The following attributes are defined with ineligible attributes to watch: ${watchedWatchers.map(({attribute, watched}) => `"${attribute}"->"${watched}"`).join(", ")}.`)
 		}
 
-		let missingFacetAttributes = facets.attributes
-			.filter(({ name }) => {
-				return !normalized[name];
-			})
-			.map((facet) => `"${facet.type}: ${facet.name}"`);
-		if (missingFacetAttributes.length) {
+		let missingFacetAttributes = Array.isArray(facets.attributes)
+			? facets.attributes
+				.filter(({ name }) => !normalized[name])
+				.map((facet) => `"${facet.type}: ${facet.name}"`)
+			: []
+		if (missingFacetAttributes.length > 0) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidKeyCompositeAttributeTemplate, `Invalid key composite attribute template. The following composite attribute attributes were described in the key composite attribute template but were not included model's attributes: ${missingFacetAttributes.join(", ")}`);
 		}
-		if (invalidProperties.length) {
+		if (invalidProperties.length > 0) {
 			let message = invalidProperties.map((prop) => `Schema Validation Error. Attribute "${prop.name}" property "${prop.property}". Received: "${prop.value}", Expected: "${prop.expected}"`);
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, message);
 		} else {
@@ -489,6 +468,37 @@ class Schema {
 		}
 	}
 
+	_validateProperties() {}
+
+	_formatWatchTranslations(attributes) {
+		let watchersToAttributes = {};
+		let attributesToWatchers = {};
+		let watchAllAttributes = {};
+		let hasWatchers = false;
+		for (let name of Object.keys(attributes)) {
+			if (attributes[name].isWatcher()) {
+				hasWatchers = true;
+				watchersToAttributes[name] = attributes[name].watching;
+			} else if (attributes[name].watchAll) {
+				hasWatchers = true;
+				watchAllAttributes[name] = name;
+			} else {
+				attributesToWatchers[name] = attributesToWatchers[name] || {};
+				attributesToWatchers[name] = attributes[name].watchedBy;
+			}
+		}
+		return {
+			hasWatchers,
+			watchAllAttributes,
+			watchersToAttributes,
+			attributesToWatchers
+		};
+	}
+
+	getAttribute(path) {
+		return this.traverser.getAttribute(path);
+	}
+
 	getLabels() {
 		let labels = {};
 		for (let name of Object.keys(this.attributes)) {
@@ -500,56 +510,25 @@ class Schema {
 		return labels;
 	};
 
-	// _getPartDetail(part = "") {
-	// 	let detail = {
-	// 			expression: "",
-	// 			name: "",
-	// 			value: "",
-	// 	};
-	// 	if (part.includes("[")) {
-	// 			if (!part.match(/\[\d\]/gi)) {
-	// 					throw new Error(`Invalid path: Part "${part}" has bracket containing non-numeric characters.`);
-	// 			}
-	// 			let [name] = part.match(/.*(?=\[)/gi);
-	// 			detail.name = `#${name}`;
-	// 			detail.value = name;
-	// 	} else {
-	// 			detail.name = `#${part}`;
-	// 			detail.value = part;
-	// 	}
-	// 	detail.expression = `#${part}`;
-	// 	return detail;
-	// }
-
-	// parseAttributePath(path = "") {
-	// 	if (typeof path !== "string" || !path.length) {
-  //     throw new Error("Invalid path: Path must be a string with a non-zero length");
-	// 	}
-	// 	let parts = path.split(/\./gi);
-	// 	let attr = this._getPartDetail(parts[0]);
-	// 	let target = this._getPartDetail(parts[parts.length-1]).value;
-	// 	if (this.attributes[attr.value] === undefined) {
-	// 		throw new Error(`Invalid path: Target attribute "${attr.value}" does not exist in model`);
-	// 	} else if (attr.expression.includes("[") && this.attributes[attr.value].type !== AttributeTypes.list) {
-	// 		throw new Error(`Invalid path: Target attribute "${attr.value}" is not of type "${AttributeTypes.list}"`);
-	// 	}
-	// 	let names = {};
-	// 	let expressions = [];
-	// 	for (let part of parts) {
-	// 			let detail = this._getPartDetail(part);
-	// 			names[detail.name] = detail.value;
-	// 			expressions.push(detail.expression);
-	// 	}
-	// 	return {path, names, target, attr: attr.value, expression: expressions.join(".")};
-	// }
+	getLabels() {
+		let labels = {};
+		for (let name of Object.keys(this.attributes)) {
+			let label = this.attributes[name].label;
+			if (label !== undefined) {
+				labels[name] = label;
+			}
+		}
+		return labels;
+	};
 
 	_applyAttributeMutation(method, include, avoid, payload) {
 		let data = { ...payload };
-		for (let attribute of Object.keys(include)) {
+		for (let path of Object.keys(include)) {
 			// this.attributes[attribute] !== undefined | Attribute exists as actual attribute. If `includeKeys` is turned on for example this will include values that do not have a presence in the model and therefore will not have a `.get()` method
 			// avoid[attribute] === undefined           | Attribute shouldn't be in the avoided
-			if (this.attributes[attribute] !== undefined && avoid[attribute] === undefined) {
-				data[attribute] = this.attributes[attribute][method](payload[attribute], {...payload});
+			const attribute = this.getAttribute(path);
+			if (attribute !== undefined && avoid[path] === undefined) {
+				data[path] = attribute[method](payload[path], {...payload});
 			}
 		}
 		return data;
