@@ -125,6 +125,8 @@ const ItemOperations = {
 	"subtract": "subtract",
 };
 
+const AttributeProxySymbol = Symbol("attribute_proxy");
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -143,6 +145,7 @@ module.exports = {
 	ElectroInstance,
 	UnprocessedTypes,
 	AttributeWildCard,
+	AttributeProxySymbol,
 	ElectroInstanceTypes,
 	AttributeMutationMethods,
 };

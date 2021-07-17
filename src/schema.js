@@ -1,4 +1,4 @@
-const { KeyTypes, CastTypes, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes } = require("./types");
+const { CastTypes, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");

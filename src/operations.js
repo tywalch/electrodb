@@ -1,4 +1,4 @@
-const {AttributeTypes, ItemOperations} = require("./types");
+const {AttributeTypes, ItemOperations, AttributeProxySymbol} = require("./types");
 
 const deleteOperations = {
     template: function del(attr, path, value) {
@@ -7,7 +7,7 @@ const deleteOperations = {
         switch(attr.type) {
             case AttributeTypes.any:
             case AttributeTypes.set:
-                operation = ItemOperations.DELETE;
+                operation = ItemOperations.delete;
                 expression = `${path} ${value}`;
                 break;
             default:
@@ -25,7 +25,7 @@ const UpdateOperations = {
             switch(attr.type) {
                 case AttributeTypes.any:
                 case AttributeTypes.list:
-                    operation = ItemOperations.SET;
+                    operation = ItemOperations.set;
                     expression = `${path} = list_append(${path}, ${value})`;
                     break;
                 default:
@@ -42,7 +42,7 @@ const UpdateOperations = {
                 case AttributeTypes.set:
                 case AttributeTypes.number:
                 case AttributeTypes.any:
-                    operation = ItemOperations.ADD;
+                    operation = ItemOperations.add;
                     expression = `${path} ${value}`;
                     break;
                 default:
@@ -58,7 +58,7 @@ const UpdateOperations = {
             switch(attr.type) {
                 case AttributeTypes.any:
                 case AttributeTypes.number:
-                    operation = ItemOperations.SUBTRACT;
+                    operation = ItemOperations.subtract;
                     expression = `${path} ${value}`;
                     break;
                 default:
@@ -74,7 +74,7 @@ const UpdateOperations = {
             let expression = "";
             switch(attr.type) {
                 case AttributeTypes.list:
-                    operation = ItemOperations.SET;
+                    operation = ItemOperations.set;
                     expression = `${path} = list_append(${path}, ${value})`;
                     break;
                 case AttributeTypes.map:
@@ -83,7 +83,7 @@ const UpdateOperations = {
                 case AttributeTypes.number:
                 case AttributeTypes.boolean:
                 case AttributeTypes.any:
-                    operation = ItemOperations.SET;
+                    operation = ItemOperations.set;
                     expression = `${path} = ${value}`;
                     break;
                 default:
@@ -103,7 +103,7 @@ const UpdateOperations = {
                 case AttributeTypes.string:
                 case AttributeTypes.number:
                 case AttributeTypes.boolean:
-                    operation = ItemOperations.REMOVE;
+                    operation = ItemOperations.remove;
                     expression = `${path}`;
                     break;
                 default:
@@ -202,5 +202,140 @@ const FilterOperations = {
         strict: false
     }
 };
+
+class ExpressionState {
+    constructor() {
+        this.names = {};
+        this.values = {};
+        this.paths = {};
+        this.counts = {};
+        this.expression = "";
+    }
+
+    incrementName(name) {
+        if (this.counts[name] === undefined) {
+            this.counts[name] = 1;
+        }
+        return this.counts[name]++;
+    }
+
+    setName(name, value, path) {
+        this.names[name] = value;
+        this.setPath(path, "name", name);
+    }
+
+    getNames() {
+        return this.names;
+    }
+
+    setValue(name, value, path) {
+        this.values[name] = value;
+        this.setPath(path, "value", name);
+    }
+
+    getValues() {
+        return this.values;
+    }
+
+    setPath(path, type, name) {
+        this.paths[path] = this.paths[path] || {};
+        this.paths[path][type] = name;
+    }
+
+    getPaths() {
+        return this.paths;
+    }
+}
+
+class AttributeOperationProxy {
+    constructor({expressions, attributes = {}, operations = {}, operationProxy = (val) => val}) {
+        this.ref = {
+            attributes,
+            operations
+        }
+        this.expressions = expressions;
+        this.attributes = AttributeOperationProxy.buildAttributes(expressions, attributes);
+        this.operations = AttributeOperationProxy.buildOperations(expressions, operations, operationProxy);
+        this.sym = AttributeProxySymbol
+    }
+
+    invokeCallback(op, ...params) {
+        return op(this.attributes, this.operations, ...params);
+    }
+
+    static buildOperations(expressions, operations, operationProxy) {
+        let ops = {};
+        for (let operation of Object.keys(operations)) {
+            let {template} = operations[operation];
+            Object.defineProperty(ops, operation, {
+                get: () => {
+                    return (property, ...values) => {
+                        if (property === undefined) {
+                            throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid/Unknown property passed in where clause passed to operation: '${operation}'`);
+                        }
+                        if (property.__is_clause__ === this.sym) {
+                            const {path, name, attr, jsonPath} = property();
+                            const target = attr.type === "any"
+                                ? attr
+                                : attr.getAttribute(jsonPath);
+
+                            const attrValues = [];
+                            for (const value of values) {
+                                let valueCount = expressions.incrementName(name);
+                                let attrValue = `:${name}_w${valueCount}`;
+                                // op.length is to see if function takes value argument
+                                if (template.length > 1) {
+                                    expressions.setAttribute(this.type, operation, target.path, value);
+                                    expressions.setValue(attrValue, value, operation, jsonPath);
+                                    attrValues.push(attrValue);
+                                }
+                            }
+
+                            return operationProxy(
+                                template(target, path, ...attrValues)
+                            )
+                            // } else if (typeof property === "string") {
+                            //   // todo: parse string
+                        } else {
+                            throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid Attribute in where clause passed to operation '${operation}'. Use injected attributes only.`);
+                        }
+                    }
+                }
+            });
+        }
+        return ops;
+    }
+
+    static pathProxy(path, name, attr, jsonPath, expressions) {
+        return new Proxy(() => ({path, name, attr, jsonPath}), {
+            get: (target, prop) => {
+                if (prop === "__is_clause__") {
+                    return this.sym
+                } else if (isNaN(prop)) {
+                    jsonPath = `${jsonPath}.${prop}`;
+                    expressions.setName(`#${prop}`, prop, jsonPath);
+                    return AttributeOperationProxy.pathProxy(`${path}.#${prop}`, name, attr, jsonPath, expressions);
+                } else {
+                    jsonPath = `${jsonPath}[*]`;
+                    return AttributeOperationProxy.pathProxy(`${path}[${prop}]`, name, attr, jsonPath, expressions);
+                }
+            }
+        });
+    }
+
+    static buildAttributes(expressions, attributes) {
+        let attr = {};
+        for (let [name, attr] of Object.entries(attributes)) {
+            Object.defineProperty(attr, name, {
+                get: () => {
+                    let path = `#${name}`;
+                    expressions.setName(path, attr.field, name);
+                    return AttributeOperationProxy.pathProxy(path, name, attr, name, expressions);
+                }
+            })
+        }
+        return attr;
+    }
+}
 
 module.exports = {UpdateOperations, FilterOperations};

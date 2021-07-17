@@ -1,6 +1,7 @@
-const { QueryTypes, MethodTypes } = require("./types");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes } = require("./types");
 const v = require("./validations");
 const e = require("./errors");
+const u = require("./util");
 
 function batchAction(action, type, entity, state, payload) {
 	if (state.getError() !== null) {
@@ -159,7 +160,7 @@ let clauses = {
 				return state
 					.setMethod(MethodTypes.put)
 					.setType(QueryTypes.eq)
-					.setPut(record)
+					.applyPut(record)
 					.setPK(entity._expectFacets(record, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(record, attributes.sk);
@@ -189,7 +190,7 @@ let clauses = {
 				return state
 					.setMethod(MethodTypes.put)
 					.setType(QueryTypes.eq)
-					.setPut(record)
+					.applyPut(record)
 					.setPK(entity._expectFacets(record, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(record, attributes.sk);
@@ -256,12 +257,7 @@ let clauses = {
 			}
 			try {
 				let record = entity.model.schema.checkUpdate({...data});
-				state.query.update.set = Object.assign(
-					{},
-					state.query.update.set,
-					record,
-				);
-				return state;
+				return state.applyUpdate(ItemOperations.set, record);
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -557,7 +553,9 @@ class ChainState {
 				pk: {},
 				sk: [],
 			},
-			filter: {},
+			filter: {
+
+			},
 			options,
 		};
 		this.subStates = [];
@@ -655,8 +653,16 @@ class ChainState {
 		}
 	}
 
-	setPut(data = {}) {
+	applyPut(data = {}) {
 		this.query.put.data = {...this.query.put.data, ...data};
+		return this;
+	}
+
+	applyUpdate(operation, data = {}) {
+		if (ItemOperations[operation] === undefined) {
+			throw new Error(`Invalid update operation: "${operation}". Valid operations include ${u.commaSeparatedString(Object.keys(ItemOperations))}`);
+		}
+		this.query.update[operation] = {...this.query.update[operation], ...data}
 		return this;
 	}
 }
