@@ -271,21 +271,20 @@ class ExpressionState {
 }
 
 class AttributeOperationProxy {
-    constructor({expressions, attributes = {}, operations = {}, operationProxy = (val) => val}) {
+    constructor({builder, attributes = {}, operations = {}, formatter = (val) => val}) {
         this.ref = {
             attributes,
             operations
-        }
-        this.expressions = expressions;
-        this.attributes = AttributeOperationProxy.buildAttributes(expressions, attributes);
-        this.operations = AttributeOperationProxy.buildOperations(expressions, operations, operationProxy);
+        };
+        this.attributes = AttributeOperationProxy.buildAttributes(builder, attributes);
+        this.operations = AttributeOperationProxy.buildOperations(builder, operations, formatter);
     }
 
     invokeCallback(op, ...params) {
         return op(this.attributes, this.operations, ...params);
     }
 
-    static buildOperations(expression, operations, operationProxy) {
+    static buildOperations(builder, operations, operationProxy) {
         let ops = {};
         for (let operation of Object.keys(operations)) {
             let {template} = operations[operation];
@@ -301,13 +300,13 @@ class AttributeOperationProxy {
                             for (const value of values) {
                                 // op.length is to see if function takes value argument
                                 if (template.length > 1) {
-                                    const attrValue = expression.setValue(target.name, value);
+                                    const attrValue = builder.setValue(target.name, value);
                                     attrValues.push(attrValue);
                                 }
                             }
 
                             const result = template(target, paths.expression, ...attrValues);
-                            expression.setPath(paths.json, result);
+                            builder.setPath(paths.json, result);
 
                             return operationProxy(
                                 result,
@@ -330,7 +329,7 @@ class AttributeOperationProxy {
         return ops;
     }
 
-    static pathProxy(paths, root, target, expressions) {
+    static pathProxy(paths, root, target, builder) {
         return new Proxy(() => ({paths, root, target}), {
             get: (_, prop) => {
                 if (prop === "__is_clause__") {
@@ -346,20 +345,20 @@ class AttributeOperationProxy {
                     } else {
                         field = attribute.field;
                     }
-                    paths = expressions.setName(paths, prop, field);
-                    return AttributeOperationProxy.pathProxy(paths, root, attribute, expressions);
+                    paths = builder.setName(paths, prop, field);
+                    return AttributeOperationProxy.pathProxy(paths, root, attribute, builder);
                 }
             }
         });
     }
 
-    static buildAttributes(expressions, attributes) {
+    static buildAttributes(builder, attributes) {
         let attr = {};
         for (let [name, attribute] of Object.entries(attributes)) {
             Object.defineProperty(attr, name, {
                 get: () => {
-                    const paths = expressions.setName({}, attribute.name, attribute.field);
-                    return AttributeOperationProxy.pathProxy(paths, attribute, attribute, expressions);
+                    const paths = builder.setName({}, attribute.name, attribute.field);
+                    return AttributeOperationProxy.pathProxy(paths, attribute, attribute, builder);
                 }
             })
         }

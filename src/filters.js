@@ -22,7 +22,7 @@ class FilterFactory {
 		}
 	}
 
-	_buildFilterAttributes(setName, setValue, getValueCount) {
+	_buildFilterAttributes(setName, setValue) {
 		let attributes = {};
 		for (let [name, attribute] of Object.entries(this.attributes)) {
 			let filterAttribute = {};
@@ -87,24 +87,18 @@ class FilterFactory {
 	buildClause(filterFn) {
 		return (entity, state, ...params) => {
 			const type = this.getExpressionType(state.query.method);
-			const filter = state.query.filter[type];
-			let getValueCount = (name) => filter.incrementName(name);
-			let setName = (paths, name, value) => filter.setName(paths, name, value);
-			let setValue = (name, value, path) => filter.setValue(name, value, path);
+			const builder = state.query.filter[type];
+			let setName = (paths, name, value) => builder.setName(paths, name, value);
+			let setValue = (name, value, path) => builder.setValue(name, value, path);
 			let attributes = this._buildFilterAttributes(
 				setName,
 				setValue,
-				getValueCount,
 			);
-			let result = filterFn(attributes, ...params);
-			if (typeof result !== "string") {
+			const expression = filterFn(attributes, ...params);
+			if (typeof expression !== "string") {
 				throw new e.ElectroError(e.ErrorCodes.InvalidFilter, "Invalid filter response. Expected result to be of type string");
 			}
-			const expression = this._concatFilterExpression(
-				filter.getExpression(),
-				result,
-			)
-			filter.setExpression(expression);
+			builder.add(expression);
 			return state;
 		};
 	}

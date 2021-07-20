@@ -1,5 +1,7 @@
 const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes } = require("./types");
 const {ExpressionState} = require("./operations");
+const {UpdateExpression} = require("./update");
+const {FilterExpression} = require("./where");
 const v = require("./validations");
 const e = require("./errors");
 const u = require("./util");
@@ -547,6 +549,7 @@ class ChainState {
 				add: {},
 				subtract: {}
 			},
+			updates: new UpdateExpression(),
 			put: {
 				data: {},
 			},
@@ -555,8 +558,8 @@ class ChainState {
 				sk: [],
 			},
 			filter: {
-				[ExpressionTypes.ConditionExpression]: new ExpressionState(),
-				[ExpressionTypes.FilterExpression]: new ExpressionState()
+				[ExpressionTypes.ConditionExpression]: new FilterExpression(),
+				[ExpressionTypes.FilterExpression]: new FilterExpression()
 			},
 			options,
 		};

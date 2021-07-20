@@ -117,7 +117,7 @@ describe("Offline Where", () => {
                 ':pk': `$tests#pen_${pen.toLowerCase()}`,
                 ':sk1': '$filters_1#row_'
             },
-            FilterExpression: '\n\t\t\t\t#complex[0].#coordinates.#y >= :complex1\n\t\t\t'
+            FilterExpression: '#complex[0].#coordinates.#y >= :complex1'
         });
     });
 

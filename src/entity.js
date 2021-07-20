@@ -752,11 +752,11 @@ class Entity {
 
 	_applyParameterExpressionTypes(params, filter) {
 		const conditions = filter[ExpressionTypes.ConditionExpression];
-		if (conditions.getExpression().length > 0) {
+		if (conditions.build().length > 0) {
 			if (typeof params[ExpressionTypes.ConditionExpression] === "string" && params[ExpressionTypes.ConditionExpression].length > 0) {
-				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${conditions.getExpression()}`
+				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${conditions.build()}`
 			} else {
-				params[ExpressionTypes.ConditionExpression] = conditions.getExpression();
+				params[ExpressionTypes.ConditionExpression] = conditions.build();
 			}
 			if (Object.keys(conditions.getNames()).length > 0) {
 				params.ExpressionAttributeNames = params.ExpressionAttributeNames || {};
@@ -919,8 +919,8 @@ class Entity {
 			let skField = this.model.indexes[accessPattern].sk.field;
 			params.FilterExpression = `${params.FilterExpression} AND begins_with(#${skField}, :${skField})`;
 		}
-		if (filter.getExpression()) {
-			params.FilterExpression = `${params.FilterExpression} AND ${filter.getExpression()}`;
+		if (filter.build()) {
+			params.FilterExpression = `${params.FilterExpression} AND ${filter.build()}`;
 		}
 		return params;
 	}
@@ -1167,8 +1167,8 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.getExpression()) {
-			params.FilterExpression = filter.getExpression();
+		if (filter.build()) {
+			params.FilterExpression = filter.build();
 		}
 		return params;
 	}
@@ -1193,7 +1193,7 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		let expressions = [customExpressions.expression, filter.getExpression()].filter(Boolean).join(" AND ");
+		let expressions = [customExpressions.expression, filter.build()].filter(Boolean).join(" AND ");
 		if (expressions.length) {
 			params.FilterExpression = expressions;
 		}
@@ -1236,8 +1236,8 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.getExpression()) {
-			params.FilterExpression = filter.getExpression();
+		if (filter.build()) {
+			params.FilterExpression = filter.build();
 		}
 		return params;
 	}
