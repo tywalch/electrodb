@@ -4,16 +4,26 @@ const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, Attribute
 const e = require("./errors");
 
 class AttributeTraverser {
-	constructor() {
-		this.paths = new Map();
+	constructor(parentTraverser) {
+		if (parentTraverser instanceof AttributeTraverser) {
+			this.paths = parentTraverser.paths;
+		} else {
+			this.paths = new Map();
+		}
+		this.children = new Map();
 	}
 
 	setPath(path, attribute) {
 		this.paths.set(path, attribute);
+		this.children.set(path, attribute);
 	}
 
-	getAttribute(path) {
+	getPath(path) {
 		return this.paths.get(path);
+	}
+
+	getChild(path) {
+		return this.children.get(path);
 	}
 }
 
@@ -43,11 +53,12 @@ class Attribute {
 		this.parentType = definition.parentType;
 		const pathType = this.getPathType(this.type, this.parentType);
 		const path = Attribute.buildPath(this.name, pathType, this.parentType);
+		const fieldPath = Attribute.buildPath(this.field, pathType, this.parentType);
 		this.path = path;
-		this.traverser = definition.traverser;
-		if (definition.traverser) {
-			this.traverser.setPath(path, this);
-		}
+		this.fieldPath = fieldPath;
+		this.traverser = new AttributeTraverser(definition.traverser);
+		this.traverser.setPath(path, this);
+		this.traverser.setPath(fieldPath, this);
 	}
 
 	static buildPath(name, type, parentPath) {
@@ -103,9 +114,14 @@ class Attribute {
 	}
 
 	getAttribute(path) {
-		if (this.traverser) {
-			return this.traverser.getAttribute(path);
+		return this.traverser.getPath(path);
+	}
+
+	getChild(path) {
+		if (this.type === AttributeTypes.any) {
+			return this;
 		}
+		return this.traverser.getChild(path);
 	}
 
 	_makeGet(name, get) {
@@ -496,7 +512,7 @@ class Schema {
 	}
 
 	getAttribute(path) {
-		return this.traverser.getAttribute(path);
+		return this.traverser.getPath(path);
 	}
 
 	getLabels() {

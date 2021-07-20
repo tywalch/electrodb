@@ -88,11 +88,11 @@ describe("Offline Where", () => {
             TableName: 'electro',
             ExpressionAttributeNames: { '#animal': 'a', '#pk': 'pk', '#sk1': 'sk' },
             ExpressionAttributeValues: {
-                ':animal_w1': 'Cow',
+                ':animal1': 'Cow',
                 ':pk': '$tests#pen_pen_name',
                 ':sk1': '$filters_1#row_'
             },
-            FilterExpression: '#animal = :animal_w1'
+            FilterExpression: '#animal = :animal1'
         });
     });
 
@@ -113,11 +113,11 @@ describe("Offline Where", () => {
                 '#sk1': 'sk'
             },
             ExpressionAttributeValues: {
-                ':complex_w1': -56.0344,
+                ':complex1': -56.0344,
                 ':pk': `$tests#pen_${pen.toLowerCase()}`,
                 ':sk1': '$filters_1#row_'
             },
-            FilterExpression: '\n\t\t\t\t#complex[0].#coordinates.#y >= :complex_w1\n\t\t\t'
+            FilterExpression: '\n\t\t\t\t#complex[0].#coordinates.#y >= :complex1\n\t\t\t'
         });
     });
 
@@ -143,12 +143,12 @@ describe("Offline Where", () => {
                 '#sk1': 'sk'
             },
             ExpressionAttributeValues: {
-                ':animal_w1': 'Chicken',
-                ':dangerous_w1': true,
+                ':animal1': 'Chicken',
+                ':dangerous1': true,
                 ':pk': `$tests#pen_${pen.toLowerCase()}`,
                 ':sk1': '$filters_1#row_'
             },
-            FilterExpression: '(#animal = :animal_w1) AND #dangerous = :dangerous_w1'
+            FilterExpression: '(#animal = :animal1) AND #dangerous = :dangerous1'
         });
     });
     it("Should apply the where clause as condition expression for mutation methods", () => {
@@ -174,36 +174,36 @@ describe("Offline Where", () => {
         expect(deleteParams).to.deep.equal({
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
             TableName: 'electro',
-            ConditionExpression: '#animal = :animal_w1',
+            ConditionExpression: '#animal = :animal1',
             ExpressionAttributeNames: { '#animal': 'a' },
-            ExpressionAttributeValues: { ':animal_w1': 'cow' }
+            ExpressionAttributeValues: { ':animal1': 'cow' }
         });
 
         expect(removeParams).to.deep.equal({
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
             TableName: 'electro',
-            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal_w1',
+            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal1',
             ExpressionAttributeNames: { '#animal': 'a' },
-            ExpressionAttributeValues: { ':animal_w1': 'cow' }
+            ExpressionAttributeValues: { ':animal1': 'cow' }
         });
 
 
         expect(updateParams).to.deep.equal({
             UpdateExpression: 'SET #d = :d',
             ExpressionAttributeNames: { '#animal': 'a', '#d': 'd' },
-            ExpressionAttributeValues: { ':animal_w1': 'cow', ':d': false },
+            ExpressionAttributeValues: { ':animal1': 'cow', ':d': false },
             TableName: 'electro',
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
-            ConditionExpression: '#animal = :animal_w1'
+            ConditionExpression: '#animal = :animal1'
         });
 
         expect(patchParams).to.deep.equal({
             UpdateExpression: 'SET #d = :d',
             ExpressionAttributeNames: { '#animal': 'a', '#d': 'd' },
-            ExpressionAttributeValues: { ':animal_w1': 'cow', ':d': false },
+            ExpressionAttributeValues: { ':animal1': 'cow', ':d': false },
             TableName: 'electro',
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
-            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal_w1'
+            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal1'
         });
     })
 })

@@ -208,8 +208,7 @@ class ExpressionState {
     constructor() {
         this.names = {};
         this.values = {};
-        this.pathNames = {};
-        this.pathValues = {};
+        this.paths = {};
         this.counts = {};
         this.expression = "";
     }
@@ -221,35 +220,45 @@ class ExpressionState {
         return this.counts[name]++;
     }
 
-    setName(name, value) {
-        this.names[name] = value;
+    setName(paths, name, value) {
+        let json = "";
+        let expression = "";
+        const prop = `#${name}`;
+        if (Object.keys(paths).length === 0) {
+            json = `${name}`;
+            expression = `${prop}`;
+            this.names[prop] = value;
+        } else if (isNaN(name)) {
+            json = `${paths.json}.${name}`;
+            expression = `${paths.expression}.${prop}`;
+            this.names[prop] = value;
+        } else {
+            json = `${paths.json}[*]`;
+            expression = `${paths.expression}[${name}]`;
+        }
+        return {json, expression, prop};
     }
 
     getNames() {
         return this.names;
     }
 
-    setValue(name, value) {
-        this.values[name] = value;
+    setValue(name, value, path) {
+        let valueCount = this.incrementName(name);
+        let expression = `:${name}${valueCount}`
+        this.values[expression] = value;
+        if (path) {
+            this.setPath(path, value);
+        }
+        return expression;
     }
 
     getValues() {
         return this.values;
     }
 
-    setPathName(path, name) {
-        this.pathNames[path] = name;
-    }
-
-    setPathValue(path, name) {
-        this.pathValues[path] = name;
-    }
-
-    getPaths() {
-        return {
-            names: this.pathNames,
-            values: this.pathValues
-        };
+    setPath(path, value) {
+        this.paths[path] = value;
     }
 
     setExpression(expression) {
@@ -287,34 +296,26 @@ class AttributeOperationProxy {
                             throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid/Unknown property passed in where clause passed to operation: '${operation}'`);
                         }
                         if (property.__is_clause__ === AttributeProxySymbol) {
-                            const {path, name, attr, jsonPath} = property();
-                            const target = attr.type === "any"
-                                ? attr
-                                : attr.getAttribute(jsonPath);
-
+                            const {paths, root, target} = property();
                             const attrValues = [];
                             for (const value of values) {
-                                let valueCount = expression.incrementName(name);
-                                let attrValue = `:${name}_w${valueCount}`;
                                 // op.length is to see if function takes value argument
                                 if (template.length > 1) {
-                                    expression.setValue(attrValue, value);
-                                    expression.setPathValue(jsonPath, value);
+                                    const attrValue = expression.setValue(target.name, value);
                                     attrValues.push(attrValue);
                                 }
                             }
 
-                            const result = template(target, path, ...attrValues);
-                            expression.setPathValue(jsonPath, result);
+                            const result = template(target, paths.expression, ...attrValues);
+                            expression.setPath(paths.json, result);
 
                             return operationProxy(
                                 result,
                                 {
-                                    expressionPath: path,
-                                    jsonPath,
+                                    root,
+                                    paths,
                                     target,
                                     values: attrValues,
-                                    attribute: attr,
                                 }
                             );
                             // } else if (typeof property === "string") {
@@ -329,18 +330,24 @@ class AttributeOperationProxy {
         return ops;
     }
 
-    static pathProxy(path, name, attr, jsonPath, expressions) {
-        return new Proxy(() => ({path, name, attr, jsonPath}), {
-            get: (target, prop) => {
+    static pathProxy(paths, root, target, expressions) {
+        return new Proxy(() => ({paths, root, target}), {
+            get: (_, prop) => {
                 if (prop === "__is_clause__") {
                     return AttributeProxySymbol
-                } else if (isNaN(prop)) {
-                    jsonPath = `${jsonPath}.${prop}`;
-                    expressions.setName(`#${prop}`, prop);
-                    return AttributeOperationProxy.pathProxy(`${path}.#${prop}`, name, attr, jsonPath, expressions);
                 } else {
-                    jsonPath = `${jsonPath}[*]`;
-                    return AttributeOperationProxy.pathProxy(`${path}[${prop}]`, name, attr, jsonPath, expressions);
+                    const attribute = target.getChild(prop);
+                    let field;
+                    if (attribute === undefined) {
+                        throw new Error(`Invalid attribute "${prop}" on path "${paths.json}".`);
+                    } else if (attribute === root && attribute.type === AttributeTypes.any) {
+                        // This function is only called if a nested property is called. If this attribute is ultimately the root, don't use the root's field name
+                        field = prop;
+                    } else {
+                        field = attribute.field;
+                    }
+                    paths = expressions.setName(paths, prop, field);
+                    return AttributeOperationProxy.pathProxy(paths, root, attribute, expressions);
                 }
             }
         });
@@ -351,9 +358,8 @@ class AttributeOperationProxy {
         for (let [name, attribute] of Object.entries(attributes)) {
             Object.defineProperty(attr, name, {
                 get: () => {
-                    let path = `#${name}`;
-                    expressions.setName(path, attribute.field);
-                    return AttributeOperationProxy.pathProxy(path, name, attribute, name, expressions);
+                    const paths = expressions.setName({}, attribute.name, attribute.field);
+                    return AttributeOperationProxy.pathProxy(paths, attribute, attribute, expressions);
                 }
             })
         }

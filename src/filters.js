@@ -30,18 +30,16 @@ class FilterFactory {
 				Object.defineProperty(filterAttribute, type, {
 					get: () => {
 						return (...values) => {
-							let attrName = `#${name}`;
-							setName(attrName, attribute.field);
+							let {prop} = setName({}, name, attribute.field);
 							let attrValues = [];
 							for (let value of values) {
-								let valueCount = getValueCount(name);
-								let attrValue = `:${name}${valueCount}`;
 								if (template.length > 1) {
-									setValue(attrValue, value);
-									attrValues.push(attrValue);
+									attrValues.push(
+										setValue(name, value, name)
+									);
 								}
 							}
-							let expression = template(attribute, attrName, ...attrValues);
+							let expression = template(attribute, prop, ...attrValues);
 							return expression.trim();
 						};
 					},
@@ -91,7 +89,7 @@ class FilterFactory {
 			const type = this.getExpressionType(state.query.method);
 			const filter = state.query.filter[type];
 			let getValueCount = (name) => filter.incrementName(name);
-			let setName = (name, value, path) => filter.setName(name, value, path);
+			let setName = (paths, name, value) => filter.setName(paths, name, value);
 			let setValue = (name, value, path) => filter.setValue(name, value, path);
 			let attributes = this._buildFilterAttributes(
 				setName,
