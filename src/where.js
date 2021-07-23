@@ -6,7 +6,6 @@ const e = require("./errors");
 class FilterExpression extends ExpressionState {
 	constructor(props) {
 		super(props);
-		this.state = new ExpressionState();
 		this.expression = "";
 	}
 

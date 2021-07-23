@@ -1,5 +1,5 @@
 const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes } = require("./types");
-const {ExpressionState} = require("./operations");
+const {AttributeOperationProxy, UpdateOperations} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
 const v = require("./validations");
@@ -227,7 +227,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["set", "append", "remove", "add", "subtract"],
+		children: ["set", "append", "remove", "add", "subtract", "data"],
 	},
 	update: {
 		name: "update",
@@ -250,7 +250,23 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["set", "append", "remove", "add", "subtract"],
+		children: ["set", "append", "remove", "add", "subtract", "data"],
+	},
+	data: {
+		name: "data",
+		action(entity, state, cb) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				state.query.update.invokeCallback(cb);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "subtract", "go", "params"]
 	},
 	set: {
 		name: "set",
@@ -260,47 +276,83 @@ let clauses = {
 			}
 			try {
 				let record = entity.model.schema.checkUpdate({...data});
-				return state.applyUpdate(ItemOperations.set, record);
+				state.query.updateProxy.fromObject(ItemOperations.set, record);
+				return state;
 			} catch(err) {
 				state.setError(err);
 				return state;
 			}
 		},
-		children: ["set", "go", "params"],
+		children: ["data", "set", "append", "add", "subtract", "go", "params"]
 	},
-	// append: {
-	// 	name: "append",
-	// 	action(entity, state, data = {}) {
-	// 		let attributes = {}
-	// 		let payload = {};
-	// 		for (let path of Object.keys(data)) {
-	// 			let parsed = entity.model.schema.parseAttributePath(path);
-	//
-	// 		}
-	// 	},
-	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	// },
+	append: {
+		name: "append",
+		action(entity, state, data = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				let record = entity.model.schema.checkUpdate({...data});
+				state.query.updateProxy.fromObject(ItemOperations.append, record);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "subtract", "go", "params"]
+	},
 	// remove: {
 	// 	name: "remove",
 	// 	action(entity, state, data) {
-	//
+	// 		if (state.getError() !== null) {
+	// 			return state;
+	// 		}
+	// 		try {
+	// 			let record = entity.model.schema.checkUpdate({...data});
+	// 			state.query.updateProxy.fromObject(ItemOperations.remove, record);
+	// 			return state;
+	// 		} catch(err) {
+	// 			state.setError(err);
+	// 			return state;
+	// 		}
 	// 	},
-	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
+	// 	children: ["data", "set", "append", "remove", "a, "go", "params"]
 	// },
-	// add: {
-	// 	name: "add",
-	// 	action(entity, state, data) {
-	//
-	// 	},
-	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	// },
-	// subtract: {
-	// 	name: "subtract",
-	// 	action(entity, state, data) {
-	//
-	// 	},
-	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	// },
+	add: {
+		name: "add",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				let record = entity.model.schema.checkUpdate({...data});
+				state.query.updateProxy.fromObject(ItemOperations.add, record);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "subtract", "go", "params"]
+	},
+	subtract: {
+		name: "subtract",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				let record = entity.model.schema.checkUpdate({...data});
+				state.query.updateProxy.fromObject(ItemOperations.subtract, record);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "subtract", "go", "params"]
+	},
 	query: {
 		name: "query",
 		action(entity, state, facets, options = {}) {
@@ -533,23 +585,23 @@ let clauses = {
 };
 
 class ChainState {
-	constructor(index = "", facets = {}, hasSortKey = false, options = {}, parentState = null) {
+	constructor({index = "", compositeAttributes = {}, attributes = {}, hasSortKey = false, options = {}, parentState = null} = {}) {
+		const update = new UpdateExpression();
 		this.parentState = parentState;
-		this.error = null
+		this.error = null;
+		this.attributes = attributes;
 		this.query = {
 			collection: "",
 			index: index,
 			type: "",
 			method: "",
-			facets: { ...facets },
-			update: {
-				set: {},
-				append: {},
-				remove: {},
-				add: {},
-				subtract: {}
-			},
-			updates: new UpdateExpression(),
+			facets: { ...compositeAttributes },
+			update,
+			updateProxy: new AttributeOperationProxy({
+				builder: update,
+				attributes: attributes,
+				operations: UpdateOperations,
+			}),
 			put: {
 				data: {},
 			},
@@ -642,7 +694,14 @@ class ChainState {
 	}
 
 	createSubState() {
-		let subState = new ChainState(this.query.index, this.query.facets, this.hasSortKey, this.query.options, this);
+		let subState = new ChainState({
+			parentState: this,
+			index: this.query.index,
+			attributes: this.attributes,
+			hasSortKey: this.hasSortKey,
+			options: this.query.options,
+			compositeAttributes: this.query.facets
+		});
 		this.subStates.push(subState);
 		return subState;
 	}

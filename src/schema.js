@@ -25,6 +25,10 @@ class AttributeTraverser {
 	getChild(path) {
 		return this.children.get(path);
 	}
+
+	getAll() {
+		return this.paths.entries();
+	}
 }
 
 class Attribute {
@@ -583,6 +587,10 @@ class Schema {
 		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
 	}
 
+	applyAttributeSetters(payload = {}) {
+		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
+	}
+
 	translateFromFields(item = {}, options = {}) {
 		let { includeKeys } = options;
 		let data = {};
@@ -620,14 +628,16 @@ class Schema {
 
 	checkUpdate(payload = {}) {
 		let record = {};
-		for (let attribute of Object.values(this.attributes)) {
-			let value = payload[attribute.name];
-			if (value === undefined) continue;
+		for (let [path, attribute] of this.traverser.getAll()) {
+			let value = payload[path];
+			if (value === undefined) {
+				continue;
+			}
 			if (attribute.readOnly) {
 				// todo: #electroerror
 				throw new Error(`Attribute ${attribute.name} is Read-Only and cannot be updated`);
 			} else {
-				record[attribute.name] = attribute.getValidate(value);
+				record[path] = attribute.getValidate(value);
 			}
 		}
 		return record;

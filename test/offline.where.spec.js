@@ -88,11 +88,11 @@ describe("Offline Where", () => {
             TableName: 'electro',
             ExpressionAttributeNames: { '#animal': 'a', '#pk': 'pk', '#sk1': 'sk' },
             ExpressionAttributeValues: {
-                ':animal1': 'Cow',
+                ':animal0': 'Cow',
                 ':pk': '$tests#pen_pen_name',
                 ':sk1': '$filters_1#row_'
             },
-            FilterExpression: '#animal = :animal1'
+            FilterExpression: '#animal = :animal0'
         });
     });
 
@@ -113,11 +113,11 @@ describe("Offline Where", () => {
                 '#sk1': 'sk'
             },
             ExpressionAttributeValues: {
-                ':complex1': -56.0344,
+                ':complex0': -56.0344,
                 ':pk': `$tests#pen_${pen.toLowerCase()}`,
                 ':sk1': '$filters_1#row_'
             },
-            FilterExpression: '#complex[0].#coordinates.#y >= :complex1'
+            FilterExpression: '#complex[0].#coordinates.#y >= :complex0'
         });
     });
 
@@ -143,12 +143,12 @@ describe("Offline Where", () => {
                 '#sk1': 'sk'
             },
             ExpressionAttributeValues: {
-                ':animal1': 'Chicken',
-                ':dangerous1': true,
+                ':animal0': 'Chicken',
+                ':dangerous0': true,
                 ':pk': `$tests#pen_${pen.toLowerCase()}`,
                 ':sk1': '$filters_1#row_'
             },
-            FilterExpression: '(#animal = :animal1) AND #dangerous = :dangerous1'
+            FilterExpression: '(#animal = :animal0) AND #dangerous = :dangerous0'
         });
     });
     it("Should apply the where clause as condition expression for mutation methods", () => {
@@ -174,36 +174,36 @@ describe("Offline Where", () => {
         expect(deleteParams).to.deep.equal({
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
             TableName: 'electro',
-            ConditionExpression: '#animal = :animal1',
+            ConditionExpression: '#animal = :animal0',
             ExpressionAttributeNames: { '#animal': 'a' },
-            ExpressionAttributeValues: { ':animal1': 'cow' }
+            ExpressionAttributeValues: { ':animal0': 'cow' }
         });
 
         expect(removeParams).to.deep.equal({
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
             TableName: 'electro',
-            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal1',
+            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal0',
             ExpressionAttributeNames: { '#animal': 'a' },
-            ExpressionAttributeValues: { ':animal1': 'cow' }
+            ExpressionAttributeValues: { ':animal0': 'cow' }
         });
 
 
         expect(updateParams).to.deep.equal({
-            UpdateExpression: 'SET #d = :d',
-            ExpressionAttributeNames: { '#animal': 'a', '#d': 'd' },
-            ExpressionAttributeValues: { ':animal1': 'cow', ':d': false },
+            UpdateExpression: 'SET #dangerous = :dangerous0',
+            ExpressionAttributeNames: { '#animal': 'a', '#dangerous': 'd' },
+            ExpressionAttributeValues: { ':animal0': 'cow', ':dangerous0': false },
             TableName: 'electro',
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
-            ConditionExpression: '#animal = :animal1'
+            ConditionExpression: '#animal = :animal0'
         });
 
         expect(patchParams).to.deep.equal({
-            UpdateExpression: 'SET #d = :d',
-            ExpressionAttributeNames: { '#animal': 'a', '#d': 'd' },
-            ExpressionAttributeValues: { ':animal1': 'cow', ':d': false },
+            UpdateExpression: 'SET #dangerous = :dangerous0',
+            ExpressionAttributeNames: { '#animal': 'a', '#dangerous': 'd' },
+            ExpressionAttributeValues: { ':animal0': 'cow', ':dangerous0': false },
             TableName: 'electro',
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
-            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal1'
+            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal0'
         });
     })
 })

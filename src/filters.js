@@ -50,40 +50,6 @@ class FilterFactory {
 		return attributes;
 	}
 
-	_cleanUpExpression(value) {
-		if (typeof value === "string" && value.length > 0) {
-			return value.replace(/\n|\r/g, "").trim();
-		}
-		return ""
-	}
-
-	_isEmptyExpression(value) {
-		if (typeof value !== "string") {
-			throw new Error("Invalid expression value type. Expected type string.");
-		}
-		return !value.replace(/\n|\r|\w/g, "").trim();
-	}
-
-	_concatFilterExpression(existingExpression = "", newExpression = "") {
-		if (typeof existingExpression === "string" && existingExpression.length) {
-			existingExpression = this._cleanUpExpression(existingExpression);
-			newExpression = this._cleanUpExpression(newExpression);
-			let isEmpty = this._isEmptyExpression(newExpression);
-			if (isEmpty) {
-				return existingExpression;
-			}
-			let existingNeedsParens =
-				!existingExpression.startsWith("(") &&
-				!existingExpression.endsWith(")");
-			if (existingNeedsParens) {
-				existingExpression = `(${existingExpression})`;
-			}
-			return `${existingExpression} AND ${newExpression}`;
-		} else {
-			return newExpression;
-		}
-	}
-
 	buildClause(filterFn) {
 		return (entity, state, ...params) => {
 			const type = this.getExpressionType(state.query.method);

@@ -19,6 +19,16 @@ const deleteOperations = {
 };
 
 const UpdateOperations = {
+    name: {
+      template: function name(attr, path) {
+          return path;
+      }
+    },
+    value: {
+      template: function value(attr, path, value) {
+          return value;
+      }
+    },
     append: {
         template: function append(attr, path, value) {
             let operation = "";
@@ -32,7 +42,7 @@ const UpdateOperations = {
                 default:
                     throw new Error(`Invalid Update Attribute Operation: "APPEND" Operation can only be performed on attributes with type "list" or "any".`);
             }
-            return {operation, expression, attr};
+            return {operation, expression};
         }
     },
     add: {
@@ -49,7 +59,7 @@ const UpdateOperations = {
                 default:
                     throw new Error(`Invalid Update Attribute Operation: "ADD" Operation can only be performed on attributes with type "number", "set", or "any".`);
             }
-            return {operation, expression, attr};
+            return {operation, expression};
         }
     },
     subtract: {
@@ -59,8 +69,8 @@ const UpdateOperations = {
             switch(attr.type) {
                 case AttributeTypes.any:
                 case AttributeTypes.number:
-                    operation = ItemOperations.subtract;
-                    expression = `${path} ${value}`;
+                    operation = ItemOperations.set;
+                    expression = `${path} = ${path} - ${value}`;
                     break;
                 default:
                     throw new Error(`Invalid Update Attribute Operation: "SUBTRACT" Operation can only be performed on attributes with type "number" or "any".`);
@@ -90,7 +100,7 @@ const UpdateOperations = {
                 default:
                     throw new Error(`Invalid Update Attribute Operation: "SET" Operation can only be performed on attributes with type "list", "map", "string", "number", "boolean", or "any".`);
             }
-            return {operation, expression, attr};
+            return {operation, expression};
         }
     },
     remove: {
@@ -110,7 +120,7 @@ const UpdateOperations = {
                 default:
                     throw new Error(`Invalid Update Attribute Operation: "REMOVE" Operation can only be performed on attributes with type "map", "list", "string", "number", "boolean", or "any".`);
             }
-            return {operation, expression, attr};
+            return {operation, expression};
         }
     },
     del: deleteOperations,
@@ -215,11 +225,12 @@ class ExpressionState {
 
     incrementName(name) {
         if (this.counts[name] === undefined) {
-            this.counts[name] = 1;
+            this.counts[name] = 0;
         }
-        return this.counts[name]++;
+        return `${this.counts[name]++}`;
     }
 
+    // todo: make the structure: name, value, paths
     setName(paths, name, value) {
         let json = "";
         let expression = "";
@@ -243,14 +254,15 @@ class ExpressionState {
         return this.names;
     }
 
-    setValue(name, value, path) {
+    setValue(name, value) {
         let valueCount = this.incrementName(name);
         let expression = `:${name}${valueCount}`
         this.values[expression] = value;
-        if (path) {
-            this.setPath(path, value);
-        }
         return expression;
+    }
+
+    updateValue(name, value) {
+        this.values[name] = value;
     }
 
     getValues() {
@@ -268,23 +280,61 @@ class ExpressionState {
     getExpression() {
         return this.expression;
     }
+
+
 }
 
 class AttributeOperationProxy {
-    constructor({builder, attributes = {}, operations = {}, formatter = (val) => val}) {
+    constructor({builder, attributes = {}, operations = {}}) {
         this.ref = {
             attributes,
             operations
         };
         this.attributes = AttributeOperationProxy.buildAttributes(builder, attributes);
-        this.operations = AttributeOperationProxy.buildOperations(builder, operations, formatter);
+        this.operations = AttributeOperationProxy.buildOperations(builder, operations);
     }
 
     invokeCallback(op, ...params) {
         return op(this.attributes, this.operations, ...params);
     }
 
-    static buildOperations(builder, operations, operationProxy) {
+    fromObject(operation, record) {
+        for (let path of Object.keys(record)) {
+            const value = record[path];
+            const parts = this._parseJSONPath(path);
+            let attribute;
+            for (let part of parts) {
+                attribute = this.attributes[part];
+            }
+            if (attribute) {
+                this.operations[operation](attribute, value);
+            }
+        }
+    }
+
+    fromArray(operation, paths) {
+        for (let path of paths) {
+            const parts = this._parseJSONPath(path);
+            let attribute;
+            for (let part of parts) {
+                attribute = this.attributes[part];
+            }
+            if (attribute) {
+                this.operations[operation](attribute);
+            }
+        }
+    }
+
+    _parseJSONPath(path = "") {
+        if (typeof path !== "string") {
+            throw new Error("Path must be a string");
+        }
+        path = path.replace(/\[/g, ".");
+        path = path.replace(/\[/g, "");
+        return path.split(".");
+    }
+
+    static buildOperations(builder, operations) {
         let ops = {};
         for (let operation of Object.keys(operations)) {
             let {template} = operations[operation];
@@ -296,27 +346,25 @@ class AttributeOperationProxy {
                         }
                         if (property.__is_clause__ === AttributeProxySymbol) {
                             const {paths, root, target} = property();
-                            const attrValues = [];
+                            const attributeValues = [];
                             for (const value of values) {
-                                // op.length is to see if function takes value argument
-                                if (template.length > 1) {
-                                    const attrValue = builder.setValue(target.name, value);
-                                    attrValues.push(attrValue);
+
+                                // template.length is to see if function takes value argument
+
+                                if (template.length > 2) {
+                                    const attributeValueName = builder.setValue(target.name, value);
+                                    builder.setPath(paths.json, {value, name: attributeValueName});
+                                    attributeValues.push(attributeValueName);
                                 }
                             }
 
-                            const result = template(target, paths.expression, ...attrValues);
-                            builder.setPath(paths.json, result);
-
-                            return operationProxy(
-                                result,
-                                {
-                                    root,
-                                    paths,
-                                    target,
-                                    values: attrValues,
-                                }
-                            );
+                            const formatted = template(target, paths.expression, ...attributeValues);
+                            // todo: this is so hacky, only UpdateExpressionBuilders have two params :(
+                            if (typeof builder.add === "function" && builder.add.length >= 2 && formatted !== undefined && typeof formatted.operation === "string" && typeof formatted.expression === "string") {
+                                builder.add(formatted.operation, formatted.expression);
+                                return formatted.expression;
+                            }
+                            return formatted;
                             // } else if (typeof property === "string") {
                             //   // todo: parse string
                         } else {

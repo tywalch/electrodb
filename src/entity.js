@@ -117,7 +117,7 @@ class Entity {
 							eqFilters.push(attr[facet].eq(facets[facet]));
 						}
 					}
-				return eqFilters.join(" AND");
+				return eqFilters.join(" AND ");
 			});
 		} else {
 			return this._makeChain(match.index, this._clausesWithFilters, clauses.index)
@@ -129,7 +129,7 @@ class Entity {
 							eqFilters.push(attr[facet].eq(facets[facet]));
 						}
 					}
-					return eqFilters.join(" AND");
+					return eqFilters.join(" AND ");
 				});
 		}
 	}
@@ -262,10 +262,11 @@ class Entity {
 	}
 
 	async _exec(method, parameters) {
-		return this.client[method](parameters).promise().catch(err => {
-			err.__isAWSError = true;
-			throw err;
-		});
+		return this.client[method](parameters).promise()
+			.catch(err => {
+				err.__isAWSError = true;
+				throw err;
+			});
 	}
 
 	async executeBulkWrite(parameters, config) {
@@ -502,8 +503,13 @@ class Entity {
 	}
 	/* istanbul ignore next */
 	_makeChain(index = "", clauses, rootClause, options = {}) {
-		let facets = this.model.facets.byIndex[index];
-		let state = new ChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
+		let state = new ChainState({
+			index,
+			options,
+			attributes: this.model.schema.attributes,
+			hasSortKey: this.model.lookup.indexHasSortKeys[index],
+			compositeAttributes: this.model.facets.byIndex[index]
+		});
 		return state.init(this, clauses, rootClause);
 	}
 
@@ -786,7 +792,7 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
-				params = this._makeUpdateParams(
+				params = this._makeUpdateParams2(
 					update,
 					keys.pk,
 					...consolidatedQueryFacets,
@@ -939,6 +945,45 @@ class Entity {
 			delete copy[key];
 		}
 		return copy;
+	}
+
+	_makeUpdateParams2(update = {}, pk = {}, sk = {}) {
+		let modifiedAttributeValues = {};
+		let modifiedAttributeNames = {};
+		for (const path of Object.keys(update.paths)) {
+			const {value, name} = update.paths[path];
+			modifiedAttributeValues[path] = value;
+			modifiedAttributeNames[path] = name;
+		}
+		modifiedAttributeValues = this._removeAttributes(modifiedAttributeValues, {...pk, ...sk, ...this.model.schema.getReadOnly()});
+		const preparedUpdateValues = this.model.schema.applyAttributeSetters(modifiedAttributeValues);
+		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
+		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
+		// should only happen when an attribute is changed.
+		const { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, preparedUpdateValues);
+		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[""];
+
+		for (const path of Object.keys(preparedUpdateValues)) {
+			if (modifiedAttributeNames[path] !== undefined && preparedUpdateValues[path] !== undefined) {
+				update.updateValue(modifiedAttributeNames[path], preparedUpdateValues[path]);
+			} else if (preparedUpdateValues[path] !== undefined) {
+				update.set(path, preparedUpdateValues[path]);
+			}
+		}
+
+		for (const indexKey of Object.keys(updatedKeys)) {
+			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
+				update.set(indexKey, updatedKeys[indexKey]);
+			}
+		}
+
+		return {
+			UpdateExpression: update.build(),
+			ExpressionAttributeNames: update.getNames(),
+			ExpressionAttributeValues: update.getValues(),
+			TableName: this._getTableName(),
+			Key: indexKey,
+		};
 	}
 
 	/* istanbul ignore next */

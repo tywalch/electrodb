@@ -133,8 +133,8 @@ describe("Filter", () => {
 			KeyConditionExpression: '#pk = :pk',
 			TableName: 'StoreDirectory',
 			ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk' },
-			ExpressionAttributeValues: { ':id1': 'abc', ':pk': '$mallstoredirectory_1$mallstores#id_abc' },
-			FilterExpression: '#id = :id1'
+			ExpressionAttributeValues: { ':id0': 'abc', ':pk': '$mallstoredirectory_1$mallstores#id_abc' },
+			FilterExpression: '#id = :id0'
 		});
 	})
 	it("Should allow for a filter to return an empty string with Find method", () => {
@@ -185,12 +185,12 @@ describe("Filter", () => {
 				"#leaseEnd": "leaseEnd",
 			});
 			expect(filterExpression.getValues()).to.deep.equal({
-				":rent1": "20.00",
-				":mall1": "EastPointe",
-				":leaseEnd1": "20200101",
-				":leaseEnd2": "20200401",
+				":rent0": "20.00",
+				":mall0": "EastPointe",
+				":leaseEnd0": "20200101",
+				":leaseEnd1": "20200401",
 			});
-			expect(filterExpression.getExpression()).to.equal("(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)");
+			expect(filterExpression.getExpression()).to.equal("(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)");
 		});
 		it("Shouldnt validate the attributes passed when not strict", () => {
 			function byCategory(attr, { category }) {
@@ -206,8 +206,8 @@ describe("Filter", () => {
 			let state = clause(MallStores, new ChainState(), { category });
 			const filterExpression = state.query.filter["FilterExpression"];
 			expect(filterExpression.getNames()).to.deep.equal({ '#category': 'category' });
-			expect(filterExpression.getValues()).to.deep.equal({ ':category1': 'food' });
-			expect(filterExpression.getExpression()).to.equal('contains(#category, :category1)');
+			expect(filterExpression.getValues()).to.deep.equal({ ':category0': 'food' });
+			expect(filterExpression.getExpression()).to.equal('contains(#category, :category0)');
 		});
 		it("Should not allow filters named 'go', 'params', or 'filter'", () => {
 			let schema = {
