@@ -626,6 +626,18 @@ class Schema {
 		return record;
 	}
 
+	checkRemove(paths = []) {
+		for (const path of paths) {
+			const attribute = this.traverser.getPath(path);
+			if (!attribute) {
+				throw new Error(`Attribute "${path}" does not exist on model.`);
+			} else if (attribute.readOnly) {
+				throw new Error(`Attribute ${attribute.name} is Read-Only and cannot be updated`);
+			}
+		}
+		return paths;
+	}
+
 	checkUpdate(payload = {}) {
 		let record = {};
 		for (let [path, attribute] of this.traverser.getAll()) {

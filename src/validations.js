@@ -50,7 +50,6 @@ const Attribute = {
 		},
 		default: {
 			type: "any",
-			format: "isFunctionOrString",
 		},
 		validate: {
 			type: "any",

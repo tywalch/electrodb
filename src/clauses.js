@@ -250,7 +250,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["set", "append", "remove", "add", "subtract", "data"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
 	},
 	data: {
 		name: "data",
@@ -259,14 +259,14 @@ let clauses = {
 				return state;
 			}
 			try {
-				state.query.update.invokeCallback(cb);
+				state.query.updateProxy.invokeCallback(cb);
 				return state;
 			} catch(err) {
 				state.setError(err);
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "subtract", "go", "params"]
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
 	},
 	set: {
 		name: "set",
@@ -283,7 +283,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "subtract", "go", "params"]
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
 	},
 	append: {
 		name: "append",
@@ -300,25 +300,46 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "subtract", "go", "params"]
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
 	},
-	// remove: {
-	// 	name: "remove",
-	// 	action(entity, state, data) {
-	// 		if (state.getError() !== null) {
-	// 			return state;
-	// 		}
-	// 		try {
-	// 			let record = entity.model.schema.checkUpdate({...data});
-	// 			state.query.updateProxy.fromObject(ItemOperations.remove, record);
-	// 			return state;
-	// 		} catch(err) {
-	// 			state.setError(err);
-	// 			return state;
-	// 		}
-	// 	},
-	// 	children: ["data", "set", "append", "remove", "a, "go", "params"]
-	// },
+	updateRemove: {
+		name: "remove",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				if (!Array.isArray(data)) {
+					throw new Error("Update method 'remove' expects type Array");
+				}
+
+				let record = entity.model.schema.checkRemove(data);
+				state.query.updateProxy.fromArray(ItemOperations.remove, record);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+	},
+	updateDelete: {
+		name: "delete",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				let record = entity.model.schema.checkUpdate({...data});
+				state.query.updateProxy.fromObject(ItemOperations.delete, record);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+	},
 	add: {
 		name: "add",
 		action(entity, state, data) {
@@ -334,7 +355,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "subtract", "go", "params"]
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
 	},
 	subtract: {
 		name: "subtract",
@@ -351,7 +372,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "subtract", "go", "params"]
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
 	},
 	query: {
 		name: "query",
@@ -624,7 +645,8 @@ class ChainState {
 	init(entity, allClauses, currentClause) {
 		let current = {};
 		for (let child of currentClause.children) {
-			current[child] = (...args) => {
+			const name = allClauses[child].name;
+			current[name] = (...args) => {
 				this.prev = this.self;
 				this.self = child;
 				let results = allClauses[child].action(entity, this, ...args);

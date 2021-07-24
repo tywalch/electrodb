@@ -751,9 +751,9 @@ describe("Entity", () => {
 			let del = MallStores.delete({ id });
 			expect(del).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let update = MallStores.update({ id }).set({ rent, category });
-			expect(update).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract");
+			expect(update).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
 			let patch = MallStores.patch({ id }).set({ rent, category });
-			expect(patch).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract");
+			expect(patch).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
 			let put = MallStores.put({
 				store,
 				mall,
@@ -2919,8 +2919,8 @@ describe("Entity", () => {
 
 			expect(injected).includes.property("rentsLeaseEndFilter");
 			expect(injected).includes.property("filter");
-			expect(injected.rentsLeaseEndFilter).to.have.keys(["children", "action"]);
-			expect(injected.filter).to.have.keys(["children", "action"]);
+			expect(injected.rentsLeaseEndFilter).to.have.keys(["name", "children", "action"]);
+			expect(injected.filter).to.have.keys(["children", "action", "name"]);
 			expect(clauses).to.not.deep.equal(injected);
 			expect(clauses).to.not.have.key("rentsLeaseEndFilter");
 			let noSideEffectsOnClauses = Object.values(clauses).every(

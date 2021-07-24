@@ -1,4 +1,3 @@
-const __is_clause__ = Symbol("IsWhereClause");
 const {MethodTypes, ExpressionTypes} = require("./types");
 const {AttributeOperationProxy, ExpressionState} = require("./operations");
 const e = require("./errors");
@@ -102,12 +101,14 @@ class WhereFactory {
 		for (let [name, filter] of Object.entries(filters)) {
 			filterChildren.push(name);
 			injected[name] = {
+				name,
 				action: this.buildClause(filter),
 				children: ["params", "go", "page", "where", ...modelFilters],
 			};
 		}
 		filterChildren.push("where");
 		injected["where"] = {
+			name: "where",
 			action: (entity, state, fn) => {
 				return this.buildClause(fn)(entity, state);
 			},

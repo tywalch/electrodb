@@ -82,12 +82,14 @@ class FilterFactory {
 		for (let [name, filter] of Object.entries(filters)) {
 			filterChildren.push(name);
 			injected[name] = {
+				name: name,
 				action: this.buildClause(filter),
 				children: ["params", "go", "page", "filter", ...modelFilters],
 			};
 		}
 		filterChildren.push("filter");
 		injected["filter"] = {
+			name: "filter",
 			action: (entity, state, fn) => {
 				return this.buildClause(fn)(entity, state);
 			},
