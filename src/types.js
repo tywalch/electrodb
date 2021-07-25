@@ -123,6 +123,7 @@ const ItemOperations = {
 	"remove": "remove",
 	"add": "add",
 	"subtract": "subtract",
+	"append": "append",
 };
 
 const AttributeProxySymbol = Symbol("attribute_proxy");

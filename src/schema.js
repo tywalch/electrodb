@@ -587,9 +587,9 @@ class Schema {
 		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
 	}
 
-	applyAttributeSetters(payload = {}) {
-		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
-	}
+	// applyAttributeSetters(payload = {}) {
+	// 	return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
+	// }
 
 	translateFromFields(item = {}, options = {}) {
 		let { includeKeys } = options;

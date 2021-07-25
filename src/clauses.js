@@ -556,6 +556,12 @@ let clauses = {
 						results = entity._params(state, options);
 						break;
 				}
+
+				if (state.getMethod() === MethodTypes.update && results.ExpressionAttributeValues && Object.keys(results.ExpressionAttributeValues).length === 0) {
+					// An update that only does a `remove` operation would result in an empty object
+					// todo: change the getValues() method to return undefined in this case (would potentially require a more generous refactor)
+					delete results.ExpressionAttributeValues;
+				}
 				return results;
 			} catch(err) {
 				throw err;
@@ -741,14 +747,6 @@ class ChainState {
 
 	applyPut(data = {}) {
 		this.query.put.data = {...this.query.put.data, ...data};
-		return this;
-	}
-
-	applyUpdate(operation, data = {}) {
-		if (ItemOperations[operation] === undefined) {
-			throw new Error(`Invalid update operation: "${operation}". Valid operations include ${u.commaSeparatedString(Object.keys(ItemOperations))}`);
-		}
-		this.query.update[operation] = {...this.query.update[operation], ...data}
 		return this;
 	}
 }

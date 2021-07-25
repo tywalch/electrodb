@@ -84,10 +84,8 @@ const UpdateOperations = {
             let operation = "";
             let expression = "";
             switch(attr.type) {
+                case AttributeTypes.set:
                 case AttributeTypes.list:
-                    operation = ItemOperations.set;
-                    expression = `${path} = list_append(${path}, ${value})`;
-                    break;
                 case AttributeTypes.map:
                 case AttributeTypes.enum:
                 case AttributeTypes.string:
@@ -104,21 +102,25 @@ const UpdateOperations = {
         }
     },
     remove: {
+
         template: function remove(attr, path) {
             let operation = "";
             let expression = "";
             switch(attr.type) {
+                case AttributeTypes.set:
                 case AttributeTypes.any:
                 case AttributeTypes.list:
                 case AttributeTypes.map:
                 case AttributeTypes.string:
                 case AttributeTypes.number:
                 case AttributeTypes.boolean:
+                case AttributeTypes.enum:
                     operation = ItemOperations.remove;
                     expression = `${path}`;
                     break;
-                default:
+                default: {
                     throw new Error(`Invalid Update Attribute Operation: "REMOVE" Operation can only be performed on attributes with type "map", "list", "string", "number", "boolean", or "any".`);
+                }
             }
             return {operation, expression};
         }
@@ -336,6 +338,7 @@ class AttributeOperationProxy {
 
     static buildOperations(builder, operations) {
         let ops = {};
+        let seen = new Set();
         for (let operation of Object.keys(operations)) {
             let {template} = operations[operation];
             Object.defineProperty(ops, operation, {
@@ -350,9 +353,10 @@ class AttributeOperationProxy {
                             for (const value of values) {
 
                                 // template.length is to see if function takes value argument
+                                if (template.length === 1) {
 
-                                if (template.length > 2) {
-                                    const attributeValueName = builder.setValue(target.name, value);
+                                } else if (template.length > 2) {
+                                    let attributeValueName = builder.setValue(target.name, value);
                                     builder.setPath(paths.json, {value, name: attributeValueName});
                                     attributeValues.push(attributeValueName);
                                 }
