@@ -522,7 +522,7 @@ describe("Entity", () => {
 			let adjustments = "500.00";
 			expect(() =>
 				MallStores.update({ id }).set({ rent, category, id }).params(),
-			).to.throw("Attribute id is Read-Only and cannot be updated");
+			).to.throw(`Attribute "id" is Read-Only and cannot be updated`);
 			expect(() =>
 				MallStores.update({ id }).set({ rent, adjustments }).params(),
 			).to.not.throw();
@@ -597,17 +597,17 @@ describe("Entity", () => {
 						indexes: ["gsi1pk-gsi1sk-index", "gsi2pk-gsi2sk-index"],
 						impactedIndexTypes: {
 							"gsi1pk-gsi1sk-index": {
-				  				"pk": "pk"
+				  				"pk": "gsi1pk"
 							},
 							"gsi2pk-gsi2sk-index": {
-				  				"pk": "pk"
+				  				"pk": "gsi2pk"
 							},
 							"gsi3pk-gsi3sk-index": {
-				  				"pk": "pk",
-				  				"sk": "sk"
+				  				"pk": "gsi3pk",
+				  				"sk": "gsi3sk"
 							},
 							"gsi4pk-gsi4sk-index": {
-				  				"sk": "sk"
+				  				"sk": "gsi4sk"
 							}
 						}
 					},
@@ -633,7 +633,7 @@ describe("Entity", () => {
 						"indexes": [],
 						"impactedIndexTypes": {
 							"gsi2pk-gsi2sk-index": {
-								"sk": "sk"
+								"sk": "gsi2sk"
 							}
 						}
 					}
@@ -663,16 +663,16 @@ describe("Entity", () => {
 						],
 						"impactedIndexTypes": {
 							"gsi1pk-gsi1sk-index": {
-								"pk": "pk"
+								"pk": "gsi1pk"
 							},
 							"gsi2pk-gsi2sk-index": {
-								"pk": "pk"
+								"pk": "gsi2pk"
 							},
 							"gsi3pk-gsi3sk-index": {
-								"pk": "pk"
+								"pk": "gsi3pk"
 							},
 							"gsi4pk-gsi4sk-index": {
-								"sk": "sk"
+								"sk": "gsi4sk"
 							}
 						}
 					}
@@ -694,16 +694,16 @@ describe("Entity", () => {
 						],
 						"impactedIndexTypes": {
 							"gsi1pk-gsi1sk-index": {
-								"pk": "pk"
+								"pk": "gsi1pk"
 							},
 							"gsi2pk-gsi2sk-index": {
-								"pk": "pk"
+								"pk": "gsi2pk"
 							},
 							"gsi3pk-gsi3sk-index": {
-								"pk": "pk"
+								"pk": "gsi3pk"
 							},
 							"gsi4pk-gsi4sk-index": {
-								"sk": "sk"
+								"sk": "gsi4sk"
 							}
 						}
 					}
@@ -722,10 +722,10 @@ describe("Entity", () => {
 						"indexes": [],
 						"impactedIndexTypes": {
 							"gsi2pk-gsi2sk-index": {
-								"sk": "sk"
+								"sk": "gsi2sk"
 							},
 							"gsi3pk-gsi3sk-index": {
-								"sk": "sk"
+								"sk": "gsi3sk"
 							}
 						}
 					}

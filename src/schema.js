@@ -632,7 +632,7 @@ class Schema {
 			if (!attribute) {
 				throw new Error(`Attribute "${path}" does not exist on model.`);
 			} else if (attribute.readOnly) {
-				throw new Error(`Attribute ${attribute.name} is Read-Only and cannot be updated`);
+				throw new Error(`Attribute "${attribute.name}" is Read-Only and cannot be updated`);
 			}
 		}
 		return paths;
@@ -647,7 +647,7 @@ class Schema {
 			}
 			if (attribute.readOnly) {
 				// todo: #electroerror
-				throw new Error(`Attribute ${attribute.name} is Read-Only and cannot be updated`);
+				throw new Error(`Attribute "${attribute.name}" is Read-Only and cannot be updated`);
 			} else {
 				record[path] = attribute.getValidate(value);
 			}

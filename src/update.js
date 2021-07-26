@@ -24,6 +24,11 @@ class UpdateExpression extends ExpressionState {
         this.add(ItemOperations.set, `${n.prop} = ${v}`);
     }
 
+    remove(name) {
+        const n = this.setName({}, name, name);
+        this.add(ItemOperations.remove, `${n.prop}`);
+    }
+
     build() {
         let expressions = [];
         for (const type of Object.keys(this.operations)) {

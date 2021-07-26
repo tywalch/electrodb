@@ -955,12 +955,18 @@ class Entity {
 			modifiedAttributeValues[path] = value;
 			modifiedAttributeNames[path] = name;
 		}
+		const removed = {};
+		for (const name in update.impacted) {
+			if (update.impacted[name] === ItemOperations.remove) {
+				removed[name] = name;
+			}
+		}
 		modifiedAttributeValues = this._removeAttributes(modifiedAttributeValues, {...pk, ...sk, ...this.model.schema.getReadOnly()});
 		const preparedUpdateValues = this.model.schema.applyAttributeSetters(modifiedAttributeValues);
 		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
 		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
 		// should only happen when an attribute is changed.
-		const { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, preparedUpdateValues);
+		const { indexKey, updatedKeys, deletedKeys = [] } = this._getUpdatedKeys(pk, sk, preparedUpdateValues, removed);
 		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[""];
 
 		for (const path of Object.keys(preparedUpdateValues)) {
@@ -974,6 +980,12 @@ class Entity {
 		for (const indexKey of Object.keys(updatedKeys)) {
 			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
 				update.set(indexKey, updatedKeys[indexKey]);
+			}
+		}
+
+		for (const indexKey of deletedKeys) {
+			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
+				update.remove(indexKey);
 			}
 		}
 
@@ -1369,7 +1381,7 @@ class Entity {
 		return { indexKey, updatedKeys, setAttributes };
 	}
 
-	_getUpdatedKeys(pk, sk, set) {
+	_getUpdatedKeys(pk, sk, set, removed) {
 		let updateIndex = "";
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
@@ -1377,6 +1389,11 @@ class Entity {
 			{ ...set },
 			{ ...keyAttributes },
 		);
+		const removedKeyImpact = this._expectIndexFacets(
+			{...removed},
+			{...keyAttributes}
+		)
+
 		// complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
 		if (completeFacets.impactedIndexTypes[updateIndex] === undefined) {
 			completeFacets.impactedIndexTypes[updateIndex] = {
@@ -1386,7 +1403,11 @@ class Entity {
 		}
 		let composedKeys = this._makeKeysFromAttributes(completeFacets.impactedIndexTypes,{ ...set, ...keyAttributes });
 		let updatedKeys = {};
+		let deletedKeys = [];
 		let indexKey = {};
+		for (const keys of Object.values(removedKeyImpact.impactedIndexTypes)) {
+			deletedKeys = deletedKeys.concat(Object.values(keys));
+		}
 		for (let [index, keys] of Object.entries(composedKeys)) {
 			let { pk, sk } = keyTranslations[index];
 			if (index === updateIndex) {
@@ -1415,7 +1436,7 @@ class Entity {
 				updatedKeys[sk] = keys.sk[0];
 			}
 		}
-		return { indexKey, updatedKeys };
+		return { indexKey, updatedKeys, deletedKeys };
 	}
 
 	/* istanbul ignore next */
@@ -1433,7 +1454,7 @@ class Entity {
 					impactedIndexes[index][type] = impactedIndexes[index][type] || [];
 					impactedIndexes[index][type].push(attribute);
 					impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-					impactedIndexTypes[index][type] = type;
+					impactedIndexTypes[index][type] = this.model.translations.keys[index][type];
 				});
 			}
 		}

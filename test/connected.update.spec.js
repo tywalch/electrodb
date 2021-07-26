@@ -5,6 +5,7 @@ const { expect } = require("chai");
 const uuid = require("uuid").v4;
 const moment = require("moment");
 const DynamoDB = require("aws-sdk/clients/dynamodb");
+const sleep = async (ms) => new Promise((resolve) => setTimeout(() => resolve(), ms));
 
 const client = new DynamoDB.DocumentClient({
     region: "us-east-1",
@@ -39,10 +40,6 @@ const users = new Entity({
         pinned: {
             type: "any"
         },
-        createdAt: {
-            type: "string",
-            default: () => moment.utc().format()
-        }
     },
     indexes: {
         user: {
@@ -68,18 +65,17 @@ const users = new Entity({
                 composite: []
             }
         },
-        subscriptions: {
-            collection: "watching",
-            index: "gsi3pk-gsi3sk-index",
+        geographics: {
+            index: "gsi2pk-gsi2sk-index",
             pk: {
-                composite: ["username"],
-                field: "gsi3pk"
+                composite: ["location"],
+                field: "gsi2pk"
             },
             sk: {
                 composite: [],
-                field: "gsi3sk"
+                field: "gsi2sk"
             }
-        }
+        },
     }
 }, {table, client});
 
@@ -161,7 +157,8 @@ const repositories = new Entity({
         },
         createdAt: {
             type: "string",
-            default: () => moment.utc().format()
+            default: () => moment.utc().format(),
+            readOnly: true
         },
         recentCommits: {
             type: "any"
@@ -230,92 +227,354 @@ describe("Update Item", () => {
         });
     });
     describe("remove operations", () => {
-        it("should allow for deleting elements to create a sparse index", async () => {
-            const repoName = uuid();
-            const repoOwner = uuid();
-            const createdAt = "2021-07-01";
-            await repositories
-                .create({
-                    repoName,
-                    repoOwner,
-                    createdAt,
-                    license: "apache-2.0",
-                    description: "my description",
-                    recentCommits: [
-                        {
-                            sha: "8ca4d4b2",
-                            data: "1627158426",
-                            message: "fixing bug"
-                        },
-                        {
-                            sha: "25d68f54",
-                            data: "1627158100",
-                            message: "adding bug"
-                        }
-                    ],
-                    stars: 10,
-                    isPrivate: false,
-                    defaultBranch: "main",
-                    tags: ["tag1", "tag2"]
-                })
-                .go();
+        it("should allow for deleting all PK elements on a gsi to create a sparse index", async () => {
+            const username = uuid();
+            const location = uuid();
 
-            const params = repositories
-                .update({repoName, repoOwner})
+            await users.create({
+                username,
+                location,
+                bio: "I make things.",
+                fullName: "tyler walch"
+            }).go();
+
+            const itemBefore = await users.get({username}).go({raw: true});
+
+            expect(itemBefore).to.deep.equal({
+                "Item": {
+                    "pk": `$versioncontrol#username_${username}`,
+                    "sk": "$overview#user_1",
+
+                    "gsi1pk": `$versioncontrol#username_${username}`,
+                    "gsi1sk": "$owned#user_1",
+
+                    "gsi2pk": `$versioncontrol#location_${location}`,
+                    "gsi2sk": "$user_1",
+
+                    "location": location,
+                    "username": username,
+
+                    "bio": "I make things.",
+                    "fullName": "tyler walch",
+
+                    "__edb_e__": "user",
+                    "__edb_v__": "1"
+                }
+            });
+
+            const params = users
+                .update({username})
                 .remove([
-                    "description",
-                    "recentCommits",
-                    "stars",
-                    "defaultBranch",
-                    "tags",
-                    "isPrivate",
-                    "createdAt"
+                    "location"
                 ])
                 .params();
 
-            await repositories
-                .update({repoName, repoOwner})
+            expect(params).to.deep.equal({
+                "UpdateExpression": "REMOVE #location, #gsi2pk",
+                "ExpressionAttributeNames": {
+                    "#location": "location",
+                    "#gsi2pk": "gsi2pk"
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$versioncontrol#username_${username}`,
+                    "sk": "$overview#user_1"
+                }
+            });
+
+            await users
+                .update({username})
                 .remove([
-                    "recentCommits",
-                    "stars",
-                    "defaultBranch",
-                    "tags",
-                    "isPrivate",
-                    "createdAt",
-                    "license"
+                    "location"
                 ])
                 .go();
 
-            const item = await repositories
-                .get({repoName, repoOwner})
-                .go();
+            const itemAfter = await users
+                .get({username})
+                .go({raw: true});
 
-            expect(item).to.deep.equal({
-                repoOwner: repoOwner,
-                repoName: repoName,
-                username: repoOwner,
-                description: "my description"
+            expect(itemAfter).to.deep.equal({
+                "Item": {
+                    "pk": `$versioncontrol#username_${username}`,
+                    "sk": "$overview#user_1",
+
+                    "gsi1pk": `$versioncontrol#username_${username}`,
+                    "gsi1sk": "$owned#user_1",
+
+                    "gsi2sk": "$user_1",
+
+                    "username": username,
+                    "bio": "I make things.",
+                    "fullName": "tyler walch",
+                    "__edb_v__": "1",
+                    "__edb_e__": "user"
+                }
+            });
+        });
+
+        it("should allow for deleting all SK elements on a gsi to create a sparse index", async () => {
+            const users = new Entity({
+                model: {
+                    entity: "user",
+                    service: "versioncontrol",
+                    version: "1"
+                },
+                attributes: {
+                    username: {
+                        type: "string"
+                    },
+                    email: {
+                        type: "string"
+                    },
+                    device: {
+                        type: "string"
+                    },
+                    bio: {
+                        type: "string"
+                    },
+                    location: {
+                        type: "string"
+                    },
+                    fullName: {
+                        type: "string"
+                    },
+                },
+                indexes: {
+                    user: {
+                        pk: {
+                            composite: ["username"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: [],
+                            field: "sk"
+                        }
+                    },
+                    approved: {
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: ["email"],
+                            field: "gsi1pk"
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["device"]
+                        }
+                    }
+                }
+            }, {table, client});
+            const username = uuid();
+            const location = uuid();
+            const device = uuid();
+            const email = uuid();
+
+            await users.create({
+                email,
+                device,
+                username,
+                location,
+                bio: "I make things.",
+                fullName: "tyler walch"
+            }).go();
+
+            const itemBefore = await users.get({username}).go({raw: true});
+
+            expect(itemBefore).to.deep.equal({
+                "Item": {
+                    "pk": `$versioncontrol#username_${username}`,
+                    "sk": "$user_1",
+
+                    "gsi1pk": `$versioncontrol#email_${email}`,
+                    "gsi1sk": `$user_1#device_${device}`,
+
+                    "email": email,
+                    "device": device,
+                    "location": location,
+                    "username": username,
+
+                    "bio": "I make things.",
+                    "fullName": "tyler walch",
+
+                    "__edb_e__": "user",
+                    "__edb_v__": "1"
+                }
             });
 
-            let error = await repositories
-                .update({repoName, repoOwner})
+            const params = users
+                .update({username})
                 .remove([
-                    "license",
-                    "description",
-                    "recentCommits",
-                    "stars",
-                    "defaultBranch",
-                    "tags",
-                    "isPrivate",
-                    "createdAt"
+                    "device"
+                ])
+                .params();
+
+            expect(params).to.deep.equal({
+                "UpdateExpression": "REMOVE #device, #gsi1sk",
+                "ExpressionAttributeNames": {
+                    "#device": "device",
+                    "#gsi1sk": "gsi1sk"
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$versioncontrol#username_${username}`,
+                    "sk": "$user_1"
+                }
+            });
+
+            await users
+                .update({username})
+                .remove([
+                    "device"
+                ])
+                .go();
+
+            const itemAfter = await users
+                .get({username})
+                .go({raw: true});
+
+            expect(itemAfter).to.deep.equal({
+                "Item": {
+                    "pk": `$versioncontrol#username_${username}`,
+                    "sk": "$user_1",
+
+                    "gsi1pk": `$versioncontrol#email_${email}`,
+
+                    "username": username,
+                    "location": location,
+                    "email": email,
+
+                    "bio": "I make things.",
+                    "fullName": "tyler walch",
+
+                    "__edb_v__": "1",
+                    "__edb_e__": "user"
+                }
+            });
+        });
+
+        it("should not allow for partial deletion of a gsi composite index", async () => {
+            const users = new Entity({
+                model: {
+                    entity: "user",
+                    service: "versioncontrol",
+                    version: "1"
+                },
+                attributes: {
+                    username: {
+                        type: "string"
+                    },
+                    email: {
+                        type: "string"
+                    },
+                    device: {
+                        type: "string"
+                    },
+                    bio: {
+                        type: "string"
+                    },
+                    location: {
+                        type: "string"
+                    },
+                    fullName: {
+                        type: "string"
+                    },
+                },
+                indexes: {
+                    user: {
+                        pk: {
+                            composite: ["username"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: [],
+                            field: "sk"
+                        }
+                    },
+                    approved: {
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: ["email"],
+                            field: "gsi1pk"
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["location", "device"]
+                        }
+                    }
+                }
+            }, {table, client});
+            const username = uuid();
+            const location = uuid();
+            const device = uuid();
+            const email = uuid();
+
+            await users.create({
+                email,
+                device,
+                username,
+                location,
+                bio: "I make things.",
+                fullName: "tyler walch"
+            }).go();
+
+            const itemBefore = await users.get({username}).go({raw: true});
+
+            expect(itemBefore).to.deep.equal({
+                "Item": {
+                    "pk": `$versioncontrol#username_${username}`,
+                    "sk": "$user_1",
+
+                    "gsi1pk": `$versioncontrol#email_${email}`,
+                    "gsi1sk": `$user_1#location_${location}#device_${device}`,
+
+                    "email": email,
+                    "device": device,
+                    "location": location,
+                    "username": username,
+
+                    "bio": "I make things.",
+                    "fullName": "tyler walch",
+
+                    "__edb_e__": "user",
+                    "__edb_v__": "1"
+                }
+            });
+
+            const error = () => users
+                .update({username})
+                .remove([
+                    "device"
+                ])
+                .params();
+
+            expect(error).to.throw(`Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`)
+
+            const error2 = await users
+                .update({username})
+                .remove([
+                    "location"
                 ])
                 .go()
                 .catch(err => err);
-            expect(error.message).to.not.be.undefined;
-            expect(error.message).to.equal("cannot partially impact key");
+            expect(error2.message).to.equal(`Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
         });
-        it("should respect readOnly", () => {
 
+        it("should respect readOnly", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+            await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    isPrivate: false,
+                })
+                .go();
+
+            const error = await repositories
+                .update({repoName, repoOwner})
+                .remove([ "createdAt" ])
+                .go()
+                .catch(err => err);
+            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated`);
         });
         it("should remove properties from an item", async () => {
             const repoName = uuid();
@@ -326,6 +585,7 @@ describe("Update Item", () => {
                     repoName,
                     repoOwner,
                     createdAt,
+                    isPrivate: false,
                     license: "apache-2.0",
                     description: "my description",
                     recentCommits: [
@@ -341,7 +601,6 @@ describe("Update Item", () => {
                         }
                     ],
                     stars: 10,
-                    isPrivate: false,
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })

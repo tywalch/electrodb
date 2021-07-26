@@ -222,6 +222,7 @@ class ExpressionState {
         this.values = {};
         this.paths = {};
         this.counts = {};
+        this.impacted = {};
         this.expression = "";
     }
 
@@ -283,7 +284,9 @@ class ExpressionState {
         return this.expression;
     }
 
-
+    setImpacted(operation, path) {
+        this.impacted[path] = operation;
+    }
 }
 
 class AttributeOperationProxy {
@@ -363,6 +366,7 @@ class AttributeOperationProxy {
                             }
 
                             const formatted = template(target, paths.expression, ...attributeValues);
+                            builder.setImpacted(operation, paths.json);
                             // todo: this is so hacky, only UpdateExpressionBuilders have two params :(
                             if (typeof builder.add === "function" && builder.add.length >= 2 && formatted !== undefined && typeof formatted.operation === "string" && typeof formatted.expression === "string") {
                                 builder.add(formatted.operation, formatted.expression);
