@@ -225,6 +225,92 @@ describe("Update Item", () => {
                 .catch(err => err)
             expect(err.message).to.equal(`Invalid Update Attribute Operation: "APPEND" Operation can only be performed on attributes with type "list" or "any".`);
         });
+        it("should append items to a list", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+            const createdAt = "2021-07-01";
+            const recentCommits = [{
+                sha: "8ca4d4b2",
+                data: "1627158426",
+                message: "fixing bug"
+            }];
+            const additionalCommit = [{
+                sha: "25d68f54",
+                data: "1627158100",
+                message: "adding bug"
+            }];
+            const created = await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    createdAt,
+                    recentCommits,
+                    isPrivate: false,
+                    license: "apache-2.0",
+                    description: "my description",
+                    stars: 10,
+                    defaultBranch: "main",
+                    tags: ["tag1", "tag2"]
+                })
+                .go();
+            await repositories
+                .update({repoName, repoOwner})
+                .append({
+                    recentCommits: additionalCommit
+                })
+                .go();
+
+            const item = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(item).to.deep.equal({
+                ...created,
+                recentCommits: [...recentCommits, ...additionalCommit]
+            });
+        });
+        it("should append items to a list with data method", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+            const createdAt = "2021-07-01";
+            const recentCommits = [{
+                sha: "8ca4d4b2",
+                data: "1627158426",
+                message: "fixing bug"
+            }];
+            const additionalCommit = [{
+                sha: "25d68f54",
+                data: "1627158100",
+                message: "adding bug"
+            }];
+            const created = await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    createdAt,
+                    recentCommits,
+                    isPrivate: false,
+                    license: "apache-2.0",
+                    description: "my description",
+                    stars: 10,
+                    defaultBranch: "main",
+                    tags: ["tag1", "tag2"]
+                })
+                .go();
+            await repositories
+                .update({repoName, repoOwner})
+                .data(({recentCommits}, {append}) => append(recentCommits, additionalCommit))
+                .go();
+
+            const item = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(item).to.deep.equal({
+                ...created,
+                recentCommits: [...recentCommits, ...additionalCommit]
+            });
+        });
     });
     describe("remove operations", () => {
         it("should allow for deleting all PK elements on a gsi to create a sparse index", async () => {
@@ -561,6 +647,7 @@ describe("Update Item", () => {
         it("should respect readOnly", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
+
             await repositories
                 .put({
                     repoName,
@@ -576,6 +663,7 @@ describe("Update Item", () => {
                 .catch(err => err);
             expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated`);
         });
+
         it("should remove properties from an item", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
@@ -630,11 +718,68 @@ describe("Update Item", () => {
                 isPrivate: false,
             });
         });
+
+        it("should remove properties from an item with data method", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+            const createdAt = "2021-07-01";
+
+            await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    createdAt,
+                    isPrivate: false,
+                    license: "apache-2.0",
+                    description: "my description",
+                    recentCommits: [
+                        {
+                            sha: "8ca4d4b2",
+                            data: "1627158426",
+                            message: "fixing bug"
+                        },
+                        {
+                            sha: "25d68f54",
+                            data: "1627158100",
+                            message: "adding bug"
+                        }
+                    ],
+                    stars: 10,
+                    defaultBranch: "main",
+                    tags: ["tag1", "tag2"]
+                })
+                .go();
+
+            await repositories
+                .update({repoName, repoOwner})
+                .data((a, {remove}) => {
+                    remove(a.license);
+                    remove(a.description);
+                    remove(a.recentCommits);
+                    remove(a.stars);
+                    remove(a.defaultBranch);
+                    remove(a.tags);
+                })
+                .go();
+
+            const item = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(item).to.deep.equal({
+                createdAt,
+                repoOwner,
+                repoName,
+                username: repoOwner,
+                isPrivate: false,
+            });
+        });
     });
     describe("delete operations", () => {
         it("should delete a value from the Set type attribute", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
+
             await repositories
                 .create({
                     repoName,
@@ -645,26 +790,58 @@ describe("Update Item", () => {
                     tags: ["tag1", "tag2"]
                 })
                 .go();
+
             await repositories
                 .update({repoName, repoOwner})
                 .delete({tags: "tag1"})
                 .go();
+
             const {tags} = await repositories
                 .get({repoName, repoOwner})
                 .go();
+
             expect(tags).to.deep.equal(["tag2"]);
         });
+        it("should delete a value from the Set type attribute with data method", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+
+            await repositories
+                .create({
+                    repoName,
+                    repoOwner,
+                    stars: 10,
+                    isPrivate: false,
+                    defaultBranch: "main",
+                    tags: ["tag1", "tag2"]
+                })
+                .go();
+
+            await repositories
+                .update({repoName, repoOwner})
+                .data(({tags}, {del}) => del(tags, "tag1"))
+                .go();
+
+            const {tags} = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(tags).to.deep.equal(["tag2"]);
+        });
+
         it("should only allow attributes with type 'set', or 'any'", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
-            let err = await repositories
+            const err = await repositories
                 .update({repoName, repoOwner})
                 .delete({description: "my description"})
                 .go()
-                .catch(err => err)
+                .catch(err => err);
+
             expect(err.message).to.equal(`Invalid Update Attribute Operation: "DELETE" Operation can only be performed on attributes with type "set" or "any".`);
         });
     });
+
     describe("add operations", () => {
         it("should increment the 'stars' property", async () => {
             const repoName = uuid();
@@ -678,16 +855,48 @@ describe("Update Item", () => {
                 })
                 .go();
             expect(repo.stars).to.equal(0);
+
             await repositories
                 .update({repoName, repoOwner})
                 .add({stars: 1})
                 .go();
+
             const {stars} = await repositories
                 .get({repoName, repoOwner})
                 .go();
+
             expect(stars).to.equal(1);
         });
+
         it("should add 5 'stars' to the repository", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+
+            const repo = await repositories
+                .create({
+                    repoName,
+                    repoOwner,
+                    stars: 10,
+                    isPrivate: false,
+                    defaultBranch: "main",
+                })
+                .go();
+
+            expect(repo.stars).to.equal(10);
+
+            await repositories
+                .update({repoName, repoOwner})
+                .add({stars: 5})
+                .go();
+
+            const {stars} = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(stars).to.equal(15);
+        });
+
+        it("should add 5 'stars' to the repository with the data method", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
             const repo = await repositories
@@ -699,20 +908,25 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                 })
                 .go();
+
             expect(repo.stars).to.equal(10);
+
             await repositories
                 .update({repoName, repoOwner})
-                .add({stars: 5})
+                .data(({stars}, {add}) => add(stars, 5))
                 .go();
+
             const {stars} = await repositories
                 .get({repoName, repoOwner})
                 .go();
+
             expect(stars).to.equal(15);
         });
 
         it("should add an item to the tags property Set", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
+
             await repositories
                 .create({
                     repoName,
@@ -723,24 +937,29 @@ describe("Update Item", () => {
                     tags: ["tag1", "tag2"]
                 })
                 .go();
+
             await repositories
                 .update({repoName, repoOwner})
                 .add({tags: "tag3"})
                 .go();
+
             const {tags} = await repositories
                 .get({repoName, repoOwner})
                 .go();
+
             expect(tags).to.deep.equal(["tag1", "tag2", "tag3"]);
         });
 
         it("should only allow attributes with type 'number', 'set' or 'any'", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
-            let err = await repositories
+
+            const err = await repositories
                 .update({repoName, repoOwner})
                 .add({description: "my description"})
                 .go()
-                .catch(err => err)
+                .catch(err => err);
+
             expect(err.message).to.equal(`Invalid Update Attribute Operation: "ADD" Operation can only be performed on attributes with type "number", "set", or "any".`);
         });
     });
@@ -748,6 +967,7 @@ describe("Update Item", () => {
         it("should decrement the 'stars' property", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
+
             const repo = await repositories
                 .create({
                     repoName,
@@ -757,20 +977,53 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                 })
                 .go();
+
             expect(repo.stars).to.equal(5);
+
             await repositories
                 .update({repoName, repoOwner})
                 .subtract({stars: 1})
                 .go();
+
             const {stars} = await repositories
                 .get({repoName, repoOwner})
                 .go();
+
             expect(stars).to.equal(4);
         });
 
         it("should remove 3 'stars' from the repository", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
+
+            const repo = await repositories
+                .create({
+                    repoName,
+                    repoOwner,
+                    stars: 5,
+                    isPrivate: false,
+                    defaultBranch: "main",
+                })
+                .go();
+
+            expect(repo.stars).to.equal(5);
+
+            await repositories
+                .update({repoName, repoOwner})
+                .subtract({stars: 3})
+                .go();
+
+            const {stars} = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(stars).to.equal(2);
+        });
+
+        it("should remove 3 'stars' from the repository with the data method", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+
             const repo = await repositories
                 .create({
                     repoName,
@@ -781,15 +1034,19 @@ describe("Update Item", () => {
                 })
                 .go();
             expect(repo.stars).to.equal(5);
+
             await repositories
                 .update({repoName, repoOwner})
-                .subtract({stars: 3})
+                .data(({stars}, {subtract}) => subtract(stars, 3))
                 .go();
+
             const {stars} = await repositories
                 .get({repoName, repoOwner})
                 .go();
+
             expect(stars).to.equal(2);
         });
+
         it("should only allow types", () => {
 
         });
