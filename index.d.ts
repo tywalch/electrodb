@@ -1,4 +1,5 @@
 declare const WhereSymbol: unique symbol;
+declare const UpdateDataSymbol: unique symbol;
 
 type BooleanAttribute = {
     readonly type: "boolean";
@@ -151,6 +152,17 @@ type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,
         : never
 }
 
+type ItemTypeDescription<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
+    [a in keyof S["attributes"]]: S["attributes"][a]["type"] extends infer R
+        ? R extends "string" ? "string"
+            : R extends "number" ? "number"
+                : R extends "boolean" ? "boolean"
+                    : R extends ReadonlyArray<string> ? "enum"
+                        : R extends "any" ? "any"
+                            : never
+        : never
+}
+
 type RequiredAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<{
     [a in keyof S["attributes"]]: S["attributes"][a]["required"] extends infer R
         ? R extends true ? true
@@ -263,67 +275,105 @@ type SetItem<A extends string, F extends A, C extends string, S extends Schema<A
         Omit<Partial<TableItem<A,F,C,S>>, keyof AllTableIndexCompositeAttributes<A,F,C,S>>,
         ReadOnlyAttributes<A,F,C,S>
     >
+
+type RemoveItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    Array<keyof SetItem<A,F,C,S>>
+
 // ExtractKeysOfValueType
 type AppendItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    Pick<
-        SetItem<A,F,C,S>,
-        ExtractKeysOfValueType<
-            SetItem<A,F,C,S>,
-            any[]
-        >
-    >
+    {
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "list" | "any">]: P extends keyof SetItem<A,F,C,S>
+        ? SetItem<A,F,C,S>[P]
+        : never
+    }
 
 type AddItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     {
-        [P in ExtractKeysOfValueType<Item<A,F,C,S>, number>]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number">]: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }
 
 type SubtractItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     {
-        [P in ExtractKeysOfValueType<Item<A,F,C,S>, number>]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number">]: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }
 
 type DeleteItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    Pick<
-        SetItem<A,F,C,S>,
-        ExtractKeysOfValueType<
-            SetItem<A,F,C,S>,
-            any[]
-        >
-    >
+    {
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "any" | "set">]: P extends keyof SetItem<A,F,C,S>
+        ? SetItem<A,F,C,S>[P]
+        : never
+    }
 
-export interface WhereAttributeSymbol<T> {
-    [WhereSymbol]: void;
-    _: T;
-}
+export type WhereAttributeSymbol<T extends any> =
+    {[WhereSymbol]: void} &
+    T extends string ? string :
+        T extends number ? number :
+            T extends boolean ? boolean :
+                T extends Array<any> ? Array<WhereAttributeSymbol<T[number]>> :
+                    T extends object ? { [P in keyof T]: WhereAttributeSymbol<T[P]> } :
+                        T extends any ? any :
+                            never
 
 type WhereAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> = {
     [Attr in keyof I]: WhereAttributeSymbol<I[Attr]>
 }
 
+export type DataUpdateAttributeSymbol<T extends any> =
+    { [UpdateDataSymbol]: void } &
+    T extends string ? string :
+        T extends number ? number :
+            T extends boolean ? boolean :
+                T extends Array<any> ? Array<DataUpdateAttributeSymbol<T[number]>> :
+                    T extends object ? { [P in keyof T]: DataUpdateAttributeSymbol<T[P]> } :
+                        T extends any ? any
+                            : never;
+
+
+type DataUpdateAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends SetItem<A,F,C,S>> = {
+    [Attr in keyof Required<I>]:
+        Attr extends keyof ItemTypeDescription<A,F,C,S>
+            ? DataUpdateAttributeSymbol<Required<I>[Attr]>
+            : never
+}
+
 type WhereOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> = {
-    eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    ne: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    gte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    lte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    between: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never, value2: A["_"] extends infer V ? V: never) => string;
-    begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    exists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
-    notExists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
-    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    ne: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    gte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    lte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    between: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T, value2: T) => string;
+    begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    exists: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
+    notExists: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
+    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    name: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
+};
+
+type DataUpdateOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends SetItem<A,F,C,S>> = {
+    set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: T) => any;
+    remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
+    append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<string> ? never : T) => any;
+    add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number ? T : never) => any;
+    subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number ? T : never) => any;
+    delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<string> ? never : T) => any;
+    del: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<string> ? never : T) => any;
+    value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: T) => any;
+    name: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
 };
 
 type WhereCallback<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> =
     <W extends WhereAttributes<A,F,C,S,I>>(attributes: W, operations: WhereOperations<A,F,C,S,I>) => string;
+
+type DataUpdateCallback<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends SetItem<A,F,C,S>> =
+    <W extends DataUpdateAttributes<A,F,C,S,I>>(attributes: W, operations: DataUpdateOperations<A,F,C,S,I>) => any;
 
 interface QueryOptions {
     params?: object;
@@ -390,13 +440,18 @@ type SetRecordActionOptions<A extends string, F extends A, C extends string, S e
     subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     where: WhereClause<A,F,C,S, Item<A,F,C,S>,RecordsActionOptions<A,F,C,S,TableItem,IndexCompositeAttributes>>;
 }
 
 type SetRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
 type RemoveRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: (keyof RemoveAttr)[]) => SetRecordActionOptions<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
+type DataUpdateMethodRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> =
+    DataUpdateMethod<A,F,C,S, SetItem<A,F,C,S>, SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>>
 
 type WhereClause<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>, T> = (where: WhereCallback<A,F,C,S,I>) => T;
+
+type DataUpdateMethod<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends SetItem<A,F,C,S>, T> = (update: DataUpdateCallback<A,F,C,S,I>) => T;
 
 type QueryOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, CompositeAttributes, TableItem, IndexCompositeAttributes> = {
     between: (skCompositeAttributesStart: CompositeAttributes, skCompositeAttributesEnd: CompositeAttributes) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexCompositeAttributes>;
@@ -467,6 +522,7 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
         subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -484,8 +540,7 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     setIdentifier(type: "entity" | "version", value: string): void;
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>
     query: Queries<A,F,C,S>;
-    c: IndexCollections<A,F,C,S>
-    e: EntityCollections<A,F,C,S>
+    a: DataUpdateAttributes<A,F,C,S, SetItem<A,F,C,S>>
 }
 
 type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
@@ -540,19 +595,19 @@ type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}
 }
 
 type CollectionWhereOperations = {
-    eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    ne: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    gte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    lte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    between: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never, value2: A["_"] extends infer V ? V: never) => string;
-    begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    ne: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    lt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    gte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    lte: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    between: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T, value2: T) => string;
+    begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     exists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
     notExists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
-    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
-    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A["_"] extends infer V ? V: never) => string;
+    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
 }
 
