@@ -5,7 +5,6 @@ const { expect } = require("chai");
 const uuid = require("uuid").v4;
 const moment = require("moment");
 const DynamoDB = require("aws-sdk/clients/dynamodb");
-const sleep = async (ms) => new Promise((resolve) => setTimeout(() => resolve(), ms));
 
 const client = new DynamoDB.DocumentClient({
     region: "us-east-1",
@@ -182,6 +181,23 @@ const repositories = new Entity({
                     return client.createSet(value);
                 }
             }
+        },
+        followers: {
+            type: "any",
+            get: (value) => {
+                if (value) {
+                    return value.values;
+                }
+                return [];
+            },
+            set: (value) => {
+                if (value) {
+                    return client.createSet(value);
+                }
+            }
+        },
+        files: {
+            type: "any"
         }
     },
     indexes: {
@@ -214,18 +230,186 @@ const repositories = new Entity({
 const service = new Service({users, repositories});
 
 describe("Update Item", () => {
-    describe("set operations", () => {
+    it("should allow operations to be all chained together", async () => {
+        const repoName = uuid();
+        const repoOwner = uuid();
+        const createdAt = "2021-07-01";
 
+        const recentCommits = [
+            {
+                sha: "8ca4d4b2",
+                data: "1627158426",
+                message: "fixing bug",
+                views: 50
+            },
+            {
+                sha: "25d68f54",
+                data: "1627158100",
+                message: "adding bug",
+                views: 25
+            }
+        ];
+
+        const created = await repositories
+            .put({
+                repoName,
+                repoOwner,
+                createdAt,
+                recentCommits,
+                about: "my about details",
+                isPrivate: false,
+                license: "apache-2.0",
+                description: "my description",
+                stars: 10,
+                defaultBranch: "main",
+                tags: ["tag1", "tag2"],
+                custom: {
+                    prop1: "abc",
+                    prop2: 100,
+                    prop3: 200,
+                    prop4: "xyz"
+                },
+                followers: ["tywalch"],
+                views: 99,
+                files: ["index.ts", "package.json"]
+            })
+            .go();
+
+        const updates = {
+            prop2: 15,
+            tags: "tag1",
+            stars: 8,
+            description: "updated description",
+            files: ["README.md"],
+            about: "about",
+            license: "cc",
+            followers: "tinkertamper",
+            prop1: "def",
+            recentCommitsViews: 1,
+        }
+
+        const params = repositories.update({repoName, repoOwner})
+            .add({views: updates.views, followers: updates.followers})
+            .subtract({stars: updates.stars})
+            .append({files: updates.files})
+            .set({description: updates.description})
+            .remove([updates.about])
+            .delete({tags: updates.tags})
+            .data((attr, op) => {
+                op.set(attr.custom.prop1, updates.prop1);
+                op.add(attr.views, op.name(attr.custom.prop3));
+                op.add(attr.recentCommits[0].views, updates.recentCommitsViews);
+                op.remove(attr.recentCommits[1].message)
+            })
+            .params();
+
+        expect(params).to.deep.equal({
+            "UpdateExpression": "SET #stars = #stars - :stars0, #files = list_append(#files, :files0), #description = :description0, #custom.#prop1 = :custom0, #views = #views + #custom.#prop3 REMOVE #about, #recentCommits[1].#message ADD #followers :followers0, #recentCommits[0].#views :recentCommits0 DELETE #tags :tags0",
+            "ExpressionAttributeNames": {
+                "#followers": "followers",
+                "#stars": "stars",
+                "#files": "files",
+                "#description": "description",
+                "#about": "about",
+                "#tags": "tags",
+                "#custom": "custom",
+                "#prop1": "prop1",
+                "#views": "views",
+                "#prop3": "prop3",
+                "#recentCommits": "recentCommits",
+                "#message": "message"
+            },
+            "ExpressionAttributeValues": {
+                ":followers0": params.ExpressionAttributeValues[":followers0"],
+                ":stars0": 8,
+                ":files0": [
+                    "README.md"
+                ],
+                ":description0": "updated description",
+                ":tags0": params.ExpressionAttributeValues[":tags0"],
+                ":custom0": "def",
+                ":recentCommits0": 1
+            },
+            "TableName": "electro",
+            "Key": {
+                "pk": `$versioncontrol#repoowner_${repoOwner}`,
+                "sk": `$alerts#repositories_1#reponame_${repoName}`
+            }
+        });
+
+        await repositories.update({repoName, repoOwner})
+            .add({views: updates.views, followers: updates.followers})
+            .subtract({stars: updates.stars})
+            .append({files: updates.files})
+            .set({description: updates.description})
+            .remove([updates.about])
+            .delete({tags: updates.tags})
+            .data((attr, op) => {
+                op.set(attr.custom.prop1, updates.prop1);
+                op.add(attr.views, op.name(attr.custom.prop3));
+                op.add(attr.recentCommits[0].views, updates.recentCommitsViews);
+                op.remove(attr.recentCommits[1].message)
+            })
+            .go()
+
+        const item = await repositories.get({repoName, repoOwner}).go();
+
+        const expected = {
+            "repoOwner": repoOwner,
+            "repoName": repoName,
+            "custom": {
+                "prop2": 100,
+                "prop1": "def",
+                "prop4": "xyz",
+                "prop3": 200
+            },
+            "defaultBranch": "main",
+            "description": updates.description,
+            "recentCommits": [
+                {
+                    "data": "1627158426",
+                    "message": "fixing bug",
+                    "sha": "8ca4d4b2",
+                    "views": created.recentCommits[0].views + updates.recentCommitsViews
+                },
+                {
+                    "data": "1627158100",
+                    "sha": "25d68f54",
+                    "views": 25
+                }
+            ],
+            "isPrivate": false,
+            "stars": created.stars - updates.stars,
+            "tags": [
+                "tag2"
+            ],
+            "createdAt": createdAt,
+            "license": "apache-2.0",
+            "followers": [
+                updates.followers,
+                ...created.followers,
+            ],
+            "files": [
+                ...created.files,
+                ...updates.files,
+            ],
+            "views": created.views + created.custom.prop3,
+            "username": repoOwner,
+        }
+
+        expect(item).to.deep.equal(expected);
     });
+
     describe("append operations", () => {
         it("should only allow attributes with type 'list', or 'any'", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
-            let err = await repositories
+            const err = await repositories
                 .update({repoName, repoOwner})
                 .append({description: "my description"})
                 .go()
-                .catch(err => err)
+                .catch(err => err);
+
             expect(err.message).to.equal(`Invalid Update Attribute Operation: "APPEND" Operation can only be performed on attributes with type "list" or "any".`);
         });
         it("should append items to a list", async () => {
@@ -258,6 +442,7 @@ describe("Update Item", () => {
                     tags: ["tag1", "tag2"]
                 })
                 .go();
+
             await repositories
                 .update({repoName, repoOwner})
                 .append({
