@@ -1158,8 +1158,6 @@ let getKeys = ((val) => {}) as GetKeys;
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
 
-
-
     // Query Operations
     entityWithSK.query
         .myIndex({attr1: "abc"})
@@ -1858,6 +1856,15 @@ let getKeys = ((val) => {}) as GetKeys;
             },
             prop4: {
                 type: "string"
+            },
+            prop5: {
+                type: "number"
+            },
+            prop6: {
+                type: "any"
+            },
+            prop7: {
+                type: "string"
             }
         },
         indexes: {
@@ -1887,8 +1894,115 @@ let getKeys = ((val) => {}) as GetKeys;
 
     expectError(() => {
         entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .add({prop7: 13})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .subtract({prop7: 13})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .delete({prop7: "13", prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .delete({prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .append({prop7: "13", prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .append({prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(["prop3"])
+            .params();
+    });
+
+    // patch
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
             .patch({prop1: "abc", prop2: "def"})
             .set({prop3: "abc"})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .add({prop7: 13})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .subtract({prop7: 13})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .delete({prop7: "13", prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .delete({prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .append({prop7: "13", prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .append({prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .remove(["prop3"])
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .remove(["prop3"])
             .params();
     });
 
@@ -1896,6 +2010,43 @@ let getKeys = ((val) => {}) as GetKeys;
     entityWithReadOnlyAttribute
         .update({prop1: "abc", prop2: "def"})
         .set(setItemValue)
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .remove([
+            "prop4"
+        ])
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .add({
+            prop5: 13,
+            prop6: 34
+        })
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .subtract({
+            prop5: 13 ,
+            prop6: 34
+        })
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .append({
+            prop6: ["value"]
+        })
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .delete({
+            prop6: ["value"]
+        })
         .params();
 
     type MyCollection1Pager = {

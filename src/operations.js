@@ -113,7 +113,7 @@ const UpdateOperations = {
     },
     remove: {
         canNest: false,
-        template: function remove(attr, path) {
+        template: function remove(attr, ...paths) {
             let operation = "";
             let expression = "";
             switch(attr.type) {
@@ -126,12 +126,13 @@ const UpdateOperations = {
                 case AttributeTypes.boolean:
                 case AttributeTypes.enum:
                     operation = ItemOperations.remove;
-                    expression = `${path}`;
+                    expression = paths.join(", ");
                     break;
                 default: {
                     throw new Error(`Invalid Update Attribute Operation: "REMOVE" Operation can only be performed on attributes with type "map", "list", "string", "number", "boolean", or "any".`);
                 }
             }
+            console.log("expression", expression, paths);
             return {operation, expression};
         }
     },

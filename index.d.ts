@@ -263,6 +263,38 @@ type SetItem<A extends string, F extends A, C extends string, S extends Schema<A
         Omit<Partial<TableItem<A,F,C,S>>, keyof AllTableIndexCompositeAttributes<A,F,C,S>>,
         ReadOnlyAttributes<A,F,C,S>
     >
+// ExtractKeysOfValueType
+type AppendItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    Pick<
+        SetItem<A,F,C,S>,
+        ExtractKeysOfValueType<
+            SetItem<A,F,C,S>,
+            any[]
+        >
+    >
+
+type AddItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    {
+        [P in ExtractKeysOfValueType<Item<A,F,C,S>, number>]: P extends keyof SetItem<A,F,C,S>
+            ? SetItem<A,F,C,S>[P]
+            : never
+    }
+
+type SubtractItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    {
+        [P in ExtractKeysOfValueType<Item<A,F,C,S>, number>]: P extends keyof SetItem<A,F,C,S>
+            ? SetItem<A,F,C,S>[P]
+            : never
+    }
+
+type DeleteItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    Pick<
+        SetItem<A,F,C,S>,
+        ExtractKeysOfValueType<
+            SetItem<A,F,C,S>,
+            any[]
+        >
+    >
 
 export interface WhereAttributeSymbol<T> {
     [WhereSymbol]: void;
@@ -356,7 +388,8 @@ type SetRecordActionOptions<A extends string, F extends A, C extends string, S e
     where: WhereClause<A,F,C,S,Item<A,F,C,S>,RecordsActionOptions<A,F,C,S,TableItem,IndexCompositeAttributes>>;
 }
 
-type SetRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr,IndexCompositeAttributes,TableItem>;
+type SetRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
+type RemoveRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: (keyof RemoveAttr)[]) => SetRecordActionOptions<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
 
 type WhereClause<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>, T> = (where: WhereCallback<A,F,C,S,I>) => T;
 
@@ -423,10 +456,20 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
-        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>
+        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        remove: RemoveRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
-        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>
+        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        remove: RemoveRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
     put(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
@@ -439,15 +482,6 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     c: IndexCollections<A,F,C,S>
     e: EntityCollections<A,F,C,S>
 }
-
-type TestCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
-    [Name in keyof E]:
-        E[Name] extends Entity<infer A, infer F, infer C, infer S>
-            ? {
-                [Collection in keyof EntityCollections<A,F,C,S>]: Collection
-            }[keyof EntityCollections<A,F,C,S>]
-            : never
-};
 
 type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Name in keyof E]:
@@ -593,31 +627,6 @@ type Spread<L, R> = Id<
     // Properties in R, with types that include undefined, that exist in L
     & SpreadProperties<L, R, OptionalPropertyNames<R> & keyof L>
     >;
-
-// type WTF<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
-//     [Collection in keyof Collections]: {
-//         [EntityName in keyof E]:
-//             EntityName extends Collections[Collection]
-//                 ? {
-//                     query: E[EntityName]["query"][
-//                         E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
-//                             ? Collection extends keyof EntityCollections<A, F, C, S>
-//                             ? EntityCollections<A, F, C, S>[Collection]
-//                             : never
-//                             : never
-//                         ]
-//                     go: {
-//                         [EntityResultName in Collections[Collection]]:
-//                         EntityResultName extends keyof E
-//                             ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-//                             ? ResponseItem<A,F,C,S>[]
-//                             : never
-//                             : never
-//                     }
-//                 }
-//                 : never
-//     }
-// }
 
 type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
