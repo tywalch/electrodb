@@ -128,6 +128,11 @@ const ItemOperations = {
 
 const AttributeProxySymbol = Symbol("attribute_proxy");
 
+const BuilderTypes = {
+	update: "update",
+	filter: "filter"
+}
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -136,6 +141,7 @@ module.exports = {
 	QueryTypes,
 	MethodTypes,
 	Comparisons,
+	BuilderTypes,
 	MaxBatchItems,
 	ModelVersions,
 	ItemOperations,

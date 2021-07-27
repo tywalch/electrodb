@@ -166,6 +166,9 @@ const repositories = new Entity({
         custom: {
             type: "any"
         },
+        views: {
+            type: "number"
+        },
         tags: {
             type: "any",
             get: (value) => {
@@ -234,11 +237,13 @@ describe("Update Item", () => {
                 data: "1627158426",
                 message: "fixing bug"
             }];
+
             const additionalCommit = [{
                 sha: "25d68f54",
                 data: "1627158100",
                 message: "adding bug"
             }];
+
             const created = await repositories
                 .put({
                     repoName,
@@ -297,6 +302,7 @@ describe("Update Item", () => {
                     tags: ["tag1", "tag2"]
                 })
                 .go();
+
             await repositories
                 .update({repoName, repoOwner})
                 .data(({recentCommits}, {append}) => append(recentCommits, additionalCommit))
@@ -1033,6 +1039,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                 })
                 .go();
+
             expect(repo.stars).to.equal(5);
 
             await repositories
@@ -1052,7 +1059,36 @@ describe("Update Item", () => {
         });
     });
     describe("name operation", () => {
-        it("should only allow types", () => {
+        it("should allow name to be passed to other operation", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+
+            const repo = await repositories
+                .create({
+                    repoName,
+                    repoOwner,
+                    stars: 5,
+                    isPrivate: false,
+                    defaultBranch: "main",
+                    views: 10
+                })
+                .go();
+
+            expect(repo.stars).to.equal(5);
+
+            await repositories
+                .update({repoName, repoOwner})
+                .data(({stars, views}, {name, add}) => add(views, name(stars)))
+                .go();
+
+            const {views} = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(views).to.equal(15);
+        });
+
+        it("should only allow types", async () => {
 
         });
     });

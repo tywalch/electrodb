@@ -1,5 +1,5 @@
 const {AttributeOperationProxy, ExpressionState} = require("./operations");
-const {ItemOperations, AttributeProxyTypes} = require("./types");
+const {ItemOperations, BuilderTypes} = require("./types");
 const u = require("./util");
 
 class UpdateExpression extends ExpressionState {
@@ -12,6 +12,7 @@ class UpdateExpression extends ExpressionState {
             subtract: new Set(),
             delete: new Set()
         };
+        this.type = BuilderTypes.update;
     }
 
     add(type, expression) {

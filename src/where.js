@@ -1,4 +1,4 @@
-const {MethodTypes, ExpressionTypes} = require("./types");
+const {MethodTypes, ExpressionTypes, BuilderTypes} = require("./types");
 const {AttributeOperationProxy, ExpressionState} = require("./operations");
 const e = require("./errors");
 
@@ -6,6 +6,7 @@ class FilterExpression extends ExpressionState {
 	constructor(props) {
 		super(props);
 		this.expression = "";
+		this.type = BuilderTypes.filter;
 	}
 
 	_trim(expression) {

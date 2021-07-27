@@ -1,7 +1,8 @@
-const {AttributeTypes, ItemOperations, AttributeProxySymbol} = require("./types");
+const {AttributeTypes, ItemOperations, AttributeProxySymbol, BuilderTypes} = require("./types");
 const e = require("./errors");
 
 const deleteOperations = {
+    canNest: false,
     template: function del(attr, path, value) {
         let operation = "";
         let expression = "";
@@ -20,16 +21,19 @@ const deleteOperations = {
 
 const UpdateOperations = {
     name: {
-      template: function name(attr, path) {
-          return path;
-      }
+        canNest: true,
+        template: function name(attr, path) {
+            return path;
+        }
     },
     value: {
-      template: function value(attr, path, value) {
-          return value;
-      }
+        canNest: true,
+        template: function value(attr, path, value) {
+            return value;
+        }
     },
     append: {
+        canNest: false,
         template: function append(attr, path, value) {
             let operation = "";
             let expression = "";
@@ -46,15 +50,19 @@ const UpdateOperations = {
         }
     },
     add: {
+        canNest: false,
         template: function add(attr, path, value) {
             let operation = "";
             let expression = "";
             switch(attr.type) {
-                case AttributeTypes.set:
-                case AttributeTypes.number:
                 case AttributeTypes.any:
+                case AttributeTypes.set:
                     operation = ItemOperations.add;
                     expression = `${path} ${value}`;
+                    break;
+                case AttributeTypes.number:
+                    operation = ItemOperations.set;
+                    expression = `${path} = ${path} + ${value}`;
                     break;
                 default:
                     throw new Error(`Invalid Update Attribute Operation: "ADD" Operation can only be performed on attributes with type "number", "set", or "any".`);
@@ -63,6 +71,7 @@ const UpdateOperations = {
         }
     },
     subtract: {
+        canNest: false,
         template: function subtract(attr, path, value) {
             let operation = "";
             let expression = "";
@@ -80,6 +89,7 @@ const UpdateOperations = {
         }
     },
     set: {
+        canNest: false,
         template: function set(attr, path, value) {
             let operation = "";
             let expression = "";
@@ -102,7 +112,7 @@ const UpdateOperations = {
         }
     },
     remove: {
-
+        canNest: false,
         template: function remove(attr, path) {
             let operation = "";
             let expression = "";
@@ -343,7 +353,7 @@ class AttributeOperationProxy {
         let ops = {};
         let seen = new Set();
         for (let operation of Object.keys(operations)) {
-            let {template} = operations[operation];
+            let {template, canNest} = operations[operation];
             Object.defineProperty(ops, operation, {
                 get: () => {
                     return (property, ...values) => {
@@ -354,27 +364,31 @@ class AttributeOperationProxy {
                             const {paths, root, target} = property();
                             const attributeValues = [];
                             for (const value of values) {
-
                                 // template.length is to see if function takes value argument
-                                if (template.length === 1) {
-
-                                } else if (template.length > 2) {
-                                    let attributeValueName = builder.setValue(target.name, value);
-                                    builder.setPath(paths.json, {value, name: attributeValueName});
-                                    attributeValues.push(attributeValueName);
+                                if (template.length > 2) {
+                                    if (seen.has(value)) {
+                                        attributeValues.push(value);
+                                    } else {
+                                        let attributeValueName = builder.setValue(target.name, value);
+                                        builder.setPath(paths.json, {value, name: attributeValueName});
+                                        attributeValues.push(attributeValueName);
+                                    }
                                 }
                             }
 
                             const formatted = template(target, paths.expression, ...attributeValues);
                             builder.setImpacted(operation, paths.json);
-                            // todo: this is so hacky, only UpdateExpressionBuilders have two params :(
-                            if (typeof builder.add === "function" && builder.add.length >= 2 && formatted !== undefined && typeof formatted.operation === "string" && typeof formatted.expression === "string") {
+
+                            if (canNest) {
+                                seen.add(paths.expression);
+                            }
+
+                            if (builder.type === BuilderTypes.update && formatted && typeof formatted.operation === "string" && typeof formatted.expression === "string") {
                                 builder.add(formatted.operation, formatted.expression);
                                 return formatted.expression;
                             }
+
                             return formatted;
-                            // } else if (typeof property === "string") {
-                            //   // todo: parse string
                         } else {
                             throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid Attribute in where clause passed to operation '${operation}'. Use injected attributes only.`);
                         }
