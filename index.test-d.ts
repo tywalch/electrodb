@@ -833,7 +833,7 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<SetParametersWithoutSK>({attr6: "1234"});
 
     // Finishers
-    type UpdateParametersFinishers = "go" | "set" | "params" | "where";
+    type UpdateParametersFinishers = "set" | "delete" | "remove" | "go" | "params" | "where" | "add" | "subtract" | "append";
 
     let updateItem = entityWithSK.update({attr1: "abc", attr2: "def"}).set({});
     let updateItemWithoutSK = entityWithoutSK.update({attr1: "abc"}).set({});
@@ -900,7 +900,7 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<PatchParametersWithoutSK>({attr6: "1234"});
 
     // Finishers
-    type PatchParametersFinishers = "go" | "set" | "params" | "where";
+    type PatchParametersFinishers = "set" | "delete" | "remove" | "go" | "params" | "where" | "add" | "subtract" | "append";
 
     let patchItem = entityWithSK.patch({attr1: "abc", attr2: "def"}).set({});
     let patchItemWithoutSK = entityWithoutSK.patch({attr1: "abc"}).set({});
@@ -2044,6 +2044,47 @@ let getKeys = ((val) => {}) as GetKeys;
 
     entityWithReadOnlyAttribute
         .update({prop1: "abc", prop2: "def"})
+        .delete({
+            prop6: ["value"]
+        })
+        .params();
+
+    // full chain with duplicates
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .set(setItemValue)
+        .remove([
+            "prop4"
+        ])
+        .add({
+            prop5: 13,
+            prop6: 34
+        })
+        .subtract({
+            prop5: 13 ,
+            prop6: 34
+        })
+        .append({
+            prop6: ["value"]
+        })
+        .delete({
+            prop6: ["value"]
+        })
+        .set(setItemValue)
+        .remove([
+            "prop4"
+        ])
+        .add({
+            prop5: 13,
+            prop6: 34
+        })
+        .subtract({
+            prop5: 13 ,
+            prop6: 34
+        })
+        .append({
+            prop6: ["value"]
+        })
         .delete({
             prop6: ["value"]
         })
