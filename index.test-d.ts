@@ -1901,13 +1901,13 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
-    // expectError(() => {
-    //     entityWithReadOnlyAttribute
-    //         .update({prop1: "abc", prop2: "def"})
-    //         // prop7 is string not number
-    //         .data(({prop7}, {set}) => set(prop7, 5))
-    //         .params();
-    // });
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            // prop7 is string not number
+            .data(({prop7}, {set}) => set(prop7, 5))
+            .params();
+    });
 
     expectError(() => {
         entityWithReadOnlyAttribute
@@ -2120,7 +2120,7 @@ let getKeys = ((val) => {}) as GetKeys;
             op.set(attr.prop6, true)
             op.set(attr.prop6[1], true)
             op.set(attr.prop6.prop1, true)
-            op.set(attr.prop8, "dgd")
+            op.set(attr.prop8, "def")
 
             op.remove(attr.prop4);
             op.remove(attr.prop5);
@@ -2165,7 +2165,7 @@ let getKeys = ((val) => {}) as GetKeys;
             op.value(attr.prop6, "abc");
             op.value(attr.prop6[1], "abc");
             op.value(attr.prop6.prop1, "abc");
-            op.value(attr.prop8, "sdgd");
+            op.value(attr.prop8, "abc");
         })
         .add({
             prop5: 13,
