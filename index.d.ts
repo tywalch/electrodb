@@ -154,12 +154,7 @@ type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,
 
 type ItemTypeDescription<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [a in keyof S["attributes"]]: S["attributes"][a]["type"] extends infer R
-        ? R extends "string" ? "string"
-            : R extends "number" ? "number"
-                : R extends "boolean" ? "boolean"
-                    : R extends ReadonlyArray<string> ? "enum"
-                        : R extends "any" ? "any"
-                            : never
+        ? R
         : never
 }
 
@@ -270,6 +265,12 @@ type PutItem<A extends string, F extends A, C extends string, S extends Schema<A
     Pick<Item<A,F,C,S>, ExtractKeysOfValueType<RequiredPutItems<A,F,C,S>,true>>
     & Partial<Item<A,F,C,S>>
 
+type UpdateData<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+    Omit<
+        Omit<Item<A,F,C,S>, keyof AllTableIndexCompositeAttributes<A,F,C,S>>,
+        ReadOnlyAttributes<A,F,C,S>
+    >
+
 type SetItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Omit<
         Omit<Partial<TableItem<A,F,C,S>>, keyof AllTableIndexCompositeAttributes<A,F,C,S>>,
@@ -327,17 +328,15 @@ export type DataUpdateAttributeSymbol<T extends any> =
     T extends string ? string :
         T extends number ? number :
             T extends boolean ? boolean :
-                T extends Array<any> ? Array<DataUpdateAttributeSymbol<T[number]>> :
-                    T extends object ? { [P in keyof T]: DataUpdateAttributeSymbol<T[P]> } :
-                        T extends any ? any
-                            : never;
+                T extends ReadonlyArray<infer A> ? A :
+                    T extends Array<any> ? Array<DataUpdateAttributeSymbol<T[number]>> :
+                        T extends object ? { [P in keyof T]: DataUpdateAttributeSymbol<T[P]> } :
+                            T extends any ? any
+                                : never;
 
 
-type DataUpdateAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends SetItem<A,F,C,S>> = {
-    [Attr in keyof Required<I>]:
-        Attr extends keyof ItemTypeDescription<A,F,C,S>
-            ? DataUpdateAttributeSymbol<Required<I>[Attr]>
-            : never
+type DataUpdateAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> = {
+    [Attr in keyof I]: DataUpdateAttributeSymbol<I[Attr]>
 }
 
 type WhereOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> = {
@@ -357,7 +356,7 @@ type WhereOperations<A extends string, F extends A, C extends string, S extends 
     name: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
 };
 
-type DataUpdateOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends SetItem<A,F,C,S>> = {
+type DataUpdateOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> = {
     set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: T) => any;
     remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
     append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<string> ? never : T) => any;
@@ -372,7 +371,7 @@ type DataUpdateOperations<A extends string, F extends A, C extends string, S ext
 type WhereCallback<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>> =
     <W extends WhereAttributes<A,F,C,S,I>>(attributes: W, operations: WhereOperations<A,F,C,S,I>) => string;
 
-type DataUpdateCallback<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends SetItem<A,F,C,S>> =
+type DataUpdateCallback<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> =
     <W extends DataUpdateAttributes<A,F,C,S,I>>(attributes: W, operations: DataUpdateOperations<A,F,C,S,I>) => any;
 
 interface QueryOptions {
@@ -445,13 +444,13 @@ type SetRecordActionOptions<A extends string, F extends A, C extends string, S e
 }
 
 type SetRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
-type RemoveRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: (keyof RemoveAttr)[]) => SetRecordActionOptions<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
+type RemoveRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: RemoveAttr) => SetRecordActionOptions<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
 type DataUpdateMethodRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> =
-    DataUpdateMethod<A,F,C,S, SetItem<A,F,C,S>, SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>>
+    DataUpdateMethod<A,F,C,S, UpdateData<A,F,C,S>, SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>>
 
 type WhereClause<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S>, T> = (where: WhereCallback<A,F,C,S,I>) => T;
 
-type DataUpdateMethod<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends SetItem<A,F,C,S>, T> = (update: DataUpdateCallback<A,F,C,S,I>) => T;
+type DataUpdateMethod<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>, T> = (update: DataUpdateCallback<A,F,C,S,I>) => T;
 
 type QueryOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, CompositeAttributes, TableItem, IndexCompositeAttributes> = {
     between: (skCompositeAttributesStart: CompositeAttributes, skCompositeAttributesEnd: CompositeAttributes) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexCompositeAttributes>;
@@ -517,7 +516,7 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        remove: RemoveRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -526,11 +525,12 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     };
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        remove: RemoveRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
     put(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
@@ -540,7 +540,6 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     setIdentifier(type: "entity" | "version", value: string): void;
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>
     query: Queries<A,F,C,S>;
-    a: DataUpdateAttributes<A,F,C,S, SetItem<A,F,C,S>>
 }
 
 type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {

@@ -1963,16 +1963,12 @@ let getKeys = ((val) => {}) as GetKeys;
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
             .data(({prop5}, {append}) => {
-                //expectError(() => {
-                    append(prop5, 25)
-                //});
+                append(prop5, 25)
             })
             .params();
     });
-    // entityWithReadOnlyAttribute.a.
 
     // patch
-
     expectError(() => {
         entityWithReadOnlyAttribute
             .patch({prop1: "abc", prop2: "def"})
