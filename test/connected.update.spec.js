@@ -412,6 +412,7 @@ describe("Update Item", () => {
 
             expect(err.message).to.equal(`Invalid Update Attribute Operation: "APPEND" Operation can only be performed on attributes with type "list" or "any".`);
         });
+
         it("should append items to a list", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
@@ -459,6 +460,70 @@ describe("Update Item", () => {
                 recentCommits: [...recentCommits, ...additionalCommit]
             });
         });
+
+        it("should support append being called twice in a chain", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+            const createdAt = "2021-07-01";
+            const firstCommit = [{
+                sha: "8ca4d4b2",
+                message: "fixing bug",
+                timestamp: 1627158426
+            }];
+
+            const secondCommit = [{
+                sha: "25d68f54",
+                message: "adding bug",
+                timestamp: 1627158100
+            }];
+
+            const custom = [{
+                status: "started",
+                timestamp: 1627158100
+            }]
+
+            const customUpdate = [{
+                status: "working",
+                timestamp: 1627198100
+            }]
+
+            const created = await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    createdAt,
+                    recentCommits: firstCommit,
+                    custom: custom,
+                    isPrivate: false,
+                    license: "apache-2.0",
+                    description: "my description",
+                    stars: 10,
+                    defaultBranch: "main",
+                    tags: ["tag1", "tag2"]
+                })
+                .go();
+
+            await repositories
+                .update({repoName, repoOwner})
+                .append({
+                    recentCommits: secondCommit
+                })
+                .append({
+                    custom: customUpdate
+                })
+                .go();
+
+            const item = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(item).to.deep.equal({
+                ...created,
+                recentCommits: [...firstCommit, ...secondCommit],
+                custom: [...custom, ...customUpdate]
+            });
+        });
+
         it("should append items to a list with data method", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
