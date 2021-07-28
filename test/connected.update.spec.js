@@ -1023,6 +1023,7 @@ describe("Update Item", () => {
         it("should only allow attributes with type 'set', or 'any'", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
+
             const err = await repositories
                 .update({repoName, repoOwner})
                 .delete({description: "my description"})

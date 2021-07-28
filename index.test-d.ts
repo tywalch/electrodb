@@ -1901,6 +1901,22 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // expectError(() => {
+    //     entityWithReadOnlyAttribute
+    //         .update({prop1: "abc", prop2: "def"})
+    //         // prop7 is string not number
+    //         .data(({prop7}, {set}) => set(prop7, 5))
+    //         .params();
+    // });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            // prop8 is enum with values ["abc", "def"]
+            .data(({prop8}, {set}) => set(prop8, "ghi"))
+            .params();
+    });
+
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})

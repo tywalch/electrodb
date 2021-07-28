@@ -239,11 +239,6 @@ type TableItem<A extends string, F extends A, C extends string, S extends Schema
 type ResponseItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Omit<TableItem<A,F,C,S>, HiddenAttributes<A,F,C,S>>
 
-/* Seems to be a TypeScript defect? Can't add this type onto an Entity without it breaking Services */
-// type PutItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-//     (Pick<AllTableIndexCompositeAttributes<A,F,C,S>, RequiredPutCompositeAttributes<A,F,C,S>> & Partial<Omit<AllTableIndexCompositeAttributes<A,F,C,S>, RequiredPutCompositeAttributes<A,F,C,S>>>)
-//     & (Pick<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>> & Partial<Omit<Item<A,F,C,S>, RequiredAttributes<A,F,C,S>>>)
-
 type RequiredPutItems<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [Attribute in keyof S["attributes"]]:
     "required" extends keyof S["attributes"][Attribute]
@@ -359,11 +354,11 @@ type WhereOperations<A extends string, F extends A, C extends string, S extends 
 type DataUpdateOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> = {
     set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: T) => any;
     remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
-    append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<string> ? never : T) => any;
+    append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<any> ? never : T) => any;
     add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number ? T : never) => any;
     subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number ? T : never) => any;
-    delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<string> ? never : T) => any;
-    del: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<string> ? never : T) => any;
+    delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<any> ? never : T) => any;
+    del: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends number | boolean | string | ReadonlyArray<any> ? never : T) => any;
     value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: T) => any;
     name: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
 };
