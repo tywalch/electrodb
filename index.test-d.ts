@@ -1867,6 +1867,14 @@ let getKeys = ((val) => {}) as GetKeys;
             },
             prop8: {
                 type: ["abc", "def"] as const
+            },
+            prop9: {
+                type: "number",
+                readOnly: true,
+            },
+            prop10: {
+                type: "any",
+                readOnly: true
             }
         },
         indexes: {
@@ -1887,6 +1895,7 @@ let getKeys = ((val) => {}) as GetKeys;
     entityWithReadOnlyAttribute.put({prop1: "abc", prop2: "def", prop3: "ghi"}).params();
     entityWithReadOnlyAttribute.create({prop1: "abc", prop2: "def", prop3: "ghi"}).params();
 
+    // readonly
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1894,6 +1903,39 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .add({prop9: 13})
+            .params();
+    });
+
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .subtract({prop9: 13})
+            .params();
+    });
+
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .delete({prop10: "13"})
+            .params();
+    });
+
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .append({prop10: ["abc"]})
+            .params();
+    });
+
+    // bad type - not number
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1901,6 +1943,15 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // bad type - not number
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .subtract({prop7: 13})
+            .params();
+    });
+
+    // bad type - not string
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1909,6 +1960,7 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // bad type - incorrect enum
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1917,6 +1969,7 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // bad type - not number
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1924,6 +1977,7 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // bad type - not number
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1931,6 +1985,23 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // bad type - not any
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .data(({prop7}, {del}) => del(prop7, 5))
+            .params();
+    });
+
+    // bad type - not any
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .data(({prop7}, op) => op.delete(prop7, 5))
+            .params();
+    });
+
+    // bad type - not any
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1938,12 +2009,14 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // bad type - not any
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
             .delete({prop5: 24})
             .params();
     });
+
 
     expectError(() => {
         entityWithReadOnlyAttribute
@@ -1959,6 +2032,7 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // readonly
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1966,6 +2040,7 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // readonly
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})

@@ -360,32 +360,32 @@ type RemoveItem<A extends string, F extends A, C extends string, S extends Schem
     Array<keyof SetItem<A,F,C,S>>
 
 type AppendItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    {
+    Partial<{
         [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "list" | "any">]: P extends keyof SetItem<A,F,C,S>
-        ? SetItem<A,F,C,S>[P]
-        : never
-    }
+            ? SetItem<A,F,C,S>[P]
+            : never
+    }>
 
 type AddItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    {
+    Partial<{
         [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number">]: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
-    }
+    }>
 
 type SubtractItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    {
+    Partial<{
         [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number">]: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
-    }
+    }>
 
 type DeleteItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    {
+    Partial<{
         [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "any" | "set">]: P extends keyof SetItem<A,F,C,S>
-        ? SetItem<A,F,C,S>[P]
-        : never
-    }
+            ? SetItem<A,F,C,S>[P]
+            : never
+    }>
 
 export type WhereAttributeSymbol<T extends any> = {[WhereSymbol]: void} & T
 
