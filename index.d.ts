@@ -88,7 +88,7 @@ type MapAttribute<A extends string> = {
 
 type ListAttribute<A extends string> = {
     readonly type: "list";
-    readonly items: ReadonlyArray<Attribute<A>>;
+    readonly items: Attribute<A>;
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
