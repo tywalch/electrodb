@@ -727,6 +727,7 @@ describe("Update Item", () => {
 
             await StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
+                // @ts-ignore
                 .add({'listAttribute[1].setAttribute': newSetValue1})
                 .go();
 
