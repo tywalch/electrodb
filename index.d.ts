@@ -368,14 +368,14 @@ type AppendItem<A extends string, F extends A, C extends string, S extends Schem
 
 type AddItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{
-        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number", "any">]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number" | "any">]: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }>
 
 type SubtractItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{
-        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number", "any">]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number" | "any">]: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }>

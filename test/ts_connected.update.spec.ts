@@ -543,6 +543,7 @@ describe("Update Item", () => {
         it("should perform complex data type update example 1", async () => {
             await StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
+                // @ts-ignore
                 .set({'mapAttribute.mapProperty': "value1"})
                 .go();
 
@@ -634,6 +635,7 @@ describe("Update Item", () => {
         it("should perform complex data type update example 2", async () => {
             await StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
+                // @ts-ignore
                 .remove(['listAttribute[0]'])
                 .go();
 
