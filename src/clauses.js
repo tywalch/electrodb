@@ -1,23 +1,26 @@
-const { QueryTypes, MethodTypes } = require("./types");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes } = require("./types");
+const {AttributeOperationProxy, UpdateOperations} = require("./operations");
+const {UpdateExpression} = require("./update");
+const {FilterExpression} = require("./where");
 const v = require("./validations");
 const e = require("./errors");
+const u = require("./util");
 
 function batchAction(action, type, entity, state, payload) {
-	if (state.error !== null) {
+	if (state.getError() !== null) {
 		return state;
 	}
 	try {
-		state.query.method = type;
+		state.setMethod(type);
 		for (let facets of payload) {
-			let batchState = action(entity, state.batch.create(), facets);
-			if (batchState.error !== null) {
-				throw batchState.error;
+			let batchState = action(entity, state.createSubState(), facets);
+			if (batchState.getError() !== null) {
+				throw batchState.getError();
 			}
-			state.batch.push(batchState);
 		}
 		return state;
 	} catch(err) {
-		state.error = err;
+		state.setError(err);
 		return state;
 	}
 }
@@ -31,18 +34,20 @@ let clauses = {
 		name: "collection",
 		/* istanbul ignore next */
 		action(entity, state, collection = "", facets /* istanbul ignore next */ = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				entity._expectFacets(facets, Object.keys(facets), `"query" composite attributes`);
-				state.query.collection = collection;
-				state.query.method = MethodTypes.query;
-				state.query.type = QueryTypes.collection;
-				return state;
+				entity._expectFacets(facets, Object.keys(facets), `"query collection" composite attributes`);
+				const {pk} = state.getCompositeAttributes();
+				return state
+					.setType(QueryTypes.collection)
+					.setMethod(MethodTypes.query)
+					.setCollection(collection)
+					.setPK(entity._expectFacets(facets, pk));
+
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -51,14 +56,13 @@ let clauses = {
 	scan: {
 		name: "scan",
 		action(entity, state) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				state.query.method = MethodTypes.scan;
-				return state;
+				return state.setMethod(MethodTypes.scan);
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -68,27 +72,21 @@ let clauses = {
 		name: "get",
 		/* istanbul ignore next */
 		action(entity, state, facets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				state.query.method = MethodTypes.get;
-				state.query.type = QueryTypes.eq;
-				if (state.hasSortKey) {
-					entity._expectFacets(facets, state.query.facets.sk);
-					let queryFacets = entity._buildQueryFacets(
-						facets,
-						state.query.facets.sk,
-					);
-					state.query.keys.sk.push({
-						type: state.query.type,
-						facets: queryFacets,
+				const attributes = state.getCompositeAttributes();
+				return state
+					.setMethod(MethodTypes.get)
+					.setType(QueryTypes.eq)
+					.setPK(entity._expectFacets(facets, attributes.pk))
+					.ifSK(() => {
+						entity._expectFacets(facets, attributes.sk);
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
 					});
-				}
-				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -108,27 +106,21 @@ let clauses = {
 		name: "delete",
 		/* istanbul ignore next */
 		action(entity, state, facets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				state.query.method = MethodTypes.delete;
-				state.query.type = QueryTypes.eq;
-				if (state.hasSortKey) {
-					entity._expectFacets(facets, state.query.facets.sk);
-					let queryFacets = entity._buildQueryFacets(
-						facets,
-						state.query.facets.sk,
-					);
-					state.query.keys.sk.push({
-						type: state.query.type,
-						facets: queryFacets,
+				const attributes = state.getCompositeAttributes();
+				return state
+					.setMethod(MethodTypes.delete)
+					.setType(QueryTypes.eq)
+					.setPK(entity._expectFacets(facets, attributes.pk))
+					.ifSK(() => {
+						entity._expectFacets(facets, attributes.sk);
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
 					});
-				}
-				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -138,27 +130,21 @@ let clauses = {
 		name: "remove",
 		/* istanbul ignore next */
 		action(entity, state, facets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				state.query.method = MethodTypes.remove;
-				state.query.type = QueryTypes.eq;
-				if (state.hasSortKey) {
-					entity._expectFacets(facets, state.query.facets.sk);
-					let queryFacets = entity._buildQueryFacets(
-						facets,
-						state.query.facets.sk,
-					);
-					state.query.keys.sk.push({
-						type: state.query.type,
-						facets: queryFacets,
+				const attributes = state.getCompositeAttributes();
+				return state
+					.setMethod(MethodTypes.delete)
+					.setType(QueryTypes.eq)
+					.setPK(entity._expectFacets(facets, attributes.pk))
+					.ifSK(() => {
+						entity._expectFacets(facets, attributes.sk);
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
 					});
-				}
-				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -167,30 +153,24 @@ let clauses = {
 	put: {
 		name: "put",
 		/* istanbul ignore next */
-		action(entity, state, payload) {
-			if (state.error !== null) {
+		action(entity, state, payload = {}) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
 				let record = entity.model.schema.checkCreate({...payload});
-				state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
-				state.query.method = MethodTypes.put;
-				state.query.type = QueryTypes.eq;
-				if (state.hasSortKey) {
-					entity._expectFacets(record, state.query.facets.sk);
-					let queryFacets = entity._buildQueryFacets(
-						record,
-						state.query.facets.sk,
-					);
-					state.query.keys.sk.push({
-						type: state.query.type,
-						facets: queryFacets,
+				const attributes = state.getCompositeAttributes();
+				return state
+					.setMethod(MethodTypes.put)
+					.setType(QueryTypes.eq)
+					.applyPut(record)
+					.setPK(entity._expectFacets(record, attributes.pk))
+					.ifSK(() => {
+						entity._expectFacets(record, attributes.sk);
+						state.setSK(entity._buildQueryFacets(record, attributes.sk));
 					});
-				}
-				state.query.put.data = Object.assign({}, record);
-				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -204,29 +184,23 @@ let clauses = {
 	create: {
 		name: "create",
 		action(entity, state, payload) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
 				let record = entity.model.schema.checkCreate({...payload});
-				state.query.keys.pk = entity._expectFacets(record, state.query.facets.pk);
-				state.query.method = MethodTypes.put;
-				state.query.type = QueryTypes.eq;
-				if (state.hasSortKey) {
-					entity._expectFacets(record, state.query.facets.sk);
-					let queryFacets = entity._buildQueryFacets(
-						record,
-						state.query.facets.sk,
-					);
-					state.query.keys.sk.push({
-						type: state.query.type,
-						facets: queryFacets,
+				const attributes = state.getCompositeAttributes();
+				return state
+					.setMethod(MethodTypes.put)
+					.setType(QueryTypes.eq)
+					.applyPut(record)
+					.setPK(entity._expectFacets(record, attributes.pk))
+					.ifSK(() => {
+						entity._expectFacets(record, attributes.sk);
+						state.setSK(entity._buildQueryFacets(record, attributes.sk));
 					});
-				}
-				state.query.put.data = Object.assign({}, record);
-				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -235,136 +209,184 @@ let clauses = {
 	patch: {
 		name: "patch",
 		action(entity, state, facets) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				state.query.method = MethodTypes.update;
-				state.query.type = QueryTypes.eq;
-				if (state.hasSortKey) {
-					entity._expectFacets(facets, state.query.facets.sk);
-					let queryFacets = entity._buildQueryFacets(
-						facets,
-						state.query.facets.sk,
-					);
-					state.query.keys.sk.push({
-						type: state.query.type,
-						facets: queryFacets,
+				const attributes = state.getCompositeAttributes();
+				return state
+					.setMethod(MethodTypes.update)
+					.setType(QueryTypes.eq)
+					.setPK(entity._expectFacets(facets, attributes.pk))
+					.ifSK(() => {
+						entity._expectFacets(facets, attributes.sk);
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
 					});
-				}
-				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
-		children: ["set", "append", "remove", "add", "subtract"],
+		children: ["set", "append", "remove", "add", "subtract", "data"],
 	},
 	update: {
 		name: "update",
 		action(entity, state, facets) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				state.query.method = MethodTypes.update;
-				state.query.type = QueryTypes.eq;
-				if (state.hasSortKey) {
-					entity._expectFacets(facets, state.query.facets.sk);
-					let queryFacets = entity._buildQueryFacets(
-						facets,
-						state.query.facets.sk,
-					);
-					state.query.keys.sk.push({
-						type: state.query.type,
-						facets: queryFacets,
+				const attributes = state.getCompositeAttributes();
+				return state
+					.setMethod(MethodTypes.update)
+					.setType(QueryTypes.eq)
+					.setPK(entity._expectFacets(facets, attributes.pk))
+					.ifSK(() => {
+						entity._expectFacets(facets, attributes.sk);
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
 					});
-				}
-				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
-		children: ["set", "append", "remove", "add", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+	},
+	data: {
+		name: "data",
+		action(entity, state, cb) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				state.query.updateProxy.invokeCallback(cb);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
 	},
 	set: {
 		name: "set",
 		action(entity, state, data) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				let record = entity.model.schema.checkUpdate({...data});
-				state.query.update.set = Object.assign(
-					{},
-					state.query.update.set,
-					record,
-				);
+				state.query.updateProxy.fromObject(ItemOperations.set, data);
 				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
-		children: ["set", "go", "params"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
 	},
-	// append: {
-	// 	name: "append",
-	// 	action(entity, state, data = {}) {
-	// 		let attributes = {}
-	// 		let payload = {};
-	// 		for (let path of Object.keys(data)) {
-	// 			let parsed = entity.model.schema.parseAttributePath(path);
-	//
-	// 		}
-	// 	},
-	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	// },
-	// remove: {
-	// 	name: "remove",
-	// 	action(entity, state, data) {
-	//
-	// 	},
-	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	// },
-	// add: {
-	// 	name: "add",
-	// 	action(entity, state, data) {
-	//
-	// 	},
-	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	// },
-	// subtract: {
-	// 	name: "subtract",
-	// 	action(entity, state, data) {
-	//
-	// 	},
-	// 	children: ["set", "append", "remove", "add", "subtract", "go", "params"]
-	// },
-	query: {
-		name: "query",
-		action(entity, state, facets, options = {}) {
-			if (state.error !== null) {
+	append: {
+		name: "append",
+		action(entity, state, data = {}) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				state.query.keys.pk = entity._expectFacets(facets, state.query.facets.pk);
-				entity._expectFacets(facets, Object.keys(facets), `"query" composite attributes`);
-				state.query.method = MethodTypes.query;
-				state.query.type = QueryTypes.is;
-				if (state.query.facets.sk) {
-					let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-					state.query.keys.sk.push({
-						type: state.query.type,
-						facets: queryFacets,
-					});
-				}
+				state.query.updateProxy.fromObject(ItemOperations.append, data);
 				return state;
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+	},
+	updateRemove: {
+		name: "remove",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				if (!Array.isArray(data)) {
+					throw new Error("Update method 'remove' expects type Array");
+				}
+
+				// let record = entity.model.schema.checkRemove(data);
+				state.query.updateProxy.fromArray(ItemOperations.remove, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+	},
+	updateDelete: {
+		name: "delete",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				state.query.updateProxy.fromObject(ItemOperations.delete, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+	},
+	add: {
+		name: "add",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				state.query.updateProxy.fromObject(ItemOperations.add, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+	},
+	subtract: {
+		name: "subtract",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				state.query.updateProxy.fromObject(ItemOperations.subtract, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+	},
+	query: {
+		name: "query",
+		action(entity, state, facets, options = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				const attributes = state.getCompositeAttributes();
+				entity._expectFacets(facets, Object.keys(facets), `"query" composite attributes`);
+				return state
+					.setMethod(MethodTypes.query)
+					.setType(QueryTypes.is)
+					.setPK(entity._expectFacets(facets, attributes.pk))
+					.ifSK(() => {
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+					});
+			} catch(err) {
+				state.setError(err);
 				return state;
 			}
 		},
@@ -373,10 +395,11 @@ let clauses = {
 	between: {
 		name: "between",
 		action(entity, state, startingFacets = {}, endingFacets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
+				const attributes = state.getCompositeAttributes();
 				entity._expectFacets(
 					startingFacets,
 					Object.keys(startingFacets),
@@ -387,26 +410,13 @@ let clauses = {
 					Object.keys(endingFacets),
 					`"and" composite attributes`,
 				);
-				state.query.type = QueryTypes.between;
-				let queryEndingFacets = entity._buildQueryFacets(
-					endingFacets,
-					state.query.facets.sk,
-				);
-				let queryStartingFacets = entity._buildQueryFacets(
-					startingFacets,
-					state.query.facets.sk,
-				);
-				state.query.keys.sk.push({
-					type: QueryTypes.and,
-					facets: queryEndingFacets,
-				});
-				state.query.keys.sk.push({
-					type: QueryTypes.between,
-					facets: queryStartingFacets,
-				});
-				return state;
+				return state
+					.setType(QueryTypes.and)
+					.setSK(entity._buildQueryFacets(endingFacets, attributes.sk))
+					.setType(QueryTypes.between)
+					.setSK(entity._buildQueryFacets(startingFacets, attributes.sk))
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -415,20 +425,20 @@ let clauses = {
 	begins: {
 		name: "begins",
 		action(entity, state, facets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
-				entity._expectFacets(facets, Object.keys(facets), `"gt" composite attributes`);
-				state.query.type = QueryTypes.begins;
-				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-				return state;
+				entity._expectFacets(facets, Object.keys(facets), `"begins" composite attributes`);
+
+				return state
+					.setType(QueryTypes.begins)
+					.ifSK(state => {
+						const attributes = state.getCompositeAttributes();
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+					});
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -437,20 +447,19 @@ let clauses = {
 	gt: {
 		name: "gt",
 		action(entity, state, facets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
 				entity._expectFacets(facets, Object.keys(facets), `"gt" composite attributes`);
-				state.query.type = QueryTypes.gt;
-				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-				return state;
+				return state
+					.setType(QueryTypes.gt)
+					.ifSK(state => {
+						const attributes = state.getCompositeAttributes();
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+					});
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -459,20 +468,19 @@ let clauses = {
 	gte: {
 		name: "gte",
 		action(entity, state, facets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
 				entity._expectFacets(facets, Object.keys(facets), `"gte" composite attributes`);
-				state.query.type = QueryTypes.gte;
-				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-				return state;
+				return state
+					.setType(QueryTypes.gte)
+					.ifSK(state => {
+						const attributes = state.getCompositeAttributes();
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+					});
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -481,20 +489,18 @@ let clauses = {
 	lt: {
 		name: "lt",
 		action(entity, state, facets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
 				entity._expectFacets(facets, Object.keys(facets), `"lt" composite attributes`);
-				state.query.type = QueryTypes.lt;
-				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-				return state;
+				return state.setType(QueryTypes.lt)
+					.ifSK(state => {
+						const attributes = state.getCompositeAttributes();
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+					});
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -503,20 +509,18 @@ let clauses = {
 	lte: {
 		name: "lte",
 		action(entity, state, facets = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return state;
 			}
 			try {
 				entity._expectFacets(facets, Object.keys(facets), `"lte" composite attributes`);
-				state.query.type = QueryTypes.lte;
-				let queryFacets = entity._buildQueryFacets(facets, state.query.facets.sk);
-				state.query.keys.sk.push({
-					type: state.query.type,
-					facets: queryFacets,
-				});
-				return state;
+				return state.setType(QueryTypes.lte)
+					.ifSK(state => {
+						const attributes = state.getCompositeAttributes();
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+					});
 			} catch(err) {
-				state.error = err;
+				state.setError(err);
 				return state;
 			}
 		},
@@ -525,7 +529,7 @@ let clauses = {
 	params: {
 		name: "params",
 		action(entity, state, options = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				throw state.error;
 			}
 			try {
@@ -533,14 +537,25 @@ let clauses = {
 					throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
 				}
 				let results;
-				if (state.query.method === MethodTypes.query) {
-					results = entity._queryParams(state, options);
-				} else if (state.query.method === MethodTypes.batchWrite) {
-					results = entity._batchWriteParams(state, options);
-				} else if (state.query.method === MethodTypes.batchGet) {
-					results = entity._batchGetParams(state, options);
-				} else {
-					results = entity._params(state, options);
+				switch (state.getMethod()) {
+					case MethodTypes.query:
+						results = entity._queryParams(state, options);
+						break;
+					case MethodTypes.batchWrite:
+						results = entity._batchWriteParams(state, options);
+						break
+					case MethodTypes.batchGet:
+						results = entity._batchGetParams(state, options);
+						break;
+					default:
+						results = entity._params(state, options);
+						break;
+				}
+
+				if (state.getMethod() === MethodTypes.update && results.ExpressionAttributeValues && Object.keys(results.ExpressionAttributeValues).length === 0) {
+					// An update that only does a `remove` operation would result in an empty object
+					// todo: change the getValues() method to return undefined in this case (would potentially require a more generous refactor)
+					delete results.ExpressionAttributeValues;
 				}
 				return results;
 			} catch(err) {
@@ -552,7 +567,7 @@ let clauses = {
 	go: {
 		name: "go",
 		action(entity, state, options = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return Promise.reject(state.error);
 			}
 			try {
@@ -560,8 +575,8 @@ let clauses = {
 					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 				}
 				let params = clauses.params.action(entity, state, options);
-				let {config} = entity._applyParameterOptions({}, state.query.options, options);
-				return entity.go(state.query.method, params, config);
+				let {config} = entity._applyParameterOptions({}, state.getOptions(), options);
+				return entity.go(state.getMethod(), params, config);
 			} catch(err) {
 				return Promise.reject(err);
 			}
@@ -571,7 +586,7 @@ let clauses = {
 	page: {
 		name: "page",
 		action(entity, state, page = null, options = {}) {
-			if (state.error !== null) {
+			if (state.getError() !== null) {
 				return Promise.reject(state.error);
 			}
 			try {
@@ -581,8 +596,8 @@ let clauses = {
 					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 				}
 				let params = clauses.params.action(entity, state, options);
-				let {config} = entity._applyParameterOptions({}, state.query.options, options);
-				return entity.go(state.query.method, params, config);
+				let {config} = entity._applyParameterOptions({}, state.getOptions(), options);
+				return entity.go(state.getMethod(), params, config);
 			} catch(err) {
 				return Promise.reject(err);
 			}
@@ -591,21 +606,24 @@ let clauses = {
 	},
 };
 
-function initChainState(index, facets = {}, hasSortKey, options) {
-	return {
-		error: null,
-		query: {
+class ChainState {
+	constructor({index = "", compositeAttributes = {}, attributes = {}, hasSortKey = false, options = {}, parentState = null} = {}) {
+		const update = new UpdateExpression({prefix: "_u"});
+		this.parentState = parentState;
+		this.error = null;
+		this.attributes = attributes;
+		this.query = {
+			collection: "",
 			index: index,
 			type: "",
 			method: "",
-			facets: { ...facets },
-			update: {
-				set: {},
-				append: {},
-				remove: {},
-				add: {},
-				subtract: {}
-			},
+			facets: { ...compositeAttributes },
+			update,
+			updateProxy: new AttributeOperationProxy({
+				builder: update,
+				attributes: attributes,
+				operations: UpdateOperations,
+			}),
 			put: {
 				data: {},
 			},
@@ -613,23 +631,122 @@ function initChainState(index, facets = {}, hasSortKey, options) {
 				pk: {},
 				sk: [],
 			},
-			filter: {},
-			options,
-		},
-		batch: {
-			items: [],
-			create() {
-				return initChainState(index, facets, hasSortKey, options);
+			filter: {
+				[ExpressionTypes.ConditionExpression]: new FilterExpression(),
+				[ExpressionTypes.FilterExpression]: new FilterExpression()
 			},
-			push(state) {
-				this.items.push(state);
-			}
-		},
-		hasSortKey: hasSortKey,
-	};
+			options,
+		};
+		this.subStates = [];
+		this.hasSortKey = hasSortKey;
+		this.prev = null;
+		this.self = null;
+	}
+
+	init(entity, allClauses, currentClause) {
+		let current = {};
+		for (let child of currentClause.children) {
+			const name = allClauses[child].name;
+			current[name] = (...args) => {
+				this.prev = this.self;
+				this.self = child;
+				let results = allClauses[child].action(entity, this, ...args);
+				if (allClauses[child].children.length) {
+					return this.init(entity, allClauses, allClauses[child]);
+				} else {
+					return results;
+				}
+			};
+		}
+		return current;
+	}
+
+	getMethod() {
+		return this.query.method;
+	}
+
+	getOptions() {
+		return this.query.options;
+	}
+
+	setPK(attributes) {
+		this.query.keys.pk = attributes;
+		return this;
+	}
+
+	ifSK(cb) {
+		if (this.hasSortKey) {
+			cb(this);
+		}
+		return this;
+	}
+
+	getCompositeAttributes() {
+		return this.query.facets;
+	}
+
+	setSK(attributes, type = this.query.type) {
+		if (this.hasSortKey) {
+			this.query.keys.sk.push({
+				type: type,
+				facets: attributes
+			});
+		}
+		return this;
+	}
+
+	setType(type) {
+		if (!QueryTypes[type]) {
+			throw new Error(`Invalid query type: "${type}"`);
+		}
+		this.query.type = QueryTypes[type];
+		return this;
+	}
+
+	setMethod(method) {
+		if (!MethodTypes[method]) {
+			throw new Error(`Invalid method type: "${method}"`);
+		}
+		this.query.method = MethodTypes[method];
+		return this;
+	}
+
+	setCollection(collection) {
+		this.query.collection = collection;
+		return this;
+	}
+
+	createSubState() {
+		let subState = new ChainState({
+			parentState: this,
+			index: this.query.index,
+			attributes: this.attributes,
+			hasSortKey: this.hasSortKey,
+			options: this.query.options,
+			compositeAttributes: this.query.facets
+		});
+		this.subStates.push(subState);
+		return subState;
+	}
+
+	getError() {
+		return this.error;
+	}
+
+	setError(err) {
+		this.error = err;
+		if (this.parentState) {
+			this.parentState.setError(err);
+		}
+	}
+
+	applyPut(data = {}) {
+		this.query.put.data = {...this.query.put.data, ...data};
+		return this;
+	}
 }
 
 module.exports = {
 	clauses,
-	initChainState
+	ChainState,
 };

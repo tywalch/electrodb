@@ -1,6 +1,5 @@
-import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, SetItem} from ".";
+import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, UpdateDataSymbol} from ".";
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
-
 let entityWithSK = new Entity({
     model: {
         entity: "abc",
@@ -833,7 +832,7 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<SetParametersWithoutSK>({attr6: "1234"});
 
     // Finishers
-    type UpdateParametersFinishers = "go" | "set" | "params" | "where";
+    type UpdateParametersFinishers = "set" | "delete" | "remove" | "go" | "params" | "where" | "add" | "subtract" | "append" | "data";
 
     let updateItem = entityWithSK.update({attr1: "abc", attr2: "def"}).set({});
     let updateItemWithoutSK = entityWithoutSK.update({attr1: "abc"}).set({});
@@ -900,7 +899,7 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<PatchParametersWithoutSK>({attr6: "1234"});
 
     // Finishers
-    type PatchParametersFinishers = "go" | "set" | "params" | "where";
+    type PatchParametersFinishers = "set" | "delete" | "remove" | "go" | "params" | "where" | "add" | "subtract" | "append" | "data";
 
     let patchItem = entityWithSK.patch({attr1: "abc", attr2: "def"}).set({});
     let patchItemWithoutSK = entityWithoutSK.patch({attr1: "abc"}).set({});
@@ -1157,8 +1156,6 @@ let getKeys = ((val) => {}) as GetKeys;
         .myIndex3({attr5: "dgdagad"})
         .go({params: {}})
         .then(a => a.map(val => val.attr4))
-
-
 
     // Query Operations
     entityWithSK.query
@@ -1858,6 +1855,26 @@ let getKeys = ((val) => {}) as GetKeys;
             },
             prop4: {
                 type: "string"
+            },
+            prop5: {
+                type: "number"
+            },
+            prop6: {
+                type: "any"
+            },
+            prop7: {
+                type: "string"
+            },
+            prop8: {
+                type: ["abc", "def"] as const
+            },
+            prop9: {
+                type: "number",
+                readOnly: true,
+            },
+            prop10: {
+                type: "any",
+                readOnly: true
             }
         },
         indexes: {
@@ -1878,6 +1895,7 @@ let getKeys = ((val) => {}) as GetKeys;
     entityWithReadOnlyAttribute.put({prop1: "abc", prop2: "def", prop3: "ghi"}).params();
     entityWithReadOnlyAttribute.create({prop1: "abc", prop2: "def", prop3: "ghi"}).params();
 
+    // readonly
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -1885,10 +1903,223 @@ let getKeys = ((val) => {}) as GetKeys;
             .params();
     });
 
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .add({prop9: 13})
+            .params();
+    });
+
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .subtract({prop9: 13})
+            .params();
+    });
+
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .delete({prop10: "13"})
+            .params();
+    });
+
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .append({prop10: ["abc"]})
+            .params();
+    });
+
+    // bad type - not number
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .add({prop7: 13})
+            .params();
+    });
+
+    // bad type - not number
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .subtract({prop7: 13})
+            .params();
+    });
+
+    // bad type - not string
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            // prop7 is string not number
+            .data(({prop7}, {set}) => set(prop7, 5))
+            .params();
+    });
+
+    // bad type - incorrect enum
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            // prop8 is enum with values ["abc", "def"]
+            .data(({prop8}, {set}) => set(prop8, "ghi"))
+            .params();
+    });
+
+    // bad type - not number
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .data(({prop7}, {subtract}) => subtract(prop7, 5))
+            .params();
+    });
+
+    // bad type - not number
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .data(({prop7}, {add}) => add(prop7, 5))
+            .params();
+    });
+
+    // bad type - not any
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .data(({prop7}, {del}) => del(prop7, 5))
+            .params();
+    });
+
+    // bad type - not any
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .data(({prop7}, op) => op.delete(prop7, 5))
+            .params();
+    });
+
+    // bad type - not any
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .delete({prop7: "13", prop5: 24})
+            .params();
+    });
+
+    // bad type - not any
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .delete({prop5: 24})
+            .params();
+    });
+
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .append({prop7: "13", prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .append({prop5: 24})
+            .params();
+    });
+
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(["prop3"])
+            .params();
+    });
+
+    // readonly
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .data(({prop3}, {remove}) => {
+                remove(prop3)
+            })
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .data(({prop5}, {append}) => {
+                append(prop5, 25)
+            })
+            .params();
+    });
+
+    // patch
     expectError(() => {
         entityWithReadOnlyAttribute
             .patch({prop1: "abc", prop2: "def"})
             .set({prop3: "abc"})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .add({prop7: 13})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .subtract({prop7: 13})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .delete({prop7: "13", prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .delete({prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .append({prop7: "13", prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .append({prop5: 24})
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .remove(["prop3"])
+            .params();
+    });
+
+    expectError(() => {
+        entityWithReadOnlyAttribute
+            .patch({prop1: "abc", prop2: "def"})
+            .remove(["prop3"])
             .params();
     });
 
@@ -1897,6 +2128,134 @@ let getKeys = ((val) => {}) as GetKeys;
         .update({prop1: "abc", prop2: "def"})
         .set(setItemValue)
         .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .remove([
+            "prop4"
+        ])
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .add({
+            prop5: 13,
+        })
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .subtract({
+            prop5: 13,
+        })
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .append({
+            prop6: ["value"]
+        })
+        .params();
+
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .delete({
+            prop6: ["value"]
+        })
+        .params();
+
+    // full chain with duplicates
+    entityWithReadOnlyAttribute
+        .update({prop1: "abc", prop2: "def"})
+        .set(setItemValue)
+        .remove([
+            "prop4"
+        ])
+        .add({
+            prop5: 13,
+        })
+        .subtract({
+            prop5: 13,
+        })
+        .append({
+            prop6: ["value"]
+        })
+        .delete({
+            prop6: ["value"]
+        })
+        .set(setItemValue)
+        .remove([
+            "prop4"
+        ])
+        .data((attr, op) => {
+            op.set(attr.prop4, "abc");
+            op.set(attr.prop5, 134);
+            op.set(attr.prop6, "def")
+            op.set(attr.prop6, 123)
+            op.set(attr.prop6, true)
+            op.set(attr.prop6[1], true)
+            op.set(attr.prop6.prop1, true)
+            op.set(attr.prop8, "def")
+
+            op.remove(attr.prop4);
+            op.remove(attr.prop5);
+            op.remove(attr.prop6);
+            op.remove(attr.prop6);
+            op.remove(attr.prop6);
+            op.remove(attr.prop6[1]);
+            op.remove(attr.prop6.prop1);
+            op.remove(attr.prop8)
+
+            op.append(attr.prop6, ["abc"]);
+            op.append(attr.prop6, ["abc"]);
+            op.append(attr.prop6, ["abc"]);
+            op.append(attr.prop6[1], ["abc"]);
+            op.append(attr.prop6.prop1, ["abc"]);
+
+            op.delete(attr.prop6, ["abc"]);
+            op.delete(attr.prop6, ["abc"]);
+            op.delete(attr.prop6, ["abc"]);
+            op.delete(attr.prop6[1], ["abc"]);
+            op.delete(attr.prop6.prop1, ["abc"]);
+
+            op.del(attr.prop6, ["abc"]);
+            op.del(attr.prop6, ["abc"]);
+            op.del(attr.prop6, ["abc"]);
+            op.del(attr.prop6[1], ["abc"]);
+            op.del(attr.prop6.prop1, ["abc"]);
+
+            op.name(attr.prop4);
+            op.name(attr.prop5);
+            op.name(attr.prop6);
+            op.name(attr.prop6);
+            op.name(attr.prop6);
+            op.name(attr.prop6[1]);
+            op.name(attr.prop6.prop1);
+            op.name(attr.prop8);
+
+            op.value(attr.prop4, "abc");
+            op.value(attr.prop5, 134);
+            op.value(attr.prop6, "abc");
+            op.value(attr.prop6, "abc");
+            op.value(attr.prop6, "abc");
+            op.value(attr.prop6[1], "abc");
+            op.value(attr.prop6.prop1, "abc");
+            op.value(attr.prop8, "abc");
+        })
+        .add({
+            prop5: 13,
+        })
+        .subtract({
+            prop5: 13,
+        })
+        .append({
+            prop6: ["value"]
+        })
+        .delete({
+            prop6: ["value"]
+        })
+        .params();
+
 
     type MyCollection1Pager = {
         attr5?: string | undefined;

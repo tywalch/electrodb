@@ -2,7 +2,10 @@ const moment = require("moment");
 const uuidV4 = require("uuid/v4");
 const { expect } = require("chai");
 let { Entity } = require("../src/entity");
-let { FilterFactory, FilterTypes } = require("../src/filters");
+let { FilterFactory } = require("../src/filters");
+const {FilterOperations} = require("../src/operations");
+const {ChainState} = require("../src/clauses");
+
 
 let model = {
 	service: "MallStoreDirectory",
@@ -130,8 +133,8 @@ describe("Filter", () => {
 			KeyConditionExpression: '#pk = :pk',
 			TableName: 'StoreDirectory',
 			ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk' },
-			ExpressionAttributeValues: { ':id1': 'abc', ':pk': '$mallstoredirectory_1$mallstores#id_abc' },
-			FilterExpression: '#id = :id1'
+			ExpressionAttributeValues: { ':id0': 'abc', ':pk': '$mallstoredirectory_1$mallstores#id_abc' },
+			FilterExpression: '#id = :id0'
 		});
 	})
 	it("Should allow for a filter to return an empty string with Find method", () => {
@@ -163,38 +166,31 @@ describe("Filter", () => {
 			}
 			let filter = new FilterFactory(
 				MallStores.model.schema.attributes,
-				FilterTypes,
+				FilterOperations,
 			);
 			let clause = filter.buildClause(rentsLeaseEndFilter);
 			let lowRent = "20.00";
 			let beginning = "20200101";
 			let end = "20200401";
 			let location = "EastPointe";
-			let results = clause(
+			let state = clause(
 				MallStores,
-				{ query: { filter: {} } },
+				new ChainState(),
 				{ lowRent, beginning, end, location },
 			);
-			expect(results).to.deep.equal({
-				query: {
-					filter: {
-						ExpressionAttributeNames: {
-							"#rent": "rent",
-							"#mall": "mallId",
-							"#leaseEnd": "leaseEnd",
-						},
-						ExpressionAttributeValues: {
-							":rent1": "20.00",
-							":mall1": "EastPointe",
-							":leaseEnd1": "20200101",
-							":leaseEnd2": "20200401",
-						},
-						valueCount: { rent: 2, mall: 2, leaseEnd: 3 },
-						FilterExpression:
-							"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
-					},
-				},
+			const filterExpression = state.query.filter["FilterExpression"];
+			expect(filterExpression.getNames()).to.deep.equal({
+				"#rent": "rent",
+				"#mall": "mallId",
+				"#leaseEnd": "leaseEnd",
 			});
+			expect(filterExpression.getValues()).to.deep.equal({
+				":rent0": "20.00",
+				":mall0": "EastPointe",
+				":leaseEnd0": "20200101",
+				":leaseEnd1": "20200401",
+			});
+			expect(filterExpression.getExpression()).to.equal("(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)");
 		});
 		it("Shouldnt validate the attributes passed when not strict", () => {
 			function byCategory(attr, { category }) {
@@ -202,22 +198,16 @@ describe("Filter", () => {
 			}
 			let filter = new FilterFactory(
 				MallStores.model.schema.attributes,
-				FilterTypes,
+				FilterOperations,
 			);
 			let clause = filter.buildClause(byCategory);
 			let category = "food";
 
-			let containsFood = clause(MallStores, { query: { filter: {} } }, { category });
-			expect(containsFood).to.deep.equal({
-				query: {
-					filter: {
-						ExpressionAttributeNames: { '#category': 'category' },
-						ExpressionAttributeValues: { ':category1': 'food' },
-						valueCount: { category: 2 },
-						FilterExpression: 'contains(#category, :category1)'
-					}
-				}
-			})
+			let state = clause(MallStores, new ChainState(), { category });
+			const filterExpression = state.query.filter["FilterExpression"];
+			expect(filterExpression.getNames()).to.deep.equal({ '#category': 'category' });
+			expect(filterExpression.getValues()).to.deep.equal({ ':category0': 'food' });
+			expect(filterExpression.getExpression()).to.equal('contains(#category, :category0)');
 		});
 		it("Should not allow filters named 'go', 'params', or 'filter'", () => {
 			let schema = {

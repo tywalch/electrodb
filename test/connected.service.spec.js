@@ -1330,12 +1330,12 @@ describe("Entities with custom identifiers and versions", () => {
 				'#sk1': 'sk',
 			},
 			ExpressionAttributeValues: {
-				':uniqueToModelTwo_w1': 'uniqueToModelTwoValue',
-				':uniqueToModelOne_w1': 'uniqueToModelOneValue',
+				':uniqueToModelTwo0': 'uniqueToModelTwoValue',
+				':uniqueToModelOne0': 'uniqueToModelOneValue',
 				':pk': '$myservice#prop1_abc',
 				':sk1': '$collectiona',
 			},
-			"FilterExpression": "#uniqueToModelTwo = :uniqueToModelTwo_w1 OR #uniqueToModelOne = :uniqueToModelOne_w1"
+			"FilterExpression": "#uniqueToModelTwo = :uniqueToModelTwo0 OR #uniqueToModelOne = :uniqueToModelOne0"
 		});
 	});
 

@@ -56,6 +56,12 @@ const AttributeTypes = {
 	any: "any",
 };
 
+const PathTypes = {
+	...AttributeTypes,
+	item: "item"
+};
+
+
 const ExpressionTypes = {
 	ConditionExpression: "ConditionExpression",
 	FilterExpression: "FilterExpression"
@@ -109,24 +115,44 @@ const UnprocessedTypes = {
 	item: "item"
 };
 
-const WatchAll = "*";
+const AttributeWildCard = "*";
+
+const ItemOperations = {
+	"set": "set",
+	"delete": "delete",
+	"remove": "remove",
+	"add": "add",
+	"subtract": "subtract",
+	"append": "append",
+};
+
+const AttributeProxySymbol = Symbol("attribute_proxy");
+
+const BuilderTypes = {
+	update: "update",
+	filter: "filter"
+}
 
 module.exports = {
 	Pager,
 	KeyTypes,
-	WatchAll,
 	CastTypes,
+	PathTypes,
 	QueryTypes,
 	MethodTypes,
 	Comparisons,
+	BuilderTypes,
 	MaxBatchItems,
 	ModelVersions,
+	ItemOperations,
 	AttributeTypes,
 	EntityVersions,
 	ServiceVersions,
 	ExpressionTypes,
 	ElectroInstance,
 	UnprocessedTypes,
+	AttributeWildCard,
+	AttributeProxySymbol,
 	ElectroInstanceTypes,
 	AttributeMutationMethods,
 };

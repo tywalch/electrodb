@@ -22,7 +22,8 @@
 - [**Easily Compose Hierarchical Access Patterns**](#composite-attributes) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
 - [**Single Table Entity Segregation**](#model) - Entities created with **ElectroDB** will not conflict with other entities when using a single table.
 - [**Simplified Sort Key Condition Querying**](#building-queries) - Write efficient sort key queries by easily building compose keys.
-- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`.
+- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`, and `FilterExpressions`.
+- [**Simplified Update Expression Composition**](#update-record) - Easily compose type safe update operations without having to format tedious `ExpressionAttributeNames`, `ExpressionAttributeValues`, and `UpdateExpressions`. 
 - [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/idiomatic queries that return multiple entities in a single request.
 - [**Automatic Index Selection**](#find-records) - Use `.find()` or `.match()` methods to dynamically and efficiently query based on defined sort key structures.
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
@@ -96,7 +97,7 @@ StoreLocations.query
       - [Attribute Definition](#attribute-definition)
       - [Attribute Getters and Setters](#attribute-getters-and-setters)
       - [Attribute Watching](#attribute-watching)
-        * [Attribute Watching: Watch All](#attribute-watching-watch-all)
+        * [Attribute Watching: Watch All](#attribute-watching--watch-all)
         * [Attribute Watching Examples](#attribute-watching-examples)
       - [Calculated Attributes](#calculated-attributes)
       - [Virtual Attributes](#virtual-attributes)
@@ -127,6 +128,7 @@ StoreLocations.query
   * [Where](#where)
     + [FilterExpressions](#filterexpressions)
     + [ConditionExpressions](#conditionexpressions)
+    + [Where with Complex Attributes](#where-with-complex-attributes)
     + [Attributes and Operations](#attributes-and-operations)
     + [Multiple Where Clauses](#multiple-where-clauses)
 - [Building Queries](#building-queries)
@@ -143,9 +145,17 @@ StoreLocations.query
     + [Put Record](#put-record)
     + [Batch Write Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
+      - [Update Method: Set](#update-method--set)
+      - [Update Method: Remove](#update-method--remove)
+      - [Update Method: Add](#update-method--add)
+      - [Update Method: Subtract](#update-method--subtract)
+      - [Update Method: Append](#update-method--append)
+      - [Update Method: Delete](#update-method--delete)
+      - [Update Method: Data](#update-method--data)
+    + [Update Method: Complex Data Types](#update-method--complex-data-types)
     + [Scan Records](#scan-records)
     + [Remove Method](#remove-method)
-    + [Patch Records](#patch-records)
+    + [Patch Record](#patch-record)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
     + [Match Records](#match-records)
@@ -162,7 +172,7 @@ StoreLocations.query
         * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
-- [Errors:](#errors)
+- [Errors:](#errors-)
   + [No Client Defined On Model](#no-client-defined-on-model)
   + [Invalid Identifier](#invalid-identifier)
   + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
@@ -219,7 +229,7 @@ StoreLocations.query
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
 - [Electro CLI](#electro-cli)
 - [Version 1 Migration](#version-1-migration)
-  * [New schema format/breaking key format change](#new-schema-formatbreaking-key-format-change)
+  * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
   * [The renaming of index property Facets to Composite and Template](#the-renaming-of-index-property-facets-to-composite-and-template)
   * [Get Method to Return null](#get-method-to-return-null)
 - [Coming Soon](#coming-soon)
@@ -2090,6 +2100,42 @@ animals.update({habitat: "Africa", enclosure: "5b"})
 	.go()
 ```
 
+### Where with Complex Attributes
+
+ElectroDB supports using the `where()` method with DynamoDB's complex attribute types: `map`, `list`, and `set`. When using the injected `attributes` object, simply drill into the attribute itself to apply your update directly to the required object.
+
+The following are examples on how to filter on complex attributes:
+
+**Example 1: Filtering on a `map` attribute**
+
+```javascript
+animals.query
+	.farm({habitat: "Africa"})
+	.where(({veterinarian}, {eq, between}) => eq(veterinarian.name, "Herb Peterson"))
+	.go()
+```
+
+**Example 1: Filtering on an element in a `list` attribute**
+
+```javascript
+animals.update({habitat: "Africa", enclosure: "5b"})
+    .set({
+      "handlers[0]": "mark"
+    })
+	.where(({handlers}, {eq}) => eq(handlers[0], "jerry"))
+	.go()
+```
+
+**Example 3: Filtering on the a `set` item ("veal"), with a `map` attribute property ("meat"), that is an element of a `list` attribute ("meals")**
+
+```javascript
+animals.query
+	.farm({habitat: "Africa"})
+	.where(({meals}, {exists, between}) => `
+	    ${exists(meals[0].meat.veal)} AND ${between(meals[0].schedule, '6:00', '7:00')}
+	`)
+	.go()
+```
 
 ### Attributes and Operations
 
@@ -2695,9 +2741,24 @@ let unprocessed = await StoreLocations.put([
 Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Update Record
-To update a record, pass all Table index composite attributes to the update method and then pass `set` attributes that need to be updated. This example contains an optional conditional expression.
 
-> Note: If your update includes changes to an attribute that is also a composite attribute for a global secondary index, you must provide all composite attributes for that index. If this constraint did not exist, your keys would either get out of sync with the attributes in your model, or be partially updated at the time of writing because the other attributes in that index were not present at the time of key composition.
+Update Methods are available **_after_** the method `update()` is called, and allow you to perform alter an item stored dynamodb. The methods can be used (and reused) in a chain to form update parameters, when finished with `.params()`, or an update operation, when finished with `.go()`.
+
+ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client.
+
+Update Method                          | Attribute Types                          | Parameter
+-------------                          | ---------------------------------------- | ---------
+[set](#update-method-set)              | `number` `string` `boolean` `enum` `any` | `object`
+[remove](#update-method-remove)        | `number` `string` `boolean` `enum` `any` | `array`
+[add](#update-method-add)              | `number` `any` soon: (`set`)             | `object`
+[subtract](#update-method-subtract)    | `number`                                 | `object`
+[append](#update-method-append)        | `any` soon: (`list`)                     | `object`
+[delete](#update-method-delete)        | `any` soon: (`set`)                      | `object`
+[data](#update-method-data)            | `*`                                      | `callback`
+
+#### Update Method: Set
+
+The `set()` method will accept all attributes defined on the model. Provide a value to apply or replace onto the item.
 
 ```javascript
 await StoreLocations
@@ -2723,6 +2784,332 @@ await StoreLocations
   },
   "ConditionExpression": "#category = :category_w1"
 }
+```
+
+#### Update Method: Remove
+
+The `remove()` method will accept all attributes defined on the model. Unlike most other update methods, the `remove()` method accepts an array with the names of the attributes that should be removed.
+
+```javascript
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .remove(["category"])
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+
+// Equivalent Params:
+{
+  "UpdateExpression": "REMOVE #category",
+  "ExpressionAttributeNames": {
+    "#category": "category"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/coffee"
+  },
+  "TableName": "StoreDirectory",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
+}
+```
+
+#### Update Method: Add
+
+The `add()` method will accept attributes with type `number` and `any` defined on the model. In the case of a `number` attribute, provide a number to _add_ to the existing attribute's value on the item.
+
+If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a number.
+
+> Note: When the `add()` method is applied to `set` type attribute, the values provided must abide by the [value format expectations enforced by the DocumentClient](https://aws.amazon.com/blogs/developer/announcing-the-amazon-dynamodb-document-client-in-the-aws-sdk-for-javascript/). ElectroDB does not modify values based on the update method to fulfil current DocumentClient restrictions.
+
+```javascript
+const newTenant = client.createSet("larry");
+
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .add({
+      rent: 100, // "number" attribute
+      tenant: newTenant // "set" attribute
+    })
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+
+// Equivalent Params:
+{
+  "UpdateExpression": "SET #rent = #rent + :rent0 ADD #tenant :tenant0",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#rent": "rent",
+    "#tenant": "tenant"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/coffee",
+    ":rent0": 100,
+    ":tenant0": ["larry"]
+  },
+  "TableName": "StoreDirectory",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
+}
+```
+
+#### Update Method: Subtract
+
+The `subtract()` method will accept attributes with type `number`. In the case of a `number` attribute, provide a number to _subtract_ from the existing attribute's value on the item.
+
+```javascript
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .subtract({deposit: 500})
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+
+// Equivalent Params:
+{
+  "UpdateExpression": "SET #deposit = #deposit - :deposit0",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#deposit": "deposit"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/coffee",
+    ":deposit0": 500
+  },
+  "TableName": "StoreDirectory",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
+}
+```
+
+#### Update Method: Append
+
+The `append()` method will accept attributes with type `any`. This is a convenience method for working with DynamoDB lists, and is notably different that [`set`](#update-method-set) because it will add an element to an existing array, rather than overwrite the existing value.
+
+> Note: Values provided must abide by the [value format expectations enforced by the DocumentClient](https://aws.amazon.com/blogs/developer/announcing-the-amazon-dynamodb-document-client-in-the-aws-sdk-for-javascript/). ElectroDB does not modify values based on the update method to fulfil current DocumentClient restrictions.
+
+```javascript
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .append({
+      rentalAgreement: [{
+        type: "ammendment", 
+        detail: "no soup for you"
+      }]
+    })
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+
+// Equivalent Params:
+{
+  "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0)",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#rentalAgreement": "rentalAgreement"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/coffee",
+    ":rentalAgreement0": [
+      {
+        "type": "ammendment",
+        "detail": "no soup for you"
+      }
+    ]
+  },
+  "TableName": "StoreDirectory",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
+}
+```
+
+#### Update Method: Delete
+
+The `delete()` method will accept attributes with type `any`. This operation removes items from a DynamoDB `set`.
+
+> Note: Values provided must abide by the [value format expectations enforced by the DocumentClient](https://aws.amazon.com/blogs/developer/announcing-the-amazon-dynamodb-document-client-in-the-aws-sdk-for-javascript/). ElectroDB does not modify values based on the update method to fulfil current DocumentClient restrictions.
+
+```javascript
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .delete({contact: '555-345-2222'})
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+
+// Equivalent Params:
+{
+  "UpdateExpression": "DELETE #contact :contact0",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#contact": "contact"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/coffee",
+    ":contact0": "555-345-2222"
+  },
+  "TableName": "StoreDirectory",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
+}
+```
+
+#### Update Method: Data
+
+The `data()` allows for different approach to updating your item, by accepting a callback with a similar argument signature to the [where clause](#where).
+
+The callback provided to the `data` method is injected with an `attributes` object as the first parameter, and an `operations` object as the second parameter. All operations accept an attribute from the `attributes` object as a first parameter, and optionally accept a second `value` parameter.
+
+As mentioned above, this method is functionally similar to the `where` clause with one exception: The callback provided to `data()` is not expected to return a value. When you invoke an injected `operation` method, the side effects are applied directly to update expression you are building.
+
+operation     | example                               | result                                                                | description
+------------- | ------------------------------------- | --------------------------------------------------------------------- | -----------
+`set`         | `set(category, value)`                | `#category = :category0`                                              | Add or overwrite existing value
+`add`         | `add(tenant, name)`                   | `#tenant :tenant1`                                                    | Add value to existing `set` attribute (used when provided attribute is of type `any` or `set`)
+`add`         | `add(rent, amount)`                   | `#rent = #rent + :rent0`                                              | Mathematically add given number to existing number on record
+`subtract`    | `subtract(deposit, amount)`           | `#deposit = #deposit - :deposit0`                                     | Mathematically subtract given number from existing number on record
+`remove`      | `remove(petFee)`                      | `#petFee`                                                             | Remove attribute/property from item
+`append`      | `append(rentalAgreement, amendment)`  | `#rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0)` | Add element to existing `list` attribute
+`delete`      | `delete(tenant, name)`                | `#tenant :tenant1`                                                    | Remove item from existing `set` attribute
+`del`         | `del(tenant, name)`                   | `#tenant :tenant1`                                                    | Alias for `delete` operation
+`name`        | `name(rent)`                          | `#rent`                                                               | Reference another attribute's name, can be passed to other operation that allows leveraging existing attribute values in calculating new values
+`value`       | `value(rent, value)`                  | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
+
+```javascript
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .data((attr, op) => {
+        const newTenant = attr.value(attr.tenant, "larry")
+        op.set(attr.category, "food/meal");
+        op.add(attr.tenant, newTenant);
+        op.add(attr.rent, 100);
+        op.subtract(attr.deposit, 200);
+        op.remove(attr.leaseEndDate);
+        op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
+        op.delete(attr.tags, 'coffee');
+        op.del(attr.contact, '555-345-2222');
+        op.add(attr.totalFees, op.name(attr.petFee));
+        op.add(attr.leaseHolders, newTenant);
+    })
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+
+// Equivalent Params:
+{
+  "UpdateExpression": "SET #category = :category0, #rent = #rent + :rent0, #deposit = #deposit - :deposit0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant1, #leaseHolders :leaseHolders0 DELETE #tags :tags0, #contact :contact0",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#tenant": "tenant",
+    "#rent": "rent",
+    "#deposit": "deposit",
+    "#leaseEndDate": "leaseEndDate",
+    "#rentalAgreement": "rentalAgreement",
+    "#tags": "tags",
+    "#contact": "contact",
+    "#totalFees": "totalFees",
+    "#petFee": "petFee",
+    "#leaseHolders": "leaseHolders",
+    "#gsi2sk": "gsi2sk"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/meal",
+    ":tenant0": "larry",
+    ":tenant1": ":tenant0",
+    ":rent0": 100,
+    ":deposit0": 200,
+    ":rentalAgreement0": [{
+      "type": "ammendment",
+      "detail": "no soup for you"
+    }],
+    ":tags0": "coffee",
+    ":contact0": "555-345-2222",
+    ":leaseHolders0": ":tenant0"
+  },
+  "TableName": "StoreDirectory",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
+}
+```
+
+### Update Method: Complex Data Types
+
+ElectroDB supports updating DynamoDB's complex types (`list`, `map`, `set`) with all of its Update Methods.
+
+When using the chain methods [set](#update-method-set), [add](#update-method-add), [subtract](#update-method-subtract), [remove](#update-method-remove), [append](#update-method-append), and [delete](#update-method-delete), you can access `map` properties, `list` elements, and `set` items by supplying the json path of the property as the name of the attribute.
+
+The [`data()` method](#update-method-data) also allows for working with complex types. Unlike using the update chain methods, the `data()` method ensures type safety when using TypeScript. When using the injected `attributes` object, simply drill into the attribute itself to apply your update directly to the required object.
+
+The following are examples on how update complex attributes, using both with chain methods and the `data()` method.
+
+**Example 1: Set property on a `map` attribute**
+
+Specifying a property on a `map` attribute can expressed using dot notation.
+
+```javascript
+// via Chain Method
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .set({'mapAttribute.mapProperty':  "value"})
+    .go();
+
+// via Data Method 
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "value"))
+    .go()
+```
+
+**Example 2: Removing an element from a `list` attribute**
+
+Specifying an index on a `list` attribute is done with square brackets containing the element's index number.
+
+```javascript
+// via Chain Method
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .remove(['listAttribute[0]'])
+    .go();
+
+// via Data Method 
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .data(({listAttribute}, {remove}) => remove(listAttribute[0]))
+    .go();
+```
+
+**Example 3: Adding an item to a `set` attribute, on a `map` attribute, that is an element of a `list` attribute**
+
+All other complex structures are simply variations on the above two examples.
+
+```javascript
+// Set values must use the DocumentClient to create a `set`
+const newSetValue = StoreLocations.client.createSet("setItemValue"); 
+
+// via Data Method 
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .add({'listAttribute[1].setAttribute': newSetValue})
+    .go();
+
+await StoreLocations
+    .update({cityId, mallId, storeId, buildingId})
+    .data(({listAttribute}, {add}) => {
+        add(listAttribute[1].setAttribute, newSetValue)
+    })
+    .go();
 ```
 
 ### Scan Records
@@ -2787,35 +3174,11 @@ await StoreLocations.remove({
 // }
 ```
 
-### Patch Records
+### Patch Record
 
 In DynamoDB, `update` operations by default will insert a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not inserted when updating.
 
-```javascript
-await StoreLocations
-    .patch({cityId, mallId, storeId, buildingId})
-    .set({category: "food/meal"})
-    .where((attr, op) => op.eq(attr.category, "food/coffee"))
-    .go()
-
-// Equivalent Params:
-{
-  "UpdateExpression": "SET #category = :category",
-  "ExpressionAttributeNames": {
-    "#category": "category"
-  },
-  "ExpressionAttributeValues": {
-    ":category_w1": "food/coffee",
-    ":category": "food/meal"
-  },
-  "TableName": "StoreDirectory",
-  "Key": {
-    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-  },
-  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk) AND #category = :category_w1"
-}
-```
+For more detail on how to use the `patch()` method, see the section [Update Record](#update-record) to see all the transferable requirements and capabilities available to `patch()`.
 
 ### Create Records
 
@@ -4430,5 +4793,4 @@ This change stems from the fact the `facets` is already a defined term in the Dy
 
 # Coming Soon
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
-- Append/Add/Subtract/Remove updates capabilities
 - Complex attributes (list, map, set)

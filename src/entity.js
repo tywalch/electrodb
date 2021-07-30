@@ -1,9 +1,10 @@
 "use strict";
 const { Schema } = require("./schema");
-const { EntityVersions, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
-const { FilterFactory, FilterTypes } = require("./filters");
+const { EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { FilterFactory } = require("./filters");
+const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
-const { clauses, initChainState } = require("./clauses");
+const { clauses, ChainState } = require("./clauses");
 const validations = require("./validations");
 const utilities = require("./util");
 const e = require("./errors");
@@ -18,8 +19,8 @@ class Entity {
 		/** start beta/v1 condition **/
 		this.config.table = config.table || model.table;
 		/** end beta/v1 condition **/
-		this._filterBuilder = new FilterFactory(this.model.schema.attributes, FilterTypes);
-		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterTypes);
+		this._filterBuilder = new FilterFactory(this.model.schema.attributes, FilterOperations);
+		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterOperations);
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(clauses, this.model.filters);
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
 		this.scan = this._makeChain("", this._clausesWithFilters, clauses.index).scan();
@@ -107,27 +108,29 @@ class Entity {
 	match(facets = {}) {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
-			return this._makeChain("", this._clausesWithFilters, clauses.index).scan().filter(attr => {
-				let eqFilters = [];
-				for (let facet of Object.keys(facets)) {
-					if (attr[facet] !== undefined && facets[facet] !== undefined) {
-						eqFilters.push(attr[facet].eq(facets[facet]));
+			return this._makeChain("", this._clausesWithFilters, clauses.index)
+				.scan()
+				.filter(attr => {
+					let eqFilters = [];
+					for (let facet of Object.keys(facets)) {
+						if (attr[facet] !== undefined && facets[facet] !== undefined) {
+							eqFilters.push(attr[facet].eq(facets[facet]));
+						}
 					}
-				}
-				return eqFilters.join(" AND");
+				return eqFilters.join(" AND ");
 			});
 		} else {
-			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(
-				facets,
-			).filter(attr => {
-				let eqFilters = [];
-				for (let facet of Object.keys(facets)) {
-					if (attr[facet] !== undefined && facets[facet] !== undefined) {
-						eqFilters.push(attr[facet].eq(facets[facet]));
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index)
+				.query(facets)
+				.filter(attr => {
+					let eqFilters = [];
+					for (let facet of Object.keys(facets)) {
+						if (attr[facet] !== undefined && facets[facet] !== undefined) {
+							eqFilters.push(attr[facet].eq(facets[facet]));
+						}
 					}
-				}
-				return eqFilters.join(" AND");
-			});
+					return eqFilters.join(" AND ");
+				});
 		}
 	}
 
@@ -259,10 +262,11 @@ class Entity {
 	}
 
 	async _exec(method, parameters) {
-		return this.client[method](parameters).promise().catch(err => {
-			err.__isAWSError = true;
-			throw err;
-		});
+		return this.client[method](parameters).promise()
+			.catch(err => {
+				err.__isAWSError = true;
+				throw err;
+			});
 	}
 
 	async executeBulkWrite(parameters, config) {
@@ -499,9 +503,14 @@ class Entity {
 	}
 	/* istanbul ignore next */
 	_makeChain(index = "", clauses, rootClause, options = {}) {
-		let facets = this.model.facets.byIndex[index];
-		let state = initChainState(index, facets, this.model.lookup.indexHasSortKeys[index], options);
-		return this._chain(state, clauses, rootClause);
+		let state = new ChainState({
+			index,
+			options,
+			attributes: this.model.schema.attributes,
+			hasSortKey: this.model.lookup.indexHasSortKeys[index],
+			compositeAttributes: this.model.facets.byIndex[index]
+		});
+		return state.init(this, clauses, rootClause);
 	}
 
 	_regexpEscape(string) {
@@ -748,19 +757,20 @@ class Entity {
 	}
 
 	_applyParameterExpressionTypes(params, filter) {
-		if (typeof filter[ExpressionTypes.ConditionExpression] === "string" && filter[ExpressionTypes.ConditionExpression].length > 0) {
+		const conditions = filter[ExpressionTypes.ConditionExpression];
+		if (conditions.build().length > 0) {
 			if (typeof params[ExpressionTypes.ConditionExpression] === "string" && params[ExpressionTypes.ConditionExpression].length > 0) {
-				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${filter[ExpressionTypes.ConditionExpression]}`
+				params[ExpressionTypes.ConditionExpression] = `${params[ExpressionTypes.ConditionExpression]} AND ${conditions.build()}`
 			} else {
-				params[ExpressionTypes.ConditionExpression] = filter[ExpressionTypes.ConditionExpression];
+				params[ExpressionTypes.ConditionExpression] = conditions.build();
 			}
-			if (Object.keys(filter.ExpressionAttributeNames).length > 0) {
+			if (Object.keys(conditions.getNames()).length > 0) {
 				params.ExpressionAttributeNames = params.ExpressionAttributeNames || {};
-				params.ExpressionAttributeNames = Object.assign({}, filter.ExpressionAttributeNames, params.ExpressionAttributeNames);
+				params.ExpressionAttributeNames = Object.assign({}, conditions.getNames(), params.ExpressionAttributeNames);
 			}
-			if (Object.keys(filter.ExpressionAttributeValues).length > 0) {
+			if (Object.keys(conditions.getValues()).length > 0) {
 				params.ExpressionAttributeValues = params.ExpressionAttributeValues || {};
-				params.ExpressionAttributeValues = Object.assign({}, filter.ExpressionAttributeValues, params.ExpressionAttributeValues);
+				params.ExpressionAttributeValues = Object.assign({}, conditions.getValues(), params.ExpressionAttributeValues);
 			}
 		}
 		return params;
@@ -782,14 +792,14 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
-				params = this._makeUpdateParams(
+				params = this._makeUpdateParams2(
 					update,
 					keys.pk,
 					...consolidatedQueryFacets,
 				);
 				break;
 			case MethodTypes.scan:
-				params = this._makeScanParam(filter);
+				params = this._makeScanParam(filter[ExpressionTypes.FilterExpression]);
 				break;
 			/* istanbul ignore next */
 			default:
@@ -803,7 +813,7 @@ class Entity {
 		let table = config.table || this._getTableName();
 		let userDefinedParams = config.params || {};
 		let records = [];
-		for (let itemState of state.batch.items) {
+		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			if (method === MethodTypes.get) {
@@ -827,7 +837,7 @@ class Entity {
 	_batchWriteParams(state, config = {}) {
 		let table = config.table || this._getTableName();
 		let records = [];
-		for (let itemState of state.batch.items) {
+		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			switch (method) {
@@ -897,11 +907,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				filter.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			FilterExpression: `begins_with(#${pkField}, :${pkField})`,
@@ -915,8 +925,8 @@ class Entity {
 			let skField = this.model.indexes[accessPattern].sk.field;
 			params.FilterExpression = `${params.FilterExpression} AND begins_with(#${skField}, :${skField})`;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = `${params.FilterExpression} AND ${filter.FilterExpression}`;
+		if (filter.build()) {
+			params.FilterExpression = `${params.FilterExpression} AND ${filter.build()}`;
 		}
 		return params;
 	}
@@ -937,8 +947,60 @@ class Entity {
 		return copy;
 	}
 
+	_makeUpdateParams2(update = {}, pk = {}, sk = {}) {
+		let modifiedAttributeValues = {};
+		let modifiedAttributeNames = {};
+		for (const path of Object.keys(update.paths)) {
+			const {value, name} = update.paths[path];
+			modifiedAttributeValues[path] = value;
+			modifiedAttributeNames[path] = name;
+		}
+		const removed = {};
+		for (const name in update.impacted) {
+			if (update.impacted[name] === ItemOperations.remove) {
+				removed[name] = name;
+			}
+		}
+		modifiedAttributeValues = this._removeAttributes(modifiedAttributeValues, {...pk, ...sk, ...this.model.schema.getReadOnly()});
+		const preparedUpdateValues = this.model.schema.applyAttributeSetters(modifiedAttributeValues);
+		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
+		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
+		// should only happen when an attribute is changed.
+		const { indexKey, updatedKeys, deletedKeys = [] } = this._getUpdatedKeys(pk, sk, preparedUpdateValues, removed);
+		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[""];
+
+		for (const path of Object.keys(preparedUpdateValues)) {
+			if (modifiedAttributeNames[path] !== undefined && preparedUpdateValues[path] !== undefined) {
+				update.updateValue(modifiedAttributeNames[path], preparedUpdateValues[path]);
+			} else if (preparedUpdateValues[path] !== undefined) {
+				update.set(path, preparedUpdateValues[path]);
+			}
+		}
+
+		for (const indexKey of Object.keys(updatedKeys)) {
+			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
+				update.set(indexKey, updatedKeys[indexKey]);
+			}
+		}
+
+		for (const indexKey of deletedKeys) {
+			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
+				update.remove(indexKey);
+			}
+		}
+
+		return {
+			UpdateExpression: update.build(),
+			ExpressionAttributeNames: update.getNames(),
+			ExpressionAttributeValues: update.getValues(),
+			TableName: this._getTableName(),
+			Key: indexKey,
+		};
+	}
+
 	/* istanbul ignore next */
-	_makeUpdateParams({ set } = {}, pk = {}, sk = {}) {
+	_makeUpdateParams(update = {}, pk = {}, sk = {}) {
+		const set = update[ItemOperations.set] || {};
 		let withoutKeyFacets = this._removeAttributes(set, {...pk, ...sk, ...this.model.schema.getReadOnly()});
 		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
 		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
@@ -995,7 +1057,7 @@ class Entity {
 			this.model.indexes[accessPattern].pk.field,
 			this.model.indexes[accessPattern].sk.field
 		];
-		return this._expressionAttributeBuilder(data, { skip });
+		return this._expressionAttributeBuilder(data, ItemOperations.set, { skip });
 	}
 
 	_queryKeyExpressionAttributeBuilder(index, pk, ...sks) {
@@ -1009,7 +1071,7 @@ class Entity {
 			restrict.push(id);
 			translate[id] = translate["sk"];
 		}
-		let keyExpressions = this._expressionAttributeBuilder(keys, {
+		let keyExpressions = this._expressionAttributeBuilder(keys, ItemOperations.set, {
 			translate,
 			restrict,
 		});
@@ -1021,7 +1083,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_expressionAttributeBuilder(item = {}, options = {}) {
+	_expressionAttributeBuilder(item = {}, operation = "", options = {}) {
 		let {
 			require = [],
 			reject = [],
@@ -1075,7 +1137,7 @@ class Entity {
 			expressions.ExpressionAttributeNames[nameProp] = name;
 			expressions.ExpressionAttributeValues[valProp] = value;
 		}
-		expressions.UpdateExpression = `SET ${expressions.UpdateExpression.join(
+		expressions.UpdateExpression = `${operation.toUpperCase()} ${expressions.UpdateExpression.join(
 			", ",
 		)}`;
 		return expressions;
@@ -1099,7 +1161,7 @@ class Entity {
 				parameters = this._makeBeginsWithQueryParams(
 					state.query.options,
 					state.query.index,
-					state.query.filter,
+					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1108,7 +1170,7 @@ class Entity {
 				parameters = this._makeBeginsWithQueryParams(
 					state.query.options,
 					state.query.index,
-					state.query.filter,
+					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					this._getCollectionSk(state.query.collection),
 				);
@@ -1116,7 +1178,7 @@ class Entity {
 			case QueryTypes.between:
 				parameters = this._makeBetweenQueryParams(
 					state.query.index,
-					state.query.filter,
+					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1128,7 +1190,7 @@ class Entity {
 				parameters = this._makeComparisonQueryParams(
 					state.query.index,
 					state.query.type,
-					state.query.filter,
+					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					...indexKeys.sk,
 				);
@@ -1150,11 +1212,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames,
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				filter.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			KeyConditionExpression: `#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2`,
@@ -1162,8 +1224,8 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = filter.FilterExpression;
+		if (filter.build()) {
+			params.FilterExpression = filter.build();
 		}
 		return params;
 	}
@@ -1182,13 +1244,13 @@ class Entity {
 		let params = {
 			KeyConditionExpression,
 			TableName: this._getTableName(),
-			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.ExpressionAttributeNames, keyExpressions.ExpressionAttributeNames, customExpressions.names),
-			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.ExpressionAttributeValues, keyExpressions.ExpressionAttributeValues, customExpressions.values),
+			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.getNames(), keyExpressions.ExpressionAttributeNames, customExpressions.names),
+			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.getValues(), keyExpressions.ExpressionAttributeValues, customExpressions.values),
 		};
 		if (index) {
 			params["IndexName"] = index;
 		}
-		let expressions = [customExpressions.expression, filter.FilterExpression].filter(Boolean).join(" AND ");
+		let expressions = [customExpressions.expression, filter.build()].filter(Boolean).join(" AND ");
 		if (expressions.length) {
 			params.FilterExpression = expressions;
 		}
@@ -1219,11 +1281,11 @@ class Entity {
 		let params = {
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeNames,
+				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames,
 			),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(
-				filter.ExpressionAttributeValues,
+				filter.getValues(),
 				keyExpressions.ExpressionAttributeValues,
 			),
 			KeyConditionExpression: `#pk = :pk and #sk1 ${operator} :sk1`,
@@ -1231,8 +1293,8 @@ class Entity {
 		if (index) {
 			params["IndexName"] = index;
 		}
-		if (filter.FilterExpression) {
-			params.FilterExpression = filter.FilterExpression;
+		if (filter.build()) {
+			params.FilterExpression = filter.build();
 		}
 		return params;
 	}
@@ -1319,7 +1381,7 @@ class Entity {
 		return { indexKey, updatedKeys, setAttributes };
 	}
 
-	_getUpdatedKeys(pk, sk, set) {
+	_getUpdatedKeys(pk, sk, set, removed) {
 		let updateIndex = "";
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
@@ -1327,6 +1389,11 @@ class Entity {
 			{ ...set },
 			{ ...keyAttributes },
 		);
+		const removedKeyImpact = this._expectIndexFacets(
+			{...removed},
+			{...keyAttributes}
+		)
+
 		// complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
 		if (completeFacets.impactedIndexTypes[updateIndex] === undefined) {
 			completeFacets.impactedIndexTypes[updateIndex] = {
@@ -1336,7 +1403,11 @@ class Entity {
 		}
 		let composedKeys = this._makeKeysFromAttributes(completeFacets.impactedIndexTypes,{ ...set, ...keyAttributes });
 		let updatedKeys = {};
+		let deletedKeys = [];
 		let indexKey = {};
+		for (const keys of Object.values(removedKeyImpact.impactedIndexTypes)) {
+			deletedKeys = deletedKeys.concat(Object.values(keys));
+		}
 		for (let [index, keys] of Object.entries(composedKeys)) {
 			let { pk, sk } = keyTranslations[index];
 			if (index === updateIndex) {
@@ -1365,7 +1436,7 @@ class Entity {
 				updatedKeys[sk] = keys.sk[0];
 			}
 		}
-		return { indexKey, updatedKeys };
+		return { indexKey, updatedKeys, deletedKeys };
 	}
 
 	/* istanbul ignore next */
@@ -1383,7 +1454,7 @@ class Entity {
 					impactedIndexes[index][type] = impactedIndexes[index][type] || [];
 					impactedIndexes[index][type].push(attribute);
 					impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-					impactedIndexTypes[index][type] = type;
+					impactedIndexTypes[index][type] = this.model.translations.keys[index][type];
 				});
 			}
 		}

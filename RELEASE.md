@@ -20,3 +20,7 @@ The approach for "Watch All" syntax for attributes (e.g. `{watch: "*"}`) weighed
 5. When Complex Attributes are added, there needs to be consideration about how these properties will fall into the `watch`, `set`, and `get` syntax. That is a larger consideration, but in regard to `watch`, having a wildcard type character could be very powerful. Imagine the following examples:
     - `{ watch: ["myMapAttribute.*"] }` - Whenever any property of a Map attribute is updated/queried
     - `{ watch: ["myListAttribute[*].elementValue"] }` - Whenever any item of a List attribute, that contains Map attributes, is updated/queried
+   
+## [1.2.0]
+### ExpressionAttributeValues Properties 
+To prevent clashes between `update` values and filter conditions, a change was made to how the property names of `ExpressionAttributeValues` are constructed. This is not a breaking change but if you have tests to specifically compare param results against static JSON you will need to update that JSON. Changes to JSON query parameters is not considered a breaking major version change.    

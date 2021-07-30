@@ -16,7 +16,6 @@ describe("Model Validation", () => {
 					readOnly: "not_bool",
 					required: "also_not_bool",
 					cast: 4,
-					default: 5,
 					validate: "not_fn_or_regexp",
 					get: "not_fn",
 					set: "also_not_fn",
@@ -32,7 +31,7 @@ describe("Model Validation", () => {
 			},
 		};
 		expect(() => model(record)).to.throw(
-			"instance.attributes.prop1.type is not of a type(s) string,array, instance.attributes.prop1.field is not of a type(s) string, instance.attributes.prop1.label is not of a type(s) string, instance.attributes.prop1.readOnly is not of a type(s) boolean, instance.attributes.prop1.required is not of a type(s) boolean, instance.attributes.prop1.cast is not of a type(s) string, instance.attributes.prop1.cast is not one of enum values: string,number, instance.attributes.prop1.default must be either a function or string, instance.attributes.prop1.validate must be either a function or Regexp, instance.attributes.prop1.get must be a function, instance.attributes.prop1.set must be a function",
+			"instance requires property \"model\", instance.model is required, instance.attributes.prop1.type is not of a type(s) string,array, instance.attributes.prop1.field is not of a type(s) string, instance.attributes.prop1.label is not of a type(s) string, instance.attributes.prop1.readOnly is not of a type(s) boolean, instance.attributes.prop1.required is not of a type(s) boolean, instance.attributes.prop1.cast is not of a type(s) string, instance.attributes.prop1.cast is not one of enum values: string,number, instance.attributes.prop1.validate must be either a function or Regexp, instance.attributes.prop1.get must be a function, instance.attributes.prop1.set must be a function - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model",
 		);
 	});
 	it("should not allow composite attributes to be used more than once in one index", () => {

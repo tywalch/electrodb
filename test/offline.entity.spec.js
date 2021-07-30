@@ -522,7 +522,7 @@ describe("Entity", () => {
 			let adjustments = "500.00";
 			expect(() =>
 				MallStores.update({ id }).set({ rent, category, id }).params(),
-			).to.throw("Attribute id is Read-Only and cannot be updated");
+			).to.throw(`Attribute "id" is Read-Only and cannot be updated`);
 			expect(() =>
 				MallStores.update({ id }).set({ rent, adjustments }).params(),
 			).to.not.throw();
@@ -597,17 +597,17 @@ describe("Entity", () => {
 						indexes: ["gsi1pk-gsi1sk-index", "gsi2pk-gsi2sk-index"],
 						impactedIndexTypes: {
 							"gsi1pk-gsi1sk-index": {
-				  				"pk": "pk"
+				  				"pk": "gsi1pk"
 							},
 							"gsi2pk-gsi2sk-index": {
-				  				"pk": "pk"
+				  				"pk": "gsi2pk"
 							},
 							"gsi3pk-gsi3sk-index": {
-				  				"pk": "pk",
-				  				"sk": "sk"
+				  				"pk": "gsi3pk",
+				  				"sk": "gsi3sk"
 							},
 							"gsi4pk-gsi4sk-index": {
-				  				"sk": "sk"
+				  				"sk": "gsi4sk"
 							}
 						}
 					},
@@ -633,7 +633,7 @@ describe("Entity", () => {
 						"indexes": [],
 						"impactedIndexTypes": {
 							"gsi2pk-gsi2sk-index": {
-								"sk": "sk"
+								"sk": "gsi2sk"
 							}
 						}
 					}
@@ -663,16 +663,16 @@ describe("Entity", () => {
 						],
 						"impactedIndexTypes": {
 							"gsi1pk-gsi1sk-index": {
-								"pk": "pk"
+								"pk": "gsi1pk"
 							},
 							"gsi2pk-gsi2sk-index": {
-								"pk": "pk"
+								"pk": "gsi2pk"
 							},
 							"gsi3pk-gsi3sk-index": {
-								"pk": "pk"
+								"pk": "gsi3pk"
 							},
 							"gsi4pk-gsi4sk-index": {
-								"sk": "sk"
+								"sk": "gsi4sk"
 							}
 						}
 					}
@@ -694,16 +694,16 @@ describe("Entity", () => {
 						],
 						"impactedIndexTypes": {
 							"gsi1pk-gsi1sk-index": {
-								"pk": "pk"
+								"pk": "gsi1pk"
 							},
 							"gsi2pk-gsi2sk-index": {
-								"pk": "pk"
+								"pk": "gsi2pk"
 							},
 							"gsi3pk-gsi3sk-index": {
-								"pk": "pk"
+								"pk": "gsi3pk"
 							},
 							"gsi4pk-gsi4sk-index": {
-								"sk": "sk"
+								"sk": "gsi4sk"
 							}
 						}
 					}
@@ -722,10 +722,10 @@ describe("Entity", () => {
 						"indexes": [],
 						"impactedIndexTypes": {
 							"gsi2pk-gsi2sk-index": {
-								"sk": "sk"
+								"sk": "gsi2sk"
 							},
 							"gsi3pk-gsi3sk-index": {
-								"sk": "sk"
+								"sk": "gsi3sk"
 							}
 						}
 					}
@@ -751,9 +751,9 @@ describe("Entity", () => {
 			let del = MallStores.delete({ id });
 			expect(del).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let update = MallStores.update({ id }).set({ rent, category });
-			expect(update).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter");
+			expect(update).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
 			let patch = MallStores.patch({ id }).set({ rent, category });
-			expect(patch).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter");
+			expect(patch).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
 			let put = MallStores.put({
 				store,
 				mall,
@@ -850,9 +850,9 @@ describe("Entity", () => {
 					":__edb_e__": "MallStores",
 					":__edb_v__": "1",
 					":pk": "$mallstoredirectory_1$mallstores#id_",
-					":store1": "Starblix"
+					":store0": "Starblix"
 				},
-				"FilterExpression": "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #store = :store1",
+				"FilterExpression": "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #store = :store0",
 				"TableName": "StoreDirectory"
 			})
 		})
@@ -888,13 +888,12 @@ describe("Entity", () => {
 				.set({ mall, store, building, category, unit, rent, leaseEnd })
 				.params();
 			expect(update).to.deep.equal({
-				UpdateExpression:
-					"SET #mall = :mall, #storeId = :storeId, #buildingId = :buildingId, #unitId = :unitId, #category = :category, #leaseEnd = :leaseEnd, #rent = :rent, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk, #gsi2pk = :gsi2pk, #gsi2sk = :gsi2sk, #gsi3pk = :gsi3pk, #gsi3sk = :gsi3sk, #gsi4pk = :gsi4pk, #gsi4sk = :gsi4sk",
+				UpdateExpression: "SET #mall = :mall_u0, #store = :store_u0, #building = :building_u0, #category = :category_u0, #unit = :unit_u0, #rent = :rent_u0, #leaseEnd = :leaseEnd_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #gsi4pk = :gsi4pk_u0, #gsi4sk = :gsi4sk_u0",
 				ExpressionAttributeNames: {
 					"#mall": "mall",
-					"#storeId": "storeId",
-					"#buildingId": "buildingId",
-					"#unitId": "unitId",
+					"#store": "storeId",
+					"#building": "buildingId",
+					"#unit": "unitId",
 					"#category": "category",
 					"#leaseEnd": "leaseEnd",
 					"#rent": "rent",
@@ -908,21 +907,21 @@ describe("Entity", () => {
 					"#gsi4sk": "gsi4sk",
 				},
 				ExpressionAttributeValues: {
-					":mall": mall,
-					":storeId": store,
-					":buildingId": building,
-					":unitId": unit,
-					":category": category,
-					":leaseEnd": leaseEnd,
-					":rent": rent,
-					":gsi1pk": "$mallstoredirectory_1#mall_eastpointe",
-					":gsi1sk": "$mallstores#building_buildinga#unit_b54#store_lattelarrys",
-					":gsi2pk": "$mallstoredirectory_1#mall_eastpointe",
-					":gsi2sk": "$mallstores#leaseend_2020-01-20#store_lattelarrys#building_buildinga#unit_b54",
-					":gsi3pk": "$mallstoredirectory_1#mall_eastpointe",
-					":gsi3sk": "$mallstores#category_food/coffee#building_buildinga#unit_b54#store_lattelarrys",
-					":gsi4pk": "$mallstoredirectory_1#store_lattelarrys",
-					":gsi4sk": "$mallstores#mall_eastpointe#building_buildinga#unit_b54",
+					":mall_u0": mall,
+					":store_u0": store,
+					":building_u0": building,
+					":unit_u0": unit,
+					":category_u0": category,
+					":leaseEnd_u0": leaseEnd,
+					":rent_u0": rent,
+					":gsi1pk_u0": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi1sk_u0": "$mallstores#building_buildinga#unit_b54#store_lattelarrys",
+					":gsi2pk_u0": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi2sk_u0": "$mallstores#leaseend_2020-01-20#store_lattelarrys#building_buildinga#unit_b54",
+					":gsi3pk_u0": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi3sk_u0": "$mallstores#category_food/coffee#building_buildinga#unit_b54#store_lattelarrys",
+					":gsi4pk_u0": "$mallstoredirectory_1#store_lattelarrys",
+					":gsi4sk_u0": "$mallstores#mall_eastpointe#building_buildinga#unit_b54",
 				},
 				TableName: "StoreDirectory",
 				Key: {
@@ -1383,9 +1382,9 @@ describe("Entity", () => {
 				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
 			});
 			expect(updateParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value',
+				UpdateExpression: 'SET #value = :value_u0',
 				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value': 'ahssfh' },
+				ExpressionAttributeValues: { ':value_u0': 'ahssfh' },
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: '$mallstoredirectory_1#id_abcd',
@@ -1393,9 +1392,9 @@ describe("Entity", () => {
 				}
 			});
 			expect(patchParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value',
+				UpdateExpression: 'SET #value = :value_u0',
 				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value': 'ahssfh' },
+				ExpressionAttributeValues: { ':value_u0': 'ahssfh' },
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: '$mallstoredirectory_1#id_abcd',
@@ -1962,9 +1961,9 @@ describe("Entity", () => {
 			let rent = "0.00";
 			let patchParams = MallStores.patch({id, mall}).set({rent}).params();
 			expect(patchParams).to.deep.equal({
-				UpdateExpression: 'SET #rent = :rent',
+				UpdateExpression: 'SET #rent = :rent_u0',
 				ExpressionAttributeNames: { '#rent': 'rent' },
-				ExpressionAttributeValues: { ':rent': '0.00' },
+				ExpressionAttributeValues: { ':rent_u0': '0.00' },
 				TableName: 'StoreDirectory',
 				Key: {
 					pk: '$mallstoredirectory_1#id_12345',
@@ -2628,10 +2627,10 @@ describe("Entity", () => {
 				ExpressionAttributeValues: {
 					":__edb_e__": "MallStores",
 					":__edb_v__": "1",
-					':leaseEnd1': '123',
+					':leaseEnd0': '123',
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd1"
+				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd0"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
@@ -2666,10 +2665,10 @@ describe("Entity", () => {
 				ExpressionAttributeValues: {
 					":__edb_e__": "MallStores",
 					":__edb_v__": "1",
-					':leaseEnd1': '123',
+					':leaseEnd0': '123',
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd1"
+				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd0"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
@@ -2702,11 +2701,11 @@ describe("Entity", () => {
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#id': 'storeLocationId', '#pk': 'pk'},
 				ExpressionAttributeValues: {
-					':id1': '123',
+					':id0': '123',
 					':pk': '$mallstoredirectory_1$mallstores#id_123',
 				},
 				KeyConditionExpression: '#pk = :pk',
-				FilterExpression: "#id = :id1"
+				FilterExpression: "#id = :id0"
 			});
 			expect(keys).to.be.deep.equal([{ name: "id", type: "pk" }]);
 			expect(index).to.be.equal("");
@@ -2743,14 +2742,14 @@ describe("Entity", () => {
 					'#sk1': 'gsi1sk'
 				},
 				ExpressionAttributeValues: {
-					':mall1': '123',
-					':building1': '123',
-					':unit1': '123',
+					':mall0': '123',
+					':building0': '123',
+					':unit0': '123',
 					':pk': '$mallstoredirectory_1#mall_123',
 					':sk1': '$mallstores#building_123#unit_123#store_'
 				},
 				IndexName: 'gsi1pk-gsi1sk-index',
-				FilterExpression: '#mall = :mall1 AND#building = :building1 AND#unit = :unit1'
+				FilterExpression: '#mall = :mall0 AND #building = :building0 AND #unit = :unit0'
 			});
 			expect(keys).to.be.deep.equal([
 				{ name: "mall", type: "pk" },
@@ -2919,8 +2918,8 @@ describe("Entity", () => {
 
 			expect(injected).includes.property("rentsLeaseEndFilter");
 			expect(injected).includes.property("filter");
-			expect(injected.rentsLeaseEndFilter).to.have.keys(["children", "action"]);
-			expect(injected.filter).to.have.keys(["children", "action"]);
+			expect(injected.rentsLeaseEndFilter).to.have.keys(["name", "children", "action"]);
+			expect(injected.filter).to.have.keys(["children", "action", "name"]);
 			expect(clauses).to.not.deep.equal(injected);
 			expect(clauses).to.not.have.key("rentsLeaseEndFilter");
 			let noSideEffectsOnClauses = Object.values(clauses).every(
@@ -2950,16 +2949,16 @@ describe("Entity", () => {
 					"#sk1": "gsi1sk",
 				},
 				ExpressionAttributeValues: {
-					":rent1": "50.00",
-					":mall1": "EastPointe",
-					":leaseEnd1": "20200101",
-					":leaseEnd2": "20200401",
+					":rent0": "50.00",
+					":mall0": "EastPointe",
+					":leaseEnd0": "20200101",
+					":leaseEnd1": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
-					"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
+					"(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
 			});
 		});
 
@@ -2985,16 +2984,16 @@ describe("Entity", () => {
 					"#sk1": "gsi1sk",
 				},
 				ExpressionAttributeValues: {
-					":rent1": "50.00",
-					":mall1": "EastPointe",
-					":leaseEnd1": "20200101",
-					":leaseEnd2": "20200401",
+					":rent0": "50.00",
+					":mall0": "EastPointe",
+					":leaseEnd0": "20200101",
+					":leaseEnd1": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 				FilterExpression:
-					"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
+					"(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
 			});
 		});
 		it("Should add filtered fields to the between params", () => {
@@ -3021,17 +3020,17 @@ describe("Entity", () => {
 					"#sk1": "gsi3sk",
 				},
 				ExpressionAttributeValues: {
-					":rent1": "50.00",
-					":mall1": "EastPointe",
-					":leaseEnd1": "20200101",
-					":leaseEnd2": "20200401",
+					":rent0": "50.00",
+					":mall0": "EastPointe",
+					":leaseEnd0": "20200101",
+					":leaseEnd1": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 					":sk1": "$MallStores#category_food/coffee#building_BuildingA".toLowerCase(),
 					":sk2": "$MallStores#category_food/coffee#building_BuildingF".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
 				FilterExpression:
-					"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
+					"(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
 			});
 		});
 		it("Should add filtered fields to the comparison params", () => {
@@ -3058,16 +3057,16 @@ describe("Entity", () => {
 					"#sk1": "gsi2sk",
 				},
 				ExpressionAttributeValues: {
-					":rent1": "50.00",
-					":mall1": "EastPointe",
-					":leaseEnd1": "20200101",
-					":leaseEnd2": "20200401",
+					":rent0": "50.00",
+					":mall0": "EastPointe",
+					":leaseEnd0": "20200101",
+					":leaseEnd1": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 					":sk1": "$MallStores#leaseEnd_20201231".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
 				FilterExpression:
-					"(#rent >= :rent1 AND #mall = :mall1) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
+					"(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
 			});
 		});
 	});
@@ -3716,9 +3715,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
@@ -3732,9 +3731,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk)",
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
@@ -3865,9 +3864,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1#id_123-456-789',
@@ -3881,9 +3880,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1#id_123-456-789',
@@ -4021,9 +4020,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
@@ -4036,9 +4035,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk)",
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
@@ -4176,9 +4175,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -4192,9 +4191,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -4337,9 +4336,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -4353,9 +4352,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unitId = :unitId',
-								ExpressionAttributeNames: { '#unitId': 'unitId' },
-								ExpressionAttributeValues: { ':unitId': 'abc' },
+								UpdateExpression: 'SET #unit = :unit_u0',
+								ExpressionAttributeNames: { '#unit': 'unitId' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -4936,14 +4935,14 @@ describe("Entity", () => {
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
-				UpdateExpression: 'SET #prop7 = :prop7',
+				UpdateExpression: 'SET #prop7 = :prop7_u0',
 				ExpressionAttributeNames: { '#prop7': 'prop7' },
-				ExpressionAttributeValues: { ':prop7': 'hij-prop7' },
+				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7' },
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' }
 			});
 			expect(secondaryIndexParams).to.be.deep.equal({
-				UpdateExpression: 'SET #prop3 = :prop3, #prop4 = :prop4, #prop5 = :prop5, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk, #gsi2pk = :gsi2pk',
+				UpdateExpression: 'SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0',
 				ExpressionAttributeNames: {
 					'#prop3': 'prop3',
 					'#prop4': 'prop4',
@@ -4953,12 +4952,12 @@ describe("Entity", () => {
 					'#gsi2pk': 'gsi2pk'
 				},
 				ExpressionAttributeValues: {
-					':prop3': 'hij-prop3',
-					':prop4': 'jkl-prop4',
-					':prop5': 'lmn-prop5',
-					':gsi1pk': '$testing#prop3_hij-prop3',
-					':gsi1sk': '$setters_1#prop4_jkl-prop4',
-					':gsi2pk': '$testing#prop5_lmn-prop5'
+					':prop3_u0': 'hij-prop3',
+					':prop4_u0': 'jkl-prop4',
+					':prop5_u0': 'lmn-prop5',
+					':gsi1pk_u0': '$testing#prop3_hij-prop3',
+					':gsi1sk_u0': '$setters_1#prop4_jkl-prop4',
+					':gsi2pk_u0': '$testing#prop5_lmn-prop5'
 				},
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' }
@@ -5077,15 +5076,15 @@ describe("Entity", () => {
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
-				UpdateExpression: 'SET #prop7 = :prop7',
+				UpdateExpression: 'SET #prop7 = :prop7_u0',
 				ExpressionAttributeNames: { '#prop7': 'prop7' },
-				ExpressionAttributeValues: { ':prop7': 'hij-prop7' },
+				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7' },
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
 				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
 			});
 			expect(secondaryIndexParams).to.be.deep.equal({
-				UpdateExpression: 'SET #prop3 = :prop3, #prop4 = :prop4, #prop5 = :prop5, #gsi1pk = :gsi1pk, #gsi1sk = :gsi1sk, #gsi2pk = :gsi2pk',
+				UpdateExpression: 'SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0',
 				ExpressionAttributeNames: {
 					'#prop3': 'prop3',
 					'#prop4': 'prop4',
@@ -5095,12 +5094,12 @@ describe("Entity", () => {
 					'#gsi2pk': 'gsi2pk'
 				},
 				ExpressionAttributeValues: {
-					':prop3': 'hij-prop3',
-					':prop4': 'jkl-prop4',
-					':prop5': 'lmn-prop5',
-					':gsi1pk': '$testing#prop3_hij-prop3',
-					':gsi1sk': '$setters_1#prop4_jkl-prop4',
-					':gsi2pk': '$testing#prop5_lmn-prop5'
+					':prop3_u0': 'hij-prop3',
+					':prop4_u0': 'jkl-prop4',
+					':prop5_u0': 'lmn-prop5',
+					':gsi1pk_u0': '$testing#prop3_hij-prop3',
+					':gsi1sk_u0': '$setters_1#prop4_jkl-prop4',
+					':gsi2pk_u0': '$testing#prop5_lmn-prop5'
 				},
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
@@ -5743,9 +5742,9 @@ describe("Entity", () => {
 			});
 
 			expect(updateParams).to.deep.equal({
-				UpdateExpression: 'SET #number3 = :number3',
+				UpdateExpression: 'SET #number3 = :number3_u0',
 				ExpressionAttributeNames: { '#number3': 'number3' },
-				ExpressionAttributeValues: { ':number3': 77 },
+				ExpressionAttributeValues: { ':number3_u0': 77 },
 				TableName: 'electro_nostringkeys',
 				Key: { pk: 55, sk: 66 }
 			});
