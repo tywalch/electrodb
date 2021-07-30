@@ -227,9 +227,673 @@ const repositories = new Entity({
     }
 }, {table, client});
 
+
+const StoreLocations = new Entity({
+    model: {
+        service: "MallStoreDirectory",
+        entity: "MallStore",
+        version: "1",
+    },
+    attributes: {
+        cityId: {
+            type: "string",
+            required: true,
+        },
+        mallId: {
+            type: "string",
+            required: true,
+        },
+        storeId: {
+            type: "string",
+            required: true,
+        },
+        buildingId: {
+            type: "string",
+            required: true,
+        },
+        unitId: {
+            type: "string",
+            required: true,
+        },
+        category: {
+            type: [
+                "spite store",
+                "food/coffee",
+                "food/meal",
+                "clothing",
+                "electronics",
+                "department",
+                "misc"
+            ],
+            required: true
+        },
+        leaseEndDate: {
+            type: "string",
+            required: true
+        },
+        rent: {
+            type: "number",
+            required: true,
+        },
+        discount: {
+            type: "number",
+            required: false,
+            default: 0,
+        },
+        tenant: {
+            type: "any"
+        },
+        deposit: {
+            type: "number"
+        },
+        rentalAgreement: {
+            type: "any"
+        },
+        tags: {
+            type: "any"
+        },
+        contact: {
+            type: "any"
+        },
+        leaseHolders: {
+            type: "any"
+        },
+        petFee: {
+            type: "number"
+        },
+        totalFees: {
+            type: "number"
+        },
+        listAttribute: {
+            type: "any"
+        },
+        mapAttribute: {
+            type: "any"
+        }
+    },
+    indexes: {
+        stores: {
+            pk: {
+                field: "pk",
+                composite: ["cityId", "mallId"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["buildingId", "storeId"]
+            }
+        },
+        units: {
+            index: "gis1pk-gsi1sk-index",
+            pk: {
+                field: "gis1pk",
+                composite: ["mallId"]
+            },
+            sk: {
+                field: "gsi1sk",
+                composite: ["buildingId", "unitId"]
+            }
+        },
+        leases: {
+            index: "gis2pk-gsi2sk-index",
+            pk: {
+                field: "gis2pk",
+                composite: ["storeId"]
+            },
+            sk: {
+                field: "gsi2sk",
+                composite: ["leaseEndDate"]
+            }
+        }
+    },
+    filters: {
+        byCategory: ({category}, name) => category.eq(name),
+        rentDiscount: (attributes, discount, max, min) => {
+            return `${attributes.discount.lte(discount)} AND ${attributes.rent.between(max, min)}`
+        }
+    }
+}, {table, client});
+
 const service = new Service({users, repositories});
 
 describe("Update Item", () => {
+
+    describe("readme examples", () => {
+        let cityId = uuid();
+        const mallId = "EastPointe";
+        const storeId = "LatteLarrys";
+        const buildingId= "A34";
+        beforeEach(async () => {
+            cityId = uuid();
+            await StoreLocations
+                .put({
+                    cityId,
+                    storeId,
+                    mallId,
+                    buildingId,
+                    unitId: "B47",
+                    category: "food/coffee",
+                    leaseEndDate: "2020-03-22",
+                    rent: 4500,
+                    tenant: StoreLocations.client.createSet("tom"),
+                    deposit: 1000,
+                    rentalAgreement: [
+                        {
+                            type: "ammendment",
+                            detail: "dont wear puffy shirt"
+                        }
+                    ],
+                    tags: StoreLocations.client.createSet("family_friendly"),
+                    contact: StoreLocations.client.createSet("555-555-5555"),
+                    mapAttribute: {
+                        mapProperty: "before"
+                    },
+                    listAttribute: [
+                        {
+                            setAttribute: StoreLocations.client.createSet("555-555-5555")
+                        },
+                        {
+                            setAttribute: StoreLocations.client.createSet("666-666-6666")
+                        }
+                    ]
+                })
+                .go();
+        });
+
+        it("should perform complex data type update example 1", async () => {
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .set({'mapAttribute.mapProperty': "value1"})
+                .go();
+
+            let item1 = await StoreLocations
+                .get({cityId, mallId, storeId, buildingId})
+                .go();
+
+            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+                cityId,
+                "mallId": "EastPointe",
+                "mapAttribute": {
+                    "mapProperty": "value1"
+                },
+                "rentalAgreement": [
+                    {
+                        "type": "ammendment",
+                        "detail": "dont wear puffy shirt"
+                    }
+                ],
+                "discount": 0,
+                "rent": 4500,
+                "storeId": "LatteLarrys",
+                "buildingId": "A34",
+                "tags": ["family_friendly"],
+                "leaseEndDate": "2020-03-22",
+                "contact": ["555-555-5555"],
+                "deposit": 1000,
+                "unitId": "B47",
+                "category": "food/coffee",
+                "listAttribute": [
+                    {
+                        "setAttribute": ["555-555-5555"]
+                    },
+                    {
+                        "setAttribute": ["666-666-6666"]
+                    }
+                ],
+                "tenant": ["tom"]
+            });
+
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "value2"))
+                .go()
+
+            let item2 = await StoreLocations
+                .get({cityId, mallId, storeId, buildingId})
+                .go();
+
+            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+                cityId,
+                "mallId": "EastPointe",
+                "mapAttribute": {
+                    "mapProperty": "value2"
+                },
+                "rentalAgreement": [{
+                        "type": "ammendment",
+                        "detail": "dont wear puffy shirt"
+                    }
+                ],
+                "discount": 0,
+                "rent": 4500,
+                "storeId": "LatteLarrys",
+                "buildingId": "A34",
+                "tags": [
+                    "family_friendly"
+                ],
+                "leaseEndDate": "2020-03-22",
+                "contact": [
+                    "555-555-5555"
+                ],
+                "deposit": 1000,
+                "unitId": "B47",
+                "category": "food/coffee",
+                "listAttribute": [
+                    {
+                        "setAttribute": ["555-555-5555"]
+                    },
+                    {
+                        "setAttribute": ["666-666-6666"]
+                    }
+                ],
+                "tenant": [
+                    "tom"
+                ]
+            });
+        });
+
+        it("should perform complex data type update example 2", async () => {
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .remove(['listAttribute[0]'])
+                .go();
+
+            let item1 = await StoreLocations
+                .get({cityId, mallId, storeId, buildingId})
+                .go();
+
+            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+                cityId,
+                "mallId": "EastPointe",
+                "mapAttribute": {
+                    "mapProperty": "before"
+                },
+                "rentalAgreement": [
+                    {
+                        "type": "ammendment",
+                        "detail": "dont wear puffy shirt"
+                    }
+                ],
+                "discount": 0,
+                "rent": 4500,
+                "storeId": "LatteLarrys",
+                "buildingId": "A34",
+                "tags": [
+                    "family_friendly"
+                ],
+                "leaseEndDate": "2020-03-22",
+                "contact": [
+                    "555-555-5555"
+                ],
+                "deposit": 1000,
+                "unitId": "B47",
+                "category": "food/coffee",
+                "listAttribute": [
+                    {
+                        "setAttribute": ["666-666-6666"]
+                    }
+                ],
+                "tenant": [
+                    "tom"
+                ]
+            });
+
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .data(({listAttribute}, {remove}) => remove(listAttribute[0]))
+                .go();
+
+            let item2 = await StoreLocations
+                .get({cityId, mallId, storeId, buildingId})
+                .go();
+
+            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+                cityId,
+                "mallId": "EastPointe",
+                "mapAttribute": {
+                    "mapProperty": "before"
+                },
+                "rentalAgreement": [
+                    {
+                        "type": "ammendment",
+                        "detail": "dont wear puffy shirt"
+                    }
+                ],
+                "discount": 0,
+                "rent": 4500,
+                "storeId": "LatteLarrys",
+                "buildingId": "A34",
+                "tags": [
+                    "family_friendly"
+                ],
+                "leaseEndDate": "2020-03-22",
+                "contact": [
+                    "555-555-5555"
+                ],
+                "deposit": 1000,
+                "unitId": "B47",
+                "category": "food/coffee",
+                "listAttribute": [],
+                "tenant": [
+                    "tom"
+                ]
+            });
+        });
+
+        it("should perform complex data type update example 3", async () => {
+            const newSetValue1 = StoreLocations.client.createSet("setItemValue1");
+            const newSetValue2 = StoreLocations.client.createSet("setItemValue2");
+
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .add({'listAttribute[1].setAttribute': newSetValue1})
+                .go();
+
+            let item1 = await StoreLocations
+                .get({cityId, mallId, storeId, buildingId})
+                .go();
+
+            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+                cityId,
+                "mallId": "EastPointe",
+                "mapAttribute": {
+                    "mapProperty": "before"
+                },
+                "rentalAgreement": [
+                    {
+                        "type": "ammendment",
+                        "detail": "dont wear puffy shirt"
+                    }
+                ],
+                "discount": 0,
+                "rent": 4500,
+                "storeId": "LatteLarrys",
+                "buildingId": "A34",
+                "tags": [
+                    "family_friendly"
+                ],
+                "leaseEndDate": "2020-03-22",
+                "contact": [
+                    "555-555-5555"
+                ],
+                "deposit": 1000,
+                "unitId": "B47",
+                "category": "food/coffee",
+                "listAttribute": [
+                    {
+                        "setAttribute": ["555-555-5555"]
+                    },
+                    {
+                        "setAttribute": ["666-666-6666", "setItemValue1"]
+                    }
+                ],
+                "tenant": [
+                    "tom"
+                ]
+            });
+
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .data(({listAttribute}, {add}) => {
+                    add(listAttribute[1].setAttribute, newSetValue2)
+                })
+                .go();
+
+            let item2 = await StoreLocations
+                .get({cityId, mallId, storeId, buildingId})
+                .go();
+
+            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+                cityId,
+                "mallId": "EastPointe",
+                "mapAttribute": {
+                    "mapProperty": "before"
+                },
+                "rentalAgreement": [
+                    {
+                        "type": "ammendment",
+                        "detail": "dont wear puffy shirt"
+                    }
+                ],
+                "discount": 0,
+                "rent": 4500,
+                "storeId": "LatteLarrys",
+                "buildingId": "A34",
+                "tags": [
+                    "family_friendly"
+                ],
+                "leaseEndDate": "2020-03-22",
+                "contact": [
+                    "555-555-5555"
+                ],
+                "deposit": 1000,
+                "unitId": "B47",
+                "category": "food/coffee",
+                "listAttribute": [
+                    {
+                        "setAttribute": ["555-555-5555"]
+                    },
+                    {
+                        "setAttribute": ["666-666-6666", "setItemValue1", "setItemValue2"]
+                    }
+                ],
+                "tenant": ["tom"]
+            });
+        });
+
+        it("should generate the same parameters as shown in the readme examples", () => {
+            const cityId = uuid();
+            const mallId = "EastPointe";
+            const storeId = "LatteLarrys";
+            const buildingId= "A34";
+            const setParameters = StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .set({category: "food/meal"})
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params()
+
+            expect(setParameters).to.deep.equal({
+                UpdateExpression: 'SET #category = :category_u0',
+                ExpressionAttributeNames: { '#category': 'category' },
+                ExpressionAttributeValues: { ':category0': 'food/coffee', ':category_u0': 'food/meal' },
+                TableName: 'electro',
+                Key: {
+                    pk: `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
+                    sk: '$mallstore_1#buildingid_a34#storeid_lattelarrys'
+                },
+                ConditionExpression: '#category = :category0'
+            });
+
+            const removeParameters = StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .remove(["category"])
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params();
+
+            expect(removeParameters).to.deep.equal({
+                "UpdateExpression": "REMOVE #category",
+                "ExpressionAttributeNames": {
+                    "#category": "category"
+                },
+                "ExpressionAttributeValues": {
+                    ":category0": "food/coffee"
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
+                    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+                },
+                "ConditionExpression": "#category = :category0"
+            });
+
+            const newTenant = client.createSet("larry");
+            const addParameters = StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .add({
+                    rent: 100, // "number" attribute
+                    tenant: newTenant // "set" attribute
+                })
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params()
+
+            expect(JSON.parse(JSON.stringify(addParameters))).to.deep.equal({
+                "UpdateExpression": "SET #rent = #rent + :rent_u0 ADD #tenant :tenant_u0",
+                "ExpressionAttributeNames": {
+                    "#category": "category",
+                        "#rent": "rent",
+                        "#tenant": "tenant"
+                    },
+                    "ExpressionAttributeValues": {
+                    ":category0": "food/coffee",
+                    ":rent_u0": 100,
+                    ":tenant_u0": ["larry"]
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
+                    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+                },
+                "ConditionExpression": "#category = :category0"
+            })
+
+            const subtractParameters = StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .subtract({deposit: 500})
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params()
+
+            expect(subtractParameters).to.deep.equal({
+                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0",
+                "ExpressionAttributeNames": {
+                    "#category": "category",
+                    "#deposit": "deposit"
+                },
+                "ExpressionAttributeValues": {
+                    ":category0": "food/coffee",
+                    ":deposit_u0": 500
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
+                    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+                },
+                "ConditionExpression": "#category = :category0"
+            });
+
+            const appendParameters = StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .append({
+                    rentalAgreement: [{
+                        type: "ammendment",
+                        detail: "no soup for you"
+                    }]
+                })
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params()
+
+            expect(appendParameters).to.deep.equal({
+                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0)",
+                "ExpressionAttributeNames": {
+                    "#category": "category",
+                    "#rentalAgreement": "rentalAgreement"
+                },
+                "ExpressionAttributeValues": {
+                    ":category0": "food/coffee",
+                    ":rentalAgreement_u0": [{
+                        "type": "ammendment",
+                        "detail": "no soup for you"
+                    }]
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
+                    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+                },
+                "ConditionExpression": "#category = :category0"
+            });
+
+            const deleteParameters = StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .delete({contact: '555-345-2222'})
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params()
+
+
+            expect(deleteParameters).to.deep.equal({
+                "UpdateExpression": "DELETE #contact :contact_u0",
+                "ExpressionAttributeNames": {
+                    "#category": "category",
+                    "#contact": "contact"
+                },
+                "ExpressionAttributeValues": {
+                    ":category0": "food/coffee",
+                    ":contact_u0": "555-345-2222",
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
+                    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+                },
+                "ConditionExpression": "#category = :category0"
+            });
+
+            const allParameters = StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .data((attr, op) => {
+                    const newTenant = op.value(attr.tenant, "larry")
+                    op.set(attr.category, "food/meal");
+                    op.add(attr.tenant, newTenant);
+                    op.add(attr.rent, 100);
+                    op.subtract(attr.deposit, 200);
+                    op.remove(attr.leaseEndDate);
+                    op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
+                    op.delete(attr.tags, 'coffee');
+                    op.del(attr.contact, '555-345-2222');
+                    op.add(attr.totalFees, op.name(attr.petFee));
+                    op.add(attr.leaseHolders, newTenant);
+                })
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params()
+
+            expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
+                "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u1, #leaseHolders :leaseHolders_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "ExpressionAttributeNames": {
+                    "#category": "category",
+                    "#tenant": "tenant",
+                    "#rent": "rent",
+                    "#deposit": "deposit",
+                    "#leaseEndDate": "leaseEndDate",
+                    "#rentalAgreement": "rentalAgreement",
+                    "#tags": "tags",
+                    "#contact": "contact",
+                    "#totalFees": "totalFees",
+                    "#petFee": "petFee",
+                    "#leaseHolders": "leaseHolders",
+                    "#gsi2sk": "gsi2sk"
+                },
+                "ExpressionAttributeValues": {
+                    ":category0": "food/coffee",
+                    ":category_u0": "food/meal",
+                    ":tenant_u0": "larry",
+                    ":tenant_u1": ":tenant_u0",
+                    ":rent_u0": 100,
+                    ":deposit_u0": 200,
+                    ":rentalAgreement_u0": [{
+                        "type": "ammendment",
+                        "detail": "no soup for you"
+                    }],
+                    ":tags_u0": "coffee",
+                    ":contact_u0": "555-345-2222",
+                    ":leaseHolders_u0": ":tenant_u0"
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
+                    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+                },
+                "ConditionExpression": "#category = :category0"
+            });
+        });
+    });
+
     it("should allow operations to be all chained together", async () => {
         const repoName = uuid();
         const repoOwner = uuid();
@@ -289,7 +953,7 @@ describe("Update Item", () => {
         }
 
         const params = repositories.update({repoName, repoOwner})
-            .add({views: updates.views, followers: updates.followers})
+            .add({followers: updates.followers})
             .subtract({stars: updates.stars})
             .append({files: updates.files})
             .set({description: updates.description})
@@ -304,7 +968,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = #stars - :stars0, #files = list_append(#files, :files0), #description = :description0, #custom.#prop1 = :custom0, #views = #views + #custom.#prop3 REMOVE #about, #recentCommits[1].#message ADD #followers :followers0, #recentCommits[0].#views :recentCommits0 DELETE #tags :tags0",
+            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :recentCommits_u0 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -320,15 +984,15 @@ describe("Update Item", () => {
                 "#message": "message"
             },
             "ExpressionAttributeValues": {
-                ":followers0": params.ExpressionAttributeValues[":followers0"],
-                ":stars0": 8,
-                ":files0": [
+                ":followers_u0": params.ExpressionAttributeValues[":followers_u0"],
+                ":stars_u0": 8,
+                ":files_u0": [
                     "README.md"
                 ],
-                ":description0": "updated description",
-                ":tags0": params.ExpressionAttributeValues[":tags0"],
-                ":custom0": "def",
-                ":recentCommits0": 1
+                ":description_u0": "updated description",
+                ":tags_u0": params.ExpressionAttributeValues[":tags_u0"],
+                ":custom_u0": "def",
+                ":recentCommits_u0": 1
             },
             "TableName": "electro",
             "Key": {
@@ -338,7 +1002,7 @@ describe("Update Item", () => {
         });
 
         await repositories.update({repoName, repoOwner})
-            .add({views: updates.views, followers: updates.followers})
+            .add({followers: updates.followers})
             .subtract({stars: updates.stars})
             .append({files: updates.files})
             .set({description: updates.description})

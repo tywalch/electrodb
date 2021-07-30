@@ -132,7 +132,6 @@ const UpdateOperations = {
                     throw new Error(`Invalid Update Attribute Operation: "REMOVE" Operation can only be performed on attributes with type "map", "list", "string", "number", "boolean", or "any".`);
                 }
             }
-            console.log("expression", expression, paths);
             return {operation, expression};
         }
     },
@@ -228,20 +227,21 @@ const FilterOperations = {
 };
 
 class ExpressionState {
-    constructor() {
+    constructor({prefix} = {}) {
         this.names = {};
         this.values = {};
         this.paths = {};
         this.counts = {};
         this.impacted = {};
         this.expression = "";
+        this.prefix = prefix || "";
     }
 
     incrementName(name) {
         if (this.counts[name] === undefined) {
             this.counts[name] = 0;
         }
-        return `${this.counts[name]++}`;
+        return `${this.prefix}${this.counts[name]++}`;
     }
 
     // todo: make the structure: name, value, paths
@@ -318,12 +318,16 @@ class AttributeOperationProxy {
         for (let path of Object.keys(record)) {
             const value = record[path];
             const parts = this._parseJSONPath(path);
-            let attribute;
+            let attribute = this.attributes;
             for (let part of parts) {
-                attribute = this.attributes[part];
+                attribute = attribute[part];
             }
             if (attribute) {
                 this.operations[operation](attribute, value);
+                const {target} = attribute();
+                if (target.readOnly) {
+                    throw new Error(`Attribute "${attribute.name}" is Read-Only and cannot be updated`);
+                }
             }
         }
     }
@@ -331,12 +335,16 @@ class AttributeOperationProxy {
     fromArray(operation, paths) {
         for (let path of paths) {
             const parts = this._parseJSONPath(path);
-            let attribute;
+            let attribute = this.attributes;
             for (let part of parts) {
-                attribute = this.attributes[part];
+                attribute = attribute[part];
             }
             if (attribute) {
                 this.operations[operation](attribute);
+                const {target} = attribute();
+                if (target.readOnly) {
+                    throw new Error(`Attribute "${attribute.name}" is Read-Only and cannot be updated`);
+                }
             }
         }
     }
@@ -346,7 +354,7 @@ class AttributeOperationProxy {
             throw new Error("Path must be a string");
         }
         path = path.replace(/\[/g, ".");
-        path = path.replace(/\[/g, "");
+        path = path.replace(/\]/g, "");
         return path.split(".");
     }
 

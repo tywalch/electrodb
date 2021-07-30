@@ -275,8 +275,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				let record = entity.model.schema.checkUpdate({...data});
-				state.query.updateProxy.fromObject(ItemOperations.set, record);
+				state.query.updateProxy.fromObject(ItemOperations.set, data);
 				return state;
 			} catch(err) {
 				state.setError(err);
@@ -292,8 +291,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				let record = entity.model.schema.checkUpdate({...data});
-				state.query.updateProxy.fromObject(ItemOperations.append, record);
+				state.query.updateProxy.fromObject(ItemOperations.append, data);
 				return state;
 			} catch(err) {
 				state.setError(err);
@@ -313,8 +311,8 @@ let clauses = {
 					throw new Error("Update method 'remove' expects type Array");
 				}
 
-				let record = entity.model.schema.checkRemove(data);
-				state.query.updateProxy.fromArray(ItemOperations.remove, record);
+				// let record = entity.model.schema.checkRemove(data);
+				state.query.updateProxy.fromArray(ItemOperations.remove, data);
 				return state;
 			} catch(err) {
 				state.setError(err);
@@ -330,8 +328,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				let record = entity.model.schema.checkUpdate({...data});
-				state.query.updateProxy.fromObject(ItemOperations.delete, record);
+				state.query.updateProxy.fromObject(ItemOperations.delete, data);
 				return state;
 			} catch(err) {
 				state.setError(err);
@@ -347,8 +344,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				let record = entity.model.schema.checkUpdate({...data});
-				state.query.updateProxy.fromObject(ItemOperations.add, record);
+				state.query.updateProxy.fromObject(ItemOperations.add, data);
 				return state;
 			} catch(err) {
 				state.setError(err);
@@ -364,8 +360,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				let record = entity.model.schema.checkUpdate({...data});
-				state.query.updateProxy.fromObject(ItemOperations.subtract, record);
+				state.query.updateProxy.fromObject(ItemOperations.subtract, data);
 				return state;
 			} catch(err) {
 				state.setError(err);
@@ -613,7 +608,7 @@ let clauses = {
 
 class ChainState {
 	constructor({index = "", compositeAttributes = {}, attributes = {}, hasSortKey = false, options = {}, parentState = null} = {}) {
-		const update = new UpdateExpression();
+		const update = new UpdateExpression({prefix: "_u"});
 		this.parentState = parentState;
 		this.error = null;
 		this.attributes = attributes;
