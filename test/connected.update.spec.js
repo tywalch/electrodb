@@ -11,7 +11,6 @@ const client = new DynamoDB.DocumentClient({
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 
-
 const table = "electro";
 
 const users = new Entity({
@@ -356,6 +355,156 @@ const StoreLocations = new Entity({
 const service = new Service({users, repositories});
 
 describe("Update Item", () => {
+    describe("conditions and updates", () => {
+        let cityId = uuid();
+        const mallId = "EastPointe";
+        const storeId = "LatteLarrys";
+        const buildingId = "A34";
+        beforeEach(async () => {
+            cityId = uuid();
+            await StoreLocations
+                .put({
+                    cityId,
+                    storeId,
+                    mallId,
+                    buildingId,
+                    unitId: "B47",
+                    category: "food/coffee",
+                    leaseEndDate: "2020-03-22",
+                    rent: 4500,
+                    tenant: StoreLocations.client.createSet("tom"),
+                    deposit: 1000,
+                    rentalAgreement: [
+                        {
+                            type: "ammendment",
+                            detail: "dont wear puffy shirt"
+                        }
+                    ],
+                    tags: StoreLocations.client.createSet("family_friendly"),
+                    contact: StoreLocations.client.createSet("555-555-5555"),
+                    mapAttribute: {
+                        mapProperty: "before"
+                    },
+                    listAttribute: [
+                        {
+                            setAttribute: StoreLocations.client.createSet("555-555-5555")
+                        },
+                        {
+                            setAttribute: StoreLocations.client.createSet("666-666-6666")
+                        }
+                    ]
+                })
+                .go();
+        });
+
+        it("should conditionally update a map attribute", async () => {
+            const composite = {cityId, mallId, storeId, buildingId};
+            const results1 = await StoreLocations.get(composite).go();
+
+            await StoreLocations.update(composite)
+                .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "after1"))
+                .where(({mapAttribute}, {eq}) => eq(mapAttribute.mapProperty, results1.mapAttribute.mapProperty))
+                .go();
+
+            const results2 = await StoreLocations.get(composite).go();
+
+            expect(results2).to.deep.equal({
+                cityId,
+                storeId,
+                mallId,
+                buildingId,
+                unitId: "B47",
+                category: "food/coffee",
+                leaseEndDate: "2020-03-22",
+                rent: 4500,
+                tenant: StoreLocations.client.createSet("tom"),
+                deposit: 1000,
+                rentalAgreement: [
+                    {
+                        type: "ammendment",
+                        detail: "dont wear puffy shirt"
+                    }
+                ],
+                tags: StoreLocations.client.createSet("family_friendly"),
+                contact: StoreLocations.client.createSet("555-555-5555"),
+                mapAttribute: {
+                    mapProperty: "after1"
+                },
+                listAttribute: [
+                    {
+                        setAttribute: StoreLocations.client.createSet("555-555-5555")
+                    },
+                    {
+                        setAttribute: StoreLocations.client.createSet("666-666-6666")
+                    }
+                ],
+                discount: 0
+            });
+
+            let update = await StoreLocations.update(composite)
+                .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "after1"))
+                .where(({mapAttribute}, {eq}) => eq(mapAttribute.mapProperty, results1.mapAttribute.mapProperty))
+                .go()
+                .then(() => {})
+                .catch(err => err);
+
+            expect(update.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error")
+        });
+
+        it("should conditionally update a list attribute", async () => {
+            const composite = {cityId, mallId, storeId, buildingId};
+            const results1 = await StoreLocations.get(composite).go();
+
+            await StoreLocations.update(composite)
+                .data(({rentalAgreement}, {set}) => set(rentalAgreement[0].detail, "no soup for you"))
+                .where(({rentalAgreement}, {eq}) => eq(rentalAgreement[0].detail, results1.rentalAgreement[0].detail))
+                .go();
+
+            const results2 = await StoreLocations.get(composite).go();
+
+            expect(results2).to.deep.equal({
+                cityId,
+                storeId,
+                mallId,
+                buildingId,
+                unitId: "B47",
+                category: "food/coffee",
+                leaseEndDate: "2020-03-22",
+                rent: 4500,
+                tenant: StoreLocations.client.createSet("tom"),
+                deposit: 1000,
+                rentalAgreement: [
+                    {
+                        type: "ammendment",
+                        detail: "no soup for you"
+                    }
+                ],
+                tags: StoreLocations.client.createSet("family_friendly"),
+                contact: StoreLocations.client.createSet("555-555-5555"),
+                mapAttribute: {
+                    mapProperty: "before"
+                },
+                listAttribute: [
+                    {
+                        setAttribute: StoreLocations.client.createSet("555-555-5555")
+                    },
+                    {
+                        setAttribute: StoreLocations.client.createSet("666-666-6666")
+                    }
+                ],
+                discount: 0
+            });
+
+            let update = await StoreLocations.update(composite)
+                .data(({rentalAgreement}, {set}) => set(rentalAgreement[0].detail, "no soup for you"))
+                .where(({rentalAgreement}, {eq}) => eq(rentalAgreement[0].detail, results1.rentalAgreement[0].detail))
+                .go()
+                .then(() => {})
+                .catch(err => err);
+
+            expect(update.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error")
+        });
+    });
 
     describe("readme examples", () => {
         let cityId = uuid();
