@@ -22,7 +22,8 @@
 - [**Easily Compose Hierarchical Access Patterns**](#composite-attributes) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
 - [**Single Table Entity Segregation**](#model) - Entities created with **ElectroDB** will not conflict with other entities when using a single table.
 - [**Simplified Sort Key Condition Querying**](#building-queries) - Write efficient sort key queries by easily building compose keys.
-- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`.
+- [**Simplified Filter Composition**](#where) - Easily create complex readable filters for DynamoDB queries without worrying about the implementation of `ExpressionAttributeNames`, `ExpressionAttributeValues`, and `FilterExpressions`.
+- [**Simplified Update Expression Composition**](#update-record) - Easily compose type safe update operations without having to format tedious `ExpressionAttributeNames`, `ExpressionAttributeValues`, and `UpdateExpressions`. 
 - [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/idiomatic queries that return multiple entities in a single request.
 - [**Automatic Index Selection**](#find-records) - Use `.find()` or `.match()` methods to dynamically and efficiently query based on defined sort key structures.
 - [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
@@ -96,7 +97,7 @@ StoreLocations.query
       - [Attribute Definition](#attribute-definition)
       - [Attribute Getters and Setters](#attribute-getters-and-setters)
       - [Attribute Watching](#attribute-watching)
-        * [Attribute Watching: Watch All](#attribute-watching-watch-all)
+        * [Attribute Watching: Watch All](#attribute-watching--watch-all)
         * [Attribute Watching Examples](#attribute-watching-examples)
       - [Calculated Attributes](#calculated-attributes)
       - [Virtual Attributes](#virtual-attributes)
@@ -127,6 +128,7 @@ StoreLocations.query
   * [Where](#where)
     + [FilterExpressions](#filterexpressions)
     + [ConditionExpressions](#conditionexpressions)
+    + [Where with Complex Attributes](#where-with-complex-attributes)
     + [Attributes and Operations](#attributes-and-operations)
     + [Multiple Where Clauses](#multiple-where-clauses)
 - [Building Queries](#building-queries)
@@ -143,9 +145,17 @@ StoreLocations.query
     + [Put Record](#put-record)
     + [Batch Write Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
+      - [Update Method: Set](#update-method--set)
+      - [Update Method: Remove](#update-method--remove)
+      - [Update Method: Add](#update-method--add)
+      - [Update Method: Subtract](#update-method--subtract)
+      - [Update Method: Append](#update-method--append)
+      - [Update Method: Delete](#update-method--delete)
+      - [Update Method: Data](#update-method--data)
+    + [Update Method: Complex Data Types](#update-method--complex-data-types)
     + [Scan Records](#scan-records)
     + [Remove Method](#remove-method)
-    + [Patch Records](#patch-records)
+    + [Patch Record](#patch-record)
     + [Create Records](#create-records)
     + [Find Records](#find-records)
     + [Match Records](#match-records)
@@ -162,7 +172,7 @@ StoreLocations.query
         * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
-- [Errors:](#errors)
+- [Errors:](#errors-)
   + [No Client Defined On Model](#no-client-defined-on-model)
   + [Invalid Identifier](#invalid-identifier)
   + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
@@ -219,7 +229,7 @@ StoreLocations.query
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
 - [Electro CLI](#electro-cli)
 - [Version 1 Migration](#version-1-migration)
-  * [New schema format/breaking key format change](#new-schema-formatbreaking-key-format-change)
+  * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
   * [The renaming of index property Facets to Composite and Template](#the-renaming-of-index-property-facets-to-composite-and-template)
   * [Get Method to Return null](#get-method-to-return-null)
 - [Coming Soon](#coming-soon)
@@ -4783,5 +4793,4 @@ This change stems from the fact the `facets` is already a defined term in the Dy
 
 # Coming Soon
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
-- Append/Add/Subtract/Remove updates capabilities
 - Complex attributes (list, map, set)
