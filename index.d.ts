@@ -368,14 +368,14 @@ type AppendItem<A extends string, F extends A, C extends string, S extends Schem
 
 type AddItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{
-        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number">]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number", "any">]: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }>
 
 type SubtractItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{
-        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number">]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number", "any">]: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }>
@@ -421,8 +421,8 @@ type DataUpdateOperations<A extends string, F extends A, C extends string, S ext
     set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V : never) => any;
     remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
     append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | boolean | string | ReadonlyArray<any> ? never : V : never ) => any;
-    add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : never : never ) => any;
-    subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : never : never ) => any;
+    add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
+    subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
     delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | boolean | string | ReadonlyArray<any> ? never : V : never ) => any;
     del: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | boolean | string | ReadonlyArray<any> ? never : V : never ) => any;
     value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V : never) => any;
@@ -601,6 +601,7 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     setIdentifier(type: "entity" | "version", value: string): void;
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>
     query: Queries<A,F,C,S>;
+    client: any;
 }
 
 type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {

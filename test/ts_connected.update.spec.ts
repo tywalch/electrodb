@@ -1,11 +1,9 @@
-process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
-const { Entity } = require("../src/entity");
-const { Service } = require("../src/service");
-const { expect } = require("chai");
-const uuid = require("uuid").v4;
-const moment = require("moment");
-const DynamoDB = require("aws-sdk/clients/dynamodb");
-
+process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
+import { Entity } from "../index";
+import { expect } from "chai";
+import {v4 as uuid} from "uuid";
+import moment from "moment";
+import DynamoDB from "aws-sdk/clients/dynamodb";
 const client = new DynamoDB.DocumentClient({
     region: "us-east-1",
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
@@ -112,7 +110,7 @@ const licenses = [
     "ncsa",
     "unlicense",
     "zlib"
-];
+] as const;
 
 const repositories = new Entity({
     model: {
@@ -134,7 +132,7 @@ const repositories = new Entity({
             type: "string",
             readOnly: true,
             watch: ["repoOwner"],
-            set: (_, {repoOwner}) => repoOwner
+            set: (_, {repoOwner}: {repoOwner?: string}) => repoOwner
         },
         description: {
             type: "string"
@@ -147,11 +145,14 @@ const repositories = new Entity({
         },
         defaultBranch: {
             type: "string",
-            default: "main"
+            default: "main",
+            get: (branch) => {
+                return branch;
+            }
         },
         stars: {
-          type: "number",
-          default: 0
+            type: "number",
+            default: 0
         },
         createdAt: {
             type: "string",
@@ -226,7 +227,6 @@ const repositories = new Entity({
     }
 }, {table, client});
 
-
 const StoreLocations = new Entity({
     model: {
         service: "MallStoreDirectory",
@@ -263,7 +263,7 @@ const StoreLocations = new Entity({
                 "electronics",
                 "department",
                 "misc"
-            ],
+            ] as const,
             required: true
         },
         leaseEndDate: {
@@ -343,16 +343,8 @@ const StoreLocations = new Entity({
                 composite: ["leaseEndDate"]
             }
         }
-    },
-    filters: {
-        byCategory: ({category}, name) => category.eq(name),
-        rentDiscount: (attributes, discount, max, min) => {
-            return `${attributes.discount.lte(discount)} AND ${attributes.rent.between(max, min)}`
-        }
     }
 }, {table, client});
-
-const service = new Service({users, repositories});
 
 describe("Update Item", () => {
     describe("conditions and updates", () => {
@@ -607,9 +599,9 @@ describe("Update Item", () => {
                     "mapProperty": "value2"
                 },
                 "rentalAgreement": [{
-                        "type": "ammendment",
-                        "detail": "dont wear puffy shirt"
-                    }
+                    "type": "ammendment",
+                    "detail": "dont wear puffy shirt"
+                }
                 ],
                 "discount": 0,
                 "rent": 4500,
@@ -873,7 +865,7 @@ describe("Update Item", () => {
                 "ConditionExpression": "#category = :category0"
             });
 
-            const newTenant = client.createSet("larry");
+            const newTenant = client.createSet(["larry"]);
             const addParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .add({
@@ -887,10 +879,10 @@ describe("Update Item", () => {
                 "UpdateExpression": "SET #rent = #rent + :rent_u0 ADD #tenant :tenant_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
-                        "#rent": "rent",
-                        "#tenant": "tenant"
-                    },
-                    "ExpressionAttributeValues": {
+                    "#rent": "rent",
+                    "#tenant": "tenant"
+                },
+                "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
                     ":rent_u0": 100,
                     ":tenant_u0": ["larry"]
@@ -1101,12 +1093,12 @@ describe("Update Item", () => {
             recentCommitsViews: 1,
         }
 
-        const params = repositories.update({repoName, repoOwner})
+        const params: any = repositories.update({repoName, repoOwner})
             .add({followers: updates.followers})
             .subtract({stars: updates.stars})
             .append({files: updates.files})
             .set({description: updates.description})
-            .remove([updates.about])
+            .remove(["about"])
             .delete({tags: updates.tags})
             .data((attr, op) => {
                 op.set(attr.custom.prop1, updates.prop1);
@@ -1155,7 +1147,7 @@ describe("Update Item", () => {
             .subtract({stars: updates.stars})
             .append({files: updates.files})
             .set({description: updates.description})
-            .remove([updates.about])
+            .remove(["about"])
             .delete({tags: updates.tags})
             .data((attr, op) => {
                 op.set(attr.custom.prop1, updates.prop1);
@@ -1192,7 +1184,7 @@ describe("Update Item", () => {
                 }
             ],
             "isPrivate": false,
-            "stars": created.stars - updates.stars,
+            "stars": (created.stars || 0) - (updates.stars || 0),
             "tags": [
                 "tag2"
             ],
@@ -1217,9 +1209,10 @@ describe("Update Item", () => {
         it("should only allow attributes with type 'list', or 'any'", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
+            const append = {description: "my description"} as any
             const err = await repositories
                 .update({repoName, repoOwner})
-                .append({description: "my description"})
+                .append(append)
                 .go()
                 .catch(err => err);
 
@@ -1725,9 +1718,11 @@ describe("Update Item", () => {
                 })
                 .go();
 
+            const removal = ["createdAt"] as any;
+
             const error = await repositories
                 .update({repoName, repoOwner})
-                .remove([ "createdAt" ])
+                .remove(removal)
                 .go()
                 .catch(err => err);
             console.log(error);
@@ -1904,9 +1899,11 @@ describe("Update Item", () => {
             const repoName = uuid();
             const repoOwner = uuid();
 
+            const deletion = {description: "my description"} as any;
+
             const err = await repositories
                 .update({repoName, repoOwner})
-                .delete({description: "my description"})
+                .delete(deletion)
                 .go()
                 .catch(err => err);
 
@@ -2026,9 +2023,11 @@ describe("Update Item", () => {
             const repoName = uuid();
             const repoOwner = uuid();
 
+            const addition = {description: "my description"} as any;
+
             const err = await repositories
                 .update({repoName, repoOwner})
-                .add({description: "my description"})
+                .add(addition)
                 .go()
                 .catch(err => err);
 
@@ -2118,10 +2117,6 @@ describe("Update Item", () => {
                 .go();
 
             expect(stars).to.equal(2);
-        });
-
-        it("should only allow types", () => {
-
         });
     });
     describe("name operation", () => {

@@ -189,18 +189,18 @@ describe("Offline Where", () => {
 
 
         expect(updateParams).to.deep.equal({
-            UpdateExpression: 'SET #dangerous = :dangerous0',
+            UpdateExpression: 'SET #dangerous = :dangerous_u0',
             ExpressionAttributeNames: { '#animal': 'a', '#dangerous': 'd' },
-            ExpressionAttributeValues: { ':animal0': 'cow', ':dangerous0': false },
+            ExpressionAttributeValues: { ':animal0': 'cow', ':dangerous_u0': false },
             TableName: 'electro',
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
             ConditionExpression: '#animal = :animal0'
         });
 
         expect(patchParams).to.deep.equal({
-            UpdateExpression: 'SET #dangerous = :dangerous0',
+            UpdateExpression: 'SET #dangerous = :dangerous_u0',
             ExpressionAttributeNames: { '#animal': 'a', '#dangerous': 'd' },
-            ExpressionAttributeValues: { ':animal0': 'cow', ':dangerous0': false },
+            ExpressionAttributeValues: { ':animal0': 'cow', ':dangerous_u0': false },
             TableName: 'electro',
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
             ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal0'

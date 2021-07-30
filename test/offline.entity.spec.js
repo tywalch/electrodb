@@ -888,8 +888,7 @@ describe("Entity", () => {
 				.set({ mall, store, building, category, unit, rent, leaseEnd })
 				.params();
 			expect(update).to.deep.equal({
-				UpdateExpression:
-					"SET #mall = :mall0, #store = :store0, #building = :building0, #unit = :unit0, #category = :category0, #leaseEnd = :leaseEnd0, #rent = :rent0, #gsi1pk = :gsi1pk0, #gsi1sk = :gsi1sk0, #gsi2pk = :gsi2pk0, #gsi2sk = :gsi2sk0, #gsi3pk = :gsi3pk0, #gsi3sk = :gsi3sk0, #gsi4pk = :gsi4pk0, #gsi4sk = :gsi4sk0",
+				UpdateExpression: "SET #mall = :mall_u0, #store = :store_u0, #building = :building_u0, #category = :category_u0, #unit = :unit_u0, #rent = :rent_u0, #leaseEnd = :leaseEnd_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #gsi4pk = :gsi4pk_u0, #gsi4sk = :gsi4sk_u0",
 				ExpressionAttributeNames: {
 					"#mall": "mall",
 					"#store": "storeId",
@@ -908,21 +907,21 @@ describe("Entity", () => {
 					"#gsi4sk": "gsi4sk",
 				},
 				ExpressionAttributeValues: {
-					":mall0": mall,
-					":store0": store,
-					":building0": building,
-					":unit0": unit,
-					":category0": category,
-					":leaseEnd0": leaseEnd,
-					":rent0": rent,
-					":gsi1pk0": "$mallstoredirectory_1#mall_eastpointe",
-					":gsi1sk0": "$mallstores#building_buildinga#unit_b54#store_lattelarrys",
-					":gsi2pk0": "$mallstoredirectory_1#mall_eastpointe",
-					":gsi2sk0": "$mallstores#leaseend_2020-01-20#store_lattelarrys#building_buildinga#unit_b54",
-					":gsi3pk0": "$mallstoredirectory_1#mall_eastpointe",
-					":gsi3sk0": "$mallstores#category_food/coffee#building_buildinga#unit_b54#store_lattelarrys",
-					":gsi4pk0": "$mallstoredirectory_1#store_lattelarrys",
-					":gsi4sk0": "$mallstores#mall_eastpointe#building_buildinga#unit_b54",
+					":mall_u0": mall,
+					":store_u0": store,
+					":building_u0": building,
+					":unit_u0": unit,
+					":category_u0": category,
+					":leaseEnd_u0": leaseEnd,
+					":rent_u0": rent,
+					":gsi1pk_u0": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi1sk_u0": "$mallstores#building_buildinga#unit_b54#store_lattelarrys",
+					":gsi2pk_u0": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi2sk_u0": "$mallstores#leaseend_2020-01-20#store_lattelarrys#building_buildinga#unit_b54",
+					":gsi3pk_u0": "$mallstoredirectory_1#mall_eastpointe",
+					":gsi3sk_u0": "$mallstores#category_food/coffee#building_buildinga#unit_b54#store_lattelarrys",
+					":gsi4pk_u0": "$mallstoredirectory_1#store_lattelarrys",
+					":gsi4sk_u0": "$mallstores#mall_eastpointe#building_buildinga#unit_b54",
 				},
 				TableName: "StoreDirectory",
 				Key: {
@@ -1383,9 +1382,9 @@ describe("Entity", () => {
 				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
 			});
 			expect(updateParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value0',
+				UpdateExpression: 'SET #value = :value_u0',
 				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value0': 'ahssfh' },
+				ExpressionAttributeValues: { ':value_u0': 'ahssfh' },
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: '$mallstoredirectory_1#id_abcd',
@@ -1393,9 +1392,9 @@ describe("Entity", () => {
 				}
 			});
 			expect(patchParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value0',
+				UpdateExpression: 'SET #value = :value_u0',
 				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value0': 'ahssfh' },
+				ExpressionAttributeValues: { ':value_u0': 'ahssfh' },
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: '$mallstoredirectory_1#id_abcd',
@@ -1962,9 +1961,9 @@ describe("Entity", () => {
 			let rent = "0.00";
 			let patchParams = MallStores.patch({id, mall}).set({rent}).params();
 			expect(patchParams).to.deep.equal({
-				UpdateExpression: 'SET #rent = :rent0',
+				UpdateExpression: 'SET #rent = :rent_u0',
 				ExpressionAttributeNames: { '#rent': 'rent' },
-				ExpressionAttributeValues: { ':rent0': '0.00' },
+				ExpressionAttributeValues: { ':rent_u0': '0.00' },
 				TableName: 'StoreDirectory',
 				Key: {
 					pk: '$mallstoredirectory_1#id_12345',
@@ -3716,9 +3715,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
@@ -3732,9 +3731,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk)",
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
@@ -3865,9 +3864,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1#id_123-456-789',
@@ -3881,9 +3880,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1#id_123-456-789',
@@ -4021,9 +4020,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
@@ -4036,9 +4035,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk)",
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
@@ -4176,9 +4175,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -4192,9 +4191,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -4337,9 +4336,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -4353,9 +4352,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unit = :unit0',
+								UpdateExpression: 'SET #unit = :unit_u0',
 								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit0': 'abc' },
+								ExpressionAttributeValues: { ':unit_u0': 'abc' },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -4936,14 +4935,14 @@ describe("Entity", () => {
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
-				UpdateExpression: 'SET #prop7 = :prop70',
+				UpdateExpression: 'SET #prop7 = :prop7_u0',
 				ExpressionAttributeNames: { '#prop7': 'prop7' },
-				ExpressionAttributeValues: { ':prop70': 'hij-prop7' },
+				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7' },
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' }
 			});
 			expect(secondaryIndexParams).to.be.deep.equal({
-				UpdateExpression: 'SET #prop3 = :prop30, #prop4 = :prop40, #prop5 = :prop50, #gsi1pk = :gsi1pk0, #gsi1sk = :gsi1sk0, #gsi2pk = :gsi2pk0',
+				UpdateExpression: 'SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0',
 				ExpressionAttributeNames: {
 					'#prop3': 'prop3',
 					'#prop4': 'prop4',
@@ -4953,12 +4952,12 @@ describe("Entity", () => {
 					'#gsi2pk': 'gsi2pk'
 				},
 				ExpressionAttributeValues: {
-					':prop30': 'hij-prop3',
-					':prop40': 'jkl-prop4',
-					':prop50': 'lmn-prop5',
-					':gsi1pk0': '$testing#prop3_hij-prop3',
-					':gsi1sk0': '$setters_1#prop4_jkl-prop4',
-					':gsi2pk0': '$testing#prop5_lmn-prop5'
+					':prop3_u0': 'hij-prop3',
+					':prop4_u0': 'jkl-prop4',
+					':prop5_u0': 'lmn-prop5',
+					':gsi1pk_u0': '$testing#prop3_hij-prop3',
+					':gsi1sk_u0': '$setters_1#prop4_jkl-prop4',
+					':gsi2pk_u0': '$testing#prop5_lmn-prop5'
 				},
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' }
@@ -5077,15 +5076,15 @@ describe("Entity", () => {
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
-				UpdateExpression: 'SET #prop7 = :prop70',
+				UpdateExpression: 'SET #prop7 = :prop7_u0',
 				ExpressionAttributeNames: { '#prop7': 'prop7' },
-				ExpressionAttributeValues: { ':prop70': 'hij-prop7' },
+				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7' },
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
 				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
 			});
 			expect(secondaryIndexParams).to.be.deep.equal({
-				UpdateExpression: 'SET #prop3 = :prop30, #prop4 = :prop40, #prop5 = :prop50, #gsi1pk = :gsi1pk0, #gsi1sk = :gsi1sk0, #gsi2pk = :gsi2pk0',
+				UpdateExpression: 'SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0',
 				ExpressionAttributeNames: {
 					'#prop3': 'prop3',
 					'#prop4': 'prop4',
@@ -5095,12 +5094,12 @@ describe("Entity", () => {
 					'#gsi2pk': 'gsi2pk'
 				},
 				ExpressionAttributeValues: {
-					':prop30': 'hij-prop3',
-					':prop40': 'jkl-prop4',
-					':prop50': 'lmn-prop5',
-					':gsi1pk0': '$testing#prop3_hij-prop3',
-					':gsi1sk0': '$setters_1#prop4_jkl-prop4',
-					':gsi2pk0': '$testing#prop5_lmn-prop5'
+					':prop3_u0': 'hij-prop3',
+					':prop4_u0': 'jkl-prop4',
+					':prop5_u0': 'lmn-prop5',
+					':gsi1pk_u0': '$testing#prop3_hij-prop3',
+					':gsi1sk_u0': '$setters_1#prop4_jkl-prop4',
+					':gsi2pk_u0': '$testing#prop5_lmn-prop5'
 				},
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
@@ -5743,9 +5742,9 @@ describe("Entity", () => {
 			});
 
 			expect(updateParams).to.deep.equal({
-				UpdateExpression: 'SET #number3 = :number30',
+				UpdateExpression: 'SET #number3 = :number3_u0',
 				ExpressionAttributeNames: { '#number3': 'number3' },
-				ExpressionAttributeValues: { ':number30': 77 },
+				ExpressionAttributeValues: { ':number3_u0': 77 },
 				TableName: 'electro_nostringkeys',
 				Key: { pk: 55, sk: 66 }
 			});

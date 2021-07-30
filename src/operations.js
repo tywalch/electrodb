@@ -326,7 +326,7 @@ class AttributeOperationProxy {
                 this.operations[operation](attribute, value);
                 const {target} = attribute();
                 if (target.readOnly) {
-                    throw new Error(`Attribute "${attribute.name}" is Read-Only and cannot be updated`);
+                    throw new Error(`Attribute "${target.name}" is Read-Only and cannot be updated`);
                 }
             }
         }
@@ -343,7 +343,7 @@ class AttributeOperationProxy {
                 this.operations[operation](attribute);
                 const {target} = attribute();
                 if (target.readOnly) {
-                    throw new Error(`Attribute "${attribute.name}" is Read-Only and cannot be updated`);
+                    throw new Error(`Attribute "${target.name}" is Read-Only and cannot be updated`);
                 }
             }
         }
