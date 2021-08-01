@@ -2646,7 +2646,7 @@ entityWithComplexShapes
         prop4: [{
             val2: 789,
             val3: ["123"],
-            val4: [1, 2, 3]
+            // val4: [1, 2, 3]
         }],
         prop5: ["abc"]
     })
