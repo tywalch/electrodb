@@ -43,7 +43,7 @@ const Comparisons = {
 	lt: "<",
 };
 
-const CastTypes = ["string", "number"];
+const CastTypes = ["string", "number", "list", "set"];
 
 const AttributeTypes = {
 	string: "string",
@@ -131,6 +131,27 @@ const AttributeProxySymbol = Symbol("attribute_proxy");
 const BuilderTypes = {
 	update: "update",
 	filter: "filter"
+};
+
+const ValueTypes = {
+	string: "string",
+	boolean: "boolean",
+	number: "number",
+	array: "array",
+	set: "set",
+	aws_set: "aws_set",
+	object: "object",
+	map: "map",
+	null: "null",
+	undefined: "undefined",
+	unknown: "unknown",
+};
+
+const TraverserIndexes = {
+	readonly: "readonly",
+	required: "required",
+	getters: "getters",
+	setters: "setters"
 }
 
 module.exports = {
@@ -139,6 +160,7 @@ module.exports = {
 	CastTypes,
 	PathTypes,
 	QueryTypes,
+	ValueTypes,
 	MethodTypes,
 	Comparisons,
 	BuilderTypes,
@@ -150,6 +172,7 @@ module.exports = {
 	ServiceVersions,
 	ExpressionTypes,
 	ElectroInstance,
+	TraverserIndexes,
 	UnprocessedTypes,
 	AttributeWildCard,
 	AttributeProxySymbol,

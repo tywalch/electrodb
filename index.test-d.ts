@@ -2508,3 +2508,146 @@ const entityWithWatchAll = new Entity({
         }
     }
 });
+
+const entityWithComplexShapes = new Entity({
+    model: {
+        entity: "entity",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string",
+            label: "props"
+        },
+        prop2: {
+            type: "string",
+        },
+        prop3: {
+            type: "map",
+            properties: {
+                val1: {
+                    type: "string"
+                }
+            }
+        },
+        prop4: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    val2: {
+                        type: "number",
+                    },
+                    val3: {
+                        type: "list",
+                        items: {
+                            type: ["xyz", "123"] as const
+                        }
+                    }
+                }
+            }
+        },
+        prop5: {
+            type: "set",
+            items: {
+                type: ["abc", "def"] as const
+            }
+        },
+        prop6: {
+            type: "set",
+            items: {
+                type: "string"
+            }
+        }
+    },
+    indexes: {
+        record: {
+            collection: "mops",
+            pk: {
+                field: "pk",
+                composite: ["prop1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop2"]
+            }
+        }
+    }
+});
+
+entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
+
+    data.prop3?.val1;
+    let int = 0;
+    if (Array.isArray(data.prop4)) {
+        for (let value of data.prop4) {
+            if (typeof value === "string") {
+                if (isNaN(parseInt(value))) {
+                    int += 0;
+                } else {
+                    int += parseInt(value);
+                }
+            } else if (typeof value === "number") {
+                int += value;
+            } else if (Array.isArray(value)) {
+                for (let val of value) {
+                    int += val.val2
+                }
+            } else {
+                int += value.val2;
+            }
+        }
+    }
+    return data.prop3?.val1
+});
+
+entityWithComplexShapes
+    .get({prop1: "abc", prop2: "def"})
+    .go()
+    .then(data => {
+        data.prop5?.map(values => values)
+        data.prop6?.map(values => values)
+    })
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .set({
+        prop4: [{
+            val2: 789,
+            val3: ["123"]
+        }],
+        prop5: ["abc"]
+    })
+    .go()
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .set({
+        prop4: [{
+            val2: 789,
+            val3: ["123"]
+        }],
+        prop5: ["abc"]
+    })
+    .where(({prop5}, {eq}) => eq(prop5, ["abc"]))
+    .where(({prop1}, {eq}) => eq(prop1, "abc"))
+    .go()
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .set({
+        prop4: [{
+            val2: 789,
+            val3: ["123"]
+        }],
+        prop5: ["abc"]
+    })
+    .go()
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .set({
+        prop4: [{
+            val2: 789,
+            val3: ["123"]
+        }],
+        prop5: ["abc"]
+    })
+    .go()

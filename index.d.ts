@@ -77,13 +77,58 @@ type MapAttribute<A extends string> = {
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
-    readonly get?: (val: any, item: any) => any | undefined;
-    readonly set?: (val: any | undefined, item: any) => any | undefined;
+    readonly get?: (val: Record<string, any>, item: any) => any | undefined;
+    readonly set?: (val: Record<string, any> | undefined, item: any) => any | undefined;
     readonly default?: () => any;
     readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly label?: string;
-    readonly watch?: ReadonlyArray<A>;
+    readonly watch?: ReadonlyArray<string> | "*";
+}
+
+type StringListAttribute<A extends string> = {
+    readonly type: "list";
+    readonly items: StringAttribute<A>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: string[], item: any) => any | undefined;
+    readonly set?: (val: string[] | undefined, item: any) => any | undefined;
+    readonly default?: () => any;
+    readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
+    readonly field?: string;
+    readonly label?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
+}
+
+type NumberListAttribute<A extends string> = {
+    readonly type: "list";
+    readonly items: NumberAttribute<A>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: number[], item: any) => any | undefined;
+    readonly set?: (val: number[] | undefined, item: any) => any | undefined;
+    readonly default?: () => any;
+    readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
+    readonly field?: string;
+    readonly label?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
+}
+
+type MapListAttribute<A extends string> = {
+    readonly type: "list";
+    readonly items: MapAttribute<A>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: Record<string, any>[], item: any) => any | undefined;
+    readonly set?: (val: Record<string, any>[] | undefined, item: any) => any | undefined;
+    readonly default?: () => any;
+    readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
+    readonly field?: string;
+    readonly label?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
 }
 
 type ListAttribute<A extends string> = {
@@ -92,33 +137,71 @@ type ListAttribute<A extends string> = {
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
-    readonly get?: (val: any, item: any) => any | undefined;
-    readonly set?: (val: any | undefined, item: any) => any | undefined;
+    readonly get?: (val: any[], item: any) => any | undefined;
+    readonly set?: (val: any[] | undefined, item: any) => any | undefined;
     readonly default?: () => any;
     readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly label?: string;
-    readonly watch?: ReadonlyArray<A>;
+    readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type SetAttribute<A extends string> = {
+interface DynamoDBSet<T> {
+    values: Array<T>
+    wrapperName: "Set"
+    toString: () => Array<T>
+}
+
+type ElectroDBSet<T> = Array<T> | Set<T> | DynamoDBSet<T>;
+
+type StringSetAttribute<A extends string> = {
     readonly type: "set";
-    readonly items: SetAttributeItems;
+    readonly items: StringAttribute<A>;
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
-    readonly get?: (val: any, item: any) => any | undefined;
-    readonly set?: (val: any | undefined, item: any) => any | undefined;
+    readonly get?: (val: ElectroDBSet<string>, item: any) => any | undefined;
+    readonly set?: (val: ElectroDBSet<string> | undefined, item: any) => any | undefined;
     readonly default?: () => any;
     readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly label?: string;
-    readonly watch?: ReadonlyArray<A>;
+    readonly watch?: ReadonlyArray<string> | "*";
+}
+
+type NumberSetAttribute<A extends string> = {
+    readonly type: "set";
+    readonly items: NumberAttribute<A>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: ElectroDBSet<number>, item: any) => any | undefined;
+    readonly set?: (val: ElectroDBSet<number> | undefined, item: any) => any | undefined;
+    readonly default?: () => any;
+    readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
+    readonly field?: string;
+    readonly label?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
+}
+
+type EnumSetAttribute<A extends string> = {
+    readonly type: "set";
+    readonly items: EnumAttribute<A>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: ElectroDBSet<number>, item: any) => any | undefined;
+    readonly set?: (val: ElectroDBSet<number> | undefined, item: any) => any | undefined;
+    readonly default?: () => any;
+    readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
+    readonly field?: string;
+    readonly label?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
 }
 
 type SetAttributeItems = "string" | "number" | ReadonlyArray<string>;
 
-type Attribute<A extends string> = BooleanAttribute<A> | NumberAttribute<A> | StringAttribute<A> | EnumAttribute<A> | AnyAttribute<A> // | MapAttribute<A> | ListAttribute<A> | SetAttribute<A>;
+type Attribute<A extends string> = BooleanAttribute<A> | NumberAttribute<A> | StringAttribute<A> | EnumAttribute<A> | AnyAttribute<A> | MapAttribute<A> | ListAttribute<A> | StringSetAttribute<A> | NumberSetAttribute<A> | EnumSetAttribute<A> | StringListAttribute<A> | NumberListAttribute<A> | MapListAttribute<A>;
 
 type Attributes<A extends string> = {
     readonly [a in A]: Attribute<A>
@@ -204,28 +287,25 @@ type ItemAttribute<A extends Attribute<any>> =
                                 [P in keyof A["properties"]]:
                                 A["properties"][P] extends infer M
                                     ? M extends Attribute<any>
-                                    ? ItemAttribute<M>
-                                    : never
+                                        ? ItemAttribute<M>
+                                        : never
                                     : never
                             }
                             : never
                         : R extends "list"
                             ? "items" extends keyof A
-                                ? A["items"] extends ReadonlyArray<infer L>
-                                    ? L extends Attribute<any>
-                                        ? Array<ItemAttribute<L>>
+                                ? A["items"] extends infer I
+                                    ? I extends Attribute<any>
+                                        ? ItemAttribute<I>[]
                                         : never
                                     : never
                                 : never
                             : R extends "set"
                                 ? "items" extends keyof A
-                                    ? A["items"] extends SetAttributeItems
-                                        ? A["items"] extends infer I
-                                            ? I extends "string" ? string[]
-                                                : I extends "number" ? number[]
-                                                    : I extends ReadonlyArray<infer E> ? E[]
-                                                        : never
-                                            : never
+                                    ? A["items"] extends infer I
+                                        ? I extends Attribute<any>
+                                            ? ItemAttribute<I>[]
+                                            : any
                                         : never
                                     : never
                                 : R extends "any" ? any
@@ -325,19 +405,19 @@ type ResponseItem<A extends string, F extends A, C extends string, S extends Sch
 
 type RequiredPutItems<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [Attribute in keyof S["attributes"]]:
-    "required" extends keyof S["attributes"][Attribute]
-        ? true extends S["attributes"][Attribute]["required"]
-            ? true
-            : "default" extends keyof S["attributes"][Attribute]
-                ? false
-                : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
-                    ? true
-                    : false
-    : "default" extends keyof S["attributes"][Attribute]
-        ? false
-        : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
-            ? true
-            : false
+        "required" extends keyof S["attributes"][Attribute]
+            ? true extends S["attributes"][Attribute]["required"]
+                ? true
+                : "default" extends keyof S["attributes"][Attribute]
+                    ? false
+                    : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
+                        ? true
+                        : false
+        : "default" extends keyof S["attributes"][Attribute]
+            ? false
+            : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
+                ? true
+                : false
 }
 
 type PutItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
@@ -613,13 +693,15 @@ type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> 
         : never
 }[keyof E];
 
-type AttributeType<T extends "string" | "number" | "boolean" | "any" | ReadonlyArray<any> | "map", A extends Attribute<any>> =
-    T extends "string" ? string
-        : T extends "number" ? number
-        : T extends "boolean" ? boolean
-        : T extends ReadonlyArray<infer E> ? E
-        : T extends "any" ? any
-        : never;
+// type AttributeType<T extends "string" | "number" | "boolean" | "any" | ReadonlyArray<any> | "map", A extends Attribute<any>> =
+//     T extends "string" ? string
+//         : T extends "number" ? number
+//         : T extends "boolean" ? boolean
+//         : T extends ReadonlyArray<infer E> ? E
+//         : T extends "map" ?
+//
+//         : T extends "any" ? any
+//         : never;
 
 type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Name in keyof E]: {
@@ -630,7 +712,7 @@ type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, an
 type AllEntityAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Attr in AllEntityAttributeNames<E>]: {
         [Name in keyof E]: Attr extends keyof E[Name]["schema"]["attributes"]
-            ? AttributeType<E[Name]["schema"]["attributes"][Attr]["type"], E[Name]["schema"]["attributes"][Attr]>
+            ? ItemAttribute<E[Name]["schema"]["attributes"][Attr]>
             : never
     }[keyof E];
 };

@@ -1728,7 +1728,7 @@ describe("Update Item", () => {
                 .remove(removal)
                 .go()
                 .catch(err => err);
-            console.log(error);
+
             expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated`);
 
         });
