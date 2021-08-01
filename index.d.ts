@@ -1,7 +1,11 @@
 declare const WhereSymbol: unique symbol;
 declare const UpdateDataSymbol: unique symbol;
 
-type BooleanAttribute<A extends string> = {
+interface ReadOnlyAttribute {
+    readonly readOnly: true;
+}
+
+interface BooleanAttribute<A extends string> {
     readonly type: "boolean";
     readonly required?: boolean;
     readonly hidden?: boolean;
@@ -15,7 +19,7 @@ type BooleanAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type NumberAttribute<A extends string> = {
+interface NumberAttribute<A extends string> {
     readonly type: "number";
     readonly required?: boolean;
     readonly hidden?: boolean;
@@ -29,7 +33,7 @@ type NumberAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type StringAttribute<A extends string> = {
+interface StringAttribute<A extends string> {
     readonly type: "string";
     readonly required?: boolean;
     readonly hidden?: boolean;
@@ -43,7 +47,7 @@ type StringAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type EnumAttribute<A extends string> = {
+interface EnumAttribute<A extends string> {
     readonly type: ReadonlyArray<string>;
     readonly required?: boolean;
     readonly hidden?: boolean;
@@ -57,7 +61,7 @@ type EnumAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type AnyAttribute<A extends string> = {
+interface AnyAttribute<A extends string> {
     readonly type: "any";
     readonly required?: boolean;
     readonly hidden?: boolean;
@@ -71,7 +75,7 @@ type AnyAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type MapAttribute<A extends string> = {
+interface MapAttribute<A extends string> {
     readonly type: "map";
     readonly properties: Attributes<A>;
     readonly required?: boolean;
@@ -86,7 +90,7 @@ type MapAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type StringListAttribute<A extends string> = {
+interface StringListAttribute<A extends string> {
     readonly type: "list";
     readonly items: StringAttribute<A>;
     readonly required?: boolean;
@@ -101,7 +105,7 @@ type StringListAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type NumberListAttribute<A extends string> = {
+interface NumberListAttribute<A extends string> {
     readonly type: "list";
     readonly items: NumberAttribute<A>;
     readonly required?: boolean;
@@ -116,7 +120,7 @@ type NumberListAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type MapListAttribute<A extends string> = {
+interface MapListAttribute<A extends string> {
     readonly type: "list";
     readonly items: MapAttribute<A>;
     readonly required?: boolean;
@@ -131,7 +135,7 @@ type MapListAttribute<A extends string> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type ListAttribute<A extends string> = {
+interface ListAttribute<A extends string> {
     readonly type: "list";
     readonly items: Attribute<A>;
     readonly required?: boolean;
@@ -312,6 +316,45 @@ type ItemAttribute<A extends Attribute<any>> =
                                     : never
         : never
 
+type EditableItemAttribute<A extends Attribute<any>> =
+    A extends ReadOnlyAttribute
+        ? never
+        : A["type"] extends infer R
+            ? R extends "string" ? string
+            : R extends "number" ? number
+                : R extends "boolean" ? boolean
+                    : R extends ReadonlyArray<infer E> ? E
+                        : R extends "map"
+                            ? "properties" extends keyof A
+                                ? {
+                                    [P in keyof A["properties"]]:
+                                    A["properties"][P] extends infer M
+                                        ? M extends Attribute<any>
+                                            ? ItemAttribute<M>
+                                            : never
+                                        : never
+                                }
+                                : never
+                            : R extends "list"
+                                ? "items" extends keyof A
+                                    ? A["items"] extends infer I
+                                        ? I extends Attribute<any>
+                                            ? ItemAttribute<I>[]
+                                            : never
+                                        : never
+                                    : never
+                                : R extends "set"
+                                    ? "items" extends keyof A
+                                        ? A["items"] extends infer I
+                                            ? I extends Attribute<any>
+                                                ? ItemAttribute<I>[]
+                                                : any
+                                            : never
+                                        : never
+                                    : R extends "any" ? any
+                                        : never
+            : never        
+
 type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Attr extends Attributes<A>> = {
     [a in keyof Attr]: ItemAttribute<Attr[a]>
 }
@@ -425,10 +468,10 @@ type PutItem<A extends string, F extends A, C extends string, S extends Schema<A
     & Partial<Item<A,F,C,S,S["attributes"]>>
 
 type UpdateData<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    Omit<
-        Omit<Item<A,F,C,S,S["attributes"]>, keyof AllTableIndexCompositeAttributes<A,F,C,S>>,
-        ReadOnlyAttributes<A,F,C,S>
-    >
+    Omit<{
+        [Attr in keyof S["attributes"]]: EditableItemAttribute<S["attributes"][Attr]>
+    }, keyof AllTableIndexCompositeAttributes<A,F,C,S> | ReadOnlyAttributes<A,F,C,S>>
+    
 
 type SetItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Omit<
@@ -473,7 +516,18 @@ type WhereAttributes<A extends string, F extends A, C extends string, S extends 
     [Attr in keyof I]: WhereAttributeSymbol<I[Attr]>
 }
 
-export type DataUpdateAttributeSymbol<T extends any> = { [UpdateDataSymbol]: void } & T
+export type DataUpdateAttributeSymbol<T extends any> = 
+    { [UpdateDataSymbol]: void } 
+    & T extends string ? T
+    : T extends number ? T
+    : T extends boolean ? T
+    : T extends {[key: string]: any}
+        ? {[key in keyof T]: DataUpdateAttributeSymbol<T[key]>}
+            : T extends Array<infer I>
+                ? Array<DataUpdateAttributeSymbol<I>>
+                    : T extends ReadonlyArray<infer A>
+                        ? ReadonlyArray<DataUpdateAttributeSymbol<A>>
+                        : T
 
 
 type DataUpdateAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> = {
@@ -500,7 +554,7 @@ type WhereOperations<A extends string, F extends A, C extends string, S extends 
 type DataUpdateOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> = {
     set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V : never) => any;
     remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
-    append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | boolean | string | ReadonlyArray<any> ? never : V : never ) => any;
+    append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : never : never ) => any;
     add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
     subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
     delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | boolean | string | ReadonlyArray<any> ? never : V : never ) => any;

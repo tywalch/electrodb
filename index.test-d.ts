@@ -2544,6 +2544,12 @@ const entityWithComplexShapes = new Entity({
                         items: {
                             type: ["xyz", "123"] as const
                         }
+                    },
+                    val4: {
+                        type: "set",
+                        items: {
+                            type: "number"
+                        }
                     }
                 }
             }
@@ -2577,7 +2583,6 @@ const entityWithComplexShapes = new Entity({
 });
 
 entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
-
     data.prop3?.val1;
     let int = 0;
     if (Array.isArray(data.prop4)) {
@@ -2609,44 +2614,104 @@ entityWithComplexShapes
         data.prop5?.map(values => values)
         data.prop6?.map(values => values)
     })
+
 entityWithComplexShapes
     .update({prop1: "abc", prop2: "def"})
     .set({
         prop4: [{
             val2: 789,
-            val3: ["123"]
+            val3: ["123"],
+            val4: [123, 456]
         }],
         prop5: ["abc"]
     })
     .go()
+
+entityWithComplexShapes
+    .put({
+        prop1: "abc",
+        prop2: "def",
+        prop4: [{
+            val2: 789,
+            val3: ["123"],
+            val4: [123, 456]
+        }],
+        prop5: ["abc"]
+    })
+    .go()
+
 entityWithComplexShapes
     .update({prop1: "abc", prop2: "def"})
     .set({
         prop4: [{
             val2: 789,
-            val3: ["123"]
+            val3: ["123"],
+            val4: [1, 2, 3]
         }],
         prop5: ["abc"]
     })
     .where(({prop5}, {eq}) => eq(prop5, ["abc"]))
     .where(({prop1}, {eq}) => eq(prop1, "abc"))
-    .go()
+    .go();
+
+
 entityWithComplexShapes
     .update({prop1: "abc", prop2: "def"})
-    .set({
+    .append({
         prop4: [{
             val2: 789,
-            val3: ["123"]
+            val3: ["123"],
+            val4: [1, 2, 3]
+        }],
+    })
+    .data(({prop5, prop4}, {add, append, remove}) => {
+        add(prop5, ["abc"]);
+        append(prop4[0].val3, ["123"]);
+        append(prop4, [{
+            val2: 789, 
+            val3: ["123"],
+            val4: [1, 2, 3]
+        }]);
+        add(prop4[0].val2, 789);
+        add(prop4[0].val4, [1]);
+        remove(prop4[0].val4);
+        remove(prop4[0].val3);
+        remove(prop4[0].val2);
+
+    })
+    .go()
+
+
+expectError(() => {    
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .append({
+        prop4: [{
+            val2: 789,
+            val3: ["123"],
+            val4: [1, 2, 3]
         }],
         prop5: ["abc"]
     })
     .go()
+});
+
+expectError(() => {    
+    entityWithComplexShapes
+        .update({prop1: "abc", prop2: "def"})
+        .data(({prop1}, {remove}) => {
+            remove(prop1);
+        })
+        .go()
+    });
+
 entityWithComplexShapes
     .update({prop1: "abc", prop2: "def"})
     .set({
         prop4: [{
             val2: 789,
-            val3: ["123"]
+            val3: ["123"],
+            val4: [1, 2, 3]
         }],
         prop5: ["abc"]
     })
