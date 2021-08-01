@@ -2600,7 +2600,8 @@ entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
                     int += val.val2
                 }
             } else {
-                int += value.val2;
+                expectType<number|undefined>(value.val2);
+                int += value?.val2 ?? 0;
             }
         }
     }

@@ -9,6 +9,14 @@ interface RequiredAttribute {
     readonly required: true;
 }
 
+interface HiddenAttribute {
+    readonly hidden: true;
+}
+
+interface DefaultedAttribute {
+    readonly default: any;
+}
+
 interface BooleanAttribute<A extends string> {
     readonly type: "boolean";
     readonly required?: boolean;
@@ -320,6 +328,55 @@ type ItemAttribute<A extends Attribute<any>> =
                                     : never
         : never
 
+type ReturnedAttribute<A extends Attribute<any>> =
+    A extends HiddenAttribute ? never
+    : A["type"] extends infer R
+        ? R extends "string" ? string
+        : R extends "number" ? number
+            : R extends "boolean" ? boolean
+                : R extends ReadonlyArray<infer E> ? E
+                    : R extends "map"
+                        ? "properties" extends keyof A
+                            ? A extends RequiredAttribute | DefaultedAttribute
+                                ? {
+                                    [P in keyof A["properties"]]: A["properties"][P] extends infer M
+                                        ? M extends Attribute<any>
+                                            ? ReturnedAttribute<M>
+                                            : never
+                                        : never
+                                }
+                                : {
+                                    [P in keyof A["properties"]]?: A["properties"][P] extends infer M
+                                        ? M extends Attribute<any>
+                                            ? ReturnedAttribute<M>
+                                            : never
+                                        : never
+                                }
+                            : never
+                        : R extends "list"
+                            ? "items" extends keyof A
+                                ? A["items"] extends infer I
+                                    ? I extends Attribute<any>
+                                        ? ReturnedAttribute<I>[]
+                                        : never
+                                    : never
+                                : never
+                            : R extends "set"
+                                ? "items" extends keyof A
+                                    ? A["items"] extends infer I
+                                        ? I extends Attribute<any>
+                                            ? ReturnedAttribute<I>[]
+                                            : any
+                                        : never
+                                    : never
+                                : R extends "any" ? any
+                                    : never
+            : never        
+
+type ReturnedItems<A extends string, F extends A, C extends string, S extends Schema<A,F,C>,Attr extends S["attributes"]> = { 
+    [a in keyof Attr]: ReturnedAttribute<Attr[a]>
+}
+
 type EditableItemAttribute<A extends Attribute<any>> =
     A extends ReadOnlyAttribute
         ? never
@@ -483,8 +540,8 @@ type IndexCompositeAttributes<A extends string, F extends A, C extends string, S
 
 type TableItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     AllTableIndexCompositeAttributes<A,F,C,S> &
-    Pick<Item<A,F,C,S,S["attributes"]>, RequiredAttributes<A,F,C,S>> &
-    Partial<Omit<Item<A,F,C,S,S["attributes"]>, RequiredAttributes<A,F,C,S>>>
+    Pick<ReturnedItems<A,F,C,S,S["attributes"]>, RequiredAttributes<A,F,C,S>> &
+    Partial<Omit<ReturnedItems<A,F,C,S,S["attributes"]>, RequiredAttributes<A,F,C,S>>>
 
 type ResponseItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Omit<TableItem<A,F,C,S>, HiddenAttributes<A,F,C,S>>
