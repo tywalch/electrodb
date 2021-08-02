@@ -1,3 +1,4 @@
+
 # ElectroDB
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
 [![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
@@ -2119,9 +2120,6 @@ animals.query
 
 ```javascript
 animals.update({habitat: "Africa", enclosure: "5b"})
-    .set({
-      "handlers[0]": "mark"
-    })
 	.where(({handlers}, {eq}) => eq(handlers[0], "jerry"))
 	.go()
 ```
@@ -2132,28 +2130,45 @@ animals.update({habitat: "Africa", enclosure: "5b"})
 animals.query
 	.farm({habitat: "Africa"})
 	.where(({meals}, {exists, between}) => `
-	    ${exists(meals[0].meat.veal)} AND ${between(meals[0].schedule, '6:00', '7:00')}
+		${exists(meals[0].meat.veal)} AND ${between(meals[0].schedule, '6:00', '7:00')}
 	`)
 	.go()
 ```
 
 ### Attributes and Operations
 
-Where functions allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions:
+Where functions allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations`, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions. 
+
+> Note: `where` callbacks must return a string. All method on the  `operation` object all return strings, so you can return the results of the `operation` method or use template strings compose an expression.
 
 ```javascript
-// A single filter operation
+// A single filter operation 
 animals.update({habitat: "Africa", enclosure: "5b"})
 	.set({keeper: "Joe Exotic"})
 	.where((attr, op) => op.eq(attr.dangerous, true))
 	.go();
 
-// Multiple conditions
+// A single filter operation  
+animals.update({habitat: "Africa", enclosure: "5b"})
+	.set({keeper: "Joe Exotic"})
+	.where((attr, op) => op.eq(attr.dangerous, true))
+	.go();
+
+// Multiple conditions - `op`
 animals.update({habitat: "Africa", enclosure: "5b"})
 	.set({keeper: "Joe Exotic"})
 	.where((attr, op) => `
 		${op.eq(attr.dangerous, true)} AND ${op.contains(attr.diet, "meat")}
 	`)
+	.go();
+
+// Multiple usages of `where` (implicit AND)
+animals.update({habitat: "Africa", enclosure: "5b"})
+	.set({keeper: "Joe Exotic"})
+	.where((attr, op) => `
+		${op.eq(attr.dangerous, true)} AND ${op.contains(attr.diet, "meat")}
+	`)
+	.where((attr, op)) => op.betweem(attr.schedule, "05:30", "19:00"))
 	.go();
 ```
 
