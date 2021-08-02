@@ -2582,6 +2582,91 @@ const entityWithComplexShapes = new Entity({
     }
 });
 
+const entityWithComplexShapesRequired = new Entity({
+    model: {
+        entity: "entity",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string",
+            label: "props"
+        },
+        prop2: {
+            type: "string",
+        },
+        prop3: {
+            type: "map",
+            properties: {
+                val1: {
+                    type: "string",
+                    required: true
+                }
+            },
+            required: true
+        },
+        prop4: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    val2: {
+                        type: "number",
+                        required: true
+                    },
+                    val3: {
+                        type: "list",
+                        items: {
+                            type: ["xyz", "123"] as const,
+                            required: true
+                        },
+                        required: true
+                    },
+                    val4: {
+                        type: "set",
+                        items: {
+                            type: "number",
+                            required: true
+                        },
+                        required: true
+                    }
+                }
+            },
+            required: true
+        },
+        prop5: {
+            type: "set",
+            items: {
+                type: ["abc", "def"] as const,
+                required: true
+            },
+            required: true
+        },
+        prop6: {
+            type: "set",
+            items: {
+                type: "string",
+                required: true
+            },
+            required: true
+        }
+    },
+    indexes: {
+        record: {
+            collection: "mops",
+            pk: {
+                field: "pk",
+                composite: ["prop1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop2"]
+            }
+        }
+    }
+});
+
 entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
     data.prop3?.val1;
     let int = 0;
@@ -2684,17 +2769,17 @@ entityWithComplexShapes
 
 
 expectError(() => {    
-entityWithComplexShapes
-    .update({prop1: "abc", prop2: "def"})
-    .append({
-        prop4: [{
-            val2: 789,
-            val3: ["123"],
-            val4: [1, 2, 3]
-        }],
-        prop5: ["abc"]
-    })
-    .go()
+    entityWithComplexShapes
+        .update({prop1: "abc", prop2: "def"})
+        .append({
+            prop4: [{
+                val2: 789,
+                val3: ["123"],
+                val4: [1, 2, 3]
+            }],
+            prop5: ["abc"]
+        })
+        .go()
 });
 
 expectError(() => {    
@@ -2717,3 +2802,25 @@ entityWithComplexShapes
         prop5: ["abc"]
     })
     .go()
+
+entityWithComplexShapesRequired.put({
+    prop1: "abc",
+    prop2: "def",
+    prop3: {
+        val1: "abc",
+    },
+    prop4: [{
+        val2: 789,
+        val3: ["123"],
+        val4: [1, 2, 3]
+    }],
+    prop5: ["abc"],
+    prop6: ["abdbdb"],
+});
+expectError(() => {
+    entityWithComplexShapesRequired.put({});
+})
+
+expectError(() => {
+    entityWithComplexShapesRequired.put({prop1: "abc", prop2: "def"});
+});
