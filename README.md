@@ -3003,18 +3003,21 @@ operation     | example                               | result                  
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
-    .data((attr, op) => {
-        const newTenant = attr.value(attr.tenant, "larry")
-        op.set(attr.category, "food/meal");
-        op.add(attr.tenant, newTenant);
-        op.add(attr.rent, 100);
-        op.subtract(attr.deposit, 200);
-        op.remove(attr.leaseEndDate);
-        op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
-        op.delete(attr.tags, 'coffee');
-        op.del(attr.contact, '555-345-2222');
-        op.add(attr.totalFees, op.name(attr.petFee));
-        op.add(attr.leaseHolders, newTenant);
+    .data((a, o) => {
+        const newTenant = a.value(attr.tenant, "larry");
+        o.set(a.category, "food/meal");   // electrodb "enum"   -> dynamodb "string"
+        o.add(a.tenant, newTenant);       // electrodb "any"    -> dynamodb "set"
+        o.add(a.rent, 100);               // electrodb "number" -> dynamodb "number"
+        o.subtract(a.deposit, 200);       // electrodb "number" -> dynamodb "number"
+        o.remove(a.leaseEndDate);         // electrodb "string" -> dynamodb "string"
+        o.append(a.rentalAgreement, [{    // electrodb "any"    -> dynamodb "list"
+            type: "ammendment",
+            detail: "no soup for you"
+        }]);
+        o.delete(a.tags, 'coffee');       // electrodb "any"    -> dynamodb "set"
+        o.del(a.contact, '555-345-2222'); // electrodb "string" -> dynamodb "string"
+        o.add(a.fees, op.name(a.petFee)); // electrodb "number" -> dynamodb "number"
+        o.add(a.leaseHolders, newTenant); // electrodb "any"    -> dynamodb "set"
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
