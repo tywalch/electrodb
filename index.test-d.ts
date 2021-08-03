@@ -1,5 +1,6 @@
 import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, UpdateDataSymbol} from ".";
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
+import {complex} from "./test/complex.test-d";
 let entityWithSK = new Entity({
     model: {
         entity: "abc",
@@ -2542,29 +2543,23 @@ const entityWithComplexShapes = new Entity({
                     val3: {
                         type: "list",
                         items: {
-                            type: ["xyz", "123"] as const
+                            type: "string"
                         }
                     },
                     val4: {
                         type: "set",
-                        items: {
-                            type: "number"
-                        }
+                        items: "number"
                     }
                 }
             }
         },
         prop5: {
             type: "set",
-            items: {
-                type: ["abc", "def"] as const
-            }
+            items: "string"
         },
         prop6: {
             type: "set",
-            items: {
-                type: "string"
-            }
+            items: "string"
         }
     },
     indexes: {
@@ -2596,7 +2591,7 @@ const entityWithComplexShapesRequired = new Entity({
         prop2: {
             type: "string",
         },
-        prop3: {
+        attr3: {
             type: "map",
             properties: {
                 val1: {
@@ -2606,7 +2601,7 @@ const entityWithComplexShapesRequired = new Entity({
             },
             required: true
         },
-        prop4: {
+        attr4: {
             type: "list",
             items: {
                 type: "map",
@@ -2618,37 +2613,28 @@ const entityWithComplexShapesRequired = new Entity({
                     val3: {
                         type: "list",
                         items: {
-                            type: ["xyz", "123"] as const,
+                            type: "string",
                             required: true
                         },
                         required: true
                     },
                     val4: {
                         type: "set",
-                        items: {
-                            type: "number",
-                            required: true
-                        },
+                        items: "number",
                         required: true
                     }
                 }
             },
             required: true
         },
-        prop5: {
+        attr5: {
             type: "set",
-            items: {
-                type: ["abc", "def"] as const,
-                required: true
-            },
+            items: "string",
             required: true
         },
-        prop6: {
+        attr6: {
             type: "set",
-            items: {
-                type: "string",
-                required: true
-            },
+            items: "string",
             required: true
         }
     },
@@ -2665,6 +2651,91 @@ const entityWithComplexShapesRequired = new Entity({
             }
         }
     }
+});
+
+const entityWithComplexShapesRequiredOnEdge = new Entity({
+    model: {
+        entity: "entity",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string",
+            label: "props"
+        },
+        prop2: {
+            type: "string",
+        },
+        attrz3: {
+            type: "map",
+            properties: {
+                val1: {
+                    type: "string",
+                    required: true
+                }
+            }
+        },
+        attrz4: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    val2: {
+                        type: "number",
+                        required: true,
+                    },
+                    val3: {
+                        type: "list",
+                        items: {
+                            type: "string",
+                            required: true
+                        },
+                    },
+                    val4: {
+                        type: "set",
+                        items: "number",
+                    },
+                    val5: {
+                        type: "map",
+                        properties: {
+                            val6: {
+                                type: "string",
+                                required: true
+                            }
+                        }
+                    }
+                }
+            },
+        },
+        attrz5: {
+            type: "set",
+            items: "string",
+        },
+        attrz6: {
+            type: "set",
+            items: "string",
+        }
+    },
+    indexes: {
+        record: {
+            collection: "mops",
+            pk: {
+                field: "pk",
+                composite: ["prop1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop2"]
+            }
+        }
+    }
+});
+
+const complexShapeService = new Service({
+    ent1: entityWithComplexShapesRequiredOnEdge,
+    ent2: entityWithComplexShapes,
+    ent3: entityWithComplexShapesRequired
 });
 
 entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
@@ -2806,17 +2877,18 @@ entityWithComplexShapes
 entityWithComplexShapesRequired.put({
     prop1: "abc",
     prop2: "def",
-    prop3: {
+    attr3: {
         val1: "abc",
     },
-    prop4: [{
+    attr4: [{
         val2: 789,
         val3: ["123"],
         val4: [1, 2, 3]
     }],
-    prop5: ["abc"],
-    prop6: ["abdbdb"],
+    attr5: ["abc"],
+    attr6: ["abdbdb"],
 });
+
 expectError(() => {
     entityWithComplexShapesRequired.put({});
 })
@@ -2824,3 +2896,46 @@ expectError(() => {
 expectError(() => {
     entityWithComplexShapesRequired.put({prop1: "abc", prop2: "def"});
 });
+
+complexShapeService.collections
+    .mops({prop1: "abc"})
+    .where((a, op) => {
+        op.eq(a.attr3.val1, "abd");
+            expectError(() => op.eq(a.attr3, "abc"));
+            expectError(() => op.eq(a.attr3.val2, "abc"));
+            expectError(() => op.eq(a.attr3.val1, 123));
+        op.between(a.attr4[0].val2, 789, 888);
+            expectError(() => op.eq(a.attr4, "abc"));
+            expectError(() => op.eq(a.attr4.val2, "abc"));
+            expectError(() => op.eq(a.attr4[0].val2, "456"));
+        op.between(a.attr4[0].val3[1], "xyz", "123");
+            // expectNotAssignable<"abc">(a.attr4[1].val3[1]);
+            // expectNotAssignable<typeof (a.attr4[1].val3)>(["abc"]);
+            // expectError(() => op.eq(a.attr4[1].val3["def"], "xyz"));
+        op.gte(a.attr5, ["abc"]);
+
+        op.eq(a.attrz3.val1, "abd");
+            expectError(() => op.eq(a.attrz3, "abc"))
+            expectError(() => op.eq(a.attrz3.val2, "abc"))
+            expectError(() => op.eq(a.attrz3.val1, 123));
+        op.between(a.attrz4[0].val2, 789, 888);
+            // expectNotAssignable<"abc">(a.attrz4[1].val3[1]);
+            // expectNotAssignable<["abc"]>(a.attrz4[1].val3);
+            expectError(() => op.eq(a.attrz4[0].val2, "456"));
+        op.between(a.attrz4[0].val3[1], "xyz", "123");
+            // expectError(() => op.eq(a.attr4[1].val3[1], "abc"));
+            // expectError(() => op.eq(a.attr4[1].val3["def"], "xyz"));
+        op.gte(a.attrz5, ["abc"]);
+
+        op.eq(a.prop3.val1, "abd");
+            expectError(() => op.eq(a.attrz3, "abc"))
+            expectError(() => op.eq(a.attrz3.val2, "abc"))
+            expectError(() => op.eq(a.attrz3.val1, 123))
+        op.between(a.prop4[0].val2, 789, 888);
+        op.between(a.prop4[0].val3[1], "xyz", "123");
+        op.gte(a.prop5, ["abc"])
+        op.eq(a.prop2, "def");
+        op.contains(a.prop4[1].val3[2], "123");
+
+        return "";
+    })
