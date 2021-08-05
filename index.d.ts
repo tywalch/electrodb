@@ -17,6 +17,18 @@ interface DefaultedAttribute {
     readonly default: any;
 }
 
+type NestedBooleanAttribute = {
+    readonly type: "boolean";
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: boolean, item: any) => boolean | undefined;
+    readonly set?: (val?: boolean, item?: any) => boolean | undefined;
+    readonly default?: boolean | (() => boolean);
+    readonly validate?: ((val: boolean) => boolean) | ((val: boolean) => void) | ((val: boolean) => string | void);
+    readonly field?: string;
+}
+
 type BooleanAttribute = {
     readonly type: "boolean";
     readonly required?: boolean;
@@ -31,6 +43,18 @@ type BooleanAttribute = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
+type NestedNumberAttribute = {
+    readonly type: "number";
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: number, item: any) => number | undefined;
+    readonly set?: (val?: number, item?: any) => number | undefined;
+    readonly default?: number | (() => number);
+    readonly validate?: ((val: number) => boolean) | ((val: number) => void) | ((val: number) => string | void);
+    readonly field?: string;
+}
+
 type NumberAttribute = {
     readonly type: "number";
     readonly required?: boolean;
@@ -43,6 +67,18 @@ type NumberAttribute = {
     readonly field?: string;
     readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+}
+
+type NestedStringAttribute = {
+    readonly type: "string";
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: string, item: any) => string | undefined;
+    readonly set?: (val?: string, item?: any) => string | undefined;
+    readonly default?: string | (() => string);
+    readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
+    readonly field?: string;
 }
 
 type StringAttribute = {
@@ -73,6 +109,18 @@ type EnumAttribute = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
+type NestedAnyAttribute = {
+    readonly type: "any";
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: any, item: any) => any | undefined;
+    readonly set?: (val?: any, item?: any) => any | undefined;
+    readonly default?: () => any;
+    readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
+    readonly field?: string;
+}
+
 type AnyAttribute = {
     readonly type: "any";
     readonly required?: boolean;
@@ -87,10 +135,10 @@ type AnyAttribute = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type MapAttribute = {
+type NestedMapAttribute = {
     readonly type: "map";
     readonly properties: {
-        readonly [name: string]: Attribute;
+        readonly [name: string]: NestedAttributes;
     };
     readonly required?: boolean;
     readonly hidden?: boolean;
@@ -100,25 +148,27 @@ type MapAttribute = {
     readonly default?: Record<string, any> | (() => Record<string, any>);
     readonly validate?: ((val: Record<string, any>) => boolean) | ((val: Record<string, any>) => void) | ((val: Record<string, any>) => string | void);
     readonly field?: string;
-    readonly label?: string;
+}
+
+type MapAttribute = {
+    readonly type: "map";
+    readonly properties: {
+        readonly [name: string]: NestedAttributes;
+    };
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: Record<string, any>, item: any) => Record<string, any> | undefined;
+    readonly set?: (val?: Record<string, any>, item?: any) => Record<string, any> | undefined;
+    readonly default?: Record<string, any> | (() => Record<string, any>);
+    readonly validate?: ((val: Record<string, any>) => boolean) | ((val: Record<string, any>) => void) | ((val: Record<string, any>) => string | void);
+    readonly field?: string;
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type StringListAttribute = {
+type NestedStringListAttribute = {
     readonly type: "list";
-    readonly items: {
-        readonly type: "string";
-        readonly required?: boolean;
-        readonly hidden?: boolean;
-        readonly readOnly?: boolean;
-        readonly get?: (val: string, item: any) => string | undefined;
-        readonly set?: (val?: string, item?: any) => string | undefined;
-        readonly default?: string | (() => string);
-        readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
-        readonly field?: string;
-        readonly label?: string;
-        readonly watch?: ReadonlyArray<string> | "*";
-    };
+    readonly items: NestedStringAttribute;
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
@@ -126,26 +176,24 @@ type StringListAttribute = {
     readonly set?: (val?: string[], item?: any) => string[] | undefined;
     readonly default?: string[] | (() => string[]);
     readonly validate?: ((val: string[]) => boolean) | ((val: string[]) => void) | ((val: string[]) => string | void);
-    readonly field?: string;
-    readonly label?: string;
+}
+
+type StringListAttribute = {
+    readonly type: "list";
+    readonly items: NestedStringAttribute;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: string[], item: any) => string[] | undefined;
+    readonly set?: (val?: string[], item?: any) => string[] | undefined;
+    readonly default?: string[] | (() => string[]);
+    readonly validate?: ((val: string[]) => boolean) | ((val: string[]) => void) | ((val: string[]) => string | void);
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type NumberListAttribute = {
+type NestedNumberListAttribute = {
     readonly type: "list";
-    readonly items: {
-        readonly type: "number";
-        readonly required?: boolean;
-        readonly hidden?: boolean;
-        readonly readOnly?: boolean;
-        readonly get?: (val: number, item: any) => number | undefined;
-        readonly set?: (val?: number, item?: any) => number | undefined;
-        readonly default?: number | (() => number);
-        readonly validate?: ((val: number) => boolean) | ((val: number) => void) | ((val: number) => string | void);
-        readonly field?: string;
-        readonly label?: string;
-        readonly watch?: ReadonlyArray<string> | "*";
-    };
+    readonly items: NestedNumberAttribute;
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
@@ -154,28 +202,25 @@ type NumberListAttribute = {
     readonly default?: number[] | (() => number[]);
     readonly validate?: ((val: number[]) => boolean) | ((val: number[]) => void) | ((val: number[]) => string | void);
     readonly field?: string;
-    readonly label?: string;
+}
+
+type NumberListAttribute = {
+    readonly type: "list";
+    readonly items: NestedNumberAttribute;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: number[], item: any) => number[] | undefined;
+    readonly set?: (val?: number[], item?: any) => number[] | undefined;
+    readonly default?: number[] | (() => number[]);
+    readonly validate?: ((val: number[]) => boolean) | ((val: number[]) => void) | ((val: number[]) => string | void);
+    readonly field?: string;
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type MapListAttribute = {
+type NestedMapListAttribute = {
     readonly type: "list";
-    readonly items: {
-        readonly type: "map";
-        readonly properties: {
-            readonly [name: string]: Attribute;
-        };
-        readonly required?: boolean;
-        readonly hidden?: boolean;
-        readonly readOnly?: boolean;
-        readonly get?: (val: Record<string, any>, item: any) => Record<string, any> | undefined;
-        readonly set?: (val?: Record<string, any>, item?: any) => Record<string, any> | undefined;
-        readonly default?: Record<string, any> | (() => Record<string, any>);
-        readonly validate?: ((val: Record<string, any>) => boolean) | ((val: Record<string, any>) => void) | ((val: Record<string, any>) => string | void);
-        readonly field?: string;
-        readonly label?: string;
-        readonly watch?: ReadonlyArray<string> | "*";
-    };
+    readonly items: NestedMapAttribute;
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
@@ -184,8 +229,33 @@ type MapListAttribute = {
     readonly default?: Record<string, any>[] | (() => Record<string, any>[]);
     readonly validate?: ((val: Record<string, any>[]) => boolean) | ((val: Record<string, any>[]) => void) | ((val: Record<string, any>[]) => string | void);
     readonly field?: string;
-    readonly label?: string;
+}
+
+type MapListAttribute = {
+    readonly type: "list";
+    readonly items: NestedMapAttribute;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: Record<string, any>[], item: any) => Record<string, any>[] | undefined;
+    readonly set?: (val?: Record<string, any>[], item?: any) => Record<string, any>[] | undefined;
+    readonly default?: Record<string, any>[] | (() => Record<string, any>[]);
+    readonly validate?: ((val: Record<string, any>[]) => boolean) | ((val: Record<string, any>[]) => void) | ((val: Record<string, any>[]) => string | void);
+    readonly field?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+}
+
+type NestedStringSetAttribute = {
+    readonly type: "set";
+    readonly items: "string";
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: Array<string>, item: any) => Array<string> | undefined;
+    readonly set?: (val?: Array<string>, item?: any) => Array<string> | undefined;
+    readonly default?: Array<string> | (() => Array<string>);
+    readonly validate?: ((val: Array<string>) => boolean) | ((val: Array<string>) => void) | ((val: Array<string>) => string | void);
+    readonly field?: string;
 }
 
 type StringSetAttribute = {
@@ -199,8 +269,20 @@ type StringSetAttribute = {
     readonly default?: Array<string> | (() => Array<string>);
     readonly validate?: ((val: Array<string>) => boolean) | ((val: Array<string>) => void) | ((val: Array<string>) => string | void);
     readonly field?: string;
-    readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+}
+
+type NestedNumberSetAttribute = {
+    readonly type: "set";
+    readonly items: "number";
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: number[], item: any) => number[] | undefined;
+    readonly set?: (val?: number[], item?: any) => number[] | undefined;
+    readonly default?: number[] | (() => number[]);
+    readonly validate?: ((val: number[]) => boolean) | ((val: number[]) => void) | ((val: number[]) => string | void);
+    readonly field?: string;
 }
 
 type NumberSetAttribute = {
@@ -214,7 +296,6 @@ type NumberSetAttribute = {
     readonly default?: number[] | (() => number[]);
     readonly validate?: ((val: number[]) => boolean) | ((val: number[]) => void) | ((val: number[]) => string | void);
     readonly field?: string;
-    readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
@@ -230,6 +311,18 @@ type Attribute =
     | StringListAttribute
     | NumberListAttribute
     | MapListAttribute;
+
+type NestedAttributes =
+    NestedBooleanAttribute
+    | NestedNumberAttribute
+    | NestedStringAttribute
+    | NestedAnyAttribute
+    | NestedMapAttribute
+    | NestedStringListAttribute
+    | NestedNumberListAttribute
+    | NestedMapListAttribute
+    | NestedStringSetAttribute
+    | NestedNumberSetAttribute
 
 type Attributes<A extends string> = {
     readonly [a in A]: Attribute
@@ -324,7 +417,7 @@ type ItemAttribute<A extends Attribute> =
                             ? "items" extends keyof A
                                 ? A["items"] extends infer I
                                     ? I extends Attribute
-                                        ? ItemAttribute<I>[]
+                                        ? Array<ItemAttribute<I>>
                                         : never
                                     : never
                                 : never
@@ -395,9 +488,9 @@ type CreatedAttribute<A extends Attribute> =
                         ? "properties" extends keyof A
                             ? A extends RequiredAttribute
                                 ? {
-                                    [P in keyof A["properties"]]: A["properties"][P] extends infer RM
-                                        ? RM extends Attribute
-                                            ? CreatedAttribute<RM>
+                                    [P in keyof A["properties"]]: A["properties"][P] extends infer M
+                                        ? M extends Attribute
+                                            ? CreatedAttribute<M>
                                             : never
                                         : never
                                 }
@@ -460,7 +553,7 @@ type EditableItemAttribute<A extends Attribute> =
                                 ? "items" extends keyof A
                                     ? A["items"] extends infer I
                                         ? I extends Attribute
-                                            ? EditableItemAttribute<I>[]
+                                            ? Array<EditableItemAttribute<I>>
                                             : never
                                         : never
                                     : never
@@ -499,7 +592,7 @@ type UpdatableItemAttribute<A extends Attribute> =
                                 ? "items" extends keyof A
                                     ? A["items"] extends infer I
                                         ? I extends Attribute
-                                            ? UpdatableItemAttribute<I>[]
+                                            ? Array<UpdatableItemAttribute<I>>
                                             : never
                                         : never
                                     : never
