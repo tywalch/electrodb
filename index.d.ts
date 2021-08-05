@@ -393,7 +393,7 @@ type CreatedAttribute<A extends Attribute> =
                 : R extends ReadonlyArray<infer E> ? E
                     : R extends "map"
                         ? "properties" extends keyof A
-                            ? A extends RequiredAttribute | DefaultedAttribute
+                            ? A extends RequiredAttribute
                                 ? {
                                     [P in keyof A["properties"]]: A["properties"][P] extends infer RM
                                         ? RM extends Attribute
