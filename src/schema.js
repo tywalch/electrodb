@@ -158,12 +158,13 @@ class Attribute {
 	}
 
 	static buildChildSetItems(definition, parent) {
-		const items = Attribute.buildChildListItems(definition, parent);
+		const {items, traverser} = definition;
 		const allowedTypes = [AttributeTypes.string, AttributeTypes.boolean, AttributeTypes.number, AttributeTypes.enum];
-		if (allowedTypes.includes(items.type)) {
-			return items;
+		if (!Array.isArray(items) && !allowedTypes.includes(items)) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "items" definition for Set attribute: "${definition.path}". Acceptable item types include ${u.commaSeparatedString(allowedTypes)}`);
 		}
-		throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "items" definition for Set attribute: "${definition.path}". Acceptable item types include ${u.commaSeparatedString(allowedTypes)}`);
+		const prop = {type: items, ...parent};
+		return Schema.normalizeAttributes({ prop }, {}, traverser).attributes.prop;
 	}
 
 	static buildChildMapProperties(definition, parent) {
