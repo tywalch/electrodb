@@ -456,21 +456,16 @@ type ReturnedAttribute<A extends Attribute> =
                 : A["type"] extends ReadonlyArray<infer E> ? E
                     : A["type"] extends "map"
                         ? "properties" extends keyof A
-                            ? A extends RequiredAttribute | DefaultedAttribute
-                                ? {
-                                    [P in keyof A["properties"]]: A["properties"][P] extends infer M
-                                        ? M extends Attribute
+                            ?
+                            TrimmedAttributes<{
+                                [P in keyof A["properties"]]: A["properties"][P] extends infer M
+                                    ? M extends Attribute
+                                        ? M extends RequiredAttribute | DefaultedAttribute
                                             ? ReturnedAttribute<M>
-                                            : never
+                                            : ReturnedAttribute<M> | undefined
                                         : never
-                                }
-                                : {
-                                    [P in keyof A["properties"]]?: A["properties"][P] extends infer M
-                                        ? M extends Attribute
-                                            ? ReturnedAttribute<M>
-                                            : never
-                                        : never
-                                }
+                                    : never
+                            }>
                             : never
                         : A["type"] extends "list"
                             ? "items" extends keyof A
@@ -491,6 +486,13 @@ type ReturnedAttribute<A extends Attribute> =
                                 : A["type"] extends "any" ? any
                                     : never
 
+type UndefinedKeys<T> = {
+    [P in keyof T]: undefined extends T[P] ? P: never
+}[keyof T]
+
+type TrimmedAttributes<A extends Attributes<any>> =
+    Partial<Pick<A, UndefinedKeys<A>>> & Omit<A, UndefinedKeys<A>>
+
 type CreatedAttribute<A extends Attribute> =
     A["type"] extends "string" ? string
         : A["type"] extends "number" ? number
@@ -498,21 +500,15 @@ type CreatedAttribute<A extends Attribute> =
                 : A["type"] extends ReadonlyArray<infer E> ? E
                     : A["type"] extends "map"
                         ? "properties" extends keyof A
-                            ? A extends RequiredAttribute
-                                ? {
-                                    [P in keyof A["properties"]]: A["properties"][P] extends infer M
-                                        ? M extends Attribute
-                                            ? CreatedAttribute<M>
-                                            : never
+                            ? TrimmedAttributes<{
+                                [P in keyof A["properties"]]: A["properties"][P] extends infer M
+                                    ? M extends Attribute
+                                        ? M extends RequiredAttribute | DefaultedAttribute
+                                            ? ReturnedAttribute<M>
+                                            : ReturnedAttribute<M> | undefined
                                         : never
-                                }
-                                : {
-                                    [P in keyof A["properties"]]?: A["properties"][P] extends infer M
-                                        ? M extends Attribute
-                                            ? CreatedAttribute<M>
-                                            : never
-                                        : never
-                                }
+                                : never
+                            }>
                             : never
                         : A["type"] extends "list"
                             ? "items" extends keyof A
@@ -551,14 +547,14 @@ type EditableItemAttribute<A extends Attribute> =
                     : R extends ReadonlyArray<infer E> ? E
                         : R extends "map"
                             ? "properties" extends keyof A
-                                ? {
+                                ? TrimmedAttributes<{
                                     [P in keyof A["properties"]]:
                                     A["properties"][P] extends infer M
                                         ? M extends Attribute
                                             ? EditableItemAttribute<M>
                                             : never
                                         : never
-                                }
+                                }>
                                 : never
                             : R extends "list"
                                 ? "items" extends keyof A

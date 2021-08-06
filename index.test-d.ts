@@ -1,6 +1,5 @@
-import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, UpdateDataSymbol} from ".";
+import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem} from ".";
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
-import {complex} from "./test/complex.test-d";
 let entityWithSK = new Entity({
     model: {
         entity: "abc",
@@ -2939,3 +2938,497 @@ complexShapeService.collections
 
         return "";
     })
+
+const complex = new Entity({
+    model: {
+        entity: "user",
+        service: "versioncontrol",
+        version: "1"
+    },
+    attributes: {
+        stringVal: {
+            type: "string",
+            default: () => "abc",
+            validate: (value) => value !== undefined,
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        enumVal: {
+            type: ["abc", "def"] as const,
+            validate: (value: "abc" | "def") => value !== undefined,
+            default: () => "abc",
+            get: (value: "abc" | "def") => {
+                return value;
+            },
+            set: (value?: "abc" | "def") => {
+                return value;
+            }
+        },
+        numVal: {
+            type: "number",
+            validate: (value) => value !== undefined,
+            default: () => 123,
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        boolValue: {
+            type: "boolean",
+            validate: (value) => value !== undefined,
+            default: () => true,
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        stringSetValue: {
+            type: "set",
+            items: "string",
+            validate: (value) => value !== undefined,
+            default: () => ["abc"],
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        numberSetValue: {
+            type: "set",
+            items: "number",
+            validate: (value) => value !== undefined,
+            default: () => [1],
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        stringListValue: {
+            type: "list",
+            items: {
+                type: "string",
+                default: "abc",
+                validate: (value) => value !== undefined,
+                get: (value) => {
+                    return value;
+                },
+                set: (value) => {
+                    return value;
+                }
+            },
+            default: ["abc"],
+            validate: (value: string[]) => value !== undefined,
+            get: (value: string[]) => {
+                return value;
+            },
+            set: (value?: string[]) => {
+                return value;
+            }
+        },
+        numberListValue: {
+            type: "list",
+            items: {
+                type: "number",
+                validate: (value) => value !== undefined,
+                default: 0,
+                get: (value) => {
+                    return value;
+                },
+                set: (value) => {
+                    return value;
+                }
+            },
+            default: [],
+            validate: (value: number[]) => value !== undefined,
+            get: (value: number[]) => {
+                return value;
+            },
+            set: (value?: number[]) => {
+                return value;
+            }
+        },
+        mapListValue: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    stringVal: {
+                        type: "string",
+                        default: "def",
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    numVal: {
+                        type: "number",
+                        default: 5,
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    boolValue: {
+                        type: "boolean",
+                        default: false,
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    enumVal: {
+                        type: ["abc", "def"] as const,
+                        validate: (value: "abc" | "def") => value !== undefined,
+                        default: () => "abc",
+                        get: (value: "abc" | "def") => {
+                            return value;
+                        },
+                        set: (value?: "abc" | "def") => {
+                            return value;
+                        }
+                    },
+                },
+                validate: (value) => value !== undefined,
+                default: {
+                    stringVal: "abc",
+                    numVal: 123,
+                    boolValue: false,
+                },
+                get: (value) => {
+                    return value;
+                },
+                set: (value) => {
+                    return value;
+                }
+            },
+            get: (value: any) => {
+                return value;
+            },
+            set: (value: any) => {
+                return value;
+            }
+        },
+        mapValue: {
+            type: "map",
+            properties: {
+                stringVal: {
+                    type: "string",
+                    default: () => "abc",
+                    validate: (value) => value !== undefined,
+                    get: (value) => {
+                        return value;
+                    },
+                    set: (value) => {
+                        return value;
+                    }
+                },
+                numVal: {
+                    type: "number",
+                    default: () => 10,
+                    validate: (value) => value !== undefined,
+                    get: (value) => {
+                        return value;
+                    },
+                    set: (value) => {
+                        return value;
+                    }
+                },
+                boolValue: {
+                    type: "boolean",
+                    default: () => false,
+                    validate: (value) => value !== undefined,
+                    get: (value) => {
+                        return value;
+                    },
+                    set: (value) => {
+                        return value;
+                    }
+                },
+                enumVal: {
+                    type: ["abc", "def"] as const,
+                    validate: (value: "abc" | "def") => value !== undefined,
+                    default: () => "abc",
+                    get: (value: "abc" | "def") => {
+                        return value;
+                    },
+                    set: (value?: "abc" | "def") => {
+                        return value;
+                    }
+                },
+                stringListValue: {
+                    type: "list",
+                    items: {
+                        type: "string",
+                        default: "abc",
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    default: [],
+                    validate: (value: string[]) => value !== undefined,
+                    get: (value: string[]) => {
+                        return value;
+                    },
+                    set: (value?: string[]) => {
+                        return value;
+                    }
+                },
+                numberListValue: {
+                    type: "list",
+                    items: {
+                        type: "number",
+                        default: () => 100,
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    default: [123, 123],
+                    validate: (value: number[]) => value !== undefined,
+                    get: (value: number[]) => {
+                        return value;
+                    },
+                    set: (value?: number[]) => {
+                        return value;
+                    }
+                },
+                mapListValue: {
+                    type: "list",
+                    items: {
+                        type: "map",
+                        properties: {
+                            stringVal: {
+                                type: "string",
+                                default: "def",
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            numVal: {
+                                type: "number",
+                                default: 100,
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            boolValue: {
+                                type: "boolean",
+                                default: () => false,
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            stringSetValue: {
+                                type: "set",
+                                items: "string",
+                                default: ["abc"],
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            numberSetValue: {
+                                type: "set",
+                                items: "number",
+                                default: [5],
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            enumVal: {
+                                type: ["abc", "def"] as const,
+                                validate: (value: "abc" | "def") => value !== undefined,
+                                default: () => "abc",
+                                get: (value: "abc" | "def") => {
+                                    return value;
+                                },
+                                set: (value?: "abc" | "def") => {
+                                    return value;
+                                }
+                            },
+                        },
+                        default: () => ({
+                            stringVal: "anx",
+                            numVal: 13,
+                            boolValue: true,
+                            emumValue: "abc",
+                            stringSetValue: ["def"],
+                            numberSetValue: [10],
+                        }),
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    default: [],
+                    validate: (value: Record<string, any>[]) => value !== undefined,
+                    get: (value: Record<string, any>[]) => {
+                        return value;
+                    },
+                    set: (value?: Record<string, any>[]) => {
+                        return value;
+                    }
+                },
+            },
+            default: () => undefined,
+            validate: (value) => value !== undefined,
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        }
+    },
+    indexes: {
+        user: {
+            collection: "overview",
+            pk: {
+                composite: ["username"],
+                field: "pk"
+            },
+            sk: {
+                composite: [],
+                field: "sk"
+            }
+        },
+        _: {
+            collection: "owned",
+            index: "gsi1pk-gsi1sk-index",
+            pk: {
+                composite: ["username"],
+                field: "gsi1pk"
+            },
+            sk: {
+                field: "gsi1sk",
+                composite: []
+            }
+        }
+    }
+}, {table: "abc"});
+
+const mapTests = new Entity({
+    model: {
+        entity: "mapTests",
+        service: "tests",
+        version: "1"
+    },
+    attributes: {
+        username: {
+            type: "string"
+        },
+        mapObject: {
+            type: "map",
+            properties: {
+                minimal: {
+                    type: "string"
+                },
+                required: {
+                    type: "string",
+                    required: true
+                },
+                hidden: {
+                    type: "string",
+                    hidden: true
+                },
+                readOnly: {
+                    type: "string",
+                    readOnly: true
+                }
+            }
+        }
+    },
+    indexes: {
+        user: {
+            pk: {
+                composite: ["username"],
+                field: "pk"
+            },
+            sk: {
+                composite: [],
+                field: "sk"
+            }
+        }
+    }
+});
+
+type IsNever<T> = [T] extends [never] ? true : false
+
+mapTests
+    .get({username: "test"})
+    .go()
+    .then(data => {
+        if (data && data.mapObject !== undefined) {
+            expectType<undefined|string>(data.mapObject.minimal);
+            expectType<undefined|string>(data.mapObject.readOnly);
+            expectType<string>(data.mapObject.required);
+        }
+    });
+
+
+type MapTestPutParameters = Parameter<typeof mapTests.put>;
+expectAssignable<MapTestPutParameters>([{username: "abc"}]);
+// expectAssignable<MapTestPutParameters>();
+mapTests.put({username: "abc", mapObject: {required: "val"}});
+mapTests.put([{username: "abc", mapObject: {required: "val"}}]);
+expectError(() => {
+    mapTests.put({username: "abc", mapObject: {minimal: "abc"}});
+});
+expectError(() => {
+    mapTests.put([{username: "abc", mapObject: {minimal: "abc"}}]);
+});
+mapTests.update({username: "abc"}).data((attr, op) => {
+    expectError(() => op.set(attr.mapObject.readOnly, "abc"));
+    op.set(attr.mapObject.minimal, "abc");
+    op.set(attr.mapObject.hidden, "abc");
+    op.set(attr.mapObject.required, "abc");
+});
