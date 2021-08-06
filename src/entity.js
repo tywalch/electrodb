@@ -792,7 +792,7 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
-				params = this._makeUpdateParams2(
+				params = this._makeUpdateParams(
 					update,
 					keys.pk,
 					...consolidatedQueryFacets,
@@ -947,7 +947,7 @@ class Entity {
 		return copy;
 	}
 
-	_makeUpdateParams2(update = {}, pk = {}, sk = {}) {
+	_makeUpdateParams(update = {}, pk = {}, sk = {}) {
 		let modifiedAttributeValues = {};
 		let modifiedAttributeNames = {};
 		for (const path of Object.keys(update.paths)) {
@@ -993,37 +993,6 @@ class Entity {
 			UpdateExpression: update.build(),
 			ExpressionAttributeNames: update.getNames(),
 			ExpressionAttributeValues: update.getValues(),
-			TableName: this._getTableName(),
-			Key: indexKey,
-		};
-	}
-
-	/* istanbul ignore next */
-	_makeUpdateParams(update = {}, pk = {}, sk = {}) {
-		const set = update[ItemOperations.set] || {};
-		let withoutKeyFacets = this._removeAttributes(set, {...pk, ...sk, ...this.model.schema.getReadOnly()});
-		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
-		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
-		// should only happen when an attribute is changed.
-		let setAttributes = this.model.schema.applyAttributeSetters(withoutKeyFacets);
-		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
-		let translatedFields = this.model.schema.translateToFields(setAttributes);
-
-		let item = {
-			...translatedFields,
-			...updatedKeys,
-		};
-
-		let {
-			UpdateExpression,
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
-		} = this._updateExpressionBuilder(item);
-
-		return {
-			UpdateExpression,
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
 			TableName: this._getTableName(),
 			Key: indexKey,
 		};

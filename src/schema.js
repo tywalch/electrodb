@@ -267,13 +267,12 @@ class Attribute {
 				}
 				if (Object.keys(data).length > 0) {
 					return getter(data, siblings);
+				} else {
+					return getter(values, siblings);
 				}
-			} else if (this.type === AttributeTypes.list || this.type === AttributeTypes.set) {
+			} else if (this.type === AttributeTypes.list) {
 				const data = [];
 				for (let value of values) {
-					if (this.type === AttributeTypes.set) {
-						value = this.fromDDBSet(value);
-					}
 					const results = children.items.get(value, [...values]);
 					if (results !== undefined) {
 						data.push(results);
@@ -281,7 +280,12 @@ class Attribute {
 				}
 				if (data.length > 0) {
 					return getter(data, siblings);
+				} else {
+					return getter(values, siblings);
 				}
+			} else if (this.type === AttributeTypes.set) {
+				const data = this.fromDDBSet(values);
+				return getter(data, siblings);
 			} else {
 				return getter(values, siblings);
 			}
@@ -310,8 +314,10 @@ class Attribute {
 				}
 				if (Object.keys(data).length > 0) {
 					return setter(data, siblings);
+				} else {
+					return setter(values, siblings);
 				}
-			} else if (this.type === AttributeTypes.list || this.type === AttributeTypes.set) {
+			} else if (this.type === AttributeTypes.list) {
 				if (!Array.isArray(values)) {
 					values = [values];
 				}
@@ -322,14 +328,15 @@ class Attribute {
 						data.push(results);
 					}
 				}
+
 				if (data.length > 0) {
-					const results = setter(data, siblings);
-					if (this.type === AttributeTypes.set) {
-						return this.toDDBSet(results, children.items.type);
-					} else {
-						return results
-					}
+					return setter(data, siblings);
+				} else {
+					return setter(values, siblings);
 				}
+			} else if (this.type === AttributeTypes.set) {
+				const results = setter(values, siblings);
+				return this.toDDBSet(results, children.items);
 			} else {
 				return setter(values, siblings);
 			}
@@ -345,21 +352,23 @@ class Attribute {
 
 	toDDBSet(value, type) {
 		const valueType = getValueType(value);
+		let array;
 		switch(valueType) {
 			case ValueTypes.set:
-				return new DynamoDBSet(Array.from(value));
+				array = Array.from(value);
+				return array.length > 0
+					? new DynamoDBSet(array, type)
+					: undefined
 			case ValueTypes.aws_set:
 				return value;
 			case ValueTypes.array:
-				return new DynamoDBSet(value);
+				return new DynamoDBSet(value, type);
 			case ValueTypes.string:
 			case ValueTypes.boolean:
 			case ValueTypes.number:
-				if (valueType === type) {
-					return new DynamoDBSet(value);
-				}
-			case ValueTypes.undefined:
-				return new DynamoDBSet();
+				return valueType === type
+					? new DynamoDBSet(value, type)
+					: undefined;
 		}
 		throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Set values must be supplied as either Arrays, native JavaScript Set objects, or DocumentClient Set objects.`)
 	}
@@ -525,7 +534,7 @@ class Attribute {
 			for (const i in value) {
 				const [isValid, errorMessages] = this.items.isValid(value[i]);
 				if (!isValid) {
-					errors.push(errorMessages + `at index ${i}`);
+					errors.push(errorMessages + ` at index "${i}"`);
 				}
 			}
 		} else {
@@ -585,11 +594,63 @@ class Attribute {
 	}
 
 	val(value) {
-		value = this.cast(value);
+		const getValue = (v) => {
+			v = this.cast(v);
+			if (v === undefined) {
+				v = this.default();
+			}
+			return v;
+		}
+
 		if (value === undefined) {
 			value = this.default();
 		}
-		return value;
+
+		if (value === undefined) {
+			return value;
+		} else if (this.type === AttributeTypes.map) {
+			const data = {};
+
+			for (const name of Object.keys(this.properties.attributes)) {
+				const attribute = this.properties.attributes[name];
+				const results = attribute.val(value[attribute.name]);
+				if (results !== undefined) {
+					data[attribute.field] = results;
+				}
+			}
+
+			if (Object.keys(data).length > 0) {
+				return getValue(data);
+			} else {
+				return getValue();
+			}
+
+		} else if (this.type === AttributeTypes.list) {
+			if (!Array.isArray(value)) {
+				value = [value];
+			}
+
+			const data = [];
+
+			for (const v of value) {
+				const results = this.items.val(v);
+				if (results !== undefined) {
+					data.push(results);
+				}
+			}
+
+			if (data.length > 0) {
+				return getValue(data);
+			} else {
+				return getValue();
+			}
+
+		} else if (this.type === AttributeTypes.set) {
+			const results = getValue(value);
+			return this.toDDBSet(results, this.items);
+		} else {
+			return getValue(value);
+		}
 	}
 
 	getValidate(value) {

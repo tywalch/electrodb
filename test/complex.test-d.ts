@@ -164,7 +164,18 @@ export const complex = new Entity({
                         set: (value) => {
                             return value;
                         }
-                    }
+                    },
+                    enumVal: {
+                        type: ["abc", "def"] as const,
+                        validate: (value: "abc" | "def") => value !== undefined,
+                        default: () => "abc",
+                        get: (value: "abc" | "def") => {
+                            return value;
+                        },
+                        set: (value?: "abc" | "def") => {
+                            return value;
+                        }
+                    },
                 },
                 validate: (value) => value !== undefined,
                 default: {
@@ -219,6 +230,17 @@ export const complex = new Entity({
                         return value;
                     },
                     set: (value) => {
+                        return value;
+                    }
+                },
+                enumVal: {
+                    type: ["abc", "def"] as const,
+                    validate: (value: "abc" | "def") => value !== undefined,
+                    default: () => "abc",
+                    get: (value: "abc" | "def") => {
+                        return value;
+                    },
+                    set: (value?: "abc" | "def") => {
                         return value;
                     }
                 },
@@ -304,17 +326,6 @@ export const complex = new Entity({
                                     return value;
                                 }
                             },
-                            emumValue: {
-                                type: ["abc", "def"] as const,
-                                default: () => "abc",
-                                validate: (value: string) => value !== undefined,
-                                get: (value: string) => {
-                                    return value;
-                                },
-                                set: (value?: string) => {
-                                    return value;
-                                }
-                            },
                             stringSetValue: {
                                 type: "set",
                                 items: "string",
@@ -336,6 +347,17 @@ export const complex = new Entity({
                                     return value;
                                 },
                                 set: (value) => {
+                                    return value;
+                                }
+                            },
+                            enumVal: {
+                                type: ["abc", "def"] as const,
+                                validate: (value: "abc" | "def") => value !== undefined,
+                                default: () => "abc",
+                                get: (value: "abc" | "def") => {
+                                    return value;
+                                },
+                                set: (value?: "abc" | "def") => {
                                     return value;
                                 }
                             },

@@ -10,19 +10,31 @@
 //     }
 // }
 //
-// const memberTypeToSetType = {
-//     'String': 'String',
-//     'Number': 'Number',
-//     'NumberValue': 'Number',
-//     'Binary': 'Binary',
-//     'string': 'string',
-//     'number': 'number'
-// };
+const memberTypeToSetType = {
+    'String': 'String',
+    'Number': 'Number',
+    'NumberValue': 'Number',
+    'Binary': 'Binary',
+    'string': 'string',
+    'number': 'number'
+};
 
 class DynamoDBSet {
-    constructor(list) {
+    constructor(list, type) {
         this.wrapperName = 'Set';
-        this.values = [].concat(list);
+        this.type = memberTypeToSetType[type];
+        if (this.type === undefined) {
+            new Error(`Invalid Set type: ${type}`);
+        }
+        this.values = Array.from(new Set([].concat(list)));
+    }
+
+    detectType() {
+        return memberTypeToSetType[typeof (this.values[0])];
+    }
+
+    validate() {
+        console.log("called vaidate");
     }
 
     toJSON() {
@@ -62,7 +74,7 @@ class DynamoDBSet {
 //     },
 //
 //     detectType: function() {
-//         this.type = memberTypeToSetType[typeOf(this.values[0])];
+//
 //         if (!this.type) {
 //             throw util.error(new Error(), {
 //                 code: 'InvalidSetType',
