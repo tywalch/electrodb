@@ -8,6 +8,7 @@ import {
     Status,
     IsNotTicket,
     NotYetViewed,
+    PullRequest,
     isIssueCommentIds,
     isPullRequestCommentIds
 } from "./database";

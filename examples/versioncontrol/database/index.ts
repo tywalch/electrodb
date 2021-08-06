@@ -5,7 +5,7 @@ import {subscriptions} from "./subscriptions";
 import {users} from "./users";
 import {pullRequests, pullRequestComments} from "./pullrequests";
 import {issues, issueComments} from "./issues";
-import {CreateEntityItem, UpdateEntityItem, EntityItem} from "../../../";
+import {CreateEntityItem, UpdateEntityItem, EntityItem, EntitySchema} from "../../../";
 import {Status, SubscriptionTypes, IsNotTicket, isIssueCommentIds, isPullRequestCommentIds, NotYetViewed} from "./types"
 
 const table = "electro";
@@ -34,6 +34,7 @@ export type CreatePullRequest = CreateEntityItem<typeof pullRequests>;
 export type UpdatePullRequest = UpdateEntityItem<typeof pullRequests>;
 export type PullRequestItem = EntityItem<typeof pullRequests>;
 export type PullRequestIds = Parameters<typeof pullRequests.get>[0][0];
+export type PullRequest = EntitySchema<typeof pullRequests>;
 
 export type CreatePullRequestComment = CreateEntityItem<typeof pullRequestComments>;
 export type UpdatePullRequestComment = UpdateEntityItem<typeof pullRequestComments>;

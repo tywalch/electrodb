@@ -100,7 +100,7 @@ class AttributeTraverser {
 
 
 class Attribute {
-	constructor(definition = {}, parent = null) {
+	constructor(definition = {}) {
 		this.name = definition.name;
 		this.field = definition.field || definition.name;
 		this.label = definition.label;
@@ -130,11 +130,9 @@ class Attribute {
 		this.traverser = new AttributeTraverser(definition.traverser);
 		this.traverser.setPath(this.path, this);
 		this.traverser.setPath(this.fieldPath, this);
-		const {items, properties} = Attribute.buildChildAttributes(type, definition, { parentType: this.type, parentPath: this.path });
-		this.items = items;
-		this.properties = properties;
-		this.get = this._makeGet(definition.get, {items, properties});
-		this.set = this._makeSet(definition.set, {items, properties});
+		this.parent = { parentType: this.type, parentPath: this.path };
+		this.get = this._makeGet(definition.get);
+		this.set = this._makeSet(definition.set);
 	}
 
 	static buildChildAttributes(type, definition, parent) {
@@ -224,6 +222,22 @@ class Attribute {
 		}
 	}
 
+	_makeGet(get) {
+		this._checkGetSet(get, "get");
+		const getter = get || ((attr) => attr);
+		return (values, siblings) => {
+			if (this.hidden) {
+				return;
+			}
+			return getter(values, siblings);
+		}
+	}
+
+	_makeSet(set) {
+		this._checkGetSet(set, "set");
+		return set || ((attr) => attr);
+	}
+
 	getPathType(type, parentType) {
 		if (parentType === AttributeTypes.list || parentType === AttributeTypes.set) {
 			return PathTypes.item;
@@ -242,135 +256,10 @@ class Attribute {
 		return this.traverser.getPath(path);
 	}
 
-	_makeGet(get, children) {
-		if (typeof get !== "function" && get !== undefined) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "get" property for attribute ${this.path}. Please ensure value is a function or undefined.`);
+	_checkGetSet(val, type) {
+		if (typeof val !== "function" && val !== undefined) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "${type}" property for attribute ${this.path}. Please ensure value is a function or undefined.`);
 		}
-		const getter = get || ((attr) => attr);
-		return (values, siblings) => {
-			if (this.hidden) {
-				return;
-			}
-			if (values === undefined) {
-				return getter(values, siblings);
-			}
-			if (this.type === AttributeTypes.map) {
-				const data = {};
-				for (const name of Object.keys(children.properties.attributes)) {
-					const attribute = children.properties.attributes[name];
-					if (values[attribute.field] !== undefined) {
-						let results = attribute.get(values[attribute.field], {...values});
-						if (results !== undefined) {
-							data[attribute.name] = results;
-						}
-					}
-				}
-				if (Object.keys(data).length > 0) {
-					return getter(data, siblings);
-				} else {
-					return getter(values, siblings);
-				}
-			} else if (this.type === AttributeTypes.list) {
-				const data = [];
-				for (let value of values) {
-					const results = children.items.get(value, [...values]);
-					if (results !== undefined) {
-						data.push(results);
-					}
-				}
-				if (data.length > 0) {
-					return getter(data, siblings);
-				} else {
-					return getter(values, siblings);
-				}
-			} else if (this.type === AttributeTypes.set) {
-				const data = this.fromDDBSet(values);
-				return getter(data, siblings);
-			} else {
-				return getter(values, siblings);
-			}
-		}
-	}
-
-	_makeSet(set, children) {
-		if (typeof set !== "function" && set !== undefined) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "set" property for attribute ${this.path}. Please ensure value is a function or undefined.`);
-		}
-		const setter = set || ((attr) => attr);
-		return (values, siblings) => {
-			if (values === undefined) {
-				return setter(values, siblings);
-			}
-			if (this.type === AttributeTypes.map) {
-				const data = {};
-				for (const name of Object.keys(children.properties.attributes)) {
-					const attribute = children.properties.attributes[name];
-					if (values[attribute.name] !== undefined) {
-						const results = attribute.set(values[attribute.name], {...values});
-						if (results !== undefined) {
-							data[attribute.field] = results;
-						}
-					}
-				}
-				if (Object.keys(data).length > 0) {
-					return setter(data, siblings);
-				} else {
-					return setter(values, siblings);
-				}
-			} else if (this.type === AttributeTypes.list) {
-				if (!Array.isArray(values)) {
-					values = [values];
-				}
-				const data = [];
-				for (const value of values) {
-					const results = children.items.get(value, [...values]);
-					if (results !== undefined) {
-						data.push(results);
-					}
-				}
-
-				if (data.length > 0) {
-					return setter(data, siblings);
-				} else {
-					return setter(values, siblings);
-				}
-			} else if (this.type === AttributeTypes.set) {
-				const results = setter(values, siblings);
-				return this.toDDBSet(results, children.items);
-			} else {
-				return setter(values, siblings);
-			}
-		}
-	}
-
-	fromDDBSet(value) {
-		if (getValueType(value) === ValueTypes.aws_set) {
-			return value.values;
-		}
-		return value;
-	}
-
-	toDDBSet(value, type) {
-		const valueType = getValueType(value);
-		let array;
-		switch(valueType) {
-			case ValueTypes.set:
-				array = Array.from(value);
-				return array.length > 0
-					? new DynamoDBSet(array, type)
-					: undefined
-			case ValueTypes.aws_set:
-				return value;
-			case ValueTypes.array:
-				return new DynamoDBSet(value, type);
-			case ValueTypes.string:
-			case ValueTypes.boolean:
-			case ValueTypes.number:
-				return valueType === type
-					? new DynamoDBSet(value, type)
-					: undefined;
-		}
-		throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Set values must be supplied as either Arrays, native JavaScript Set objects, or DocumentClient Set objects.`)
 	}
 
 	_makeCast(name, cast) {
@@ -482,15 +371,6 @@ class Attribute {
 			case AttributeTypes.any:
 				isTyped = true;
 				break;
-			case AttributeTypes.set:
-			case AttributeTypes.map:
-			case AttributeTypes.list:
-				let [childrenAreValid, childErrors] = this._validateChildren(value);
-				isTyped = childrenAreValid;
-				if (!isTyped) {
-					reason = childErrors;
-				}
-				break;
 			case AttributeTypes.string:
 			case AttributeTypes.number:
 			case AttributeTypes.boolean:
@@ -504,7 +384,120 @@ class Attribute {
 		return [isTyped, reason];
 	}
 
-	_validateMapProperties(value) {
+	isValid(value) {
+		try {
+			let [isTyped, typeError] = this._isType(value);
+			let [isValid, validationError] = this.validate(value);
+			let reason = [typeError, validationError].filter(Boolean).join(", ");
+			return [isTyped && isValid, reason];
+		} catch (err) {
+			return [false, err.message];
+		}
+	}
+
+	val(value) {
+		value = this.cast(value);
+		if (value === undefined) {
+			value = this.default();
+		}
+		return value;
+	}
+
+	getValidate(value) {
+		value = this.val(value);
+		let [isValid, validationError] = this.isValid(value);
+		if (!isValid) {
+			// todo: #electroerror
+			throw new Error(validationError);
+		}
+		return value;
+	}
+}
+
+class MapAttribute extends Attribute {
+	constructor(definition) {
+		super(definition);
+		const properties = Attribute.buildChildMapProperties(definition, this.parent);
+		this.properties = properties;
+		this.get = this._makeGet(definition.get, properties);
+		this.set = this._makeSet(definition.set, properties);
+	}
+
+	_makeGet(get, properties) {
+		this._checkGetSet(get, "get");
+
+		const getter = get || ((attr) => attr);
+
+		return (values, siblings) => {
+			const data = {};
+
+			if (this.hidden) {
+				return;
+			}
+
+			if (values === undefined) {
+				return getter(values, siblings);
+			}
+
+			for (const name of Object.keys(properties.attributes)) {
+				const attribute = properties.attributes[name];
+				if (values[attribute.field] !== undefined) {
+					let results = attribute.get(values[attribute.field], {...values});
+					if (results !== undefined) {
+						data[attribute.name] = results;
+					}
+				}
+			}
+
+			if (Object.keys(data).length > 0) {
+				return getter(data, siblings);
+			} else {
+				return getter(values, siblings);
+			}
+		}
+	}
+
+	_makeSet(set, properties) {
+		this._checkGetSet(set, "set");
+		const setter = set || ((attr) => attr);
+		return (values, siblings) => {
+			const data = {};
+
+			if (values === undefined) {
+				return setter(values, siblings);
+			}
+
+			for (const name of Object.keys(properties.attributes)) {
+				const attribute = properties.attributes[name];
+				if (values[attribute.name] !== undefined) {
+					const results = attribute.set(values[attribute.name], {...values});
+					if (results !== undefined) {
+						data[attribute.field] = results;
+					}
+				}
+			}
+
+			if (Object.keys(data).length > 0) {
+				return setter(data, siblings);
+			} else {
+				return setter(values, siblings);
+			}
+		}
+	}
+
+	_isType(value) {
+		if (value === undefined) {
+			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+		}
+		let reason = "";
+		const [childrenAreValid, childErrors] = this._validateChildren(value);
+		if (!childrenAreValid) {
+			reason = childErrors;
+		}
+		return [childrenAreValid, reason]
+	}
+
+	_validateChildren(value) {
 		const valueType = getValueType(value);
 		const attributes = this.properties.attributes;
 		const errors = [];
@@ -527,7 +520,119 @@ class Attribute {
 		return [errors.length === 0, errors.filter(Boolean).join(", ")];
 	}
 
-	_validateListItems(value) {
+	val(value) {
+		const getValue = (v) => {
+			v = this.cast(v);
+			if (v === undefined) {
+				v = this.default();
+			}
+			return v;
+		}
+
+		if (value === undefined) {
+			value = this.default();
+		}
+
+		if (value === undefined) {
+			return value;
+		} else {
+			const data = {};
+
+			for (const name of Object.keys(this.properties.attributes)) {
+				const attribute = this.properties.attributes[name];
+				const results = attribute.val(value[attribute.name]);
+				if (results !== undefined) {
+					data[attribute.field] = results;
+				}
+			}
+
+			if (Object.keys(data).length > 0) {
+				return getValue(data);
+			} else {
+				return getValue();
+			}
+		}
+	}
+}
+
+class ListAttribute extends Attribute {
+	constructor(definition) {
+		super(definition);
+		const items = Attribute.buildChildListItems(definition, this.parent);
+		this.items = items;
+		this.get = this._makeGet(definition.get, items);
+		this.set = this._makeSet(definition.set, items);
+	}
+
+	_makeGet(get, items) {
+		this._checkGetSet(get, "get");
+
+		const getter = get || ((attr) => attr);
+
+		return (values, siblings) => {
+			const data = [];
+
+			if (this.hidden) {
+				return;
+			}
+
+			if (values === undefined) {
+				return getter(values, siblings);
+			}
+
+			for (let value of values) {
+				const results = items.get(value, [...values]);
+				if (results !== undefined) {
+					data.push(results);
+				}
+			}
+
+			if (data.length > 0) {
+				return getter(data, siblings);
+			} else {
+				return getter(values, siblings);
+			}
+		}
+	}
+
+	_makeSet(set, items) {
+		this._checkGetSet(set, "set");
+		const setter = set || ((attr) => attr);
+		return (values, siblings) => {
+			const data = [];
+
+			if (!Array.isArray(values)) {
+				values = [values];
+			}
+
+			for (const value of values) {
+				const results = items.get(value, [...values]);
+				if (results !== undefined) {
+					data.push(results);
+				}
+			}
+
+			if (data.length > 0) {
+				return setter(data, siblings);
+			} else {
+				return setter(values, siblings);
+			}
+		}
+	}
+
+	_isType(value) {
+		if (value === undefined) {
+			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+		}
+		let reason = "";
+		const [childrenAreValid, childErrors] = this._validateChildren(value);
+		if (!childrenAreValid) {
+			reason = childErrors;
+		}
+		return [childrenAreValid, reason]
+	}
+
+	_validateChildren(value) {
 		const valueType = getValueType(value);
 		const errors = [];
 		if (valueType === ValueTypes.array) {
@@ -545,7 +650,121 @@ class Attribute {
 		return [errors.length === 0, errors.filter(Boolean).join(", ")];
 	}
 
-	_validateSetItems(value) {
+	val(value) {
+		const getValue = (v) => {
+			v = this.cast(v);
+			if (v === undefined) {
+				v = this.default();
+			}
+			return v;
+		}
+
+		if (value === undefined) {
+			value = this.default();
+		}
+
+		if (value === undefined) {
+			return value;
+		} else {
+			if (!Array.isArray(value)) {
+				value = [value];
+			}
+
+			const data = [];
+
+			for (const v of value) {
+				const results = this.items.val(v);
+				if (results !== undefined) {
+					data.push(results);
+				}
+			}
+
+			if (data.length > 0) {
+				return getValue(data);
+			} else {
+				return getValue();
+			}
+		}
+	}
+}
+
+class SetAttribute extends Attribute {
+	constructor(definition) {
+		super(definition);
+		const items = Attribute.buildChildSetItems(definition, this.parent);
+		this.items = items;
+		this.get = this._makeGet(definition.get, items);
+		this.set = this._makeSet(definition.set, items);
+	}
+
+	fromDDBSet(value) {
+		if (getValueType(value) === ValueTypes.aws_set) {
+			return value.values;
+		}
+		return value;
+	}
+
+	toDDBSet(value) {
+		const valueType = getValueType(value);
+		let array;
+		switch(valueType) {
+			case ValueTypes.set:
+				array = Array.from(value);
+				return array.length > 0
+					? new DynamoDBSet(array, this.items.type)
+					: undefined
+			case ValueTypes.aws_set:
+				return value;
+			case ValueTypes.array:
+				return new DynamoDBSet(value, this.items.type);
+			case ValueTypes.string:
+			case ValueTypes.boolean:
+			case ValueTypes.number:
+				return valueType === type
+					? new DynamoDBSet(value, this.items.type)
+					: undefined;
+		}
+		throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}". Set values must be supplied as either Arrays, native JavaScript Set objects, or DocumentClient Set objects.`)
+	}
+
+	_makeGet(get, items) {
+		this._checkGetSet(get, "get");
+
+		const getter = get || ((attr) => attr);
+
+		return (values, siblings) => {
+			let data;
+			if (values !== undefined) {
+				data = this.fromDDBSet(values);
+			}
+			return getter(data, siblings);
+		}
+	}
+
+	_makeSet(set, items) {
+		this._checkGetSet(set, "set");
+		const setter = set || ((attr) => attr);
+		return (values, siblings) => {
+			const results = setter(values, siblings);
+			if (results !== undefined) {
+				return this.toDDBSet(results);
+			}
+		}
+	}
+
+	_isType(value) {
+		if (value === undefined) {
+			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+		}
+		let reason = "";
+		const [childrenAreValid, childErrors] = this._validateChildren(value);
+		if (!childrenAreValid) {
+			reason = childErrors;
+		}
+		return [childrenAreValid, reason]
+	}
+
+	_validateChildren(value) {
 		const valueType = getValueType(value);
 		const errors = [];
 		let arr = [];
@@ -569,30 +788,6 @@ class Attribute {
 		return [errors.length === 0, errors.filter(Boolean).join(", ")];
 	}
 
-	_validateChildren(value) {
-		switch (this.type) {
-			case AttributeTypes.map:
-				return this._validateMapProperties(value);
-			case AttributeTypes.set:
-				return this._validateSetItems(value);
-			case AttributeTypes.list:
-				return this._validateListItems(value);
-			default:
-				return [true, ""];
-		}
-	}
-
-	isValid(value) {
-		try {
-			let [isTyped, typeError] = this._isType(value);
-			let [isValid, validationError] = this.validate(value);
-			let reason = [typeError, validationError].filter(Boolean).join(", ");
-			return [isTyped && isValid, reason];
-		} catch (err) {
-			return [false, err.message];
-		}
-	}
-
 	val(value) {
 		const getValue = (v) => {
 			v = this.cast(v);
@@ -608,59 +803,10 @@ class Attribute {
 
 		if (value === undefined) {
 			return value;
-		} else if (this.type === AttributeTypes.map) {
-			const data = {};
-
-			for (const name of Object.keys(this.properties.attributes)) {
-				const attribute = this.properties.attributes[name];
-				const results = attribute.val(value[attribute.name]);
-				if (results !== undefined) {
-					data[attribute.field] = results;
-				}
-			}
-
-			if (Object.keys(data).length > 0) {
-				return getValue(data);
-			} else {
-				return getValue();
-			}
-
-		} else if (this.type === AttributeTypes.list) {
-			if (!Array.isArray(value)) {
-				value = [value];
-			}
-
-			const data = [];
-
-			for (const v of value) {
-				const results = this.items.val(v);
-				if (results !== undefined) {
-					data.push(results);
-				}
-			}
-
-			if (data.length > 0) {
-				return getValue(data);
-			} else {
-				return getValue();
-			}
-
-		} else if (this.type === AttributeTypes.set) {
-			const results = getValue(value);
-			return this.toDDBSet(results, this.items);
 		} else {
-			return getValue(value);
+			const results = getValue(value);
+			return this.toDDBSet(results);
 		}
-	}
-
-	getValidate(value) {
-		value = this.val(value);
-		let [isValid, validationError] = this.isValid(value);
-		if (!isValid) {
-			// todo: #electroerror
-			throw new Error(validationError);
-		}
-		return value;
 	}
 }
 
@@ -785,11 +931,25 @@ class Schema {
 		}
 
 		for (let name of Object.keys(definitions)) {
-			let definition = definitions[name];
+			const definition = definitions[name];
+
 			definition.watchedBy = Array.isArray(watchedAttributes[name])
 				? watchedAttributes[name]
-				: []
-			normalized[name] = new Attribute(definition);
+				: [];
+
+			switch(definition.type) {
+				case AttributeTypes.map:
+					normalized[name] = new MapAttribute(definition);
+					break;
+				case AttributeTypes.list:
+					normalized[name] = new ListAttribute(definition);
+					break;
+				case AttributeTypes.set:
+					normalized[name] = new SetAttribute(definition);
+					break;
+				default:
+					normalized[name] = new Attribute(definition);
+			}
 		}
 
 		let watchedWatchers = [];

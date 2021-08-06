@@ -562,7 +562,7 @@ describe("Entity", () => {
 						value: {"prop1": "val1", "prop2": "val2"}
 					},
 					fail: true,
-					message: `Invalid attribute value supplied to "set" attribute "data". Set values must be supplied as either Arrays, native JavaScript Set objects, or DocumentClient Set objects.`
+					message: `Invalid attribute value supplied to "set" attribute "data". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, or DocumentClient Set objects.`
 				},{
 					input: {
 						data: {
@@ -609,6 +609,7 @@ describe("Entity", () => {
 						try {
 							let entity = new Entity(schema);
 							entity.put({id, data}).params();
+							console.log("should have failed", test);
 						} catch(err) {
 							throw err;
 						}
@@ -617,8 +618,9 @@ describe("Entity", () => {
 					expect(() => {
 						try {
 							let entity = new Entity(schema);
-							entity.put({id, data}).params()
+							entity.put({id, data}).params();
 						} catch(err) {
+							console.log(err, test)
 							throw err;
 						}
           			}).to.not.throw();
