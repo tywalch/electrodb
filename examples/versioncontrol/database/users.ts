@@ -28,7 +28,22 @@ export const users = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
+      default: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: ["*"],
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    following: {
+      type: "set",
+      items: "string"
+    },
+    followers: {
+      type: "set",
+      items: "string"
     }
   },
   indexes: {

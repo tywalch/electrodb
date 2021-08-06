@@ -43,6 +43,28 @@ export const pullRequests = new Entity({
       set: (val) => toStatusCode(val),
       get: (val) => toStatusString(val)
     },
+    reviewers: {
+      type: "list",
+      items: {
+        type: "map",
+        properties: {
+          username: {
+            type: "string",
+            required: true,
+          },
+          approved: {
+            type: "boolean",
+            required: true,
+          },
+          createdAt: {
+            type: "string",
+            default: () => moment.utc().format(),
+            readOnly: true,
+            required: true,
+          }
+        }
+      }
+    },
     createdAt: {
       type: "string",
       default: () => moment.utc().format()

@@ -47,12 +47,14 @@ export const issues = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
+      default: () => moment.utc().format(),
+      readOnly: true,
     },
     updatedAt: {
       type: "string",
-      watch: ["status"],
-      set: () => moment.utc().format()
+      watch: ["*"],
+      set: () => moment.utc().format(),
+      readOnly: true,
     },
   },
   indexes: {
@@ -151,7 +153,14 @@ export const issueComments = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
+      default: () => moment.utc().format(),
+      readOnly: true
+    },
+    updatedAt: {
+      type: "string",
+      watch: ["*"],
+      set: () => moment.utc().format(),
+      readOnly: true,
     },
   },
   indexes: {

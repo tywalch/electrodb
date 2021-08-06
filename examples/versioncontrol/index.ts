@@ -115,3 +115,45 @@ async function readReply(user: string, comment: any): Promise<boolean> {
         return false;
     }
 }
+
+async function approvePullRequest(repoOwner: string, repoName: string, pullRequestNumber: string, username: string) {
+    const pullRequest = await store.entities.pullRequests
+        .get({repoOwner, repoName, pullRequestNumber})
+        .go();
+
+    if (!pullRequest || !pullRequest.reviewers) {
+        return false;
+    }
+
+    let index: number = -1;
+
+    for (let i = 0; i < pullRequest.reviewers.length; i++) {
+        const reviewer = pullRequest.reviewers[i];
+        if (reviewer.username === username) {
+            index = i;
+        }
+    }
+
+    if (index === -1) {
+        return false;
+    }
+
+    return store.entities.pullRequests
+        .update({repoOwner, repoName, pullRequestNumber})
+        .data(({reviewers}, {set}) => {
+            set(reviewers[index].approved, true);
+        })
+        .where(({reviewers}, {eq}) => `
+            ${eq(reviewers[index].username, username)};
+        `)
+        .go()
+        .then(() => true)
+        .catch(() => false);
+}
+
+async function followRepository(repoOwner: string, repoName: string, follower: string) {
+    await store.entities
+        .repositories.update({repoOwner, repoName})
+        .add({follower: [follower]})
+        .go()
+}

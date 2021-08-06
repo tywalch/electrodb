@@ -450,12 +450,11 @@ type ItemAttribute<A extends Attribute> =
 
 type ReturnedAttribute<A extends Attribute> =
     A extends HiddenAttribute ? never
-    : A["type"] extends infer R
-        ? R extends "string" ? string
-        : R extends "number" ? number
-            : R extends "boolean" ? boolean
-                : R extends ReadonlyArray<infer E> ? E
-                    : R extends "map"
+        : A["type"] extends "string" ? string
+        : A["type"] extends "number" ? number
+            : A["type"] extends "boolean" ? boolean
+                : A["type"] extends ReadonlyArray<infer E> ? E
+                    : A["type"] extends "map"
                         ? "properties" extends keyof A
                             ? A extends RequiredAttribute | DefaultedAttribute
                                 ? {
@@ -473,7 +472,7 @@ type ReturnedAttribute<A extends Attribute> =
                                         : never
                                 }
                             : never
-                        : R extends "list"
+                        : A["type"] extends "list"
                             ? "items" extends keyof A
                                 ? A["items"] extends infer I
                                     ? I extends Attribute
@@ -481,7 +480,7 @@ type ReturnedAttribute<A extends Attribute> =
                                         : never
                                     : never
                                 : never
-                            : R extends "set"
+                            : A["type"] extends "set"
                                 ? "items" extends keyof A
                                     ? A["items"] extends infer I
                                         ? I extends "string" ? string[]
@@ -489,9 +488,8 @@ type ReturnedAttribute<A extends Attribute> =
                                                 : never
                                         : never
                                     : never
-                                : R extends "any" ? any
+                                : A["type"] extends "any" ? any
                                     : never
-            : never
 
 type CreatedAttribute<A extends Attribute> =
     A["type"] extends "string" ? string
@@ -1270,4 +1268,34 @@ export type CreateEntityItem<E extends Entity<any, any, any, any>> =
 export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
         ? SetItem<A, F, C, S>
+        : never;
+
+export type UpdateAddEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AddItem<A, F, C, S>
+        : never;
+
+export type UpdateSubtractEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? SubtractItem<A, F, C, S>
+        : never;
+
+export type UpdateAppendEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AppendItem<A, F, C, S>
+        : never;
+
+export type UpdateRemoveEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? RemoveItem<A, F, C, S>
+        : never;
+
+export type UpdateDeleteEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? DeleteItem<A, F, C, S>
+        : never;
+
+type EntitySchema<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? Item<A,F,C,S,S["attributes"]>
         : never;
