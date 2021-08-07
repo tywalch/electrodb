@@ -1878,7 +1878,37 @@ let getKeys = ((val) => {}) as GetKeys;
                     required: true
                 },
                 required: true,
-            }
+            },
+            prop8: {
+                type: "string",
+                required: true,
+                default: "abc"
+            },
+            prop9: {
+                type: "map",
+                properties: {
+                    nested1: {
+                        type: "string",
+                        required: true,
+                        default: () => "abc"
+                    },
+                    nested2: {
+                        type: "string",
+                        required: true,
+                        default: "abc"
+                    }
+                },
+                default: {},
+                required: true,
+            },
+            prop10: {
+                type: "list",
+                items: {
+                    type: "string",
+                },
+                required: true,
+                default: []
+            },
         },
         indexes: {
             record: {
@@ -1895,7 +1925,7 @@ let getKeys = ((val) => {}) as GetKeys;
         }
     });
 
-    // required attributes, as objet and array
+    // required attributes, as object and array, without required (but defaulted attributes)
     entityWithRequiredAttribute.put({
         prop1: "abc",
         prop2: "def",
@@ -1907,6 +1937,7 @@ let getKeys = ((val) => {}) as GetKeys;
         },
         prop7: []
     });
+    // required attributes, as object and array, without required (but defaulted attributes)
     entityWithRequiredAttribute.put([{
         prop1: "abc",
         prop2: "def",
@@ -1918,6 +1949,7 @@ let getKeys = ((val) => {}) as GetKeys;
         },
         prop7: []
     }]);
+    // required attributes, as object and array, without required (but defaulted attributes)
     entityWithRequiredAttribute.create({
         prop1: "abc",
         prop2: "def",

@@ -526,9 +526,11 @@ type CreatedAttribute<A extends Attribute> =
                             ? TrimmedAttributes<{
                                 [P in keyof A["properties"]]: A["properties"][P] extends infer M
                                     ? M extends Attribute
-                                        ? M extends RequiredAttribute
-                                            ? CreatedAttribute<M>
-                                            : CreatedAttribute<M> | undefined
+                                        ? M extends DefaultedAttribute
+                                            ? CreatedAttribute<M> | undefined
+                                            : M extends RequiredAttribute
+                                                ? CreatedAttribute<M>
+                                                : CreatedAttribute<M> | undefined
                                         : never
                                 : never
                             }>
@@ -769,18 +771,33 @@ type TableItem<A extends string, F extends A, C extends string, S extends Schema
 type ResponseItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Omit<TableItem<A,F,C,S>, HiddenAttributes<A,F,C,S>>
 
+// type RequiredPutItems<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
+//     [Attribute in keyof S["attributes"]]:
+//     "required" extends keyof S["attributes"][Attribute]
+//         ? true extends S["attributes"][Attribute]["required"]
+//         ? true
+//         : "default" extends keyof S["attributes"][Attribute]
+//             ? false
+//             : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
+//                 ? true
+//                 : false
+//         : "default" extends keyof S["attributes"][Attribute]
+//         ? false
+//         : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
+//             ? true
+//             : false
+// }
+
 type RequiredPutItems<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [Attribute in keyof S["attributes"]]:
-        "required" extends keyof S["attributes"][Attribute]
+    "default" extends keyof S["attributes"][Attribute]
+        ? false
+        : "required" extends keyof S["attributes"][Attribute]
             ? true extends S["attributes"][Attribute]["required"]
                 ? true
-                : "default" extends keyof S["attributes"][Attribute]
-                    ? false
                     : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
                         ? true
                         : false
-        : "default" extends keyof S["attributes"][Attribute]
-            ? false
             : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
                 ? true
                 : false
