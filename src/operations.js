@@ -326,7 +326,9 @@ class AttributeOperationProxy {
                 this.operations[operation](attribute, value);
                 const {target} = attribute();
                 if (target.readOnly) {
-                    throw new Error(`Attribute "${target.name}" is Read-Only and cannot be updated`);
+                    throw new Error(`Attribute "${target.path}" is Read-Only and cannot be updated`);
+                } else if (operation === ItemOperations.remove && target.required) {
+                    throw new Error(`Attribute "${target.path}" is Required and cannot be removed`);
                 }
             }
         }
@@ -343,7 +345,9 @@ class AttributeOperationProxy {
                 this.operations[operation](attribute);
                 const {target} = attribute();
                 if (target.readOnly) {
-                    throw new Error(`Attribute "${target.name}" is Read-Only and cannot be updated`);
+                    throw new Error(`Attribute "${target.path}" is Read-Only and cannot be updated`);
+                } else if (operation === ItemOperations.remove && target.required) {
+                    throw new Error(`Attribute "${target.path}" is Required and cannot be removed`);
                 }
             }
         }
@@ -387,9 +391,9 @@ class AttributeOperationProxy {
 
                             const formatted = template(target, paths.expression, ...attributeValues);
                             builder.setImpacted(operation, paths.json);
-
                             if (canNest) {
                                 seen.add(paths.expression);
+                                seen.add(formatted);
                             }
 
                             if (builder.type === BuilderTypes.update && formatted && typeof formatted.operation === "string" && typeof formatted.expression === "string") {
@@ -417,7 +421,7 @@ class AttributeOperationProxy {
                     const attribute = target.getChild(prop);
                     let field;
                     if (attribute === undefined) {
-                        throw new Error(`Invalid attribute "${prop}" on path "${paths.json}".`);
+                        throw new Error(`Invalid attribute "${prop}" at path "${paths.json}".`);
                     } else if (attribute === root && attribute.type === AttributeTypes.any) {
                         // This function is only called if a nested property is called. If this attribute is ultimately the root, don't use the root's field name
                         field = prop;
@@ -439,7 +443,7 @@ class AttributeOperationProxy {
                     const paths = builder.setName({}, attribute.name, attribute.field);
                     return AttributeOperationProxy.pathProxy(paths, attribute, attribute, builder);
                 }
-            })
+            });
         }
         return attr;
     }

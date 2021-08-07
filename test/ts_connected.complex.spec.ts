@@ -1082,4 +1082,218 @@ describe("Simple Crud On Complex Entity", () => {
         expect(putItem).to.deep.equal(getItem);
         expect(putItem).to.deep.equal({ stringVal, stringVal2, map: {} });
     });
+
+    it("should apply readOnly constraints to nested attributes", () => {
+        const entity = new Entity({
+            model: {
+                entity: "user",
+                service: "versioncontrol",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                },
+                stringVal2: {
+                    type: "string",
+                },
+                map: {
+                    type: "map",
+                    properties: {
+                        test: {
+                            type: "string",
+                            readOnly: true,
+                        }
+                    },
+                }
+            },
+            indexes: {
+                user: {
+                    collection: "overview",
+                    pk: {
+                        composite: ["stringVal"],
+                        field: "pk"
+                    },
+                    sk: {
+                        composite: ["stringVal2"],
+                        field: "sk"
+                    }
+                },
+            }
+        }, {table, client});
+        const stringVal = uuid();
+        const stringVal2 = uuid();
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+                    // @ts-ignore
+                    .set({"map.test": "abc"})
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "map.test" is Read-Only and cannot be updated`);
+    });
+
+    it("should apply readOnly constraints to nested attributes under a list", () => {
+        const entity = new Entity({
+            model: {
+                entity: "user",
+                service: "versioncontrol",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                },
+                stringVal2: {
+                    type: "string",
+                },
+                list: {
+                    type: "list",
+                    items: {
+                        type: "map",
+                        properties: {
+                            test: {
+                                type: "string",
+                                readOnly: true,
+                            }
+                        },
+                    }
+                }
+            },
+            indexes: {
+                user: {
+                    collection: "overview",
+                    pk: {
+                        composite: ["stringVal"],
+                        field: "pk"
+                    },
+                    sk: {
+                        composite: ["stringVal2"],
+                        field: "sk"
+                    }
+                },
+            }
+        }, {table, client});
+        const stringVal = uuid();
+        const stringVal2 = uuid();
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+                    // @ts-ignore
+                    .set({"list[3].test": "def"})
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "list[*].test" is Read-Only and cannot be updated`);
+    });
+
+    it("should apply not null style removal constraints to required nested attributes", () => {
+        const entity = new Entity({
+            model: {
+                entity: "user",
+                service: "versioncontrol",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                },
+                stringVal2: {
+                    type: "string",
+                },
+                map: {
+                    type: "map",
+                    properties: {
+                        test: {
+                            type: "string",
+                            required: true,
+                        }
+                    },
+                }
+            },
+            indexes: {
+                user: {
+                    collection: "overview",
+                    pk: {
+                        composite: ["stringVal"],
+                        field: "pk"
+                    },
+                    sk: {
+                        composite: ["stringVal2"],
+                        field: "sk"
+                    }
+                },
+            }
+        }, {table, client});
+        const stringVal = uuid();
+        const stringVal2 = uuid();
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+                    // @ts-ignore
+                    .remove(["map.test"])
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "map.test" is Required and cannot be removed`);
+    });
+
+    it("should apply not null style removal constraints to required nested attributes under a list", () => {
+        const entity = new Entity({
+            model: {
+                entity: "user",
+                service: "versioncontrol",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                },
+                stringVal2: {
+                    type: "string",
+                },
+                list: {
+                    type: "list",
+                    items: {
+                        type: "map",
+                        properties: {
+                            test: {
+                                type: "string",
+                                required: true,
+                            }
+                        },
+                    }
+                }
+            },
+            indexes: {
+                user: {
+                    collection: "overview",
+                    pk: {
+                        composite: ["stringVal"],
+                        field: "pk"
+                    },
+                    sk: {
+                        composite: ["stringVal2"],
+                        field: "sk"
+                    }
+                },
+            }
+        }, {table, client});
+        const stringVal = uuid();
+        const stringVal2 = uuid();
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+                    // @ts-ignore
+                    .remove(["list[3].test"])
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "list[*].test" is Required and cannot be removed`);
+    });
 });

@@ -35,11 +35,23 @@ class AttributeTraverser {
 	constructor(parentTraverser) {
 		if (parentTraverser instanceof AttributeTraverser) {
 			this.parent = parentTraverser;
+			this.paths = this.parent.paths;
 		} else {
 			this.parent = null;
+			this.paths = new Map();
 		}
-		this.paths = new Map();
+		this.children = new Map();
 		this.indexes = new Map();
+	}
+
+	setChild(name, attribute) {
+		this.children.set(name, attribute);
+	}
+
+	asChild(name, attribute) {
+		if (this.parent) {
+			this.parent.setChild(name, attribute);
+		}
 	}
 
 	setPath(path, attribute) {
@@ -53,11 +65,15 @@ class AttributeTraverser {
 		if (this.parent) {
 			return this.parent.getPath(path);
 		}
-		return this._getChild(path);
+		return this.paths.get(path);
 	}
 
-	_getChild(path) {
-		return this.paths.get(path);
+	getChild(name) {
+		return this.children.get(name);
+	}
+
+	getAllChildren() {
+		return this.children.entries();
 	}
 
 	getAll() {
@@ -96,6 +112,10 @@ class AttributeTraverser {
 			return this._getChildIndex(name, key);
 		}
 	}
+
+	spawn() {
+		return new AttributeTraverser(this);
+	}
 }
 
 
@@ -130,6 +150,7 @@ class Attribute {
 		this.traverser = new AttributeTraverser(definition.traverser);
 		this.traverser.setPath(this.path, this);
 		this.traverser.setPath(this.fieldPath, this);
+		this.traverser.asChild(this.name, this);
 		this.parent = { parentType: this.type, parentPath: this.path };
 		this.get = this._makeGet(definition.get);
 		this.set = this._makeSet(definition.set);
@@ -150,23 +171,25 @@ class Attribute {
 	}
 
 	static buildChildListItems(definition, parent) {
-		const {items, traverser} = definition;
+		const {items} = definition;
 		const prop = {...items, ...parent};
-		return Schema.normalizeAttributes({ prop }, {}, traverser).attributes.prop;
+		// The use of "*" is to ensure the child's name is "*" when added to the traverser and searching for the children of a list
+		return Schema.normalizeAttributes({ '*': prop }, {}, parent.traverser).attributes["*"];
 	}
 
 	static buildChildSetItems(definition, parent) {
-		const {items, traverser} = definition;
+		const {items} = definition;
+
 		const allowedTypes = [AttributeTypes.string, AttributeTypes.boolean, AttributeTypes.number, AttributeTypes.enum];
 		if (!Array.isArray(items) && !allowedTypes.includes(items)) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "items" definition for Set attribute: "${definition.path}". Acceptable item types include ${u.commaSeparatedString(allowedTypes)}`);
 		}
 		const prop = {type: items, ...parent};
-		return Schema.normalizeAttributes({ prop }, {}, traverser).attributes.prop;
+		return Schema.normalizeAttributes({ prop }, {}, parent.traverser).attributes.prop;
 	}
 
 	static buildChildMapProperties(definition, parent) {
-		const {properties, traverser} = definition;
+		const {properties} = definition;
 		if (!properties || typeof properties !== "object") {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "properties" definition for Map attribute: "${definition.path}". The "properties" definition must describe the attributes that the Map will accept`);
 		}
@@ -174,7 +197,7 @@ class Attribute {
 		for (let name of Object.keys(properties)) {
 			attributes[name] = {...properties[name], ...parent};
 		}
-		return Schema.normalizeAttributes(attributes, {}, traverser);
+		return Schema.normalizeAttributes(attributes, {}, parent.traverser);
 	}
 
 	static buildPath(name, type, parentPath) {
@@ -252,8 +275,12 @@ class Attribute {
 	getChild(path) {
 		if (this.type === AttributeTypes.any) {
 			return this;
+		} else if (!isNaN(path) && (this.type === AttributeTypes.list || this.type === AttributeTypes.set)) {
+			// if they're asking for a number, and this is a list, children will be under "*"
+			return this.traverser.getChild("*");
+		} else {
+			return this.traverser.getChild(path);
 		}
-		return this.traverser.getPath(path);
 	}
 
 	_checkGetSet(val, type) {
@@ -417,7 +444,11 @@ class Attribute {
 class MapAttribute extends Attribute {
 	constructor(definition) {
 		super(definition);
-		const properties = Attribute.buildChildMapProperties(definition, this.parent);
+		const properties = Attribute.buildChildMapProperties(definition, {
+			parentType: this.type,
+			parentPath: this.path,
+			traverser: this.traverser
+		});
 		this.properties = properties;
 		this.get = this._makeGet(definition.get, properties);
 		this.set = this._makeSet(definition.set, properties);
@@ -459,10 +490,10 @@ class MapAttribute extends Attribute {
 		const setter = set || ((attr) => attr);
 		return (values, siblings) => {
 			const data = {};
-
 			if (values === undefined) {
 				return setter(data, siblings);
 			}
+
 
 			for (const name of Object.keys(properties.attributes)) {
 				const attribute = properties.attributes[name];
@@ -473,7 +504,6 @@ class MapAttribute extends Attribute {
 					}
 				}
 			}
-
 			return setter(data, siblings);
 		}
 	}
@@ -547,7 +577,11 @@ class MapAttribute extends Attribute {
 class ListAttribute extends Attribute {
 	constructor(definition) {
 		super(definition);
-		const items = Attribute.buildChildListItems(definition, this.parent);
+		const items = Attribute.buildChildListItems(definition, {
+			parentType: this.type,
+			parentPath: this.path,
+			traverser: this.traverser
+		});
 		this.items = items;
 		this.get = this._makeGet(definition.get, items);
 		this.set = this._makeSet(definition.set, items);
@@ -591,7 +625,7 @@ class ListAttribute extends Attribute {
 			}
 
 			for (const value of values) {
-				const results = items.get(value, [...values]);
+				const results = items.set(value, [...values]);
 				if (results !== undefined) {
 					data.push(results);
 				}
@@ -668,7 +702,11 @@ class ListAttribute extends Attribute {
 class SetAttribute extends Attribute {
 	constructor(definition) {
 		super(definition);
-		const items = Attribute.buildChildSetItems(definition, this.parent);
+		const items = Attribute.buildChildSetItems(definition, {
+			parentType: this.type,
+			parentPath: this.path,
+			traverser: this.traverser
+		});
 		this.items = items;
 		this.get = this._makeGet(definition.get, items);
 		this.set = this._makeSet(definition.set, items);
@@ -687,20 +725,22 @@ class SetAttribute extends Attribute {
 		switch(valueType) {
 			case ValueTypes.set:
 				array = Array.from(value);
-				return array.length > 0
-					? new DynamoDBSet(array, this.items.type)
-					: undefined
+				return new DynamoDBSet(array, this.items.type);
 			case ValueTypes.aws_set:
 				return value;
 			case ValueTypes.array:
 				return new DynamoDBSet(value, this.items.type);
 			case ValueTypes.string:
 			case ValueTypes.boolean:
-			case ValueTypes.number:
-				return valueType === type
-					? new DynamoDBSet(value, this.items.type)
-					: undefined;
+			case ValueTypes.number: {
+				if (valueType === this.items.type) {
+					return new DynamoDBSet(value, this.items.type);
+				} else {
+					throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}" but Attribute is defined as ${this.items.type}`);
+				}
+			}
 		}
+
 		throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}". Set values must be supplied as either Arrays, native JavaScript Set objects, or DocumentClient Set objects.`)
 	}
 
@@ -800,11 +840,8 @@ class Schema {
 		this.translationForTable = schema.translationForTable;
 		this.translationForRetrieval = schema.translationForRetrieval;
 		this.hiddenAttributes = schema.hiddenAttributes;
-		this.hasHiddenAttributes = Object.keys(schema.hiddenAttributes).length > 0;
 		this.readOnlyAttributes = schema.readOnlyAttributes;
-		this.hasReadOnlyAttributes = Object.keys(schema.readOnlyAttributes).length > 0;
 		this.requiredAttributes = schema.requiredAttributes;
-		this.hasRequiredAttributes = Object.keys(schema.requiredAttributes).length > 0
 		this.translationForWatching = this._formatWatchTranslations(this.attributes);
 		this.traverser = traverser;
 
@@ -818,7 +855,7 @@ class Schema {
 		let translationForTable = {};
 		let translationForRetrieval = {};
 		let watchedAttributes = {};
-		let requiredAttributes = {};
+		let requiredAttributes = new Set();
 		let hiddenAttributes = new Set();
 		let readOnlyAttributes = new Set();
 		let definitions = {};
@@ -879,7 +916,7 @@ class Schema {
 			}
 
 			if (definition.required) {
-				requiredAttributes[name] = name;
+				requiredAttributes.add(name);
 			}
 
 			if (facets.byAttr && facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
@@ -1144,6 +1181,10 @@ class Schema {
 
 	getReadOnly() {
 		return Array.from(this.readOnlyAttributes);
+	}
+
+	getRequired() {
+		return Array.from(this.requiredAttributes);
 	}
 
 	formatItemForRetrieval(item, config) {
