@@ -249,7 +249,7 @@ describe("Entity", () => {
 				}
 			}
 		});
-		it("Should validate an attribute's defined type when evaluating a field for saving.", () => {
+		it("Should validate an attribute's defined type when evaluating a field for saving", () => {
 			let tests = [
 				{
 					input: {
@@ -465,7 +465,6 @@ describe("Entity", () => {
 					fail: true,
 					message: `Invalid value type at entity path: "data". Value is required.`
 				}, {
-					// this test sucks because a Map is an object, but we'll end up just dropping this on the ground
 					input: {
 						data: {
 							type: "map",
@@ -481,8 +480,8 @@ describe("Entity", () => {
 						},
 						value: new Map(Object.entries({"prop1": "val1", "prop2": "val2"}))
 					},
-					fail: false,
-					// message: `Invalid value type at entity path: "data". Expected value to be an Object to fulfill attribute type "map"`
+					fail: true,
+					message: `Invalid value type at entity path: "data". Expected value to be an object to fulfill attribute type "map"`
 				},{
 					input: {
 						data: {
@@ -537,8 +536,8 @@ describe("Entity", () => {
 						},
 						value: new Set(["yes", "no", "maybe"])
 					},
-					fail: false,
-					// message: `Invalid value type at entity path: "data". Expected value to be an Object to fulfill attribute type "map"`
+					fail: true,
+					message: `Invalid value type at entity path: "data". Expected value to be an object to fulfill attribute type "map"`
 				},{
 					input: {
 						data: {

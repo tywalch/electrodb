@@ -3383,6 +3383,26 @@ const mapTests = new Entity({
                 readOnly: {
                     type: "string",
                     readOnly: true
+                },
+                anotherMap: {
+                    type: "map",
+                    properties: {
+                        minimal: {
+                            type: "string"
+                        },
+                        required: {
+                            type: "string",
+                            required: true
+                        },
+                        hidden: {
+                            type: "string",
+                            hidden: true
+                        },
+                        readOnly: {
+                            type: "string",
+                            readOnly: true
+                        }
+                    }
                 }
             }
         }
@@ -3408,6 +3428,7 @@ mapTests
     .go()
     .then(data => {
         if (data && data.mapObject !== undefined) {
+            expectNotAssignable<string>(data.mapObject.hidden);
             expectType<undefined|string>(data.mapObject.minimal);
             expectType<undefined|string>(data.mapObject.readOnly);
             expectType<string>(data.mapObject.required);
@@ -3416,8 +3437,10 @@ mapTests
 
 
 type MapTestPutParameters = Parameter<typeof mapTests.put>;
+// just the key is fine because `mapObject` is not required
 expectAssignable<MapTestPutParameters>([{username: "abc"}]);
-// expectAssignable<MapTestPutParameters>();
+
+// with mapObject present, `required` is required
 mapTests.put({username: "abc", mapObject: {required: "val"}});
 mapTests.put([{username: "abc", mapObject: {required: "val"}}]);
 expectError(() => {
@@ -3426,9 +3449,27 @@ expectError(() => {
 expectError(() => {
     mapTests.put([{username: "abc", mapObject: {minimal: "abc"}}]);
 });
+
+// with anotherMap present, `required` is required
+mapTests.put({username: "abc", mapObject: {required: "val", anotherMap: {required: "def"}}});
+mapTests.put([{username: "abc", mapObject: {required: "val", anotherMap: {required: "def"}}}]);
+expectError(() => {
+    mapTests.put({username: "abc", mapObject: {minimal: "abc", required: "def", anotherMap: {}}});
+});
+expectError(() => {
+    mapTests.put([{username: "abc", mapObject: {minimal: "abc", required: "def", anotherMap: {}}}]);
+});
+
+//
 mapTests.update({username: "abc"}).data((attr, op) => {
     expectError(() => op.set(attr.mapObject.readOnly, "abc"));
+    expectError(() => op.set(attr.mapObject.anotherMap.readOnly, "abc"));
     op.set(attr.mapObject.minimal, "abc");
+    op.set(attr.mapObject.anotherMap.minimal, "abc");
     op.set(attr.mapObject.hidden, "abc");
+    op.set(attr.mapObject.anotherMap.hidden, "abc");
     op.set(attr.mapObject.required, "abc");
+    op.set(attr.mapObject.anotherMap.required, "abc");
 });
+
+expectError(() => mapTests.update({username: "abc"}).remove(["username"]));

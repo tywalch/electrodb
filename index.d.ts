@@ -182,7 +182,17 @@ type MapAttribute = {
 
 type NestedStringListAttribute = {
     readonly type: "list";
-    readonly items: NestedStringAttribute;
+    readonly items: {
+        readonly type: "string";
+        readonly required?: boolean;
+        readonly hidden?: boolean;
+        readonly readOnly?: boolean;
+        readonly get?: (val: string, item: any) => string | undefined | void;
+        readonly set?: (val?: string, item?: any) => string | undefined | void;
+        readonly default?: string | (() => string);
+        readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
+        readonly field?: string;
+    };
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
@@ -194,7 +204,17 @@ type NestedStringListAttribute = {
 
 type StringListAttribute = {
     readonly type: "list";
-    readonly items: NestedStringAttribute;
+    readonly items: {
+        readonly type: "string";
+        readonly required?: boolean;
+        readonly hidden?: boolean;
+        readonly readOnly?: boolean;
+        readonly get?: (val: string, item: any) => string | undefined | void;
+        readonly set?: (val?: string, item?: any) => string | undefined | void;
+        readonly default?: string | (() => string);
+        readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
+        readonly field?: string;
+    }
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
@@ -450,11 +470,12 @@ type ItemAttribute<A extends Attribute> =
 
 type ReturnedAttribute<A extends Attribute> =
     A extends HiddenAttribute ? never
-        : A["type"] extends "string" ? string
-        : A["type"] extends "number" ? number
-            : A["type"] extends "boolean" ? boolean
-                : A["type"] extends ReadonlyArray<infer E> ? E
-                    : A["type"] extends "map"
+        : A["type"] extends infer R
+        ? R extends "string" ? string
+        : R extends "number" ? number
+            : R extends "boolean" ? boolean
+                : R extends ReadonlyArray<infer E> ? E
+                    : R extends "map"
                         ? "properties" extends keyof A
                             ?
                             TrimmedAttributes<{
@@ -467,7 +488,7 @@ type ReturnedAttribute<A extends Attribute> =
                                     : never
                             }>
                             : never
-                        : A["type"] extends "list"
+                        : R extends "list"
                             ? "items" extends keyof A
                                 ? A["items"] extends infer I
                                     ? I extends Attribute
@@ -475,7 +496,7 @@ type ReturnedAttribute<A extends Attribute> =
                                         : never
                                     : never
                                 : never
-                            : A["type"] extends "set"
+                            : R extends "set"
                                 ? "items" extends keyof A
                                     ? A["items"] extends infer I
                                         ? I extends "string" ? string[]
@@ -483,8 +504,9 @@ type ReturnedAttribute<A extends Attribute> =
                                                 : never
                                         : never
                                     : never
-                                : A["type"] extends "any" ? any
+                                : R extends "any" ? any
                                     : never
+        : never
 
 type UndefinedKeys<T> = {
     [P in keyof T]: undefined extends T[P] ? P: never
@@ -494,23 +516,24 @@ type TrimmedAttributes<A extends Attributes<any>> =
     Partial<Pick<A, UndefinedKeys<A>>> & Omit<A, UndefinedKeys<A>>
 
 type CreatedAttribute<A extends Attribute> =
-    A["type"] extends "string" ? string
-        : A["type"] extends "number" ? number
-            : A["type"] extends "boolean" ? boolean
-                : A["type"] extends ReadonlyArray<infer E> ? E
-                    : A["type"] extends "map"
+    A["type"] extends infer R
+    ? R extends "string" ? string
+        : R extends "number" ? number
+            : R extends "boolean" ? boolean
+                : R extends ReadonlyArray<infer E> ? E
+                    : R extends "map"
                         ? "properties" extends keyof A
                             ? TrimmedAttributes<{
                                 [P in keyof A["properties"]]: A["properties"][P] extends infer M
                                     ? M extends Attribute
                                         ? M extends RequiredAttribute | DefaultedAttribute
-                                            ? ReturnedAttribute<M>
-                                            : ReturnedAttribute<M> | undefined
+                                            ? CreatedAttribute<M>
+                                            : CreatedAttribute<M> | undefined
                                         : never
                                 : never
                             }>
                             : never
-                        : A["type"] extends "list"
+                        : R extends "list"
                             ? "items" extends keyof A
                                 ? A["items"] extends infer I
                                     ? I extends Attribute
@@ -518,7 +541,7 @@ type CreatedAttribute<A extends Attribute> =
                                         : never
                                     : never
                                 : never
-                            : A["type"] extends "set"
+                            : R extends "set"
                                 ? "items" extends keyof A
                                     ? A["items"] extends infer I
                                         ? I extends "string" ? string[]
@@ -526,8 +549,9 @@ type CreatedAttribute<A extends Attribute> =
                                                 : never
                                         : never
                                     : never
-                                : A["type"] extends "any" ? any
+                                : R extends "any" ? any
                                     : never
+    : never
 
 type ReturnedItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>,Attr extends S["attributes"]> = {
     [a in keyof Attr]: ReturnedAttribute<Attr[a]>
@@ -613,7 +637,7 @@ type UpdatableItemAttribute<A extends Attribute> =
                                         : never
                                     : R extends "any" ? any
                                         : never
-            : never    
+            : never
 
 type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Attr extends Attributes<A>> = {
     [a in keyof Attr]: ItemAttribute<Attr[a]>
@@ -823,7 +847,7 @@ type WhereOperations<A extends string, F extends A, C extends string, S extends 
 
 type DataUpdateOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> = {
     set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V : never) => any;
-    remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
+    remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: [T] extends [never] ? never : A) => any;
     append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : never : never ) => any;
     add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
     subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
@@ -1016,16 +1040,6 @@ type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> 
         }[keyof EntityCollections<A,F,C,S>]
         : never
 }[keyof E];
-
-// type AttributeType<T extends "string" | "number" | "boolean" | "any" | ReadonlyArray<any> | "map", A extends Attribute> =
-//     T extends "string" ? string
-//         : T extends "number" ? number
-//         : T extends "boolean" ? boolean
-//         : T extends ReadonlyArray<infer E> ? E
-//         : T extends "map" ?
-//
-//         : T extends "any" ? any
-//         : never;
 
 type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Name in keyof E]: {

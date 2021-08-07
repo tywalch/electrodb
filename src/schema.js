@@ -436,7 +436,7 @@ class MapAttribute extends Attribute {
 			}
 
 			if (values === undefined) {
-				return getter(values, siblings);
+				return getter(data, siblings);
 			}
 
 			for (const name of Object.keys(properties.attributes)) {
@@ -449,11 +449,8 @@ class MapAttribute extends Attribute {
 				}
 			}
 
-			if (Object.keys(data).length > 0) {
-				return getter(data, siblings);
-			} else {
-				return getter(values, siblings);
-			}
+
+			return getter(data, siblings);
 		}
 	}
 
@@ -464,7 +461,7 @@ class MapAttribute extends Attribute {
 			const data = {};
 
 			if (values === undefined) {
-				return setter(values, siblings);
+				return setter(data, siblings);
 			}
 
 			for (const name of Object.keys(properties.attributes)) {
@@ -477,11 +474,7 @@ class MapAttribute extends Attribute {
 				}
 			}
 
-			if (Object.keys(data).length > 0) {
-				return setter(data, siblings);
-			} else {
-				return setter(values, siblings);
-			}
+			return setter(data, siblings);
 		}
 	}
 
@@ -510,7 +503,7 @@ class MapAttribute extends Attribute {
 			}
 		} else if (valueType !== ValueTypes.object) {
 			errors.push(
-				`Invalid value type at entity path: "${this.path}". Expected value to be an Object to fulfill attribute type "${this.type}"`
+				`Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`
 			);
 		} else if (this.properties.hasRequiredAttributes) {
 			errors.push(
@@ -529,28 +522,24 @@ class MapAttribute extends Attribute {
 			return v;
 		}
 
-		if (value === undefined) {
-			value = this.default();
+		if (value === undefined || value && Object.keys(value).length === 0) {
+			return getValue(value);
 		}
 
-		if (value === undefined) {
-			return value;
+		const data = {};
+
+		for (const name of Object.keys(this.properties.attributes)) {
+			const attribute = this.properties.attributes[name];
+			const results = attribute.val(value[attribute.name]);
+			if (results !== undefined) {
+				data[attribute.field] = results;
+			}
+		}
+
+		if (Object.keys(data).length > 0) {
+			return getValue(data);
 		} else {
-			const data = {};
-
-			for (const name of Object.keys(this.properties.attributes)) {
-				const attribute = this.properties.attributes[name];
-				const results = attribute.val(value[attribute.name]);
-				if (results !== undefined) {
-					data[attribute.field] = results;
-				}
-			}
-
-			if (Object.keys(data).length > 0) {
-				return getValue(data);
-			} else {
-				return getValue();
-			}
+			return getValue();
 		}
 	}
 }
@@ -577,7 +566,7 @@ class ListAttribute extends Attribute {
 			}
 
 			if (values === undefined) {
-				return getter(values, siblings);
+				return getter(data, siblings);
 			}
 
 			for (let value of values) {
@@ -587,11 +576,7 @@ class ListAttribute extends Attribute {
 				}
 			}
 
-			if (data.length > 0) {
-				return getter(data, siblings);
-			} else {
-				return getter(values, siblings);
-			}
+			return getter(data, siblings);
 		}
 	}
 
@@ -601,8 +586,8 @@ class ListAttribute extends Attribute {
 		return (values, siblings) => {
 			const data = [];
 
-			if (!Array.isArray(values)) {
-				values = [values];
+			if (values === undefined) {
+				return setter(values, siblings);
 			}
 
 			for (const value of values) {
@@ -612,11 +597,7 @@ class ListAttribute extends Attribute {
 				}
 			}
 
-			if (data.length > 0) {
-				return setter(data, siblings);
-			} else {
-				return setter(values, siblings);
-			}
+			return setter(data, siblings);
 		}
 	}
 
@@ -660,30 +641,26 @@ class ListAttribute extends Attribute {
 		}
 
 		if (value === undefined) {
-			value = this.default();
+			return this.default();
+		} else if (Array.isArray(value) && value.length === 0) {
+			return value;
+		} else if (!Array.isArray(value)) {
+			value = [value];
 		}
 
-		if (value === undefined) {
-			return value;
+		const data = [];
+
+		for (const v of value) {
+			const results = this.items.val(v);
+			if (results !== undefined) {
+				data.push(results);
+			}
+		}
+
+		if (data.filter(value => value !== undefined).length > 0) {
+			return getValue(data);
 		} else {
-			if (!Array.isArray(value)) {
-				value = [value];
-			}
-
-			const data = [];
-
-			for (const v of value) {
-				const results = this.items.val(v);
-				if (results !== undefined) {
-					data.push(results);
-				}
-			}
-
-			if (data.length > 0) {
-				return getValue(data);
-			} else {
-				return getValue();
-			}
+			return getValue();
 		}
 	}
 }
@@ -733,11 +710,15 @@ class SetAttribute extends Attribute {
 		const getter = get || ((attr) => attr);
 
 		return (values, siblings) => {
-			let data;
 			if (values !== undefined) {
-				data = this.fromDDBSet(values);
+				const data = this.fromDDBSet(values);
+				return getter(data, siblings);
 			}
-			return getter(data, siblings);
+			let results = getter(data, siblings);
+			if (results !== undefined) {
+				// if not undefined, try to convert, else no need to return
+				return this.fromDDBSet(results);
+			}
 		}
 	}
 
