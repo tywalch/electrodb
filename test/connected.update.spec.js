@@ -387,8 +387,6 @@ const StoreLocations = new Entity({
     }
 }, {table, client});
 
-const service = new Service({users, repositories});
-
 describe("Update Item", () => {
     describe("conditions and updates", () => {
         let cityId = uuid();

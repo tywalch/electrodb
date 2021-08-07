@@ -132,7 +132,7 @@ const repositories = new Entity({
             type: "string",
             readOnly: true,
             watch: ["repoOwner"],
-            set: (_, {repoOwner}: {repoOwner?: string}) => repoOwner
+            set: (_, {repoOwner}) => repoOwner
         },
         description: {
             type: "string"
@@ -145,10 +145,7 @@ const repositories = new Entity({
         },
         defaultBranch: {
             type: "string",
-            default: "main",
-            get: (branch) => {
-                return branch;
-            }
+            default: "main"
         },
         stars: {
             type: "number",
@@ -160,7 +157,28 @@ const repositories = new Entity({
             readOnly: true
         },
         recentCommits: {
-            type: "any"
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    sha: {
+                        type: "string"
+                    },
+                    data: {
+                        type: "string"
+                    },
+                    message: {
+                        type: "string"
+                    },
+                    views: {
+                        type: "number"
+                    },
+                    timestamp: {
+                        type: "number"
+                    }
+                }
+
+            }
         },
         custom: {
             type: "any"
@@ -169,37 +187,21 @@ const repositories = new Entity({
             type: "number"
         },
         tags: {
-            type: "any",
-            get: (value) => {
-                if (value) {
-                    return value.values;
-                }
-                return [];
-            },
-            set: (value) => {
-                if (value) {
-                    return client.createSet(value);
-                }
-            }
+            type: "set",
+            items: "string",
         },
         followers: {
-            type: "any",
-            get: (value) => {
-                if (value) {
-                    return value.values;
-                }
-                return [];
-            },
-            set: (value) => {
-                if (value) {
-                    return client.createSet(value);
-                }
-            }
+            type: "set",
+            items: "string",
         },
         files: {
-            type: "any"
-        }
-    },
+            type: "list",
+            items: {
+                type: "string"
+            }
+        },
+    }
+    ,
     indexes: {
         repositories: {
             collection: "alerts",
@@ -263,7 +265,7 @@ const StoreLocations = new Entity({
                 "electronics",
                 "department",
                 "misc"
-            ] as const,
+            ],
             required: true
         },
         leaseEndDate: {
@@ -280,22 +282,39 @@ const StoreLocations = new Entity({
             default: 0,
         },
         tenant: {
-            type: "any"
+            type: "set",
+            items: "string"
         },
         deposit: {
             type: "number"
         },
         rentalAgreement: {
-            type: "any"
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    type: {
+                        type: "string",
+                        required: true
+                    },
+                    detail: {
+                        type: "string",
+                        required: true
+                    }
+                }
+            }
         },
         tags: {
-            type: "any"
+            type: "set",
+            items: "string"
         },
         contact: {
-            type: "any"
+            type: "set",
+            items: "string"
         },
         leaseHolders: {
-            type: "any"
+            type: "set",
+            items: "string",
         },
         petFee: {
             type: "number"
@@ -304,10 +323,24 @@ const StoreLocations = new Entity({
             type: "number"
         },
         listAttribute: {
-            type: "any"
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    setAttribute: {
+                        type: "set",
+                        items: "string"
+                    }
+                }
+            }
         },
         mapAttribute: {
-            type: "any"
+            type: "map",
+            properties: {
+                mapProperty: {
+                    type: "string"
+                }
+            }
         }
     },
     indexes: {
@@ -364,7 +397,7 @@ describe("Update Item", () => {
                     category: "food/coffee",
                     leaseEndDate: "2020-03-22",
                     rent: 4500,
-                    tenant: StoreLocations.client.createSet("tom"),
+                    tenant: ["tom"],
                     deposit: 1000,
                     rentalAgreement: [
                         {
@@ -372,17 +405,17 @@ describe("Update Item", () => {
                             detail: "dont wear puffy shirt"
                         }
                     ],
-                    tags: StoreLocations.client.createSet("family_friendly"),
-                    contact: StoreLocations.client.createSet("555-555-5555"),
+                    tags: ["family_friendly"],
+                    contact: ["555-555-5555"],
                     mapAttribute: {
                         mapProperty: "before"
                     },
                     listAttribute: [
                         {
-                            setAttribute: StoreLocations.client.createSet("555-555-5555")
+                            setAttribute: ["555-555-5555"]
                         },
                         {
-                            setAttribute: StoreLocations.client.createSet("666-666-6666")
+                            setAttribute: ["666-666-6666"]
                         }
                     ]
                 })
@@ -395,7 +428,11 @@ describe("Update Item", () => {
 
             await StoreLocations.update(composite)
                 .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "after1"))
-                .where(({mapAttribute}, {eq}) => eq(mapAttribute.mapProperty, results1.mapAttribute.mapProperty))
+                .where(({mapAttribute}, {eq}) => {
+                    return results1?.mapAttribute?.mapProperty
+                        ? eq(mapAttribute.mapProperty, results1.mapAttribute.mapProperty)
+                        : ""
+                })
                 .go();
 
             const results2 = await StoreLocations.get(composite).go();
@@ -409,7 +446,7 @@ describe("Update Item", () => {
                 category: "food/coffee",
                 leaseEndDate: "2020-03-22",
                 rent: 4500,
-                tenant: StoreLocations.client.createSet("tom"),
+                tenant: ["tom"],
                 deposit: 1000,
                 rentalAgreement: [
                     {
@@ -417,17 +454,17 @@ describe("Update Item", () => {
                         detail: "dont wear puffy shirt"
                     }
                 ],
-                tags: StoreLocations.client.createSet("family_friendly"),
-                contact: StoreLocations.client.createSet("555-555-5555"),
+                tags: ["family_friendly"],
+                contact: ["555-555-5555"],
                 mapAttribute: {
                     mapProperty: "after1"
                 },
                 listAttribute: [
                     {
-                        setAttribute: StoreLocations.client.createSet("555-555-5555")
+                        setAttribute: ["555-555-5555"]
                     },
                     {
-                        setAttribute: StoreLocations.client.createSet("666-666-6666")
+                        setAttribute: ["666-666-6666"]
                     }
                 ],
                 discount: 0
@@ -435,7 +472,11 @@ describe("Update Item", () => {
 
             let update = await StoreLocations.update(composite)
                 .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "after1"))
-                .where(({mapAttribute}, {eq}) => eq(mapAttribute.mapProperty, results1.mapAttribute.mapProperty))
+                .where(({mapAttribute}, {eq}) => {
+                    return results1?.mapAttribute?.mapProperty
+                        ? eq(mapAttribute.mapProperty, results1.mapAttribute.mapProperty)
+                        : ""
+                })
                 .go()
                 .then(() => {})
                 .catch(err => err);
@@ -449,7 +490,11 @@ describe("Update Item", () => {
 
             await StoreLocations.update(composite)
                 .data(({rentalAgreement}, {set}) => set(rentalAgreement[0].detail, "no soup for you"))
-                .where(({rentalAgreement}, {eq}) => eq(rentalAgreement[0].detail, results1.rentalAgreement[0].detail))
+                .where(({rentalAgreement}, {eq}) => {
+                    return results1?.rentalAgreement?.[0]?.detail
+                        ? eq(rentalAgreement[0].detail, results1.rentalAgreement[0].detail)
+                        : ""
+                })
                 .go();
 
             const results2 = await StoreLocations.get(composite).go();
@@ -463,7 +508,7 @@ describe("Update Item", () => {
                 category: "food/coffee",
                 leaseEndDate: "2020-03-22",
                 rent: 4500,
-                tenant: StoreLocations.client.createSet("tom"),
+                tenant: ["tom"],
                 deposit: 1000,
                 rentalAgreement: [
                     {
@@ -471,17 +516,17 @@ describe("Update Item", () => {
                         detail: "no soup for you"
                     }
                 ],
-                tags: StoreLocations.client.createSet("family_friendly"),
-                contact: StoreLocations.client.createSet("555-555-5555"),
+                tags: ["family_friendly"],
+                contact: ["555-555-5555"],
                 mapAttribute: {
                     mapProperty: "before"
                 },
                 listAttribute: [
                     {
-                        setAttribute: StoreLocations.client.createSet("555-555-5555")
+                        setAttribute: ["555-555-5555"]
                     },
                     {
-                        setAttribute: StoreLocations.client.createSet("666-666-6666")
+                        setAttribute: ["666-666-6666"]
                     }
                 ],
                 discount: 0
@@ -489,7 +534,11 @@ describe("Update Item", () => {
 
             let update = await StoreLocations.update(composite)
                 .data(({rentalAgreement}, {set}) => set(rentalAgreement[0].detail, "no soup for you"))
-                .where(({rentalAgreement}, {eq}) => eq(rentalAgreement[0].detail, results1.rentalAgreement[0].detail))
+                .where(({rentalAgreement}, {eq}) => {
+                    return results1?.rentalAgreement?.[0]?.detail
+                        ? eq(rentalAgreement[0].detail, results1.rentalAgreement[0].detail)
+                        : "";
+                })
                 .go()
                 .then(() => {})
                 .catch(err => err);
@@ -515,7 +564,7 @@ describe("Update Item", () => {
                     category: "food/coffee",
                     leaseEndDate: "2020-03-22",
                     rent: 4500,
-                    tenant: StoreLocations.client.createSet("tom"),
+                    tenant: ["tom"],
                     deposit: 1000,
                     rentalAgreement: [
                         {
@@ -523,17 +572,17 @@ describe("Update Item", () => {
                             detail: "dont wear puffy shirt"
                         }
                     ],
-                    tags: StoreLocations.client.createSet("family_friendly"),
-                    contact: StoreLocations.client.createSet("555-555-5555"),
+                    tags: ["family_friendly"],
+                    contact: ["555-555-5555"],
                     mapAttribute: {
                         mapProperty: "before"
                     },
                     listAttribute: [
                         {
-                            setAttribute: StoreLocations.client.createSet("555-555-5555")
+                            setAttribute: ["555-555-5555"]
                         },
                         {
-                            setAttribute: StoreLocations.client.createSet("666-666-6666")
+                            setAttribute: ["666-666-6666"]
                         }
                     ]
                 })
@@ -551,7 +600,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+            expect(item1).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -593,7 +642,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+            expect(item2).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -643,7 +692,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+            expect(item1).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -688,7 +737,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+            expect(item2).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -722,8 +771,8 @@ describe("Update Item", () => {
         });
 
         it("should perform complex data type update example 3", async () => {
-            const newSetValue1 = StoreLocations.client.createSet("setItemValue1");
-            const newSetValue2 = StoreLocations.client.createSet("setItemValue2");
+            const newSetValue1 = ["setItemValue1"];
+            const newSetValue2 = ["setItemValue2"];
 
             await StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
@@ -735,7 +784,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+            expect(item1).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -785,7 +834,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+            expect(item2).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -868,17 +917,16 @@ describe("Update Item", () => {
                 "ConditionExpression": "#discount = :discount0"
             });
 
-            const newTenant = client.createSet(["larry"]);
             const addParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .add({
                     rent: 100, // "number" attribute
-                    tenant: newTenant // "set" attribute
+                    tenant: ["larry"] // "set" attribute
                 })
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
                 .params()
 
-            expect(JSON.parse(JSON.stringify(addParameters))).to.deep.equal({
+            expect(addParameters).to.deep.equal({
                 "UpdateExpression": "SET #rent = #rent + :rent_u0 ADD #tenant :tenant_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
@@ -888,7 +936,11 @@ describe("Update Item", () => {
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
                     ":rent_u0": 100,
-                    ":tenant_u0": ["larry"]
+                    ":tenant_u0": {
+                        "type": "String",
+                        "values": ["larry"],
+                        "wrapperName": "Set"
+                    }
                 },
                 "TableName": "electro",
                 "Key": {
@@ -956,7 +1008,7 @@ describe("Update Item", () => {
 
             const deleteParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
-                .delete({contact: '555-345-2222'})
+                .delete({contact: ['555-345-2222']})
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
                 .params()
 
@@ -969,7 +1021,11 @@ describe("Update Item", () => {
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
-                    ":contact_u0": "555-345-2222",
+                    ":contact_u0": {
+                        "type": "String",
+                        "values": ["555-345-2222"],
+                        "wrapperName": "Set",
+                    }
                 },
                 "TableName": "electro",
                 "Key": {
@@ -982,22 +1038,22 @@ describe("Update Item", () => {
             const allParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .data((attr, op) => {
-                    const newTenant = op.value(attr.tenant, "larry")
+                    const newTenant = op.value(attr.tenant, ["larry"]);
                     op.set(attr.category, "food/meal");
                     op.add(attr.tenant, newTenant);
                     op.add(attr.rent, 100);
                     op.subtract(attr.deposit, 200);
                     op.remove(attr.leaseEndDate);
                     op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
-                    op.delete(attr.tags, 'coffee');
-                    op.del(attr.contact, '555-345-2222');
+                    op.delete(attr.tags, ['coffee']);
+                    op.del(attr.contact, ['555-345-2222']);
                     op.add(attr.totalFees, op.name(attr.petFee));
                     op.add(attr.leaseHolders, newTenant);
                 })
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
                 .params()
 
-            expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
+            expect(allParameters).to.deep.equal({
                 "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
@@ -1016,15 +1072,27 @@ describe("Update Item", () => {
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
                     ":category_u0": "food/meal",
-                    ":tenant_u0": "larry",
                     ":rent_u0": 100,
                     ":deposit_u0": 200,
                     ":rentalAgreement_u0": [{
                         "type": "ammendment",
                         "detail": "no soup for you"
                     }],
-                    ":tags_u0": "coffee",
-                    ":contact_u0": "555-345-2222",
+                    ":contact_u0": {
+                        "type": "String",
+                        "values": ["555-345-2222"],
+                        "wrapperName": "Set",
+                    },
+                    ":tags_u0": {
+                        "type": "String",
+                        "values": ["coffee"],
+                        "wrapperName": "Set",
+                    },
+                    ":tenant_u0": {
+                        "type": "String",
+                        "values": ["larry"],
+                        "wrapperName": "Set",
+                   }
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1091,16 +1159,16 @@ describe("Update Item", () => {
             license: "cc",
             followers: "tinkertamper",
             prop1: "def",
-            recentCommitsViews: 1,
+            recentCommitsViews: 3,
         }
 
         const params: any = repositories.update({repoName, repoOwner})
-            .add({followers: updates.followers})
+            .add({followers: ["tinkertamper"]})
             .subtract({stars: updates.stars})
             .append({files: updates.files})
             .set({description: updates.description})
             .remove(["about"])
-            .delete({tags: updates.tags})
+            .delete({tags: [updates.tags]})
             .data((attr, op) => {
                 op.set(attr.custom.prop1, updates.prop1);
                 op.add(attr.views, op.name(attr.custom.prop3));
@@ -1110,7 +1178,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :recentCommits_u0 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #recentCommits[0].#views = #recentCommits[0].#views + :views_u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -1134,7 +1202,7 @@ describe("Update Item", () => {
                 ":description_u0": "updated description",
                 ":tags_u0": params.ExpressionAttributeValues[":tags_u0"],
                 ":custom_u0": "def",
-                ":recentCommits_u0": 1
+                ":views_u0": 3
             },
             "TableName": "electro",
             "Key": {
@@ -1144,12 +1212,12 @@ describe("Update Item", () => {
         });
 
         await repositories.update({repoName, repoOwner})
-            .add({followers: updates.followers})
+            .add({followers: [updates.followers]})
             .subtract({stars: updates.stars})
             .append({files: updates.files})
             .set({description: updates.description})
             .remove(["about"])
-            .delete({tags: updates.tags})
+            .delete({tags: [updates.tags]})
             .data((attr, op) => {
                 op.set(attr.custom.prop1, updates.prop1);
                 op.add(attr.views, op.name(attr.custom.prop3));
@@ -1176,7 +1244,7 @@ describe("Update Item", () => {
                     "data": "1627158426",
                     "message": "fixing bug",
                     "sha": "8ca4d4b2",
-                    "views": created.recentCommits[0].views + updates.recentCommitsViews
+                    "views": (created?.recentCommits?.[0]?.views || 0) + updates.recentCommitsViews
                 },
                 {
                     "data": "1627158100",
@@ -1193,10 +1261,10 @@ describe("Update Item", () => {
             "license": "apache-2.0",
             "followers": [
                 updates.followers,
-                ...created.followers,
+                ...(created.followers ?? []),
             ],
             "files": [
-                ...created.files,
+                ...(created.files ?? []),
                 ...updates.files,
             ],
             "views": created.views + created.custom.prop3,
@@ -1343,7 +1411,10 @@ describe("Update Item", () => {
             const additionalCommit = [{
                 sha: "25d68f54",
                 data: "1627158100",
-                message: "adding bug"
+                message: "adding bug",
+                views: 10,
+                timestamp: Date.now(),
+                // abc: "def"
             }];
             const created = await repositories
                 .put({
@@ -1859,7 +1930,7 @@ describe("Update Item", () => {
 
             await repositories
                 .update({repoName, repoOwner})
-                .delete({tags: "tag1"})
+                .delete({tags: ["tag1"]})
                 .go();
 
             const {tags} = await repositories
@@ -1885,7 +1956,7 @@ describe("Update Item", () => {
 
             await repositories
                 .update({repoName, repoOwner})
-                .data(({tags}, {del}) => del(tags, "tag1"))
+                .data(({tags}, {del}) => del(tags, ["tag1"]))
                 .go();
 
             const {tags} = await repositories
@@ -2009,7 +2080,7 @@ describe("Update Item", () => {
 
             await repositories
                 .update({repoName, repoOwner})
-                .add({tags: "tag3"})
+                .add({tags: ["tag3"]})
                 .go();
 
             const {tags} = await repositories

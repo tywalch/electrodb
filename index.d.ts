@@ -804,35 +804,34 @@ type SetItem<A extends string, F extends A, C extends string, S extends Schema<A
 // type RemoveItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
 //     Array<keyof SetItem<A,F,C,S>>
 type RemoveItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    // Array<keyof SetItem<A,F,C,S>>
     Array< keyof Omit<{
         [Attr in keyof S["attributes"]]?: RemovableItemAttribute<S["attributes"][Attr]>
     }, keyof AllTableIndexCompositeAttributes<A,F,C,S> | ReadOnlyAttributes<A,F,C,S> | RequiredAttributes<A,F,C,S>>>
 
 type AppendItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{
-        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "list" | "any">]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "list" | "any">]?: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }>
 
 type AddItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{
-        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number" | "any">]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number" | "any" | "set">]?: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }>
 
 type SubtractItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{
-        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number" | "any">]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "number" | "any">]?: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }>
 
 type DeleteItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{
-        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "any" | "set">]: P extends keyof SetItem<A,F,C,S>
+        [P in ExtractKeysOfValueType<ItemTypeDescription<A,F,C,S>, "any" | "set">]?: P extends keyof SetItem<A,F,C,S>
             ? SetItem<A,F,C,S>[P]
             : never
     }>
@@ -867,6 +866,17 @@ export type DataUpdateAttributeSymbol<T extends any> =
                     ? Array<DataUpdateAttributeSymbol<I>>
                     : T
 
+type DataUpdateAttributeValues<A extends DataUpdateAttributeSymbol<any>> =
+    A extends DataUpdateAttributeSymbol<infer T>
+        ? T extends string ? T
+        : T extends number ? T
+        : T extends boolean ? T
+        : T extends {[key: string]: any}
+        ? {[key in keyof T]?: DataUpdateAttributeValues<T[key]>}
+        : T extends ReadonlyArray<infer A> ? ReadonlyArray<DataUpdateAttributeValues<A>>
+        : T extends Array<infer I> ? Array<DataUpdateAttributeValues<I>>
+        : T
+    : never
 
 type DataUpdateAttributes<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> = {
     [Attr in keyof I]: DataUpdateAttributeSymbol<I[Attr]>
@@ -890,14 +900,14 @@ type WhereOperations<A extends string, F extends A, C extends string, S extends 
 };
 
 type DataUpdateOperations<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> = {
-    set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V : never) => any;
+    set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
     remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: [T] extends [never] ? never : A) => any;
-    append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : never : never ) => any;
-    add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
+    append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
+    add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | Array<any> ? V : [V] extends [any] ? V : never : never ) => any;
     subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
-    delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | boolean | string | ReadonlyArray<any> ? never : V : never ) => any;
-    del: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | boolean | string | ReadonlyArray<any> ? never : V : never ) => any;
-    value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V : never) => any;
+    delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : [V] extends [any] ? V : never : never ) => any;
+    del:    <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : never : never ) => any;
+    value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
     name: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
 };
 
