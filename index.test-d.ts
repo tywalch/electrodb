@@ -3642,6 +3642,10 @@ mapTests.update({username: "abc"}).data((attr, op) => {
     op.set(attr.mapObject.anotherMap.hidden, "abc");
     op.set(attr.mapObject.required, "abc");
     op.set(attr.mapObject.anotherMap.required, "abc");
+    expectError(() => op.set(attr.mapObject, {}));
+    expectError(() => op.set(attr.mapObject, {minimal: "abc"}));
+    op.set(attr.mapObject, {required: "anc"});
+
 });
 
 expectError(() => mapTests.update({username: "abc"}).remove(["username"]));
