@@ -130,7 +130,7 @@ type NestedAnyAttribute = {
     readonly readOnly?: boolean;
     readonly get?: (val: any, item: any) => any | undefined | void;
     readonly set?: (val?: any, item?: any) => any | undefined | void;
-    readonly default?: () => any;
+    readonly default?: any | (() => any);
     readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
 }
@@ -142,7 +142,7 @@ type AnyAttribute = {
     readonly readOnly?: boolean;
     readonly get?: (val: any, item: any) => any | undefined | void;
     readonly set?: (val?: any, item?: any) => any | undefined | void;
-    readonly default?: () => any;
+    readonly default?: any | (() => any);
     readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly label?: string;
@@ -526,7 +526,7 @@ type CreatedAttribute<A extends Attribute> =
                             ? TrimmedAttributes<{
                                 [P in keyof A["properties"]]: A["properties"][P] extends infer M
                                     ? M extends Attribute
-                                        ? M extends RequiredAttribute | DefaultedAttribute
+                                        ? M extends RequiredAttribute
                                             ? CreatedAttribute<M>
                                             : CreatedAttribute<M> | undefined
                                         : never
@@ -638,6 +638,45 @@ type UpdatableItemAttribute<A extends Attribute> =
                                     : R extends "any" ? any
                                         : never
             : never
+
+type RemovableItemAttribute<A extends Attribute> =
+    A extends ReadOnlyAttribute | RequiredAttribute
+        ? never
+        : A["type"] extends infer R
+        ? R extends "string" ? string
+            : R extends "number" ? number
+                : R extends "boolean" ? boolean
+                    : R extends ReadonlyArray<infer E> ? E
+                        : R extends "map"
+                            ? "properties" extends keyof A
+                                ? {
+                                    [P in keyof A["properties"]]?:
+                                    A["properties"][P] extends infer M
+                                        ? M extends Attribute
+                                            ? UpdatableItemAttribute<M>
+                                            : never
+                                        : never
+                                }
+                                : never
+                            : R extends "list"
+                                ? "items" extends keyof A
+                                    ? A["items"] extends infer I
+                                        ? I extends Attribute
+                                            ? Array<UpdatableItemAttribute<I>>
+                                            : never
+                                        : never
+                                    : never
+                                : R extends "set"
+                                    ? "items" extends keyof A
+                                        ? A["items"] extends infer I
+                                            ? I extends "string" ? string[]
+                                                : I extends "number" ? number[]
+                                                    : never
+                                            : never
+                                        : never
+                                    : R extends "any" ? any
+                                        : never
+        : never
 
 type Item<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, Attr extends Attributes<A>> = {
     [a in keyof Attr]: ItemAttribute<Attr[a]>
@@ -762,8 +801,13 @@ type SetItem<A extends string, F extends A, C extends string, S extends Schema<A
         [Attr in keyof S["attributes"]]?: UpdatableItemAttribute<S["attributes"][Attr]>
     }, keyof AllTableIndexCompositeAttributes<A,F,C,S> | ReadOnlyAttributes<A,F,C,S>>
 
+// type RemoveItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
+//     Array<keyof SetItem<A,F,C,S>>
 type RemoveItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
-    Array<keyof SetItem<A,F,C,S>>
+    // Array<keyof SetItem<A,F,C,S>>
+    Array< keyof Omit<{
+        [Attr in keyof S["attributes"]]?: RemovableItemAttribute<S["attributes"][Attr]>
+    }, keyof AllTableIndexCompositeAttributes<A,F,C,S> | ReadOnlyAttributes<A,F,C,S> | RequiredAttributes<A,F,C,S>>>
 
 type AppendItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Partial<{

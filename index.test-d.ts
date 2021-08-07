@@ -1836,6 +1836,178 @@ let getKeys = ((val) => {}) as GetKeys;
             });
         })
 
+    let entityWithRequiredAttribute = new Entity({
+        model: {
+            entity: "e1",
+            service: "s1",
+            version: "1"
+        },
+        attributes: {
+            prop1: {
+                type: "string"
+            },
+            prop2: {
+                type: "string"
+            },
+            prop3: {
+                type: "string",
+                required: true
+            },
+            prop4: {
+                type: "number",
+                required: true,
+            },
+            prop5: {
+                type: "any",
+                required: true
+            },
+            prop6: {
+                type: "map",
+                properties: {
+                    nested1: {
+                        type: "string",
+                        required: true
+                    }
+                },
+                required: true,
+            },
+            prop7: {
+                type: "list",
+                items: {
+                    type: "string",
+                    required: true
+                },
+                required: true,
+            }
+        },
+        indexes: {
+            record: {
+                collection: "collection1",
+                pk: {
+                    field: "pk",
+                    composite: ["prop1"]
+                },
+                sk: {
+                    field: "sk",
+                    composite: ["prop2"]
+                }
+            }
+        }
+    });
+
+    // required attributes, as objet and array
+    entityWithRequiredAttribute.put({
+        prop1: "abc",
+        prop2: "def",
+        prop3: "ghi",
+        prop4: 123,
+        prop5: {anyVal: ["anyItem"]},
+        prop6: {
+            nested1: "abc"
+        },
+        prop7: []
+    });
+    entityWithRequiredAttribute.put([{
+        prop1: "abc",
+        prop2: "def",
+        prop3: "ghi",
+        prop4: 123,
+        prop5: {anyVal: ["anyItem"]},
+        prop6: {
+            nested1: "abc"
+        },
+        prop7: []
+    }]);
+    entityWithRequiredAttribute.create({
+        prop1: "abc",
+        prop2: "def",
+        prop3: "ghi",
+        prop4: 123,
+        prop5: {anyVal: ["anyItem"]},
+        prop6: {
+            nested1: "abc"
+        },
+        prop7: []
+    });
+    // create doesnt allow for bulk
+    expectError(() => {
+        entityWithRequiredAttribute.create([{
+            prop1: "abc",
+            prop2: "def",
+            prop3: "ghi",
+            prop4: 123,
+            prop5: {anyVal: ["anyItem"]},
+            prop6: {
+                nested1: "abc"
+            },
+            prop7: []
+        }]);
+    });
+    // missing `nested1` on `prop6`
+    expectError(() => {
+        entityWithRequiredAttribute.put({
+            prop1: "abc",
+            prop2: "def",
+            prop3: "ghi",
+            prop4: 123,
+            prop5: {anyVal: ["anyItem"]},
+            prop6: {},
+            prop7: []
+        });
+    })
+    // missing `nested1` on `prop6`
+    expectError(() => {
+        entityWithRequiredAttribute.put([{
+            prop1: "abc",
+            prop2: "def",
+            prop3: "ghi",
+            prop4: 123,
+            prop5: {anyVal: ["anyItem"]},
+            prop6: {},
+            prop7: []
+        }]);
+    })
+    // missing `nested1` on `prop6`
+    expectError(() => {
+        entityWithRequiredAttribute.create({
+            prop1: "abc",
+            prop2: "def",
+            prop3: "ghi",
+            prop4: 123,
+            prop5: {anyVal: ["anyItem"]},
+            prop6: {},
+            prop7: []
+        });
+    });
+
+    // no removing required attributes
+    expectError(() => {
+        entityWithRequiredAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(['prop3'])
+    });
+
+    // no removing required attributes
+    expectError(() => {
+        entityWithRequiredAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(['prop5'])
+    });
+
+    // no removing required attributes
+    expectError(() => {
+        entityWithRequiredAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(['prop6'])
+    });
+
+    // no removing required attributes
+    expectError(() => {
+        entityWithRequiredAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(['prop7'])
+    });
+
     let entityWithReadOnlyAttribute = new Entity({
         model: {
             entity: "e1",
