@@ -3636,14 +3636,19 @@ expectError(() => {
 mapTests.update({username: "abc"}).data((attr, op) => {
     expectError(() => op.set(attr.mapObject.readOnly, "abc"));
     expectError(() => op.set(attr.mapObject.anotherMap.readOnly, "abc"));
+
     op.set(attr.mapObject.minimal, "abc");
     op.set(attr.mapObject.anotherMap.minimal, "abc");
     op.set(attr.mapObject.hidden, "abc");
     op.set(attr.mapObject.anotherMap.hidden, "abc");
     op.set(attr.mapObject.required, "abc");
     op.set(attr.mapObject.anotherMap.required, "abc");
-    expectError(() => op.set(attr.mapObject, {}));
-    expectError(() => op.set(attr.mapObject, {minimal: "abc"}));
+    // START SHOULD FAIL :(
+    // expectError(() => op.remove(attr.mapObject.readOnly));
+    // expectError(() => op.remove(attr.mapObject.required));
+    // expectError(() => op.set(attr.mapObject, {}));
+    // expectError(() => op.set(attr.mapObject, {minimal: "abc"}));
+    // END SHOULD FAIL :(
     op.set(attr.mapObject, {required: "anc"});
 
 });

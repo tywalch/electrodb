@@ -810,23 +810,12 @@ class SetAttribute extends Attribute {
 	}
 
 	val(value) {
-		const getValue = (v) => {
-			v = this.cast(v);
-			if (v === undefined) {
-				v = this.default();
-			}
-			return v;
-		}
-
 		if (value === undefined) {
 			value = this.default();
 		}
 
-		if (value === undefined) {
-			return value;
-		} else {
-			const results = getValue(value);
-			return this.toDDBSet(results);
+		if (value !== undefined) {
+			return this.toDDBSet(value);
 		}
 	}
 }

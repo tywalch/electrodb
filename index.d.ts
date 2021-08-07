@@ -864,7 +864,9 @@ export type DataUpdateAttributeSymbol<T extends any> =
                 ? ReadonlyArray<DataUpdateAttributeSymbol<A>>
                 : T extends Array<infer I>
                     ? Array<DataUpdateAttributeSymbol<I>>
-                    : T
+                    : [T] extends [never]
+                        ? never
+                        : T
 
 type DataUpdateAttributeValues<A extends DataUpdateAttributeSymbol<any>> =
     A extends DataUpdateAttributeSymbol<infer T>
@@ -875,6 +877,8 @@ type DataUpdateAttributeValues<A extends DataUpdateAttributeSymbol<any>> =
         ? {[key in keyof T]?: DataUpdateAttributeValues<T[key]>}
         : T extends ReadonlyArray<infer A> ? ReadonlyArray<DataUpdateAttributeValues<A>>
         : T extends Array<infer I> ? Array<DataUpdateAttributeValues<I>>
+        : [T] extends [never]
+        ? never
         : T
     : never
 
