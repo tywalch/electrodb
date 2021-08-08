@@ -916,7 +916,7 @@ type WhereOperations<A extends string, F extends A, C extends string, S extends 
     notExists: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
     contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
-    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V : never) => A extends WhereAttributeSymbol<infer V> ? V : never;
     name: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
 };
 
@@ -928,7 +928,7 @@ type DataUpdateOperations<A extends string, F extends A, C extends string, S ext
     subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
     delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : [V] extends [any] ? V : never : never ) => any;
     del:    <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : never : never ) => any;
-    value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
+    value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => Required<DataUpdateAttributeValues<A>>;
     name: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
 };
 

@@ -3698,3 +3698,21 @@ complexAttributeService.collections
         return "";
     })
     .go()
+
+// `value` operation should return the type of value for more constrained usage
+complex.update({username: "abc"})
+    .data((attr, op) => {
+        const numberValue = op.value(attr.numVal, 10);
+        op.set(attr.numVal, numberValue);
+        op.set(attr.mapValue.numVal, numberValue);
+        expectError(() => op.set(attr.mapValue.stringVal, numberValue));
+    })
+    .where((attr, op) => {
+        const num = 10;
+        const numberValue = op.value(attr.numVal, num);
+        op.eq(attr.numVal, numberValue);
+        op.eq(attr.mapValue.numVal, numberValue);
+        expectError(() => op.eq(attr.mapValue.stringVal, numberValue));
+        return "";
+    })
+    .go()

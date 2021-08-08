@@ -2205,8 +2205,58 @@ describe("Update Item", () => {
         });
     });
     describe("value operation", () => {
-        it("should only allow types", () => {
+        it("should only allow types", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
 
+            const repo = await repositories
+                .create({
+                    repoName,
+                    repoOwner,
+                    stars: 5,
+                    isPrivate: false,
+                    views: 10,
+                })
+                .go();
+
+            expect(repo.stars).to.equal(5);
+            expect(repo.views).to.equal(10);
+
+            const updateParams = repositories
+                .update({repoName, repoOwner})
+                .data(({stars, views}, {value, add}) => {
+                    const newStars = value(stars, 20);
+                    add(views, newStars);
+                    add(stars, newStars);
+                })
+                .params();
+
+            expect(updateParams).to.deep.equal({
+                UpdateExpression: 'SET #views = #views + :stars_u0, #stars = #stars + :stars_u0',
+                ExpressionAttributeNames: { '#stars': 'stars', '#views': 'views' },
+                ExpressionAttributeValues: { ':stars_u0': 20 },
+                TableName: 'electro',
+                Key: {
+                    pk: `$versioncontrol#repoowner_${repoOwner}`,
+                    sk: `$alerts#repositories_1#reponame_${repoName}`
+                }
+            });
+
+            await repositories
+                .update({repoName, repoOwner})
+                .data(({stars, views}, {value, add}) => {
+                    const newStars = value(stars, 20);
+                    add(views, newStars);
+                    add(stars, newStars);
+                })
+                .go();
+
+            const {views, stars} = await repositories
+                .get({repoName, repoOwner})
+                .go();
+
+            expect(views).to.equal(30);
+            expect(stars).to.equal(25);
         });
     });
     describe("nested operations", () => {
@@ -2214,6 +2264,4 @@ describe("Update Item", () => {
 
         });
     });
-    // todo: diy format operations?
-
 });

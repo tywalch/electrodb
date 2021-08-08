@@ -216,13 +216,15 @@ const FilterOperations = {
         template: function(attr, name, value) {
             return value;
         },
-        strict: false
+        strict: false,
+        canNest: true,
     },
     name: {
         template: function(attr, name) {
             return name;
         },
-        strict: false
+        strict: false,
+        canNest: true,
     }
 };
 

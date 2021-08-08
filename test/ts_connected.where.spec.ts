@@ -254,7 +254,23 @@ describe("Where Clause Queries", async () => {
             .and.have.length(1);
         expect(animals.map(pen => pen.animal))
             .to.have.members(["Pig"]);
-    })
+    });
+    it("Should allow for value operations to be used more than once", async () => {
+        let animals = await WhereTests.query
+            .farm({pen})
+            .where(({animal, dangerous}, {value, gt, eq}) => {
+                const piggy = value(animal, "Pig");
+                return `
+                    ${eq(animal, "Pig")} 
+                    OR (${gt(animal, piggy)} AND ${eq(dangerous, true)})`;
+            })
+            .go();
+        expect(animals)
+            .to.be.an("array")
+            .and.have.length(2);
+        expect(animals.map(pen => pen.animal))
+            .to.have.members(["Pig", "Shark"]);
+    });
     it("Should not update an animal which doesnt exist", async () => {
         try {
             await WhereTests.update(penRows[0])
