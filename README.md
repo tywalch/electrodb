@@ -156,7 +156,7 @@ StoreLocations.query
     + [Scan Records](#scan-records)
     + [Remove Method](#remove-method)
     + [Patch Record](#patch-record)
-    + [Create Records](#create-records)
+    + [Create Record](#create-record)
     + [Find Records](#find-records)
     + [Match Records](#match-records)
     + [Access Pattern Queries](#access-pattern-queries)
@@ -2754,7 +2754,7 @@ let unprocessed = await StoreLocations.delete([
 Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
-Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
+Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.     
 
 This example includes an optional conditional expression
 ```javascript
@@ -2903,9 +2903,9 @@ Elements of the `unprocessed` array are unlike results received from a query. In
 
 ### Update Record
 
-Update Methods are available **_after_** the method `update()` is called, and allow you to perform alter an item stored dynamodb. The methods can be used (and reused) in a chain to form update parameters, when finished with `.params()`, or an update operation, when finished with `.go()`.
+Update Methods are available **_after_** the method `update()` is called, and allow you to perform alter an item stored dynamodb. The methods can be used (and reused) in a chain to form update parameters, when finished with `.params()`, or an update operation, when finished with `.go()`. If your application requires the values created/update to be returned (e.g. via the `ReturnValues` DocumentClient parameters), use the [Query Option](#query-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
 
-ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client.
+> ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client.
 
 Update Method                          | Attribute Types                                              | Parameter
 -------------------------------------- | ------------------------------------------------------------ | ---------
@@ -3339,9 +3339,11 @@ In DynamoDB, `update` operations by default will insert a record if record being
 
 For more detail on how to use the `patch()` method, see the section [Update Record](#update-record) to see all the transferable requirements and capabilities available to `patch()`.
 
-### Create Records
+### Create Record
 
 In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table.
+
+A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.
 
 ```javascript
 await StoreLocations
@@ -3949,7 +3951,8 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   pager?: "raw" | "named" | "item";
   originalErr?: boolean;
   concurrent?: number;
-  unprocessed?: "raw" | "item"   
+  unprocessed?: "raw" | "item"
+  response: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new"
 };
 ```
 
@@ -3963,6 +3966,7 @@ pager       | `"named"`            | Used in with pagination (`.pages()`) calls 
 originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
 concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
 unprocessed | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
+response    | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will always null when used, which also bypasses ElectroDB's response formatting if performance is a concern.  
 
 # Errors:
 | Error Code | Description |

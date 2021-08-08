@@ -279,7 +279,7 @@ describe("Entity", async () => {
 			let updatedStore = await MallStores.update(secondStore)
 				.set({ rent: newRent })
 				.go();
-			expect(updatedStore).to.be.null;
+			expect(updatedStore).to.be.empty;
 			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
@@ -314,7 +314,7 @@ describe("Entity", async () => {
 			} catch(err) {
 				expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
 			}
-			expect(recordTwo).to.be.null
+			expect(recordTwo).to.be.null;
 		});
 
 		it("Should only update a record if it already exists", async () => {
@@ -618,7 +618,7 @@ describe("Entity", async () => {
 			let updatedStore = await MallStores.update(secondStore)
 				.set({ rent: newRent })
 				.go();
-			expect(updatedStore).to.be.null;
+			expect(updatedStore).to.be.empty;
 			let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
 			expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 		}).timeout(20000);
@@ -1195,7 +1195,7 @@ describe("Entity", async () => {
 				.update({ date, id })
 				.set({ prop1: updatedProp1 })
 				.go();
-			expect(updatedRecord).to.be.null;
+			expect(updatedRecord).to.be.empty;
 			let getUpdatedRecord = await db.get({ date, id }).go();
 			expect(getUpdatedRecord).to.deep.equal({
 				id,
@@ -4098,8 +4098,8 @@ describe("Entity", async () => {
 			expect(putRecord).to.deep.equal({ number1: 55, number2: 66 });
 			expect(getRecord).to.deep.equal({ number1: 55, number2: 66 });
 			expect(queryRecord).to.deep.equal([{ number1: 55, number2: 66, number3: 77 }]);
-			expect(updateRecord).to.be.null;
-			expect(deleteRecord).to.be.null;
+			expect(updateRecord).to.be.empty;
+			expect(deleteRecord).to.be.empty;
 		});
 	});
 });

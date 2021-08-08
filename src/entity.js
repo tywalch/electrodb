@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -329,10 +329,37 @@ class Entity {
 		if (validations.isFunction(config.parse)) {
 			return config.parse(config, response);
 		}
-		if (method === MethodTypes.put || method === MethodTypes.create) {
-			return this.formatResponse(parameters.IndexName, parameters, config);
-		} else {
-			return this.formatResponse(parameters.IndexName, response, config);
+		// if (method === MethodTypes.put || method === MethodTypes.create) {
+		// 	return this.formatResponse(parameters.IndexName, parameters, config);
+		// } else {
+		// 	return this.formatResponse(parameters.IndexName, response, config);
+		// }
+		switch (parameters.ReturnValues) {
+			case FormatToReturnValues.none:
+				return null;
+			case FormatToReturnValues.all_new:
+			case FormatToReturnValues.all_old:
+			case FormatToReturnValues.updated_new:
+			case FormatToReturnValues.updated_old:
+				return this.formatResponse(parameters.IndexName, response, config);
+			case FormatToReturnValues.default:
+			default:
+				return this._formatDefaultResponse(method, parameters.IndexName, parameters, config, response);
+		}
+	}
+
+	_formatDefaultResponse(method, index, parameters, config = {}, response) {
+		switch (method) {
+			case MethodTypes.put:
+			case MethodTypes.create:
+				return this.formatResponse(index, parameters, config);
+			case MethodTypes.update:
+			case MethodTypes.patch:
+			case MethodTypes.delete:
+			case MethodTypes.remove:
+				return this.formatResponse(index, response, {...config, _objectOnEmpty: true});
+			default:
+				return this.formatResponse(index, response, config);
 		}
 	}
 
@@ -436,6 +463,13 @@ class Entity {
 							}
 						}
 					}
+				} else if (response.Attributes) {
+					results = this.model.schema.formatItemForRetrieval(response.Attributes, config);
+					if (Object.keys(results).length === 0) {
+						results = null;
+					}
+				} else if (config._objectOnEmpty) {
+					return {};
 				} else {
 					results = null;
 				}
@@ -649,10 +683,20 @@ class Entity {
 			parse: undefined,
 			pager: Pager.named,
 			unprocessed: UnprocessedTypes.item,
-			_isPagination: false
+			_isPagination: false,
+			response: 'default'
 		};
 
 		config = options.reduce((config, option) => {
+			if (typeof option.response === 'string' && option.response.length) {
+				const format = 	ReturnValues[option.response];
+				if (format === undefined) {
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "format" provided: "${option.format}". Allowed values include ${utilities.commaSeparatedString(Object.keys(ReturnValues))}.`);
+				}
+				config.response = format;
+				config.params.ReturnValues = FormatToReturnValues[format];
+			}
+
 			if (option.includeKeys === true) {
 				config.includeKeys = true;
 			}

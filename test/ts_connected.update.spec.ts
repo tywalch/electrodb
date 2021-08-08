@@ -2242,7 +2242,7 @@ describe("Update Item", () => {
                 }
             });
 
-            await repositories
+            const value = await repositories
                 .update({repoName, repoOwner})
                 .data(({stars, views}, {value, add}) => {
                     const newStars = value(stars, 20);

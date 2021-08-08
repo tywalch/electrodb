@@ -154,6 +154,24 @@ const TraverserIndexes = {
 	setters: "setters"
 }
 
+const ReturnValues = {
+	'default': 'default',
+	'none': 'none',
+	'all_old': 'all_old',
+	'updated_old': 'updated_old',
+	'all_new': 'all_new',
+	'updated_new': 'updated_new',
+};
+
+const FormatToReturnValues = {
+	'none': 'NONE',
+	'default': 'NONE',
+	'all_old': 'ALL_OLD',
+	'updated_old': 'UPDATED_OLD',
+	'all_new': 'ALL_NEW',
+	'updated_new': 'UPDATED_NEW'
+};
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -164,6 +182,7 @@ module.exports = {
 	MethodTypes,
 	Comparisons,
 	BuilderTypes,
+	ReturnValues,
 	MaxBatchItems,
 	ModelVersions,
 	ItemOperations,
@@ -175,7 +194,8 @@ module.exports = {
 	TraverserIndexes,
 	UnprocessedTypes,
 	AttributeWildCard,
+	FormatToReturnValues,
 	AttributeProxySymbol,
 	ElectroInstanceTypes,
-	AttributeMutationMethods,
+	AttributeMutationMethods
 };

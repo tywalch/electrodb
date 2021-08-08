@@ -938,6 +938,10 @@ type WhereCallback<A extends string, F extends A, C extends string, S extends Sc
 type DataUpdateCallback<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> =
     <W extends DataUpdateAttributes<A,F,C,S,I>>(attributes: W, operations: DataUpdateOperations<A,F,C,S,I>) => any;
 
+type ReturnValues = "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
+
+
+
 interface QueryOptions {
     params?: object;
     raw?: boolean;
@@ -947,9 +951,22 @@ interface QueryOptions {
     limit?: number;
 }
 
+interface UpdateQueryOptions extends QueryOptions {
+    response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
+}
+
+interface DeleteQueryOptions extends QueryOptions {
+    response?: "default" | "none" | 'all_old';
+}
+
+interface PutQueryOptions extends QueryOptions {
+    response?: "default" | "none" | 'all_old';
+}
+
 interface ParamOptions {
     params?: object;
     table?: string;
+    response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
 }
 
 interface PaginationOptions extends QueryOptions {
@@ -967,7 +984,7 @@ type OptionalDefaultEntityIdentifiers = {
     __edb_v__?: string;
 }
 
-type GoRecord<ResponseType, Options = QueryOptions> = (options?: Options) => Promise<ResponseType>;
+type GoRecord<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<T>;
 
 type PageRecord<ResponseType, CompositeAttributes> = (page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: PaginationOptions) => Promise<[
     (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
@@ -989,14 +1006,26 @@ type SingleRecordOperationOptions<A extends string, F extends A, C extends strin
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
 };
 
+type PutRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
+    go: GoRecord<ResponseType, PutQueryOptions>;
+    params: ParamRecord<PutQueryOptions>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
+};
+
+type DeleteRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
+    go: GoRecord<ResponseType, DeleteQueryOptions>;
+    params: ParamRecord<DeleteQueryOptions>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,DeleteRecordOperationOptions<A,F,C,S,ResponseType>>;
+};
+
 type BulkRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
     go: GoRecord<ResponseType, BulkOptions>;
     params: ParamRecord<BulkOptions>;
 };
 
 type SetRecordActionOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> = {
-    go: GoRecord<TableItem>;
-    params: ParamRecord;
+    go: GoRecord<Partial<TableItem>, UpdateQueryOptions>;
+    params: ParamRecord<UpdateQueryOptions>;
     set: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     remove: SetRecord<A,F,C,S, Array<keyof SetItem<A,F,C,S>>,IndexCompositeAttributes,TableItem>;
     add: SetRecord<A,F,C,S, AddItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
@@ -1075,9 +1104,9 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     constructor(schema: S, config?: EntityConfiguration);
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [AllTableIndexCompositeAttributes<A,F,C,S>[], ResponseItem<A,F,C,S>[]]>;
-    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
-    remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+    remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -1096,9 +1125,9 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
         delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
-    put(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+    put(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
-    create(record: PutItem<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+    create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     find(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
     match(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
     setIdentifier(type: "entity" | "version", value: string): void;
