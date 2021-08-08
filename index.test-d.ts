@@ -3535,7 +3535,7 @@ const complex = new Entity({
     },
     indexes: {
         user: {
-            collection: "overview",
+            collection: "complexShapes",
             pk: {
                 composite: ["username"],
                 field: "pk"
@@ -3613,6 +3613,7 @@ const mapTests = new Entity({
     },
     indexes: {
         user: {
+            collection: "complexShapes",
             pk: {
                 composite: ["username"],
                 field: "pk"
@@ -3625,7 +3626,7 @@ const mapTests = new Entity({
     }
 });
 
-type IsNever<T> = [T] extends [never] ? true : false
+const complexAttributeService = new Service({mapTests, complex});
 
 mapTests
     .get({username: "test"})
@@ -3686,3 +3687,14 @@ mapTests.update({username: "abc"}).data((attr, op) => {
 });
 
 expectError(() => mapTests.update({username: "abc"}).remove(["username"]));
+
+complexAttributeService.collections
+    .complexShapes({username: "abc"})
+    .where((attr, op) => {
+        op.eq(attr.mapObject.minimal, "abc");
+        op.eq(attr.numberListValue[0], 123)
+        op.eq(attr.mapListValue[1].enumVal, "def");
+        op.eq(attr.mapListValue[1].numVal, 345);
+        return "";
+    })
+    .go()
