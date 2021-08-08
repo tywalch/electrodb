@@ -270,9 +270,26 @@ If you experience any issues using TypeScript with ElectroDB, your feedback is v
 
 The following types are exported for easier use while using ElectroDB with TypeScript:
 
+#### EntityRecord Type
+
+The EntityRecord type is an object containing every attribute an Entity's model.
+
+_Definition:_
+
+```typescript
+type EntityRecord<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? Item<A,F,C,S,S["attributes"]>
+        : never;
+```
+
+_Use:_
+
+type MyEntity = EntityRecord<typeof YourEntityInstance> 
+
 #### EntityItem Type
 
-This type represents an item as it's returned from a query to DynamoDB.
+This type represents an item as it is returned from a query to DynamoDB. This is different from the `EntityRecord` in that this type reflects the `required`, `hidden`, `default`, etc properties defined on the attribute.  
 
 _Definition:_
 
@@ -310,7 +327,7 @@ type NewThing = CreateEntityItem<typeof YourEntityInstance>;
 
 #### UpdateEntityItem Type
 
-This type represents an item that you would pass your entity's `create` or `update` method to `set`
+This type represents an item that you would pass your entity's `set` method when using `create` or `update`.
 
 _Definition:_
 
@@ -326,6 +343,65 @@ _Use:_
 ```typescript
 type UpdateProperties = UpdateEntityItem<typeof YourEntityInstance>;
 ```
+
+
+#### UpdateAddEntityItem Type 
+
+This type represents an item that you would pass your entity's `add` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+
+`````
+
+#### UpdateSubtractEntityItem Type 
+
+This type represents an item that you would pass your entity's `subtract` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateSubtractEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? SubtractItem<A, F, C, S>
+        : never;
+```
+
+#### UpdateAppendEntityItem Type 
+
+This type represents an item that you would pass your entity's `append` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateAppendEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AppendItem<A, F, C, S>
+        : never;
+```
+
+#### UpdateRemoveEntityItem Type 
+
+This type represents an item that you would pass your entity's `remove` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateRemoveEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? RemoveItem<A, F, C, S>
+        : never;
+```
+
+#### UpdateDeleteEntityItem Type 
+
+This type represents an item that you would pass your entity's `delete` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateDeleteEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? DeleteItem<A, F, C, S>
+        : never;
+```
+
 
 # Entities and Services
 > To see full examples of ***ElectroDB*** in action, go to the [Examples](#examples) section.
@@ -554,15 +630,6 @@ const EmployeesModel = {
 			},
 		},
 	},
-	filters: {
-		upcomingCelebrations: (attributes, startDate, endDate) => {
-			let { dateHired, birthday } = attributes;
-			return `${dateHired.between(startDate, endDate)} OR ${birthday.between(
-				startDate,
-				endDate,
-			)}`;
-		},
-	},
 };
 
 const TasksModel = {
@@ -652,7 +719,7 @@ client   | (optional) An instance of the `docClient` from the `aws-sdk` for use 
 Assign just the `type` of the attribute directly to the attribute name. Types currently supported options are "string", "number", "boolean", an array of strings representing a fixed set of possible values, or "any" which disables value type checking on that attribute.
 ```typescript
 attributes: {
-	<AttributeName>: "string" | "number" | "boolean" | "any" | string[] | ReadonlyArray<string> 
+	<AttributeName>: "string" | "number" | "boolean" | "list" | "map" | "set" | "any" | string[] | ReadonlyArray<string> 
 }
 ```
 
@@ -661,31 +728,57 @@ Use the expanded syntax build out more robust attribute options.
 ```typescript
 attributes: {
 	<AttributeName>: {
-		type: string | ReadonlyArray<string>;
+		type: "string" | "number" | "boolean" | "list" | "map" | "set" | "any" | ReadonlyArray<string>;
 		required?: boolean;
-		default?: value|() => value;
-		validate?: RegExp | (value: any) => void | string;
+		default?: <type> | (() => <type>);
+		validate?: RegExp | ((value: <type>) => void | string);
 		field?: string;
 		readOnly?: boolean;
 		label?: string;
-		cast?: "number"|"string"|"boolean";
-		get?: (attribute, schema) => value;
-		set?: (attribute, schema) => value;
+        cast?: "number"|"string"|"boolean";
+		get?: (attribute: <type>, schema: any) => <type> | void | undefined;
+		set?: (attribute?: <type>, schema?: any) => <type> | void | undefined; 
+		watch: "*" | string[]
 	}
 }
 ```
 
+> Note: When using get/set in TypeScript, be sure to use the `?:` syntax to denote an optional attribute on `set`
+
+#### Attribute Definition
+
+Property      | Type                                                       | Required | Types     | Description
+ ------------ | :--------------------------------------------------------: | :------: | :-------: | -----------
+`type`        | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | all       | Accepts the values: `"string"`, `"number"` `"boolean"`, `"map"`, `"list"`, `"set"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"` which disables value type checking on that attribute.
+`required`    | `boolean`                                                  | no       | all       | Flag an attribute as required to be present when creating a record. This attribute also acts as a type of `NOT NULL` flag, preventing it from being removed directly.  
+`hidden`      | `boolean`                                                  | no       | all       | Flag an attribute as hidden to remove the property from results before they are returned. 
+`default`     | `value`, `() => value`                                     | no       | all       | Either the default value itself or a synchronous function that returns the desired value. Applied before `set` and before `required` check. 
+`validate`    | `RegExp`, `(value: any) => void`, `(value: any) => string` | no       | all       | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error.   
+`field`       | `string`                                                   | no       | all       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
+`readOnly`    | `boolean`                                                  | no       | all       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail. 
+`label`       | `string`                                                   | no       | all       | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
+`cast`        | `"number"`, `"string"`, `"boolean"`                        | no       | all       | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
+`set`         | `(attribute, schema) => value`                             | no       | all       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
+`get`         | `(attribute, schema) => value`                             | no       | all       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
+`watch`       | `Attribute[], "*"`                                         | no       | root-only | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed. Only available on root level attributes.
+`properties`  | `{[key: string]: Attribute}`                               | yes*     | map       | Define the properties available on a `"map"` attribute, required if your attribute is a map. Syntax for map properties is the same as root level attributes.
+`items`       | `Attribute`                                                | yes*     | list      | Define the attribute type your list attribute will contain, required if your attribute is a list. Syntax for list items is the same as a single attribute.
+`items`       | "string" | "number"                                        | yes*     | set       | Define the primitive type your set attribute will contain, required if your attribute is a set. Unlike lists, a set defines it's items with a string of either "string" or "number".
+
 #### Enum Attributes
 
-When using TypeScript, if you wish to also enforce this type make sure to us the `as const` syntax. If TypeScript is not told this array is Readonly, even when your model is passed directly to the Entity constructor, it will not resolve the unique values within that array. This may be desirable, however, as enforcing the type value can require consumers of your model to do more work to resolve the type beyond just the type `string`.
+When using TypeScript, if you wish to also enforce this type make sure to us the `as const` syntax. If TypeScript is not told this array is Readonly, even when your model is passed directly to the Entity constructor, it will not resolve the unique values within that array. 
+
+This may be desirable, however, as enforcing the type value can require consumers of your model to do more work to resolve the type beyond just the type `string`.
 
 > Note: Regardless of using TypeScript or JavaScript, ElectroDB will enforce values supplied match the supplied array of values at runtime.
 
 The following example shows the differences in how TypeScript may enforce your enum value:
+
 ```typescript
 attributes: {
   myEnumAttribute1: {
-      type: ["option1", "option2", "option3"] // TypeScript enforces as `string[]`
+      type: ["option1", "option2", "option3"]        // TypeScript enforces as `string[]`
   },
   myEnumAttribute2: {
     type: ["option1", "option2", "option3"] as const // TypeScript enforces as `"option1" | "option2" | "option3" | undefined`
@@ -697,22 +790,74 @@ attributes: {
 }
 ```
 
-#### Attribute Definition
+#### Map Attributes
 
-Property   | Type                                                       | Required | Description
- --------- | :--------------------------------------------------------: | :------: | -----------
-`type`     | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | Accepts the values: `"string"`, `"number"` `"boolean"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"`which disables value type checking on that attribute. |
-`required` | `boolean`                                                  | no       | Flag an attribute as required to be present when creating a record. |
-`hidden`   | `boolean`                                                  | no       | Flag an attribute for removal upon retrieval. |
-`default`  | `value`, `() => value`                                     | no       | Either the default value itself, as a string literal, or a synchronous function that returns the desired value. |  
-`validate` | `RegExp`, `(value: any) => void`, `(value: any) => string` | no       | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. |  
-`field`    | `string`                                                   | no       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
-`readOnly` | `boolean`                                                  | no       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail. 
-`label`    | `string`                                                   | no       | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
-`cast`     | `"number"`, `"string"`, `"boolean"`                        | no       | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
-`set`      | `(attribute, schema) => value`                             | no       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
-`get`      | `(attribute, schema) => value`                             | no       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
-`watch`    | `Attribute[], "*"`                                         | no       | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed.
+Map attributes leverage DynamoDB's native support for object type structures. The attributes within a Map are defined under the `properties` property; a syntax that mirrors the same syntax as root level attributes. You are not limited in the types of attributes you can nest inside a map attribute.
+
+```typescript
+attributes: {
+  myMapAttribute: {
+    type: "map",
+    properties: {
+      myStringAttribute: {
+        type: "string"
+      },
+      myNumberAttribute: {
+        type: "number"
+      }
+    }
+  }
+}
+```
+
+#### List Attributes
+
+List attributes model array like structures with DynamoDB's List type. The elements of a List attribute are defined using the `items` property. Similar to Map attributes, ElectroDB does not restrict the types of items that can be used with a list.
+
+```typescript
+attributes: {
+  myStringList: { 
+    type: "list",
+    items: {
+      type: "string"
+    },
+  },
+  myMapList: {
+    myMapAttribute: {
+      type: "map",
+      properties: {
+        myStringAttribute: {
+          type: "string"
+        },
+        myNumberAttribute: {
+          type: "number"
+        }
+      }
+    }
+  }
+}
+```
+
+#### Set Attributes
+
+The Set attribute is arguably one of DynamoDB's most powerful types. ElectroDB supports String and Number Sets using the `items` property set as either `"string"` or `"number"`. 
+
+In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by *removing* the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB will accept Arrays, JavaScript native Sets, and `createSet` objects and manage the interactions with the client for you. On retrieval, ElectroDB will also convert Sets to JavaScript arrays.
+
+> Note: If you are using TypeScript, Sets are currently typed as Arrays to simplify the type system. Again, ElectroDB will handle to conversion of these Arrays without the need to use `client.createSet()`.
+ 
+```typescript
+attributes: {
+  myStringSet: {
+    type: "set",
+    items: "string"
+  },
+  myNumberSet: {
+    type: "set",
+    items: "number"
+  }
+}
+```
 
 #### Attribute Getters and Setters
 Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both callbacks should be pure synchronous functions and may be invoked multiple times during one query.
@@ -730,6 +875,8 @@ ElectroDB invokes an Attribute's `set` callback in the following circumstances:
 1. Setters for all Attributes will always be invoked when performing a `create` or `put` operation.
 2. Setters will only be invoked when an Attribute is modified when performing a `patch` or `update` operation.
 3. When using ElectroDB's [attribute watching](#attribute-watching) functionality, an attribute will have its setter callback invoked whenever the setter callback of any "watched" attributes are invoked. Note: The setter of an Attribute Watcher will always be applied _after_ the setters for the attributes it watches.
+
+> Note: As of ElectroDB `1.3.0`, the `watch` property is only possible for root level attributes. Watch is currently not supported for nested attributes like properties on a "map" or items of a "list".  
 
 #### Attribute Watching
 Attribute watching is a powerful feature in ElectroDB that can be used to solve many unique challenges with DynamoDB. In short, you can define a column to have its getter/setter callbacks called whenever another attribute's getter or setter callbacks are called. If you haven't read the section on [Attribute Getters and Setters](#attribute-getters-and-setters), it will provide you with more context about when an attribute's mutation callbacks are called.
@@ -2173,22 +2320,22 @@ animals.update({habitat: "Africa", enclosure: "5b"})
 
 The `attributes` object contains every Attribute defined in the Entity's Model. The `operations` object contains the following methods:
 
-operator | example | result
-| ----------- | ----------- | ----------- |  
-`eq` | `eq(rent, maxRent)` | `#rent = :rent1`
-`ne` | `eq(rent, maxRent)` | `#rent <> :rent1`
-`gte` | `gte(rent, value)` | `#rent >= :rent1`
-`gt` | `gt(rent, maxRent)` | `#rent > :rent1`
-`lte` | `lte(rent, maxRent)` | `#rent <= :rent1`
-`lt` | `lt(rent, maxRent)` | `#rent < :rent1`
-`begins` | `begins(rent, maxRent)` | `begins_with(#rent, :rent1)`
-`exists` | `exists(rent)` | `attribute_exists(#rent)`
-`notExists` | `notExists(rent)` | `attribute_not_exists(#rent)`
-`contains` | `contains(rent, maxRent)` | `contains(#rent = :rent1)`
-`notContains` | `notContains(rent, maxRent)` | `not contains(#rent = :rent1)`
-`between` | `between(rent, minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
-`name` | `name(rent)` | `#rent`
-`value` | `value(rent, maxRent)` | `:rent1`
+operator      | example                           | result
+------------- | --------------------------------- | -------------------------------
+`eq`          | `eq(rent, maxRent)`               | `#rent = :rent1`
+`ne`          | `eq(rent, maxRent)`               | `#rent <> :rent1`
+`gte`         | `gte(rent, value)`                | `#rent >= :rent1`
+`gt`          | `gt(rent, maxRent)`               | `#rent > :rent1`
+`lte`         | `lte(rent, maxRent)`              | `#rent <= :rent1`
+`lt`          | `lt(rent, maxRent)`               | `#rent < :rent1`
+`begins`      | `begins(rent, maxRent)`           | `begins_with(#rent, :rent1)`
+`exists`      | `exists(rent)`                    | `attribute_exists(#rent)`
+`notExists`   | `notExists(rent)`                 | `attribute_not_exists(#rent)`
+`contains`    | `contains(rent, maxRent)`         | `contains(#rent = :rent1)`
+`notContains` | `notContains(rent, maxRent)`      | `not contains(#rent = :rent1)`
+`between`     | `between(rent, minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
+`name`        | `name(rent)`                      | `#rent`
+`value`       | `value(rent, maxRent)`            | `:rent1`
 
 ### Multiple Where Clauses
 It is possible to include chain multiple where clauses. The resulting FilterExpressions (or ConditionExpressions) are concatenated with an implicit `AND` operator.
@@ -2420,14 +2567,14 @@ StoreLocations.query.stores({cityId, mallId, unitId});
 ```
 
 ### Sort Key Operations
-| operator | use case |
-| ---: | ----------- |
-| `begins` | Keys starting with a particular set of characters.
-| `between` | Keys between a specified range. |
-| `gt` | Keys less than some value |
-| `gte` | Keys less than or equal to some value |
-| `lt` | Keys greater than some value |
-| `lte` | Keys greater than or equal to some value |
+| operator  | use case 
+| --------: | ----------- |
+| `begins`  | Keys starting with a particular set of characters.
+| `between` | Keys between a specified range. 
+| `gt`      | Keys less than some value 
+| `gte`     | Keys less than or equal to some value 
+| `lt`      | Keys greater than some value 
+| `lte`     | Keys greater than or equal to some value 
 
 Each record represents one Store location. All Stores are located in Malls we manage.
 
@@ -2760,15 +2907,15 @@ Update Methods are available **_after_** the method `update()` is called, and al
 
 ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client.
 
-Update Method                          | Attribute Types                          | Parameter
--------------                          | ---------------------------------------- | ---------
-[set](#update-method-set)              | `number` `string` `boolean` `enum` `any` | `object`
-[remove](#update-method-remove)        | `number` `string` `boolean` `enum` `any` | `array`
-[add](#update-method-add)              | `number` `any` soon: (`set`)             | `object`
-[subtract](#update-method-subtract)    | `number`                                 | `object`
-[append](#update-method-append)        | `any` soon: (`list`)                     | `object`
-[delete](#update-method-delete)        | `any` soon: (`set`)                      | `object`
-[data](#update-method-data)            | `*`                                      | `callback`
+Update Method                          | Attribute Types                                              | Parameter
+-------------------------------------- | ------------------------------------------------------------ | ---------
+[set](#update-method-set)              | `number` `string` `boolean` `enum` `map` `list` `set` `any`  | `object`
+[remove](#update-method-remove)        | `number` `string` `boolean` `enum` `map` `list` `set` `any`  | `array`
+[add](#update-method-add)              | `number` `any` `set`                                         | `object`
+[subtract](#update-method-subtract)    | `number`                                                     | `object`
+[append](#update-method-append)        | `any` `list`                                                 | `object`
+[delete](#update-method-delete)        | `any` `set`                                                  | `object`
+[data](#update-method-data)            | `*`                                                          | `callback`
 
 #### Update Method: Set
 
@@ -2804,6 +2951,8 @@ await StoreLocations
 
 The `remove()` method will accept all attributes defined on the model. Unlike most other update methods, the `remove()` method accepts an array with the names of the attributes that should be removed.
 
+> Note that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed.  
+
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -2831,11 +2980,9 @@ await StoreLocations
 
 #### Update Method: Add
 
-The `add()` method will accept attributes with type `number` and `any` defined on the model. In the case of a `number` attribute, provide a number to _add_ to the existing attribute's value on the item.
+The `add()` method will accept attributes with type `number`, `set`, and `any` defined on the model. In the case of a `number` attribute, provide a number to _add_ to the existing attribute's value on the item.
 
-If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a number.
-
-> Note: When the `add()` method is applied to `set` type attribute, the values provided must abide by the [value format expectations enforced by the DocumentClient](https://aws.amazon.com/blogs/developer/announcing-the-amazon-dynamodb-document-client-in-the-aws-sdk-for-javascript/). ElectroDB does not modify values based on the update method to fulfil current DocumentClient restrictions.
+If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a number. 
 
 ```javascript
 const newTenant = client.createSet("larry");
@@ -2843,8 +2990,8 @@ const newTenant = client.createSet("larry");
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .add({
-      rent: 100, // "number" attribute
-      tenant: newTenant // "set" attribute
+      rent: 100,         // "number" attribute
+      tenant: ["larry"]  // "set" attribute
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
@@ -2906,8 +3053,6 @@ await StoreLocations
 
 The `append()` method will accept attributes with type `any`. This is a convenience method for working with DynamoDB lists, and is notably different that [`set`](#update-method-set) because it will add an element to an existing array, rather than overwrite the existing value.
 
-> Note: Values provided must abide by the [value format expectations enforced by the DocumentClient](https://aws.amazon.com/blogs/developer/announcing-the-amazon-dynamodb-document-client-in-the-aws-sdk-for-javascript/). ElectroDB does not modify values based on the update method to fulfil current DocumentClient restrictions.
-
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -2947,14 +3092,12 @@ await StoreLocations
 
 #### Update Method: Delete
 
-The `delete()` method will accept attributes with type `any`. This operation removes items from a DynamoDB `set`.
-
-> Note: Values provided must abide by the [value format expectations enforced by the DocumentClient](https://aws.amazon.com/blogs/developer/announcing-the-amazon-dynamodb-document-client-in-the-aws-sdk-for-javascript/). ElectroDB does not modify values based on the update method to fulfil current DocumentClient restrictions.
+The `delete()` method will accept attributes with type `any` or `set` . This operation removes items from a the `contract` attribute, defined as a `set` attribute.
 
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
-    .delete({contact: '555-345-2222'})
+    .delete({contact: ['555-345-2222']})
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
 
@@ -3005,27 +3148,27 @@ await StoreLocations
     .data((a, o) => {
         const newTenant = a.value(attr.tenant, "larry");
         o.set(a.category, "food/meal");   // electrodb "enum"   -> dynamodb "string"
-        o.add(a.tenant, newTenant);       // electrodb "any"    -> dynamodb "set"
+        o.add(a.tenant, newTenant);       // electrodb "set"    -> dynamodb "set"
         o.add(a.rent, 100);               // electrodb "number" -> dynamodb "number"
         o.subtract(a.deposit, 200);       // electrodb "number" -> dynamodb "number"
         o.remove(a.leaseEndDate);         // electrodb "string" -> dynamodb "string"
-        o.append(a.rentalAgreement, [{    // electrodb "any"    -> dynamodb "list"
-            type: "ammendment",
+        o.append(a.rentalAgreement, [{    // electrodb "list"   -> dynamodb "list"
+            type: "ammendment",           // electrodb "map"    -> dynamodb "map"
             detail: "no soup for you"
         }]);
-        o.delete(a.tags, 'coffee');       // electrodb "any"    -> dynamodb "set"
+        o.delete(a.tags, ['coffee']);     // electrodb "set"    -> dynamodb "set"
         o.del(a.contact, '555-345-2222'); // electrodb "string" -> dynamodb "string"
         o.add(a.fees, op.name(a.petFee)); // electrodb "number" -> dynamodb "number"
-        o.add(a.leaseHolders, newTenant); // electrodb "any"    -> dynamodb "set"
+        o.add(a.leaseHolders, newTenant); // electrodb "set"    -> dynamodb "set"
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
 
 // Equivalent Params:
 {
-  "UpdateExpression": "SET #category = :category0, #rent = #rent + :rent0, #deposit = #deposit - :deposit0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant1, #leaseHolders :leaseHolders0 DELETE #tags :tags0, #contact :contact0",
+  "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
   "ExpressionAttributeNames": {
-    "#category": "category",
+  "#category": "category",
     "#tenant": "tenant",
     "#rent": "rent",
     "#deposit": "deposit",
@@ -3039,22 +3182,21 @@ await StoreLocations
     "#gsi2sk": "gsi2sk"
   },
   "ExpressionAttributeValues": {
-    ":category0": "food/meal",
-    ":tenant0": "larry",
-    ":tenant1": ":tenant0",
-    ":rent0": 100,
-    ":deposit0": 200,
-    ":rentalAgreement0": [{
-      "type": "ammendment",
+    ":category0": "food/coffee",
+    ":category_u0": "food/meal",
+    ":tenant_u0": ["larry"],
+    ":rent_u0": 100,
+    ":deposit_u0": 200,
+    ":rentalAgreement_u0": [{
+      "type": "amendment",
       "detail": "no soup for you"
     }],
-    ":tags0": "coffee",
-    ":contact0": "555-345-2222",
-    ":leaseHolders0": ":tenant0"
-  },
-  "TableName": "StoreDirectory",
+    ":tags_u0": ["coffee"], // <- DynamoDB Set
+    ":contact_u0": ["555-345-2222"], // <- DynamoDB Set 
+    },
+  "TableName": "electro",
   "Key": {
-    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
+    "pk": `$mallstoredirectory#cityid_12345#mallid_eastpointe`,
     "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
   },
   "ConditionExpression": "#category = :category0"
@@ -3073,7 +3215,7 @@ The following are examples on how update complex attributes, using both with cha
 
 **Example 1: Set property on a `map` attribute**
 
-Specifying a property on a `map` attribute can expressed using dot notation.
+Specifying a property on a `map` attribute is expressed with dot notation.
 
 ```javascript
 // via Chain Method
@@ -3091,7 +3233,7 @@ await StoreLocations
 
 **Example 2: Removing an element from a `list` attribute**
 
-Specifying an index on a `list` attribute is done with square brackets containing the element's index number.
+Specifying an index on a `list` attribute is expressed with square brackets containing the element's index number.
 
 ```javascript
 // via Chain Method

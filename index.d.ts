@@ -1380,7 +1380,7 @@ export type UpdateDeleteEntityItem<E extends Entity<any, any, any, any>> =
         ? DeleteItem<A, F, C, S>
         : never;
 
-type EntitySchema<E extends Entity<any, any, any, any>> =
+type EntityRecord<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
         ? Item<A,F,C,S,S["attributes"]>
         : never;
