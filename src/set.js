@@ -17,6 +17,10 @@ class DynamoDBSet {
         this.values = Array.from(new Set([].concat(list)));
     }
 
+    initialize(list, validate) {
+
+    }
+
     detectType() {
         return memberTypeToSetType[typeof (this.values[0])];
     }

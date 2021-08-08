@@ -2208,6 +2208,7 @@ class Entity {
 
 	_parseModel(model, config = {}) {
 		/** start beta/v1 condition **/
+		const {client} = config;
 		let modelVersion = utilities.getModelVersion(model);
 		let service, entity, version, table, name;
 		switch(modelVersion) {
@@ -2243,7 +2244,7 @@ class Entity {
 			indexAccessPattern,
 			indexHasSubCollections,
 		} = this._normalizeIndexes(model.indexes);
-		let schema = new Schema(model.attributes, facets);
+		let schema = new Schema(model.attributes, facets, {client});
 		let filters = this._normalizeFilters(model.filters);
 		let prefixes = this._normalizePrefixes(service, entity, version, indexes, modelVersion);
 

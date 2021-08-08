@@ -926,7 +926,7 @@ describe("Update Item", () => {
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
                 .params()
 
-            expect(addParameters).to.deep.equal({
+            expect(JSON.parse(JSON.stringify(addParameters))).to.deep.equal({
                 "UpdateExpression": "SET #rent = #rent + :rent_u0 ADD #tenant :tenant_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
@@ -936,11 +936,7 @@ describe("Update Item", () => {
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
                     ":rent_u0": 100,
-                    ":tenant_u0": {
-                        "type": "String",
-                        "values": ["larry"],
-                        "wrapperName": "Set"
-                    }
+                    ":tenant_u0": ["larry"]
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1013,7 +1009,7 @@ describe("Update Item", () => {
                 .params()
 
 
-            expect(deleteParameters).to.deep.equal({
+            expect(JSON.parse(JSON.stringify(deleteParameters))).to.deep.equal({
                 "UpdateExpression": "DELETE #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
@@ -1021,11 +1017,7 @@ describe("Update Item", () => {
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
-                    ":contact_u0": {
-                        "type": "String",
-                        "values": ["555-345-2222"],
-                        "wrapperName": "Set",
-                    }
+                    ":contact_u0": ["555-345-2222"]
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1053,7 +1045,7 @@ describe("Update Item", () => {
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
                 .params()
 
-            expect(allParameters).to.deep.equal({
+            expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
                 "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
@@ -1078,21 +1070,9 @@ describe("Update Item", () => {
                         "type": "ammendment",
                         "detail": "no soup for you"
                     }],
-                    ":contact_u0": {
-                        "type": "String",
-                        "values": ["555-345-2222"],
-                        "wrapperName": "Set",
-                    },
-                    ":tags_u0": {
-                        "type": "String",
-                        "values": ["coffee"],
-                        "wrapperName": "Set",
-                    },
-                    ":tenant_u0": {
-                        "type": "String",
-                        "values": ["larry"],
-                        "wrapperName": "Set",
-                   }
+                    ":contact_u0": ["555-345-2222"],
+                    ":tags_u0": ["coffee"],
+                    ":tenant_u0": ["larry"]
                 },
                 "TableName": "electro",
                 "Key": {

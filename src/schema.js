@@ -154,6 +154,7 @@ class Attribute {
 		this.parent = { parentType: this.type, parentPath: this.path };
 		this.get = this._makeGet(definition.get);
 		this.set = this._makeSet(definition.set);
+		this.client = definition.client;
 	}
 
 	static buildChildAttributes(type, definition, parent) {
@@ -171,25 +172,25 @@ class Attribute {
 	}
 
 	static buildChildListItems(definition, parent) {
-		const {items} = definition;
+		const {items, client} = definition;
 		const prop = {...items, ...parent};
 		// The use of "*" is to ensure the child's name is "*" when added to the traverser and searching for the children of a list
-		return Schema.normalizeAttributes({ '*': prop }, {}, parent.traverser).attributes["*"];
+		return Schema.normalizeAttributes({ '*': prop }, {}, {client, traverser: parent.traverser}).attributes["*"];
 	}
 
 	static buildChildSetItems(definition, parent) {
-		const {items} = definition;
+		const {items, client} = definition;
 
 		const allowedTypes = [AttributeTypes.string, AttributeTypes.boolean, AttributeTypes.number, AttributeTypes.enum];
 		if (!Array.isArray(items) && !allowedTypes.includes(items)) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "items" definition for Set attribute: "${definition.path}". Acceptable item types include ${u.commaSeparatedString(allowedTypes)}`);
 		}
 		const prop = {type: items, ...parent};
-		return Schema.normalizeAttributes({ prop }, {}, parent.traverser).attributes.prop;
+		return Schema.normalizeAttributes({ prop }, {}, {client, traverser: parent.traverser}).attributes.prop;
 	}
 
 	static buildChildMapProperties(definition, parent) {
-		const {properties} = definition;
+		const {properties, client} = definition;
 		if (!properties || typeof properties !== "object") {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "properties" definition for Map attribute: "${definition.path}". The "properties" definition must describe the attributes that the Map will accept`);
 		}
@@ -197,7 +198,7 @@ class Attribute {
 		for (let name of Object.keys(properties)) {
 			attributes[name] = {...properties[name], ...parent};
 		}
-		return Schema.normalizeAttributes(attributes, {}, parent.traverser);
+		return Schema.normalizeAttributes(attributes, {}, {client, traverser: parent.traverser});
 	}
 
 	static buildPath(name, type, parentPath) {
@@ -719,22 +720,33 @@ class SetAttribute extends Attribute {
 		return value;
 	}
 
+	_createDDBSet(value) {
+		if (this.client && typeof this.client.createSet === "function") {
+			value = Array.isArray(value)
+				? Array.from(new Set(value))
+				: value;
+			return this.client.createSet(value, {validate: true});
+		} else {
+			return new DynamoDBSet(value, this.items.type);
+		}
+	}
+
 	toDDBSet(value) {
 		const valueType = getValueType(value);
 		let array;
 		switch(valueType) {
 			case ValueTypes.set:
 				array = Array.from(value);
-				return new DynamoDBSet(array, this.items.type);
+				return this._createDDBSet(array);
 			case ValueTypes.aws_set:
 				return value;
 			case ValueTypes.array:
-				return new DynamoDBSet(value, this.items.type);
+				return this._createDDBSet(value);
 			case ValueTypes.string:
 			case ValueTypes.boolean:
 			case ValueTypes.number: {
 				if (valueType === this.items.type) {
-					return new DynamoDBSet(value, this.items.type);
+					return this._createDDBSet(value);
 				} else {
 					throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}" but Attribute is defined as ${this.items.type}`);
 				}
@@ -821,9 +833,10 @@ class SetAttribute extends Attribute {
 }
 
 class Schema {
-	constructor(properties = {}, facets = {}, traverser = new AttributeTraverser()) {
+	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client} = {}) {
 		this._validateProperties(properties);
-		let schema = Schema.normalizeAttributes(properties, facets, traverser);
+		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client});
+		this.client = client;
 		this.attributes = schema.attributes;
 		this.enums = schema.enums;
 		this.translationForTable = schema.translationForTable;
@@ -833,10 +846,9 @@ class Schema {
 		this.requiredAttributes = schema.requiredAttributes;
 		this.translationForWatching = this._formatWatchTranslations(this.attributes);
 		this.traverser = traverser;
-
 	}
 
-	static normalizeAttributes(attributes = {}, facets = {}, traverser) {
+	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client} = {}) {
 		let invalidProperties = [];
 		let normalized = {};
 		let usedAttrs = {};
@@ -865,6 +877,7 @@ class Schema {
 			let definition = {
 				name,
 				traverser,
+				client,
 				label: attribute.label,
 				required: !!attribute.required,
 				field: attribute.field || name,
@@ -880,7 +893,7 @@ class Schema {
 				items: attribute.items,
 				properties: attribute.properties,
 				parentPath: attribute.parentPath,
-				parentType: attribute.parentType
+				parentType: attribute.parentType,
 			};
 
 			if (attribute.watch !== undefined) {
