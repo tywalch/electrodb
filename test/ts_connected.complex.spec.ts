@@ -1296,4 +1296,94 @@ describe("Simple Crud On Complex Entity", () => {
             }
         }).to.throw(`Attribute "list[*].test" is Required and cannot be removed`);
     });
+
+    it("should be able to create DynamoDB compatible Set objects without the client", async () => {
+        const entity = new Entity({
+            model: {
+                entity: "user",
+                service: "versioncontrol",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                },
+                stringVal2: {
+                    type: "string",
+                },
+                stringSet: {
+                    type: "set",
+                    items: "string"
+                },
+                numberSet: {
+                    type: "set",
+                    items: "number"
+                },
+            },
+            indexes: {
+                user: {
+                    collection: "overview",
+                    pk: {
+                        composite: ["stringVal"],
+                        field: "pk"
+                    },
+                    sk: {
+                        composite: ["stringVal2"],
+                        field: "sk"
+                    }
+                },
+            }
+        }, {table});
+        const stringVal = uuid();
+        const stringVal2 = uuid()
+        const putParams: any = entity.put({
+            stringVal,
+            stringVal2,
+            numberSet: [123,456,789],
+            stringSet: ["abc", "def", "ghi"]
+        }).params();
+        expect(putParams.Item.stringSet.values).to.deep.equal([ 'abc', 'def', 'ghi' ]);
+        expect(putParams.Item.stringSet.wrapperName).to.equal("Set");
+        expect(putParams.Item.stringSet.type).to.equal("String");
+        expect(putParams.Item.numberSet.values).to.deep.equal([123,456,789]);
+        expect(putParams.Item.numberSet.wrapperName).to.equal("Set");
+        expect(putParams.Item.numberSet.type).to.equal("Number");
+        expect(JSON.parse(JSON.stringify(putParams))).to.deep.equal({
+            Item: {
+                stringVal,
+                stringVal2,
+                stringSet: [ 'abc', 'def', 'ghi' ],
+                numberSet: [ 123, 456, 789 ],
+                pk: `$versioncontrol#stringval_${stringVal}`,
+                sk: `$overview#user_1#stringval2_${stringVal2}`,
+                __edb_e__: 'user',
+                __edb_v__: '1'
+            },
+            TableName: 'electro'
+        });
+        await client.put(putParams).promise();
+        const getParams: any = entity.get({
+            stringVal,
+            stringVal2
+        }).params();
+        const results: any = await client.get(getParams).promise();
+        expect(results.Item.stringSet.values).to.deep.equal([ 'abc', 'def', 'ghi' ]);
+        expect(results.Item.stringSet.wrapperName).to.equal("Set");
+        expect(results.Item.stringSet.type).to.equal("String");
+        expect(results.Item.numberSet.values).to.deep.equal([123,456,789]);
+        expect(results.Item.numberSet.wrapperName).to.equal("Set");
+        expect(results.Item.numberSet.type).to.equal("Number");
+        expect(JSON.parse(JSON.stringify(results))).to.deep.equal({
+            Item: {
+                stringVal,
+                stringVal2,
+                pk: `$versioncontrol#stringval_${stringVal}`,
+                sk: `$overview#user_1#stringval2_${stringVal2}`,
+                stringSet: [ 'abc', 'def', 'ghi' ],
+                numberSet: [ 123, 456, 789 ],
+                __edb_e__: 'user',
+                __edb_v__: '1'
+            }
+        });
+    });
 });
