@@ -2119,9 +2119,6 @@ animals.query
 
 ```javascript
 animals.update({habitat: "Africa", enclosure: "5b"})
-    .set({
-      "handlers[0]": "mark"
-    })
 	.where(({handlers}, {eq}) => eq(handlers[0], "jerry"))
 	.go()
 ```
@@ -2132,28 +2129,45 @@ animals.update({habitat: "Africa", enclosure: "5b"})
 animals.query
 	.farm({habitat: "Africa"})
 	.where(({meals}, {exists, between}) => `
-	    ${exists(meals[0].meat.veal)} AND ${between(meals[0].schedule, '6:00', '7:00')}
+		${exists(meals[0].meat.veal)} AND ${between(meals[0].schedule, '6:00', '7:00')}
 	`)
 	.go()
 ```
 
 ### Attributes and Operations
 
-Where functions allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions:
+Where functions allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations`, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions. 
+
+> Note: `where` callbacks must return a string. All method on the  `operation` object all return strings, so you can return the results of the `operation` method or use template strings compose an expression.
 
 ```javascript
-// A single filter operation
+// A single filter operation 
 animals.update({habitat: "Africa", enclosure: "5b"})
 	.set({keeper: "Joe Exotic"})
 	.where((attr, op) => op.eq(attr.dangerous, true))
 	.go();
 
-// Multiple conditions
+// A single filter operation  
+animals.update({habitat: "Africa", enclosure: "5b"})
+	.set({keeper: "Joe Exotic"})
+	.where((attr, op) => op.eq(attr.dangerous, true))
+	.go();
+
+// Multiple conditions - `op`
 animals.update({habitat: "Africa", enclosure: "5b"})
 	.set({keeper: "Joe Exotic"})
 	.where((attr, op) => `
 		${op.eq(attr.dangerous, true)} AND ${op.contains(attr.diet, "meat")}
 	`)
+	.go();
+
+// Multiple usages of `where` (implicit AND)
+animals.update({habitat: "Africa", enclosure: "5b"})
+	.set({keeper: "Joe Exotic"})
+	.where((attr, op) => `
+		${op.eq(attr.dangerous, true)} AND ${op.contains(attr.diet, "meat")}
+	`)
+	.where((attr, op)) => op.betweem(attr.schedule, "05:30", "19:00"))
 	.go();
 ```
 
@@ -2988,18 +3002,21 @@ operation     | example                               | result                  
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
-    .data((attr, op) => {
-        const newTenant = attr.value(attr.tenant, "larry")
-        op.set(attr.category, "food/meal");
-        op.add(attr.tenant, newTenant);
-        op.add(attr.rent, 100);
-        op.subtract(attr.deposit, 200);
-        op.remove(attr.leaseEndDate);
-        op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
-        op.delete(attr.tags, 'coffee');
-        op.del(attr.contact, '555-345-2222');
-        op.add(attr.totalFees, op.name(attr.petFee));
-        op.add(attr.leaseHolders, newTenant);
+    .data((a, o) => {
+        const newTenant = a.value(attr.tenant, "larry");
+        o.set(a.category, "food/meal");   // electrodb "enum"   -> dynamodb "string"
+        o.add(a.tenant, newTenant);       // electrodb "any"    -> dynamodb "set"
+        o.add(a.rent, 100);               // electrodb "number" -> dynamodb "number"
+        o.subtract(a.deposit, 200);       // electrodb "number" -> dynamodb "number"
+        o.remove(a.leaseEndDate);         // electrodb "string" -> dynamodb "string"
+        o.append(a.rentalAgreement, [{    // electrodb "any"    -> dynamodb "list"
+            type: "ammendment",
+            detail: "no soup for you"
+        }]);
+        o.delete(a.tags, 'coffee');       // electrodb "any"    -> dynamodb "set"
+        o.del(a.contact, '555-345-2222'); // electrodb "string" -> dynamodb "string"
+        o.add(a.fees, op.name(a.petFee)); // electrodb "number" -> dynamodb "number"
+        o.add(a.leaseHolders, newTenant); // electrodb "any"    -> dynamodb "set"
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
