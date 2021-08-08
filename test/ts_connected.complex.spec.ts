@@ -1386,4 +1386,455 @@ describe("Simple Crud On Complex Entity", () => {
             }
         });
     });
+
+    it("should apply field names when saving the record to the database", async () => {
+        const entity = new Entity({
+            model: {
+                entity: "user",
+                service: "versioncontrol",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                },
+                stringVal2: {
+                    type: "string",
+                },
+                stringSet: {
+                    type: "set",
+                    items: "string",
+                    field: "ss1",
+                },
+                numberSet: {
+                    type: "set",
+                    items: "number",
+                    field: "ns1",
+                },
+                mapVal: {
+                    type: "map",
+                    properties: {
+                        nestedList1: {
+                            type: "list",
+                            items: {
+                                type: "string"
+                            },
+                            field: "nl1"
+                        },
+                        nestedStringVal1: {
+                            type: "string",
+                            field: "nsv1"
+                        },
+                        nestedNumberVal1: {
+                            type: "number",
+                            field: "nnv1"
+                        },
+                        nestedStringSetVal1: {
+                            type: "set",
+                            items: "string",
+                            field: "nssv1"
+                        },
+                    },
+                    field: "mv1",
+                },
+                listVal: {
+                    type: "list",
+                    items: {
+                        type: "map",
+                        properties: {
+                            nestedList2: {
+                                type: "list",
+                                items: {
+                                    type: "string"
+                                },
+                                field: "nl2"
+                            },
+                            nestedStringVal2: {
+                                type: "string",
+                                field: "nsv2"
+                            },
+                            nestedNumberVal2: {
+                                type: "number",
+                                field: "nnv2"
+                            },
+                            nestedStringSetVal2: {
+                                type: "set",
+                                items: "string",
+                                field: "nssv2"
+                            },
+                        },
+                    },
+                    field: "lv1"
+                }
+            },
+            indexes: {
+                user: {
+                    collection: "overview",
+                    pk: {
+                        composite: ["stringVal"],
+                        field: "pk"
+                    },
+                    sk: {
+                        composite: ["stringVal2"],
+                        field: "sk"
+                    }
+                },
+            }
+        }, {table, client});
+        const stringVal = uuid();
+        const stringVal2 = uuid();
+        const item = {
+            stringVal,
+            stringVal2,
+            numberSet: [123,456,789],
+            stringSet: ["abc", "def", "ghi"],
+            mapVal: {
+                nestedNumberVal1: 123,
+                nestedStringVal1: "def",
+                nestedList1: ["ghi"],
+                nestedStringSetVal1: ["xyz"],
+            },
+            listVal: [
+                {
+                    nestedList2: ["wxyz"],
+                    nestedNumberVal2: 98014,
+                    nestedStringSetVal2: ["item1", "item2"],
+                    nestedStringVal2: "def",
+                }
+            ]
+        };
+
+        const putParams: any = entity.put(item).params();
+        expect(JSON.parse(JSON.stringify(putParams))).to.deep.equal({
+            "Item": {
+                "stringVal": stringVal,
+                "stringVal2": stringVal2,
+                "ss1": [
+                    "abc",
+                    "def",
+                    "ghi"
+                ],
+                "ns1": [
+                    123,
+                    456,
+                    789
+                ],
+                "mv1": {
+                    "nl1": [
+                        "ghi"
+                    ],
+                    "nsv1": "def",
+                    "nnv1": 123,
+                    "nssv1": [
+                        "xyz"
+                    ]
+                },
+                "lv1": [
+                    {
+                        "nl2": [
+                            "wxyz"
+                        ],
+                        "nsv2": "def",
+                        "nnv2": 98014,
+                        "nssv2": [
+                            "item1",
+                            "item2"
+                        ]
+                    }
+                ],
+                "pk": `$versioncontrol#stringval_${stringVal}`,
+                "sk": `$overview#user_1#stringval2_${stringVal2}`,
+                "__edb_e__": "user",
+                "__edb_v__": "1"
+            },
+            "TableName": "electro"
+        });
+
+        const putRecord = await entity.put(item).go();
+        const getRecord = await entity.get(item).go();
+        expect(JSON.parse(JSON.stringify(putRecord))).to.deep.equal(item);
+        expect(JSON.parse(JSON.stringify(getRecord))).to.deep.equal(item);
+    });
+
+    it("should validate the type of a complex/nested attribute", () => {
+        const entity = new Entity({
+            model: {
+                entity: "user",
+                service: "versioncontrol",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                },
+                stringVal2: {
+                    type: "string",
+                },
+                stringSet: {
+                    type: "set",
+                    items: "string",
+                    field: "ss1",
+                },
+                numberSet: {
+                    type: "set",
+                    items: "number",
+                    field: "ns1",
+                },
+                mapVal: {
+                    type: "map",
+                    properties: {
+                        nestedList1: {
+                            type: "list",
+                            items: {
+                                type: "string"
+                            },
+                            field: "nl1"
+                        },
+                        nestedStringVal1: {
+                            type: "string",
+                            field: "nsv1"
+                        },
+                        nestedNumberVal1: {
+                            type: "number",
+                            field: "nnv1"
+                        },
+                        nestedStringSetVal1: {
+                            type: "set",
+                            items: "string",
+                            field: "nssv1"
+                        },
+                    },
+                    field: "mv1",
+                },
+                listVal: {
+                    type: "list",
+                    items: {
+                        type: "map",
+                        properties: {
+                            nestedList2: {
+                                type: "list",
+                                items: {
+                                    type: "string"
+                                },
+                                field: "nl2"
+                            },
+                            nestedStringVal2: {
+                                type: "string",
+                                field: "nsv2"
+                            },
+                            nestedNumberVal2: {
+                                type: "number",
+                                field: "nnv2"
+                            },
+                            nestedStringSetVal2: {
+                                type: "set",
+                                items: "string",
+                                field: "nssv2"
+                            },
+                        },
+                    },
+                    field: "lv1"
+                }
+            },
+            indexes: {
+                user: {
+                    collection: "overview",
+                    pk: {
+                        composite: ["stringVal"],
+                        field: "pk"
+                    },
+                    sk: {
+                        composite: ["stringVal2"],
+                        field: "sk"
+                    }
+                },
+            }
+        }, {table});
+
+
+
+        const tests: {input: any; error: string; t: number}[] = [
+            {
+                input: {
+                    stringSet: [3456]
+                },
+                error: 'Invalid value type at entity path: "stringSet[*]". Received value of type "number", expected value of type "string"',
+                t: 1,
+            },
+            {
+                input: {
+                    numberSet: ["123"]
+                },
+                error: 'Invalid value type at entity path: "numberSet[*]". Received value of type "string", expected value of type "number"',
+                t: 2,
+            },
+            {
+                input: {
+                    numberSet: {}
+                },
+                error: 'Invalid attribute value supplied to "set" attribute "numberSet". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.',
+                t: 3
+            },
+            {
+                input: {
+                    mapVal: {
+                        nestedList1: {}
+                    }
+                },
+                error: 'Invalid value type at entity path "mapVal.nestedList1. Received value of type "object", expected value of type "array"',
+                t: 4
+            },
+            {
+                input: {
+                    mapVal: {
+                        nestedList1: "abc"
+                    }
+                },
+                error: 'Invalid value type at entity path "mapVal.nestedList1. Received value of type "string", expected value of type "array"',
+                t: 5
+            },
+            {
+                input: {
+                    mapVal: {
+                        nestedStringVal1: 234
+                    }
+                },
+                error: 'Invalid value type at entity path: "mapVal.nestedStringVal1". Received value of type "number", expected value of type "string"',
+                t: 6
+            },
+            {
+                input: {
+                    mapVal: {
+                        nestedNumberVal1: "234"
+                    }
+                },
+                error: 'Invalid value type at entity path: "mapVal.nestedNumberVal1". Received value of type "string", expected value of type "number"',
+                t: 7
+            },
+            {
+                input: {
+                    mapVal: {
+                        nestedStringSetVal1: {}
+                    }
+                },
+                error: 'Invalid attribute value supplied to "set" attribute "mapVal.nestedStringSetVal1". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.',
+                t: 8
+            },
+            {
+                input: {
+                    mapVal: {
+                        nestedStringSetVal1: [123,456]
+                    }
+                },
+                error: 'Invalid value type at entity path: "mapVal.nestedStringSetVal1[*]". Received value of type "number", expected value of type "string", Invalid value type at entity path: "mapVal.nestedStringSetVal1[*]". Received value of type "number", expected value of type "string"',
+                t: 9
+            },
+            {
+                input: {
+                    listVal: ["def"]
+                },
+                error: `Invalid value type at entity path: "listVal[*]". Expected value to be an object to fulfill attribute type "map"`,
+                t: 10
+            },
+            {
+                input: {
+                    listVal: [{
+                        nestedList2: ""
+                    }]
+                },
+                error: 'Invalid value type at entity path "listVal[*].nestedList2. Received value of type "string", expected value of type "array"',
+                t: 11
+            },
+            {
+                input: {
+                    listVal: [{
+                        nestedList2: new Set()
+                    }]
+                },
+                error: 'Invalid value type at entity path "listVal[*].nestedList2. Received value of type "set", expected value of type "array"',
+                t: 12
+            },
+            {
+                input: {
+                    listVal: [{
+                        nestedStringVal2: []
+                    }]
+                },
+                error: 'Invalid value type at entity path: "listVal[*].nestedStringVal2". Received value of type "object", expected value of type "string" at index "0"',
+                t: 13
+            },
+            {
+                input: {
+                    listVal: [{
+                        nestedNumberVal2: "def"
+                    }]
+                },
+                error: 'Invalid value type at entity path: "listVal[*].nestedNumberVal2". Received value of type "string", expected value of type "number" at index "0"',
+                t: 14
+            },
+            {
+                input: {
+                    listVal: [{
+                        nestedStringSetVal2: [123, 356]
+                    }]
+                },
+                error: 'Invalid value type at entity path: "listVal[*].nestedStringSetVal2[*]". Received value of type "number", expected value of type "string", Invalid value type at entity path: "listVal[*].nestedStringSetVal2[*]". Received value of type "number", expected value of type "string" at index "0"',
+                t: 15
+            },
+        ];
+
+        const stringVal = uuid();
+        const stringVal2 = uuid();
+        const putErrors: string[] = [];
+        const updateErrors: string[] = [];
+        const invalidErrors: string[] = [];
+        const invalid = Symbol();
+
+        for (const t in tests) {
+            const test = tests[t];
+            try {
+                entity.put({stringVal, stringVal2, ...test.input}).params();
+                throw invalid;
+            } catch (err) {
+                if (err === invalid) {
+                    invalidErrors.push(`Expected test #${t} to throw error "${test.error}" when using "put" method.`);
+                } else {
+                    putErrors.push(err.message);
+                }
+            }
+            try {
+                entity.update({stringVal, stringVal2}).set({...test.input}).params();
+                throw invalid;
+            } catch (err) {
+                if (err === invalid) {
+                    invalidErrors.push(`Expected test #${t} to throw error "${test.error}" when using "update" method.`);
+                } else {
+                    updateErrors.push(err.message);
+                }
+            }
+        }
+
+        const errors = tests.map(test => test.error);
+
+        if (invalidErrors.length) {
+            console.log(invalidErrors);
+        }
+        if (errors.length !== putErrors.length) {
+            console.log("expected errors", errors);
+            console.log("expected put errors", putErrors);
+        } else {
+            for (let i = 0; i < errors.length; i++) {
+                if (errors[i] !== putErrors[i]) {
+                    console.log("expected", tests[i].t, errors[i]);
+                    console.log("received", tests[i].t, putErrors[i]);
+                }
+            }
+        }
+
+        expect(invalidErrors).to.be.an("array").with.length(0);
+        expect(putErrors).to.deep.equal(updateErrors);
+        expect(putErrors).to.have.length(tests.length);
+        expect(updateErrors).to.have.length(tests.length);
+        expect(putErrors).to.deep.equal(tests.map(test => test.error));
+    })
 });

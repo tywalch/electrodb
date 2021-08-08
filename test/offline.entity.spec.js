@@ -481,7 +481,7 @@ describe("Entity", () => {
 						value: new Map(Object.entries({"prop1": "val1", "prop2": "val2"}))
 					},
 					fail: true,
-					message: `Invalid value type at entity path: "data". Expected value to be an object to fulfill attribute type "map"`
+					message: `Invalid value type at entity path "data. Received value of type "map", expected value of type "object"`
 				},{
 					input: {
 						data: {
@@ -537,7 +537,7 @@ describe("Entity", () => {
 						value: new Set(["yes", "no", "maybe"])
 					},
 					fail: true,
-					message: `Invalid value type at entity path: "data". Expected value to be an object to fulfill attribute type "map"`
+					message: `Invalid value type at entity path "data. Received value of type "set", expected value of type "object"`
 				},{
 					input: {
 						data: {
@@ -550,7 +550,7 @@ describe("Entity", () => {
 						value: new Set(["yes", "no", "maybe"])
 					},
 					fail: true,
-					message: `Invalid value type at entity path: "data[*]". Received value of type "object", expected value of type "string" at index "0"`
+					message: `Invalid value type at entity path "data. Received value of type "set", expected value of type "array"`
 				},{
 					input: {
 						data: {
@@ -561,7 +561,7 @@ describe("Entity", () => {
 						value: {"prop1": "val1", "prop2": "val2"}
 					},
 					fail: true,
-					message: `Invalid attribute value supplied to "set" attribute "data". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, or DocumentClient Set objects.`
+					message: `Invalid attribute value supplied to "set" attribute "data". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.`
 				},{
 					input: {
 						data: {

@@ -1778,7 +1778,7 @@ describe("Update Item", () => {
                 .go()
                 .catch(err => err);
 
-            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated`);
+            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed`);
         });
 
         it("should remove properties from an item", async () => {

@@ -41,7 +41,6 @@ class AttributeTraverser {
 			this.paths = new Map();
 		}
 		this.children = new Map();
-		this.indexes = new Map();
 	}
 
 	setChild(name, attribute) {
@@ -62,6 +61,7 @@ class AttributeTraverser {
 	}
 
 	getPath(path) {
+		path = u.genericizeJSONPath(path);
 		if (this.parent) {
 			return this.parent.getPath(path);
 		}
@@ -81,40 +81,6 @@ class AttributeTraverser {
 			return this.parent.getAll();
 		}
 		return this.paths.entries();
-	}
-
-	_getChildIndex(name, key) {
-		const index = this.indexes.get(name);
-		if (index !== undefined) {
-			return index.get(key);
-		}
-	}
-
-	_setChildIndex(name, key, value) {
-		if (!this.indexes.has(name)) {
-			this.indexes.set(name, new Map());
-		}
-		this.indexes.get(name).set(key, value);
-	}
-
-	setIndex(name, key, value) {
-		if (this.parent) {
-			this.parent.setIndex(name, key, value);
-		} else {
-			this._setChildIndex(name, key, value);
-		}
-	}
-
-	getIndex(name, key) {
-		if (this.parent) {
-			return this.parent.getIndex(name, key);
-		} else {
-			return this._getChildIndex(name, key);
-		}
-	}
-
-	spawn() {
-		return new AttributeTraverser(this);
 	}
 }
 
@@ -476,7 +442,7 @@ class MapAttribute extends Attribute {
 				if (values[attribute.field] !== undefined) {
 					let results = attribute.get(values[attribute.field], {...values});
 					if (results !== undefined) {
-						data[attribute.name] = results;
+						data[name] = results;
 					}
 				}
 			}
@@ -494,12 +460,10 @@ class MapAttribute extends Attribute {
 			if (values === undefined) {
 				return setter(data, siblings);
 			}
-
-
 			for (const name of Object.keys(properties.attributes)) {
 				const attribute = properties.attributes[name];
-				if (values[attribute.name] !== undefined) {
-					const results = attribute.set(values[attribute.name], {...values});
+				if (values[name] !== undefined) {
+					const results = attribute.set(values[name], {...values});
 					if (results !== undefined) {
 						data[attribute.field] = results;
 					}
@@ -512,6 +476,10 @@ class MapAttribute extends Attribute {
 	_isType(value) {
 		if (value === undefined) {
 			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+		}
+		const valueType = getValueType(value);
+		if (valueType !== ValueTypes.object) {
+			return [false, `Invalid value type at entity path "${this.path}. Received value of type "${valueType}", expected value of type "object"`];
 		}
 		let reason = "";
 		const [childrenAreValid, childErrors] = this._validateChildren(value);
@@ -552,9 +520,13 @@ class MapAttribute extends Attribute {
 			}
 			return v;
 		}
-
-		if (value === undefined || value && Object.keys(value).length === 0) {
+		const valueType = getValueType(value);
+		if (value === undefined) {
 			return getValue(value);
+		} else if (value && valueType !== "object" && Object.keys(value).length === 0) {
+			return getValue(value);
+		} else if (valueType !== "object") {
+			throw new Error(`Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`);
 		}
 
 		const data = {};
@@ -563,7 +535,7 @@ class MapAttribute extends Attribute {
 			const attribute = this.properties.attributes[name];
 			const results = attribute.val(value[attribute.name]);
 			if (results !== undefined) {
-				data[attribute.field] = results;
+				data[name] = results;
 			}
 		}
 
@@ -636,9 +608,23 @@ class ListAttribute extends Attribute {
 		}
 	}
 
+	_validateArrayValue(value) {
+		const valueType = getValueType(value);
+		if (value !== undefined && valueType !== ValueTypes.array) {
+			return [false, `Invalid value type at entity path "${this.path}. Received value of type "${valueType}", expected value of type "array"`];
+		} else {
+			return [true, ""];
+		}
+	}
+
 	_isType(value) {
 		if (value === undefined) {
 			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+		}
+
+		const [isValidArray, errors] = this._validateArrayValue(value);
+		if (!isValidArray) {
+			return [isValidArray, errors];
 		}
 		let reason = "";
 		const [childrenAreValid, childErrors] = this._validateChildren(value);
@@ -680,7 +666,7 @@ class ListAttribute extends Attribute {
 		} else if (Array.isArray(value) && value.length === 0) {
 			return value;
 		} else if (!Array.isArray(value)) {
-			value = [value];
+			throw new Error(`Invalid value type at entity path "${this.path}. Received value of type "${getValueType(value)}", expected value of type "array"`);
 		}
 
 		const data = [];
@@ -743,17 +729,14 @@ class SetAttribute extends Attribute {
 			case ValueTypes.array:
 				return this._createDDBSet(value);
 			case ValueTypes.string:
-			case ValueTypes.boolean:
 			case ValueTypes.number: {
-				if (valueType === this.items.type) {
-					return this._createDDBSet(value);
-				} else {
-					throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}" but Attribute is defined as ${this.items.type}`);
-				}
+				this.items.getValidate(value);
+				return this._createDDBSet(value);
 			}
+			default:
+				throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.`)
 		}
 
-		throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}". Set values must be supplied as either Arrays, native JavaScript Set objects, or DocumentClient Set objects.`)
 	}
 
 	_makeGet(get, items) {
@@ -789,6 +772,7 @@ class SetAttribute extends Attribute {
 		if (value === undefined) {
 			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
 		}
+
 		let reason = "";
 		const [childrenAreValid, childErrors] = this._validateChildren(value);
 		if (!childrenAreValid) {
@@ -870,7 +854,7 @@ class Schema {
 			if (facets.fields && facets.fields.includes(name)) {
 				continue;
 			}
-			if (attribute.field && facets.fields.includes(attribute.field)) {
+			if (attribute.field && facets.fields && facets.fields.includes(attribute.field)) {
 				continue;
 			}
 			let isKey = !!facets.byIndex && facets.byIndex[""].all.find((facet) => facet.name === name);
@@ -1158,7 +1142,9 @@ class Schema {
 			if (!attribute) {
 				throw new Error(`Attribute "${path}" does not exist on model.`);
 			} else if (attribute.readOnly) {
-				throw new Error(`Attribute "${attribute.path}" is Read-Only and cannot be updated`);
+				throw new Error(`Attribute "${attribute.path}" is Read-Only and cannot be removed`);
+			} else if (attribute.required) {
+				throw new Error(`Attribute "${attribute.path}" is Required and cannot be removed`);
 			}
 		}
 		return paths;

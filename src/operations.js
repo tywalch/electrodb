@@ -1,5 +1,6 @@
 const {AttributeTypes, ItemOperations, AttributeProxySymbol, BuilderTypes} = require("./types");
 const e = require("./errors");
+const v = require("./util");
 
 const deleteOperations = {
     canNest: false,
@@ -319,7 +320,7 @@ class AttributeOperationProxy {
     fromObject(operation, record) {
         for (let path of Object.keys(record)) {
             const value = record[path];
-            const parts = this._parseJSONPath(path);
+            const parts = v.parseJSONPath(path);
             let attribute = this.attributes;
             for (let part of parts) {
                 attribute = attribute[part];
@@ -329,8 +330,6 @@ class AttributeOperationProxy {
                 const {target} = attribute();
                 if (target.readOnly) {
                     throw new Error(`Attribute "${target.path}" is Read-Only and cannot be updated`);
-                } else if (operation === ItemOperations.remove && target.required) {
-                    throw new Error(`Attribute "${target.path}" is Required and cannot be removed`);
                 }
             }
         }
@@ -338,7 +337,7 @@ class AttributeOperationProxy {
 
     fromArray(operation, paths) {
         for (let path of paths) {
-            const parts = this._parseJSONPath(path);
+            const parts = v.parseJSONPath(path);
             let attribute = this.attributes;
             for (let part of parts) {
                 attribute = attribute[part];
@@ -353,15 +352,6 @@ class AttributeOperationProxy {
                 }
             }
         }
-    }
-
-    _parseJSONPath(path = "") {
-        if (typeof path !== "string") {
-            throw new Error("Path must be a string");
-        }
-        path = path.replace(/\[/g, ".");
-        path = path.replace(/\]/g, "");
-        return path.split(".");
     }
 
     static buildOperations(builder, operations) {
