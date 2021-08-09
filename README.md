@@ -289,7 +289,7 @@ type MyEntity = EntityRecord<typeof YourEntityInstance>
 
 #### EntityItem Type
 
-This type represents an item as it is returned from a query to DynamoDB. This is different from the `EntityRecord` in that this type reflects the `required`, `hidden`, `default`, etc properties defined on the attribute.  
+This type represents an item as it is returned from a query. This is different from the `EntityRecord` in that this type reflects the `required`, `hidden`, `default`, etc properties defined on the attribute.  
 
 _Definition:_
 
@@ -796,7 +796,7 @@ attributes: {
 
 #### Map Attributes
 
-Map attributes leverage DynamoDB's native support for object type structures. The attributes within a Map are defined under the `properties` property; a syntax that mirrors the same syntax as root level attributes. You are not limited in the types of attributes you can nest inside a map attribute.
+Map attributes leverage DynamoDB's native support for object-like structures. The attributes within a Map are defined under the `properties` property; a syntax that mirrors the syntax used to define root level attributes. You are not limited in the types of attributes you can nest inside a map attribute.
 
 ```typescript
 attributes: {
@@ -816,7 +816,7 @@ attributes: {
 
 #### List Attributes
 
-List attributes model array like structures with DynamoDB's List type. The elements of a List attribute are defined using the `items` property. Similar to Map attributes, ElectroDB does not restrict the types of items that can be used with a list.
+List attributes model array-like structures with DynamoDB's List type. The elements of a List attribute are defined using the `items` property. Similar to Map properties, ElectroDB does not restrict the types of items that can be used with a list.
 
 ```typescript
 attributes: {
@@ -844,11 +844,11 @@ attributes: {
 
 #### Set Attributes
 
-The Set attribute is arguably one of DynamoDB's most powerful types. ElectroDB supports String and Number Sets using the `items` property set as either `"string"` or `"number"`. 
+The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports String and Number Sets using the `items` property set as either `"string"` or `"number"`. 
 
-In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by *removing* the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB will accept Arrays, JavaScript native Sets, and `createSet` objects and manage the interactions with the client for you. On retrieval, ElectroDB will also convert Sets to JavaScript arrays.
+In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by *removing* the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes will accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval.
 
-> Note: If you are using TypeScript, Sets are currently typed as Arrays to simplify the type system. Again, ElectroDB will handle to conversion of these Arrays without the need to use `client.createSet()`.
+> Note: If you are using TypeScript, Sets are currently typed as Arrays to simplify the type system. Again, ElectroDB will handle the conversion of these Arrays without the need to use `client.createSet()`.
  
 ```typescript
 attributes: {
