@@ -351,6 +351,10 @@ This type represents an item that you would pass your entity's `add` method when
 
 _Definition:_
 ```typescript
+export type UpdateAddEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AddItem<A, F, C, S>
+        : never;
 
 `````
 

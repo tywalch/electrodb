@@ -43,7 +43,7 @@ const Comparisons = {
 	lt: "<",
 };
 
-const CastTypes = ["string", "number", "list", "set"];
+const CastTypes = ["string", "number"];
 
 const AttributeTypes = {
 	string: "string",

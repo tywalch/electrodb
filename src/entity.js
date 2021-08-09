@@ -99,7 +99,7 @@ class Entity {
 		if (!matchesTableIndex) {
 			return false;
 		}
-		//
+
 		return indexFacets.all.every((facet) => {
 			return pager[facet.name] !== undefined;
 		});
@@ -329,11 +329,6 @@ class Entity {
 		if (validations.isFunction(config.parse)) {
 			return config.parse(config, response);
 		}
-		// if (method === MethodTypes.put || method === MethodTypes.create) {
-		// 	return this.formatResponse(parameters.IndexName, parameters, config);
-		// } else {
-		// 	return this.formatResponse(parameters.IndexName, response, config);
-		// }
 		switch (parameters.ReturnValues) {
 			case FormatToReturnValues.none:
 				return null;
@@ -438,7 +433,6 @@ class Entity {
 			let results = {};
 			if (config.raw && !config._isPagination) {
 				if (response.TableName) {
-					// a VERY hacky way to deal with PUTs
 					results = {};
 				} else {
 					results = response;
@@ -944,7 +938,6 @@ class Entity {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
 		let pkField = this.model.indexes[accessPattern].pk.field;
-		// let facets = this.model.facets.byIndex[indexBase];
 		let {pk, sk} = this._makeIndexKeys(indexBase);
 		let keys = this._makeParameterKey(indexBase, pk, ...sk);
 		let keyExpressions = this._expressionAttributeBuilder(keys);
@@ -1330,9 +1323,6 @@ class Entity {
 	_makeKeysFromAttributes(indexes, attributes) {
 		let indexKeys = {};
 		for (let [index, keyTypes] of Object.entries(indexes)) {
-			// let pkAttributes = keyTypes.pk ? attributes : {};
-			// let skAttributes = keyTypes.sk ? attributes : {};
-			// indexKeys[index] = this._makeIndexKeys(index, pkAttributes, skAttributes);
 			let keys = this._makeIndexKeys(index, attributes, attributes);
 			if (keyTypes.pk || keyTypes.sk) {
 				indexKeys[index] = {};
