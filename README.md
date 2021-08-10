@@ -71,7 +71,6 @@ StoreLocations.query
 ### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ## Table of Contents
-
 - [ElectroDB](#electrodb)
   * [Features](#features)
   * [Table of Contents](#table-of-contents)
@@ -79,9 +78,16 @@ StoreLocations.query
 - [Usage](#usage)
   * [TypeScript Support](#typescript-support)
     + [Exported Types](#exported-types)
+      - [EntityRecord Type](#entityrecord-type)
       - [EntityItem Type](#entityitem-type)
+      - [CollectionItem Type](#collectionitem-type)
       - [CreateEntityItem Type](#createentityitem-type)
       - [UpdateEntityItem Type](#updateentityitem-type)
+      - [UpdateAddEntityItem Type](#updateaddentityitem-type)
+      - [UpdateSubtractEntityItem Type](#updatesubtractentityitem-type)
+      - [UpdateAppendEntityItem Type](#updateappendentityitem-type)
+      - [UpdateRemoveEntityItem Type](#updateremoveentityitem-type)
+      - [UpdateDeleteEntityItem Type](#updatedeleteentityitem-type)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
@@ -93,11 +99,14 @@ StoreLocations.query
   * [Attributes](#attributes)
     + [Simple Syntax](#simple-syntax)
     + [Expanded Syntax](#expanded-syntax)
-      - [Enum Attributes](#enum-attributes)
       - [Attribute Definition](#attribute-definition)
+      - [Enum Attributes](#enum-attributes)
+      - [Map Attributes](#map-attributes)
+      - [List Attributes](#list-attributes)
+      - [Set Attributes](#set-attributes)
       - [Attribute Getters and Setters](#attribute-getters-and-setters)
       - [Attribute Watching](#attribute-watching)
-        * [Attribute Watching: Watch All](#attribute-watching--watch-all)
+        * [Attribute Watching: Watch All](#attribute-watching-watch-all)
         * [Attribute Watching Examples](#attribute-watching-examples)
       - [Calculated Attributes](#calculated-attributes)
       - [Virtual Attributes](#virtual-attributes)
@@ -145,14 +154,14 @@ StoreLocations.query
     + [Put Record](#put-record)
     + [Batch Write Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
-      - [Update Method: Set](#update-method--set)
-      - [Update Method: Remove](#update-method--remove)
-      - [Update Method: Add](#update-method--add)
-      - [Update Method: Subtract](#update-method--subtract)
-      - [Update Method: Append](#update-method--append)
-      - [Update Method: Delete](#update-method--delete)
-      - [Update Method: Data](#update-method--data)
-    + [Update Method: Complex Data Types](#update-method--complex-data-types)
+      - [Update Method: Set](#update-method-set)
+      - [Update Method: Remove](#update-method-remove)
+      - [Update Method: Add](#update-method-add)
+      - [Update Method: Subtract](#update-method-subtract)
+      - [Update Method: Append](#update-method-append)
+      - [Update Method: Delete](#update-method-delete)
+      - [Update Method: Data](#update-method-data)
+    + [Update Method: Complex Data Types](#update-method-complex-data-types)
     + [Scan Records](#scan-records)
     + [Remove Method](#remove-method)
     + [Patch Record](#patch-record)
@@ -284,8 +293,9 @@ type EntityRecord<E extends Entity<any, any, any, any>> =
 ```
 
 _Use:_
-
-type MyEntity = EntityRecord<typeof YourEntityInstance> 
+```typescript
+type MyEntity = EntityRecord<typeof MyService, "mycollection">
+```
 
 #### EntityItem Type
 
@@ -303,8 +313,16 @@ export type EntityItem<E extends Entity<any, any, any, any>> =
 _Use:_
 
 ```typescript
-type Thing = EntityItem<typeof YourEntityInstance>;
+type Thing = EntityItem<typeof MyEntityInstance>;
 ```
+
+#### CollectionItem Type
+
+This type represents the value returned from a collection query, and is similar to EntityItem.
+
+_Use:_
+
+type CollectionResults = CollectionItem<typeof 
 
 #### CreateEntityItem Type
 
@@ -322,7 +340,7 @@ export type CreateEntityItem<E extends Entity<any, any, any, any>> =
 _Use:_
 
 ```typescript
-type NewThing = CreateEntityItem<typeof YourEntityInstance>;
+type NewThing = CreateEntityItem<typeof MyEntityInstance>;
 ```
 
 #### UpdateEntityItem Type
@@ -341,7 +359,7 @@ export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
 _Use:_
 
 ```typescript
-type UpdateProperties = UpdateEntityItem<typeof YourEntityInstance>;
+type UpdateProperties = UpdateEntityItem<typeof MyEntityInstance>;
 ```
 
 
