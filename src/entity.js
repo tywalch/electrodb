@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -99,7 +99,7 @@ class Entity {
 		if (!matchesTableIndex) {
 			return false;
 		}
-		//
+
 		return indexFacets.all.every((facet) => {
 			return pager[facet.name] !== undefined;
 		});
@@ -329,10 +329,32 @@ class Entity {
 		if (validations.isFunction(config.parse)) {
 			return config.parse(config, response);
 		}
-		if (method === MethodTypes.put || method === MethodTypes.create) {
-			return this.formatResponse(parameters.IndexName, parameters, config);
-		} else {
-			return this.formatResponse(parameters.IndexName, response, config);
+		switch (parameters.ReturnValues) {
+			case FormatToReturnValues.none:
+				return null;
+			case FormatToReturnValues.all_new:
+			case FormatToReturnValues.all_old:
+			case FormatToReturnValues.updated_new:
+			case FormatToReturnValues.updated_old:
+				return this.formatResponse(parameters.IndexName, response, config);
+			case FormatToReturnValues.default:
+			default:
+				return this._formatDefaultResponse(method, parameters.IndexName, parameters, config, response);
+		}
+	}
+
+	_formatDefaultResponse(method, index, parameters, config = {}, response) {
+		switch (method) {
+			case MethodTypes.put:
+			case MethodTypes.create:
+				return this.formatResponse(index, parameters, config);
+			case MethodTypes.update:
+			case MethodTypes.patch:
+			case MethodTypes.delete:
+			case MethodTypes.remove:
+				return this.formatResponse(index, response, {...config, _objectOnEmpty: true});
+			default:
+				return this.formatResponse(index, response, config);
 		}
 	}
 
@@ -411,7 +433,6 @@ class Entity {
 			let results = {};
 			if (config.raw && !config._isPagination) {
 				if (response.TableName) {
-					// a VERY hacky way to deal with PUTs
 					results = {};
 				} else {
 					results = response;
@@ -436,6 +457,13 @@ class Entity {
 							}
 						}
 					}
+				} else if (response.Attributes) {
+					results = this.model.schema.formatItemForRetrieval(response.Attributes, config);
+					if (Object.keys(results).length === 0) {
+						results = null;
+					}
+				} else if (config._objectOnEmpty) {
+					return {};
 				} else {
 					results = null;
 				}
@@ -649,10 +677,20 @@ class Entity {
 			parse: undefined,
 			pager: Pager.named,
 			unprocessed: UnprocessedTypes.item,
-			_isPagination: false
+			_isPagination: false,
+			response: 'default'
 		};
 
 		config = options.reduce((config, option) => {
+			if (typeof option.response === 'string' && option.response.length) {
+				const format = 	ReturnValues[option.response];
+				if (format === undefined) {
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "format" provided: "${option.format}". Allowed values include ${utilities.commaSeparatedString(Object.keys(ReturnValues))}.`);
+				}
+				config.response = format;
+				config.params.ReturnValues = FormatToReturnValues[format];
+			}
+
 			if (option.includeKeys === true) {
 				config.includeKeys = true;
 			}
@@ -792,7 +830,7 @@ class Entity {
 				break;
 			case MethodTypes.update:
 			case MethodTypes.patch:
-				params = this._makeUpdateParams2(
+				params = this._makeUpdateParams(
 					update,
 					keys.pk,
 					...consolidatedQueryFacets,
@@ -900,7 +938,6 @@ class Entity {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
 		let pkField = this.model.indexes[accessPattern].pk.field;
-		// let facets = this.model.facets.byIndex[indexBase];
 		let {pk, sk} = this._makeIndexKeys(indexBase);
 		let keys = this._makeParameterKey(indexBase, pk, ...sk);
 		let keyExpressions = this._expressionAttributeBuilder(keys);
@@ -947,7 +984,7 @@ class Entity {
 		return copy;
 	}
 
-	_makeUpdateParams2(update = {}, pk = {}, sk = {}) {
+	_makeUpdateParams(update = {}, pk = {}, sk = {}) {
 		let modifiedAttributeValues = {};
 		let modifiedAttributeNames = {};
 		for (const path of Object.keys(update.paths)) {
@@ -993,37 +1030,6 @@ class Entity {
 			UpdateExpression: update.build(),
 			ExpressionAttributeNames: update.getNames(),
 			ExpressionAttributeValues: update.getValues(),
-			TableName: this._getTableName(),
-			Key: indexKey,
-		};
-	}
-
-	/* istanbul ignore next */
-	_makeUpdateParams(update = {}, pk = {}, sk = {}) {
-		const set = update[ItemOperations.set] || {};
-		let withoutKeyFacets = this._removeAttributes(set, {...pk, ...sk, ...this.model.schema.getReadOnly()});
-		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
-		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
-		// should only happen when an attribute is changed.
-		let setAttributes = this.model.schema.applyAttributeSetters(withoutKeyFacets);
-		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
-		let translatedFields = this.model.schema.translateToFields(setAttributes);
-
-		let item = {
-			...translatedFields,
-			...updatedKeys,
-		};
-
-		let {
-			UpdateExpression,
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
-		} = this._updateExpressionBuilder(item);
-
-		return {
-			UpdateExpression,
-			ExpressionAttributeNames,
-			ExpressionAttributeValues,
 			TableName: this._getTableName(),
 			Key: indexKey,
 		};
@@ -1317,9 +1323,6 @@ class Entity {
 	_makeKeysFromAttributes(indexes, attributes) {
 		let indexKeys = {};
 		for (let [index, keyTypes] of Object.entries(indexes)) {
-			// let pkAttributes = keyTypes.pk ? attributes : {};
-			// let skAttributes = keyTypes.sk ? attributes : {};
-			// indexKeys[index] = this._makeIndexKeys(index, pkAttributes, skAttributes);
 			let keys = this._makeIndexKeys(index, attributes, attributes);
 			if (keyTypes.pk || keyTypes.sk) {
 				indexKeys[index] = {};
@@ -2239,6 +2242,7 @@ class Entity {
 
 	_parseModel(model, config = {}) {
 		/** start beta/v1 condition **/
+		const {client} = config;
 		let modelVersion = utilities.getModelVersion(model);
 		let service, entity, version, table, name;
 		switch(modelVersion) {
@@ -2274,7 +2278,7 @@ class Entity {
 			indexAccessPattern,
 			indexHasSubCollections,
 		} = this._normalizeIndexes(model.indexes);
-		let schema = new Schema(model.attributes, facets);
+		let schema = new Schema(model.attributes, facets, {client});
 		let filters = this._normalizeFilters(model.filters);
 		let prefixes = this._normalizePrefixes(service, entity, version, indexes, modelVersion);
 

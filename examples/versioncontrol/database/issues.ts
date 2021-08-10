@@ -47,12 +47,14 @@ export const issues = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
+      default: () => moment.utc().format(),
+      readOnly: true,
     },
     updatedAt: {
       type: "string",
-      watch: ["status"],
-      set: () => moment.utc().format()
+      watch: ["*"],
+      set: () => moment.utc().format(),
+      readOnly: true,
     },
   },
   indexes: {
@@ -68,7 +70,7 @@ export const issues = new Entity({
       }
     },
     created: {
-      collection: "owned",
+      collection: ["owned", "managed"],
       index: "gsi1pk-gsi1sk-index",
       pk: {
         field: "gsi1pk",
@@ -76,7 +78,7 @@ export const issues = new Entity({
       },
       sk: {
         field: "gsi1sk",
-        composite: ["status", "repoOwner", "repoName",]
+        composite: ["status", "createdAt"]
       }
     }, 
     todos: {
@@ -151,7 +153,14 @@ export const issueComments = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
+      default: () => moment.utc().format(),
+      readOnly: true
+    },
+    updatedAt: {
+      type: "string",
+      watch: ["*"],
+      set: () => moment.utc().format(),
+      readOnly: true,
     },
   },
   indexes: {

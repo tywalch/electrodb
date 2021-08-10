@@ -26,10 +26,25 @@ export const users = new Entity({
     pinned: {
       type: "any"
     },
+    following: {
+      type: "set",
+      items: "string"
+    },
+    followers: {
+      type: "set",
+      items: "string"
+    },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
-    }
+      default: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: ["*"],
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
   },
   indexes: {
     user: {

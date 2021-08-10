@@ -131,7 +131,46 @@ const AttributeProxySymbol = Symbol("attribute_proxy");
 const BuilderTypes = {
 	update: "update",
 	filter: "filter"
+};
+
+const ValueTypes = {
+	string: "string",
+	boolean: "boolean",
+	number: "number",
+	array: "array",
+	set: "set",
+	aws_set: "aws_set",
+	object: "object",
+	map: "map",
+	null: "null",
+	undefined: "undefined",
+	unknown: "unknown",
+};
+
+const TraverserIndexes = {
+	readonly: "readonly",
+	required: "required",
+	getters: "getters",
+	setters: "setters"
 }
+
+const ReturnValues = {
+	'default': 'default',
+	'none': 'none',
+	'all_old': 'all_old',
+	'updated_old': 'updated_old',
+	'all_new': 'all_new',
+	'updated_new': 'updated_new',
+};
+
+const FormatToReturnValues = {
+	'none': 'NONE',
+	'default': 'NONE',
+	'all_old': 'ALL_OLD',
+	'updated_old': 'UPDATED_OLD',
+	'all_new': 'ALL_NEW',
+	'updated_new': 'UPDATED_NEW'
+};
 
 module.exports = {
 	Pager,
@@ -139,9 +178,11 @@ module.exports = {
 	CastTypes,
 	PathTypes,
 	QueryTypes,
+	ValueTypes,
 	MethodTypes,
 	Comparisons,
 	BuilderTypes,
+	ReturnValues,
 	MaxBatchItems,
 	ModelVersions,
 	ItemOperations,
@@ -150,9 +191,11 @@ module.exports = {
 	ServiceVersions,
 	ExpressionTypes,
 	ElectroInstance,
+	TraverserIndexes,
 	UnprocessedTypes,
 	AttributeWildCard,
+	FormatToReturnValues,
 	AttributeProxySymbol,
 	ElectroInstanceTypes,
-	AttributeMutationMethods,
+	AttributeMutationMethods
 };

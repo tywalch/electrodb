@@ -43,6 +43,28 @@ export const pullRequests = new Entity({
       set: (val) => toStatusCode(val),
       get: (val) => toStatusString(val)
     },
+    reviewers: {
+      type: "list",
+      items: {
+        type: "map",
+        properties: {
+          username: {
+            type: "string",
+            required: true,
+          },
+          approved: {
+            type: "boolean",
+            required: true,
+          },
+          createdAt: {
+            type: "string",
+            default: () => moment.utc().format(),
+            readOnly: true,
+            required: true,
+          }
+        }
+      }
+    },
     createdAt: {
       type: "string",
       default: () => moment.utc().format()
@@ -61,7 +83,7 @@ export const pullRequests = new Entity({
       }
     },
     created: {
-      collection: "owned",
+      collection: ["owned", "managed"],
       index: "gsi1pk-gsi1sk-index",
       pk: {
         field: "gsi1pk",
@@ -69,7 +91,7 @@ export const pullRequests = new Entity({
       },
       sk: {
         field: "gsi1sk",
-        composite: ["status", "repoOwner", "repoName"]
+        composite: ["status", "createdAt"]
       }
     },
     enhancements: {

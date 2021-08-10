@@ -263,15 +263,15 @@ describe("Entity", async () => {
             let secondStore = { sector, id: stores[1].id };
             let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
             let newRent = "5000.00";
-            expect(secondStoreBeforeUpdate.rent)
+            expect(secondStoreBeforeUpdate?.rent)
                 .to.equal(rent)
                 .and.to.not.equal(newRent);
             let updatedStore = await MallStores.update(secondStore)
                 .set({ rent: newRent })
                 .go();
-            expect(updatedStore).to.be.null;
+            expect(updatedStore).to.be.empty;
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
-            expect(secondStoreAfterUpdate.rent).to.equal(newRent);
+            expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
         }).timeout(20000);
 
         it("Should not create a overwrite existing record", async () => {
@@ -602,15 +602,15 @@ describe("Entity", async () => {
             let secondStore = { sector, id: stores[1].id };
             let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
             let newRent = "5000.00";
-            expect(secondStoreBeforeUpdate.rent)
+            expect(secondStoreBeforeUpdate?.rent)
                 .to.equal(rent)
                 .and.to.not.equal(newRent);
             let updatedStore = await MallStores.update(secondStore)
                 .set({ rent: newRent })
                 .go();
-            expect(updatedStore).to.be.null;
+            expect(updatedStore).to.be.empty;
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
-            expect(secondStoreAfterUpdate.rent).to.equal(newRent);
+            expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
         }).timeout(20000);
 
         it("Should not create a overwrite existing record", async () => {
@@ -1022,7 +1022,7 @@ describe("Entity", async () => {
             await record.delete({ prop1, prop2 }).go();
             await sleep(150);
             let recordNoLongerExists = await record.get({ prop1, prop2 }).go();
-            expect(!!Object.keys(recordExists).length).to.be.true;
+            expect(!!Object.keys(recordExists || {}).length).to.be.true;
             expect(recordNoLongerExists).to.be.null;
         });
     });
@@ -1102,7 +1102,7 @@ describe("Entity", async () => {
                 .update({ date, id })
                 .set({ prop1: updatedProp1 })
                 .go();
-            expect(updatedRecord).to.be.null;
+            expect(updatedRecord).to.be.empty;
             let getUpdatedRecord = await db.get({ date, id }).go();
             expect(getUpdatedRecord).to.deep.equal({
                 id,
@@ -1673,4 +1673,401 @@ describe("Entity", async () => {
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
         });
     });
+
+    describe("ReturnValues", () => {
+        let db = new Entity({
+            model: {
+                service: SERVICE,
+                entity: uuid(),
+                version: "1"
+            },
+            attributes: {
+                id: {
+                    type: "string",
+                },
+                sub: {
+                    type: "string"
+                },
+                prop1: {
+                    type: "string",
+                    field: "prop1Field",
+                },
+                prop2: {
+                    type: "string",
+                    field: "prop2Field",
+                },
+                prop3: {
+                    type: "list",
+                    items: {
+                        type: "map",
+                        properties: {
+                            prop4: {
+                                type: "string"
+                            },
+                            prop5: {
+                                type: "number"
+                            }
+                        }
+                    }
+                },
+                prop6: {
+                    type: "set",
+                    items: "string"
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: "pk",
+                        composite: ["id"],
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["sub"],
+                    },
+                },
+            },
+        },
+        { client, table: "electro" });
+
+        for (const method of ["update", "patch"] as const) {
+            it(`should return just the new results when using ${method}`, async () => {
+                const id = uuid();
+                const sub = uuid();
+                const prop1 = "aaa";
+                const prop2 = "bbb";
+                const prop3 = [
+                    {
+                        prop4: "abc",
+                        prop5: 123
+                    },
+                    {
+                        prop4: "def",
+                        prop5: 456
+                    }
+                ];
+
+                const prop6 = ["wvu", "zyx"];
+
+                await db.put({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop3,
+                    prop6
+                }).go();
+
+                const updateParams1 = db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .params<{ ReturnValues: string }>({response: "updated_new"});
+
+                expect(updateParams1.ReturnValues).to.equal("UPDATED_NEW");
+
+                const update1 = await db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .go({response: "updated_new"});
+
+                expect(update1).to.deep.equal({
+                    prop6: ['tsr', 'wvu', 'zyx'],
+                    prop3: [
+                        {prop4: 'abc', prop5: 123},
+                        {prop4: 'def', prop5: 456},
+                        {prop4: 'ghi', prop5: 789}
+                    ]
+                });
+            });
+
+            it(`should return all updated results when using ${method}`, async () => {
+                const sub = uuid();
+                const id = uuid();
+                const prop1 = "aaa";
+                const prop2 = "bbb";
+                const prop3 = [
+                    {
+                        prop4: "abc",
+                        prop5: 123
+                    },
+                    {
+                        prop4: "def",
+                        prop5: 456
+                    }
+                ];
+
+                const prop6 = ["wvu", "zyx"];
+
+                await db.put({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop3,
+                    prop6
+                }).go();
+
+                const updateParams1 = db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .params<{ ReturnValues: string }>({response: "all_new"});
+
+                expect(updateParams1.ReturnValues).to.equal("ALL_NEW");
+
+                const update1 = await db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .go({response: "all_new"});
+
+                expect(update1).to.deep.equal({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop6: ['tsr', 'wvu', 'zyx'],
+                    prop3: [
+                        {prop4: 'abc', prop5: 123},
+                        {prop4: 'def', prop5: 456},
+                        {prop4: 'ghi', prop5: 789}
+                    ]
+                });
+            });
+
+            it(`should return all old values when using ${method}`, async () => {
+                const sub = uuid();
+                const id = uuid();
+                const prop1 = "aaa";
+                const prop2 = "bbb";
+                const prop3 = [
+                    {
+                        prop4: "abc",
+                        prop5: 123
+                    },
+                    {
+                        prop4: "def",
+                        prop5: 456
+                    }
+                ];
+
+                const prop6 = ["wvu", "zyx"];
+
+                const initialData = await db.put({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop3,
+                    prop6
+                }).go();
+
+                const updateParams1 = db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .params<{ ReturnValues: string }>({response: "all_old"});
+
+                expect(updateParams1.ReturnValues).to.equal("ALL_OLD");
+
+                const update1 = await db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .go({response: "all_old"});
+
+                expect(update1).to.deep.equal(initialData);
+            });
+
+            it(`should return updated old values when using ${method}`, async () => {
+                const sub = uuid();
+                const id = uuid();
+                const prop1 = "aaa";
+                const prop2 = "bbb";
+                const prop3 = [
+                    {
+                        prop4: "abc",
+                        prop5: 123
+                    },
+                    {
+                        prop4: "def",
+                        prop5: 456
+                    }
+                ];
+
+                const prop6 = ["wvu", "zyx"];
+
+                await db.put({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop3,
+                    prop6
+                }).go();
+
+                const updateParams1 = db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .params<{ ReturnValues: string }>({response: "updated_old"});
+
+                expect(updateParams1.ReturnValues).to.equal("UPDATED_OLD");
+
+                const update1 = await db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .go({response: "updated_old"});
+
+                expect(update1).to.deep.equal({prop3, prop6});
+            });
+
+            it(`should return null when using ${method}`, async () => {
+                const sub = uuid();
+                const id = uuid();
+                const prop1 = "aaa";
+                const prop2 = "bbb";
+                const prop3 = [
+                    {
+                        prop4: "abc",
+                        prop5: 123
+                    },
+                    {
+                        prop4: "def",
+                        prop5: 456
+                    }
+                ];
+
+                const prop6 = ["wvu", "zyx"];
+
+                const initial = await db.put({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop3,
+                    prop6
+                }).go();
+
+                const updateParams1 = db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .params<{ ReturnValues: string }>({response: "none"});
+
+                expect(updateParams1.ReturnValues).to.equal("NONE");
+
+                const update1 = await db[method]({id, sub})
+                    .add({prop6: ['tsr']})
+                    .append({prop3: [{prop4: "ghi", prop5: 789}]})
+                    .go({response: "none"});
+
+                expect(update1).to.be.null;
+            })
+        }
+        for (const method of ["delete", "remove"] as const) {
+            it(`should return all old values when using ${method}`, async () => {
+                const sub = uuid();
+                const id = uuid();
+                const prop1 = "aaa";
+                const prop2 = "bbb";
+                const prop3 = [
+                    {
+                        prop4: "abc",
+                        prop5: 123
+                    },
+                    {
+                        prop4: "def",
+                        prop5: 456
+                    }
+                ];
+
+                const prop6 = ["wvu", "zyx"];
+
+                const initial = await db.put({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop3,
+                    prop6
+                }).go();
+
+                const deleteParams1: any = db[method]({id, sub}).params({response: "all_old"});
+
+                expect(deleteParams1.ReturnValues).to.equal("ALL_OLD");
+
+                const delete1 = await db[method]({id, sub})
+                    .go({response: "all_old"});
+
+                expect(delete1).to.deep.equal(initial);
+            });
+
+
+            it(`should return null when using ${method}`, async () => {
+                const sub = uuid();
+                const id = uuid();
+                const prop1 = "aaa";
+                const prop2 = "bbb";
+                const prop3 = [
+                    {
+                        prop4: "abc",
+                        prop5: 123
+                    },
+                    {
+                        prop4: "def",
+                        prop5: 456
+                    }
+                ];
+
+                const prop6 = ["wvu", "zyx"];
+
+                const initial = await db.put({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop3,
+                    prop6
+                }).go();
+
+                const deleteParams1: any = db[method]({id, sub}).params({response: "none"});
+
+                expect(deleteParams1.ReturnValues).to.equal("NONE");
+
+                const delete1 = await db[method]({id, sub})
+                    .go({response: "none"});
+
+                expect(delete1).to.be.null;
+            });
+        }
+
+        for (const method of ["put", "create"] as const) {
+            it(`should return all old values when using ${method}`, async () => {
+                const sub = uuid();
+                const id = uuid();
+                const prop1 = "aaa";
+                const prop2 = "bbb";
+                const prop3 = [
+                    {
+                        prop4: "abc",
+                        prop5: 123
+                    },
+                    {
+                        prop4: "def",
+                        prop5: 456
+                    }
+                ];
+
+                const prop6 = ["wvu", "zyx"];
+
+                const result = await db[method]({
+                    id,
+                    sub,
+                    prop1,
+                    prop2,
+                    prop3,
+                    prop6
+                }).go({response: "none"});
+
+                expect(result).to.be.null;
+            })
+        }
+    });
+
+
 });

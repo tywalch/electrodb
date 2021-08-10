@@ -151,7 +151,7 @@ describe("Entity", () => {
 			] = MallStores.model.schema.attributes.category.isValid("BAD_CATEGORY");
 			expect(!isValid);
 			expect(reason).to.eq(
-				"Value not found in set of acceptable values: food/coffee, food/meal, clothing, electronics, department, misc",
+				`Invalid value type at entity path: "category". Value not found in set of acceptable values: "food/coffee", "food/meal", "clothing", "electronics", "department", "misc"`,
 			);
 		});
 		it("Should identify a missing definiton for the table's main index", () => {
@@ -249,148 +249,329 @@ describe("Entity", () => {
 				}
 			}
 		});
-		it("Should validate an attribute's defined type when evaluating a field for saving.", () => {
+		it("Should validate an attribute's defined type when evaluating a field for saving", () => {
 			let tests = [
 				{
 					input: {
-						type: "string",
+						data: {
+							type: "string",
+							field: "data",
+						},
 						value: "abc"
 					},
 					fail: false
 				},{
 					input: {
-						type: "number",
+						data: {
+							type: "number",
+							field: "data",
+						},
 						value: 123
 					},
 					fail: false
 				},{
 					input: {
-						type: "boolean",
+						data: {
+							type: "boolean",
+
+						},
 						value: true
 					},
 					fail: false
 				},{
 					input: {
-						type: ["option1", "option2", "option3"],
+						data: {
+							type: ["option1", "option2", "option3"],
+							field: "data",
+						},
 						value: "option1"
 					},
 					fail: false
 				},{
 					input: {
-						type: "any",
+						data: {
+							type: "any",
+
+						},
 						value: "abc"
 					},
 					fail: false,
 				},{
 					input: {
-						type: "any",
+						data: {
+							type: "any",
+							field: "data",
+						},
 						value: 456
 					},
 					fail: false,
 				},{
 					input: {
-						type: "any",
+						data: {
+							type: "any",
+
+						},
 						value: true
 					},
 					fail: false,
 				},{
 					input: {
-						type: "any",
+						data: {
+							type: "any",
+
+						},
 						value: ["yes", "no", "maybe"]
 					},
 					fail: false
 				},{
 					input: {
-						type: "any",
+						data: {
+							type: "any",
+							field: "data",
+						},
 						value: {"prop1": "val1", "prop2": "val2"}
 					},
 					fail: false
 				},{
 					input: {
-						type: "set",
+						data: {
+							type: "set",
+							items: "string",
+							field: "data",
+						},
 						value: ["yes", "no", "maybe"]
 					},
 					fail: false
 				},{
 					input: {
-						type: "set",
+						data: {
+							type: "set",
+							items: "string",
+ 							field: "data",
+						},
 						value: new Set(["yes", "no", "maybe"])
 					},
 					fail: false
 				},{
 					input: {
-						type: "list",
+						data: {
+							type: "list",
+							items: {
+								type: "string"
+							},
+							field: "data",
+						},
 						value: ["yes", "no", "maybe"]
 					},
 					fail: false
 				},{
 					input: {
-						type: "map",
+						data: {
+							type: "map",
+							properties: {
+								prop1: {
+									type: "string"
+								},
+								prop2: {
+									type: "string"
+								}
+							},
+							field: "data",
+						},
 						value: {"prop1": "val1", "prop2": "val2"}
 					},
 					fail: false
 				},{
 					input: {
-						type: "map",
-						value: new Map(Object.entries({"prop1": "val1", "prop2": "val2"}))
+						data: {
+							type: "map",
+							properties: {
+								prop1: {
+									type: "string"
+								},
+								prop2: {
+									type: "string"
+								}
+							},
+							field: "data",
+						},
+						value: {"prop1": "val1"}
 					},
 					fail: false
 				},{
 					input: {
-						type: "string",
+						data: {
+							type: "map",
+							properties: {
+								prop1: {
+									type: "string"
+								},
+								prop2: {
+									type: "string",
+									required: true
+								}
+							},
+							field: "data",
+						},
+						value: {"prop1": "val1"}
+					},
+					fail: true,
+					message: `Invalid value type at entity path: "data.prop2". Value is required`,
+				}, {
+					input: {
+						data: {
+							type: "map",
+							properties: {
+								prop1: {
+									type: "string"
+								},
+								prop2: {
+									type: "string"
+								}
+							},
+							field: "data",
+							required: true,
+						},
+						value: undefined
+					},
+					fail: true,
+					message: `Invalid value type at entity path: "data". Value is required.`,
+				}, {
+					input: {
+						data: {
+							type: "list",
+							items: {
+								type: "string",
+								required: true,
+							},
+							field: "data",
+						},
+						value: []
+					},
+					fail: false,
+				},{
+					input: {
+						data: {
+							type: "list",
+							items: {
+								type: "string",
+
+							},
+							field: "data",
+							required: true,
+						},
+						value: undefined
+					},
+					fail: true,
+					message: `Invalid value type at entity path: "data". Value is required.`
+				}, {
+					input: {
+						data: {
+							type: "map",
+							properties: {
+								prop1: {
+									type: "string"
+								},
+								prop2: {
+									type: "string"
+								}
+							},
+							field: "data",
+						},
+						value: new Map(Object.entries({"prop1": "val1", "prop2": "val2"}))
+					},
+					fail: true,
+					message: `Invalid value type at entity path "data. Received value of type "map", expected value of type "object"`
+				},{
+					input: {
+						data: {
+							type: "string",
+							field: "data",
+						},
 						value: 462
 					},
 					fail: true,
-					message: `Invalid value for attribute "data": Received value of type "number", expected value of type "string".`
+					message: `Invalid value type at entity path: "data". Received value of type "number", expected value of type "string"`
 				}, {
 					input: {
-						type: "number",
+						data: {
+							type: "number",
+							field: "data",
+						},
 						value: true
 					},
 					fail: true,
-					message: `Invalid value for attribute "data": Received value of type "boolean", expected value of type "number".`
+					message: `Invalid value type at entity path: "data". Received value of type "boolean", expected value of type "number"`
 				},{
 					input: {
-						type: "boolean",
+						data: {
+							type: "boolean",
+							field: "data",
+						},
 						value: "yes"
 					},
 					fail: true,
-					message: `Invalid value for attribute "data": Received value of type "string", expected value of type "boolean".`
+					message: `Invalid value type at entity path: "data". Received value of type "string", expected value of type "boolean"`
 				},{
 					input: {
-						type: ["option1", "option2", "option3"],
+						data: {
+							type: ["option1", "option2", "option3"],
+							field: "data",
+						},
 						value: "option4"
 					},
 					fail: true,
-					message: `Invalid value for attribute "data": Value not found in set of acceptable values: option1, option2, option3.`
+					message: `Invalid value type at entity path: "data". Value not found in set of acceptable values: "option1", "option2", "option3"`
 				},{
+					// this test also sucks, we drop another value
 					input: {
-						type: "map",
+						data: {
+							type: "map",
+							properties: {
+								prop1: {
+									type: "string"
+								}
+							},
+							field: "data",
+						},
 						value: new Set(["yes", "no", "maybe"])
 					},
 					fail: true,
-					message: `Invalid value for attribute "data": Expected value to be an Object to fulfill attribute type "map".`
+					message: `Invalid value type at entity path "data. Received value of type "set", expected value of type "object"`
 				},{
 					input: {
-						type: "list",
+						data: {
+							type: "list",
+							items: {
+								type: "string"
+							},
+ 							field: "data",
+						},
 						value: new Set(["yes", "no", "maybe"])
 					},
 					fail: true,
-					message: `Invalid value for attribute "data": Expected value to be an Array to fulfill attribute type "list".`
+					message: `Invalid value type at entity path "data. Received value of type "set", expected value of type "array"`
 				},{
 					input: {
-						type: "set",
+						data: {
+							type: "set",
+							items: "string",
+							field: "data",
+						},
 						value: {"prop1": "val1", "prop2": "val2"}
 					},
 					fail: true,
-					message: `Invalid value for attribute "data": Expected value to be an Array or javascript Set to fulfill attribute type "set".`
+					message: `Invalid attribute value supplied to "set" attribute "data". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.`
 				},{
-			    input: {
-			      type: "invalid_type"
-          },
-          fail: true,
-          message: `Invalid "type" property for attribute: "data". Acceptable types include string, number, boolean, enum, map, set, list, any`
-        }
+					input: {
+						data: {
+							type: "invalid_type",
+							field: "data",
+						}
+					},
+          			fail: true,
+          			message: `Invalid "type" property for attribute: "data". Acceptable types include string, number, boolean, enum, map, set, list, any`
+				}
 			];
 			let schema = {
 				service: "MallStoreDirectory",
@@ -418,21 +599,30 @@ describe("Entity", () => {
 			};
 
 			for (let test of tests) {
-				schema.attributes.data.type = test.input.type;
+				schema.attributes.data = test.input.data;
 				let id = "abcdefg";
 				let data = test.input.value;
 
 				if (test.fail) {
 					expect(() => {
-            let entity = new Entity(schema);
-					  entity.put({id, data}).params()
-          }).to.throw(test.message);
+						try {
+							let entity = new Entity(schema);
+							entity.put({id, data}).params();
+							console.log("should have failed", test);
+						} catch(err) {
+							throw err;
+						}
+					}).to.throw(test.message);
 				} else {
-
 					expect(() => {
-            let entity = new Entity(schema);
-					  entity.put({id, data}).params()
-          }).to.not.throw();
+						try {
+							let entity = new Entity(schema);
+							entity.put({id, data}).params();
+						} catch(err) {
+							console.log(err, test)
+							throw err;
+						}
+          			}).to.not.throw();
 				}
 			}
 		});
@@ -488,7 +678,7 @@ describe("Entity", () => {
 			});
 			expect(() => Test.put({ regexp: "1533-15-44" }).params()).to.not.throw();
 			expect(() => Test.put({ regexp: "1533-1a-44" }).params()).to.throw(
-				`Invalid value for attribute "regexp": Failed user defined regex.`,
+				`Invalid value for attribute "regexp": Failed user defined regex`,
 			);
 		});
 		it("Should not allow for an invalid schema type", () => {
@@ -1277,7 +1467,7 @@ describe("Entity", () => {
 						mall: "Washington Square",
 						stores: null
 					},
-					output: `Invalid value for attribute "stores": Received value of type "object", expected value of type "number"`
+					output: `Invalid value type at entity path: "stores". Received value of type "object", expected value of type "number"`
 				},
 				{
 					happy: false,

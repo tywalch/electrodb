@@ -1,5 +1,6 @@
 const {AttributeTypes, ItemOperations, AttributeProxySymbol, BuilderTypes} = require("./types");
 const e = require("./errors");
+const v = require("./util");
 
 const deleteOperations = {
     canNest: false,
@@ -216,13 +217,15 @@ const FilterOperations = {
         template: function(attr, name, value) {
             return value;
         },
-        strict: false
+        strict: false,
+        canNest: true,
     },
     name: {
         template: function(attr, name) {
             return name;
         },
-        strict: false
+        strict: false,
+        canNest: true,
     }
 };
 
@@ -317,7 +320,7 @@ class AttributeOperationProxy {
     fromObject(operation, record) {
         for (let path of Object.keys(record)) {
             const value = record[path];
-            const parts = this._parseJSONPath(path);
+            const parts = v.parseJSONPath(path);
             let attribute = this.attributes;
             for (let part of parts) {
                 attribute = attribute[part];
@@ -326,7 +329,7 @@ class AttributeOperationProxy {
                 this.operations[operation](attribute, value);
                 const {target} = attribute();
                 if (target.readOnly) {
-                    throw new Error(`Attribute "${target.name}" is Read-Only and cannot be updated`);
+                    throw new Error(`Attribute "${target.path}" is Read-Only and cannot be updated`);
                 }
             }
         }
@@ -334,7 +337,7 @@ class AttributeOperationProxy {
 
     fromArray(operation, paths) {
         for (let path of paths) {
-            const parts = this._parseJSONPath(path);
+            const parts = v.parseJSONPath(path);
             let attribute = this.attributes;
             for (let part of parts) {
                 attribute = attribute[part];
@@ -343,19 +346,12 @@ class AttributeOperationProxy {
                 this.operations[operation](attribute);
                 const {target} = attribute();
                 if (target.readOnly) {
-                    throw new Error(`Attribute "${target.name}" is Read-Only and cannot be updated`);
+                    throw new Error(`Attribute "${target.path}" is Read-Only and cannot be updated`);
+                } else if (operation === ItemOperations.remove && target.required) {
+                    throw new Error(`Attribute "${target.path}" is Required and cannot be removed`);
                 }
             }
         }
-    }
-
-    _parseJSONPath(path = "") {
-        if (typeof path !== "string") {
-            throw new Error("Path must be a string");
-        }
-        path = path.replace(/\[/g, ".");
-        path = path.replace(/\]/g, "");
-        return path.split(".");
     }
 
     static buildOperations(builder, operations) {
@@ -387,9 +383,9 @@ class AttributeOperationProxy {
 
                             const formatted = template(target, paths.expression, ...attributeValues);
                             builder.setImpacted(operation, paths.json);
-
                             if (canNest) {
                                 seen.add(paths.expression);
+                                seen.add(formatted);
                             }
 
                             if (builder.type === BuilderTypes.update && formatted && typeof formatted.operation === "string" && typeof formatted.expression === "string") {
@@ -417,7 +413,7 @@ class AttributeOperationProxy {
                     const attribute = target.getChild(prop);
                     let field;
                     if (attribute === undefined) {
-                        throw new Error(`Invalid attribute "${prop}" on path "${paths.json}".`);
+                        throw new Error(`Invalid attribute "${prop}" at path "${paths.json}".`);
                     } else if (attribute === root && attribute.type === AttributeTypes.any) {
                         // This function is only called if a nested property is called. If this attribute is ultimately the root, don't use the root's field name
                         field = prop;
@@ -439,7 +435,7 @@ class AttributeOperationProxy {
                     const paths = builder.setName({}, attribute.name, attribute.field);
                     return AttributeOperationProxy.pathProxy(paths, attribute, attribute, builder);
                 }
-            })
+            });
         }
         return attr;
     }

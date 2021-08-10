@@ -275,6 +275,7 @@ let clauses = {
 				return state;
 			}
 			try {
+				entity.model.schema.checkUpdate(data);
 				state.query.updateProxy.fromObject(ItemOperations.set, data);
 				return state;
 			} catch(err) {
@@ -291,6 +292,7 @@ let clauses = {
 				return state;
 			}
 			try {
+				entity.model.schema.checkUpdate(data);
 				state.query.updateProxy.fromObject(ItemOperations.append, data);
 				return state;
 			} catch(err) {
@@ -310,8 +312,7 @@ let clauses = {
 				if (!Array.isArray(data)) {
 					throw new Error("Update method 'remove' expects type Array");
 				}
-
-				// let record = entity.model.schema.checkRemove(data);
+				entity.model.schema.checkRemove(data);
 				state.query.updateProxy.fromArray(ItemOperations.remove, data);
 				return state;
 			} catch(err) {
@@ -328,6 +329,7 @@ let clauses = {
 				return state;
 			}
 			try {
+				entity.model.schema.checkUpdate(data);
 				state.query.updateProxy.fromObject(ItemOperations.delete, data);
 				return state;
 			} catch(err) {
@@ -344,6 +346,7 @@ let clauses = {
 				return state;
 			}
 			try {
+				entity.model.schema.checkUpdate(data);
 				state.query.updateProxy.fromObject(ItemOperations.add, data);
 				return state;
 			} catch(err) {
@@ -360,6 +363,7 @@ let clauses = {
 				return state;
 			}
 			try {
+				entity.model.schema.checkUpdate(data);
 				state.query.updateProxy.fromObject(ItemOperations.subtract, data);
 				return state;
 			} catch(err) {

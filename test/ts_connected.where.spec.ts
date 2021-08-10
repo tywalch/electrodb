@@ -254,7 +254,23 @@ describe("Where Clause Queries", async () => {
             .and.have.length(1);
         expect(animals.map(pen => pen.animal))
             .to.have.members(["Pig"]);
-    })
+    });
+    it("Should allow for value operations to be used more than once", async () => {
+        let animals = await WhereTests.query
+            .farm({pen})
+            .where(({animal, dangerous}, {value, gt, eq}) => {
+                const piggy = value(animal, "Pig");
+                return `
+                    ${eq(animal, "Pig")} 
+                    OR (${gt(animal, piggy)} AND ${eq(dangerous, true)})`;
+            })
+            .go();
+        expect(animals)
+            .to.be.an("array")
+            .and.have.length(2);
+        expect(animals.map(pen => pen.animal))
+            .to.have.members(["Pig", "Shark"]);
+    });
     it("Should not update an animal which doesnt exist", async () => {
         try {
             await WhereTests.update(penRows[0])
@@ -272,7 +288,7 @@ describe("Where Clause Queries", async () => {
         let consistentRead = {params: {ConsistentRead: true}};
         let penRow = penRows[0];
         let before = await WhereTests.get(penRow).go(consistentRead);
-        expect(before.dangerous).to.be.undefined;
+        expect(before?.dangerous).to.be.undefined;
         let results = await WhereTests.update(penRow)
             .set({dangerous: true})
             .where(({animal, dangerous}, {value, name, notExists}) => `
@@ -281,7 +297,7 @@ describe("Where Clause Queries", async () => {
             .go({raw: true});
         expect(results).to.be.empty;
         let after = await WhereTests.get(penRow).go(consistentRead);
-        expect(after.dangerous).to.be.true;
+        expect(after?.dangerous).to.be.true;
         let doesExist = await WhereTests.update(penRow)
             .set({dangerous: true})
             .where(({animal, dangerous}, {value, name, notExists}) => `${name(animal)} = ${value(animal, penRow.animal)} AND ${notExists(dangerous)}`)
@@ -294,14 +310,14 @@ describe("Where Clause Queries", async () => {
         let consistentRead = {params: {ConsistentRead: true}};
         let penRow = penRows[1];
         let before = await WhereTests.get(penRow).go(consistentRead);
-        expect(before.dangerous).to.be.undefined;
+        expect(before?.dangerous).to.be.undefined;
         let results = await WhereTests.patch(penRow)
             .set({dangerous: true})
             .where(({dangerous}, {notExists}) => notExists(dangerous))
             .go();
-        expect(results).to.be.null;
+        expect(results).to.be.empty;
         let after = await WhereTests.get(penRow).go(consistentRead);
-        expect(after.dangerous).to.be.true;
+        expect(after?.dangerous).to.be.true;
         let doesExist = await WhereTests.patch(penRow)
             .set({dangerous: true})
             .where(({dangerous}, {notExists}) => notExists(dangerous))
@@ -314,7 +330,7 @@ describe("Where Clause Queries", async () => {
         let consistentRead = {params: {ConsistentRead: true}};
         let penRow = penRows[3];
         let existing = await WhereTests.get(penRow).go(consistentRead);
-        expect(existing.dangerous).to.be.undefined;
+        expect(existing?.dangerous).to.be.undefined;
         let wontMatch = await WhereTests.delete(penRow)
             .where(({dangerous}, {exists}) => exists(dangerous))
             .go()

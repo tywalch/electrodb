@@ -159,7 +159,28 @@ const repositories = new Entity({
             readOnly: true
         },
         recentCommits: {
-            type: "any"
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    sha: {
+                        type: "string"
+                    },
+                    data: {
+                        type: "string"
+                    },
+                    message: {
+                        type: "string"
+                    },
+                    views: {
+                        type: "number"
+                    },
+                    timestamp: {
+                        type: "number"
+                    }
+                }
+
+            }
         },
         custom: {
             type: "any"
@@ -168,35 +189,18 @@ const repositories = new Entity({
             type: "number"
         },
         tags: {
-            type: "any",
-            get: (value) => {
-                if (value) {
-                    return value.values;
-                }
-                return [];
-            },
-            set: (value) => {
-                if (value) {
-                    return client.createSet(value);
-                }
-            }
+            type: "set",
+            items: "string",
         },
         followers: {
-            type: "any",
-            get: (value) => {
-                if (value) {
-                    return value.values;
-                }
-                return [];
-            },
-            set: (value) => {
-                if (value) {
-                    return client.createSet(value);
-                }
-            }
+            type: "set",
+            items: "string",
         },
         files: {
-            type: "any"
+            type: "list",
+            items: {
+                type: "string"
+            }
         }
     },
     indexes: {
@@ -280,22 +284,39 @@ const StoreLocations = new Entity({
             default: 0,
         },
         tenant: {
-            type: "any"
+            type: "set",
+            items: "string"
         },
         deposit: {
             type: "number"
         },
         rentalAgreement: {
-            type: "any"
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    type: {
+                        type: "string",
+                        required: true
+                    },
+                    detail: {
+                        type: "string",
+                        required: true
+                    }
+                }
+            }
         },
         tags: {
-            type: "any"
+            type: "set",
+            items: "string"
         },
         contact: {
-            type: "any"
+            type: "set",
+            items: "string"
         },
         leaseHolders: {
-            type: "any"
+            type: "set",
+            items: "string",
         },
         petFee: {
             type: "number"
@@ -304,10 +325,24 @@ const StoreLocations = new Entity({
             type: "number"
         },
         listAttribute: {
-            type: "any"
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    setAttribute: {
+                        type: "set",
+                        items: "string"
+                    }
+                }
+            }
         },
         mapAttribute: {
-            type: "any"
+            type: "map",
+            properties: {
+                mapProperty: {
+                    type: "string"
+                }
+            }
         }
     },
     indexes: {
@@ -352,8 +387,6 @@ const StoreLocations = new Entity({
     }
 }, {table, client});
 
-const service = new Service({users, repositories});
-
 describe("Update Item", () => {
     describe("conditions and updates", () => {
         let cityId = uuid();
@@ -372,27 +405,29 @@ describe("Update Item", () => {
                     category: "food/coffee",
                     leaseEndDate: "2020-03-22",
                     rent: 4500,
-                    tenant: StoreLocations.client.createSet("tom"),
+                    tenant: ["tom"],
                     deposit: 1000,
                     rentalAgreement: [
                         {
-                            type: "ammendment",
+                            type: "amendment",
                             detail: "dont wear puffy shirt"
                         }
                     ],
-                    tags: StoreLocations.client.createSet("family_friendly"),
-                    contact: StoreLocations.client.createSet("555-555-5555"),
+                    tags: ["family_friendly"],
+                    contact: ["555-555-5555"],
                     mapAttribute: {
                         mapProperty: "before"
                     },
                     listAttribute: [
                         {
-                            setAttribute: StoreLocations.client.createSet("555-555-5555")
+                            setAttribute: ["555-555-5555"]
                         },
                         {
-                            setAttribute: StoreLocations.client.createSet("666-666-6666")
+                            setAttribute: ["666-666-6666"]
                         }
-                    ]
+                    ],
+                    petFee: 100,
+                    totalFees: 500,
                 })
                 .go();
         });
@@ -417,28 +452,30 @@ describe("Update Item", () => {
                 category: "food/coffee",
                 leaseEndDate: "2020-03-22",
                 rent: 4500,
-                tenant: StoreLocations.client.createSet("tom"),
+                tenant: ["tom"],
                 deposit: 1000,
                 rentalAgreement: [
                     {
-                        type: "ammendment",
+                        type: "amendment",
                         detail: "dont wear puffy shirt"
                     }
                 ],
-                tags: StoreLocations.client.createSet("family_friendly"),
-                contact: StoreLocations.client.createSet("555-555-5555"),
+                tags: ["family_friendly"],
+                contact: ["555-555-5555"],
                 mapAttribute: {
                     mapProperty: "after1"
                 },
                 listAttribute: [
                     {
-                        setAttribute: StoreLocations.client.createSet("555-555-5555")
+                        setAttribute: ["555-555-5555"]
                     },
                     {
-                        setAttribute: StoreLocations.client.createSet("666-666-6666")
+                        setAttribute: ["666-666-6666"]
                     }
                 ],
-                discount: 0
+                discount: 0,
+                petFee: 100,
+                totalFees: 500,
             });
 
             let update = await StoreLocations.update(composite)
@@ -471,28 +508,30 @@ describe("Update Item", () => {
                 category: "food/coffee",
                 leaseEndDate: "2020-03-22",
                 rent: 4500,
-                tenant: StoreLocations.client.createSet("tom"),
+                tenant: ["tom"],
                 deposit: 1000,
                 rentalAgreement: [
                     {
-                        type: "ammendment",
+                        type: "amendment",
                         detail: "no soup for you"
                     }
                 ],
-                tags: StoreLocations.client.createSet("family_friendly"),
-                contact: StoreLocations.client.createSet("555-555-5555"),
+                tags: ["family_friendly"],
+                contact: ["555-555-5555"],
                 mapAttribute: {
                     mapProperty: "before"
                 },
                 listAttribute: [
                     {
-                        setAttribute: StoreLocations.client.createSet("555-555-5555")
+                        setAttribute: ["555-555-5555"]
                     },
                     {
-                        setAttribute: StoreLocations.client.createSet("666-666-6666")
+                        setAttribute: ["666-666-6666"]
                     }
                 ],
-                discount: 0
+                discount: 0,
+                petFee: 100,
+                totalFees: 500,
             });
 
             let update = await StoreLocations.update(composite)
@@ -523,27 +562,28 @@ describe("Update Item", () => {
                     category: "food/coffee",
                     leaseEndDate: "2020-03-22",
                     rent: 4500,
-                    tenant: StoreLocations.client.createSet("tom"),
+                    tenant: ["tom"],
                     deposit: 1000,
                     rentalAgreement: [
                         {
-                            type: "ammendment",
+                            type: "amendment",
                             detail: "dont wear puffy shirt"
                         }
                     ],
-                    tags: StoreLocations.client.createSet("family_friendly"),
-                    contact: StoreLocations.client.createSet("555-555-5555"),
+                    tags: ["family_friendly"],
+                    contact: ["555-555-5555", "555-345-2222"],
                     mapAttribute: {
                         mapProperty: "before"
                     },
                     listAttribute: [
                         {
-                            setAttribute: StoreLocations.client.createSet("555-555-5555")
+                            setAttribute: ["555-555-5555"]
                         },
                         {
-                            setAttribute: StoreLocations.client.createSet("666-666-6666")
+                            setAttribute: ["666-666-6666"]
                         }
-                    ]
+                    ],
+                    petFet: 100,
                 })
                 .go();
         });
@@ -558,7 +598,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+            expect(item1).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -566,7 +606,7 @@ describe("Update Item", () => {
                 },
                 "rentalAgreement": [
                     {
-                        "type": "ammendment",
+                        "type": "amendment",
                         "detail": "dont wear puffy shirt"
                     }
                 ],
@@ -576,7 +616,7 @@ describe("Update Item", () => {
                 "buildingId": "A34",
                 "tags": ["family_friendly"],
                 "leaseEndDate": "2020-03-22",
-                "contact": ["555-555-5555"],
+                "contact": ["555-345-2222", "555-555-5555"],
                 "deposit": 1000,
                 "unitId": "B47",
                 "category": "food/coffee",
@@ -600,14 +640,14 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+            expect(item2).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
                     "mapProperty": "value2"
                 },
                 "rentalAgreement": [{
-                        "type": "ammendment",
+                        "type": "amendment",
                         "detail": "dont wear puffy shirt"
                     }
                 ],
@@ -620,6 +660,7 @@ describe("Update Item", () => {
                 ],
                 "leaseEndDate": "2020-03-22",
                 "contact": [
+                    "555-345-2222",
                     "555-555-5555"
                 ],
                 "deposit": 1000,
@@ -649,7 +690,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+            expect(item1).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -657,7 +698,7 @@ describe("Update Item", () => {
                 },
                 "rentalAgreement": [
                     {
-                        "type": "ammendment",
+                        "type": "amendment",
                         "detail": "dont wear puffy shirt"
                     }
                 ],
@@ -670,6 +711,7 @@ describe("Update Item", () => {
                 ],
                 "leaseEndDate": "2020-03-22",
                 "contact": [
+                    "555-345-2222",
                     "555-555-5555"
                 ],
                 "deposit": 1000,
@@ -694,7 +736,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+            expect(item2).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -702,7 +744,7 @@ describe("Update Item", () => {
                 },
                 "rentalAgreement": [
                     {
-                        "type": "ammendment",
+                        "type": "amendment",
                         "detail": "dont wear puffy shirt"
                     }
                 ],
@@ -715,6 +757,7 @@ describe("Update Item", () => {
                 ],
                 "leaseEndDate": "2020-03-22",
                 "contact": [
+                    "555-345-2222",
                     "555-555-5555"
                 ],
                 "deposit": 1000,
@@ -728,9 +771,8 @@ describe("Update Item", () => {
         });
 
         it("should perform complex data type update example 3", async () => {
-            const newSetValue1 = StoreLocations.client.createSet("setItemValue1");
-            const newSetValue2 = StoreLocations.client.createSet("setItemValue2");
-
+            const newSetValue1 = ["setItemValue1"];
+            const newSetValue2 = ["setItemValue2"];
             await StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .add({'listAttribute[1].setAttribute': newSetValue1})
@@ -740,7 +782,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item1))).to.deep.equal({
+            expect(item1).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -748,7 +790,7 @@ describe("Update Item", () => {
                 },
                 "rentalAgreement": [
                     {
-                        "type": "ammendment",
+                        "type": "amendment",
                         "detail": "dont wear puffy shirt"
                     }
                 ],
@@ -761,6 +803,7 @@ describe("Update Item", () => {
                 ],
                 "leaseEndDate": "2020-03-22",
                 "contact": [
+                    "555-345-2222",
                     "555-555-5555"
                 ],
                 "deposit": 1000,
@@ -790,7 +833,7 @@ describe("Update Item", () => {
                 .get({cityId, mallId, storeId, buildingId})
                 .go();
 
-            expect(JSON.parse(JSON.stringify(item2))).to.deep.equal({
+            expect(item2).to.deep.equal({
                 cityId,
                 "mallId": "EastPointe",
                 "mapAttribute": {
@@ -798,7 +841,7 @@ describe("Update Item", () => {
                 },
                 "rentalAgreement": [
                     {
-                        "type": "ammendment",
+                        "type": "amendment",
                         "detail": "dont wear puffy shirt"
                     }
                 ],
@@ -811,6 +854,7 @@ describe("Update Item", () => {
                 ],
                 "leaseEndDate": "2020-03-22",
                 "contact": [
+                    "555-345-2222",
                     "555-555-5555"
                 ],
                 "deposit": 1000,
@@ -828,11 +872,8 @@ describe("Update Item", () => {
             });
         });
 
-        it("should generate the same parameters as shown in the readme examples", () => {
-            const cityId = uuid();
-            const mallId = "EastPointe";
-            const storeId = "LatteLarrys";
-            const buildingId= "A34";
+
+        it("should generate the same parameters as shown in the readme examples - set category", async () => {
             const setParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .set({category: "food/meal"})
@@ -851,37 +892,52 @@ describe("Update Item", () => {
                 ConditionExpression: '#category = :category0'
             });
 
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .set({category: "food/meal"})
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .go();
+        });
+
+        it("should generate the same parameters as shown in the readme examples - remove discount", async () => {
             const removeParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
-                .remove(["category"])
-                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .remove(["discount"])
+                .where((attr, op) => op.eq(attr.discount, 10))
                 .params();
 
             expect(removeParameters).to.deep.equal({
-                "UpdateExpression": "REMOVE #category",
+                "UpdateExpression": "REMOVE #discount",
                 "ExpressionAttributeNames": {
-                    "#category": "category"
+                    "#discount": "discount"
                 },
                 "ExpressionAttributeValues": {
-                    ":category0": "food/coffee"
+                    ":discount0": 10
                 },
                 "TableName": "electro",
                 "Key": {
                     "pk": `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
                     "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
                 },
-                "ConditionExpression": "#category = :category0"
+                "ConditionExpression": "#discount = :discount0"
             });
 
-            const newTenant = client.createSet("larry");
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .remove(["discount"])
+                .where((attr, op) => op.eq(attr.discount, 10))
+                .params();
+        });
+
+        it("should generate the same parameters as shown in the readme examples - add rent and tenant", async () => {
             const addParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .add({
                     rent: 100, // "number" attribute
-                    tenant: newTenant // "set" attribute
+                    tenant: ["larry"] // "set" attribute
                 })
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
-                .params()
+                .params();
 
             expect(JSON.parse(JSON.stringify(addParameters))).to.deep.equal({
                 "UpdateExpression": "SET #rent = #rent + :rent_u0 ADD #tenant :tenant_u0",
@@ -901,13 +957,24 @@ describe("Update Item", () => {
                     "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
                 },
                 "ConditionExpression": "#category = :category0"
-            })
+            });
 
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .add({
+                    rent: 100, // "number" attribute
+                    tenant: ["larry"] // "set" attribute
+                })
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .go();
+        });
+
+        it("should generate the same parameters as shown in the readme examples - subtract deposit", async () => {
             const subtractParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .subtract({deposit: 500})
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
-                .params()
+                .params();
 
             expect(subtractParameters).to.deep.equal({
                 "UpdateExpression": "SET #deposit = #deposit - :deposit_u0",
@@ -927,16 +994,24 @@ describe("Update Item", () => {
                 "ConditionExpression": "#category = :category0"
             });
 
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .subtract({deposit: 500})
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .go();
+        });
+
+        it("should generate the same parameters as shown in the readme examples - append terms to the rental agreement", async () => {
             const appendParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .append({
                     rentalAgreement: [{
-                        type: "ammendment",
+                        type: "amendment",
                         detail: "no soup for you"
                     }]
                 })
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
-                .params()
+                .params();
 
             expect(appendParameters).to.deep.equal({
                 "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0)",
@@ -947,7 +1022,7 @@ describe("Update Item", () => {
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
                     ":rentalAgreement_u0": [{
-                        "type": "ammendment",
+                        "type": "amendment",
                         "detail": "no soup for you"
                     }]
                 },
@@ -959,14 +1034,27 @@ describe("Update Item", () => {
                 "ConditionExpression": "#category = :category0"
             });
 
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .append({
+                    rentalAgreement: [{
+                        type: "amendment",
+                        detail: "no soup for you"
+                    }]
+                })
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .go();
+        });
+
+        it("should generate the same parameters as shown in the readme examples - remove a phone number from contacts", async () => {
             const deleteParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
-                .delete({contact: '555-345-2222'})
+                .delete({contact: ['555-345-2222']})
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
-                .params()
+                .params();
 
 
-            expect(deleteParameters).to.deep.equal({
+            expect(JSON.parse(JSON.stringify(deleteParameters))).to.deep.equal({
                 "UpdateExpression": "DELETE #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
@@ -974,7 +1062,7 @@ describe("Update Item", () => {
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
-                    ":contact_u0": "555-345-2222",
+                    ":contact_u0": ["555-345-2222"]
                 },
                 "TableName": "electro",
                 "Key": {
@@ -984,6 +1072,14 @@ describe("Update Item", () => {
                 "ConditionExpression": "#category = :category0"
             });
 
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .delete({contact: ['555-345-2222']})
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .go();
+        });
+
+        it("should generate the same parameters as shown in the readme examples - perform a whole bunch of updates", async () => {
             const allParameters = StoreLocations
                 .update({cityId, mallId, storeId, buildingId})
                 .data((attr, op) => {
@@ -993,17 +1089,17 @@ describe("Update Item", () => {
                     op.add(attr.rent, 100);
                     op.subtract(attr.deposit, 200);
                     op.remove(attr.leaseEndDate);
-                    op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
+                    op.append(attr.rentalAgreement, [{type: "amendment", detail: "no soup for you"}]);
                     op.delete(attr.tags, 'coffee');
                     op.del(attr.contact, '555-345-2222');
                     op.add(attr.totalFees, op.name(attr.petFee));
                     op.add(attr.leaseHolders, newTenant);
                 })
                 .where((attr, op) => op.eq(attr.category, "food/coffee"))
-                .params()
+                .params();
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u1, #leaseHolders :leaseHolders_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
@@ -1021,17 +1117,15 @@ describe("Update Item", () => {
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
                     ":category_u0": "food/meal",
-                    ":tenant_u0": "larry",
-                    ":tenant_u1": ":tenant_u0",
+                    ":tenant_u0": ["larry"],
                     ":rent_u0": 100,
                     ":deposit_u0": 200,
                     ":rentalAgreement_u0": [{
-                        "type": "ammendment",
+                        "type": "amendment",
                         "detail": "no soup for you"
                     }],
-                    ":tags_u0": "coffee",
-                    ":contact_u0": "555-345-2222",
-                    ":leaseHolders_u0": ":tenant_u0"
+                    ":tags_u0": ["coffee"],
+                    ":contact_u0": ["555-345-2222"],
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1040,6 +1134,22 @@ describe("Update Item", () => {
                 },
                 "ConditionExpression": "#category = :category0"
             });
+
+            await StoreLocations
+                .update({cityId, mallId, storeId, buildingId})
+                .data((attr, op) => {
+                    const newTenant = op.value(attr.tenant, "larry")
+                    op.set(attr.category, "food/meal");
+                    op.add(attr.tenant, newTenant);
+                    op.subtract(attr.deposit, 200);
+                    op.remove(attr.leaseEndDate);
+                    op.append(attr.rentalAgreement, [{type: "amendment", detail: "absolutely no soup for you"}]);
+                    op.delete(attr.tags, 'coffee');
+                    op.del(attr.contact, '555-345-2222');
+                    op.subtract(attr.rent, op.name(attr.discount));
+                    op.add(attr.leaseHolders, newTenant);
+                })
+                .go();
         });
     });
 
@@ -1098,7 +1208,7 @@ describe("Update Item", () => {
             license: "cc",
             followers: "tinkertamper",
             prop1: "def",
-            recentCommitsViews: 1,
+            recentCommitsViews: 3,
         }
 
         const params = repositories.update({repoName, repoOwner})
@@ -1117,7 +1227,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :recentCommits_u0 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #recentCommits[0].#views = #recentCommits[0].#views + :views_u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -1141,7 +1251,7 @@ describe("Update Item", () => {
                 ":description_u0": "updated description",
                 ":tags_u0": params.ExpressionAttributeValues[":tags_u0"],
                 ":custom_u0": "def",
-                ":recentCommits_u0": 1
+                ":views_u0": 3
             },
             "TableName": "electro",
             "Key": {
@@ -1730,8 +1840,8 @@ describe("Update Item", () => {
                 .remove([ "createdAt" ])
                 .go()
                 .catch(err => err);
-            console.log(error);
-            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated`);
+
+            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed`);
 
         });
 

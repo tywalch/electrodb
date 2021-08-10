@@ -298,9 +298,6 @@ describe("Page", async () => {
         keys.add(item.pk + item.sk);
         all.push(item);
       }
-      if (results.Items.length !== keys.size) {
-        console.log({items: results.Items, keys});
-      }
       expect(results.Items.length).to.equal(keys.size);
       page = next;
     } while(page !== null);
@@ -323,9 +320,6 @@ describe("Page", async () => {
       for (let item of items) {
         keys.add(item.task + item.project + item.employee);
         all.push(item);
-      }
-      if (items.length !== keys.size) {
-        console.log({items: items, keys});
       }
       expect(items.length).to.equal(keys.size);
       page = next;

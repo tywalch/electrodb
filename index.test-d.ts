@@ -1,4 +1,4 @@
-import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, UpdateDataSymbol} from ".";
+import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem} from ".";
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 let entityWithSK = new Entity({
     model: {
@@ -554,11 +554,14 @@ let getKeys = ((val) => {}) as GetKeys;
     type DeleteBatchParamsParams = Parameter<typeof deleteBatchParams>;
     type DeleteBatchParamsParamsWithoutSK = Parameter<typeof deleteBatchParamsWithoutSK>;
 
-    expectAssignable<DeleteSingleGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<DeleteSingleGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<DeleteSingleGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "all_old"});
+    expectAssignable<DeleteSingleGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "all_old"});
 
     expectAssignable<DeleteSingleGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<DeleteSingleGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+
+    expectAssignable<DeleteSingleParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "all_old"});
+    expectAssignable<DeleteSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "all_old"});
 
     expectAssignable<DeleteSingleParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<DeleteSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
@@ -566,8 +569,14 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<DeleteSingleGoParams>({concurrency: 10, unprocessed: "raw"});
     expectError<DeleteSingleGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
 
+    expectNotAssignable<DeleteSingleGoParams>({response: "updated_new"});
+    expectNotAssignable<DeleteSingleGoParamsWithoutSK>({response: "updated_new"});
+
     expectError<DeleteSingleParamsParams>({concurrency: 10, unprocessed: "raw"});
     expectError<DeleteSingleParamsParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
+
+    expectNotAssignable<DeleteSingleParamsParams>({response: "updated_new"});
+    expectNotAssignable<DeleteSingleParamsParamsWithoutSK>({response: "updated_new"});
 
     expectAssignable<DeleteBatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
     expectAssignable<DeleteBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
@@ -591,8 +600,8 @@ let getKeys = ((val) => {}) as GetKeys;
     });
 
     // Results
-    expectAssignable<Promise<Item>>(entityWithSK.delete({attr1: "abc", attr2: "def"}).go());
-    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.delete({attr1: "abc"}).go());
+    expectAssignable<Promise<Item>>(entityWithSK.delete({attr1: "abc", attr2: "def"}).go({response: "all_old"}));
+    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.delete({attr1: "abc"}).go({response: "all_old"}));
 
     expectAssignable<"paramtest">(entityWithSK.delete({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.delete({attr1: "abc"}).params<"paramtest">());
@@ -674,14 +683,20 @@ let getKeys = ((val) => {}) as GetKeys;
     type PutBatchParamsParams = Parameter<typeof putBulkItem.params>;
     type PutBatchParamsParamsWithoutSK = Parameter<typeof putBulkItemWithoutSK.params>;
 
-    expectAssignable<PutSingleGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<PutSingleGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<PutSingleGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "all_old"});
+    expectAssignable<PutSingleGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "all_old"});
 
-    expectAssignable<PutSingleParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<PutSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<PutSingleParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "all_old"});
+    expectAssignable<PutSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "all_old"});
 
     expectError<PutSingleGoParams>({concurrency: 10, unprocessed: "raw"});
     expectError<PutSingleGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
+
+    expectError<PutSingleGoParams>({response: "updated_new"});
+    expectError<PutSingleGoParamsWithoutSK>({response: "updated_new"});
+
+    expectError<PutSingleParamsParams>({response: "updated_new"});
+    expectError<PutSingleParamsParamsWithoutSK>({response: "updated_new"});
 
     expectError<PutSingleParamsParams>({concurrency: 10, unprocessed: "raw"});
     expectError<PutSingleParamsParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
@@ -689,8 +704,14 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<PutBatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
     expectAssignable<PutBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
+    expectNotAssignable<PutBatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", response: "all_old"});
+    expectNotAssignable<PutBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", response: "all_old"});
+
     expectAssignable<PutBatchParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
     expectAssignable<PutBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+
+    expectNotAssignable<PutBatchParamsParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", response: "all_old"});
+    expectNotAssignable<PutBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", response: "all_old"});
 
     // Where
     entityWithSK.put(putItemFull).where((attr, op) => {
@@ -856,11 +877,11 @@ let getKeys = ((val) => {}) as GetKeys;
     type UpdateParamsParamsWithoutSK = Parameter<typeof updateParamsWithoutSK>;
 
 
-    expectAssignable<UpdateGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<UpdateGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<UpdateGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
+    expectAssignable<UpdateGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
 
-    expectAssignable<UpdateParamsParams>({params: {}, table: "abc"});
-    expectAssignable<UpdateParamsParamsWithoutSK>({params: {}, table: "abc"});
+    expectAssignable<UpdateParamsParams>({params: {}, table: "abc", response: "updated_new"});
+    expectAssignable<UpdateParamsParamsWithoutSK>({params: {}, table: "abc", response: "updated_new"});
 
     // Where
     updateItem.where((attr, op) => {
@@ -922,11 +943,11 @@ let getKeys = ((val) => {}) as GetKeys;
     type PatchParamsParams = Parameter<typeof patchParams>;
     type PatchParamsParamsWithoutSK = Parameter<typeof patchParamsWithoutSK>;
 
-    expectAssignable<PatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<PatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<PatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
+    expectAssignable<PatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
 
-    expectAssignable<PatchParamsParams>({params: {}, table: "abc"});
-    expectAssignable<PatchParamsParamsWithoutSK>({params: {}, table: "abc"});
+    expectAssignable<PatchParamsParams>({params: {}, table: "abc", response: "updated_new"});
+    expectAssignable<PatchParamsParamsWithoutSK>({params: {}, table: "abc", response: "updated_new"});
 
     // Where
     patchItem.where((attr, op) => {
@@ -1797,8 +1818,10 @@ let getKeys = ((val) => {}) as GetKeys;
         })
         .go()
         .then(value => {
-            expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
-            expectType<Entity1WithHiddenAttribute>(value);
+            if (value !== null) {
+                expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
+                expectType<Entity1WithHiddenAttribute>(value);
+            }
         });
 
     entityWithHiddenAttributes1
@@ -1835,6 +1858,210 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<string | undefined>(value.prop5);
             });
         })
+
+    let entityWithRequiredAttribute = new Entity({
+        model: {
+            entity: "e1",
+            service: "s1",
+            version: "1"
+        },
+        attributes: {
+            prop1: {
+                type: "string"
+            },
+            prop2: {
+                type: "string"
+            },
+            prop3: {
+                type: "string",
+                required: true
+            },
+            prop4: {
+                type: "number",
+                required: true,
+            },
+            prop5: {
+                type: "any",
+                required: true
+            },
+            prop6: {
+                type: "map",
+                properties: {
+                    nested1: {
+                        type: "string",
+                        required: true
+                    }
+                },
+                required: true,
+            },
+            prop7: {
+                type: "list",
+                items: {
+                    type: "string",
+                    required: true
+                },
+                required: true,
+            },
+            prop8: {
+                type: "string",
+                required: true,
+                default: "abc"
+            },
+            prop9: {
+                type: "map",
+                properties: {
+                    nested1: {
+                        type: "string",
+                        required: true,
+                        default: () => "abc"
+                    },
+                    nested2: {
+                        type: "string",
+                        required: true,
+                        default: "abc"
+                    }
+                },
+                default: {},
+                required: true,
+            },
+            prop10: {
+                type: "list",
+                items: {
+                    type: "string",
+                },
+                required: true,
+                default: []
+            },
+        },
+        indexes: {
+            record: {
+                collection: "collection1",
+                pk: {
+                    field: "pk",
+                    composite: ["prop1"]
+                },
+                sk: {
+                    field: "sk",
+                    composite: ["prop2"]
+                }
+            }
+        }
+    });
+
+    // required attributes, as object and array, without required (but defaulted attributes)
+    entityWithRequiredAttribute.put({
+        prop1: "abc",
+        prop2: "def",
+        prop3: "ghi",
+        prop4: 123,
+        prop5: {anyVal: ["anyItem"]},
+        prop6: {
+            nested1: "abc"
+        },
+        prop7: []
+    });
+    // required attributes, as object and array, without required (but defaulted attributes)
+    entityWithRequiredAttribute.put([{
+        prop1: "abc",
+        prop2: "def",
+        prop3: "ghi",
+        prop4: 123,
+        prop5: {anyVal: ["anyItem"]},
+        prop6: {
+            nested1: "abc"
+        },
+        prop7: []
+    }]);
+    // required attributes, as object and array, without required (but defaulted attributes)
+    entityWithRequiredAttribute.create({
+        prop1: "abc",
+        prop2: "def",
+        prop3: "ghi",
+        prop4: 123,
+        prop5: {anyVal: ["anyItem"]},
+        prop6: {
+            nested1: "abc"
+        },
+        prop7: []
+    });
+    // create doesnt allow for bulk
+    expectError(() => {
+        entityWithRequiredAttribute.create([{
+            prop1: "abc",
+            prop2: "def",
+            prop3: "ghi",
+            prop4: 123,
+            prop5: {anyVal: ["anyItem"]},
+            prop6: {
+                nested1: "abc"
+            },
+            prop7: []
+        }]);
+    });
+    // missing `nested1` on `prop6`
+    expectError(() => {
+        entityWithRequiredAttribute.put({
+            prop1: "abc",
+            prop2: "def",
+            prop3: "ghi",
+            prop4: 123,
+            prop5: {anyVal: ["anyItem"]},
+            prop6: {},
+            prop7: []
+        });
+    })
+    // missing `nested1` on `prop6`
+    expectError(() => {
+        entityWithRequiredAttribute.put([{
+            prop1: "abc",
+            prop2: "def",
+            prop3: "ghi",
+            prop4: 123,
+            prop5: {anyVal: ["anyItem"]},
+            prop6: {},
+            prop7: []
+        }]);
+    })
+    // missing `nested1` on `prop6`
+    expectError(() => {
+        entityWithRequiredAttribute.create({
+            prop1: "abc",
+            prop2: "def",
+            prop3: "ghi",
+            prop4: 123,
+            prop5: {anyVal: ["anyItem"]},
+            prop6: {},
+            prop7: []
+        });
+    });
+
+    // no removing required attributes
+    expectError(() => {
+        entityWithRequiredAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(['prop3'])
+    });
+
+    // no removing required attributes
+    expectError(() => {
+        entityWithRequiredAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(['prop5'])
+    });
+
+    // no removing required attributes
+    expectError(() => {
+        entityWithRequiredAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(['prop6'])
+    });
+
+    // no removing required attributes
+    expectError(() => {
+        entityWithRequiredAttribute
+            .update({prop1: "abc", prop2: "def"})
+            .remove(['prop7'])
+    });
 
     let entityWithReadOnlyAttribute = new Entity({
         model: {
@@ -2508,3 +2735,1012 @@ const entityWithWatchAll = new Entity({
         }
     }
 });
+
+const entityWithComplexShapes = new Entity({
+    model: {
+        entity: "entity",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string",
+            label: "props"
+        },
+        prop2: {
+            type: "string",
+        },
+        prop3: {
+            type: "map",
+            properties: {
+                val1: {
+                    type: "string"
+                }
+            }
+        },
+        prop4: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    val2: {
+                        type: "number",
+                    },
+                    val3: {
+                        type: "list",
+                        items: {
+                            type: "string"
+                        }
+                    },
+                    val4: {
+                        type: "set",
+                        items: "number"
+                    }
+                }
+            }
+        },
+        prop5: {
+            type: "set",
+            items: "string"
+        },
+        prop6: {
+            type: "set",
+            items: "string"
+        }
+    },
+    indexes: {
+        record: {
+            collection: "mops",
+            pk: {
+                field: "pk",
+                composite: ["prop1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop2"]
+            }
+        }
+    }
+});
+
+const entityWithComplexShapesRequired = new Entity({
+    model: {
+        entity: "entity",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string",
+            label: "props"
+        },
+        prop2: {
+            type: "string",
+        },
+        attr3: {
+            type: "map",
+            properties: {
+                val1: {
+                    type: "string",
+                    required: true
+                }
+            },
+            required: true
+        },
+        attr4: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    val2: {
+                        type: "number",
+                        required: true
+                    },
+                    val3: {
+                        type: "list",
+                        items: {
+                            type: "string",
+                            required: true
+                        },
+                        required: true
+                    },
+                    val4: {
+                        type: "set",
+                        items: "number",
+                        required: true
+                    }
+                }
+            },
+            required: true
+        },
+        attr5: {
+            type: "set",
+            items: "string",
+            required: true
+        },
+        attr6: {
+            type: "set",
+            items: "string",
+            required: true
+        }
+    },
+    indexes: {
+        record: {
+            collection: "mops",
+            pk: {
+                field: "pk",
+                composite: ["prop1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop2"]
+            }
+        }
+    }
+});
+
+const entityWithComplexShapesRequiredOnEdge = new Entity({
+    model: {
+        entity: "entity",
+        service: "service",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string",
+            label: "props"
+        },
+        prop2: {
+            type: "string",
+        },
+        attrz3: {
+            type: "map",
+            properties: {
+                val1: {
+                    type: "string",
+                    required: true
+                }
+            }
+        },
+        attrz4: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    val2: {
+                        type: "number",
+                        required: true,
+                    },
+                    val3: {
+                        type: "list",
+                        items: {
+                            type: "string",
+                            required: true
+                        },
+                    },
+                    val4: {
+                        type: "set",
+                        items: "number",
+                    },
+                    val5: {
+                        type: "map",
+                        properties: {
+                            val6: {
+                                type: "string",
+                                required: true
+                            }
+                        }
+                    }
+                }
+            },
+        },
+        attrz5: {
+            type: "set",
+            items: "string",
+        },
+        attrz6: {
+            type: "set",
+            items: "string",
+        }
+    },
+    indexes: {
+        record: {
+            collection: "mops",
+            pk: {
+                field: "pk",
+                composite: ["prop1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop2"]
+            }
+        }
+    }
+});
+
+const complexShapeService = new Service({
+    ent1: entityWithComplexShapesRequiredOnEdge,
+    ent2: entityWithComplexShapes,
+    ent3: entityWithComplexShapesRequired
+});
+
+entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
+    if (data === null) {
+        return null;
+    }
+    data.prop3?.val1;
+    let int = 0;
+    if (Array.isArray(data.prop4)) {
+        for (let value of data.prop4) {
+            if (typeof value === "string") {
+                if (isNaN(parseInt(value))) {
+                    int += 0;
+                } else {
+                    int += parseInt(value);
+                }
+            } else if (typeof value === "number") {
+                int += value;
+            } else if (Array.isArray(value)) {
+                for (let val of value) {
+                    int += val.val2
+                }
+            } else {
+                expectType<number|undefined>(value.val2);
+                int += value?.val2 ?? 0;
+            }
+        }
+    }
+    return data.prop3?.val1
+});
+
+entityWithComplexShapes
+    .get({prop1: "abc", prop2: "def"})
+    .go()
+    .then(data => {
+        if (data !== null) {
+            data.prop5?.map(values => values);
+            data.prop6?.map(values => values);
+        }
+    })
+
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .set({
+        prop4: [{
+            val2: 789,
+            val3: ["123"],
+            val4: [123, 456]
+        }],
+        prop5: ["abc"]
+    })
+    .go()
+
+entityWithComplexShapes
+    .put({
+        prop1: "abc",
+        prop2: "def",
+        prop4: [{
+            val2: 789,
+            val3: ["123"],
+            val4: [123, 456]
+        }],
+        prop5: ["abc"]
+    })
+    .go()
+
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .set({
+        prop4: [{
+            val2: 789,
+            val3: ["123"],
+            // val4: [1, 2, 3]
+        }],
+        prop5: ["abc"]
+    })
+    .where(({prop5}, {eq}) => eq(prop5, ["abc"]))
+    .where(({prop1}, {eq}) => eq(prop1, "abc"))
+    .go();
+
+
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .append({
+        prop4: [{
+            val2: 789,
+            val3: ["123"],
+            val4: [1, 2, 3]
+        }],
+    })
+    .data(({prop5, prop4}, {add, append, remove}) => {
+        add(prop5, ["abc"]);
+        append(prop4[0].val3, ["123"]);
+        append(prop4, [{
+            val2: 789, 
+            val3: ["123"],
+            val4: [1, 2, 3]
+        }]);
+        add(prop4[0].val2, 789);
+        add(prop4[0].val4, [1]);
+        remove(prop4[0].val4);
+        remove(prop4[0].val3);
+        remove(prop4[0].val2);
+
+    })
+    .go()
+
+
+expectError(() => {    
+    entityWithComplexShapes
+        .update({prop1: "abc", prop2: "def"})
+        .append({
+            prop4: [{
+                val2: 789,
+                val3: ["123"],
+                val4: [1, 2, 3]
+            }],
+            prop5: ["abc"]
+        })
+        .go()
+});
+
+expectError(() => {    
+    entityWithComplexShapes
+        .update({prop1: "abc", prop2: "def"})
+        .data(({prop1}, {remove}) => {
+            remove(prop1);
+        })
+        .go()
+    });
+
+entityWithComplexShapes
+    .update({prop1: "abc", prop2: "def"})
+    .set({
+        prop4: [{
+            val2: 789,
+            val3: ["123"],
+            val4: [1, 2, 3]
+        }],
+        prop5: ["abc"]
+    })
+    .go()
+
+entityWithComplexShapesRequired.put({
+    prop1: "abc",
+    prop2: "def",
+    attr3: {
+        val1: "abc",
+    },
+    attr4: [{
+        val2: 789,
+        val3: ["123"],
+        val4: [1, 2, 3]
+    }],
+    attr5: ["abc"],
+    attr6: ["abdbdb"],
+});
+
+expectError(() => {
+    entityWithComplexShapesRequired.put({});
+})
+
+expectError(() => {
+    entityWithComplexShapesRequired.put({prop1: "abc", prop2: "def"});
+});
+
+complexShapeService.collections
+    .mops({prop1: "abc"})
+    .where((a, op) => {
+        op.eq(a.attr3.val1, "abd");
+            expectError(() => op.eq(a.attr3, "abc"));
+            expectError(() => op.eq(a.attr3.val2, "abc"));
+            expectError(() => op.eq(a.attr3.val1, 123));
+        op.between(a.attr4[0].val2, 789, 888);
+            expectError(() => op.eq(a.attr4, "abc"));
+            expectError(() => op.eq(a.attr4.val2, "abc"));
+            expectError(() => op.eq(a.attr4[0].val2, "456"));
+        op.between(a.attr4[0].val3[1], "xyz", "123");
+            // expectNotAssignable<"abc">(a.attr4[1].val3[1]);
+            // expectNotAssignable<typeof (a.attr4[1].val3)>(["abc"]);
+            // expectError(() => op.eq(a.attr4[1].val3["def"], "xyz"));
+        op.gte(a.attr5, ["abc"]);
+
+        op.eq(a.attrz3.val1, "abd");
+            expectError(() => op.eq(a.attrz3, "abc"))
+            expectError(() => op.eq(a.attrz3.val2, "abc"))
+            expectError(() => op.eq(a.attrz3.val1, 123));
+        op.between(a.attrz4[0].val2, 789, 888);
+            // expectNotAssignable<"abc">(a.attrz4[1].val3[1]);
+            // expectNotAssignable<["abc"]>(a.attrz4[1].val3);
+            expectError(() => op.eq(a.attrz4[0].val2, "456"));
+        op.between(a.attrz4[0].val3[1], "xyz", "123");
+            // expectError(() => op.eq(a.attr4[1].val3[1], "abc"));
+            // expectError(() => op.eq(a.attr4[1].val3["def"], "xyz"));
+        op.gte(a.attrz5, ["abc"]);
+
+        op.eq(a.prop3.val1, "abd");
+            expectError(() => op.eq(a.attrz3, "abc"))
+            expectError(() => op.eq(a.attrz3.val2, "abc"))
+            expectError(() => op.eq(a.attrz3.val1, 123))
+        op.between(a.prop4[0].val2, 789, 888);
+        op.between(a.prop4[0].val3[1], "xyz", "123");
+        op.gte(a.prop5, ["abc"])
+        op.eq(a.prop2, "def");
+        op.contains(a.prop4[1].val3[2], "123");
+
+        return "";
+    })
+
+const complex = new Entity({
+    model: {
+        entity: "user",
+        service: "versioncontrol",
+        version: "1"
+    },
+    attributes: {
+        stringVal: {
+            type: "string",
+            default: () => "abc",
+            validate: (value) => value !== undefined,
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        enumVal: {
+            type: ["abc", "def"] as const,
+            validate: (value: "abc" | "def") => value !== undefined,
+            default: () => "abc",
+            get: (value: "abc" | "def") => {
+                return value;
+            },
+            set: (value?: "abc" | "def") => {
+                return value;
+            }
+        },
+        numVal: {
+            type: "number",
+            validate: (value) => value !== undefined,
+            default: () => 123,
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        boolValue: {
+            type: "boolean",
+            validate: (value) => value !== undefined,
+            default: () => true,
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        stringSetValue: {
+            type: "set",
+            items: "string",
+            validate: (value) => value !== undefined,
+            default: () => ["abc"],
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        numberSetValue: {
+            type: "set",
+            items: "number",
+            validate: (value) => value !== undefined,
+            default: () => [1],
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        },
+        stringListValue: {
+            type: "list",
+            items: {
+                type: "string",
+                default: "abc",
+                validate: (value) => value !== undefined,
+                get: (value) => {
+                    return value;
+                },
+                set: (value) => {
+                    return value;
+                }
+            },
+            default: ["abc"],
+            validate: (value: string[]) => value !== undefined,
+            get: (value: string[]) => {
+                return value;
+            },
+            set: (value?: string[]) => {
+                return value;
+            }
+        },
+        numberListValue: {
+            type: "list",
+            items: {
+                type: "number",
+                validate: (value) => value !== undefined,
+                default: 0,
+                get: (value) => {
+                    return value;
+                },
+                set: (value) => {
+                    return value;
+                }
+            },
+            default: [],
+            validate: (value: number[]) => value !== undefined,
+            get: (value: number[]) => {
+                return value;
+            },
+            set: (value?: number[]) => {
+                return value;
+            }
+        },
+        mapListValue: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    stringVal: {
+                        type: "string",
+                        default: "def",
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    numVal: {
+                        type: "number",
+                        default: 5,
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    boolValue: {
+                        type: "boolean",
+                        default: false,
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    enumVal: {
+                        type: ["abc", "def"] as const,
+                        validate: (value: "abc" | "def") => value !== undefined,
+                        default: () => "abc",
+                        get: (value: "abc" | "def") => {
+                            return value;
+                        },
+                        set: (value?: "abc" | "def") => {
+                            return value;
+                        }
+                    },
+                },
+                validate: (value) => value !== undefined,
+                default: {
+                    stringVal: "abc",
+                    numVal: 123,
+                    boolValue: false,
+                },
+                get: (value) => {
+                    return value;
+                },
+                set: (value) => {
+                    return value;
+                }
+            },
+            get: (value: any) => {
+                return value;
+            },
+            set: (value: any) => {
+                return value;
+            }
+        },
+        mapValue: {
+            type: "map",
+            properties: {
+                stringVal: {
+                    type: "string",
+                    default: () => "abc",
+                    validate: (value) => value !== undefined,
+                    get: (value) => {
+                        return value;
+                    },
+                    set: (value) => {
+                        return value;
+                    }
+                },
+                numVal: {
+                    type: "number",
+                    default: () => 10,
+                    validate: (value) => value !== undefined,
+                    get: (value) => {
+                        return value;
+                    },
+                    set: (value) => {
+                        return value;
+                    }
+                },
+                boolValue: {
+                    type: "boolean",
+                    default: () => false,
+                    validate: (value) => value !== undefined,
+                    get: (value) => {
+                        return value;
+                    },
+                    set: (value) => {
+                        return value;
+                    }
+                },
+                enumVal: {
+                    type: ["abc", "def"] as const,
+                    validate: (value: "abc" | "def") => value !== undefined,
+                    default: () => "abc",
+                    get: (value: "abc" | "def") => {
+                        return value;
+                    },
+                    set: (value?: "abc" | "def") => {
+                        return value;
+                    }
+                },
+                stringListValue: {
+                    type: "list",
+                    items: {
+                        type: "string",
+                        default: "abc",
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    default: [],
+                    validate: (value: string[]) => value !== undefined,
+                    get: (value: string[]) => {
+                        return value;
+                    },
+                    set: (value?: string[]) => {
+                        return value;
+                    }
+                },
+                numberListValue: {
+                    type: "list",
+                    items: {
+                        type: "number",
+                        default: () => 100,
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    default: [123, 123],
+                    validate: (value: number[]) => value !== undefined,
+                    get: (value: number[]) => {
+                        return value;
+                    },
+                    set: (value?: number[]) => {
+                        return value;
+                    }
+                },
+                mapListValue: {
+                    type: "list",
+                    items: {
+                        type: "map",
+                        properties: {
+                            stringVal: {
+                                type: "string",
+                                default: "def",
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            numVal: {
+                                type: "number",
+                                default: 100,
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            boolValue: {
+                                type: "boolean",
+                                default: () => false,
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            stringSetValue: {
+                                type: "set",
+                                items: "string",
+                                default: ["abc"],
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            numberSetValue: {
+                                type: "set",
+                                items: "number",
+                                default: [5],
+                                validate: (value) => value !== undefined,
+                                get: (value) => {
+                                    return value;
+                                },
+                                set: (value) => {
+                                    return value;
+                                }
+                            },
+                            enumVal: {
+                                type: ["abc", "def"] as const,
+                                validate: (value: "abc" | "def") => value !== undefined,
+                                default: () => "abc",
+                                get: (value: "abc" | "def") => {
+                                    return value;
+                                },
+                                set: (value?: "abc" | "def") => {
+                                    return value;
+                                }
+                            },
+                        },
+                        default: () => ({
+                            stringVal: "anx",
+                            numVal: 13,
+                            boolValue: true,
+                            emumValue: "abc",
+                            stringSetValue: ["def"],
+                            numberSetValue: [10],
+                        }),
+                        validate: (value) => value !== undefined,
+                        get: (value) => {
+                            return value;
+                        },
+                        set: (value) => {
+                            return value;
+                        }
+                    },
+                    default: [],
+                    validate: (value: Record<string, any>[]) => value !== undefined,
+                    get: (value: Record<string, any>[]) => {
+                        return value;
+                    },
+                    set: (value?: Record<string, any>[]) => {
+                        return value;
+                    }
+                },
+            },
+            default: () => undefined,
+            validate: (value) => value !== undefined,
+            get: (value) => {
+                return value;
+            },
+            set: (value) => {
+                return value;
+            }
+        }
+    },
+    indexes: {
+        user: {
+            collection: "complexShapes",
+            pk: {
+                composite: ["username"],
+                field: "pk"
+            },
+            sk: {
+                composite: [],
+                field: "sk"
+            }
+        },
+        _: {
+            collection: "owned",
+            index: "gsi1pk-gsi1sk-index",
+            pk: {
+                composite: ["username"],
+                field: "gsi1pk"
+            },
+            sk: {
+                field: "gsi1sk",
+                composite: []
+            }
+        }
+    }
+}, {table: "abc"});
+
+const mapTests = new Entity({
+    model: {
+        entity: "mapTests",
+        service: "tests",
+        version: "1"
+    },
+    attributes: {
+        username: {
+            type: "string"
+        },
+        mapObject: {
+            type: "map",
+            properties: {
+                minimal: {
+                    type: "string"
+                },
+                required: {
+                    type: "string",
+                    required: true
+                },
+                hidden: {
+                    type: "string",
+                    hidden: true
+                },
+                readOnly: {
+                    type: "string",
+                    readOnly: true
+                },
+                anotherMap: {
+                    type: "map",
+                    properties: {
+                        minimal: {
+                            type: "string"
+                        },
+                        required: {
+                            type: "string",
+                            required: true
+                        },
+                        hidden: {
+                            type: "string",
+                            hidden: true
+                        },
+                        readOnly: {
+                            type: "string",
+                            readOnly: true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    indexes: {
+        user: {
+            collection: "complexShapes",
+            pk: {
+                composite: ["username"],
+                field: "pk"
+            },
+            sk: {
+                composite: [],
+                field: "sk"
+            }
+        }
+    }
+});
+
+const complexAttributeService = new Service({mapTests, complex});
+
+mapTests
+    .get({username: "test"})
+    .go()
+    .then(data => {
+        if (data && data.mapObject !== undefined) {
+            expectNotAssignable<string>(data.mapObject.hidden);
+            expectType<undefined|string>(data.mapObject.minimal);
+            expectType<undefined|string>(data.mapObject.readOnly);
+            expectType<string>(data.mapObject.required);
+        }
+    });
+
+
+type MapTestPutParameters = Parameter<typeof mapTests.put>;
+// just the key is fine because `mapObject` is not required
+expectAssignable<MapTestPutParameters>([{username: "abc"}]);
+
+// with mapObject present, `required` is required
+mapTests.put({username: "abc", mapObject: {required: "val"}});
+mapTests.put([{username: "abc", mapObject: {required: "val"}}]);
+expectError(() => {
+    mapTests.put({username: "abc", mapObject: {minimal: "abc"}});
+});
+expectError(() => {
+    mapTests.put([{username: "abc", mapObject: {minimal: "abc"}}]);
+});
+
+// with anotherMap present, `required` is required
+mapTests.put({username: "abc", mapObject: {required: "val", anotherMap: {required: "def"}}});
+mapTests.put([{username: "abc", mapObject: {required: "val", anotherMap: {required: "def"}}}]);
+expectError(() => {
+    mapTests.put({username: "abc", mapObject: {minimal: "abc", required: "def", anotherMap: {}}});
+});
+expectError(() => {
+    mapTests.put([{username: "abc", mapObject: {minimal: "abc", required: "def", anotherMap: {}}}]);
+});
+
+//
+mapTests.update({username: "abc"}).data((attr, op) => {
+    expectError(() => op.set(attr.mapObject.readOnly, "abc"));
+    expectError(() => op.set(attr.mapObject.anotherMap.readOnly, "abc"));
+
+    op.set(attr.mapObject.minimal, "abc");
+    op.set(attr.mapObject.anotherMap.minimal, "abc");
+    op.set(attr.mapObject.hidden, "abc");
+    op.set(attr.mapObject.anotherMap.hidden, "abc");
+    op.set(attr.mapObject.required, "abc");
+    op.set(attr.mapObject.anotherMap.required, "abc");
+    // START SHOULD FAIL :(
+    // expectError(() => op.remove(attr.mapObject.readOnly));
+    // expectError(() => op.remove(attr.mapObject.required));
+    // expectError(() => op.set(attr.mapObject, {}));
+    // expectError(() => op.set(attr.mapObject, {minimal: "abc"}));
+    // END SHOULD FAIL :(
+    op.set(attr.mapObject, {required: "anc"});
+
+});
+
+expectError(() => mapTests.update({username: "abc"}).remove(["username"]));
+
+complexAttributeService.collections
+    .complexShapes({username: "abc"})
+    .where((attr, op) => {
+        op.eq(attr.mapObject.minimal, "abc");
+        op.eq(attr.numberListValue[0], 123)
+        op.eq(attr.mapListValue[1].enumVal, "def");
+        op.eq(attr.mapListValue[1].numVal, 345);
+        return "";
+    })
+    .go()
+
+// `value` operation should return the type of value for more constrained usage
+complex.update({username: "abc"})
+    .data((attr, op) => {
+        const numberValue = op.value(attr.numVal, 10);
+        op.set(attr.numVal, numberValue);
+        op.set(attr.mapValue.numVal, numberValue);
+        expectError(() => op.set(attr.mapValue.stringVal, numberValue));
+    })
+    .where((attr, op) => {
+        const num = 10;
+        const numberValue = op.value(attr.numVal, num);
+        op.eq(attr.numVal, numberValue);
+        op.eq(attr.mapValue.numVal, numberValue);
+        expectError(() => op.eq(attr.mapValue.stringVal, numberValue));
+        return "";
+    })
+    .go()

@@ -1,38 +1,92 @@
-const { CastTypes, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes } = require("./types");
+const { CastTypes, ValueTypes, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes, TraverserIndexes } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
+const u = require("./util");
+const {DynamoDBSet} = require("./set");
+
+function getValueType(value) {
+	if (value === undefined) {
+		return ValueTypes.undefined;
+	} else if (value === null) {
+		return ValueTypes.null;
+	} else if (typeof value === "string") {
+		return ValueTypes.string;
+	} else if (typeof value === "number") {
+		return ValueTypes.number;
+	} else if (typeof value === "boolean") {
+		return ValueTypes.boolean;
+	} else if (Array.isArray(value)) {
+		return ValueTypes.array;
+	} else if (value.wrapperName === "Set") {
+		return ValueTypes.aws_set;
+	} else if (value.constructor.name === "Set") {
+		return ValueTypes.set;
+	} else if (value.constructor.name === "Map") {
+		return ValueTypes.map;
+	} else if (value.constructor.name === "Object") {
+		return ValueTypes.object;
+	} else {
+		return ValueTypes.unknown;
+	}
+}
 
 class AttributeTraverser {
 	constructor(parentTraverser) {
 		if (parentTraverser instanceof AttributeTraverser) {
-			this.paths = parentTraverser.paths;
+			this.parent = parentTraverser;
+			this.paths = this.parent.paths;
 		} else {
+			this.parent = null;
 			this.paths = new Map();
 		}
 		this.children = new Map();
 	}
 
+	setChild(name, attribute) {
+		this.children.set(name, attribute);
+	}
+
+	asChild(name, attribute) {
+		if (this.parent) {
+			this.parent.setChild(name, attribute);
+		}
+	}
+
 	setPath(path, attribute) {
+		if (this.parent) {
+			this.parent.setPath(path, attribute);
+		}
 		this.paths.set(path, attribute);
-		this.children.set(path, attribute);
 	}
 
 	getPath(path) {
+		path = u.genericizeJSONPath(path);
+		if (this.parent) {
+			return this.parent.getPath(path);
+		}
 		return this.paths.get(path);
 	}
 
-	getChild(path) {
-		return this.children.get(path);
+	getChild(name) {
+		return this.children.get(name);
+	}
+
+	getAllChildren() {
+		return this.children.entries();
 	}
 
 	getAll() {
+		if (this.parent) {
+			return this.parent.getAll();
+		}
 		return this.paths.entries();
 	}
 }
 
+
 class Attribute {
-	constructor(definition = {}, parent = null) {
+	constructor(definition = {}) {
 		this.name = definition.name;
 		this.field = definition.field || definition.name;
 		this.label = definition.label;
@@ -42,8 +96,6 @@ class Attribute {
 		this.cast = this._makeCast(definition.name, definition.cast);
 		this.default = this._makeDefault(definition.default);
 		this.validate = this._makeValidate(definition.validate);
-		this.get = this._makeGet(definition.name, definition.get);
-		this.set = this._makeSet(definition.name, definition.set);
 		this.indexes = [...(definition.indexes || [])];
 		let {isWatched, isWatcher, watchedBy, watching, watchAll} = Attribute._destructureWatcher(definition);
 		this._isWatched = isWatched
@@ -55,14 +107,64 @@ class Attribute {
 		this.type = type;
 		this.enumArray = enumArray;
 		this.parentType = definition.parentType;
+		this.parentPath = definition.parentPath;
 		const pathType = this.getPathType(this.type, this.parentType);
-		const path = Attribute.buildPath(this.name, pathType, this.parentType);
+		const path = Attribute.buildPath(this.name, pathType, this.parentPath);
 		const fieldPath = Attribute.buildPath(this.field, pathType, this.parentType);
 		this.path = path;
 		this.fieldPath = fieldPath;
 		this.traverser = new AttributeTraverser(definition.traverser);
-		this.traverser.setPath(path, this);
-		this.traverser.setPath(fieldPath, this);
+		this.traverser.setPath(this.path, this);
+		this.traverser.setPath(this.fieldPath, this);
+		this.traverser.asChild(this.name, this);
+		this.parent = { parentType: this.type, parentPath: this.path };
+		this.get = this._makeGet(definition.get);
+		this.set = this._makeSet(definition.set);
+		this.client = definition.client;
+	}
+
+	static buildChildAttributes(type, definition, parent) {
+		let items;
+		let properties;
+		if (type === AttributeTypes.list) {
+			items = Attribute.buildChildListItems(definition, parent);
+		} else if (type === AttributeTypes.set) {
+			items = Attribute.buildChildSetItems(definition, parent);
+		} else if (type === AttributeTypes.map) {
+			properties = Attribute.buildChildMapProperties(definition, parent);
+		}
+
+		return {items, properties};
+	}
+
+	static buildChildListItems(definition, parent) {
+		const {items, client} = definition;
+		const prop = {...items, ...parent};
+		// The use of "*" is to ensure the child's name is "*" when added to the traverser and searching for the children of a list
+		return Schema.normalizeAttributes({ '*': prop }, {}, {client, traverser: parent.traverser}).attributes["*"];
+	}
+
+	static buildChildSetItems(definition, parent) {
+		const {items, client} = definition;
+
+		const allowedTypes = [AttributeTypes.string, AttributeTypes.boolean, AttributeTypes.number, AttributeTypes.enum];
+		if (!Array.isArray(items) && !allowedTypes.includes(items)) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "items" definition for Set attribute: "${definition.path}". Acceptable item types include ${u.commaSeparatedString(allowedTypes)}`);
+		}
+		const prop = {type: items, ...parent};
+		return Schema.normalizeAttributes({ prop }, {}, {client, traverser: parent.traverser}).attributes.prop;
+	}
+
+	static buildChildMapProperties(definition, parent) {
+		const {properties, client} = definition;
+		if (!properties || typeof properties !== "object") {
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "properties" definition for Map attribute: "${definition.path}". The "properties" definition must describe the attributes that the Map will accept`);
+		}
+		const attributes = {};
+		for (let name of Object.keys(properties)) {
+			attributes[name] = {...properties[name], ...parent};
+		}
+		return Schema.normalizeAttributes(attributes, {}, {client, traverser: parent.traverser});
 	}
 
 	static buildPath(name, type, parentPath) {
@@ -110,6 +212,22 @@ class Attribute {
 		}
 	}
 
+	_makeGet(get) {
+		this._checkGetSet(get, "get");
+		const getter = get || ((attr) => attr);
+		return (values, siblings) => {
+			if (this.hidden) {
+				return;
+			}
+			return getter(values, siblings);
+		}
+	}
+
+	_makeSet(set) {
+		this._checkGetSet(set, "set");
+		return set || ((attr) => attr);
+	}
+
 	getPathType(type, parentType) {
 		if (parentType === AttributeTypes.list || parentType === AttributeTypes.set) {
 			return PathTypes.item;
@@ -124,34 +242,24 @@ class Attribute {
 	getChild(path) {
 		if (this.type === AttributeTypes.any) {
 			return this;
-		}
-		return this.traverser.getChild(path);
-	}
-
-	_makeGet(name, get) {
-		if (typeof get === "function") {
-			return get;
-		} else if (get === undefined) {
-			return (attr) => attr;
+		} else if (!isNaN(path) && (this.type === AttributeTypes.list || this.type === AttributeTypes.set)) {
+			// if they're asking for a number, and this is a list, children will be under "*"
+			return this.traverser.getChild("*");
 		} else {
-			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "get" property for attribute ${name}. Please ensure value is a function or undefined.`);
+			return this.traverser.getChild(path);
 		}
 	}
 
-	_makeSet(name, set) {
-		if (typeof set === "function") {
-			return set;
-		} else if (set === undefined) {
-			return (attr) => attr;
-		} else {
-			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "set" property for attribute ${name}. Please ensure value is a function or undefined.`);
+	_checkGetSet(val, type) {
+		if (typeof val !== "function" && val !== undefined) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "${type}" property for attribute ${this.path}. Please ensure value is a function or undefined.`);
 		}
 	}
 
 	_makeCast(name, cast) {
 		if (cast !== undefined && !CastTypes.includes(cast)) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "cast" property for attribute: "${name}". Acceptable types include ${CastTypes.join(", ",)}`,
-			);
+		);
 		} else if (cast === AttributeTypes.string) {
 			return (val) => {
 				if (val === undefined) {
@@ -194,7 +302,7 @@ class Attribute {
 		} else if (definition instanceof RegExp) {
 			return (val) => {
 				let isValid = definition.test(val);
-				let reason = isValid ? "" : "Failed user defined regex";
+				let reason = isValid ? "" : `Invalid value for attribute "${this.path}": Failed user defined regex`;
 				return [isValid, reason];
 			};
 		} else {
@@ -243,7 +351,7 @@ class Attribute {
 
 	_isType(value) {
 		if (value === undefined) {
-			return [!this.required, this.required ? "Value is required" : ""];
+			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
 		}
 		let isTyped = false;
 		let reason = "";
@@ -251,29 +359,11 @@ class Attribute {
 			case AttributeTypes.enum:
 				isTyped = this.enumArray.includes(value);
 				if (!isTyped) {
-					reason = `Value not found in set of acceptable values: ${this.enumArray.join(", ")}`;
+					reason = `Invalid value type at entity path: "${this.path}". Value not found in set of acceptable values: ${u.commaSeparatedString(this.enumArray)}`;
 				}
 				break;
 			case AttributeTypes.any:
 				isTyped = true;
-				break;
-			case AttributeTypes.map:
-				isTyped = value.constructor.name === "Object" || value.constructor.name === "Map";
-				if (!isTyped) {
-					reason = `Expected value to be an Object to fulfill attribute type "${this.type}"`
-				}
-				break;
-			case AttributeTypes.set:
-				isTyped = Array.isArray(value) || value.constructor.name === "Set";
-				if (!isTyped) {
-					reason = `Expected value to be an Array or javascript Set to fulfill attribute type "${this.type}"`
-				}
-				break;
-			case AttributeTypes.list:
-				isTyped = Array.isArray(value);
-				if (!isTyped) {
-					reason = `Expected value to be an Array to fulfill attribute type "${this.type}"`
-				}
 				break;
 			case AttributeTypes.string:
 			case AttributeTypes.number:
@@ -281,7 +371,7 @@ class Attribute {
 			default:
 				isTyped = typeof value === this.type;
 				if (!isTyped) {
-					reason = `Received value of type "${typeof value}", expected value of type "${this.type}"`;
+					reason = `Invalid value type at entity path: "${this.path}". Received value of type "${typeof value}", expected value of type "${this.type}"`;
 				}
 				break;
 		}
@@ -312,16 +402,425 @@ class Attribute {
 		let [isValid, validationError] = this.isValid(value);
 		if (!isValid) {
 			// todo: #electroerror
-			throw new Error(`Invalid value for attribute "${this.name}": ${validationError}.`);
+			throw new Error(validationError);
 		}
 		return value;
 	}
 }
 
+class MapAttribute extends Attribute {
+	constructor(definition) {
+		super(definition);
+		const properties = Attribute.buildChildMapProperties(definition, {
+			parentType: this.type,
+			parentPath: this.path,
+			traverser: this.traverser
+		});
+		this.properties = properties;
+		this.get = this._makeGet(definition.get, properties);
+		this.set = this._makeSet(definition.set, properties);
+	}
+
+	_makeGet(get, properties) {
+		this._checkGetSet(get, "get");
+
+		const getter = get || ((attr) => attr);
+
+		return (values, siblings) => {
+			const data = {};
+
+			if (this.hidden) {
+				return;
+			}
+
+			if (values === undefined) {
+				return getter(data, siblings);
+			}
+
+			for (const name of Object.keys(properties.attributes)) {
+				const attribute = properties.attributes[name];
+				if (values[attribute.field] !== undefined) {
+					let results = attribute.get(values[attribute.field], {...values});
+					if (results !== undefined) {
+						data[name] = results;
+					}
+				}
+			}
+
+
+			return getter(data, siblings);
+		}
+	}
+
+	_makeSet(set, properties) {
+		this._checkGetSet(set, "set");
+		const setter = set || ((attr) => attr);
+		return (values, siblings) => {
+			const data = {};
+			if (values === undefined) {
+				return setter(data, siblings);
+			}
+			for (const name of Object.keys(properties.attributes)) {
+				const attribute = properties.attributes[name];
+				if (values[name] !== undefined) {
+					const results = attribute.set(values[name], {...values});
+					if (results !== undefined) {
+						data[attribute.field] = results;
+					}
+				}
+			}
+			return setter(data, siblings);
+		}
+	}
+
+	_isType(value) {
+		if (value === undefined) {
+			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+		}
+		const valueType = getValueType(value);
+		if (valueType !== ValueTypes.object) {
+			return [false, `Invalid value type at entity path "${this.path}. Received value of type "${valueType}", expected value of type "object"`];
+		}
+		let reason = "";
+		const [childrenAreValid, childErrors] = this._validateChildren(value);
+		if (!childrenAreValid) {
+			reason = childErrors;
+		}
+		return [childrenAreValid, reason]
+	}
+
+	_validateChildren(value) {
+		const valueType = getValueType(value);
+		const attributes = this.properties.attributes;
+		const errors = [];
+		if (valueType === ValueTypes.object) {
+			for (const child of Object.keys(attributes)) {
+				const [isValid, errorMessages] = attributes[child].isValid(value === undefined ? value : value[child])
+				if (!isValid) {
+					errors.push(errorMessages);
+				}
+			}
+		} else if (valueType !== ValueTypes.object) {
+			errors.push(
+				`Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`
+			);
+		} else if (this.properties.hasRequiredAttributes) {
+			errors.push(
+				`Invalid value type at entity path: "${this.path}". Map attribute requires at least the properties ${u.commaSeparatedString(Object.keys(attributes))}`
+			);
+		}
+		return [errors.length === 0, errors.filter(Boolean).join(", ")];
+	}
+
+	val(value) {
+		const getValue = (v) => {
+			v = this.cast(v);
+			if (v === undefined) {
+				v = this.default();
+			}
+			return v;
+		}
+		const valueType = getValueType(value);
+		if (value === undefined) {
+			return getValue(value);
+		} else if (value && valueType !== "object" && Object.keys(value).length === 0) {
+			return getValue(value);
+		} else if (valueType !== "object") {
+			throw new Error(`Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`);
+		}
+
+		const data = {};
+
+		for (const name of Object.keys(this.properties.attributes)) {
+			const attribute = this.properties.attributes[name];
+			const results = attribute.val(value[attribute.name]);
+			if (results !== undefined) {
+				data[name] = results;
+			}
+		}
+
+		if (Object.keys(data).length > 0) {
+			return getValue(data);
+		} else {
+			return getValue();
+		}
+	}
+}
+
+class ListAttribute extends Attribute {
+	constructor(definition) {
+		super(definition);
+		const items = Attribute.buildChildListItems(definition, {
+			parentType: this.type,
+			parentPath: this.path,
+			traverser: this.traverser
+		});
+		this.items = items;
+		this.get = this._makeGet(definition.get, items);
+		this.set = this._makeSet(definition.set, items);
+	}
+
+	_makeGet(get, items) {
+		this._checkGetSet(get, "get");
+
+		const getter = get || ((attr) => attr);
+
+		return (values, siblings) => {
+			const data = [];
+
+			if (this.hidden) {
+				return;
+			}
+
+			if (values === undefined) {
+				return getter(data, siblings);
+			}
+
+			for (let value of values) {
+				const results = items.get(value, [...values]);
+				if (results !== undefined) {
+					data.push(results);
+				}
+			}
+
+			return getter(data, siblings);
+		}
+	}
+
+	_makeSet(set, items) {
+		this._checkGetSet(set, "set");
+		const setter = set || ((attr) => attr);
+		return (values, siblings) => {
+			const data = [];
+
+			if (values === undefined) {
+				return setter(values, siblings);
+			}
+
+			for (const value of values) {
+				const results = items.set(value, [...values]);
+				if (results !== undefined) {
+					data.push(results);
+				}
+			}
+
+			return setter(data, siblings);
+		}
+	}
+
+	_validateArrayValue(value) {
+		const valueType = getValueType(value);
+		if (value !== undefined && valueType !== ValueTypes.array) {
+			return [false, `Invalid value type at entity path "${this.path}. Received value of type "${valueType}", expected value of type "array"`];
+		} else {
+			return [true, ""];
+		}
+	}
+
+	_isType(value) {
+		if (value === undefined) {
+			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+		}
+
+		const [isValidArray, errors] = this._validateArrayValue(value);
+		if (!isValidArray) {
+			return [isValidArray, errors];
+		}
+		let reason = "";
+		const [childrenAreValid, childErrors] = this._validateChildren(value);
+		if (!childrenAreValid) {
+			reason = childErrors;
+		}
+		return [childrenAreValid, reason]
+	}
+
+	_validateChildren(value) {
+		const valueType = getValueType(value);
+		const errors = [];
+		if (valueType === ValueTypes.array) {
+			for (const i in value) {
+				const [isValid, errorMessages] = this.items.isValid(value[i]);
+				if (!isValid) {
+					errors.push(errorMessages + ` at index "${i}"`);
+				}
+			}
+		} else {
+			errors.push(
+				`Invalid value type at entity path: "${this.path}". Expected value to be an Array to fulfill attribute type "${this.type}"`
+			);
+		}
+		return [errors.length === 0, errors.filter(Boolean).join(", ")];
+	}
+
+	val(value) {
+		const getValue = (v) => {
+			v = this.cast(v);
+			if (v === undefined) {
+				v = this.default();
+			}
+			return v;
+		}
+
+		if (value === undefined) {
+			return this.default();
+		} else if (Array.isArray(value) && value.length === 0) {
+			return value;
+		} else if (!Array.isArray(value)) {
+			throw new Error(`Invalid value type at entity path "${this.path}. Received value of type "${getValueType(value)}", expected value of type "array"`);
+		}
+
+		const data = [];
+
+		for (const v of value) {
+			const results = this.items.val(v);
+			if (results !== undefined) {
+				data.push(results);
+			}
+		}
+
+		if (data.filter(value => value !== undefined).length > 0) {
+			return getValue(data);
+		} else {
+			return getValue();
+		}
+	}
+}
+
+class SetAttribute extends Attribute {
+	constructor(definition) {
+		super(definition);
+		const items = Attribute.buildChildSetItems(definition, {
+			parentType: this.type,
+			parentPath: this.path,
+			traverser: this.traverser
+		});
+		this.items = items;
+		this.get = this._makeGet(definition.get, items);
+		this.set = this._makeSet(definition.set, items);
+	}
+
+	fromDDBSet(value) {
+		if (getValueType(value) === ValueTypes.aws_set) {
+			return value.values;
+		}
+		return value;
+	}
+
+	_createDDBSet(value) {
+		if (this.client && typeof this.client.createSet === "function") {
+			value = Array.isArray(value)
+				? Array.from(new Set(value))
+				: value;
+			return this.client.createSet(value, {validate: true});
+		} else {
+			return new DynamoDBSet(value, this.items.type);
+		}
+	}
+
+	toDDBSet(value) {
+		const valueType = getValueType(value);
+		let array;
+		switch(valueType) {
+			case ValueTypes.set:
+				array = Array.from(value);
+				return this._createDDBSet(array);
+			case ValueTypes.aws_set:
+				return value;
+			case ValueTypes.array:
+				return this._createDDBSet(value);
+			case ValueTypes.string:
+			case ValueTypes.number: {
+				this.items.getValidate(value);
+				return this._createDDBSet(value);
+			}
+			default:
+				throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.`)
+		}
+
+	}
+
+	_makeGet(get, items) {
+		this._checkGetSet(get, "get");
+
+		const getter = get || ((attr) => attr);
+
+		return (values, siblings) => {
+			if (values !== undefined) {
+				const data = this.fromDDBSet(values);
+				return getter(data, siblings);
+			}
+			let results = getter(data, siblings);
+			if (results !== undefined) {
+				// if not undefined, try to convert, else no need to return
+				return this.fromDDBSet(results);
+			}
+		}
+	}
+
+	_makeSet(set, items) {
+		this._checkGetSet(set, "set");
+		const setter = set || ((attr) => attr);
+		return (values, siblings) => {
+			const results = setter(values, siblings);
+			if (results !== undefined) {
+				return this.toDDBSet(results);
+			}
+		}
+	}
+
+	_isType(value) {
+		if (value === undefined) {
+			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+		}
+
+		let reason = "";
+		const [childrenAreValid, childErrors] = this._validateChildren(value);
+		if (!childrenAreValid) {
+			reason = childErrors;
+		}
+		return [childrenAreValid, reason]
+	}
+
+	_validateChildren(value) {
+		const valueType = getValueType(value);
+		const errors = [];
+		let arr = [];
+		if (valueType === ValueTypes.array) {
+			arr = value;
+		} else if (valueType === ValueTypes.set) {
+			arr = Array.from(value);
+		} else if (valueType === ValueTypes.aws_set) {
+			arr = value.values;
+		} else {
+			errors.push(
+				`Invalid value type at attribute path: "${this.path}". Expected value to be an Expected value to be an Array, native JavaScript Set objects, or DocumentClient Set objects to fulfill attribute type "${this.type}"`
+			)
+		}
+		for (const item of arr) {
+			const [isValid, errorMessage] = this.items.isValid(item);
+			if (!isValid) {
+				errors.push(errorMessage);
+			}
+		}
+		return [errors.length === 0, errors.filter(Boolean).join(", ")];
+	}
+
+	val(value) {
+		if (value === undefined) {
+			value = this.default();
+		}
+
+		if (value !== undefined) {
+			return this.toDDBSet(value);
+		}
+	}
+}
+
 class Schema {
-	constructor(properties = {}, facets = {}, traverser = new AttributeTraverser()) {
+	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client} = {}) {
 		this._validateProperties(properties);
-		let schema = Schema.normalizeAttributes(properties, facets, traverser);
+		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client});
+		this.client = client;
 		this.attributes = schema.attributes;
 		this.enums = schema.enums;
 		this.translationForTable = schema.translationForTable;
@@ -333,7 +832,7 @@ class Schema {
 		this.traverser = traverser;
 	}
 
-	static normalizeAttributes(attributes = {}, facets = {}, traverser) {
+	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client} = {}) {
 		let invalidProperties = [];
 		let normalized = {};
 		let usedAttrs = {};
@@ -341,7 +840,7 @@ class Schema {
 		let translationForTable = {};
 		let translationForRetrieval = {};
 		let watchedAttributes = {};
-		let requiredAttributes = {};
+		let requiredAttributes = new Set();
 		let hiddenAttributes = new Set();
 		let readOnlyAttributes = new Set();
 		let definitions = {};
@@ -355,13 +854,14 @@ class Schema {
 			if (facets.fields && facets.fields.includes(name)) {
 				continue;
 			}
-			if (attribute.field && facets.fields.includes(attribute.field)) {
+			if (attribute.field && facets.fields && facets.fields.includes(attribute.field)) {
 				continue;
 			}
 			let isKey = !!facets.byIndex && facets.byIndex[""].all.find((facet) => facet.name === name);
 			let definition = {
 				name,
 				traverser,
+				client,
 				label: attribute.label,
 				required: !!attribute.required,
 				field: attribute.field || name,
@@ -377,7 +877,7 @@ class Schema {
 				items: attribute.items,
 				properties: attribute.properties,
 				parentPath: attribute.parentPath,
-				parentType: attribute.parentType
+				parentType: attribute.parentType,
 			};
 
 			if (attribute.watch !== undefined) {
@@ -402,7 +902,7 @@ class Schema {
 			}
 
 			if (definition.required) {
-				requiredAttributes[name] = name;
+				requiredAttributes.add(name);
 			}
 
 			if (facets.byAttr && facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
@@ -435,11 +935,25 @@ class Schema {
 		}
 
 		for (let name of Object.keys(definitions)) {
-			let definition = definitions[name];
+			const definition = definitions[name];
+
 			definition.watchedBy = Array.isArray(watchedAttributes[name])
 				? watchedAttributes[name]
-				: []
-			normalized[name] = new Attribute(definition);
+				: [];
+
+			switch(definition.type) {
+				case AttributeTypes.map:
+					normalized[name] = new MapAttribute(definition);
+					break;
+				case AttributeTypes.list:
+					normalized[name] = new ListAttribute(definition);
+					break;
+				case AttributeTypes.set:
+					normalized[name] = new SetAttribute(definition);
+					break;
+				default:
+					normalized[name] = new Attribute(definition);
+			}
 		}
 
 		let watchedWatchers = [];
@@ -587,10 +1101,6 @@ class Schema {
 		return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
 	}
 
-	// applyAttributeSetters(payload = {}) {
-	// 	return this._fulfillAttributeMutationMethod(AttributeMutationMethods.set, payload);
-	// }
-
 	translateFromFields(item = {}, options = {}) {
 		let { includeKeys } = options;
 		let data = {};
@@ -632,7 +1142,9 @@ class Schema {
 			if (!attribute) {
 				throw new Error(`Attribute "${path}" does not exist on model.`);
 			} else if (attribute.readOnly) {
-				throw new Error(`Attribute "${attribute.name}" is Read-Only and cannot be updated`);
+				throw new Error(`Attribute "${attribute.path}" is Read-Only and cannot be removed`);
+			} else if (attribute.required) {
+				throw new Error(`Attribute "${attribute.path}" is Required and cannot be removed`);
 			}
 		}
 		return paths;
@@ -647,7 +1159,7 @@ class Schema {
 			}
 			if (attribute.readOnly) {
 				// todo: #electroerror
-				throw new Error(`Attribute "${attribute.name}" is Read-Only and cannot be updated`);
+				throw new Error(`Attribute "${attribute.path}" is Read-Only and cannot be updated`);
 			} else {
 				record[path] = attribute.getValidate(value);
 			}
@@ -657,6 +1169,10 @@ class Schema {
 
 	getReadOnly() {
 		return Array.from(this.readOnlyAttributes);
+	}
+
+	getRequired() {
+		return Array.from(this.requiredAttributes);
 	}
 
 	formatItemForRetrieval(item, config) {

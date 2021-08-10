@@ -1,6 +1,19 @@
 const v = require("./validations");
 const t = require("./types");
 
+function parseJSONPath(path = "") {
+  if (typeof path !== "string") {
+    throw new Error("Path must be a string");
+  }
+  path = path.replace(/\[/g, ".");
+  path = path.replace(/\]/g, "");
+  return path.split(".");
+}
+
+function genericizeJSONPath(path = "") {
+  return path.replace(/\[\d+\]/g, "[*]");
+}
+
 function getInstanceType(instance = {}) {
   let [isModel, errors] = v.testModel(instance);
   if (!instance || Object.keys(instance).length === 0) {
@@ -67,8 +80,10 @@ function commaSeparatedString(array = []) {
 
 module.exports = {
   batchItems,
+  parseJSONPath,
   getInstanceType,
   getModelVersion,
+  genericizeJSONPath,
   commaSeparatedString,
   applyBetaModelOverrides
 };
