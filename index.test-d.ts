@@ -2964,7 +2964,10 @@ const complexShapeService = new Service({
     ent3: entityWithComplexShapesRequired
 });
 
+const parsed = entityWithComplexShapes.parse({});
+
 entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
+    expectType<typeof parsed>(data);
     if (data === null) {
         return null;
     }

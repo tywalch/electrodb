@@ -329,7 +329,7 @@ describe("BatchGet", async () => {
         }
       }
     }
-    let results = MallStores.formatBulkGetResponse(undefined, response, {});
+    let results = MallStores.formatBulkGetResponse(response, {});
     expect(results).to.be.an("array").with.length(2);
     expect(results[0]).to.be.an("array").with.length(1);
     expect(results[1]).to.be.an("array").with.length(2);
@@ -399,7 +399,7 @@ describe("BatchGet", async () => {
         }
       }
     }
-    let results = MallStores.formatBulkGetResponse(undefined, response, {unprocessed: "raw"});
+    let results = MallStores.formatBulkGetResponse(response, {unprocessed: "raw"});
     expect(results[1]).to.be.an("array").with.length(2);
     expect(results[1]).to.deep.equal([
       {
@@ -456,7 +456,7 @@ describe("BatchGet", async () => {
         }
       }
     }
-    let results = MallStores.formatBulkGetResponse(undefined, response, {includeKeys: true});
+    let results = MallStores.formatBulkGetResponse(response, {includeKeys: true});
     expect(results).to.be.an("array").with.length(2);
     expect(results[0]).to.be.an("array").with.length(1);
     expect(results[0][0]).to.be.deep.equal({
