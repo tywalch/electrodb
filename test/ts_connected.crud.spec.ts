@@ -263,7 +263,7 @@ describe("Entity", async () => {
             let secondStore = { sector, id: stores[1].id };
             let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
             let newRent = "5000.00";
-            expect(secondStoreBeforeUpdate.rent)
+            expect(secondStoreBeforeUpdate?.rent)
                 .to.equal(rent)
                 .and.to.not.equal(newRent);
             let updatedStore = await MallStores.update(secondStore)
@@ -271,7 +271,7 @@ describe("Entity", async () => {
                 .go();
             expect(updatedStore).to.be.empty;
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
-            expect(secondStoreAfterUpdate.rent).to.equal(newRent);
+            expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
         }).timeout(20000);
 
         it("Should not create a overwrite existing record", async () => {
@@ -602,7 +602,7 @@ describe("Entity", async () => {
             let secondStore = { sector, id: stores[1].id };
             let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
             let newRent = "5000.00";
-            expect(secondStoreBeforeUpdate.rent)
+            expect(secondStoreBeforeUpdate?.rent)
                 .to.equal(rent)
                 .and.to.not.equal(newRent);
             let updatedStore = await MallStores.update(secondStore)
@@ -610,7 +610,7 @@ describe("Entity", async () => {
                 .go();
             expect(updatedStore).to.be.empty;
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
-            expect(secondStoreAfterUpdate.rent).to.equal(newRent);
+            expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
         }).timeout(20000);
 
         it("Should not create a overwrite existing record", async () => {
@@ -1022,7 +1022,7 @@ describe("Entity", async () => {
             await record.delete({ prop1, prop2 }).go();
             await sleep(150);
             let recordNoLongerExists = await record.get({ prop1, prop2 }).go();
-            expect(!!Object.keys(recordExists).length).to.be.true;
+            expect(!!Object.keys(recordExists || {}).length).to.be.true;
             expect(recordNoLongerExists).to.be.null;
         });
     });

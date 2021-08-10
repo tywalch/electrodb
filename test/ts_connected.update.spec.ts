@@ -1913,11 +1913,11 @@ describe("Update Item", () => {
                 .delete({tags: ["tag1"]})
                 .go();
 
-            const {tags} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(tags).to.deep.equal(["tag2"]);
+            expect(results?.tags).to.deep.equal(["tag2"]);
         });
         it("should delete a value from the Set type attribute with data method", async () => {
             const repoName = uuid();
@@ -1939,11 +1939,11 @@ describe("Update Item", () => {
                 .data(({tags}, {del}) => del(tags, ["tag1"]))
                 .go();
 
-            const {tags} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(tags).to.deep.equal(["tag2"]);
+            expect(results?.tags).to.deep.equal(["tag2"]);
         });
 
         it("should only allow attributes with type 'set', or 'any'", async () => {
@@ -1981,11 +1981,11 @@ describe("Update Item", () => {
                 .add({stars: 1})
                 .go();
 
-            const {stars} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(stars).to.equal(1);
+            expect(results?.stars).to.equal(1);
         });
 
         it("should add 5 'stars' to the repository", async () => {
@@ -2009,11 +2009,11 @@ describe("Update Item", () => {
                 .add({stars: 5})
                 .go();
 
-            const {stars} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(stars).to.equal(15);
+            expect(results?.stars).to.equal(15);
         });
 
         it("should add 5 'stars' to the repository with the data method", async () => {
@@ -2036,11 +2036,11 @@ describe("Update Item", () => {
                 .data(({stars}, {add}) => add(stars, 5))
                 .go();
 
-            const {stars} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(stars).to.equal(15);
+            expect(results?.stars).to.equal(15);
         });
 
         it("should add an item to the tags property Set", async () => {
@@ -2063,11 +2063,11 @@ describe("Update Item", () => {
                 .add({tags: ["tag3"]})
                 .go();
 
-            const {tags} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(tags).to.deep.equal(["tag1", "tag2", "tag3"]);
+            expect(results?.tags).to.deep.equal(["tag1", "tag2", "tag3"]);
         });
 
         it("should only allow attributes with type 'number', 'set' or 'any'", async () => {
@@ -2107,11 +2107,11 @@ describe("Update Item", () => {
                 .subtract({stars: 1})
                 .go();
 
-            const {stars} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(stars).to.equal(4);
+            expect(results?.stars).to.equal(4);
         });
 
         it("should remove 3 'stars' from the repository", async () => {
@@ -2135,11 +2135,11 @@ describe("Update Item", () => {
                 .subtract({stars: 3})
                 .go();
 
-            const {stars} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(stars).to.equal(2);
+            expect(results?.stars).to.equal(2);
         });
 
         it("should remove 3 'stars' from the repository with the data method", async () => {
@@ -2163,11 +2163,11 @@ describe("Update Item", () => {
                 .data(({stars}, {subtract}) => subtract(stars, 3))
                 .go();
 
-            const {stars} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(stars).to.equal(2);
+            expect(results?.stars).to.equal(2);
         });
     });
     describe("name operation", () => {
@@ -2193,11 +2193,11 @@ describe("Update Item", () => {
                 .data(({stars, views}, {name, add}) => add(views, name(stars)))
                 .go();
 
-            const {views} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(views).to.equal(15);
+            expect(results?.views).to.equal(15);
         });
 
         it("should only allow types", async () => {
@@ -2251,12 +2251,12 @@ describe("Update Item", () => {
                 })
                 .go();
 
-            const {views, stars} = await repositories
+            const results = await repositories
                 .get({repoName, repoOwner})
                 .go();
 
-            expect(views).to.equal(30);
-            expect(stars).to.equal(25);
+            expect(results?.views).to.equal(30);
+            expect(results?.stars).to.equal(25);
         });
     });
     describe("nested operations", () => {
