@@ -771,23 +771,6 @@ type TableItem<A extends string, F extends A, C extends string, S extends Schema
 type ResponseItem<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> =
     Omit<TableItem<A,F,C,S>, HiddenAttributes<A,F,C,S>>
 
-// type RequiredPutItems<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
-//     [Attribute in keyof S["attributes"]]:
-//     "required" extends keyof S["attributes"][Attribute]
-//         ? true extends S["attributes"][Attribute]["required"]
-//         ? true
-//         : "default" extends keyof S["attributes"][Attribute]
-//             ? false
-//             : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
-//                 ? true
-//                 : false
-//         : "default" extends keyof S["attributes"][Attribute]
-//         ? false
-//         : Attribute extends keyof TableIndexCompositeAttributes<A,F,C,S>
-//             ? true
-//             : false
-// }
-
 type RequiredPutItems<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> = {
     [Attribute in keyof S["attributes"]]:
     "default" extends keyof S["attributes"][Attribute]
@@ -939,8 +922,6 @@ type DataUpdateCallback<A extends string, F extends A, C extends string, S exten
     <W extends DataUpdateAttributes<A,F,C,S,I>>(attributes: W, operations: DataUpdateOperations<A,F,C,S,I>) => any;
 
 type ReturnValues = "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
-
-
 
 interface QueryOptions {
     params?: object;
@@ -1273,6 +1254,8 @@ type Spread<L, R> = Id<
     & SpreadProperties<L, R, OptionalPropertyNames<R> & keyof L>
     >;
 
+
+
 type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
         [EntityName in keyof E]:
@@ -1409,7 +1392,21 @@ export type UpdateDeleteEntityItem<E extends Entity<any, any, any, any>> =
         ? DeleteItem<A, F, C, S>
         : never;
 
-type EntityRecord<E extends Entity<any, any, any, any>> =
+export type EntityRecord<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
         ? Item<A,F,C,S,S["attributes"]>
         : never;
+
+export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyof SERVICE["collections"]> =
+    SERVICE extends Service<infer E> ? Pick<{
+        [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ? COLLECTION extends keyof CollectionAssociations<E>
+                ? EntityName extends CollectionAssociations<E>[COLLECTION]
+                    ? ResponseItem<A,F,C,S>[]
+                    : never
+                : never
+            : never
+        }, COLLECTION extends keyof CollectionAssociations<E>
+            ? CollectionAssociations<E>[COLLECTION]
+            : never>
+    : never

@@ -26,6 +26,14 @@ export const users = new Entity({
     pinned: {
       type: "any"
     },
+    following: {
+      type: "set",
+      items: "string"
+    },
+    followers: {
+      type: "set",
+      items: "string"
+    },
     createdAt: {
       type: "string",
       default: () => moment.utc().format(),
@@ -37,14 +45,6 @@ export const users = new Entity({
       set: () => moment.utc().format(),
       readOnly: true,
     },
-    following: {
-      type: "set",
-      items: "string"
-    },
-    followers: {
-      type: "set",
-      items: "string"
-    }
   },
   indexes: {
     user: {

@@ -8,7 +8,7 @@ import {
     Status,
     IsNotTicket,
     NotYetViewed,
-    PullRequest,
+    OwnedItems,
     isIssueCommentIds,
     isPullRequestCommentIds
 } from "./database";
@@ -51,6 +51,28 @@ export async function closePullRequest(user: string, pr: PullRequestIds) {
             ${eq(username, user)} OR ${eq(repoOwner, user)}
         `)
         .go()
+}
+
+// Get all user info, repos, pull requests, and issues in one query
+export async function getFirstPageLoad(username: string) {
+    const results: OwnedItems = {
+        issues: [],
+        pullRequests: [],
+        repositories: [],
+        users: [],
+    };
+    let page = null;
+
+    do {
+        const [next, data] = await store.collections.owned({username}).page();
+        results.issues = results.issues.concat(data.issues);
+        results.pullRequests = results.pullRequests.concat(data.pullRequests);
+        results.repositories = results.repositories.concat(data.repositories);
+        results.users = results.users.concat(data.users);
+        page = next;
+    } while (page !== null);
+
+    return results;
 }
 
 // Get Subscriptions for a given Repository, PullRequest, or Issue.
@@ -155,6 +177,7 @@ async function approvePullRequest(repoOwner: string, repoName: string, pullReque
 async function followRepository(repoOwner: string, repoName: string, follower: string) {
     await store.entities
         .repositories.update({repoOwner, repoName})
-        .add({follower: [follower]})
+        .add({followers: [follower]})
         .go()
 }
+

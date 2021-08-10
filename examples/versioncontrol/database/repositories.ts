@@ -73,9 +73,9 @@ export const repositories = new Entity({
       type: "string",
       default: "main"
     },
-    createdAt: {
-      type: "string",
-      default: () => moment.utc().format()
+    topics: {
+      type: "set",
+      items: "string"
     },
     followers: {
       type: "set",
@@ -84,7 +84,11 @@ export const repositories = new Entity({
     stars: {
       type: "set",
       items: "string"
-    }
+    },
+    createdAt: {
+      type: "string",
+      default: () => moment.utc().format()
+    },
   },
   indexes: {
     repositories: {

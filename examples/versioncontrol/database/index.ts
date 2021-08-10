@@ -5,7 +5,7 @@ import {subscriptions} from "./subscriptions";
 import {users} from "./users";
 import {pullRequests, pullRequestComments} from "./pullrequests";
 import {issues, issueComments} from "./issues";
-import {CreateEntityItem, UpdateEntityItem, EntityItem, EntityRecord} from "../../../";
+import {CreateEntityItem, UpdateEntityItem, EntityItem, EntityRecord, CollectionItem} from "../../../";
 import {Status, SubscriptionTypes, IsNotTicket, isIssueCommentIds, isPullRequestCommentIds, NotYetViewed} from "./types"
 
 const table = "electro";
@@ -56,4 +56,7 @@ export type UpdateSubscription = UpdateEntityItem<typeof subscriptions>;
 export type SubscriptionItem = EntityItem<typeof subscriptions>;
 export type SubscriptionIds = Parameters<typeof subscriptions.get>[0][0];
 
+export type OwnedItems = CollectionItem<typeof store, "owned">;
+
 export { NotYetViewed, Status, SubscriptionTypes, IsNotTicket, isIssueCommentIds, isPullRequestCommentIds };
+

@@ -83,7 +83,7 @@ export const pullRequests = new Entity({
       }
     },
     created: {
-      collection: "owned",
+      collection: ["owned", "managed"],
       index: "gsi1pk-gsi1sk-index",
       pk: {
         field: "gsi1pk",
@@ -91,7 +91,7 @@ export const pullRequests = new Entity({
       },
       sk: {
         field: "gsi1sk",
-        composite: ["status", "repoOwner", "repoName"]
+        composite: ["status", "createdAt"]
       }
     },
     enhancements: {
