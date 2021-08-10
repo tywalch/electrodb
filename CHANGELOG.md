@@ -47,8 +47,8 @@ All notable changes to this project will be documented in this file. Breaking ch
   
 ## [1.3.0] - 2021-08-09
 ### Added
-- New Attribute types `map`, `list`, `set` [[read more]](./README.md#expanded-syntax)
-- New Query Options, and support for, `ReturnValues` as requested in Issue#71 [[read more]](./README.md#query-options) 
+- New Attribute types `map`, `list`, `set`. [[read more]](./README.md#expanded-syntax)
+- New Query Options, and support for, `ReturnValues` as requested in Issue#71. [[read more]](./README.md#query-options) 
 - New type definitions for recently released update methods `append`, `add`, `subtract`, `data`, `remove`, and `delete`. [[read more]](./README.md#exported-types) 
 
 ### Changed
@@ -60,4 +60,6 @@ All notable changes to this project will be documented in this file. Breaking ch
 - TypeScript type definitions for `get()` method now incorporate potential for `null` response.
 - Type definitions for `value()` and `name()` where clause operations.  
 
-
+### [1.3.1] - 2021-08-09
+### Added
+- New entity method `parse()` to expose ElectroDB formatting for values retrieved outside of ElectroDB. [[read more]](./README.md#parse)

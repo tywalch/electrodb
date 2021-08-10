@@ -172,6 +172,8 @@ const FormatToReturnValues = {
 	'updated_new': 'UPDATED_NEW'
 };
 
+const TableIndex = "";
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -179,6 +181,7 @@ module.exports = {
 	PathTypes,
 	QueryTypes,
 	ValueTypes,
+	TableIndex,
 	MethodTypes,
 	Comparisons,
 	BuilderTypes,

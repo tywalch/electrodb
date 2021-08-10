@@ -1080,6 +1080,10 @@ type ServiceConfiguration = {
     client?: DocumentClient
 };
 
+type ParseInput = {
+    [attributes: string]: any;
+}
+
 export class Entity<A extends string, F extends A, C extends string, S extends Schema<A,F,C>> {
     readonly schema: S;
     constructor(schema: S, config?: EntityConfiguration);
@@ -1111,9 +1115,10 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     find(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
     match(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
-    setIdentifier(type: "entity" | "version", value: string): void;
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>
     query: Queries<A,F,C,S>;
+    parse(item: ParseInput): ResponseItem<A,F,C,S> | null
+    setIdentifier(type: "entity" | "version", value: string): void;
     client: any;
 }
 

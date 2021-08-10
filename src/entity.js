@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -23,7 +23,7 @@ class Entity {
 		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterOperations);
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(clauses, this.model.filters);
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
-		this.scan = this._makeChain("", this._clausesWithFilters, clauses.index).scan();
+		this.scan = this._makeChain(TableIndex, this._clausesWithFilters, clauses.index).scan();
 		this.query = {};
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
@@ -68,8 +68,8 @@ class Entity {
 	}
 
 	ownsLastEvaluatedKey(key = {}) {
-		let {pk, sk} = this.model.prefixes[""];
-		let hasSK = this.model.lookup.indexHasSortKeys[""];
+		let {pk, sk} = this.model.prefixes[TableIndex];
+		let hasSK = this.model.lookup.indexHasSortKeys[TableIndex];
 		let pkMatch = typeof key[pk.field] === "string" && key[pk.field].startsWith(pk.prefix);
 		if (pkMatch && hasSK) {
 			return typeof key[sk.field] === "string" && key[sk.field].startsWith(sk.prefix);
@@ -81,7 +81,7 @@ class Entity {
 		if (pager === null) {
 			return false;
 		}
-		let tableIndex = "";
+		let tableIndex = TableIndex;
 		let tableIndexFacets = this.model.facets.byIndex[tableIndex];
 		let indexFacets = this.model.facets.byIndex[tableIndex];
 
@@ -108,7 +108,7 @@ class Entity {
 	match(facets = {}) {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
-			return this._makeChain("", this._clausesWithFilters, clauses.index)
+			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index)
 				.scan()
 				.filter(attr => {
 					let eqFilters = [];
@@ -137,7 +137,7 @@ class Entity {
 	find(facets = {}) {
 		let match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
-			return this._makeChain("", this._clausesWithFilters, clauses.index).scan();
+			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index).scan();
 		} else {
 			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(facets);
 		}
@@ -168,7 +168,7 @@ class Entity {
 	}
 
 	get(facets = {}) {
-		let index = "";
+		let index = TableIndex;
 		if (Array.isArray(facets)) {
 			return this._makeChain(index, this._clausesWithFilters, clauses.index).batchGet(facets);
 		} else {
@@ -178,7 +178,7 @@ class Entity {
 
 
 	delete(facets = {}) {
-		let index = "";
+		let index = TableIndex;
 		if (Array.isArray(facets)) {
 			return this._makeChain(index, this._clausesWithFilters, clauses.index).batchDelete(facets);
 		} else {
@@ -187,7 +187,7 @@ class Entity {
 	}
 
 	put(attributes = {}) {
-		let index = "";
+		let index = TableIndex;
 		if (Array.isArray(attributes)) {
 			return this._makeChain(index, this._clausesWithFilters, clauses.index).batchPut(attributes);
 		} else {
@@ -196,7 +196,7 @@ class Entity {
 	}
 
 	create(attributes = {}) {
-		let index = "";
+		let index = TableIndex;
 		let options = {
 			params: {
 				ConditionExpression: this._makeItemDoesntExistConditions(index)
@@ -206,12 +206,12 @@ class Entity {
 	}
 
 	update(facets = {}) {
-		let index = "";
+		let index = TableIndex;
 		return this._makeChain(index, this._clausesWithFilters, clauses.index).update(facets);
 	}
 
 	patch(facets = {}) {
-		let index = "";
+		let index = TableIndex;
 		let options = {
 			params: {
 				ConditionExpression: this._makeItemExistsConditions(index)
@@ -221,7 +221,7 @@ class Entity {
 	}
 
 	remove(facets = {}) {
-		let index = "";
+		let index = TableIndex;
 		let options = {
 			params: {
 				ConditionExpression: this._makeItemExistsConditions(index)
@@ -286,7 +286,7 @@ class Entity {
 					}
 					return;
 				}
-				let unprocessed = this.formatBulkWriteResponse(params.IndexName, response, config);
+				let unprocessed = this.formatBulkWriteResponse(response, config);
 				for (let u of unprocessed) {
 					results.push(u);
 				}
@@ -312,7 +312,7 @@ class Entity {
 					resultsAll.push(await config.parse(config, response));
 					return;
 				}
-				let [results, unprocessed] = this.formatBulkGetResponse(params.IndexName, response, config);
+				let [results, unprocessed] = this.formatBulkGetResponse(response, config);
 				for (let r of results) {
 					resultsAll.push(r);
 				}
@@ -336,7 +336,7 @@ class Entity {
 			case FormatToReturnValues.all_old:
 			case FormatToReturnValues.updated_new:
 			case FormatToReturnValues.updated_old:
-				return this.formatResponse(parameters.IndexName, response, config);
+				return this.formatResponse(response, parameters.IndexName, config);
 			case FormatToReturnValues.default:
 			default:
 				return this._formatDefaultResponse(method, parameters.IndexName, parameters, config, response);
@@ -347,14 +347,14 @@ class Entity {
 		switch (method) {
 			case MethodTypes.put:
 			case MethodTypes.create:
-				return this.formatResponse(index, parameters, config);
+				return this.formatResponse(parameters, index, config);
 			case MethodTypes.update:
 			case MethodTypes.patch:
 			case MethodTypes.delete:
 			case MethodTypes.remove:
-				return this.formatResponse(index, response, {...config, _objectOnEmpty: true});
+				return this.formatResponse(response, index, {...config, _objectOnEmpty: true});
 			default:
-				return this.formatResponse(index, response, config);
+				return this.formatResponse(response, index, config);
 		}
 	}
 
@@ -373,16 +373,17 @@ class Entity {
 		return data;
 	}
 
-	formatBulkWriteResponse(index, response = {}, config = {}) {
+	formatBulkWriteResponse(response = {}, config = {}) {
 		if (!response || !response.UnprocessedItems) {
 			return response;
 		}
-		let table = config.table || this._getTableName();
+		const table = config.table || this._getTableName();
+		const index = TableIndex;
 		let unprocessed = response.UnprocessedItems[table];
 		if (Array.isArray(unprocessed) && unprocessed.length) {
 			return unprocessed.map(request => {
 				if (request.PutRequest) {
-					return this.formatResponse(index, request.PutRequest, config);
+					return this.formatResponse(request.PutRequest, index, config);
 				} else if (request.DeleteRequest) {
 					if (config.unprocessed === UnprocessedTypes.raw) {
 						return request.DeleteRequest.Key;
@@ -398,10 +399,11 @@ class Entity {
 		}
 	}
 
-	formatBulkGetResponse(index, response = {}, config = {}) {
+	formatBulkGetResponse(response = {}, config = {}) {
 		let unprocessed = [];
 		let results = [];
-		let table = config.table || this._getTableName();
+		const table = config.table || this._getTableName();
+		const index = TableIndex;
 		if (!response.UnprocessedKeys || !response.Responses) {
 			throw new Error("Unknown response format");
 		}
@@ -418,13 +420,13 @@ class Entity {
 		}
 
 		if (response.Responses[table] && Array.isArray(response.Responses[table])) {
-			results = this.formatResponse(index, {Items: response.Responses[table]}, config);
+			results = this.formatResponse({Items: response.Responses[table]}, index, config);
 		}
 
 		return [results, unprocessed];
 	}
 
-	formatResponse(index, response, config = {}) {
+	formatResponse(response, index, config = {}) {
 		let stackTrace;
 		if (!config.originalErr) {
 			stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
@@ -469,7 +471,6 @@ class Entity {
 				}
 			}
 
-
 			if (config._isPagination) {
 				let nextPage = this._formatReturnPager(config, index, response.LastEvaluatedKey, results[results.length - 1]);
 				results = [nextPage, results];
@@ -485,6 +486,11 @@ class Entity {
 				throw stackTrace;
 			}
 		}
+	}
+
+
+	parse(item) {
+		return this.formatResponse({item});
 	}
 
 	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {
@@ -530,7 +536,7 @@ class Entity {
 		return current;
 	}
 	/* istanbul ignore next */
-	_makeChain(index = "", clauses, rootClause, options = {}) {
+	_makeChain(index = TableIndex, clauses, rootClause, options = {}) {
 		let state = new ChainState({
 			index,
 			options,
@@ -612,7 +618,7 @@ class Entity {
 
 
 
-	_deconstructIndex(index = "", lastEvaluated, lastReturned) {
+	_deconstructIndex(index = TableIndex, lastEvaluated, lastReturned) {
 		let pkName = this.model.translations.keys[index].pk;
 		let skName = this.model.translations.keys[index].sk;
 		let pkFacets = this._deconstructKeys(index, KeyTypes.pk, lastEvaluated[pkName], lastReturned);
@@ -624,11 +630,11 @@ class Entity {
 		return facets;
 	}
 
-	_formatKeysToItem(index = "", lastEvaluated, lastReturned) {
+	_formatKeysToItem(index = TableIndex, lastEvaluated, lastReturned) {
 		if (lastEvaluated === null || typeof lastEvaluated !== "object" || Object.keys(lastEvaluated).length === 0) {
 			return lastEvaluated;
 		}
-		let tableIndex = "";
+		let tableIndex = TableIndex;
 		let pager = this._deconstructIndex(index, lastEvaluated, lastReturned);
 		// lastEvaluatedKeys from query calls include the index pk/sk as well as the table index's pk/sk
 		if (index !== tableIndex) {
@@ -645,18 +651,18 @@ class Entity {
 		return pager;
 	}
 
-	_constructPagerIndex(index = "", item) {
+	_constructPagerIndex(index = TableIndex, item) {
 		let pk = this._expectFacets(item, this.model.facets.byIndex[index].pk);
 		let sk = this._expectFacets(item, this.model.facets.byIndex[index].sk);
 		let keys = this._makeIndexKeys(index, pk, sk);
 		return this._makeParameterKey(index, keys.pk, ...keys.sk);
 	}
 
-	_formatSuppliedPager(index = "", item) {
+	_formatSuppliedPager(index = TableIndex, item) {
 		if (typeof item !== "object" || Object.keys(item).length === 0) {
 			return item;
 		}
-		let tableIndex = "";
+		let tableIndex = TableIndex;
 		let pager = this._constructPagerIndex(index, item);
 		if (index !== tableIndex) {
 			pager = {...pager, ...this._constructPagerIndex(tableIndex, item)}
@@ -934,7 +940,7 @@ class Entity {
 
 	/* istanbul ignore next */
 	_makeScanParam(filter = {}) {
-		let indexBase = "";
+		let indexBase = TableIndex;
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
 		let pkField = this.model.indexes[accessPattern].pk.field;
@@ -969,7 +975,7 @@ class Entity {
 	}
 
 	_makeSimpleIndexParams(partition, sort) {
-		let index = "";
+		let index = TableIndex;
 		let keys = this._makeIndexKeys(index, partition, sort);
 		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
 		let TableName = this._getTableName();
@@ -1004,7 +1010,7 @@ class Entity {
 		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
 		// should only happen when an attribute is changed.
 		const { indexKey, updatedKeys, deletedKeys = [] } = this._getUpdatedKeys(pk, sk, preparedUpdateValues, removed);
-		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[""];
+		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
 
 		for (const path of Object.keys(preparedUpdateValues)) {
 			if (modifiedAttributeNames[path] !== undefined && preparedUpdateValues[path] !== undefined) {
@@ -1052,7 +1058,7 @@ class Entity {
 	}
 
 	_updateExpressionBuilder(data) {
-		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[""]
+		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[TableIndex]
 		let skip = [
 			// Removing readOnly from here because this should have been validated earlier in the process. Not checking
 			// readOnly here also allows `watch` properties to circumnavigate the readOnly check for attributes that
@@ -1274,7 +1280,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeComparisonQueryParams(index = "", comparison = "", filter = {}, pk = {}, sk = {}) {
+	_makeComparisonQueryParams(index = TableIndex, comparison = "", filter = {}, pk = {}, sk = {}) {
 		let operator = Comparisons[comparison];
 		if (!operator) {
 			throw new Error(`Unexpected comparison operator "${comparison}", expected ${utilities.commaSeparatedString(Object.values(Comparisons))}`);
@@ -1352,7 +1358,7 @@ class Entity {
 
 	_getPutKeys(pk, sk, set) {
 		let setAttributes = this.model.schema.applyAttributeSetters(set);
-		let updateIndex = "";
+		let updateIndex = TableIndex;
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
 		let completeFacets = this._expectIndexFacets(
@@ -1385,7 +1391,7 @@ class Entity {
 	}
 
 	_getUpdatedKeys(pk, sk, set, removed) {
-		let updateIndex = "";
+		let updateIndex = TableIndex;
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
 		let completeFacets = this._expectIndexFacets(
@@ -1642,7 +1648,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeIndexKeysWithoutTail(index = "", pkFacets = {}, ...skFacets) {
+	_makeIndexKeysWithoutTail(index = TableIndex, pkFacets = {}, ...skFacets) {
 		this._validateIndex(index);
 		if (!skFacets.length) {
 			skFacets.push({});
@@ -1670,7 +1676,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeIndexKeys(index = "", pkFacets = {}, ...skFacets) {
+	_makeIndexKeys(index = TableIndex, pkFacets = {}, ...skFacets) {
 		this._validateIndex(index);
 		if (!skFacets.length) {
 			skFacets.push({});
@@ -1772,19 +1778,19 @@ class Entity {
 			} else if (i === 0) {
 				break;
 			} else {
-				match = (candidates[0] !== undefined && facets[i][candidates[0]].index) || "";
+				match = (candidates[0] !== undefined && facets[i][candidates[0]].index) || TableIndex;
 				break;
 			}
 		}
 		return {
 			keys: keys[match] || [],
-			index: match || "",
+			index: match || TableIndex,
 			shouldScan: match === undefined
 		};
 	}
 
 	/* istanbul ignore next */
-	_parseComposedKey(key = "") {
+	_parseComposedKey(key = TableIndex) {
 		let attributes = {};
 		let names = key.match(/:[A-Z1-9]+/gi);
 		if (!names) {
@@ -1928,9 +1934,9 @@ class Entity {
 		for (let i in accessPatterns) {
 			let accessPattern = accessPatterns[i];
 			let index = indexes[accessPattern];
-			let indexName = index.index || "";
+			let indexName = index.index || TableIndex;
 			if (seenIndexes[indexName] !== undefined) {
-				if (indexName === "") {
+				if (indexName === TableIndex) {
 					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName || "(Primary Index)"}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
 				} else {
 					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName}'`);
@@ -2100,7 +2106,7 @@ class Entity {
 			}
 		}
 
-		if (facets.byIndex[""] === undefined) {
+		if (facets.byIndex[TableIndex] === undefined) {
 			throw new e.ElectroError(e.ErrorCodes.MissingPrimaryIndex, "Schema is missing an index definition for the table's main index. Please update the schema to include an index without a specified name to define the table's natural index");
 		}
 

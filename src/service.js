@@ -254,7 +254,7 @@ class Service {
 			}
 
 			// pager=false because we don't want the entity trying to parse the lastEvaluatedKey
-			let items = this.collectionSchema[collection].entities[entityAlias].formatResponse(index, {Item: record}, {...config, pager: false});
+			let items = this.collectionSchema[collection].entities[entityAlias].formatResponse({Item: record}, index, {...config, pager: false});
 			results[entityAlias].push(items);
 		}
 

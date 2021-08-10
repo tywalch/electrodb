@@ -140,6 +140,7 @@ StoreLocations.query
     + [Where with Complex Attributes](#where-with-complex-attributes)
     + [Attributes and Operations](#attributes-and-operations)
     + [Multiple Where Clauses](#multiple-where-clauses)
+  * [Parse](#parse)
 - [Building Queries](#building-queries)
   + [Using composite attributes to make hierarchical keys](#using-composite-attributes-to-make-hierarchical-keys)
     - [Shopping Mall Stores](#shopping-mall-stores)
@@ -2398,6 +2399,17 @@ let stores = await MallStores.query
   IndexName: 'idx2',
   FilterExpression: '(#rent between :rent1 and :rent2) AND (#discount = :discount1 AND #category = :category1)'
 }
+```
+
+## Parse
+The parse method can be given the `Item` value of a DynamoDB response and return a typed and formatted ElectroDB item.
+
+ElectroDB will evaluate the ownership of them Item (whether or not the schema defined on the item matches the model), will apply all the same operations as though the item was retrieved by ElectroDB itself, and will return `null` if the item could not be parsed.
+
+```typescript
+const myEntity = new Entity({...});
+const results = docClient.get({...}).promise();
+const formatted = myEntity.parse(results.Item);
 ```
 
 # Building Queries
