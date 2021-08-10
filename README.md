@@ -846,7 +846,7 @@ attributes: {
 
 The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports String and Number Sets using the `items` property set as either `"string"` or `"number"`. 
 
-In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by *removing* the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes will accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval.
+In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by removing the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval.
 
 > Note: If you are using TypeScript, Sets are currently typed as Arrays to simplify the type system. Again, ElectroDB will handle the conversion of these Arrays without the need to use `client.createSet()`.
  
@@ -2758,7 +2758,7 @@ let unprocessed = await StoreLocations.delete([
 Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
-Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.     
+Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after performing a `put()` or `create()` operation, ElectroDB will format and return the record through the same process as a Get/Query. This process will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.     
 
 This example includes an optional conditional expression
 ```javascript
@@ -2907,7 +2907,7 @@ Elements of the `unprocessed` array are unlike results received from a query. In
 
 ### Update Record
 
-Update Methods are available **_after_** the method `update()` is called, and allow you to perform alter an item stored dynamodb. The methods can be used (and reused) in a chain to form update parameters, when finished with `.params()`, or an update operation, when finished with `.go()`. If your application requires the values created/update to be returned (e.g. via the `ReturnValues` DocumentClient parameters), use the [Query Option](#query-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
+Update Methods are available **_after_** the method `update()` is called, and allow you to perform alter an item stored dynamodb. The methods can be used (and reused) in a chain to form update parameters, when finished with `.params()`, or an update operation, when finished with `.go()`. If your application requires the update method to return values related to the update (e.g. via the `ReturnValues` DocumentClient parameters), you can use the [Query Option](#query-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
 
 > ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client.
 
@@ -2986,7 +2986,7 @@ await StoreLocations
 
 The `add()` method will accept attributes with type `number`, `set`, and `any` defined on the model. In the case of a `number` attribute, provide a number to _add_ to the existing attribute's value on the item.
 
-If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a number. 
+If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a `number`. 
 
 ```javascript
 const newTenant = client.createSet("larry");
@@ -3970,7 +3970,7 @@ pager       | `"named"`            | Used in with pagination (`.pages()`) calls 
 originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
 concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
 unprocessed | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
-response    | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will always null when used, which also bypasses ElectroDB's response formatting if performance is a concern.  
+response    | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.  
 
 # Errors:
 | Error Code | Description |

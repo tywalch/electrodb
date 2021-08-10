@@ -1818,8 +1818,10 @@ let getKeys = ((val) => {}) as GetKeys;
         })
         .go()
         .then(value => {
-            expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
-            expectType<Entity1WithHiddenAttribute>(value);
+            if (value !== null) {
+                expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
+                expectType<Entity1WithHiddenAttribute>(value);
+            }
         });
 
     entityWithHiddenAttributes1
@@ -2963,6 +2965,9 @@ const complexShapeService = new Service({
 });
 
 entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
+    if (data === null) {
+        return null;
+    }
     data.prop3?.val1;
     let int = 0;
     if (Array.isArray(data.prop4)) {
@@ -2992,8 +2997,10 @@ entityWithComplexShapes
     .get({prop1: "abc", prop2: "def"})
     .go()
     .then(data => {
-        data.prop5?.map(values => values)
-        data.prop6?.map(values => values)
+        if (data !== null) {
+            data.prop5?.map(values => values);
+            data.prop6?.map(values => values);
+        }
     })
 
 entityWithComplexShapes
