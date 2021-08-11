@@ -63,3 +63,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### [1.3.1] - 2021-08-09
 ### Added
 - New entity method `parse()` to expose ElectroDB formatting for values retrieved outside of ElectroDB. [[read more]](./README.md#parse)
+
+### [1.3.2] = 2021-08-11
+### Fixed
+- Newly added method `parse()` had critical typo. Method now has an improved api, and appropriate tests [[read more]](./README.md#parse)
