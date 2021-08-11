@@ -443,7 +443,7 @@ class Entity {
 				return [response.LastEvaluatedKey || null, response];
 			} else {
 				if (response.Item) {
-					if (this.ownsItem(response.Item)) {
+					if (config._ignoreOwnership || this.ownsItem(response.Item)) {
 						results = this.model.schema.formatItemForRetrieval(response.Item, config);
 						if (Object.keys(results).length === 0) {
 							results = null;
@@ -452,7 +452,7 @@ class Entity {
 				} else if (response.Items) {
 					results = [];
 					for (let item of response.Items) {
-						if (this.ownsItem(item)) {
+						if (config._ignoreOwnership || this.ownsItem(item)) {
 							let record = this.model.schema.formatItemForRetrieval(item, config);
 							if (Object.keys(record).length > 0) {
 								results.push(record);
@@ -490,7 +490,10 @@ class Entity {
 
 
 	parse(item) {
-		return this.formatResponse({item});
+		if (item === undefined || item === null) {
+			return null;
+		}
+		return this.formatResponse(item, TableIndex, {_ignoreOwnership: true});
 	}
 
 	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {

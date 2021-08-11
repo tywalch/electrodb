@@ -2068,6 +2068,290 @@ describe("Entity", async () => {
             })
         }
     });
+    describe("Item parsing", () => {
+        const entity = new Entity({
+            model: {
+                entity: "parse_test",
+                service: "testing",
+                version: "1"
+            },
+            attributes: {
+                prop1: {
+                    type: "string"
+                },
+                prop2: {
+                    type: "string"
+                },
+                prop3: {
+                    type: "string"
+                },
+                prop4: {
+                    type: "map",
+                    properties: {
+                        nested: {
+                            type: "map",
+                            properties: {
+                                prop5: {
+                                    type: "string"
+                                },
+                                prop6: {
+                                    type: "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"],
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["prop2"],
+                    },
+                },
+            }
+        }, {table, client});
+        it("should parse the response from an item", async () => {
+            const prop1 = uuid();
+            const prop2 = uuid();
+            const prop3 = uuid();
+            await client.put({
+                Item: {
+                    prop1: prop1,
+                    prop2: prop2,
+                    prop3: prop3,
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`,
+                },
+                TableName: 'electro'
+            }).promise();
 
+            const params = {
+                Key: {
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`
+                },
+                TableName: 'electro'
+            };
 
+            const itemFromDocClient = await client.get(params).promise();
+            const parsed = entity.parse(itemFromDocClient);
+            expect(parsed).to.deep.equal({prop1, prop2, prop3});
+        });
+
+        it("should parse the response from an query that lacks identifiers", async () => {
+            const prop1 = uuid();
+            const prop2 = uuid();
+            const prop3 = uuid();
+            await client.put({
+                Item: {
+                    prop1: prop1,
+                    prop2: prop2,
+                    prop3: prop3,
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`,
+                },
+                TableName: 'electro'
+            }).promise();
+            const params = {
+                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                TableName: 'electro',
+                ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+                ExpressionAttributeValues: {
+                    ':pk': `$testing#prop1_${prop1}`,
+                    ':sk1': `$parse_test_1#prop2_${prop2}`
+                }
+            }
+            const itemFromDocClient = await client.query(params).promise();
+            const parsed = entity.parse(itemFromDocClient);
+            expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
+        });
+
+        it("should parse the response from an update", async () => {
+            const prop1 = uuid();
+            const prop2 = uuid();
+            const prop3 = uuid();
+            const prop3b = uuid();
+            await client.put({
+                Item: {
+                    prop1: prop1,
+                    prop2: prop2,
+                    prop3: prop3,
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`,
+                },
+                TableName: 'electro'
+            }).promise();
+            const params = {
+                UpdateExpression: 'SET #prop3 = :prop3',
+                ExpressionAttributeNames: { '#prop3': 'prop3' },
+                ExpressionAttributeValues: { ':prop3': prop3b },
+                TableName: 'electro',
+                Key: {
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`
+                },
+                ReturnValues: 'UPDATED_NEW'
+            }
+            const results = await client.update(params).promise();
+            const parsed = entity.parse(results);
+            expect(parsed).to.deep.equal({prop3: prop3b});
+        });
+
+        it("should parse the response from a complex update", async () => {
+            const prop1 = uuid();
+            const prop2 = uuid();
+            const prop3 = uuid();
+            await client.put({
+                "Item": {
+                    "prop1": prop1,
+                    "prop2": prop2,
+                    "prop3": prop3,
+                    "prop4": {
+                        "nested": {
+                            "prop5": "def"
+                        }
+                    },
+                    "pk": `$testing#prop1_${prop1}`,
+                    "sk": `$parse_test_1#prop2_${prop2}`,
+                },
+                "TableName": "electro"
+            }).promise();
+
+            const params = {
+                "UpdateExpression": "REMOVE #prop4.#nested.#prop5",
+                "ExpressionAttributeNames": {
+                    "#prop4": "prop4",
+                    "#nested": "nested",
+                    "#prop5": "prop5"
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": `$testing#prop1_${prop1}`,
+                    "sk": `$parse_test_1#prop2_${prop2}`
+                },
+                "ReturnValues": "UPDATED_NEW"
+            }
+
+            const results1 = await client.update(params).promise();
+            const parsed1 = entity.parse(results1);
+            expect(parsed1).to.be.null;
+            const params2 = {
+                UpdateExpression: 'SET #prop4.#nested.#prop6 = :prop6_u0',
+                ExpressionAttributeNames: { '#prop4': 'prop4', '#nested': 'nested', '#prop6': 'prop6' },
+                ExpressionAttributeValues: { ':prop6_u0': 'xyz' },
+                TableName: 'electro',
+                Key: {
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`
+                },
+                ReturnValues: 'UPDATED_NEW'
+            }
+
+            const results2 = await client.update(params).promise();
+            const parsed2 = entity.parse(results2);
+            expect(parsed2).to.be.null;
+        });
+
+        it("should parse the response from a delete", async () => {
+            const prop1 = uuid();
+            const prop2 = uuid();
+            const prop3 = uuid();
+            await client.put({
+                Item: {
+                    prop1: prop1,
+                    prop2: prop2,
+                    prop3: prop3,
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`,
+                },
+                TableName: 'electro'
+            }).promise();
+            const params = {
+                Key: {
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`
+                },
+                TableName: 'electro',
+                ReturnValues: 'ALL_OLD'
+            };
+            const results = await client.delete(params).promise();
+            const parsed = entity.parse(results);
+            expect(parsed).to.deep.equal({prop1, prop2, prop3});
+        });
+
+        it("should parse the response from a put", async () => {
+            const prop1a = uuid();
+            const prop2a = uuid();
+            const prop3a = uuid();
+            const prop1b = uuid();
+            const prop2b = uuid();
+            const prop3b = uuid();
+            await client.put({
+                Item: {
+                    prop1: prop1a,
+                    prop2: prop2a,
+                    prop3: prop3a,
+                    pk: `$testing#prop1_${prop1a}`,
+                    sk: `$parse_test_1#prop2_${prop2a}`,
+                },
+                TableName: 'electro'
+            }).promise();
+            const params = {
+                Item: {
+                    prop1: prop1b,
+                    prop2: prop2b,
+                    prop3: prop3b,
+                    pk: `$testing#prop1_${prop1a}`,
+                    sk: `$parse_test_1#prop2_${prop2a}`,
+                },
+                TableName: 'electro',
+                ReturnValues: 'ALL_OLD'
+            };
+            const results = await client.put(params).promise();
+            const parsed = entity.parse(results);
+            expect(parsed).to.deep.equal({
+                prop1: prop1a,
+                prop2: prop2a,
+                prop3: prop3a,
+            });
+        });
+
+        it("should parse the response from a scan", async () => {
+            const prop1 = uuid();
+            const prop2 = uuid();
+            const prop3 = uuid();
+            await client.put({
+                Item: {
+                    prop1: prop1,
+                    prop2: prop2,
+                    prop3: prop3,
+                    pk: `$testing#prop1_${prop1}`,
+                    sk: `$parse_test_1#prop2_${prop2}`,
+                },
+                TableName: 'electro'
+            }).promise();
+
+            const params = {
+                TableName: 'electro',
+                ReturnValues: 'ALL_OLD',
+                ExpressionAttributeNames: {
+                    '#pk': 'pk',
+                    '#sk': 'sk',
+                },
+                ExpressionAttributeValues: {
+                    ':pk': '$testing#prop1_',
+                    ':sk': `$parse_test_1#prop2_${prop2}`,
+                },
+                FilterExpression: 'begins_with(#pk, :pk) AND begins_with(#sk, :sk)'
+            }
+            const results = await client.scan(params).promise();
+            const parsed = entity.parse(results);
+            expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
+        });
+    });
 });

@@ -2402,14 +2402,17 @@ let stores = await MallStores.query
 ```
 
 ## Parse
-The parse method can be given the `Item` value of a DynamoDB response and return a typed and formatted ElectroDB item.
+The parse method can be given a DocClient response and return a typed and formatted ElectroDB item.
 
-ElectroDB will evaluate the ownership of them Item (whether or not the schema defined on the item matches the model), will apply all the same operations as though the item was retrieved by ElectroDB itself, and will return `null` if the item could not be parsed.
+ElectroDB's `parse()` method accepts results from `get`, `delete`, `put`, `update`, `query`, and `scan` operations, applies all the same operations as though the item was retrieved by ElectroDB itself, and will return `null` (or empty array for `query` results) if the item could not be parsed.
 
 ```typescript
 const myEntity = new Entity({...});
-const results = docClient.get({...}).promise();
-const formatted = myEntity.parse(results.Item);
+const getResults = docClient.get({...}).promise();
+const queryResults = docClient.query({...}).promise();
+const updateResults = docClient.update({...}).promise(); 
+const formattedGetResults = myEntity.parse(getResults);
+const formattedQueryResults = myEntity.parse(formattedQueryResults);
 ```
 
 # Building Queries
