@@ -4,6 +4,7 @@ const definition = require("../examples/taskapp/lib/table/definition.json");
 const customKeys = require("./definitions/customkeys.json");
 const noSortKeys = require("./definitions/nosortkey.json");
 const noStringKeys = require("./definitions/nostringkeys.json");
+const keyNamesAttributeNames = require("./definitions/keynamesattributenames.json");
 
 const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
 const region = "us-east-1";
@@ -30,3 +31,4 @@ create(endpoint, region, "electro", definition);
 create(endpoint, region, "electro_customkeys", customKeys);
 create(endpoint, region, "electro_nosort", noSortKeys);
 create(endpoint, region, "electro_nostringkeys", noStringKeys);
+create(endpoint, region, "electro_keynamesattributenames", keyNamesAttributeNames);

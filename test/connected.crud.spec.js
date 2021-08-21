@@ -3681,7 +3681,7 @@ describe("Entity", async () => {
 			}
 		}).timeout(10000);
 	});
-	describe("template and composite attribute arrays", async () => {
+	describe("Template and composite attribute arrays", async () => {
 		it("Should resolve composite attribute labels at an index level", async () => {
 			const SERVICE = "facettest";
 			const ENTITY = uuid();

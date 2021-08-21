@@ -851,20 +851,48 @@ class Schema {
 					type: attribute
 				};
 			}
-			if (facets.fields && facets.fields.includes(name)) {
-				continue;
+			const field = attribute.field || name;
+			if (facets.byField[field] !== undefined) {
+				for (const indexName of Object.keys(facets.byField[field])) {
+					let definition = facets.byField[field][indexName];
+					if (definition.facets.length > 1) {
+						throw new e.ElectroError(
+							e.ErrorCodes.InvalidIndexCompositeWithAttributeName,
+							`Invalid definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore is not allowed to contain composite references to other attributes. Please either change the field name of the attribute, or redefine the index to use only the single attribute "${definition.field}".`
+						)
+					}
+					// This is sort of a sneaky convenience. If someone chose their composite value to be just an array of one, we won't require that they also make a template.
+					if (definition.isCustom) {
+						if (facets.labels[indexName][definition.type].length > 0 || definition.facetLabels > 0) {
+							throw new e.ElectroError(
+								e.ErrorCodes.InvalidIndexCompositeWithAttributeName,
+								`Invalid definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore is not allowed to have labels as part of it's template. Please either change the field name of the attribute, or reformat the key template to remove all pre-fixing or post-fixing text around the attribute reference.`
+							)
+						}
+					} else {
+						throw new e.ElectroError(
+							e.ErrorCodes.InvalidIndexCompositeWithAttributeName,
+							`Invalid definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore must be defined with a template. Please either change the field name of the attribute, or add a key template to the "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}" with the value: "\${${definition.field}}"`
+						)
+					}
+
+					if (definition.inCollection) {
+						throw new e.ElectroError(
+							e.ErrorCodes.InvalidCollectionOnIndexWithAttributeFieldNames,
+							`Invalid use of a collection on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore the index is not allowed to participate in a Collection. Please either change the field name of the attribute, or remove all collection(s) from the index.`
+						)
+					}
+				}
 			}
-			if (attribute.field && facets.fields && facets.fields.includes(attribute.field)) {
-				continue;
-			}
+
 			let isKey = !!facets.byIndex && facets.byIndex[""].all.find((facet) => facet.name === name);
 			let definition = {
 				name,
-				traverser,
 				client,
+				traverser,
 				label: attribute.label,
-				required: !!attribute.required,
 				field: attribute.field || name,
+				required: !!attribute.required,
 				default: attribute.default,
 				validate: attribute.validate,
 				readOnly: !!attribute.readOnly || isKey,

@@ -41,7 +41,7 @@ export const users = new Entity({
     },
     updatedAt: {
       type: "string",
-      watch: ["*"],
+      watch: "*",
       set: () => moment.utc().format(),
       readOnly: true,
     },

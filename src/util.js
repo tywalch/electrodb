@@ -78,12 +78,45 @@ function commaSeparatedString(array = []) {
   return array.map(value => `"${value}"`).join(", ");
 }
 
+function formatStringCasing(str, casing) {
+  let strCase = t.KeyCasing.default;
+  if (typeof str !== "string") {
+    return str;
+  }
+
+  if (typeof t.KeyCasing[casing] === "string") {
+    strCase = t.KeyCasing[casing];
+  } else {
+    strCase = t.KeyCasing.default;
+  }
+  switch (strCase) {
+    case t.KeyCasing.upper:
+      return str.toUpperCase();
+    case t.KeyCasing.none:
+      return str;
+    case t.KeyCasing.lower:
+    case t.KeyCasing.default:
+    default:
+      return str.toLowerCase();
+  }
+}
+
+function formatIndexNameForDisplay(index) {
+  if (index) {
+    return index;
+  } else {
+    return "(Primary index)";
+  }
+}
+
 module.exports = {
   batchItems,
   parseJSONPath,
   getInstanceType,
   getModelVersion,
   genericizeJSONPath,
+  formatStringCasing,
   commaSeparatedString,
-  applyBetaModelOverrides
+  applyBetaModelOverrides,
+  formatIndexNameForDisplay
 };

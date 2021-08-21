@@ -1149,6 +1149,8 @@ signature               | behavior
 `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid.
 `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query
 
+
+
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
 
@@ -1177,18 +1179,20 @@ indexes: {
 }
 ```
 
-| Property       | Type                | Required | Description |
-| -------------- | :-----------------: | :------: | ----------- |
-| `pk`           | `object`            | yes      | Configuration for the pk of that index or table
-| `pk.composite` | `string | string[]` | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
-| `pk.template`  | `string`            | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
-| `pk.field`     | `string`            | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
-| `sk`           | `object`            | no       | Configuration for the sk of that index or table
-| `sk.composite` | `string | string[]` | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
-| `sk.template`  | `string`            | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
-| `sk.field`     | `string`            | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
-| `index`        | `string`            | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
-| `collection`   | `string | string[]` | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
+| Property       | Type                                   | Required | Description |
+| -------------- | :------------------------------------: | :------: | ----------- |
+| `pk`           | `object`                               | yes      | Configuration for the pk of that index or table
+| `pk.composite` | `string | string[]`                    | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
+| `pk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `pk.casing`    | `default` | `upper` | `lower` | `none` | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`. 
+| `sk`           | `object`                               | no       | Configuration for the sk of that index or table
+| `sk.composite` | `string | string[]`                    | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `sk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
+| `sk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `pk.casing`    | `default` | `upper` | `lower` | `none` | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
+| `index`        | `string`                               | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
+| `collection`   | `string | string[]`                    | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
 
 ### Indexes Without Sort Keys
 When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail.
@@ -1265,6 +1269,41 @@ const schema = {
   }
 }
 ```
+
+### Key Casing
+
+DynamoDB is a case-sensitive data store, and therefore it is common to convert the casing of keys to uppercase or lowercase prior to saving, updating, or querying data to your table. ElectroDB, by default, will lowercase all keys when preparing query parameters. For those who are using ElectroDB with an existing dataset, have preferences on upper or lowercase, or wish to not convert case at all, this can be configured on a index key field basis.
+
+In the example below, we are configuring the casing ElectroDB will use individually for the Partition Key and Sort Key on the GSI "gis1". For the index's PK, mapped to `gsi1pk`, we ElectroDB will convert this key to uppercase prior to its use in queries. For the index's SK, mapped to `gsi1pk`, we ElectroDB will not convert the case of this key prior to its use in queries.
+
+```typescript
+{
+  indexes: {
+    myIndex: {
+      index: "gsi1",
+      pk: {
+        field: "gsi1pk",
+        casing: "upper",
+        composite: ["organizationId"]
+      },
+      sk: {
+        field: "gsi1sk",
+        casing: "none",
+        composite: ["accountId"]
+      }
+    }
+  }
+}
+```
+
+> Note: Casing is a very important decision when modeling your data in DynamoDB. While choosing upper/lower is largely a personal preference, once you have begun loading records in your table it can be difficult to change your casing after the fact. Unless you have good reason, allowing for mixed case keys can make querying data difficult because it will require database consumers to always have a knowledge of their data's case.         
+
+Casing Option | Effect 
+:-----------: | --------
+`default`     | The default for keys is lowercase, or `lower`
+`lower`       | Will convert the key to lowercase prior it its use
+`upper`       | Will convert the key to uppercase prior it its use
+`none`        | Will not perform any casing changes when building keys
 
 ## Facets
 
@@ -2414,6 +2453,12 @@ const updateResults = docClient.update({...}).promise();
 const formattedGetResults = myEntity.parse(getResults);
 const formattedQueryResults = myEntity.parse(formattedQueryResults);
 ```
+
+Parse also accepts an optional `options` object as a second argument (see the section [Query Options](#query-options) to learn more). Currently, the following query options are relevant to the `parse()` method:
+
+Option            | Default | Notes
+----------------- : ------- | -----
+`ignoreOwnership` | `true`  | This property defaults to `true` here, unlike elsewhere in the application when it defaults to `false`. You can overwrite the default here with your own preference. 
 
 # Building Queries
 > For hands-on learners: the following example can be followed along with **and** executed on runkit: https://runkit.com/tywalch/electrodb-building-queries
@@ -3988,22 +4033,24 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   pager?: "raw" | "named" | "item";
   originalErr?: boolean;
   concurrent?: number;
-  unprocessed?: "raw" | "item"
-  response: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new"
+  unprocessed?: "raw" | "item";
+  response?: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new";
+  ignoreOwnership?: boolean;
 };
 ```
 
-Option      | Default              | Description
------------ | :------------------: | -----------   
-params      | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
-table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
-raw         | `false`              | Returns query results as they were returned by the docClient.
-includeKeys | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
-pager       | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
-originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
-concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
-unprocessed | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
-response    | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.  
+Option          | Default              | Description
+--------------- | :------------------: | -----------   
+params          | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
+table           | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
+raw             | `false`              | Returns query results as they were returned by the docClient.
+includeKeys     | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
+pager           | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
+originalErr     | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
+concurrent      | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
+unprocessed     | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
+response        | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
+ignoreOwnership | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.    
 
 # Errors:
 | Error Code | Description |
@@ -4216,6 +4263,24 @@ You are trying to use the custom Key Composite Attribute Template, and a Composi
 
 *What to do about it:*
 Checkout the section on [Composite Attribute Templates](#composite attribute-templates) and verify your template conforms to the rules detailed there. Both properties must contain the same attributes and be provided in the same order.
+
+### Invalid Index Composite With Attribute Name
+*Code: 1018*
+
+*Why this occurred:*
+ElectroDB's design revolves around best practices related to modeling in single table design. This includes giving indexed fields generic names. If the PK and SK fields on your table indexes also match the names of attributes on your Entity you will need to make special considerations to make sure ElectroDB can accurately map your data.  
+
+*What to do about it:*
+Checkout the section [Using ElectroDB with existing data](#using-electrodb-with-existing-data) to learn more about considerations to make when using attributes as index fields.
+
+### Invalid Collection on Index With Attribute Field Names
+*Code: 1019*
+
+*Why this occurred:*
+Collections allow for unique access patterns to be modeled between entities. It does this by appending prefixes to your key composites. If an Entity leverages an attribute field as an index key, ElectroDB will be unable to prefix your value because that would result in modifying the value itself.   
+
+*What to do about it:*
+Checkout the section [Collections](#collections) to learn more about collections, as well as the section [Using ElectroDB with existing data](#using-electrodb-with-existing-data) to learn more about considerations to make when using attributes as index fields.
 
 ### Missing Composite Attributes
 *Code: 2002*

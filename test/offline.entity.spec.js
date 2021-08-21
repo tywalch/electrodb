@@ -1,4 +1,5 @@
 const { Entity, clauses } = require("../src/entity");
+const {Service} = require("../src/service");
 const { expect } = require("chai");
 const moment = require("moment");
 const uuidV4 = require("uuid/v4");
@@ -1329,6 +1330,483 @@ describe("Entity", () => {
 			});
 		});
 	});
+	describe("Index casing", () => {
+		it("should build indexes with the specified case on the entity schema while using composites", () => {
+			let schema = {
+				model: {
+					service: "MallStoreDirectory",
+					entity: "MallStores",
+					version: "1",
+				},
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					stores: {
+						type: "number",
+					},
+					value: {
+						type: "string"
+					}
+				},
+				indexes: {
+					store: {
+						collection: ["myCollection"],
+						pk: {
+							field: "parition_key",
+							composite: ["id"],
+							casing: "none",
+						},
+						sk: {
+							field: "sort_key",
+							composite: ["mall", "stores"],
+							casing: "upper",
+						}
+					},
+					other: {
+						index: "idx1",
+						collection: "otherCollection",
+						pk: {
+							field: "parition_key_idx1",
+							composite: ["mall"],
+							casing: "upper",
+						},
+						sk: {
+							field: "sort_key_idx1",
+							composite: ["id", "stores"],
+							casing: "none",
+						}
+					}
+				}
+			};
+
+			const MallStores = new Entity(schema, {table: "StoreDirectory"});
+			const MallService = new Service({stores: MallStores}, {table: "StoreDirectory"});
+			let id = "Abcd";
+			let mall = "Defg";
+			let stores = 1;
+			let value = "Ahssfh";
+			let getParams = MallStores.get({id, mall, stores}).params();
+			let bulkGetParams = MallStores.get([{id, mall, stores}]).params();
+			let deleteParams = MallStores.delete({id, mall, stores}).params();
+			let bulkDeleteParams = MallStores.delete([{id, mall, stores}]).params();
+			let removeParams = MallStores.remove({id, mall, stores}).params();
+			let updateParams = MallStores.update({id, mall, stores}).set({value}).params();
+			let patchParams = MallStores.patch({id, mall, stores}).set({value}).params();
+			let createParams = MallStores.create({id, mall, stores, value}).params();
+			let putParams = MallStores.put({id, mall, stores, value}).params();
+			let batchPutParams = MallStores.put([{id, mall, stores, value}]).params();
+			let query1 = MallStores.query.store({id, mall, stores}).params();
+			let query2 = MallStores.query.other({id, mall, stores}).params();
+			let scanParams = MallStores.scan.params();
+			let collectionParams = MallService.collections.myCollection({id}).params();
+			expect(getParams).to.deep.equal({
+				Key: {
+					parition_key: "$MallStoreDirectory#id_Abcd",
+					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(bulkGetParams).to.deep.equal([{
+				"RequestItems": {
+					"StoreDirectory": {
+						"Keys": [
+							{
+								parition_key: "$MallStoreDirectory#id_Abcd",
+								sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
+							}
+						]
+					}
+				}
+			}]);
+			expect(deleteParams).to.deep.equal({
+				Key: {
+					parition_key: "$MallStoreDirectory#id_Abcd",
+					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(bulkDeleteParams).to.deep.equal([{
+				"RequestItems": {
+					"StoreDirectory": [
+						{
+							"DeleteRequest": {
+								"Key": {
+									parition_key: "$MallStoreDirectory#id_Abcd",
+									sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
+								}
+							}
+						}
+					]
+				}
+			}]);
+			expect(removeParams).to.deep.equal({
+				Key: {
+					parition_key: "$MallStoreDirectory#id_Abcd",
+					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
+				},
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+			});
+			expect(updateParams).to.deep.equal({
+				UpdateExpression: 'SET #value = :value_u0',
+				ExpressionAttributeNames: { '#value': 'value' },
+				ExpressionAttributeValues: { ':value_u0': 'Ahssfh' },
+				TableName: 'StoreDirectory',
+				Key: {
+					parition_key: "$MallStoreDirectory#id_Abcd",
+					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
+				}
+			});
+			expect(patchParams).to.deep.equal({
+				UpdateExpression: 'SET #value = :value_u0',
+				ExpressionAttributeNames: { '#value': 'value' },
+				ExpressionAttributeValues: { ':value_u0': 'Ahssfh' },
+				TableName: 'StoreDirectory',
+				Key: {
+					parition_key: "$MallStoreDirectory#id_Abcd",
+					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
+				},
+				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+			});
+			expect(createParams).to.deep.equal({
+				Item: {
+					id: 'Abcd',
+					mall: 'Defg',
+					stores: 1,
+					value: 'Ahssfh',
+					parition_key: "$MallStoreDirectory#id_Abcd",
+					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1',
+					parition_key_idx1: '$MALLSTOREDIRECTORY#MALL_DEFG',
+					sort_key_idx1: '$otherCollection#MallStores_1#id_Abcd#stores_1',
+					__edb_e__: 'MallStores',
+					__edb_v__: '1'
+				},
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_not_exists(parition_key) AND attribute_not_exists(sort_key)'
+			});
+			expect(putParams).to.deep.equal({
+				Item: {
+					id: 'Abcd',
+					mall: 'Defg',
+					stores: 1,
+					value: 'Ahssfh',
+					parition_key: "$MallStoreDirectory#id_Abcd",
+					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1',
+					parition_key_idx1: '$MALLSTOREDIRECTORY#MALL_DEFG',
+					sort_key_idx1: '$otherCollection#MallStores_1#id_Abcd#stores_1',
+					__edb_e__: 'MallStores',
+					__edb_v__: '1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(batchPutParams).to.deep.equal([{
+				"RequestItems": {
+					"StoreDirectory": [
+						{
+							"PutRequest": {
+								"Item": {
+									"__edb_e__": "MallStores",
+									"__edb_v__": "1",
+									"id": "Abcd",
+									"mall": "Defg",
+									"parition_key": "$MallStoreDirectory#id_Abcd",
+									"parition_key_idx1": "$MALLSTOREDIRECTORY#MALL_DEFG",
+									sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1',
+									"sort_key_idx1": "$otherCollection#MallStores_1#id_Abcd#stores_1",
+									"stores": 1,
+									"value": "Ahssfh"
+								}
+							}
+						}
+					]
+				}
+			}]);
+			expect(query1).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'parition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeValues: {
+					':pk': "$MallStoreDirectory#id_Abcd",
+					':sk1': '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
+				}
+			});
+			expect(query2).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'parition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeValues: {
+					':pk': '$MALLSTOREDIRECTORY#MALL_DEFG',
+					':sk1': '$otherCollection#MallStores_1#id_Abcd#stores_1'
+				},
+				IndexName: 'idx1'
+			});
+			expect(scanParams).to.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: {
+					'#parition_key': 'parition_key',
+					'#sort_key': 'sort_key',
+					'#__edb_e__': '__edb_e__',
+					'#__edb_v__': '__edb_v__'
+				},
+				ExpressionAttributeValues: {
+					':parition_key': '$MallStoreDirectory#id_',
+					':sort_key': '$MYCOLLECTION#MALLSTORES_1#MALL_',
+					':__edb_e__': 'MallStores',
+					':__edb_v__': '1'
+				},
+				FilterExpression: 'begins_with(#parition_key, :parition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
+			});
+			expect(collectionParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'parition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeValues: {
+					':pk': "$MallStoreDirectory#id_Abcd",
+					':sk1': '$MYCOLLECTION'
+				}
+			});
+		});
+
+		it("should build indexes with the specified case on the entity schema while using key templates", () => {
+			let schema = {
+				model: {
+					service: "MallStoreDirectory",
+					entity: "MallStores",
+					version: "1",
+				},
+				attributes: {
+					id: {
+						type: "string",
+						field: "id",
+					},
+					mall: {
+						type: "string",
+						required: true,
+						field: "mall",
+					},
+					stores: {
+						type: "number",
+					},
+					value: {
+						type: "string"
+					}
+				},
+				indexes: {
+					store: {
+						pk: {
+							field: "parition_key",
+							composite: ["id"],
+							template: "mIxEdCaSe#${id}",
+							casing: "none",
+						},
+						sk: {
+							field: "sort_key",
+							composite: ["mall", "stores"],
+							template: "mAlL#${mall}#sToReS#${stores}",
+							casing: "upper",
+						}
+					},
+					other: {
+						index: "idx1",
+						pk: {
+							field: "parition_key_idx1",
+							composite: ["mall"],
+							template: "MaLl#${mall}",
+							casing: "upper",
+						},
+						sk: {
+							field: "sort_key_idx1",
+							composite: ["id", "stores"],
+							template: "iD#${id}#sToReS#${stores}",
+							casing: "none",
+						}
+					}
+				}
+			};
+			const MallStores = new Entity(schema, {table: "StoreDirectory"});
+			let id = "Abcd";
+			let mall = "Defg";
+			let stores = 1;
+			let value = "Ahssfh";
+			let getParams = MallStores.get({id, mall, stores}).params();
+			let bulkGetParams = MallStores.get([{id, mall, stores}]).params();
+			let deleteParams = MallStores.delete({id, mall, stores}).params();
+			let bulkDeleteParams = MallStores.delete([{id, mall, stores}]).params();
+			let removeParams = MallStores.remove({id, mall, stores}).params();
+			let updateParams = MallStores.update({id, mall, stores}).set({value}).params();
+			let patchParams = MallStores.patch({id, mall, stores}).set({value}).params();
+			let createParams = MallStores.create({id, mall, stores, value}).params();
+			let putParams = MallStores.put({id, mall, stores, value}).params();
+			let batchPutParams = MallStores.put([{id, mall, stores, value}]).params();
+			let query1 = MallStores.query.store({id, mall, stores}).params();
+			let query2 = MallStores.query.other({id, mall, stores}).params();
+			let scanParams = MallStores.scan.params();
+			expect(getParams).to.deep.equal({
+				Key: {
+					parition_key: "mIxEdCaSe#Abcd",
+					sort_key: 'MALL#DEFG#STORES#1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(bulkGetParams).to.deep.equal([{
+				"RequestItems": {
+					"StoreDirectory": {
+						"Keys": [
+							{
+								parition_key: "mIxEdCaSe#Abcd",
+								sort_key: 'MALL#DEFG#STORES#1'
+							}
+						]
+					}
+				}
+			}]);
+			expect(deleteParams).to.deep.equal({
+				Key: {
+					parition_key: "mIxEdCaSe#Abcd",
+					sort_key: 'MALL#DEFG#STORES#1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(bulkDeleteParams).to.deep.equal([{
+				"RequestItems": {
+					"StoreDirectory": [
+						{
+							"DeleteRequest": {
+								"Key": {
+									parition_key: "mIxEdCaSe#Abcd",
+									sort_key: 'MALL#DEFG#STORES#1'
+								}
+							}
+						}
+					]
+				}
+			}]);
+			expect(removeParams).to.deep.equal({
+				Key: {
+					parition_key: "mIxEdCaSe#Abcd",
+					sort_key: 'MALL#DEFG#STORES#1'
+				},
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+			});
+			expect(updateParams).to.deep.equal({
+				UpdateExpression: 'SET #value = :value_u0',
+				ExpressionAttributeNames: { '#value': 'value' },
+				ExpressionAttributeValues: { ':value_u0': 'Ahssfh' },
+				TableName: 'StoreDirectory',
+				Key: {
+					parition_key: "mIxEdCaSe#Abcd",
+					sort_key: 'MALL#DEFG#STORES#1'
+				}
+			});
+			expect(patchParams).to.deep.equal({
+				UpdateExpression: 'SET #value = :value_u0',
+				ExpressionAttributeNames: { '#value': 'value' },
+				ExpressionAttributeValues: { ':value_u0': 'Ahssfh' },
+				TableName: 'StoreDirectory',
+				Key: {
+					parition_key: "mIxEdCaSe#Abcd",
+					sort_key: 'MALL#DEFG#STORES#1'
+				},
+				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+			});
+			expect(createParams).to.deep.equal({
+				Item: {
+					id: 'Abcd',
+					mall: 'Defg',
+					stores: 1,
+					value: 'Ahssfh',
+					parition_key: "mIxEdCaSe#Abcd",
+					sort_key: 'MALL#DEFG#STORES#1',
+					parition_key_idx1: 'MALL#DEFG',
+					sort_key_idx1: 'iD#Abcd#sToReS#1',
+					__edb_e__: 'MallStores',
+					__edb_v__: '1'
+				},
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_not_exists(parition_key) AND attribute_not_exists(sort_key)'
+			});
+			expect(putParams).to.deep.equal({
+				Item: {
+					id: 'Abcd',
+					mall: 'Defg',
+					stores: 1,
+					value: 'Ahssfh',
+					parition_key: "mIxEdCaSe#Abcd",
+					sort_key: 'MALL#DEFG#STORES#1',
+					parition_key_idx1: 'MALL#DEFG',
+					sort_key_idx1: 'iD#Abcd#sToReS#1',
+					__edb_e__: 'MallStores',
+					__edb_v__: '1'
+				},
+				TableName: 'StoreDirectory'
+			});
+			expect(batchPutParams).to.deep.equal([{
+				"RequestItems": {
+					"StoreDirectory": [
+						{
+							"PutRequest": {
+								"Item": {
+									"__edb_e__": "MallStores",
+									"__edb_v__": "1",
+									"id": "Abcd",
+									"mall": "Defg",
+									"parition_key": "mIxEdCaSe#Abcd",
+									"parition_key_idx1": "MALL#DEFG",
+									"sort_key": 'MALL#DEFG#STORES#1',
+									"sort_key_idx1": "iD#Abcd#sToReS#1",
+									"stores": 1,
+									"value": "Ahssfh"
+								}
+							}
+						}
+					]
+				}
+			}]);
+			expect(query1).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'parition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeValues: {
+					':pk': "mIxEdCaSe#Abcd",
+					':sk1': 'MALL#DEFG#STORES#1'
+				}
+			});
+			expect(query2).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'parition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeValues: {
+					':pk': 'MALL#DEFG',
+					':sk1': 'iD#Abcd#sToReS#1'
+				},
+				IndexName: 'idx1'
+			});
+			expect(scanParams).to.deep.equal({
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: {
+					'#parition_key': 'parition_key',
+					'#sort_key': 'sort_key',
+					'#__edb_e__': '__edb_e__',
+					'#__edb_v__': '__edb_v__'
+				},
+				ExpressionAttributeValues: {
+					':parition_key': "mIxEdCaSe#",
+					':sort_key': 'MALL#',
+					':__edb_e__': 'MallStores',
+					':__edb_v__': '1'
+				},
+				FilterExpression: 'begins_with(#parition_key, :parition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
+			});
+		});
+	})
 	describe("Making keys", () => {
 		let MallStores = new Entity(schema);
 		let mall = "EastPointe";
@@ -1486,6 +1964,7 @@ describe("Entity", () => {
 				}
 			}
 		});
+
 		it("Should use the index field names as theyre specified on the model", () => {
 			let schema = {
 				service: "MallStoreDirectory",
@@ -2611,7 +3090,7 @@ describe("Entity", () => {
 				TableName: "StoreDirectory",
 			});
 		});
-		it("Allow for static template values", () => {
+		it("Allow for static facet template values", () => {
 			const schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",
@@ -2642,6 +3121,128 @@ describe("Entity", () => {
 						sk: {
 							field: "sk",
 							facets: `dbsfhdfhsdshfshf`,
+						},
+					},
+				},
+			};
+			const entity = new Entity(schema);
+			const getParams = entity.get({id: "abc", prop1: "def"}).params();
+			const queryParams = entity.query.record({id: "abc", prop1: "def"}).params();
+			const deleteParams = entity.delete({id: "abc", prop1: "def"}).params();
+			const removeParams = entity.remove({id: "abc", prop1: "def"}).params();
+			expect(queryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: { ':pk': 'id_abc#p1_def', ':sk1': 'dbsfhdfhsdshfshf' }
+			});
+			expect(getParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory'
+			});
+			expect(deleteParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory'
+			});
+			expect(removeParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+			});
+		});
+		it("Allow for static template values with a composite", () => {
+			const schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "storeLocationId",
+					},
+					date: {
+						type: "string",
+						field: "dateTime",
+					},
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string",
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							composite: ["id", "prop1"],
+							template: "id_${id}#p1_${prop1}",
+						},
+						sk: {
+							field: "sk",
+							composite: [],
+							template: `dbsfhdfhsdshfshf`,
+						},
+					},
+				},
+			};
+			const entity = new Entity(schema);
+			const getParams = entity.get({id: "abc", prop1: "def"}).params();
+			const queryParams = entity.query.record({id: "abc", prop1: "def"}).params();
+			const deleteParams = entity.delete({id: "abc", prop1: "def"}).params();
+			const removeParams = entity.remove({id: "abc", prop1: "def"}).params();
+			expect(queryParams).to.deep.equal({
+				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				TableName: 'StoreDirectory',
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeValues: { ':pk': 'id_abc#p1_def', ':sk1': 'dbsfhdfhsdshfshf' }
+			});
+			expect(getParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory'
+			});
+			expect(deleteParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory'
+			});
+			expect(removeParams).to.deep.equal({
+				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
+				TableName: 'StoreDirectory',
+				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+			});
+		});
+		it("Allow for static template values without a composite", () => {
+			const schema = {
+				service: "MallStoreDirectory",
+				entity: "MallStores",
+				table: "StoreDirectory",
+				version: "1",
+				attributes: {
+					id: {
+						type: "string",
+						field: "storeLocationId",
+					},
+					date: {
+						type: "string",
+						field: "dateTime",
+					},
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string",
+					},
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: "id_${id}#p1_${prop1}",
+						},
+						sk: {
+							field: "sk",
+							template: `dbsfhdfhsdshfshf`,
 						},
 					},
 				},

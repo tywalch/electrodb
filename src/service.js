@@ -1,6 +1,6 @@
 const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
-const { ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
+const { KeyCasing, ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -14,7 +14,7 @@ const ConstructorTypes = {
 	v1: "v1",
 	v1Map: "v1Map",
 	unknown: "unknown"
-}
+};
 
 function inferConstructorType(service) {
 	if (v.isNameEntityRecordType(service) || v.isNameModelRecordType(service)) {
@@ -280,7 +280,7 @@ class Service {
 			return matchingEntities;
 		}
 		for (let entity of Object.values(this.collectionSchema[collection].entities)) {
-			if (entity.ownsPager(this.collectionSchema[collection].index, pager)) {
+			if (entity.ownsPager(pager, this.collectionSchema[collection].index)) {
 				matchingEntities.push(entity);
 			}
 		}
@@ -328,7 +328,7 @@ class Service {
 			return matchingIdentifiers;
 		}
 		for (let entity of Object.values(this.collectionSchema[collection].entities)) {
-			if (entity.ownsPager(this.collectionSchema[collection].index, pager)) {
+			if (entity.ownsPager(pager, this.collectionSchema[collection].index)) {
 				matchingIdentifiers.push({
 					[entity.identifiers.entity]: entity.getName(),
 					[entity.identifiers.version]: entity.getVersion(),
@@ -402,7 +402,16 @@ class Service {
 		return entity.collection(name, clauses, facets, options);
 	}
 
-
+	_validateIndexCasingMatch(definition = {}, providedIndex = {}) {
+		const definitionSk = definition.sk || {};
+		const providedSk = providedIndex.sk || {};
+		const pkCasingMatch = v.isMatchingCasing(definition.pk.casing, providedIndex.pk.casing);
+		const skCasingMatch = v.isMatchingCasing(definitionSk.casing, providedSk.casing);
+		return {
+			pk: pkCasingMatch,
+			sk: skCasingMatch
+		};
+	}
 
 	_validateCollectionDefinition(definition = {}, providedIndex = {}) {
 		let indexMatch = definition.index === providedIndex.index;
@@ -410,8 +419,9 @@ class Service {
 		let pkFacetLengthMatch = definition.pk.facets.length === providedIndex.pk.facets.length;
 		let mismatchedFacetLabels = [];
 		let collectionDifferences = [];
-		let definitionIndexName = definition.index || "(Primary Index)";
-		let providedIndexName = providedIndex.index || "(Primary Index)";
+		let definitionIndexName = u.formatIndexNameForDisplay(definition.index);
+		let providedIndexName = u.formatIndexNameForDisplay(providedIndex.index);
+		let matchingKeyCasing = this._validateIndexCasingMatch(definition, providedIndex);
 		if (pkFacetLengthMatch) {
 			for (let i = 0; i < definition.pk.labels.length; i++) {
 				let definitionFacet = definition.pk.labels[i].name;
@@ -437,6 +447,18 @@ class Service {
 					});
 				}
 			}
+		}
+		if (!matchingKeyCasing.pk) {
+			collectionDifferences.push(
+				`The pk property "casing" provided "${providedIndex.pk.casing || KeyCasing.default}" does not match established casing "${definition.pk.casing || KeyCasing.default}" on index "${providedIndexName}". Index casing options must match across all entities participating in a collection`
+			);
+		}
+		if (!matchingKeyCasing.sk) {
+			const definedSk = definition.sk || {};
+			const providedSk = providedIndex.sk || {};
+			collectionDifferences.push(
+				`The sk property "casing" provided "${definedSk.casing || KeyCasing.default}" does not match established casing "${providedSk.casing || KeyCasing.default}" on index "${providedIndexName}". Index casing options must match across all entities participating in a collection`
+			);
 		}
 		if (!indexMatch) {
 			collectionDifferences.push(
@@ -500,13 +522,13 @@ class Service {
 		}
 	}
 
-	_processEntityKeys(definition = {}, providedIndex = {}) {
+	_processEntityKeys(name, definition = {}, providedIndex = {}) {
 		if (!Object.keys(definition).length) {
 			definition = providedIndex;
 		}
-		let [invalidDefinition, invalidIndexMessages] = this._validateCollectionDefinition(definition, providedIndex);
+		const [invalidDefinition, invalidIndexMessages] = this._validateCollectionDefinition(definition, providedIndex);
 		if (invalidDefinition) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, invalidIndexMessages.join(", "));
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Validation Error while joining entity, "${name}". ${invalidIndexMessages.join(", ")}`);
 		}
 		return definition;
 	}
@@ -608,13 +630,14 @@ class Service {
 		} else {
 			this.collectionSchema[collection].table = entity._getTableName();
 		}
-		this.collectionSchema[collection].keys = this._processEntityKeys(this.collectionSchema[collection].keys, providedIndex);
+		this.collectionSchema[collection].keys = this._processEntityKeys(name, this.collectionSchema[collection].keys, providedIndex);
 		this.collectionSchema[collection].attributes = this._processEntityAttributes(this.collectionSchema[collection].attributes, entity.model.schema.attributes);
 		this.collectionSchema[collection].entities[name] = entity;
 		this.collectionSchema[collection].identifiers = this._processEntityIdentifiers(this.collectionSchema[collection].identifiers, entity.getIdentifierExpressions(name));
 		this.collectionSchema[collection].index = this._processEntityCollectionIndex(this.collectionSchema[collection].index, providedIndex.index, name, collection);
 		let collectionIndex = this._processSubCollections(this.collectionSchema[collection].collection, providedIndex.collection, name, collection);
 		this.collectionSchema[collection].collection[collectionIndex] = collection;
+
 	}
 
 	_processEntityCollectionIndex(existing, provided, name, collection) {

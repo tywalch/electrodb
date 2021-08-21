@@ -52,7 +52,7 @@ export const issues = new Entity({
     },
     updatedAt: {
       type: "string",
-      watch: ["*"],
+      watch: "*",
       set: () => moment.utc().format(),
       readOnly: true,
     },
@@ -158,7 +158,7 @@ export const issueComments = new Entity({
     },
     updatedAt: {
       type: "string",
-      watch: ["*"],
+      watch: "*",
       set: () => moment.utc().format(),
       readOnly: true,
     },

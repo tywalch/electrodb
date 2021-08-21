@@ -1,4 +1,5 @@
 const e = require("./errors");
+const {KeyCasing} = require("./types")
 
 const Validator = require("jsonschema").Validator;
 Validator.prototype.customFormats.isFunction = function (input) {
@@ -98,6 +99,11 @@ const Index = {
 					type: "string",
 					required: false,
 				},
+				casing: {
+					type: "string",
+					enum: ["upper", "lower", "none", "default"],
+					required: false,
+				}
 			},
 		},
 		sk: {
@@ -126,6 +132,11 @@ const Index = {
 					type: "string",
 					required: false,
 				},
+				casing: {
+					type: "string",
+					enum: ["upper", "lower", "none", "default"],
+					required: false,
+				}
 			},
 		},
 		index: {
@@ -323,15 +334,34 @@ function stringArrayMatch(arr1, arr2) {
 	return match;
 }
 
+function isMatchingCasing(casing1, casing2) {
+	const equivalentCasings = [KeyCasing.default, KeyCasing.lower];
+	if (isStringHasLength(casing1) && isStringHasLength(casing2)) {
+		let isRealCase = KeyCasing[casing1.toLowerCase()] !== undefined;
+		let casingsMatch = casing1 === casing2;
+		let casingsAreEquivalent = [casing1, casing2].every(casing => {
+			return casing === KeyCasing.lower || casing === KeyCasing.default;
+		});
+		return isRealCase && (casingsMatch || casingsAreEquivalent);
+	} else if (isStringHasLength(casing1)) {
+		return equivalentCasings.includes(casing1.toLowerCase());
+	} else if (isStringHasLength(casing2)) {
+		return equivalentCasings.includes(casing2.toLowerCase());
+	} else {
+		return casing1 === undefined && casing2 === undefined;
+	}
+}
+
 module.exports = {
-	model: validateModel,
 	testModel,
+	isFunction,
+	stringArrayMatch,
+	isMatchingCasing,
 	isArrayHasLength,
-	isNameModelRecordType,
 	isStringHasLength,
 	isObjectHasLength,
-	stringArrayMatch,
-	isFunction,
 	isBetaServiceConfig,
-	isNameEntityRecordType
+	isNameModelRecordType,
+	isNameEntityRecordType,
+	model: validateModel
 };
