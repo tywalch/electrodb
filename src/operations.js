@@ -230,7 +230,7 @@ const FilterOperations = {
 };
 
 class ExpressionState {
-    constructor({prefix} = {}) {
+    constructor({prefix, singleOccurrence} = {}) {
         this.names = {};
         this.values = {};
         this.paths = {};
@@ -238,9 +238,13 @@ class ExpressionState {
         this.impacted = {};
         this.expression = "";
         this.prefix = prefix || "";
+        this.singleOccurrence = singleOccurrence;
     }
 
     incrementName(name) {
+        if (this.singleOccurrence) {
+            return `${this.prefix}${0}`
+        }
         if (this.counts[name] === undefined) {
             this.counts[name] = 0;
         }

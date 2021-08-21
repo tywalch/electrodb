@@ -96,6 +96,8 @@ class Attribute {
 		this.cast = this._makeCast(definition.name, definition.cast);
 		this.default = this._makeDefault(definition.default);
 		this.validate = this._makeValidate(definition.validate);
+		this.isKeyField = !!definition.isKeyField;
+		this.destructureKey = this._makeDestructureKey(definition.keyPrefix, definition.keyPostfix);
 		this.indexes = [...(definition.indexes || [])];
 		let {isWatched, isWatcher, watchedBy, watching, watchAll} = Attribute._destructureWatcher(definition);
 		this._isWatched = isWatched
@@ -215,17 +217,34 @@ class Attribute {
 	_makeGet(get) {
 		this._checkGetSet(get, "get");
 		const getter = get || ((attr) => attr);
-		return (values, siblings) => {
+		return (value, siblings) => {
 			if (this.hidden) {
 				return;
 			}
-			return getter(values, siblings);
+			value = this.destructureKey(value);
+			return getter(value, siblings);
 		}
 	}
 
 	_makeSet(set) {
 		this._checkGetSet(set, "set");
 		return set || ((attr) => attr);
+	}
+
+	_makeDestructureKey(prefix = "", postfix = "") {
+		return (key) => {
+			let value = "";
+			if (typeof key !== "string") {
+				return key;
+			} else if (key.length > prefix.length) {
+				for (let i = prefix.length; i < key.length - postfix.length; i++) {
+					value += key[i];
+				}
+			} else {
+				value = key;
+			}
+			return value;
+		};
 	}
 
 	getPathType(type, parentType) {
@@ -852,6 +871,9 @@ class Schema {
 				};
 			}
 			const field = attribute.field || name;
+			let isKeyField = false;
+			let keyPrefix = "";
+			let keyPostfix = "";
 			if (facets.byField[field] !== undefined) {
 				for (const indexName of Object.keys(facets.byField[field])) {
 					let definition = facets.byField[field][indexName];
@@ -861,18 +883,34 @@ class Schema {
 							`Invalid definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore is not allowed to contain composite references to other attributes. Please either change the field name of the attribute, or redefine the index to use only the single attribute "${definition.field}".`
 						)
 					}
-					// This is sort of a sneaky convenience. If someone chose their composite value to be just an array of one, we won't require that they also make a template.
 					if (definition.isCustom) {
-						if (facets.labels[indexName][definition.type].length > 0 || definition.facetLabels > 0) {
+						const keyFieldLabels = facets.labels[indexName][definition.type].labels;
+						// I am not sure how more than two would happen but it would mean either
+						// 1. Code prior has an unknown edge-case.
+						// 2. Method is being incorrectly used.
+						if (keyFieldLabels.length > 2) {
 							throw new e.ElectroError(
 								e.ErrorCodes.InvalidIndexCompositeWithAttributeName,
-								`Invalid definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore is not allowed to have labels as part of it's template. Please either change the field name of the attribute, or reformat the key template to remove all pre-fixing or post-fixing text around the attribute reference.`
+								`Unexpected definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore is not possible to have more than two labels as part of it's template. Please either change the field name of the attribute, or reformat the key template to reduce all pre-fixing or post-fixing text around the attribute reference to two.`
 							)
 						}
+						isKeyField = true;
+						// Walk through the labels, given the above exception handling, I'd expect the first element to
+						// be the prefix and the second element to be the postfix.
+						for (const value of keyFieldLabels) {
+							if (value.name === field) {
+								keyPrefix = value.label || "";
+							} else {
+								keyPostfix = value.label || "";
+							}
+						}
 					} else {
+						// Upstream middleware should have taken care of this. An error here would mean:
+						// 1. Code prior has an unknown edge-case.
+						// 2. Method is being incorrectly used.
 						throw new e.ElectroError(
 							e.ErrorCodes.InvalidIndexCompositeWithAttributeName,
-							`Invalid definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore must be defined with a template. Please either change the field name of the attribute, or add a key template to the "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}" with the value: "\${${definition.field}}"`
+							`Unexpected definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore must be defined with a template. Please either change the field name of the attribute, or add a key template to the "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}" with the value: "\${${definition.field}}"`
 						)
 					}
 
@@ -890,6 +928,9 @@ class Schema {
 				name,
 				client,
 				traverser,
+				isKeyField,
+				keyPrefix,
+				keyPostfix,
 				label: attribute.label,
 				field: attribute.field || name,
 				required: !!attribute.required,

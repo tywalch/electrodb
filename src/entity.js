@@ -1937,6 +1937,33 @@ class Entity {
 		return validations.stringArrayMatch(composite, parsedAttributes.attributes);
 	}
 
+	_optimizeIndexKey(keyDefinition) {
+		const hasTemplate = typeof keyDefinition.template === "string";
+		const hasSingleItemComposite = Array.isArray(keyDefinition.facets) && keyDefinition.facets.length === 1 && keyDefinition.facets[0] === keyDefinition.field;
+		if (!hasTemplate && hasSingleItemComposite) {
+			keyDefinition.facets = "${" + keyDefinition.field + "}";
+		}
+		return keyDefinition;
+	}
+
+	_optimizeMatchingKeyAttributes(model = {}) {
+		const attributeFields = [];
+		for (const name of Object.keys(model.attributes)) {
+			const {field} = model.attributes[name];
+			attributeFields.push(field || name);
+		}
+		for (const accessPattern of Object.keys(model.indexes)) {
+			let {pk, sk} = model.indexes[accessPattern];
+			if (attributeFields.includes(pk.field)) {
+				model.indexes[accessPattern].pk = this._optimizeIndexKey(pk);
+			}
+			if (sk && attributeFields.includes(sk.field)) {
+				model.indexes[accessPattern].sk = this._optimizeIndexKey(sk);
+			}
+		}
+		return model;
+	}
+
 	_normalizeIndexes(indexes) {
 		let normalized = {};
 		let indexFieldTranslation = {};
@@ -2332,6 +2359,9 @@ class Entity {
 		}
 
 		model = this._applyCompositeToFacetConversion(model);
+
+		// _optimizeMatchingKeyAttributes abides by the design compromises made by _applyCompositeToFacetConversion :\
+		model = this._optimizeMatchingKeyAttributes(model);
 		/** end beta/v1 condition **/
 
 		let {
