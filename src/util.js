@@ -78,16 +78,15 @@ function commaSeparatedString(array = []) {
   return array.map(value => `"${value}"`).join(", ");
 }
 
-function formatStringCasing(str, casing) {
-  let strCase = t.KeyCasing.default;
+function formatStringCasing(str, casing, defaultCase) {
   if (typeof str !== "string") {
     return str;
   }
-
-  if (typeof t.KeyCasing[casing] === "string") {
-    strCase = t.KeyCasing[casing];
-  } else {
-    strCase = t.KeyCasing.default;
+  let strCase = defaultCase;
+  if (v.isStringHasLength(casing) && typeof t.KeyCasing[casing] === "string") {
+    strCase = t.KeyCasing.default === casing
+        ? defaultCase
+        : t.KeyCasing[casing];
   }
   switch (strCase) {
     case t.KeyCasing.upper:
@@ -95,17 +94,26 @@ function formatStringCasing(str, casing) {
     case t.KeyCasing.none:
       return str;
     case t.KeyCasing.lower:
+      return str.toLowerCase();
     case t.KeyCasing.default:
     default:
-      return str.toLowerCase();
+      return str;
   }
+}
+
+function formatKeyCasing(str, casing) {
+  return formatStringCasing(str, casing, t.KeyCasing.lower);
+}
+
+function formatAttributeCasing(str, casing) {
+  return formatStringCasing(str, casing, t.KeyCasing.none);
 }
 
 function formatIndexNameForDisplay(index) {
   if (index) {
     return index;
   } else {
-    return "(Primary index)";
+    return "(Primary Index)";
   }
 }
 
@@ -114,9 +122,10 @@ module.exports = {
   parseJSONPath,
   getInstanceType,
   getModelVersion,
+  formatKeyCasing,
   genericizeJSONPath,
-  formatStringCasing,
   commaSeparatedString,
+  formatAttributeCasing,
   applyBetaModelOverrides,
   formatIndexNameForDisplay
 };

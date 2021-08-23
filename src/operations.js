@@ -372,7 +372,8 @@ class AttributeOperationProxy {
                         if (property.__is_clause__ === AttributeProxySymbol) {
                             const {paths, root, target} = property();
                             const attributeValues = [];
-                            for (const value of values) {
+                            for (let value of values) {
+                                value = target.format(value);
                                 // template.length is to see if function takes value argument
                                 if (template.length > 2) {
                                     if (seen.has(value)) {

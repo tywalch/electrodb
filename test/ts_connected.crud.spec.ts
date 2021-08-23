@@ -2354,4 +2354,342 @@ describe("Entity", async () => {
             expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
         });
     });
+    describe("Key fields that match Attribute fields", () => {
+        const table = "electro_keynamesattributenames";
+        it("attribute keys can have prefixes and postfixes when defined with a prefix and postfix", async () => {
+            const entity = new Entity({
+                model: {
+                    entity: "accounts",
+                    service: "registry",
+                    version: "1"
+                },
+                attributes: {
+                    accountId: {
+                        type: "string"
+                    },
+                    organizationId: {
+                        type: "string"
+                    },
+                    name: {
+                        type: "string"
+                    },
+                    type: {
+                        type: ["FREE", "PAID", "PLATINUM"] as const
+                    },
+                    createdAt: {
+                        type: "string",
+                        default: () => moment().format("YYYY-MM-DD")
+                    },
+                    projectId: {
+                        type: "string"
+                    },
+                    incrementId: {
+                        type: "number",
+                        watch: "*",
+                        default: 0
+                    }
+                },
+                indexes: {
+                    organization: {
+                        pk: {
+                            field: "organizationId",
+                            // field: "pk",
+                            composite: ["organizationId"],
+                            template: "Prefix_${organizationId}_postfiX",
+                            // template: "${organizationId}",
+                            casing: "none",
+                        },
+                        sk: {
+                            field: "accountId",
+                            // field: "sk",
+                            casing: "upper",
+                            template: "Prefix_${accountId}_postfiX",
+                            // template: "${accountId}",
+                            composite: ["accountId"]
+                        }
+                    },
+                    onboarded: {
+                        index: "idx1",
+                        pk: {
+                            field: "type",
+                            composite: ["type"],
+                            template: "TYPE$$${type}$$type"
+                        },
+                        sk: {
+                            field: "createdAt",
+                            template: "pre#${createdAt}#post",
+                            composite: ["createdAt"]
+                        },
+                    },
+                    project: {
+                        index: "idx2",
+                        pk: {
+                            field: "projectId",
+                            composite: ["projectId"]
+                        },
+                        sk: {
+                            field: "incrementId",
+                            composite: ["incrementId"],
+                            casing: "upper",
+                        }
+                    }
+                }
+            }, {table, client});
+            const oldRecord = {
+                accountId: uuid() ,
+                organizationId: uuid() + "UpPeR_LoWeR",
+                createdAt: "1989-07-01",
+                type: "FREE" as const,
+                projectId: uuid(),
+            }
+            const newRecord = {
+                type: "FREE" as const,
+                accountId: uuid(),
+                organizationId: uuid() + "UpPeR_LoWeR",
+                createdAt: "2021-07-01",
+                projectId: uuid(),
+            };
+            const createdAt = "2022-07-01";
+            const oldPutParameters = entity.put(oldRecord).params();
+            expect(oldPutParameters).to.deep.equal({
+                Item: {
+                    accountId: `PREFIX_${oldRecord.accountId.toUpperCase()}_POSTFIX`,
+                    organizationId: `Prefix_${oldRecord.organizationId}_postfiX`,
+                    type: `type$$${oldRecord.type.toLowerCase()}$$type`,
+                    createdAt: `pre#${oldRecord.createdAt}#post`,
+                    incrementId: 0,
+                    projectId: oldRecord.projectId,
+                    __edb_e__: 'accounts',
+                    __edb_v__: '1'
+                },
+                TableName: 'electro_keynamesattributenames'
+            });
+            const oldPut = await entity.put(oldRecord).go();
+            expect(oldPut).to.deep.equal({
+                accountId: oldRecord.accountId.toUpperCase(),
+                organizationId: oldRecord.organizationId,
+                type: oldRecord.type.toLowerCase(),
+                createdAt: oldRecord.createdAt,
+                incrementId: 0,
+                projectId: oldRecord.projectId,
+            });
+            const newPutParameters = entity.put(newRecord).params();
+            expect(newPutParameters).to.deep.equal({
+                Item: {
+                    accountId: `PREFIX_${newRecord.accountId.toUpperCase()}_POSTFIX`,
+                    organizationId: `Prefix_${newRecord.organizationId}_postfiX`,
+                    type: `type$$${newRecord.type.toLowerCase()}$$type`,
+                    createdAt: `pre#${newRecord.createdAt}#post`,
+                    incrementId: 0,
+                    projectId: newRecord.projectId,
+                    __edb_e__: 'accounts',
+                    __edb_v__: '1'
+                },
+                TableName: 'electro_keynamesattributenames'
+            });
+            const newPut = await entity.put(newRecord).go();
+            expect(newPut).to.deep.equal({
+                accountId: newRecord.accountId.toUpperCase(),
+                organizationId: newRecord.organizationId,
+                type: newRecord.type.toLowerCase(),
+                createdAt: newRecord.createdAt,
+                incrementId: 0,
+                projectId: newRecord.projectId,
+            });
+
+            const newUpdateParameters = entity.update(newRecord)
+                .set({createdAt})
+                .add({incrementId: 1})
+                .params();
+            expect(newUpdateParameters).to.deep.equal({
+                UpdateExpression: 'SET #createdAt = :createdAt_u0, #incrementId = #incrementId + :incrementId_u0',
+                ExpressionAttributeNames: { '#createdAt': 'createdAt', '#incrementId': 'incrementId' },
+                ExpressionAttributeValues: { ':createdAt_u0': `pre#${createdAt}#post`, ':incrementId_u0': 1 },
+                TableName: 'electro_keynamesattributenames',
+                Key: {
+                    accountId: `PREFIX_${newRecord.accountId.toUpperCase()}_POSTFIX`,
+                    organizationId: `Prefix_${newRecord.organizationId}_postfiX`,
+                }
+            });
+
+            const newUpdate = await entity.update(newRecord)
+                .set({createdAt})
+                .add({incrementId: 1})
+                .go({response: "all_new"});
+
+            expect(newUpdate).to.deep.equal({
+                accountId: newRecord.accountId.toUpperCase(),
+                organizationId: newRecord.organizationId,
+                type: newRecord.type.toLowerCase(),
+                createdAt: createdAt,
+                incrementId: 1,
+                projectId: newRecord.projectId,
+            });
+
+            const newGetParameters = entity.get(newRecord).params();
+            expect(newGetParameters).to.deep.equal({
+                Key: {
+                    accountId: `PREFIX_${newRecord.accountId.toUpperCase()}_POSTFIX`,
+                    organizationId: `Prefix_${newRecord.organizationId}_postfiX`,
+                },
+                TableName: 'electro_keynamesattributenames'
+            });
+            const newGet = await entity.get(newRecord).go();
+            expect(newGet).to.deep.equal({
+                accountId: newRecord.accountId.toUpperCase(),
+                organizationId: newRecord.organizationId,
+                type: newRecord.type.toLowerCase(),
+                createdAt: createdAt,
+                incrementId: 1,
+                projectId: newRecord.projectId,
+            });
+            const query1Parameters = entity.query.organization(newRecord).params();
+            expect(query1Parameters).to.deep.equal({
+                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                TableName: 'electro_keynamesattributenames',
+                ExpressionAttributeNames: { '#pk': 'organizationId', '#sk1': 'accountId' },
+                ExpressionAttributeValues: {
+                    ':pk': `Prefix_${newRecord.organizationId}_postfiX`,
+                    ':sk1': `PREFIX_${newRecord.accountId.toUpperCase()}_POSTFIX`,
+                }
+            });
+            const query1 = await entity.query.organization(newRecord).go();
+            expect(query1).to.deep.equal([newUpdate]);
+            const query2Parameters = entity.query
+                .onboarded({type: newRecord.type})
+                .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId))
+                .params();
+
+            expect(query2Parameters).to.deep.equal({
+                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                TableName: 'electro_keynamesattributenames',
+                ExpressionAttributeNames: { '#pk': 'type', '#sk1': 'createdAt', '#accountId': 'accountId', },
+                ExpressionAttributeValues: {
+                    ':pk': `type$$${newRecord.type.toLowerCase()}$$type`,
+                    ':sk1': `pre#`,
+                    ':accountId0': `Prefix_${newRecord.accountId}_postfiX`.toUpperCase()
+                },
+                FilterExpression: '#accountId = :accountId0',
+                IndexName: 'idx1'
+            });
+
+            const query2 = await entity.query
+                .onboarded({type: newRecord.type})
+                .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId.toUpperCase()))
+                .go();
+
+            expect(query2).to.deep.equal([{...newUpdate, incrementId: 1}]);
+
+            const newPaginate = await entity.query
+                .onboarded({type: newRecord.type})
+                .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId.toUpperCase()))
+                .page(oldRecord);
+
+            expect(newPaginate).to.deep.equal([null, [{...newUpdate, incrementId: 1}]]);
+        });
+        it("Should throw when trying to add a collection to an attribute field index", () => {
+            expect(() => {
+                new Entity({
+                    model: {
+                        entity: "accounts",
+                        service: "registry",
+                        version: "1"
+                    },
+                    attributes: {
+                        accountId: {
+                            type: "string"
+                        },
+                        organizationId: {
+                            type: "string"
+                        },
+                        name: {
+                            type: "string"
+                        },
+                        type: {
+                            type: ["FREE", "PAID", "PLATINUM"] as const
+                        },
+                        createdAt: {
+                            type: "string",
+                            default: () => moment().format("YYYY-MM-DD")
+                        },
+                        projectId: {
+                            type: "string"
+                        },
+                        incrementId: {
+                            type: "number",
+                            watch: "*",
+                            default: 0
+                        }
+                    },
+                    indexes: {
+                        organization: {
+                            collection: "my_collection",
+                            pk: {
+                                field: "organizationId",
+                                composite: ["organizationId"],
+                                casing: "none",
+                            },
+                            sk: {
+                                field: "accountId",
+                                casing: "upper",
+                                composite: ["accountId"]
+                            }
+                        },
+                    }
+                })
+            }).to.throw('Invalid use of a collection on index "(Primary Index)". The sk field "accountId" shares a field name with an attribute defined on the Entity, and therefore the index is not allowed to participate in a Collection. Please either change the field name of the attribute, or remove all collection(s) from the index. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-collection-on-index-with-attribute-field-names');
+        });
+        it("Should throw when trying to add a prefix or postfix to a number attribute being used as an index field", () => {
+            expect(() => {
+                new Entity({
+                    model: {
+                        entity: "accounts",
+                        service: "registry",
+                        version: "1"
+                    },
+                    attributes: {
+                        accountId: {
+                            type: "string"
+                        },
+                        organizationId: {
+                            type: "string"
+                        },
+                        name: {
+                            type: "string"
+                        },
+                        type: {
+                            type: ["FREE", "PAID", "PLATINUM"] as const
+                        },
+                        createdAt: {
+                            type: "string",
+                            default: () => moment().format("YYYY-MM-DD")
+                        },
+                        projectId: {
+                            type: "string"
+                        },
+                        incrementId: {
+                            type: "number",
+                            watch: "*",
+                            default: 0
+                        }
+                    },
+                    indexes: {
+                        organization: {
+                            pk: {
+                                field: "accountId",
+                                composite: ["accountId"],
+                                casing: "none",
+                            },
+                            sk: {
+                                field: "incrementId",
+                                casing: "upper",
+                                composite: ["incrementId"],
+                                template: "prefix_${incrementId}_postfix"
+                            }
+                        },
+                    }
+                })
+            }).to.throw('definition for "sk" field on index "(Primary Index)". Index templates may only have prefix or postfix values on "string" or "enum" type attributes. The sk field "incrementId" is type "number", and therefore cannot be used with prefixes or postfixes. Please either remove the prefixed or postfixed values from the template or change the field name of the attribute. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-index-with-attribute-name');
+        });
+    });
 });

@@ -21,6 +21,18 @@
     {
       "AttributeName":"createdAt",
       "AttributeType":"S"
+    },
+    {
+      "AttributeName":"type",
+      "AttributeType":"S"
+    },
+    {
+      "AttributeName":"projectId",
+      "AttributeType":"S"
+    },
+    {
+      "AttributeName":"incrementId",
+      "AttributeType":"N"
     }
   ],
   "GlobalSecondaryIndexes":[
@@ -28,7 +40,35 @@
       "IndexName":"idx1",
       "KeySchema":[
         {
+          "AttributeName":"type",
+          "KeyType":"HASH"
+        },
+        {
           "AttributeName":"createdAt",
+          "KeyType":"RANGE"
+        }
+      ],
+      "Projection":{
+        "ProjectionType":"ALL"
+      }
+    },
+    {
+      "IndexName":"idx2",
+      "KeySchema":[
+        {
+          "AttributeName":"projectId",
+          "KeyType":"HASH"
+        }
+      ],
+      "Projection":{
+        "ProjectionType":"ALL"
+      }
+    },
+    {
+      "IndexName":"idx3",
+      "KeySchema":[
+        {
+          "AttributeName":"incrementId",
           "KeyType":"HASH"
         }
       ],

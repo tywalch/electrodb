@@ -1033,13 +1033,19 @@ class Entity {
 		}
 
 		for (const indexKey of Object.keys(updatedKeys)) {
-			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
+			const isNotTablePK = indexKey !== this.model.indexes[accessPattern].pk.field;
+			const isNotTableSK = indexKey !== this.model.indexes[accessPattern].sk.field;
+			const wasNotAlreadyModified = modifiedAttributeNames[indexKey] === undefined;
+			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
 				update.set(indexKey, updatedKeys[indexKey]);
 			}
 		}
 
 		for (const indexKey of deletedKeys) {
-			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
+			const isNotTablePK = indexKey !== this.model.indexes[accessPattern].pk.field;
+			const isNotTableSK = indexKey !== this.model.indexes[accessPattern].sk.field;
+			const wasNotAlreadyModified = modifiedAttributeNames[indexKey] === undefined;
+			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
 				update.remove(indexKey);
 			}
 		}
@@ -1634,10 +1640,10 @@ class Entity {
 
 		// If keys arent custom, set the prefixes
 		if (!keys.pk.isCustom) {
-			keys.pk.prefix = utilities.formatStringCasing(pk, tableIndex.pk.casing);
+			keys.pk.prefix = utilities.formatKeyCasing(pk, tableIndex.pk.casing);
 		}
 		if (!keys.sk.isCustom) {
-			keys.sk.prefix = utilities.formatStringCasing(sk, tableIndex.sk.casing);
+			keys.sk.prefix = utilities.formatKeyCasing(sk, tableIndex.sk.casing);
 		}
 
 		return keys;
@@ -1648,7 +1654,7 @@ class Entity {
 			? this.model.indexes[accessPattern].sk.casing
 			: undefined;
 
-		return utilities.formatStringCasing(key, casing);
+		return utilities.formatKeyCasing(key, casing);
 	}
 
 	_validateIndex(index) {
@@ -1772,7 +1778,7 @@ class Entity {
 			key = `${key}${supplied[name]}`;
 		}
 
-		return utilities.formatStringCasing(key, casing);
+		return utilities.formatKeyCasing(key, casing);
 	}
 
 	_findBestIndexKeyMatch(attributes) {

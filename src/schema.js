@@ -1,8 +1,9 @@
-const { CastTypes, ValueTypes, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes, TraverserIndexes } = require("./types");
+const { CastTypes, ValueTypes, KeyCasing, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes, TraverserIndexes } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
 const u = require("./util");
+const v = require("./validations");
 const {DynamoDBSet} = require("./set");
 
 function getValueType(value) {
@@ -97,7 +98,8 @@ class Attribute {
 		this.default = this._makeDefault(definition.default);
 		this.validate = this._makeValidate(definition.validate);
 		this.isKeyField = !!definition.isKeyField;
-		this.destructureKey = this._makeDestructureKey(definition.keyPrefix, definition.keyPostfix);
+		this.unformat = this._makeDestructureKey(definition);
+		this.format = this._makeStructureKey(definition);
 		this.indexes = [...(definition.indexes || [])];
 		let {isWatched, isWatcher, watchedBy, watching, watchAll} = Attribute._destructureWatcher(definition);
 		this._isWatched = isWatched
@@ -221,7 +223,7 @@ class Attribute {
 			if (this.hidden) {
 				return;
 			}
-			value = this.destructureKey(value);
+			value = this.unformat(value);
 			return getter(value, siblings);
 		}
 	}
@@ -231,10 +233,20 @@ class Attribute {
 		return set || ((attr) => attr);
 	}
 
-	_makeDestructureKey(prefix = "", postfix = "") {
+	_makeStructureKey({prefix = "", postfix = "", casing= KeyCasing.none} = {}) {
+		return (key) => {
+			let value = key;
+			if (this.type === AttributeTypes.string && v.isStringHasLength(key)) {
+				value = `${prefix}${key}${postfix}`;
+			}
+			return u.formatAttributeCasing(value, casing);
+		}
+	}
+
+	_makeDestructureKey({prefix = "", postfix = "", casing= KeyCasing.none} = {}) {
 		return (key) => {
 			let value = "";
-			if (typeof key !== "string") {
+			if (![AttributeTypes.string, AttributeTypes.enum].includes(this.type) || typeof key !== "string") {
 				return key;
 			} else if (key.length > prefix.length) {
 				for (let i = prefix.length; i < key.length - postfix.length; i++) {
@@ -243,7 +255,7 @@ class Attribute {
 			} else {
 				value = key;
 			}
-			return value;
+			return u.formatAttributeCasing(value, casing);
 		};
 	}
 
@@ -872,9 +884,10 @@ class Schema {
 			}
 			const field = attribute.field || name;
 			let isKeyField = false;
-			let keyPrefix = "";
-			let keyPostfix = "";
-			if (facets.byField[field] !== undefined) {
+			let prefix = "";
+			let postfix = "";
+			let casing = KeyCasing.none;
+			if (facets.byField && facets.byField[field] !== undefined) {
 				for (const indexName of Object.keys(facets.byField[field])) {
 					let definition = facets.byField[field][indexName];
 					if (definition.facets.length > 1) {
@@ -890,18 +903,24 @@ class Schema {
 						// 2. Method is being incorrectly used.
 						if (keyFieldLabels.length > 2) {
 							throw new e.ElectroError(
-								e.ErrorCodes.InvalidIndexCompositeWithAttributeName,
+								e.ErrorCodes.InvalidIndexWithAttributeName,
 								`Unexpected definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore is not possible to have more than two labels as part of it's template. Please either change the field name of the attribute, or reformat the key template to reduce all pre-fixing or post-fixing text around the attribute reference to two.`
 							)
 						}
 						isKeyField = true;
+						casing = definition.casing;
 						// Walk through the labels, given the above exception handling, I'd expect the first element to
 						// be the prefix and the second element to be the postfix.
 						for (const value of keyFieldLabels) {
 							if (value.name === field) {
-								keyPrefix = value.label || "";
+								prefix = value.label || "";
 							} else {
-								keyPostfix = value.label || "";
+								postfix = value.label || "";
+							}
+						}
+						if (attribute.type !== AttributeTypes.string && !Array.isArray(attribute.type)) {
+							if (prefix.length > 0 || postfix.length > 0) {
+								throw new e.ElectroError(e.ErrorCodes.InvalidIndexWithAttributeName, `definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". Index templates may only have prefix or postfix values on "string" or "enum" type attributes. The ${definition.type} field "${field}" is type "${attribute.type}", and therefore cannot be used with prefixes or postfixes. Please either remove the prefixed or postfixed values from the template or change the field name of the attribute.`);
 							}
 						}
 					} else {
@@ -926,13 +945,14 @@ class Schema {
 			let isKey = !!facets.byIndex && facets.byIndex[""].all.find((facet) => facet.name === name);
 			let definition = {
 				name,
+				field,
 				client,
+				casing,
+				prefix,
+				postfix,
 				traverser,
 				isKeyField,
-				keyPrefix,
-				keyPostfix,
 				label: attribute.label,
-				field: attribute.field || name,
 				required: !!attribute.required,
 				default: attribute.default,
 				validate: attribute.validate,
