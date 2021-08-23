@@ -230,7 +230,7 @@ const FilterOperations = {
 };
 
 class ExpressionState {
-    constructor({prefix} = {}) {
+    constructor({prefix, singleOccurrence} = {}) {
         this.names = {};
         this.values = {};
         this.paths = {};
@@ -238,9 +238,13 @@ class ExpressionState {
         this.impacted = {};
         this.expression = "";
         this.prefix = prefix || "";
+        this.singleOccurrence = singleOccurrence;
     }
 
     incrementName(name) {
+        if (this.singleOccurrence) {
+            return `${this.prefix}${0}`
+        }
         if (this.counts[name] === undefined) {
             this.counts[name] = 0;
         }
@@ -368,7 +372,8 @@ class AttributeOperationProxy {
                         if (property.__is_clause__ === AttributeProxySymbol) {
                             const {paths, root, target} = property();
                             const attributeValues = [];
-                            for (const value of values) {
+                            for (let value of values) {
+                                value = target.format(value);
                                 // template.length is to see if function takes value argument
                                 if (template.length > 2) {
                                     if (seen.has(value)) {

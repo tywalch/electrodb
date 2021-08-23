@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { KeyCasing, TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -77,7 +77,7 @@ class Entity {
 		return pkMatch;
 	}
 
-	ownsPager(index, pager) {
+	ownsPager(pager, index) {
 		if (pager === null) {
 			return false;
 		}
@@ -443,7 +443,7 @@ class Entity {
 				return [response.LastEvaluatedKey || null, response];
 			} else {
 				if (response.Item) {
-					if (config._ignoreOwnership || this.ownsItem(response.Item)) {
+					if (config.ignoreOwnership || this.ownsItem(response.Item)) {
 						results = this.model.schema.formatItemForRetrieval(response.Item, config);
 						if (Object.keys(results).length === 0) {
 							results = null;
@@ -452,7 +452,7 @@ class Entity {
 				} else if (response.Items) {
 					results = [];
 					for (let item of response.Items) {
-						if (config._ignoreOwnership || this.ownsItem(item)) {
+						if (config.ignoreOwnership || this.ownsItem(item)) {
 							let record = this.model.schema.formatItemForRetrieval(item, config);
 							if (Object.keys(record).length > 0) {
 								results.push(record);
@@ -489,11 +489,15 @@ class Entity {
 	}
 
 
-	parse(item) {
+	parse(item, options = {}) {
 		if (item === undefined || item === null) {
 			return null;
 		}
-		return this.formatResponse(item, TableIndex, {_ignoreOwnership: true});
+		const config = {
+			...(options || {}),
+			ignoreOwnership: true
+		}
+		return this.formatResponse(item, TableIndex, config);
 	}
 
 	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {
@@ -686,8 +690,9 @@ class Entity {
 			parse: undefined,
 			pager: Pager.named,
 			unprocessed: UnprocessedTypes.item,
+			response: 'default',
+			ignoreOwnership: false,
 			_isPagination: false,
-			response: 'default'
 		};
 
 		config = options.reduce((config, option) => {
@@ -752,6 +757,10 @@ class Entity {
 				} else {
 					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "unprocessed" provided: "${option.unprocessed}". Allowed values include ${utilities.commaSeparatedString(Object.keys(UnprocessedTypes))}.`);
 				}
+			}
+
+			if (option.ignoreOwnership) {
+				config.ignoreOwnership = option.ignoreOwnership;
 			}
 
 			config.page = Object.assign({}, config.page, option.page);
@@ -1024,13 +1033,19 @@ class Entity {
 		}
 
 		for (const indexKey of Object.keys(updatedKeys)) {
-			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
+			const isNotTablePK = indexKey !== this.model.indexes[accessPattern].pk.field;
+			const isNotTableSK = indexKey !== this.model.indexes[accessPattern].sk.field;
+			const wasNotAlreadyModified = modifiedAttributeNames[indexKey] === undefined;
+			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
 				update.set(indexKey, updatedKeys[indexKey]);
 			}
 		}
 
 		for (const indexKey of deletedKeys) {
-			if (indexKey !== this.model.indexes[accessPattern].pk.field && indexKey !== this.model.indexes[accessPattern].sk.field) {
+			const isNotTablePK = indexKey !== this.model.indexes[accessPattern].pk.field;
+			const isNotTableSK = indexKey !== this.model.indexes[accessPattern].sk.field;
+			const wasNotAlreadyModified = modifiedAttributeNames[indexKey] === undefined;
+			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
 				update.remove(indexKey);
 			}
 		}
@@ -1248,27 +1263,37 @@ class Entity {
 	_makeBeginsWithQueryParams(options, index, filter, pk, sk) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
 		let KeyConditionExpression = "#pk = :pk";
-		if (this.model.lookup.indexHasSortKeys[index] && keyExpressions.ExpressionAttributeNames["#sk1"] !== undefined) {
+
+		if (this.model.lookup.indexHasSortKeys[index] && typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "string" && keyExpressions.ExpressionAttributeValues[":sk1"].length > 0) {
 			KeyConditionExpression = `${KeyConditionExpression} and begins_with(#sk1, :sk1)`;
+		} else {
+			delete keyExpressions.ExpressionAttributeNames["#sk1"];
+			delete keyExpressions.ExpressionAttributeValues[":sk1"];
 		}
+
 		let customExpressions = {
 			names: (options.expressions && options.expressions.names) || {},
 			values: (options.expressions && options.expressions.values) || {},
 			expression: (options.expressions && options.expressions.expression) || ""
 		};
+
 		let params = {
 			KeyConditionExpression,
 			TableName: this._getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.getNames(), keyExpressions.ExpressionAttributeNames, customExpressions.names),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.getValues(), keyExpressions.ExpressionAttributeValues, customExpressions.values),
 		};
+
 		if (index) {
 			params["IndexName"] = index;
 		}
+
 		let expressions = [customExpressions.expression, filter.build()].filter(Boolean).join(" AND ");
+
 		if (expressions.length) {
 			params.FilterExpression = expressions;
 		}
+
 		return params;
 	}
 
@@ -1577,11 +1602,13 @@ class Entity {
 		let keys = {
 			pk: {
 				prefix: "",
+				field: tableIndex.pk.field,
+				casing: tableIndex.pk.casing,
 				isCustom: tableIndex.customFacets.pk,
-				field: tableIndex.pk.field
 			},
 			sk: {
 				prefix: "",
+				casing: tableIndex.sk.casing,
 				isCustom: tableIndex.customFacets.sk,
 				field: tableIndex.sk ? tableIndex.sk.field : undefined,
 			}
@@ -1613,13 +1640,21 @@ class Entity {
 
 		// If keys arent custom, set the prefixes
 		if (!keys.pk.isCustom) {
-			keys.pk.prefix = pk.toLowerCase();
+			keys.pk.prefix = utilities.formatKeyCasing(pk, tableIndex.pk.casing);
 		}
 		if (!keys.sk.isCustom) {
-			keys.sk.prefix = sk.toLowerCase();
+			keys.sk.prefix = utilities.formatKeyCasing(sk, tableIndex.sk.casing);
 		}
 
 		return keys;
+	}
+
+	_formatKeyCasing(accessPattern, key) {
+		const casing = this.model.indexes[accessPattern] !== undefined
+			? this.model.indexes[accessPattern].sk.casing
+			: undefined;
+
+		return utilities.formatKeyCasing(key, casing);
 	}
 
 	_validateIndex(index) {
@@ -1629,8 +1664,11 @@ class Entity {
 	}
 
 	_getCollectionSk(collection = "") {
-		let subCollections = this.model.subCollections[collection];
-		return this._makeCollectionPrefix(subCollections);
+		const subCollections = this.model.subCollections[collection];
+		const index = this.model.translations.collections.fromCollectionToIndex[collection];
+		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+		const prefix = this._makeCollectionPrefix(subCollections);
+		return this._formatKeyCasing(accessPattern, prefix);
 	}
 
 	_makeCollectionPrefix(collection = []) {
@@ -1647,7 +1685,7 @@ class Entity {
 		} else if (validations.isStringHasLength(collection)) {
 			prefix = `$${collection}`;
 		}
-		return prefix.toLowerCase();
+		return prefix;
 	}
 
 	/* istanbul ignore next */
@@ -1715,7 +1753,7 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeKey({prefix, isCustom} = {}, facets = [], supplied = {}, labels = [], {excludeLabelTail} = {}) {
+	_makeKey({prefix, isCustom, casing} = {}, facets = [], supplied = {}, labels = [], {excludeLabelTail} = {}) {
 		if (this._isNumericKey(isCustom, facets, labels)) {
 			return supplied[facets[0]];
 		}
@@ -1739,7 +1777,8 @@ class Entity {
 
 			key = `${key}${supplied[name]}`;
 		}
-		return key.toLowerCase();
+
+		return utilities.formatKeyCasing(key, casing);
 	}
 
 	_findBestIndexKeyMatch(attributes) {
@@ -1904,6 +1943,33 @@ class Entity {
 		return validations.stringArrayMatch(composite, parsedAttributes.attributes);
 	}
 
+	_optimizeIndexKey(keyDefinition) {
+		const hasTemplate = typeof keyDefinition.template === "string";
+		const hasSingleItemComposite = Array.isArray(keyDefinition.facets) && keyDefinition.facets.length === 1 && keyDefinition.facets[0] === keyDefinition.field;
+		if (!hasTemplate && hasSingleItemComposite) {
+			keyDefinition.facets = "${" + keyDefinition.field + "}";
+		}
+		return keyDefinition;
+	}
+
+	_optimizeMatchingKeyAttributes(model = {}) {
+		const attributeFields = [];
+		for (const name of Object.keys(model.attributes)) {
+			const {field} = model.attributes[name];
+			attributeFields.push(field || name);
+		}
+		for (const accessPattern of Object.keys(model.indexes)) {
+			let {pk, sk} = model.indexes[accessPattern];
+			if (attributeFields.includes(pk.field)) {
+				model.indexes[accessPattern].pk = this._optimizeIndexKey(pk);
+			}
+			if (sk && attributeFields.includes(sk.field)) {
+				model.indexes[accessPattern].sk = this._optimizeIndexKey(sk);
+			}
+		}
+		return model;
+	}
+
 	_normalizeIndexes(indexes) {
 		let normalized = {};
 		let indexFieldTranslation = {};
@@ -1921,6 +1987,7 @@ class Entity {
 		let collections = {};
 		let facets = {
 			byIndex: {},
+			byField: {},
 			byFacet: {},
 			byAttr: {},
 			byType: {},
@@ -1940,7 +2007,7 @@ class Entity {
 			let indexName = index.index || TableIndex;
 			if (seenIndexes[indexName] !== undefined) {
 				if (indexName === TableIndex) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName || "(Primary Index)"}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${utilities.formatIndexNameForDisplay(indexName)}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
 				} else {
 					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName}'`);
 				}
@@ -1949,13 +2016,20 @@ class Entity {
 			let hasSk = !!index.sk;
 			let inCollection = !!index.collection;
 			if (!hasSk && inCollection) {
-				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid Access pattern definition for '${accessPattern}': '${indexName || "(Primary Index)"}', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
+				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid Access pattern definition for '${accessPattern}': '${utilities.formatIndexNameForDisplay(indexName)}', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
 			}
 			let collection = index.collection || "";
 			let customFacets = {
 				pk: false,
 				sk: false,
 			};
+			const pkCasing = KeyCasing[index.pk.casing] === undefined
+				? KeyCasing.default
+				: index.pk.casing;
+			let skCasing = KeyCasing.default;
+			if (hasSk && KeyCasing[index.sk.casing] !== undefined) {
+				skCasing = index.sk.casing;
+			}
 			indexHasSortKeys[indexName] = hasSk;
 			let parsedPKAttributes = this._parseTemplateAttributes(index.pk.facets);
 			customFacets.pk = parsedPKAttributes.isCustom;
@@ -1964,12 +2038,15 @@ class Entity {
 			facets.labels[indexName]["pk"] = facets.labels[indexName]["pk"] || parsedPKAttributes;
 			facets.labels[indexName]["sk"] = facets.labels[indexName]["sk"] || this._parseTemplateAttributes();
 			let pk = {
-				facetLabels: parsedPKAttributes.labels,
+				inCollection,
+				accessPattern,
 				index: indexName,
+				casing: pkCasing,
 				type: KeyTypes.pk,
 				field: index.pk.field || "",
 				facets: parsedPKAttributes.attributes,
-				isCustom: parsedPKAttributes.isCustom
+				isCustom: parsedPKAttributes.isCustom,
+				facetLabels: parsedPKAttributes.labels,
 			};
 			let sk = {};
 			let parsedSKAttributes = {};
@@ -1978,13 +2055,15 @@ class Entity {
 				customFacets.sk = parsedSKAttributes.isCustom;
 				facets.labels[indexName]["sk"] = parsedSKAttributes;
 				sk = {
-					facetLabels: parsedSKAttributes.labels,
+					inCollection,
 					accessPattern,
 					index: indexName,
+					casing: skCasing,
 					type: KeyTypes.sk,
 					field: index.sk.field || "",
 					facets: parsedSKAttributes.attributes,
-					isCustom: parsedSKAttributes.isCustom
+					isCustom: parsedSKAttributes.isCustom,
+					facetLabels: parsedSKAttributes.labels,
 				};
 				facets.fields.push(sk.field);
 			}
@@ -2079,8 +2158,21 @@ class Entity {
 				all: attributes,
 				collection: index.collection,
 				hasSortKeys: !!indexHasSortKeys[indexName],
-				hasSubCollections: !!indexHasSubCollections[indexName]
+				hasSubCollections: !!indexHasSubCollections[indexName],
+				casing: {
+					pk: pkCasing,
+					sk: skCasing
+				}
 			};
+
+			facets.byField = facets.byField || {};
+			facets.byField[pk.field] = facets.byField[pk.field] || {};
+			facets.byField[pk.field][indexName] = pk;
+			if (sk.field) {
+				facets.byField[sk.field] = facets.byField[sk.field] || {};
+				facets.byField[sk.field][indexName] = sk;
+			}
+
 
 			attributes.forEach(({index, type, name}, j) => {
 				let next = attributes[j + 1] !== undefined ? attributes[j + 1].name : "";
@@ -2098,13 +2190,13 @@ class Entity {
 
 			let pkTemplateIsCompatible = this._compositeTemplateAreCompatible(parsedPKAttributes, index.pk.composite);
 			if (!pkTemplateIsCompatible) {
-				throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible PK 'template' and 'composite' properties for defined on index "${indexName || "(Primary Index)"}". PK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedPKAttributes.attributes)} while PK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.pk.composite)}`);
+				throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible PK 'template' and 'composite' properties for defined on index "${utilities.formatIndexNameForDisplay(indexName)}". PK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedPKAttributes.attributes)} while PK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.pk.composite)}`);
 			}
 
 			if (index.sk !== undefined && Array.isArray(index.sk.composite) && typeof index.sk.template === "string") {
 				let skTemplateIsCompatible = this._compositeTemplateAreCompatible(parsedSKAttributes, index.sk.composite);
 				if (!skTemplateIsCompatible) {
-					throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible SK 'template' and 'composite' properties for defined on index "${indexName || "(Primary Index)"}". SK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedSKAttributes.attributes)} while SK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.sk.composite)}`);
+					throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible SK 'template' and 'composite' properties for defined on index "${utilities.formatIndexNameForDisplay(indexName)}". SK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedSKAttributes.attributes)} while SK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.sk.composite)}`);
 				}
 			}
 		}
@@ -2229,7 +2321,6 @@ class Entity {
 				pk: [],
 				sk: []
 			};
-
 			for (let {name, label} of pk.labels) {
 				if (pk.isCustom) {
 					definitions[indexName].pk.push({name, label});
@@ -2274,6 +2365,9 @@ class Entity {
 		}
 
 		model = this._applyCompositeToFacetConversion(model);
+
+		// _optimizeMatchingKeyAttributes abides by the design compromises made by _applyCompositeToFacetConversion :\
+		model = this._optimizeMatchingKeyAttributes(model);
 		/** end beta/v1 condition **/
 
 		let {

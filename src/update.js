@@ -1,10 +1,9 @@
 const {AttributeOperationProxy, ExpressionState} = require("./operations");
 const {ItemOperations, BuilderTypes} = require("./types");
-const u = require("./util");
 
 class UpdateExpression extends ExpressionState {
-    constructor(props) {
-        super(props);
+    constructor(props = {}) {
+        super({...props, singleOccurrence: true});
         this.operations = {
             set: new Set(),
             remove: new Set(),

@@ -401,11 +401,13 @@ type Schema<A extends string, F extends A, C extends string> = {
             readonly index?: string;
             readonly collection?: C | ReadonlyArray<C>;
             readonly pk: {
+                readonly casing?: "upper" | "lower" | "none" | "default";
                 readonly field: string;
                 readonly composite: ReadonlyArray<F>;
                 readonly template?: string;
             }
             readonly sk?: {
+                readonly casing?: "upper" | "lower" | "none" | "default";
                 readonly field: string;
                 readonly composite: ReadonlyArray<F>;
                 readonly template?: string;
@@ -924,12 +926,18 @@ type DataUpdateCallback<A extends string, F extends A, C extends string, S exten
 type ReturnValues = "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
 
 interface QueryOptions {
-    params?: object;
     raw?: boolean;
-    includeKeys?: boolean;
-    originalErr?: boolean;
     table?: string;
     limit?: number;
+    params?: object;
+    includeKeys?: boolean;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+}
+
+// subset of QueryOptions
+interface ParseOptions {
+    ignoreOwnership?: boolean;
 }
 
 interface UpdateQueryOptions extends QueryOptions {
@@ -1123,8 +1131,8 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     match(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>
     query: Queries<A,F,C,S>;
-    parse(item: ParseSingleInput): ResponseItem<A,F,C,S> | null;
-    parse(item: ParseMultiInput): ResponseItem<A,F,C,S>[];
+    parse(item: ParseSingleInput, options?: ParseOptions): ResponseItem<A,F,C,S> | null;
+    parse(item: ParseMultiInput, options?: ParseOptions): ResponseItem<A,F,C,S>[];
     setIdentifier(type: "entity" | "version", value: string): void;
     client: any;
 }

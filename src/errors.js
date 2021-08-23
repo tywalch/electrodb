@@ -115,6 +115,18 @@ const ErrorCodes = {
     name: "IncompatibleKeyCompositeAttributeTemplate",
     sym: ErrorCode,
   },
+  InvalidIndexWithAttributeName: {
+    code: 1018,
+    section: "invalid-index-with-attribute-name",
+    name: "InvalidIndexWithAttributeName",
+    sym: ErrorCode,
+  },
+  InvalidCollectionOnIndexWithAttributeFieldNames: {
+    code: 1019,
+    section: "invalid-collection-on-index-with-attribute-field-names",
+    name: "InvalidIndexCompositeWithAttributeName",
+    sym: ErrorCode,
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",

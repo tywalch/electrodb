@@ -174,10 +174,18 @@ const FormatToReturnValues = {
 
 const TableIndex = "";
 
+const KeyCasing = {
+	none: "none",
+	upper: "upper",
+	lower: "lower",
+	default: "default",
+}
+
 module.exports = {
 	Pager,
 	KeyTypes,
 	CastTypes,
+	KeyCasing,
 	PathTypes,
 	QueryTypes,
 	ValueTypes,

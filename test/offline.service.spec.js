@@ -895,6 +895,234 @@ describe("Service Offline", async () => {
 		expect(() => service.join(schema)).to.not.throw();
 		expect(service.entities).to.have.property("MyEntity");
 	});
+	it("Should require that all partition keys should be defined with the same casing", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						casing: "upper",
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let entityTwo = {
+			entity: "entityTwo",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						casing: "lower",
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop5", "prop4"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+
+		database
+			.join(entityOne)
+		expect(() => database.join(entityTwo)).to.throw(`Validation Error while joining entity, "entityTwo". The pk property "casing" provided "lower" does not match established casing "upper" on index "(Primary Index)". Index casing options must match across all entities participating in a collection - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+	});
+	it("Should require that all sort keys should be defined with the same casing", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						casing: "upper",
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let entityTwo = {
+			entity: "entityTwo",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						casing: "lower",
+						field: "sk",
+						facets: ["prop5", "prop4"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+
+		database
+			.join(entityOne)
+		expect(() => database.join(entityTwo)).to.throw(`Validation Error while joining entity, "entityTwo". The sk property "casing" provided "upper" does not match established casing "lower" on index "(Primary Index)". Index casing options must match across all entities participating in a collection - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+	});
+	it("Should allow partial casing definitions if defaults align with chosen casing", () => {
+		let entityOne = {
+			entity: "entityOne",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						casing: "lower",
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						field: "sk",
+						facets: ["prop2", "prop3"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let entityTwo = {
+			entity: "entityTwo",
+			attributes: {
+				prop1: {
+					type: "string",
+				},
+				prop2: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				}
+			},
+			indexes: {
+				index1: {
+					pk: {
+						field: "pk",
+						facets: ["prop1"],
+					},
+					sk: {
+						casing: "lower",
+						field: "sk",
+						facets: ["prop5", "prop4"],
+					},
+					collection: "collectionA",
+				}
+			}
+		};
+		let database = new Service({
+			version: "1",
+			table: "electro",
+			service: "electrotest",
+		});
+
+		database
+			.join(entityOne)
+		expect(() => database.join(entityTwo)).to.not.throw();
+	});
 	it("Should require matching PK values for entities associated with a common collection", () => {
 		let entityOne = {
 			entity: "entityOne",
@@ -967,7 +1195,6 @@ describe("Service Offline", async () => {
 
 		database
 			.join(entityOne)
-
 		expect(() => database.join(entityTwo)).to.throw("Partition Key composite attributes provided [\"prop1\"] for index \"(Primary Index)\" do not match established composite attributes [\"prop1\", \"prop7\"] on established index \"(Primary Index)\" - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
 	});
 	it("Should require all PK values", () => {

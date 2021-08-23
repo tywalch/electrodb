@@ -1,4 +1,4 @@
-import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem} from ".";
+import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, Schema} from ".";
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 let entityWithSK = new Entity({
     model: {
@@ -3757,3 +3757,73 @@ complex.update({username: "abc"})
         return "";
     })
     .go()
+
+// casing property on schema
+const casingEntity = new Entity({
+    model: {
+        service: "MallStoreDirectory",
+        entity: "MallStores",
+        version: "1",
+    },
+    attributes: {
+        id: {
+            type: "string",
+            field: "id",
+        },
+        mall: {
+            type: "string",
+            required: true,
+            field: "mall",
+        },
+        stores: {
+            type: "number",
+        },
+        value: {
+            type: "string"
+        }
+    },
+    indexes: {
+        store: {
+            collection: ["myCollection"],
+            pk: {
+                field: "parition_key",
+                composite: ["id"],
+                casing: "lower",
+            },
+            sk: {
+                field: "sort_key",
+                composite: ["mall", "stores"],
+                casing: "upper",
+            }
+        },
+        other: {
+            index: "idx1",
+            collection: "otherCollection",
+            pk: {
+                field: "parition_key_idx1",
+                composite: ["mall"],
+                casing: "upper",
+            },
+            sk: {
+                field: "sort_key_idx1",
+                composite: ["id", "stores"],
+                casing: "default",
+            }
+        }
+    }
+}, {table: "StoreDirectory"});
+
+type RequiredIndexOptions = Required<Schema<any, any, any>["indexes"][string]>;
+type PKCasingOptions = RequiredIndexOptions["pk"]["casing"];
+type SKCasingOptions = RequiredIndexOptions["sk"]["casing"];
+const allCasingOptions = "" as "default" | "upper" | "lower" | "none" | undefined;
+expectAssignable<PKCasingOptions>(allCasingOptions);
+expectAssignable<SKCasingOptions>(allCasingOptions);
+expectError<PKCasingOptions>("not_available");
+expectError<SKCasingOptions>("not_available");
+
+type AvailableParsingOptions = Parameters<typeof casingEntity.parse>[1]
+expectAssignable<AvailableParsingOptions>(undefined);
+expectAssignable<AvailableParsingOptions>({});
+expectAssignable<AvailableParsingOptions>({ignoreOwnership: true});
+expectAssignable<AvailableParsingOptions>({ignoreOwnership: false});

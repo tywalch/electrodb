@@ -18,6 +18,7 @@
 ### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ## Features
+- [**Use with your existing tables**](#using-electrodb-with-existing-data) - ElectroDB simplifies building DocumentClient parameters, so you can use it with existing tables/data.   
 - [**Attribute Schema Enforcement**](#attributes) - Define a schema for your entities with enforced attribute validation, defaults, types, aliases, and more.
 - [**Easily Compose Hierarchical Access Patterns**](#composite-attributes) - Plan and design hierarchical keys for your indexes to multiply your possible access patterns.
 - [**Single Table Entity Segregation**](#model) - Entities created with **ElectroDB** will not conflict with other entities when using a single table.
@@ -76,23 +77,18 @@ StoreLocations.query
   * [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Usage](#usage)
-  * [TypeScript Support](#typescript-support)
-    + [Exported Types](#exported-types)
-      - [EntityRecord Type](#entityrecord-type)
-      - [EntityItem Type](#entityitem-type)
-      - [CollectionItem Type](#collectionitem-type)
-      - [CreateEntityItem Type](#createentityitem-type)
-      - [UpdateEntityItem Type](#updateentityitem-type)
-      - [UpdateAddEntityItem Type](#updateaddentityitem-type)
-      - [UpdateSubtractEntityItem Type](#updatesubtractentityitem-type)
-      - [UpdateAppendEntityItem Type](#updateappendentityitem-type)
-      - [UpdateRemoveEntityItem Type](#updateremoveentityitem-type)
-      - [UpdateDeleteEntityItem Type](#updatedeleteentityitem-type)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
-  + [TypeScript Services](#typescript-services)
+- [Project Goals](#project-goals)
+  * [TypeScript Support](#typescript-support)
+    + [TypeScript Services](#typescript-services)
   * [Join](#join)
+    - [Independent Models](#independent-models)
+    - [Joining Entity instances to a Service](#joining-entity-instances-to-a-service)
+    - [Joining models to a Service](#joining-models-to-a-service)
+    - [Joining Entities or Models with an alias](#joining-entities-or-models-with-an-alias)
+    - [Joining Entities at Service construction for TypeScript](#joining-entities-at-service-construction-for-typescript)
   * [Model](#model)
     + [Model Properties](#model-properties)
     + [Service Options](#service-options)
@@ -116,12 +112,14 @@ StoreLocations.query
     + [Indexes Without Sort Keys](#indexes-without-sort-keys)
     + [Indexes With Sort Keys](#indexes-with-sort-keys)
     + [Numeric Keys](#numeric-keys)
+    + [Index Casing](#index-casing)
   * [Facets](#facets)
   * [Composite Attributes](#composite-attributes)
     + [Composite Attribute Arrays](#composite-attribute-arrays)
     + [Composite Attribute Templates](#composite-attribute-templates)
       - [Templates and Composite Attribute Arrays](#templates-and-composite-attribute-arrays)
   * [Composite Attribute and Index Considerations](#composite-attribute-and-index-considerations)
+    + [Attributes as Indexes](#attributes-as-indexes)
   * [Collections](#collections)
     + [Collection Queries vs Entity Queries](#collection-queries-vs-entity-queries)
     + [Collection Response Structure](#collection-response-structure)
@@ -182,7 +180,7 @@ StoreLocations.query
         * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
-- [Errors:](#errors-)
+- [Errors:](#errors)
   + [No Client Defined On Model](#no-client-defined-on-model)
   + [Invalid Identifier](#invalid-identifier)
   + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
@@ -196,6 +194,8 @@ StoreLocations.query
   + [Duplicate Index Fields](#duplicate-index-fields)
   + [Duplicate Index Composite Attributes](#duplicate-index-composite-attributes)
   + [Incompatible Key Composite Attribute Template](#incompatible-key-composite-attribute-template)
+  + [Invalid Index With Attribute Name](#invalid-index-with-attribute-name)
+  + [Invalid Collection on Index With Attribute Field Names](#invalid-collection-on-index-with-attribute-field-names)
   + [Missing Composite Attributes](#missing-composite-attributes)
   + [Missing Table](#missing-table)
   + [Invalid Concurrency Option](#invalid-concurrency-option)
@@ -237,6 +237,18 @@ StoreLocations.query
       - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
+- [Exported TypeScript Types](#exported-typescript-types)
+  * [EntityRecord Type](#entityrecord-type)
+  * [EntityItem Type](#entityitem-type)
+  * [CollectionItem Type](#collectionitem-type)
+  * [CreateEntityItem Type](#createentityitem-type)
+  * [UpdateEntityItem Type](#updateentityitem-type)
+  * [UpdateAddEntityItem Type](#updateaddentityitem-type)
+  * [UpdateSubtractEntityItem Type](#updatesubtractentityitem-type)
+  * [UpdateAppendEntityItem Type](#updateappendentityitem-type)
+  * [UpdateRemoveEntityItem Type](#updateremoveentityitem-type)
+  * [UpdateDeleteEntityItem Type](#updatedeleteentityitem-type)
+- [Using ElectroDB With Existing Data](#using-electrodb-with-existing-data)
 - [Electro CLI](#electro-cli)
 - [Version 1 Migration](#version-1-migration)
   * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
@@ -261,170 +273,6 @@ const {Entity, Service} = require("electrodb");
 // or 
 import {Entity, Service} from "electrodb";
 ```
-
-## TypeScript Support
-
-Previously it was possible to generate type definition files (`.d.ts`) for you Models, Entities, and Services with the [Electro CLI](#electro-cli). New with version `0.10.0` is TypeScript support for Entities and Services.
-
-As of writing this, this functionality is still a work in progress, and enforcement of some of ElectroDB's query constraints have still not been written into the type checks. Most notably are the following constraints not yet enforced by the type checker, but are enforced at query runtime:
-
-
-- Sort Key Composite Attribute order is not strongly typed. Sort Key Composite Attributes must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about composite attribute ordering see the section on [Composite Attributes](#composite-attributes).
-- Put/Create/Update/Patch/Delete/Create operations that partially impact index composite attributes are not statically typed. When performing a `put` or `update` type operation that impacts a composite attribute of a secondary index, ElectroDB performs a check at runtime to ensure all composite attributes of that key are included. This is detailed more in the section [Composite Attribute and Index Considerations](#composite-attribute-and-index-considerations).
-- Use of the `params` method does not yet return strict types.
-- Use of the `raw` or `includeKeys` query options do not yet impact the returned types.
-
-If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a GitHub issue, and it can be addressed.
-
-### Exported Types
-
-The following types are exported for easier use while using ElectroDB with TypeScript:
-
-#### EntityRecord Type
-
-The EntityRecord type is an object containing every attribute an Entity's model.
-
-_Definition:_
-
-```typescript
-type EntityRecord<E extends Entity<any, any, any, any>> =
-    E extends Entity<infer A, infer F, infer C, infer S>
-        ? Item<A,F,C,S,S["attributes"]>
-        : never;
-```
-
-_Use:_
-```typescript
-type MyEntity = EntityRecord<typeof MyService, "mycollection">
-```
-
-#### EntityItem Type
-
-This type represents an item as it is returned from a query. This is different from the `EntityRecord` in that this type reflects the `required`, `hidden`, `default`, etc properties defined on the attribute.  
-
-_Definition:_
-
-```typescript
-export type EntityItem<E extends Entity<any, any, any, any>> =
-  E extends Entity<infer A, infer F, infer C, infer S>
-  ? ResponseItem<A, F, C, S>
-  : never;
-```
-
-_Use:_
-
-```typescript
-type Thing = EntityItem<typeof MyEntityInstance>;
-```
-
-#### CollectionItem Type
-
-This type represents the value returned from a collection query, and is similar to EntityItem.
-
-_Use:_
-
-type CollectionResults = CollectionItem<typeof 
-
-#### CreateEntityItem Type
-
-This type represents an item that you would pass your entity's `put` or `create` method
-
-_Definition:_
-
-```typescript
-export type CreateEntityItem<E extends Entity<any, any, any, any>> =
-  E extends Entity<infer A, infer F, infer C, infer S>
-  ? PutItem<A, F, C, S>
-  : never;
-```
-
-_Use:_
-
-```typescript
-type NewThing = CreateEntityItem<typeof MyEntityInstance>;
-```
-
-#### UpdateEntityItem Type
-
-This type represents an item that you would pass your entity's `set` method when using `create` or `update`.
-
-_Definition:_
-
-```typescript
-export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
-  E extends Entity<infer A, infer F, infer C, infer S>
-  ? SetItem<A, F, C, S>
-  : never;
-```
-
-_Use:_
-
-```typescript
-type UpdateProperties = UpdateEntityItem<typeof MyEntityInstance>;
-```
-
-
-#### UpdateAddEntityItem Type 
-
-This type represents an item that you would pass your entity's `add` method when using `create` or `update`.
-
-_Definition:_
-```typescript
-export type UpdateAddEntityItem<E extends Entity<any, any, any, any>> =
-    E extends Entity<infer A, infer F, infer C, infer S>
-        ? AddItem<A, F, C, S>
-        : never;
-
-`````
-
-#### UpdateSubtractEntityItem Type 
-
-This type represents an item that you would pass your entity's `subtract` method when using `create` or `update`.
-
-_Definition:_
-```typescript
-export type UpdateSubtractEntityItem<E extends Entity<any, any, any, any>> =
-    E extends Entity<infer A, infer F, infer C, infer S>
-        ? SubtractItem<A, F, C, S>
-        : never;
-```
-
-#### UpdateAppendEntityItem Type 
-
-This type represents an item that you would pass your entity's `append` method when using `create` or `update`.
-
-_Definition:_
-```typescript
-export type UpdateAppendEntityItem<E extends Entity<any, any, any, any>> =
-    E extends Entity<infer A, infer F, infer C, infer S>
-        ? AppendItem<A, F, C, S>
-        : never;
-```
-
-#### UpdateRemoveEntityItem Type 
-
-This type represents an item that you would pass your entity's `remove` method when using `create` or `update`.
-
-_Definition:_
-```typescript
-export type UpdateRemoveEntityItem<E extends Entity<any, any, any, any>> =
-    E extends Entity<infer A, infer F, infer C, infer S>
-        ? RemoveItem<A, F, C, S>
-        : never;
-```
-
-#### UpdateDeleteEntityItem Type 
-
-This type represents an item that you would pass your entity's `delete` method when using `create` or `update`.
-
-_Definition:_
-```typescript
-export type UpdateDeleteEntityItem<E extends Entity<any, any, any, any>> =
-    E extends Entity<infer A, infer F, infer C, infer S>
-        ? DeleteItem<A, F, C, S>
-        : never;
-```
-
 
 # Entities and Services
 > To see full examples of ***ElectroDB*** in action, go to the [Examples](#examples) section.
@@ -458,6 +306,29 @@ const {Service} = require("electrodb");
 import {Service} from "electrodb";
 ```
 
+# Project Goals
+
+ElectroDB focuses on simplifying the process of modeling, enforcing data constraints, querying across entities, and formatting complex DocumentClient parameters. Three important design considerations we're made with the development of ElectroDB:
+
+1. ElectroDB should be able to be useful without having to query the database itself [[read more](#params)].
+2. ElectroDB should be able to be added to a project that already has been established tables, data, and access patterns [[read more](#using-electrodb-with-existing-data)].
+3. ElectroDB should not require additional design considerations on top of those made for DynamoDB, and therefore should be able to be removed from a project at any time without sacrifice.
+
+## TypeScript Support
+
+Previously it was possible to generate type definition files (`.d.ts`) for you Models, Entities, and Services with the [Electro CLI](#electro-cli). New with version `0.10.0` is TypeScript support for Entities and Services.
+
+As of writing this, this functionality is still a work in progress, and enforcement of some of ElectroDB's query constraints have still not been written into the type checks. Most notably are the following constraints not yet enforced by the type checker, but are enforced at query runtime:
+
+- Sort Key Composite Attribute order is not strongly typed. Sort Key Composite Attributes must be provided in the order they are defined on the model to build the key appropriately. This will not cause an error at query runtime, be sure your partial Sort Keys are provided in accordance with your model to fully leverage Sort Key queries. For more information about composite attribute ordering see the section on [Composite Attributes](#composite-attributes).
+- Put/Create/Update/Patch/Delete/Create operations that partially impact index composite attributes are not statically typed. When performing a `put` or `update` type operation that impacts a composite attribute of a secondary index, ElectroDB performs a check at runtime to ensure all composite attributes of that key are included. This is detailed more in the section [Composite Attribute and Index Considerations](#composite-attribute-and-index-considerations).
+- Use of the `params` method does not yet return strict types.
+- Use of the `raw` or `includeKeys` query options do not yet impact the returned types.
+
+If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a GitHub issue, and it can be addressed.
+
+See the section [Exported TypeScript Types](#exported-typescript-types) to read more about the useful types exported from ElectroDB.  
+
 ### TypeScript Services
 
 New with version `0.10.0` is TypeScript support. To ensure accurate types with, TypeScript users should create their services by passing an Object literal or const object that maps Entity alias names to Entity instances.
@@ -477,14 +348,17 @@ Not yet available for TypeScript, this pattern will also accept Models, or a mix
 ## Join
 When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service.
 
-If using TypeScript, see [TypeScript Services](#typescript-services) to learn how to "join" entities for use in a TypeScript project.
+> _NOTE: If using TypeScript, see [Joining Entities at Service construction for TypeScript](#joining-entities-at-service-construction-for-typescript) to learn how to "join" entities for use in a TypeScript project._
+
+#### Independent Models
 
 ```javascript
-// Independent Models
 let table = "my_table_name";
 let employees = new Entity(EmployeesModel, { client, table });
 let tasks = new Entity(TasksModel, { client, table });
 ```
+
+#### Joining Entity instances to a Service
 
 ```javascript
 // Joining Entity instances to a Service
@@ -494,24 +368,27 @@ TaskApp
 	.join(tasks);    // available at TaskApp.entities.tasks
 ```
 
+#### Joining models to a Service
+
 ```javascript
-// Joining models to a Service
 let TaskApp = new Service("TaskApp", { client, table });
 TaskApp
 	.join(EmployeesModel) // available at TaskApp.entities.employees (based on entity name in model)
 	.join(TasksModel);    // available at TaskApp.entities.tasks (based on entity name in model)
 ```
 
+#### Joining Entities or Models with an alias
+
 ```javascript
-// Joining Entities or Models with an "alias"
 let TaskApp = new Service("TaskApp", { client, table });
 TaskApp
     .join("personnel", EmployeesModel) // available at TaskApp.entities.personnel
     .join("directives", TasksModel); // available at TaskApp.entities.directives
 ```
 
+#### Joining Entities at Service construction for TypeScript
+
 ```typescript
-// Joining Entities at Service construction for TypeScript
 let TaskApp = new Service({
 	personnel: EmployeesModel, // available at TaskApp.entities.personnel
 	directives: TasksModel, // available at TaskApp.entities.directives
@@ -766,7 +643,7 @@ attributes: {
 }
 ```
 
-> Note: When using get/set in TypeScript, be sure to use the `?:` syntax to denote an optional attribute on `set`
+> _NOTE: When using get/set in TypeScript, be sure to use the `?:` syntax to denote an optional attribute on `set`_
 
 #### Attribute Definition
 
@@ -794,7 +671,7 @@ When using TypeScript, if you wish to also enforce this type make sure to us the
 
 This may be desirable, however, as enforcing the type value can require consumers of your model to do more work to resolve the type beyond just the type `string`.
 
-> Note: Regardless of using TypeScript or JavaScript, ElectroDB will enforce values supplied match the supplied array of values at runtime.
+> _NOTE: Regardless of using TypeScript or JavaScript, ElectroDB will enforce values supplied match the supplied array of values at runtime._
 
 The following example shows the differences in how TypeScript may enforce your enum value:
 
@@ -867,7 +744,7 @@ The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports 
 
 In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by removing the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval.
 
-> Note: If you are using TypeScript, Sets are currently typed as Arrays to simplify the type system. Again, ElectroDB will handle the conversion of these Arrays without the need to use `client.createSet()`.
+> _NOTE: If you are using TypeScript, Sets are currently typed as Arrays to simplify the type system. Again, ElectroDB will handle the conversion of these Arrays without the need to use `client.createSet()`._
  
 ```typescript
 attributes: {
@@ -887,7 +764,7 @@ Using `get` and `set` on an attribute can allow you to apply logic before and ju
 
 The first argument in an attribute's `get` or `set` callback is the value received in the query. The second argument, called `"item"`, in an attribute's is an object containing the values of other attributes on the item as it was given or retrieved. If your attribute uses `watch`, the getter or setter of attribute being watched will be invoked _before_ your getter or setter and the updated value will be on the `"item"` argument instead of the original.
 
-> Note: Using getters/setters on Composite Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.
+> _NOTE: Using getters/setters on Composite Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record._
 
 ElectroDB invokes an Attribute's `get` method in the following circumstances:
 1. If a field exists on an item after retrieval from DynamoDB, the attribute associated with that field will have its getter method invoked.
@@ -899,14 +776,14 @@ ElectroDB invokes an Attribute's `set` callback in the following circumstances:
 2. Setters will only be invoked when an Attribute is modified when performing a `patch` or `update` operation.
 3. When using ElectroDB's [attribute watching](#attribute-watching) functionality, an attribute will have its setter callback invoked whenever the setter callback of any "watched" attributes are invoked. Note: The setter of an Attribute Watcher will always be applied _after_ the setters for the attributes it watches.
 
-> Note: As of ElectroDB `1.3.0`, the `watch` property is only possible for root level attributes. Watch is currently not supported for nested attributes like properties on a "map" or items of a "list".  
+> _NOTE: As of ElectroDB `1.3.0`, the `watch` property is only possible for root level attributes. Watch is currently not supported for nested attributes like properties on a "map" or items of a "list"._  
 
 #### Attribute Watching
 Attribute watching is a powerful feature in ElectroDB that can be used to solve many unique challenges with DynamoDB. In short, you can define a column to have its getter/setter callbacks called whenever another attribute's getter or setter callbacks are called. If you haven't read the section on [Attribute Getters and Setters](#attribute-getters-and-setters), it will provide you with more context about when an attribute's mutation callbacks are called.
 
 Because DynamoDB allows for a flexible schema, and ElectroDB allows for optional attributes, it is possible for items belonging to an entity to not have all attributes when setting or getting records. Sometimes values or changes to other attributes will require corresponding changes to another attribute. Sometimes, to fully leverage some advanced model denormalization or query access patterns,  it is necessary to duplicate some attribute values with similar or identical values. This functionality has many uses; below are just a few examples of how you can use `watch`:
 
-> Note: Using the `watch` property impacts the order of which getters and setters are called. You cannot `watch` another attribute that also uses `watch`, so ElectroDB first invokes the getters or setters of attributes without the `watch` property, then subsequently invokes the getters or setters of attributes who use `watch`.
+> _NOTE: Using the `watch` property impacts the order of which getters and setters are called. You cannot `watch` another attribute that also uses `watch`, so ElectroDB first invokes the getters or setters of attributes without the `watch` property, then subsequently invokes the getters or setters of attributes who use `watch`._
 
 ```typescript
 myAttr: { 
@@ -1149,6 +1026,8 @@ signature               | behavior
 `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid.
 `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query
 
+
+
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
 
@@ -1177,23 +1056,25 @@ indexes: {
 }
 ```
 
-| Property       | Type                | Required | Description |
-| -------------- | :-----------------: | :------: | ----------- |
-| `pk`           | `object`            | yes      | Configuration for the pk of that index or table
-| `pk.composite` | `string | string[]` | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
-| `pk.template`  | `string`            | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
-| `pk.field`     | `string`            | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
-| `sk`           | `object`            | no       | Configuration for the sk of that index or table
-| `sk.composite` | `string | string[]` | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
-| `sk.template`  | `string`            | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
-| `sk.field`     | `string`            | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
-| `index`        | `string`            | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
-| `collection`   | `string | string[]` | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
+| Property       | Type                                   | Required | Description |
+| -------------- | :------------------------------------: | :------: | ----------- |
+| `pk`           | `object`                               | yes      | Configuration for the pk of that index or table
+| `pk.composite` | `string | string[]`                    | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
+| `pk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `pk.casing`    | `default` | `upper` | `lower` | `none` | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`. 
+| `sk`           | `object`                               | no       | Configuration for the sk of that index or table
+| `sk.composite` | `string | string[]`                    | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `sk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
+| `sk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `pk.casing`    | `default` | `upper` | `lower` | `none` | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
+| `index`        | `string`                               | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
+| `collection`   | `string | string[]`                    | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
 
 ### Indexes Without Sort Keys
 When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail.
 
-> Note: It is generally recommended to always use Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesn't _need_ an additional property to define a unique record, having an `sk` with no defined composite attributes (e.g. an empty array) still opens the door to many more query opportunities like [collections](#collections).
+> _NOTE: It is generally recommended to always use Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesn't _need_ an additional property to define a unique record, having an `sk` with no defined composite attributes (e.g. an empty array) still opens the door to many more query opportunities like [collections](#collections)._
 
 ```javascript
 // ElectroDB interprets as index *not having* an SK.
@@ -1266,6 +1147,41 @@ const schema = {
 }
 ```
 
+### Index Casing
+
+DynamoDB is a case-sensitive data store, and therefore it is common to convert the casing of keys to uppercase or lowercase prior to saving, updating, or querying data to your table. ElectroDB, by default, will lowercase all keys when preparing query parameters. For those who are using ElectroDB with an existing dataset, have preferences on upper or lowercase, or wish to not convert case at all, this can be configured on an index key field basis.
+
+In the example below, we are configuring the casing ElectroDB will use individually for the Partition Key and Sort Key on the GSI "gis1". For the index's PK, mapped to `gsi1pk`, we ElectroDB will convert this key to uppercase prior to its use in queries. For the index's SK, mapped to `gsi1pk`, we ElectroDB will not convert the case of this key prior to its use in queries.
+
+```typescript
+{
+  indexes: {
+    myIndex: {
+      index: "gsi1",
+      pk: {
+        field: "gsi1pk",
+        casing: "upper",
+        composite: ["organizationId"]
+      },
+      sk: {
+        field: "gsi1sk",
+        casing: "none",
+        composite: ["accountId"]
+      }
+    }
+  }
+}
+```
+
+> _NOTE: Casing is a very important decision when modeling your data in DynamoDB. While choosing upper/lower is largely a personal preference, once you have begun loading records in your table it can be difficult to change your casing after the fact. Unless you have good reason, allowing for mixed case keys can make querying data difficult because it will require database consumers to always have a knowledge of their data's case._         
+
+Casing Option | Effect 
+:-----------: | --------
+`default`     | The default for keys is lowercase, or `lower`
+`lower`       | Will convert the key to lowercase prior it its use
+`upper`       | Will convert the key to uppercase prior it its use
+`none`        | Will not perform any casing changes when building keys
+
 ## Facets
 
 As of version `0.11.1`, "Facets" have been renamed to "Composite Attributes", and all documentation has been updated to reflect that change.
@@ -1277,7 +1193,7 @@ As of version `0.11.1`, "Facets" have been renamed to "Composite Attributes", an
 ## Composite Attributes
 A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key**, or a **Sort Key** key, which define an `index`.
 
-> Note: Only attributes with a type of `"string"`, `"number"`, `"boolean"`, or `string[]` (enum) can be used as composite attributes.
+> _NOTE: Only attributes with a type of `"string"`, `"number"`, `"boolean"`, or `string[]` (enum) can be used as composite attributes._
 
 There are two ways to provide composite:
 1. As a [Composite Attribute Array](#composite-attribute-arrays)
@@ -1307,7 +1223,7 @@ For `SK` values, the `entity` value from the model is prefixed onto the key.
 ### Composite Attribute Arrays
 Within a Composite Attribute Array, each element is the name of the corresponding Attribute defined in the Model. The attributes chosen, and the order in which they are specified, will translate to how your composite keys will be built by ElectroDB.
 
-> Note: If the Attribute has a `label` property, that will be used to prefix the composite attributes, otherwise the full Attribute name will be used.
+> _NOTE: If the Attribute has a `label` property, that will be used to prefix the composite attributes, otherwise the full Attribute name will be used._
 >
 ```javascript
 attributes: {
@@ -1362,7 +1278,7 @@ Attributes are identified by surrounding the attribute with `${...}` braces. For
 
 Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId`  would be expressed as `mid_${mallId}#bid_${buildingId}`.
 
-> Note: ***ElectroDB*** will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit ***ElectroDB's*** ability to prevent leaking entities with some queries.
+> _NOTE: ***ElectroDB*** will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit ***ElectroDB's*** ability to prevent leaking entities with some queries._
 
 ElectroDB will continue to always add a trailing delimiter to composite attributes with keys are partially supplied. The section on [BeginsWith Queries](#begins-with-queries) goes into more detail about how ***ElectroDB*** builds indexes from composite attributes.
 
@@ -1455,6 +1371,142 @@ As described in the above two sections ([Composite Attributes](#composite-attrib
 - When updating/patching an Attribute that is also a composite attribute for secondary index, ElectroDB will perform a runtime check that the operation will leave a key in a partially built state. For example: if a Sort Key is defined as having the Composite Attributes `["prop1", "prop2", "prop3"]`, than an update to the `prop1` Attribute will require supplying the `prop2` and `prop3` Attributes as well. This prevents a loss of key fidelity because ElectroDB is not able to update a key partially in place with its existing values.
 
 - As described and detailed in [Composite Attribute Arrays](#composite attribute-arrays), you can use the `label` property on an Attribute shorten a composite attribute's prefix on a key. This can allow trim down the length of your keys.
+
+### Attributes as Indexes
+
+It may be the case that an index field is also an attribute. For example, if a table was created with a Primary Index partition key of `accountId`, and that same field is used to store the `accountId` value used by the application. The following are a few examples of how to model that schema with ElectroDB:
+
+> _NOTE: If you have the unique opportunity to use ElectroDB with a new project, it is strongly recommended to use genericly named index fields that are separate from your business attributes._  
+
+**Using `composite`**
+
+When your attribute's name, or [`field` property](#expanded-syntax) on an attribute, matches the `field` property on an indexes' `pk` or `sk` ElectroDB will forego its usual index key prefixing.    
+
+```typescript
+{
+  model: {
+    entity: "your_entity_name",
+    service: "your_service_name",
+    version: "1"
+  },
+  attributes: {
+    accountId: {
+      type: "string" // string and number types are both supported
+    }      
+  },
+  indexes: {
+    "your_access_pattern_name": {
+      pk: {
+        field: "accountId",
+        composite: ["accountId"]          
+      },
+      sk: {...}
+    }
+  }
+}
+```
+
+**Using `template`** 
+
+Another approach allows you to use the `template` property, which allows you to format exactly how your key should be built when interacting with DynamoDB. In this case `composite` is optional when using `template`, but including it helps with TypeScript typing.
+
+```typescript
+{
+  model: {
+    entity: "your_entity_name",
+    service: "your_service_name",
+    version: "1"
+  },
+  attributes: {
+    accountId: {
+      type: "string" // string and number types are both supported
+    }      
+  },
+  indexes: {
+    "your_access_pattern_name": {
+      pk: {
+        field: "accountId",
+        composite: ["accountId"], // `composite` is optional when using `template` but helps with TypeScript typing
+        template: "${accountId}"
+      },
+      sk: {...}
+    }
+  }
+}
+```
+
+**Advanced use of `template`**
+
+When your `string` attribute is also an index key, and using key templates, you can also add static prefixes and postfixes to your attribute. Under the covers, ElectroDB will leverage this template while interacting with DynamoDB but will allow you to maintain a relationship with the attribute value itself. 
+
+For example, given the following model:    
+
+```typescript
+{
+  model: {
+    entity: "your_entity_name",
+    service: "your_service_name",
+    version: "1"
+  },
+  attributes: {
+    accountId: {
+      type: "string" // only string types are both supported for this example
+    },
+    organizationId: {
+      type: "string"
+    },
+    name: {
+      type: "string"
+    }
+  },
+  indexes: {
+    "your_access_pattern_name": {
+      pk: {
+        field: "accountId",
+        composite: ["accountId"],
+        template: "prefix_${accountId}_postfix"
+      },
+      sk: {
+        field: "organizationId",
+        composite: ["organizationId"]
+      }
+    }
+  }
+}
+```
+
+ElectroDB will accept a `get` request like this:
+
+```typescript
+await myEntity.get({
+  accountId: "1111-2222-3333-4444",
+  organizationId: "AAAA-BBBB-CCCC-DDDD"
+}).go()
+```
+
+Query DynamoDB with the following params (note the pre/postfix on `accountId`):
+
+> _NOTE: ElectroDB defaults keys to lowercase, though this can be configured using [Index Casing](#index-casing)._
+
+```
+{
+  Key: {
+    accountId: "prefix_1111-2222-3333-4444_postfix",
+    organizationId: `aaaa-bbbb-cccc-dddd`, 
+  },
+  TableName: 'your_table_name'
+}
+```
+
+When returned from a query, however, ElectroDB will return the following and trim the key of it's prefix and postfix:
+
+```typescript
+{
+  accountId: "prefix_1111-2222-3333-4444_postfix",
+  organizationId: `aaaa-bbbb-cccc-dddd`,
+}
+name: "your_item_name"
+```
 
 ## Collections
 A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities.
@@ -1878,7 +1930,7 @@ Unlike `overview`, the collections `contributions`, and `assignments` are more c
 
 In the case of `contributions`, _all three_ entities implement this collection on the `gsi2` index, and compose their Partition Key with the `employeeId` attribute. The `assignments` collection, however, is only implemented by the `tasks` and `projectMembers` Entities. Below is an example of using these collections:  
 
-> Note: Collection values of `collection: "contributions"` and `collection: ["contributions"]` are interpreted by ElectroDB as being the same implementation.
+> _NOTE: Collection values of `collection: "contributions"` and `collection: ["contributions"]` are interpreted by ElectroDB as being the same implementation._
  
 ```typescript
 // contributions
@@ -2010,7 +2062,7 @@ projects: {
 
 In the case of the entities above, we see an example of a [sub-collection](#sub-collections). ElectroDB will use the above definitions to generate two collections: `contributions`, `assignments`.
 
-The considerations for naming a collection are nearly identical to the considerations for [naming an index](#index-naming-conventions): What do the query results from supplying just the Partition Key represent? In the case of collections you must also consider what the results represent across _all_ of the involved entities and the entities that may be added in the future.
+The considerations for naming a collection are nearly identical to the considerations for [naming an index](#index-naming-conventions): What do the query results from supplying just the Partition Key represent? In the case of collections you must also consider what the results represent across _all_ of the involved entities, and the entities that may be added in the future.
 
 For example, the `contributions` collection is named such because when given an `employeeId` we receive the employee's details, the tasks the that employee, and the projects where they are currently a member.
 
@@ -2308,7 +2360,7 @@ animals.query
 
 Where functions allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations`, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions. 
 
-> Note: `where` callbacks must return a string. All method on the  `operation` object all return strings, so you can return the results of the `operation` method or use template strings compose an expression.
+> _NOTE: `where` callbacks must return a string. All method on the  `operation` object all return strings, so you can return the results of the `operation` method or use template strings compose an expression._
 
 ```javascript
 // A single filter operation 
@@ -2414,6 +2466,12 @@ const updateResults = docClient.update({...}).promise();
 const formattedGetResults = myEntity.parse(getResults);
 const formattedQueryResults = myEntity.parse(formattedQueryResults);
 ```
+
+Parse also accepts an optional `options` object as a second argument (see the section [Query Options](#query-options) to learn more). Currently, the following query options are relevant to the `parse()` method:
+
+Option            | Default | Notes
+----------------- : ------- | -----
+`ignoreOwnership` | `true`  | This property defaults to `true` here, unlike elsewhere in the application when it defaults to `false`. You can overwrite the default here with your own preference. 
 
 # Building Queries
 > For hands-on learners: the following example can be followed along with **and** executed on runkit: https://runkit.com/tywalch/electrodb-building-queries
@@ -2633,7 +2691,7 @@ The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete
 ### Get Method
 Provide all Table Index composite attributes in an object to the `get` method. In the event no record is found, a value of `null` will be returned.
 
-> Note: As part of ElectroDB's roll out of 1.0.0, a breaking change was made to the `get` method. Prior to 1.0.0, the `get` method would return an empty object if a record was not found. This has been changed to now return a value of `null` in this case.
+> _NOTE: As part of ElectroDB's roll out of 1.0.0, a breaking change was made to the `get` method. Prior to 1.0.0, the `get` method would return an empty object if a record was not found. This has been changed to now return a value of `null` in this case._
 
 ```javascript
 let results = await StoreLocations.get({
@@ -2656,7 +2714,7 @@ let results = await StoreLocations.get({
 ### Batch Get
 Provide all Table Index composite attributes in an array of objects to the `get` method to perform a BatchGet query.
 
-> Note: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below.
+> _NOTE: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below._
 > Additionally, when performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet queries larger than the docClient's limit of 100 records.
 
 If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
@@ -2734,7 +2792,7 @@ await StoreLocations.delete({
 ### Batch Write Delete Records
 Provide all table index composite attributes in an array of objects to the `delete` method to batch delete records.
 
-> Note: Performing a Batch Delete will return an array of "unprocessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options).
+> _NOTE: Performing a Batch Delete will return an array of "unprocessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options)._
 > Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
 
 If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
@@ -2844,7 +2902,7 @@ await StoreLocations
 ### Batch Write Put Records
 Provide all *required* Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
 
-> Note: Performing a Batch Put will return an array of "unprocessed" records. An empty array signifies all records returned were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options).
+> _NOTE: Performing a Batch Put will return an array of "unprocessed" records. An empty array signifies all records returned were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Query Options](#query-options)._
 > Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
 
 If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
@@ -2988,7 +3046,7 @@ await StoreLocations
 
 The `remove()` method will accept all attributes defined on the model. Unlike most other update methods, the `remove()` method accepts an array with the names of the attributes that should be removed.
 
-> Note that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed.  
+> _NOTE that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed._  
 
 ```javascript
 await StoreLocations
@@ -3433,7 +3491,7 @@ await StoreLocations
 
 DynamoDB offers three methods to query records: `get`, `query`, and `scan`. In **_ElectroDB_**, there is a fourth type: `find`. Unlike `get` and `query`, the `find` method does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on. Provide the `find` method will all properties known to match a record and **_ElectroDB_** will generate the most performant query it can to locate the results. This can be helpful with highly dynamic querying needs. If an index cannot be satisfied with the attributes provided, `scan` will be used as a last resort.
 
-> Note: The Find method is similar to the Match method with one exception: The attributes you supply directly to the `.find()` method will only be used to identify and fulfill your index access patterns. Any values supplied that do not contribute to a composite key will not be applied as query filters. Furthermore, if the values you provide do not resolve to an index access pattern, then a table scan will be performed. Use the `where()` chain method to further filter beyond keys, or use [Match](#match-records) for the convenience of automatic filtering based on the values given directly to that method.
+> _NOTE: The Find method is similar to the Match method with one exception: The attributes you supply directly to the `.find()` method will only be used to identify and fulfill your index access patterns. Any values supplied that do not contribute to a composite key will not be applied as query filters. Furthermore, if the values you provide do not resolve to an index access pattern, then a table scan will be performed. Use the `where()` chain method to further filter beyond keys, or use [Match](#match-records) for the convenience of automatic filtering based on the values given directly to that method._
 
 ```javascript
 await StoreLocations.find({
@@ -3771,11 +3829,11 @@ The first element for a page query is the "pager": an object contains the compos
 
 The "pager" includes the associated entity's Identifiers.
 
-> Note: It is *highly recommended* to use the [query option](#query-options) `pager: "raw""` flag when using `.page()` with `scan` operations. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
+> _NOTE: It is *highly recommended* to use the [query option](#query-options) `pager: "raw""` flag when using `.page()` with `scan` operations. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records._
 
 The second element is the results of the query, exactly as it would be returned through a `query` operation.
 
-> Note: When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. For more information on the options available in the `config` object, check out the section [Query Options](#query-options).
+> _NOTE: When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. For more information on the options available in the `config` object, check out the section [Query Options](#query-options)._
 
 #### Entity Pagination
 
@@ -3832,7 +3890,7 @@ The `.page()` method also accepts [Query Options](#query-options) just like the 
 
 A notable Query Option, that is available only to the `.page()` method, is an option called `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
 
-> Note: Because the "pager" object is destructured from the keys DynamoDB returns as the `LastEvaluatedKey`, these composite attributes differ from the record's actual attribute values in one important way: Their string values will all be lowercase. If you intend to use these attributes in ways where their casing _will_ matter (e.g. in a `where` filter), keep in mind this may result in unexpected outcomes.
+> _NOTE: Because the "pager" object is destructured from the keys DynamoDB returns as the `LastEvaluatedKey`, these composite attributes differ from the record's actual attribute values in one important way: Their string values will all be lowercase. If you intend to use these attributes in ways where their casing _will_ matter (e.g. in a `where` filter), keep in mind this may result in unexpected outcomes._
 
 The three options for the query option `pager` are as follows:
 
@@ -3988,31 +4046,34 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   pager?: "raw" | "named" | "item";
   originalErr?: boolean;
   concurrent?: number;
-  unprocessed?: "raw" | "item"
-  response: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new"
+  unprocessed?: "raw" | "item";
+  response?: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new";
+  ignoreOwnership?: boolean;
 };
 ```
 
-Option      | Default              | Description
------------ | :------------------: | -----------   
-params      | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
-table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
-raw         | `false`              | Returns query results as they were returned by the docClient.
-includeKeys | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
-pager       | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
-originalErr | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
-concurrent  | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
-unprocessed | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
-response    | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.  
+Option          | Default              | Description
+--------------- | :------------------: | -----------   
+params          | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
+table           | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
+raw             | `false`              | Returns query results as they were returned by the docClient.
+includeKeys     | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
+pager           | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
+originalErr     | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
+concurrent      | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
+unprocessed     | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
+response        | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
+ignoreOwnership | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.    
 
 # Errors:
-| Error Code | Description |
-| :--------: | ----------- | 
-| 1000s | Configuration Errors |
-| 2000s | Invalid Queries      |
-| 3000s | User Defined Errors  |
-| 4000s | DynamoDB Errors      |
-| 5000s | Unexpected Errors    |
+
+Error Code | Description
+:--------: | -------------------- 
+1000s      | Configuration Errors
+2000s      | Invalid Queries     
+3000s      | User Defined Errors 
+4000s      | DynamoDB Errors     
+5000s      | Unexpected Errors   
 
 ### No Client Defined On Model
 *Code: 1001*
@@ -4216,6 +4277,24 @@ You are trying to use the custom Key Composite Attribute Template, and a Composi
 
 *What to do about it:*
 Checkout the section on [Composite Attribute Templates](#composite attribute-templates) and verify your template conforms to the rules detailed there. Both properties must contain the same attributes and be provided in the same order.
+
+### Invalid Index With Attribute Name
+*Code: 1018*
+
+*Why this occurred:*
+ElectroDB's design revolves around best practices related to modeling in single table design. This includes giving indexed fields generic names. If the PK and SK fields on your table indexes also match the names of attributes on your Entity you will need to make special considerations to make sure ElectroDB can accurately map your data.  
+
+*What to do about it:*
+Checkout the section [Using ElectroDB with existing data](#using-electrodb-with-existing-data) to learn more about considerations to make when using attributes as index fields.
+
+### Invalid Collection on Index With Attribute Field Names
+*Code: 1019*
+
+*Why this occurred:*
+Collections allow for unique access patterns to be modeled between entities. It does this by appending prefixes to your key composites. If an Entity leverages an attribute field as an index key, ElectroDB will be unable to prefix your value because that would result in modifying the value itself.   
+
+*What to do about it:*
+Checkout the section [Collections](#collections) to learn more about collections, as well as the section [Using ElectroDB with existing data](#using-electrodb-with-existing-data) to learn more about considerations to make when using attributes as index fields.
 
 ### Missing Composite Attributes
 *Code: 2002*
@@ -4713,9 +4792,9 @@ Returns the following:
 For an example, lets look at the needs of application used to manage Shopping Mall properties. The application assists employees in the day-to-day operations of multiple Shopping Malls.
 
 ### Shopping Mall Requirements
-1. As a Maintenance Worker I need to know which stores are currently in each Mall down to the Building they are located.
-2. As a Helpdesk Employee I need to locate related stores in Mall locations by Store Category.
-3. As a Property Manager I need to identify upcoming leases in need of renewal.
+1. As a Maintenance Worker, I need to know which stores are currently in each Mall down to the Building they are located.
+2. As a Helpdesk Employee, I need to locate related stores in Mall locations by Store Category.
+3. As a Property Manager, I need to identify upcoming leases in need of renewal.
 
 Create a new Entity using the `StoreLocations` schema defined [above](#shopping-mall-stores)
 
@@ -4887,6 +4966,183 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
+
+# Exported TypeScript Types
+
+The following types are exported for easier use while using ElectroDB with TypeScript:
+
+## EntityRecord Type
+
+The EntityRecord type is an object containing every attribute an Entity's model.
+
+_Definition:_
+
+```typescript
+type EntityRecord<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? Item<A,F,C,S,S["attributes"]>
+        : never;
+```
+
+_Use:_
+```typescript
+type MyEntity = EntityRecord<typeof MyService, "mycollection">
+```
+
+## EntityItem Type
+
+This type represents an item as it is returned from a query. This is different from the `EntityRecord` in that this type reflects the `required`, `hidden`, `default`, etc properties defined on the attribute.
+
+_Definition:_
+
+```typescript
+export type EntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? ResponseItem<A, F, C, S>
+  : never;
+```
+
+_Use:_
+
+```typescript
+type Thing = EntityItem<typeof MyEntityInstance>;
+```
+
+## CollectionItem Type
+
+This type represents the value returned from a collection query, and is similar to EntityItem.
+
+_Use:_
+
+```
+type CollectionResults = CollectionItem<typeof MyServiceInstance, "collectionName">
+``` 
+
+## CreateEntityItem Type
+
+This type represents an item that you would pass your entity's `put` or `create` method
+
+_Definition:_
+
+```typescript
+export type CreateEntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? PutItem<A, F, C, S>
+  : never;
+```
+
+_Use:_
+
+```typescript
+type NewThing = CreateEntityItem<typeof MyEntityInstance>;
+```
+
+## UpdateEntityItem Type
+
+This type represents an item that you would pass your entity's `set` method when using `create` or `update`.
+
+_Definition:_
+
+```typescript
+export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? SetItem<A, F, C, S>
+  : never;
+```
+
+_Use:_
+
+```typescript
+type UpdateProperties = UpdateEntityItem<typeof MyEntityInstance>;
+```
+
+
+## UpdateAddEntityItem Type
+
+This type represents an item that you would pass your entity's `add` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateAddEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AddItem<A, F, C, S>
+        : never;
+
+`````
+
+## UpdateSubtractEntityItem Type
+
+This type represents an item that you would pass your entity's `subtract` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateSubtractEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? SubtractItem<A, F, C, S>
+        : never;
+```
+
+## UpdateAppendEntityItem Type
+
+This type represents an item that you would pass your entity's `append` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateAppendEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AppendItem<A, F, C, S>
+        : never;
+```
+
+## UpdateRemoveEntityItem Type
+
+This type represents an item that you would pass your entity's `remove` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateRemoveEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? RemoveItem<A, F, C, S>
+        : never;
+```
+
+## UpdateDeleteEntityItem Type
+
+This type represents an item that you would pass your entity's `delete` method when using `create` or `update`.
+
+_Definition:_
+```typescript
+export type UpdateDeleteEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? DeleteItem<A, F, C, S>
+        : never;
+```
+
+# Using ElectroDB With Existing Data
+When using ElectroDB with an existing table and/or data model, there are a few configurations you may need to make to your ElectroDB model. Read the sections below to see if any of the following cases fits your particular needs.
+
+Whenever using ElectroDB with existing tables/data, it is best to use the [Query Option](#query-options) `ignoreOwnership`. ElectroDB leaves some meta-data on items to help ensure data queried and returned from DynamoDB does not leak between entities. Because your data was not made by ElectroDB, these checks could impede your ability to return data.
+
+```typescript
+// when building params
+.params({ignoreOwnership: true})
+// when querying the table
+.go({ignoreOwnership: true})
+// when using pagination
+.page(null, {ignoreOwnership: true})
+```
+
+**Your existing index fields have values with mixed case:**
+
+DynamoDB is case-sensitive, and ElectroDB will lowercase key values by default. In the case where you modeled your data with uppercase, or did not apply case modifications, ElectroDB can be configured to match this behavior. Checkout the second on [Index Casing](#index-casing) to read more. 
+
+**You have index field names that match attribute names:**
+
+With Single Table Design, it is encouraged to give index fields a generic name, like `pk`, `sk`, `gsi1pk`, etc. In reality, it is also common for tables to have index fields that are named after the domain itself, like `accountId`, `organizationId`, etc. 
+
+ElectroDB tries to abstract away your when working with DynamoDB, so instead of defining `pk` or `sk` in your model's attributes, you define them as indexes and map other attributes onto those fields as a composite. Using separate item fields for keys, then for the actual attributes you use in your application, you can leverage more advanced modeling techniques in DynamoDB. 
+
+If your existing table uses non-generic fields that also function as attributes, checkout the section [Attributes as Indexes](#attributes-as-indexes) to learn more about how ElectroDB handles these types of indexes.
 
 # Electro CLI
 > _NOTE: The ElectroCLI is currently in a beta phase and subject to change._
