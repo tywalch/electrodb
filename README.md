@@ -75,12 +75,12 @@ StoreLocations.query
 - [ElectroDB](#electrodb)
   * [Features](#features)
   * [Table of Contents](#table-of-contents)
+- [Project Goals](#project-goals)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Entities and Services](#entities-and-services)
 - [Entities](#entities)
 - [Services](#services)
-- [Project Goals](#project-goals)
   * [TypeScript Support](#typescript-support)
     + [TypeScript Services](#typescript-services)
   * [Join](#join)
@@ -258,6 +258,14 @@ StoreLocations.query
 
 ----------
 
+# Project Goals
+
+ElectroDB focuses on simplifying the process of modeling, enforcing data constraints, querying across entities, and formatting complex DocumentClient parameters. Three important design considerations we're made with the development of ElectroDB:
+
+1. ElectroDB should be able to be useful without having to query the database itself [[read more](#params)].
+2. ElectroDB should be able to be added to a project that already has been established tables, data, and access patterns [[read more](#using-electrodb-with-existing-data)].
+3. ElectroDB should not require additional design considerations on top of those made for DynamoDB, and therefore should be able to be removed from a project at any time without sacrifice.
+
 # Installation
 
 Install from NPM
@@ -305,14 +313,6 @@ const {Service} = require("electrodb");
 // or
 import {Service} from "electrodb";
 ```
-
-# Project Goals
-
-ElectroDB focuses on simplifying the process of modeling, enforcing data constraints, querying across entities, and formatting complex DocumentClient parameters. Three important design considerations we're made with the development of ElectroDB:
-
-1. ElectroDB should be able to be useful without having to query the database itself [[read more](#params)].
-2. ElectroDB should be able to be added to a project that already has been established tables, data, and access patterns [[read more](#using-electrodb-with-existing-data)].
-3. ElectroDB should not require additional design considerations on top of those made for DynamoDB, and therefore should be able to be removed from a project at any time without sacrifice.
 
 ## TypeScript Support
 
