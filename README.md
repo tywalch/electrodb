@@ -4986,7 +4986,7 @@ type EntityRecord<E extends Entity<any, any, any, any>> =
 
 _Use:_
 ```typescript
-type MyEntity = EntityRecord<typeof MyService, "mycollection">
+type EntiySchema = EntityRecord<typeof MyEntity>
 ```
 
 ## EntityItem Type
