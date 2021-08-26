@@ -417,7 +417,6 @@ class Attribute {
 			let [isTyped, typeError] = this._isType(value);
 			let [isValid, validationError] = this.validate(value);
 			let reason = [typeError, validationError].filter(Boolean).join(", ");
-			console.log({isTyped, typeError, isValid, validationError, value});
 			return [isTyped && isValid, reason];
 		} catch (err) {
 			return [false, err.message];
@@ -1250,7 +1249,6 @@ class Schema {
 			if (value === undefined) {
 				continue;
 			}
-			console.log({value, payload, path});
 			if (attribute.readOnly) {
 				// todo: #electroerror
 				throw new Error(`Attribute "${attribute.path}" is Read-Only and cannot be updated`);
