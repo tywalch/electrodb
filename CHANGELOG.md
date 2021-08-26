@@ -64,12 +64,19 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Added
 - New entity method `parse()` to expose ElectroDB formatting for values retrieved outside of ElectroDB. [[read more]](./README.md#parse)
 
-### [1.3.2] = 2021-08-11
+### [1.3.2] - 2021-08-11
 ### Fixed
 - Newly added method `parse()` had critical typo. Method now has an improved api, and appropriate tests [[read more]](./README.md#parse)
 
-### [1.4.0] = 2021-08-22
+### [1.4.0] - 2021-08-22
 ### Added 
 - Added support for choosing the case ElectroDB will use when modeling a Partition or Sort Key. [[read more]](./README.md#using-electrodb-with-existing-data)
 - Added support for indexes to use fields that are shared with attribute fields. This should help users leverage ElectroDB with existing tables. [[read more]](./README.md#using-electrodb-with-existing-data)
 - Added Query Option `ignoreOwnership` to bypass ElectroDB checks/interrogations for ownership of an item before returning it. [[read more]](./README.md#query-options)
+
+### [1.4.1] - 2021-08-25
+### Added
+- Typedef support for RegExp validation on string attributes
+
+### Fixed
+- RegExp validation issue resulting in undefined (but not required) values being tested.

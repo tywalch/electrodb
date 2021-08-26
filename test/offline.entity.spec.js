@@ -679,7 +679,7 @@ describe("Entity", () => {
 			});
 			expect(() => Test.put({ regexp: "1533-15-44" }).params()).to.not.throw();
 			expect(() => Test.put({ regexp: "1533-1a-44" }).params()).to.throw(
-				`Invalid value for attribute "regexp": Failed user defined regex`,
+				`Invalid value for attribute "regexp": Failed model defined regex`,
 			);
 		});
 		it("Should not allow for an invalid schema type", () => {

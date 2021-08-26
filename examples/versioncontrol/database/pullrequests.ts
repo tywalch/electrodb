@@ -60,14 +60,20 @@ export const pullRequests = new Entity({
             type: "string",
             default: () => moment.utc().format(),
             readOnly: true,
-            required: true,
-          }
+          },
         }
       }
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: "*",
+      set: () => moment.utc().format(),
+      readOnly: true,
     },
   },
   indexes: {
@@ -164,8 +170,15 @@ export const pullRequestComments = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
-    }
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: "*",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
   },
   indexes: {
     comments: {

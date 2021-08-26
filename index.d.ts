@@ -77,7 +77,7 @@ type NestedStringAttribute = {
     readonly get?: (val: string, item: any) => string | undefined | void;
     readonly set?: (val?: string, item?: any) => string | undefined | void;
     readonly default?: string | (() => string);
-    readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
+    readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void) | RegExp;
     readonly field?: string;
 }
 
@@ -89,7 +89,7 @@ type StringAttribute = {
     readonly get?: (val: string, item: any) => string | undefined | void;
     readonly set?: (val?: string, item?: any) => string | undefined | void;
     readonly default?: string | (() => string);
-    readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
+    readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void) | RegExp;
     readonly field?: string;
     readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
@@ -190,7 +190,7 @@ type NestedStringListAttribute = {
         readonly get?: (val: string, item: any) => string | undefined | void;
         readonly set?: (val?: string, item?: any) => string | undefined | void;
         readonly default?: string | (() => string);
-        readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
+        readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void) | RegExp;
         readonly field?: string;
     };
     readonly required?: boolean;
@@ -212,7 +212,7 @@ type StringListAttribute = {
         readonly get?: (val: string, item: any) => string | undefined | void;
         readonly set?: (val?: string, item?: any) => string | undefined | void;
         readonly default?: string | (() => string);
-        readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void);
+        readonly validate?: ((val: string) => boolean) | ((val: string) => void) | ((val: string) => string | void) | RegExp;
         readonly field?: string;
     }
     readonly required?: boolean;
@@ -288,7 +288,7 @@ type NestedStringSetAttribute = {
     readonly get?: (val: Array<string>, item: any) => Array<string> | undefined | void;
     readonly set?: (val?: Array<string>, item?: any) => Array<string> | undefined | void;
     readonly default?: Array<string> | (() => Array<string>);
-    readonly validate?: ((val: Array<string>) => boolean) | ((val: Array<string>) => void) | ((val: Array<string>) => string | void);
+    readonly validate?: ((val: Array<string>) => boolean) | ((val: Array<string>) => void) | ((val: Array<string>) => string | void) | RegExp;
     readonly field?: string;
 }
 
@@ -301,7 +301,7 @@ type StringSetAttribute = {
     readonly get?: (val: Array<string>, item: any) => Array<string> | undefined | void;
     readonly set?: (val?: Array<string>, item?: any) => Array<string> | undefined | void;
     readonly default?: Array<string> | (() => Array<string>);
-    readonly validate?: ((val: Array<string>) => boolean) | ((val: Array<string>) => void) | ((val: Array<string>) => string | void);
+    readonly validate?: ((val: Array<string>) => boolean) | ((val: Array<string>) => void) | ((val: Array<string>) => string | void) | RegExp;
     readonly field?: string;
     readonly watch?: ReadonlyArray<string> | "*";
 }

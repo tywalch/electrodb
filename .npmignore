@@ -8,3 +8,4 @@ coverage/
 assets/
 test/
 *.md
+index.test-d.ts

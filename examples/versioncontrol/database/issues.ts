@@ -23,7 +23,6 @@ export const issues = new Entity({
     },
     ticketType: {
       type: TicketTypes,
-      default: () => IssueTicket,
       set: () => IssueTicket,
       readOnly: true
     },
@@ -47,7 +46,7 @@ export const issues = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format(),
+      set: () => moment.utc().format(),
       readOnly: true,
     },
     updatedAt: {
@@ -153,8 +152,8 @@ export const issueComments = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format(),
-      readOnly: true
+      set: () => moment.utc().format(),
+      readOnly: true,
     },
     updatedAt: {
       type: "string",

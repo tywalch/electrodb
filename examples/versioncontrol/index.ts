@@ -1,3 +1,6 @@
+// VersionControl (git) Service
+// This example demonstrates more advanced modeling techniques using ElectroDB
+
 import moment from "moment";
 import {
     store,
@@ -13,11 +16,6 @@ import {
     isPullRequestCommentIds
 } from "./database";
 
-/**
- * VersionControl (git) Service
- * This example shows some more advanced modeling
- *
-**/
 
 // Get Public Repositories By Username
 export async function getPublicRepository(username: string) {
@@ -61,6 +59,7 @@ export async function getFirstPageLoad(username: string) {
         repositories: [],
         users: [],
     };
+    
     let page = null;
 
     do {
@@ -114,9 +113,9 @@ export async function getUnreadComments(user: string) {
 }
 
 // Mark comment reply as read -- guards: can only be done by the user who was being replied to
-async function readReply(user: string, comment: IssueCommentIds): Promise<boolean>;
-async function readReply(user: string, comment: PullRequestCommentIds): Promise<boolean>;
-async function readReply(user: string, comment: any): Promise<boolean> {
+export async function readReply(user: string, comment: IssueCommentIds): Promise<boolean>;
+export async function readReply(user: string, comment: PullRequestCommentIds): Promise<boolean>;
+export async function readReply(user: string, comment: any): Promise<boolean> {
     const replyViewed = moment.utc().format();
     if (isIssueCommentIds(comment)) {
         return await store.entities.issueComments
@@ -139,7 +138,7 @@ async function readReply(user: string, comment: any): Promise<boolean> {
     }
 }
 
-async function approvePullRequest(repoOwner: string, repoName: string, pullRequestNumber: string, username: string) {
+export async function approvePullRequest(repoOwner: string, repoName: string, pullRequestNumber: string, username: string) {
     const pullRequest = await store.entities.pullRequests
         .get({repoOwner, repoName, pullRequestNumber})
         .go();
@@ -174,7 +173,7 @@ async function approvePullRequest(repoOwner: string, repoName: string, pullReque
         .catch(() => false);
 }
 
-async function followRepository(repoOwner: string, repoName: string, follower: string) {
+export async function followRepository(repoOwner: string, repoName: string, follower: string) {
     await store.entities
         .repositories.update({repoOwner, repoName})
         .add({followers: [follower]})

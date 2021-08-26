@@ -27,8 +27,6 @@ export const TicketTypes = [IssueTicket, PullRequestTicket, IsNotTicket] as cons
 
 export const NotYetViewed = "#";
 
-
-
 export type SubscriptionTypes = typeof TicketTypes[number];
 
 export function isIssueCommentIds(comment: any): comment is IssueCommentIds {

@@ -332,8 +332,11 @@ class Attribute {
 			};
 		} else if (definition instanceof RegExp) {
 			return (val) => {
+				if (val === undefined) {
+					return [true, ""];
+				}
 				let isValid = definition.test(val);
-				let reason = isValid ? "" : `Invalid value for attribute "${this.path}": Failed user defined regex`;
+				let reason = isValid ? "" : `Invalid value for attribute "${this.path}": Failed model defined regex`;
 				return [isValid, reason];
 			};
 		} else {
@@ -414,6 +417,7 @@ class Attribute {
 			let [isTyped, typeError] = this._isType(value);
 			let [isValid, validationError] = this.validate(value);
 			let reason = [typeError, validationError].filter(Boolean).join(", ");
+			console.log({isTyped, typeError, isValid, validationError, value});
 			return [isTyped && isValid, reason];
 		} catch (err) {
 			return [false, err.message];
@@ -1246,6 +1250,7 @@ class Schema {
 			if (value === undefined) {
 				continue;
 			}
+			console.log({value, payload, path});
 			if (attribute.readOnly) {
 				// todo: #electroerror
 				throw new Error(`Attribute "${attribute.path}" is Read-Only and cannot be updated`);

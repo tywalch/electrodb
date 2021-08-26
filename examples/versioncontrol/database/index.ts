@@ -8,7 +8,7 @@ import {issues, issueComments} from "./issues";
 import {CreateEntityItem, UpdateEntityItem, EntityItem, EntityRecord, CollectionItem} from "../../../";
 import {Status, SubscriptionTypes, IsNotTicket, isIssueCommentIds, isPullRequestCommentIds, NotYetViewed} from "./types"
 
-const table = "electro";
+export const table = "electro";
 
 export const store = new Service({
   users,

@@ -2898,7 +2898,8 @@ const entityWithComplexShapesRequiredOnEdge = new Entity({
             properties: {
                 val1: {
                     type: "string",
-                    required: true
+                    required: true,
+                    validate: /./gi
                 }
             }
         },
