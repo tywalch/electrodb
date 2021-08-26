@@ -87,7 +87,14 @@ export const repositories = new Entity({
     },
     createdAt: {
       type: "string",
-      default: () => moment.utc().format()
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: "*",
+      set: () => moment.utc().format(),
+      readOnly: true,
     },
   },
   indexes: {

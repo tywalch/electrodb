@@ -2259,9 +2259,101 @@ describe("Update Item", () => {
             expect(results?.stars).to.equal(25);
         });
     });
-    describe("nested operations", () => {
-        it("should only allow types", () => {
-
+    describe("string regex validation", () => {
+        const entity = new Entity({
+            model: {
+                entity: "regex_test",
+                service: "testing",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                    validate: /^abc.*/gi
+                },
+                map: {
+                    type: "map",
+                    properties: {
+                        nestedString: {
+                            type: "string",
+                            validate: /^abc/gi
+                        },
+                        nestedSet: {
+                            type: "set",
+                            items: "string",
+                            validate: /^abc/gi
+                        },
+                        nestedList: {
+                            type: "list",
+                            items: {
+                                type: "string",
+                                validate: /^abc/gi
+                            }
+                        }
+                    }
+                },
+                list: {
+                    type: "list",
+                    items: {
+                        type: "string",
+                        validate: /^abc/gi
+                    }
+                },
+                set: {
+                    type: "set",
+                    items: "string",
+                    validate: /^abc/gi
+                }
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: "pk",
+                        composite: ["stringVal"]
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: []
+                    }
+                }
+            }
+        }, {client, table});
+        it("should validate strings", async () => {
+            const stringVal = uuid();
+            console.log(stringVal)
+            const error = await entity.put({stringVal}).go().then(() => false).catch(err => err.message);
+            expect(error).to.be.string('Invalid value for attribute "stringVal": Failed model defined regex');
+        });
+        it("should validate string sets", async () => {
+            const stringVal = `abc${uuid()}`;
+            const setValue = ["def"];
+            const error = await entity.update({stringVal}).set({set: setValue}).go().then(() => false).catch(err => err.message);
+            expect(error).to.be.string('Invalid value for attribute "set": Failed model defined regex');
+        });
+        it("should validate string lists", async () => {
+            const stringVal = `abc${uuid()}`;
+            const listValue = ["def"];
+            const error = await entity.update({stringVal}).set({list: listValue}).go().then(() => false).catch(err => err.message);
+            expect(error).to.be.string('Invalid value for attribute "list[*]": Failed model defined regex');
+        });
+        it("should validate string map properties", async () => {
+            const stringVal = `abc${uuid()}`;
+            const nestedString = "def";
+            const error = await entity.update({stringVal}).set({map: {nestedString}}).go().then(() => false).catch(err => err.message);
+            expect(error).to.be.string('Invalid value for attribute "map.nestedString": Failed model defined regex');
+        });
+        it("should validate string set map properties", async () => {
+            const stringVal = `abc${uuid()}`;
+            const nestedSet = ["def"];
+            const error = await entity.update({stringVal}).set({map: {nestedSet}}).go().then(() => false).catch(err => err.message);
+            expect(error).to.be.string('Invalid value for attribute "map.nestedSet": Failed model defined regex');
+        });
+        it("should validate string list map properties", async () => {
+            const stringVal = `abc${uuid()}`;
+            const nestedList = ["def"];
+            const error = await entity.update({stringVal}).set({map: {nestedList}}).go({originalErr: true}).then(() => false).catch(err => err.message);
+            console.log(error)
+            expect(error).to.be.string('Invalid value for attribute "map.nestedList[*]": Failed model defined regex at index "0"');
         });
     });
 });
