@@ -40,37 +40,57 @@
 ------------
 
 **Turn this**
-```javascript
-StoreLocations.query
-        .leases({storeId: "lattelarrys"})
-        .gte({leaseEndDate: "2010"})
-        .where((attr, op) => `
-            ${op.eq(attr.cityId, "Atlanta1")} AND ${op.contains(attr.category, "food")}
-        `)
-        .params()
+```typescript
+tasks
+  .patch({ 
+    team: "core",
+    task: "45-662", 
+    project: "backend"
+  })
+  .set({ status: "open" })
+  .add({ points: 5 })
+  .append({ 
+    comments: [{
+      user: "janet",
+      body: "This seems half-baked."
+    }] 
+  })
+  .where(( {status}, {eq} ) => eq(status, "in-progress"))
+  .go();
 ```
 **Into This**
 ```json
 {
-    "TableName": "StoreDirectory",
+    "UpdateExpression": "SET #status = :status_u0, #points = #points + :points_u0, #comments = list_append(#comments, :comments_u0), #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0",
     "ExpressionAttributeNames": {
-        "#cityId": "cityId",
-        "#category": "category",
-        "#pk": "gis2pk",
-        "#sk1": "gsi2sk"
+        "#status": "status",
+        "#points": "points",
+        "#comments": "comments",
+        "#updatedAt": "updatedAt",
+        "#gsi1sk": "gsi1sk"
     },
     "ExpressionAttributeValues": {
-        ":cityId_w1": "Atlanta1",
-        ":category_w1": "food",
-        ":pk": "$mallstoredirectory#storeid_lattelarrys",
-        ":sk1": "$mallstore_1#leaseenddate_2010"
+        ":status0": "in-progress",
+        ":status_u0": "open",
+        ":points_u0": 5,
+        ":comments_u0": [
+            {
+                "user": "janet",
+                "body": "This seems half-baked."
+            }
+        ],
+        ":updatedAt_u0": 1630977029015,
+        ":gsi1sk_u0": "$assignments#tasks_1#status_open"
     },
-    "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
-    "IndexName": "gis2pk-gsi2sk-index",
-    "FilterExpression": "#cityId = :cityId_w1 AND contains(#category, :category_w1)"
+    "TableName": "your_table_name",
+    "Key": {
+        "pk": "$taskapp#team_core",
+        "sk": "$tasks_1#project_backend#task_45-662"
+    },
+    "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk) AND #status = :status0"
 }
 ``` 
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example-%234781b7?style=for-the-badge&logo=amazondynamodb)](https://electrodb.fun/?#code/PQKgBAsg9gJgpgGzARwK5wE4Es4GcA0YuccYGeqCALgUQBYCG5YA7llXWAGbZwB2MXGBDAAUKKwBbAA5QMVMAG8wAUT5V2AT0IBlTADcsAY1IBfbhiiSwAIkRwjVSzABGNgNzijUPrgVUGFwRSAF5bTShUDAB9AKC4aL4GSTgPcVAwABUGXABrITUNKk1hMW9ffxz8sDC+OBZVdS0AClEwJTb2sElYRAAuDq6u-iLNAZsAvNwbfE6h-UxcLB9xgEYZua7iDEMTccnchmlpG03TWaGGKicsF1QqPAHFTfaH5KeXruLpOHG-bD4AHMNkMhuQ0FhyDABk50J9zp8Dh9QV9ND8-jcgSCUWQ4BCoTCMHCUQiUdJLAArBxUZE476-Wz-LBYi448GoSFwaFgWFweGsoaoba0lH0jEA4EC0Hsznc3n8xHsYIi0FixmYyWfdoygk8olwKXtUmg+C4IzYaQaFaDOlohk2JlYhUovxXIUqoZqgDaNigPz4M1szIAtOSoIDyLhpoRfXxg3QoAgYIGbEYEFBiMmALpgHJgcp+Q1deBcBiUGm2P38U4kouyZk0D2o9G2PioSQuTDYobGz0MQG4JuvO1-OBUbug9hwSSD9USmug3tdbySFLqWfPHE8ke2BBYPwToZTmdD5v2yRHQ+gsM-eQ4Dda0FCzCn0U7h0ahdbo1FlEuWBjDa35nuKzLAo+PYQWApiPjBtafOacBXFyACCFabraLY2G2HZdr+YAlmW1ADM0ACUNQAHxgAAIshAB0fBQCwZH4eQDAwAA8nwCCAfK8Eoqg0gwMhMBoaearYe2nYYFe7QsFcRh0OMICyUQY4keRIRUbRDwMUxLGPmxnHcbx+rwmcUrMvAAAejxAV0YZUo4D5btIuSvtwOBJuMbmqe0K6yEsDwDD6bySDYWawfheQeVwXncg6uR+WAwDAPmbEPPmViBVOYC5HAmhCFwchgNITAaAwSC4HICj5SUaCYPeUEBRmU4hTYjnUimBwRbBzqgjkSyAnU3IYSiqVZQgwSOMsvi5lNTHcCVDW8EIDDmhmQiSOWWDSMEYAjOwTVbt4U3UrN4yDVgw1rjQqlWXA1njAOWCrG5wYvaseTBg91mqW5HkTRe0g8lAYARFEYAAOI6AAkmAAASOR0MAAAK5VHT4eUFVBcWIAln2+fh-nZa1wVgD6z4yZFW5LkMMX2eNaXA6D4ORBg0Nw2AABKDBAnAwA6DV2OaLj8XPUsX1JcTWUyGTDI+q6VBCr1tPmZBP6dMocT7TBpGeKIE0AAZlVQilG2A+5gHu+VgEbgnCQ8FuPSYlqWwoz5CDYVw3HcDyJFAVDRI9+53aIBy4J0dGm4pzTKJsYXjN45ATkitgACwAKzBgAbDnABMgabJ1jjjC4635QIC6mKRUfEFQcdEAEyuzr6-o2NBtftHR7EwI39brgMmed1HRz+n38dDCut2zl6Y1dFT4wUnzY5Xv+MCATYmR0FbxDTkIjAIFwwbl-lMB0V+0E5p0NdRywdCYHAzTNEoStCucSh4uYmlUXizRv7QGwIYwwRjwNMUiXcwB0UBFAMi7ggA)
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/PQKgBAsg9gJgpgGzARwK5wE4Es4GcA0YuccYGeqCALgUQBYCG5YA7llXWAGbZwB2MXGBDAAUKKwBbAA5QMVMAG8wAUT5V2AT0IBlTADcsAY1IBfbhiiSwAIkRwjVSzABGNgNzijUPrgVUGFwRSAF5bTShUDAB9AKC4aL4GSTgPcVAwABUGXABrITUNKk1hMW9ffxz8sDC+OBZVdS0AClEwJTb2sElYRAAuDq6u-iLNAZsAvNwbfE6h-UxcLB9xgEYZua7iDEMTccnchmlpG03TWaGGKicsF1QqPAHFTfaH5KeXruLpOHG-bD4AHMNkMhuQ0FhyDABk50J9zp8Dh9QV9ND8-jcgSCUWQ4BCoTCMHCUQiUdJLAArBxUZE476-Wz-LBYi448GoSFwaFgWFweGsoaoba0lH0jEA4EC0Hsznc3n8xHsYIi0FixmYyWfdoygk8olwKXtUmg+C4IzYaQaFaDOlohk2JlYhUovxXIUqoZqgDaNigPz4M1szIAtOSoIDyLhpoRfXxg3QoAgYIGbEYEFBiMmALpgHJgcp+Q1deBcBiUGm2P38U4kouyZk0D2o9G2PioSQuTDYobGz0MQG4JuvO1-OBUbug9hwSSD9USmug3tdbySFLqWfPHE8ke2BBYPwToZTmdD5v2yRHQ+gsM-eQ4Dda0FCzCn0U7h0ahdbo1FlEuWBjDa35nuKzLAo+PYQWApiPjBtafOacBXFyACCFabraLY2G2HZdr+YAlmW1ADM0ACUNQAHxgAAIshAB0fBQCwZH4eQDAwAA8nwCCAfK8Eoqg0gwMhMBoaearYe2nYYFe7QsFcRh0OMICyUQY4keRIRUbRDwMUxLGPmxnHcbx+rwmcUrMvAAAejxAV0YZUo4D5btIuSvtwOBJuMbmqe0K6yEsDwDD6bySDYWawfheQeVwXncg6uR+WAwDAPmbEPPmViBVOYC5HAmhCFwchgNITAaAwSC4HICj5SUaCYPeUEBRmU4hTYjnUimBwRbBzqgjkSyAnU3IYSiqVZQgwSOMsvi5lNTHcCVDW8EIDDmhmQiSOWWDSMEYAjOwTVbt4U3UrN4yDVgw1rjQqlWXA1njAOWCrG5wYvaseTBg91mqW5HkTRe0g8lAYARFEYAAOI6AAkmAAASOR0MAAAK5VHT4eUFVBcWIAln2+fh-nZa1wVgD6z4yZFW5LkMMX2eNaXA6D4ORBg0Nw2AABKDBAnAwA6DV2OaLj8XPUsX1JcTWUyGTDI+q6VBCr1tPmZBP6dMocT7TBpGeKIE0AAZlVQilG2A+5gHu+VgEbgnCQ8FuPSYlqWwoz5CDYVw3HcDyJFAVDRI9+53aIBy4J0dGm4pzTKJsYXjN45ATkitgACwAKzBgAbDnABMgabJ1jjjC4635QIC6mKRUfEFQcdEAEyuzr6-o2NBtftHR7EwI39brgMmed1HRz+n38dDCut2zl6Y1dFT4wUnzY5Xv+MCATYmR0FbxDTkIjAIFwwbl-lMB0V+0E5p0NdRywdCYHAzTNEoStCucSh4uYmlUXizRv7QGwIYwwRjwNMUiXcwB0UBFAMi7ggA)
 
 ------------
 
