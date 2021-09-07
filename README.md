@@ -14,7 +14,7 @@
 <h1 align="center">Introducing: ElectroDB Playground @ electrodb.fun</h1>
 
 <p align="center">
-  <img width="500" src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true">
+  <a href="https://electrodb.fun"><img width="500" src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true"></a>
 </p>
 
 Try out and share ElectroDB Models, Services, and Single Table Design at [https://electrodb.fun](https://electrodb.fun)!
