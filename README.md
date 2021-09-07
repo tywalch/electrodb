@@ -13,7 +13,7 @@
 
 <h1 align="center">Introducing: ElectroDB Playground @ electrodb.fun</h1>
 
-[![ElectroDB Playground](https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true | width=300)](https://electrodb.fun)
+<img src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true" width="300">
 
 Try out and share ElectroDB Models, Services, and Single Table Design at [https://electrodb.fun](https://electrodb.fun)!
 
