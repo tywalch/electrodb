@@ -9,13 +9,15 @@
 
 *Please submit issues/feedback or reach out on Twitter [@tinkertamper](https://twitter.com/tinkertamper).*
 
-<h1 align="center">ElectroDB has now entered version 1.0!</h1>
-
-> ElectroDB now has a major version, and with that comes semantic versioning guarantees and improved CHANGELOG detail. To release 1.0 some breaking changes we're made to improve the longevity of the project. Please see the [ChangeLog](/CHANGELOG.md) for more information about relevant deprecations, changes, and new features.
-
 ------------
 
-### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
+[![ElectroDB Playground](https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true)](https://electrodb.fun)
+
+<h1 align="center">Introducing: ElectroDB Playground @ electrodb.fun</h1>
+
+Try out and share ElectroDB Models, Services, and Single Table Design at [https://electrodb.fun](https://electrodb.fun)!
+
+------------
 
 ## Features
 - [**Use with your existing tables**](#using-electrodb-with-existing-data) - ElectroDB simplifies building DocumentClient parameters, so you can use it with existing tables/data.   
@@ -66,10 +68,9 @@ StoreLocations.query
     "FilterExpression": "#cityId = :cityId_w1 AND contains(#category, :category_w1)"
 }
 ``` 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example-%234781b7?style=for-the-badge&logo=amazondynamodb)](https://electrodb.fun/?#code/PQKgBAsg9gJgpgGzARwK5wE4Es4GcA0YuccYGeqCALgUQBYCG5YA7llXWAGbZwB2MXGBDAAUKKwBbAA5QMVMAG8wAUT5V2AT0IBlTADcsAY1IBfbhiiSwAIkRwjVSzABGNgNzijUPrgVUGFwRSAF5bTShUDAB9AKC4aL4GSTgPcVAwABUGXABrITUNKk1hMW9ffxz8sDC+OBZVdS0AClEwJTb2sElYRAAuDq6u-iLNAZsAvNwbfE6h-UxcLB9xgEYZua7iDEMTccnchmlpG03TWaGGKicsF1QqPAHFTfaH5KeXruLpOHG-bD4AHMNkMhuQ0FhyDABk50J9zp8Dh9QV9ND8-jcgSCUWQ4BCoTCMHCUQiUdJLAArBxUZE476-Wz-LBYi448GoSFwaFgWFweGsoaoba0lH0jEA4EC0Hsznc3n8xHsYIi0FixmYyWfdoygk8olwKXtUmg+C4IzYaQaFaDOlohk2JlYhUovxXIUqoZqgDaNigPz4M1szIAtOSoIDyLhpoRfXxg3QoAgYIGbEYEFBiMmALpgHJgcp+Q1deBcBiUGm2P38U4kouyZk0D2o9G2PioSQuTDYobGz0MQG4JuvO1-OBUbug9hwSSD9USmug3tdbySFLqWfPHE8ke2BBYPwToZTmdD5v2yRHQ+gsM-eQ4Dda0FCzCn0U7h0ahdbo1FlEuWBjDa35nuKzLAo+PYQWApiPjBtafOacBXFyACCFabraLY2G2HZdr+YAlmW1ADM0ACUNQAHxgAAIshAB0fBQCwZH4eQDAwAA8nwCCAfK8Eoqg0gwMhMBoaearYe2nYYFe7QsFcRh0OMICyUQY4keRIRUbRDwMUxLGPmxnHcbx+rwmcUrMvAAAejxAV0YZUo4D5btIuSvtwOBJuMbmqe0K6yEsDwDD6bySDYWawfheQeVwXncg6uR+WAwDAPmbEPPmViBVOYC5HAmhCFwchgNITAaAwSC4HICj5SUaCYPeUEBRmU4hTYjnUimBwRbBzqgjkSyAnU3IYSiqVZQgwSOMsvi5lNTHcCVDW8EIDDmhmQiSOWWDSMEYAjOwTVbt4U3UrN4yDVgw1rjQqlWXA1njAOWCrG5wYvaseTBg91mqW5HkTRe0g8lAYARFEYAAOI6AAkmAAASOR0MAAAK5VHT4eUFVBcWIAln2+fh-nZa1wVgD6z4yZFW5LkMMX2eNaXA6D4ORBg0Nw2AABKDBAnAwA6DV2OaLj8XPUsX1JcTWUyGTDI+q6VBCr1tPmZBP6dMocT7TBpGeKIE0AAZlVQilG2A+5gHu+VgEbgnCQ8FuPSYlqWwoz5CDYVw3HcDyJFAVDRI9+53aIBy4J0dGm4pzTKJsYXjN45ATkitgACwAKzBgAbDnABMgabJ1jjjC4635QIC6mKRUfEFQcdEAEyuzr6-o2NBtftHR7EwI39brgMmed1HRz+n38dDCut2zl6Y1dFT4wUnzY5Xv+MCATYmR0FbxDTkIjAIFwwbl-lMB0V+0E5p0NdRywdCYHAzTNEoStCucSh4uYmlUXizRv7QGwIYwwRjwNMUiXcwB0UBFAMi7ggA)
 
 ------------
-
-### Try it out for yourself! https://runkit.com/tywalch/electrodb-building-queries
 
 ## Table of Contents
 - [ElectroDB](#electrodb)
