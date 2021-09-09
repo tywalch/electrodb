@@ -847,25 +847,27 @@ myAttr: {
 
 In this example, we have an attribute `"fee"` that needs to be updated any time an item's `"price"` attribute is updated. The attribute `"fee"` uses `watch` to have its setter callback called any time `"price"` is updated via a `put`, `create`, `update`, or `patch` operation.
 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=3&ssc=29&pln=37&pc=2#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3hgmAV3p84AXjioKAdxTpMWABQIOcOCAiNqALkTqNcCouz6yQ7aJh8yAGkMa+FKADdgtCuYoDQAQxhoe0c4Vxc+YF5zAEYyQ1wHDQCGYGZhGB99NSM4S0ZrLJCNbDAvcgEoYFQAczichJChDzLsnLgSsrJUYRBmF2C2uCgKAEdhYGHGfQZhChCGnIIKFqL2rFLzbt7+xLbZANoAC30AbQtKzzIAXV2c5xh9ZQB9O0Qmz1wASkkAPgNBjTDGDCKCoXIXChwABUcAAdAAmTiDXDzeK7Ko6AAemX+RneVWqhUGYAA1kSAQRgNQpuRSQMATxwBAIhlTucrPRrqsFm0+GTcYNKdTzHz6YNGZAWWUTlduaiNCiEoh2n5mDRzFgICCnjBVTQnqg-CAKGQ8J9OBw8tY+IZYWB0qpwRyHrTKugduDmvoACwAVjNtuqEGUny4VrEtuEYEYAQojvDLrIVD8YECYFNX1t93jEP00XhAAYCwGNLCgyGgA)
+
 ```javascript
 {
   model: {
-    entity: "services",
-    service: "costEstimator",
+    entity: "products",
+    service: "estimator",
     version: "1"
   },
   attributes: {
-    service: {
+    product: {
       type: "string"
     },
     price: {
       type: "number",
-      required: true
+              required: true
     },
     fee: {
       type: "number",
-      watch: ["price"],
-      set: (_, {price}) => {
+              watch: ["price"],
+              set: (_, {price}) => {
         return price * .2;
       }
     }
@@ -874,11 +876,11 @@ In this example, we have an attribute `"fee"` that needs to be updated any time 
     pricing: {
       pk: {
         field: "pk",
-        composite: ["service"]
+                composite: ["product"]
       },
       sk: {
         field: "sk",
-        composite: []
+                composite: []
       }
     }
   }
@@ -4072,6 +4074,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   unprocessed?: "raw" | "item";
   response?: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new";
   ignoreOwnership?: boolean;
+  limit?: number;
 };
 ```
 
@@ -4086,7 +4089,8 @@ originalErr     | `false`              | By default, **ElectroDB** alters the st
 concurrent      | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
 unprocessed     | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
 response        | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
-ignoreOwnership | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.    
+ignoreOwnership | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
+limit           | _none_               | A convenience option for the query parameter `Limit`, used to specify the number of records to retrieve while performing a query.
 
 # Errors:
 

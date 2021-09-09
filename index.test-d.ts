@@ -1005,8 +1005,8 @@ let getKeys = ((val) => {}) as GetKeys;
 
     let findFinishers = entityWithSK.find({});
     let findFinishersWithoutSK = entityWithoutSK.find({});
-    let matchFinishers = entityWithSK.find({});
-    let matchFinishersWithoutSK = entityWithoutSK.find({});
+    let matchFinishers = entityWithSK.match({});
+    let matchFinishersWithoutSK = entityWithoutSK.match({});
 
     let findFinisherKeys = getKeys(findFinishers);
     let findFinisherKeysWithoutSK = getKeys(findFinishersWithoutSK);
@@ -1035,8 +1035,8 @@ let getKeys = ((val) => {}) as GetKeys;
 
     type FindParamsParams = Parameter<typeof findParams>;
     type FindParamsParamsWithoutSK = Parameter<typeof findParamsWithoutSK>;
-    type MatchParamsParams = Parameter<typeof findParams>;
-    type MatchParamsParamsWithoutSK = Parameter<typeof findParamsWithoutSK>;
+    type MatchParamsParams = Parameter<typeof matchParams>;
+    type MatchParamsParamsWithoutSK = Parameter<typeof matchParamsWithoutSK>;
 
     expectAssignable<FindGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<FindGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
@@ -1054,36 +1054,50 @@ let getKeys = ((val) => {}) as GetKeys;
     let findPageFnWithoutSK = findFinishersWithoutSK.page;
     let matchPageFn = matchFinishers.page;
     let matchPageFnWithoutSK = matchFinishersWithoutSK.page;
+    let queryPageFn = entityWithSK.query.myIndex2({attr6: 123, attr9: 456}).page;
+    let queryPageFnWithoutSk = entityWithoutSK.query.myIndex2(({attr6: 123, attr9: 456})).page;
 
     type FindPageParams = Parameters<typeof findPageFn>;
     type FindPageParamsWithoutSK = Parameters<typeof findPageFnWithoutSK>;
     type MatchPageParams = Parameters<typeof matchPageFn>;
     type MatchPageParamsWithoutSK = Parameters<typeof matchPageFnWithoutSK>;
+    type QueryPageParams = Parameters<typeof queryPageFn>;
+    type QueryPageParamsWithoutSK = Parameters<typeof queryPageFnWithoutSk>;
 
     type FindPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
     type FindPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
     type MatchPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
     type MatchPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
+    type QueryPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
+    type QueryPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
 
     expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
     expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
     expectAssignable<MatchPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
     expectAssignable<MatchPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<QueryPageParams>([{attr1: "abc", attr2: "def", attr6: 123, attr9: 456, attr5: "xyz", attr4: "abc"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<QueryPageParamsWithoutSK>([{attr1: "abc", attr6: 123, attr9: 456}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
 
     expectAssignable<FindPageParams>([null]);
     expectAssignable<FindPageParamsWithoutSK>([null]);
     expectAssignable<MatchPageParams>([null]);
     expectAssignable<MatchPageParamsWithoutSK>([null]);
+    expectAssignable<QueryPageParams>([null]);
+    expectAssignable<QueryPageParamsWithoutSK>([null]);
 
     expectAssignable<FindPageParams>([]);
     expectAssignable<FindPageParamsWithoutSK>([]);
     expectAssignable<MatchPageParams>([]);
     expectAssignable<MatchPageParamsWithoutSK>([]);
+    expectAssignable<QueryPageParams>([]);
+    expectAssignable<QueryPageParamsWithoutSK>([]);
 
     expectAssignable<FindPageReturn>(findPageFn());
     expectAssignable<FindPageReturnWithoutSK>(findPageFnWithoutSK());
-    expectAssignable<MatchPageReturn>(findPageFn());
-    expectAssignable<MatchPageReturnWithoutSK>(findPageFnWithoutSK());
+    expectAssignable<MatchPageReturn>(matchPageFn());
+    expectAssignable<MatchPageReturnWithoutSK>(matchPageFnWithoutSK());
+    expectAssignable<QueryPageReturn>(queryPageFn());
+    expectAssignable<QueryPageReturnWithoutSK>(queryPageFnWithoutSk());
 
 // Queries
     type AccessPatternNames = "myIndex" | "myIndex2" | "myIndex3";

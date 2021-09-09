@@ -955,6 +955,7 @@ interface PutQueryOptions extends QueryOptions {
 interface ParamOptions {
     params?: object;
     table?: string;
+    limit?: number;
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
 }
 
@@ -1052,7 +1053,7 @@ type Queries<A extends string, F extends A, C extends string, S extends Schema<A
         IndexSKAttributes<A,F,C,S,I> extends infer SK
             // If there is no SK, dont show query operations (when an empty array is provided)
             ? [keyof SK] extends [never]
-                ? RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>
+                ? RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S> & Required<CompositeAttributes>>
                 // If there is no SK, dont show query operations (When no PK is specified)
                 : S["indexes"][I] extends IndexWithSortKey
                     ? QueryOperations<
@@ -1060,9 +1061,9 @@ type Queries<A extends string, F extends A, C extends string, S extends Schema<A
                         // Omit the composite attributes already provided
                         Omit<Partial<IndexSKAttributes<A,F,C,S,I>>, keyof CompositeAttributes>,
                         ResponseItem<A,F,C,S>,
-                        AllTableIndexCompositeAttributes<A,F,C,S>
+                        AllTableIndexCompositeAttributes<A,F,C,S> & Required<CompositeAttributes> & SK
                         >
-                    : RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>
+                    : RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S> & Required<CompositeAttributes> & SK>
             : never
 }
 
