@@ -80,3 +80,9 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Fixed
 - RegExp validation issue resulting in undefined (but not required) values being tested.
+
+### [1.4.2] - 2021-09-09
+
+### Fixed
+- Typing for `.page()` method pager. Now includes the destructured keys associated with the index being queried. [[read more]](./README.md#page)
+- Adding documentation, and expanding typing for the query option `limit`, for use in `.params()` calls. [[read more]](./README.md#query-options)
