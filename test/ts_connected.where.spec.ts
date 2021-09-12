@@ -174,10 +174,12 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, {begins}) => begins(animal, "Sh"))
-            .go()
+            .go();
+
         expect(animals)
             .to.be.an("array")
             .and.have.length(2);
+
         expect(animals.map(pen => pen.animal)).to.have.members([
             "Shark",
             "Sheep",

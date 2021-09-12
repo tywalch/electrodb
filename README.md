@@ -1115,6 +1115,8 @@ When using indexes without Sort Keys, that should be expressed as an index *with
 }
 ```
 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gwAhnwDWfOAF44qCgHcU6TFgAUHOInUa4ICI2oAuTdu0Ul2I2WFi+ZADRaTANwpQ+wXpYCM9x9r6uTsC0FJbWokJgYGR+uA4mQjAMwMwArjAUfEYIfhrAjNm52thgoeQCUMCoAOa+JiZQFACOqcCNBXAMqRRFcUWoQiBlOfXFWKWWFVW18aNwjS1tFB1dPaO4sbN5qPoAHpmFo408UB0jc2Cih3MaBMDUHWSXdTdwPOAQ7hlGANpk+WQALpFDQbG4AenBKBo9GIABEAEJwKoZKBgRowCQwAAWFDgVCEtFEcAgBDgQlQcAABmIqSC4JC4OiIKVYDgRJ1cfjCcTSeS4HxoPBRBQcLxyfTGdVgC5KVU9gA6XqxLR9DRIYTMGiWLAQVJQAD6mpoBoGQzIeA4AEpONxeAJkYwpOQQFgDcdoIwDQDODx+PAzXjpGRXabBhQDczWdh2FxwnwtArqhQYCokPk8FbE9UICobXGROJE2B0mnHXYZOHM9nc-mOPGFS1XFhEx7TmWM7gsxok7W2EA)
+
 ### Indexes With Sort Keys
 When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the Sort Key in your model, but it does exist on the table, simply use an empty for the `composite` property. An empty array is still very useful, and opens the door to more query opportunities and access patterns like [collections](#collections).
 
@@ -1135,6 +1137,8 @@ When using indexes with Sort Keys, that should be expressed as an index *with* a
   }
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gwAhnwDWfOAF44qCgHcU6TFgAUHOInUa4ICI2oAuTdu0Ul2I2WFi+ZADRaTANwpQ+wXpYCM9x9r6uTsC0FJbWokJgYGR+uA4mQjAMwMwArjAUfEYIfhrAjNm52thgoeQCUMCoAOa+JiZQFACOqcCNBXAMqRRFcUWoQiBlOfXFWKWWFVW18aNwjS1tFB1dPaO4sbN5qPoAHpmFo408UB0jc2Cih3MaBMDUHWSXdTdwPOAQ7hlGANpk+WQALpFDR9G5ia43O4PSaiF43AD0CLgAEE4BRwNg3iRIF8KHAhFAoEIcMAJAJgFQqBoQdokXAqrR2ikqDhUgECKkqAA6OAAYQAFnRRHAIOlOkK4LSNPSKLtBmAaBJmNQIAoYBA4AF8QK1eiaPQmMwpa84PT2Zk4GBGnd9hJeBL8XxoDBRBQcBqTa96QMiXqYJK+DxSqKCHAWq57nxudLsR88b9gTcNutYlowYhOkJmDRLFgxVAAPrCHMUQsDIZkPAcACUnG4vAEDMYUnIICwheO0EYhYBnB4-HgFfx0jI7fLgzL1ogpVgWHYXHCfC03OqFBgKiQ+TwNZX1QgKjri5E4hXYHSm+bdhkk53e4PR44S+5EagWBXXdOl+3uF3GlXD5sEAA)
 
 ### Numeric Keys
 
@@ -1172,6 +1176,8 @@ const schema = {
 }
 ```
 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gwAhnwDWfOAF44qCgHcU6TFgAUCDnDggIjagC5EGzXApLsBsqgCuIClGC0yAGiOa+dgG4OKFigA8hcBpnVzgPOz5gXgsARjIjXBdNIRgGYGYrGAo+A3VjGRtmOxjc0M0AenK4XQJgWUY4EQKQIqgyuGwwH3JrFrsyOFDE0N7WgCZS-IqqmrqKBqbRu3bO7stC-s0hhKS4Ot0-bMnjKDpoRmP8sFFLqdrqC-JrkKnjSrg5YCoqOAyvhoACgBpRoSXp2BxhIRUKwUdqaLJBFJrAAkCCWUBiuGcg1emh44AgkSyBgA2us+piyABddrDV5iW75e5UR5kMQvPHvT7fX5Wf5wADKIMWNghtChMLheI6FCRJPIaIxY2xTlxeIJkGJ3XJyppdO2mlwHESiA6QmYNAsWAgVigAH1hJaKPbUIEKANcABKTjcXgCZqtGJSOAxMYAZgALABWTg8fjwZUhgBsAHYABwATgADL7hGI+EYAHQAcwoMDUgeKaqT3uLJYgKh9XHz4mLYEylYxMRrGygYzwXvrjebHFbfCLAEdYVAsMXTjwoIwu33g3XNEWijA5BRTCpQkhlQYkwBaUPZ7N4XaaQ99iZV-twADU58v9LgQ43DabbCAA)
+
 ### Index Casing
 
 DynamoDB is a case-sensitive data store, and therefore it is common to convert the casing of keys to uppercase or lowercase prior to saving, updating, or querying data to your table. ElectroDB, by default, will lowercase all keys when preparing query parameters. For those who are using ElectroDB with an existing dataset, have preferences on upper or lowercase, or wish to not convert case at all, this can be configured on an index key field basis.
@@ -1185,18 +1191,20 @@ In the example below, we are configuring the casing ElectroDB will use individua
       index: "gsi1",
       pk: {
         field: "gsi1pk",
-        casing: "upper",
+        casing: "upper", // Acct_0120 -> ACCT_0120
         composite: ["organizationId"]
       },
       sk: {
         field: "gsi1sk",
-        casing: "none",
+        casing: "none", // Acct_0120 -> Acct_0120 
         composite: ["accountId"]
       }
     }
   }
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gBXPhSh84AXjioKAdxTpMWABQIOcOCAiNqALkTqNcCouz6yw0WQA0hjSKgA3YLQrmYAQz4BrD2DA2dnCOonzAvOYAjGSGuLYaHjAMwMyCMBR8+mpGcOkeIACSjFlBGthgbuQCUMCoAOYxOXFBllBFJTllWBXm1bUNQc050HUeqMAAXonhqO0GnbndlWR99Y1GQ0bENB2d5curA03xRgTAYjAAcvmV2XtLvclrgycaVF5XN7s5+481z8cghQQB5gFRvkZflUnkcNq84IxEhQABLnCjFeb3HrQ-4NeG4WInWo6AAeGQhrUymJyYG8EJyZ2oGLItMCCw0PHAEDC6X0AG0yCMxpNprwimQALrwnIAehlcHetG8cAgBDgAANaF5+uq4GBiBVYDgdAQPIIqDBxDAIAqILJRFqRKU8NK4D56adgEzet42ezOZAeZUBa1xVLnRo5XBBP4HV4MnBvBQcMwKARoBQ3R5nPUZTHERhcwBHQSiLD9CNwR39cwxw3rJovILbcnUozEigk8x1MKRWkAWh7wEiPn7HZJfppdLbDK9VGZQ77vtdHJIgcwwbIeUKjElK7gUcYEAy6CrAAsxnVM0mcNX6nBZGeTFmc3U82AC-0ZSWyxX2VXtXqcxUF4CgbDgZ1Nhyd0Z09b1yEXHxJ06ANuQ3fkyBbcCyALFE0V3cN-yjOs4xEcQbzgVN0ygTM+GzL982mYtSygct6krO86lrWMoAbDZBliDg4kQXIPGYHZyCwCBBCgAB9TxxIoWTUBuMg8AASk4bheAEXIKHyIpJHIAAVfSQAAISoUsYh4fghAcQypDIABVBxIgAJgAZhsnT4CFcYpgwMVGCMshTNoM8AGFoACbS7LgFtQpALAACUIBoHz4rOC5rhATMnIAKQ8JVMt094BFy-LyAAQUYGheLi3TgVBKhQoAK2K7wADoPDq0QAAF0gingoDALrmEmUr4Fw1EaJCpz3IABncyJ+0WgB2Nboi4SlDC6sA0lUIJtyKeFQ0YeF-JFILZgu5t0ooeFsoqm54XKz48vhZqwXhGb8JOXB1L2uoIGUTSdocPgup-Vi9spVQrsCmYikB4HQfBjhKWhlisD2ls+FUE6LoSh7UY0caKBge0TGUIIED+ubzCWla1oANjIKDEAZ9EmeW9yto5wwgfJkGwbYIA)
 
 > _NOTE: Casing is a very important decision when modeling your data in DynamoDB. While choosing upper/lower is largely a personal preference, once you have begun loading records in your table it can be difficult to change your casing after the fact. Unless you have good reason, allowing for mixed case keys can make querying data difficult because it will require database consumers to always have a knowledge of their data's case._         
 
@@ -1296,6 +1304,9 @@ indexes: {
 	sk: '$mallstores#mid_mallvalue#bid_buildingvalue#uid_unitvalue'
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gDoFPnAC8cVBQDuKdJiwAKBBzhwQERtQBciVWrgV52XWSFQRZADT61fClABuwWhVMgAhlSqNgF+tBY1rZwjg58wLymAIxk+rg2ah4wDMDMAK4wIroqBnDmFACSjDkhathgbuQCUMCoAObBeWpUHsw61cCMTQYJIZ7exaXNcBVVZqkNPXmt7VTuXdN4iQYZwD519UN6I2OmNZtLLW0dZMyLK2p9eemomNu5zXvVk42XBrOn6RchuPErdS0AA9sjsPhBaMlIvxhs0wABrWEjAjAaglcgIo4GHjgCARLK6ADaE2ExTIAF0yssqXxEWDkaifPt4Vi1DjIPiqsSBlQyVZyGsNg0+eRbvdupSRn88tK8BwEohRm0aKYsBB0lAAPowZUUTWoDwgChkPAASk4HAKfH0ADowJllCECtsyABlAAqAHkAErIABqAEEADIAVWQSx5LoAssGg4HQ+H3oLfML0WQAEIhwpBgAihQAcgBxeNhpZimAukP5wrukvh+Km231CCKc1AA)
+
 ### Composite Attribute Templates
 In a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
@@ -1358,6 +1369,8 @@ ElectroDB will continue to always add a trailing delimiter to composite attribut
 }
 ```
 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gDoFPnAC8cVBQDuKdJiwAKBBzhq4ICI2oAuRKvWGK87HrIBZAIZUqAZRjCAwgFchIMgBoDhtQDcKUHzAvGYAjJ7ePnwBvsC0FGYg1lRCUBSMwGn00FhkkbhehpYwDMDMzjAieio+6qkUAJKM1ZG1athgCeQCUMCoAOZ5bXiFbUk2TS3Dhh1dZD19g63qBctq5cBUGQOT+tPqs2YLA0Ntq8POqJi7Nftwh92lJ2t4+aNqfdoAHlV7bVQQWjFYL8KZ3MAAazBd3UBGA1Ga5EhERhMwo4CoxTmQUYAH0ACQIepNXAo1FqHjgCBBSp6ADa8wcaSaZAAui9DOc7nwoX9yXCEUcIWTyZUMVjEsA8YTxlQSQBiZhSgkIDZbRYK5zKwmXa6MUnvVGUyA0roM2UsjzkNXbfqW8i6mAs9kw3AvN2cjgFRD3SzMGhmLAQZxQXEwP00XGoSwgChkPAASk4HHqfAMADowBVlJFiYiyLYACoAeQASsgAGoAQQAMgBVZAijTJXYWWs16v1xuGm0a-MAITrDRrABEGgA5ADinYbTcdrbr44ahZnjYMuATGf6EEUSaAA)
+
 #### Templates and Composite Attribute Arrays
 
 The example above shows indexes defined only with the `template` property. This property alone is enough to work with ElectroDB, however it can be useful to also include a `composite` array with the names of the Composite Attributes included in the `template` string. Doing so achieves the following benefits:
@@ -1386,6 +1399,8 @@ An example of using `template` while also using `composite`:
   }
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gDoFPnAC8cVBQDuKdJiwAKBBzhq4ICI2oAuRKvWGK87HrIBZAIZUqAZRjCAwgFchIMgBoDhtQDcKUHzAvGYAjJ7ePnwBvsC0FGYg1lRCUBSMwGn00FhkkbhehpYwDMDMzjAieio+6qkUAJKM1ZG1athgCeQCUMCoAOZ5bXiFbUk2TS3Dhh1dZD19g63qBctq5cBUGQOT+tPqs2YLA0Ntq8POqJi7Nftwh92lJ2t4+aNqfdoAHlV7bVQQWjFYL8KZ3MAAazBd3UBGA1Ga5EhERhMwo4CoxTmQUYAH0ACQIepNXAo1FqHjgCBBSp6ADa8wcaSaZAAui9DOc7nwoX9yXCEUcIWTyZUMVjEsA8YTxlQSQBiZhSgkIDZbRYK5zKwmXa6MUnvVGUyA0roM2UsjzkNXbfqW8i6mAs9kw3AvN2cjgFRD3SzMGhmLAQZxQXEwP00XGoSwgChkPAASk4HHqfAMADowBVlJFiYiyLYACoAeQASsgAGoAQQAMgBVZAijTJXYWWs16v1xuGm0a-MAITrDRrABEGgA5ADinYbTcdrbr44ahZnjYMuATGf6EEUSaAA)
 
 ## Composite Attribute and Index Considerations
 
@@ -1416,20 +1431,28 @@ When your attribute's name, or [`field` property](#expanded-syntax) on an attrib
   },
   attributes: {
     accountId: {
-      type: "string" // string and number types are both supported
-    }      
+      type: "string"
+    },
+    productNumber: {
+      type: "number"
+    }
   },
   indexes: {
-    "your_access_pattern_name": {
+    products: {
       pk: {
         field: "accountId",
-        composite: ["accountId"]          
+        composite: ["accountId"]
       },
-      sk: {...}
+      sk: {
+        field: "productNumber",
+        composite: ["productNumber"]
+      }
     }
   }
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3jBUANwrpoOALxxUFAO4p0mLAAoEHOJrggIjagC5EGrSbEZshslggBXKAH0zy)
 
 **Using `template`** 
 
@@ -1451,7 +1474,7 @@ Another approach allows you to use the `template` property, which allows you to 
     "your_access_pattern_name": {
       pk: {
         field: "accountId",
-        composite: ["accountId"], // `composite` is optional when using `template` but helps with TypeScript typing
+        composite: ["accountId"], // `composite` is optional when using `template` but is required when using TypeScript
         template: "${accountId}"
       },
       sk: {...}
@@ -1459,6 +1482,8 @@ Another approach allows you to use the `template` property, which allows you to 
   }
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3jBUANwrpoOALxxUFAO4p0mLAAoEHOJrggIjagC5EGrSbEZshslggBXKAH0zy+6gCGICmQA0xk5r4UUMLAtBSW1nb2AUEhFC7unj5+WqJQfMC8lgCMZL54SVquMAzAzDYwFHyG6smarrQ8NugAkozVebVw2GBh5AJQQgDmZHAdWrheyWOaYEw29AByNiDMge2dJt29ZKjLq1C5nRN5xyZCegAeleu1s7rzMFVGG1pgANY3LyYEwNRt5PVGi1GN5phsKuAqEVtgASBCA2zA3Cgr5+HjgCDpCqGADaZARTRgrTIAF0Ci9Tl8+B9nqitD8-pY7owHksVoEUXTNBCwFDseQ4czWXtAsjyXT0ZAsb08ULFiKDmSwSZcGDVSqOBNEF1XMwaOFbA4YLqaPEPCNcABKTjcXgCOAE4FwaT4howAC0ABYAKwAZgADOxbfx4HKYGz9s64AAmf3+rI2oSicRQLDGAB0YHKagdDURRMYkzDEcCeEtGcGEBU1q4SbMEnTAEcbIE0yZM3N6Hw1I6C1a8unK9XOEA)
 
 **Advanced use of `template`**
 
@@ -1499,6 +1524,8 @@ For example, given the following model:
   }
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3jBUANwrpoOALxxUFAO4p0mLAAoEHOHBARG1AFyINmuGIzYDZLBACuUAPqnld1AEMQFMgBojmvhSjCwLQUFla2dn4BQRTObh7exnCiUHzAvBYAjGRGuAlwLjAMwMzWMBR8BuqJLrQ81ugAkoyVPsbYYCHkAlBCAOZkcAD0g3C8VDjdfXDt5flQFHDMEDAAFnB81mCQsBSMhNDTK8B8JgAebmA0rbmt0L0uqMAAXgVpqE0tiZozFpOo-dc8ppXO5Pl8fl0iv9solcDk8kJdKdymDNDU6ugKoYvsYwABrVE44wEYDUZrkO4PZ6vXhNLytIlwHjgCCpMoGADaZEpjxeGFpjDIAF0GcYboy+ATsYziaSqOSyOibI1BUCZczIGzOlylfUYHShWrGWVwFQCp0yGB5iTTnYACQIXUq3B2TUwG0wonisU5Di5RDTFzMGihGz2GBBmixdwDXAASk43F4AnytWV+r20kVtRgAFoACwAVgAzAAGdhJ-jwHnU-nvTMUqC9XMATjLWUTQlE4igWCMADowKU1KmMRnPKMm1S+W8mng4wPehAVAmuMM4HJMCsbPAnRn1ptLqTGBwu6YJP2AI7Wfx9xL9vd8NQ1mcC+OtftLleJ9d7ucbLYqGPfIThcchmAoXohD4bIzx7LArxvXsP0fZ8p15Gl63fe8IKg-g1D-RhsOMT9l1XDhfzTPV-0PIDdhA8gCGsKhxjgPFUAgORUFgkRz17RDbxQqjMTQ+4MLrJoJ0I4jNFI78gA)
 
 ElectroDB will accept a `get` request like this:
 
@@ -1656,6 +1683,8 @@ await TaskApp.collections
 }
 ```
 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHQSPJdqdiIACQeXKapcRSKlIwpsqABSyBEhAGDkCwbZlXlBgQL4rZCEAA)
+
 ### Collection Queries vs Entity Queries
 
 To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection Queries only leverage [Composite Attributes](#composite-attributes) from an access pattern's Partition Key.  
@@ -1682,6 +1711,8 @@ await TaskApp.entities
 }
 ```
 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHRThgTjRHlmV5QAjt0xBYCIACQeXKS6hC8KlIwpsqABSyBEhAGDkCwbZ1XlBgQL4rZCEAA)
+
 **Collection Query** 
 ```javascript
 await TaskApp.collections
@@ -1697,6 +1728,8 @@ await TaskApp.collections
   IndexName: 'gsi2'
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHQSPJdqdiIACQeXKapcRSKlIwpsqABSyBEhAGDkCwbZlXlBgQL4rZCEAA)
 
 The notable difference between the two is how much of the Sort Key is specified at query time.
 
@@ -1924,6 +1957,8 @@ const projectMembers = new Entity({
 const TaskApp = new Service({employees, tasks, projectMembers});
 ```
 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1SYg7wPbYxOMeriSKwZAABbGKYJvVObYAAHRk-9YiRLHNObXTdu7bjNWJ9oEDeP2ATRzAwcGN43CtJI8gAHwcQA9NXbloCnlluX9-pwFABAwNijjt6InSsDAohFLXtD0Iwhc9jQv02K4bzRF4PIUUUXuIPbojO0TLVtVkjv3u7Til1IJiNP2AgR1UUdJy3lmJ0zKAOQPafmntmf59nueJ+PKAl2Xlc13XZkdG6E3OOrd26dygGINuDg+4DyHnXOgDBOxF1oFPCAM8lhzwwAvUIS93KIBdlvTcO9qh7wUAfSQR8+wmCAA)
+
 > TypeScript Note: Use `as const` syntax when defining `collection` as a string array for improved type support
 
 The last line of the code block above creates a Service called `TaskApp` using the Entity instances created above its declaration. By creating a Service, ElectroDB will identify and validate the sub-collections defined across all three models. The result in this case are four unique collections: "overview", "contributions", and "assignments". 
@@ -1950,6 +1985,8 @@ const results = await TaskApp.collections
   ExpressionAttributeValues: { ':pk': '$taskapp#projectid_sd-204', ':sk1': '$overview' }
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1XVJvVObYAAHRk-9YhFL7TE224vhw-EeAACIALQRgADAALEwNXB9oEDeLVQA)
 
 Unlike `overview`, the collections `contributions`, and `assignments` are more complex. 
 
@@ -1979,10 +2016,12 @@ const results = await TaskApp.collections
 }
 ```
 
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=158&ssc=9&pln=157&pc=1#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1XVJvVObYAAHRk-9YiRP7NObXTdu7bj8QAFJINSEDoGQTA1cH2gQN4tVAA)
+
 ```typescript
 // assignments
 const results = await TaskApp.collections
-        .assignmenets({employeeId: "JExotic"})
+        .assignments({employeeId: "JExotic"})
         .go();
 
 // results 
@@ -2002,6 +2041,8 @@ const results = await TaskApp.collections
   IndexName: 'gsi2'
 }
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1XVJvVObYAAHRk-9YiRL7TMoA5MCiHbu24-EABSSDUhA6BkEwNXB9oEDeL2QA)
 
 Looking above we can see that the `assignments` collection is actually a subset of the results that could be queried with the `contributions` collection. The power behind having the `assignments` sub-collection is the flexibility to further slice and dice your cross-entity queries into more specific and performant queries.
 
@@ -2123,7 +2164,7 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 ```
 ### Defined on the model
 
-> Deprecated but functional as with 1.0.
+> Deprecated but functional with 1.x
 
 Filters can be defined on the model and used in your query chain.
 
@@ -2176,6 +2217,9 @@ let stores = await MallStores.query
 }
 ```
 ### Defined via Filter method after query operators
+
+> Filters are no longer the preferred way to add FilterExpressions. Checkout the [Where](#where) section to find out about how to apply FilterExpressions and ConditionExpressions.
+
 The easiest way to use filters is to use them inline in your query chain.
 
 ```javascript
@@ -2236,6 +2280,9 @@ operator      | example                          | result
 This functionality allows you to write the remaining logic of your `FilterExpression` with ease. Add complex nested `and`/`or` conditions or other `FilterExpression` logic while ElectroDB handles the  `ExpressionAttributeNames` and `ExpressionAttributeValues`.
 
 ### Multiple Filters
+
+> Filters are no longer the preferred way to add FilterExpressions. Checkout the [Where](#where) section to find out about how to apply FilterExpressions and ConditionExpressions.
+
 It is possible to chain together multiple filters. The resulting FilterExpressions are concatenated with an implicit `AND` operator.
 
 ```javascript
@@ -2287,65 +2334,100 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 Below is the traditional way you would add a `FilterExpression` to Dynamo's DocumentClient directly alongside how you would accomplish the same using the `where` method.
 
 ```javascript
+animals.query
+  .exhibit({habitat: "Africa"})
+  .where(({isPregnant, offspring}, {exists, eq}) => `
+    ${eq(isPregnant, true)} OR ${exists(offspring)}
+  `)
+  .go()
+```
+
+```json
 {
-  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
-  TableName: 'zoodirectory',
-  ExpressionAttributeNames: {
-    '#animal': 'animal',
-    '#lastFed': 'lastFed',
-    '#pk': 'pk',
-    '#sk1': 'sk'
+  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+  "TableName": "zoo_manifest",
+  "ExpressionAttributeNames": {
+    "#isPregnant": "isPregnant",
+    "#offspring": "offspring",
+    "#pk": "gsi1pk",
+    "#sk1": "gsi1sk"
   },
-  ExpressionAttributeValues: {
-    ':animal_w1': 'Warthog',
-    ':lastFed_w1': '2020-09-25',
-    ':lastFed_w2': '2020-09-28',
-    ':pk': '$zoodirectory_1#habitat_africa',
-    ':sk1': '$exibits#enclosure_'
+  "ExpressionAttributeValues": {
+    ":isPregnant0": true,
+    ":pk": "$zoo#habitat_africa",
+    ":sk1": "$animals_1#enclosure_"
   },
-  FilterExpression: '#animal = :animal_w1 AND (#lastFed between :lastFed_w1 and :lastFed_w2)'
+  "IndexName": "gsi1pk-gsi1sk-index",
+  "FilterExpression": "#isPregnant = :isPregnant0 OR attribute_exists(#offspring)"
 }
 ```
 
-```javascript
-animals.query
-		.farm({habitat: "Africa"})
-		.where(({animal, dangerous}, {value, name, between}) => `
-			${name(animal)} = ${value(animal, "Warthog")} AND ${between(dangerous, "2020-09-25", "2020-09-28")}
-		`)
-		.go()
-```
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=91&ssc=8&pln=86&pc=1#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MDVCc5G1MAEqSwCgAYtA5MEwAuklecFAEAI4ZwHPcFlwZBNMJW94oZKwQYhlz5TNwVTXMElCDAObx1omhgSBypzMXjtd3D15zi8sCKtzlANjsnl4UJIQJd8h9MNUvmkUPdQhDrKxJBIhkD3l5PldkaivOjDJjsUCAEL+SxnAlMb4owQknbcaS3IgQDK5WnwxHMXiudjSX5wUlwYBiAAKc1uULQeOs9MFEGFKGZjx2JVgBTZNLh+IRlwZRI121C3GABBgisqRq+1tFhgwBBAPJNNyZaJ2EBoNDEYE9t1t53tzFYkvGO2d2TdIbt-KYrzATusgYg1VgVp5BrOKmhsIqefpjOJefN5cM2pgusk+qLdLDHp+Dc1rcMKAg2XjfONpbNecoraHZxHbYrEpQpgAHjlFQGOKAfCGwABrHuGGhW1jAphr1NeETgQ4uupMF5ySbRsXXsTr3nlrdsXd3g-WI+QSLduD1KEwyZFmOE6GAQ04FOkGAhoMM6OLckQxGuAC0cHADEd6IdBoGpmuG60Nuu4oQhq5voYH4nt+9RFCUMApFegG3veuZnE+O6wfBr7XoeDCfqeP4sHsBxHHMPTkjAOLcABo7elYTyJIgNG8OwjguBAAD6rwyDQYxMJQACUADcQgXvIAB0ixEJgVgmaB4HUXoVGlDa7TNGQrR6VZagFEQBA6HokoygQcrSDAuC+v6gZ3HJCCgZGYi4AselKAAfHAAAGoQACTRfMOj+bK8ohSCGy6dQADyvRwFlMUSGIOhhQGQYlVYqW6VZtwQDoBkCEAA)
 
 ### ConditionExpressions
 
 Below is the traditional way you would add a `ConditionExpression` to Dynamo's DocumentClient directly alongside how you would accomplish the same using the `where` method.
 
 ```javascript
+animals.update({
+    animal: "blackbear",
+    name: "Isabelle"
+  })
+  // no longer pregnant because Ernesto was born!
+  .set({
+    isPregnant: false,
+    lastEvaluation: "2021-09-12",
+    lastEvaluationBy: "stephanie.adler"
+  })
+  // welcome to the world Ernesto!
+  .append({
+    offspring: [{
+      name: "Ernesto",
+      birthday: "2021-09-12",
+      note: "healthy birth, mild pollen allergy"
+    }]
+  })
+  // using the where clause can guard against making
+  // updates against stale data
+  .where(({isPregnant, lastEvaluation}, {lt, eq}) => `
+    ${eq(isPregnant, true)} AND ${lt(lastEvaluation, "2021-09-12")}
+  `)
+  .go()
+```
+
+```json
 {
-  UpdateExpression: 'SET #dangerous = :dangerous',
-  ExpressionAttributeNames: { '#animal': 'animal', '#dangerous': 'dangerous' },
-  ExpressionAttributeValues: {
-    ':animal_w1': 'Zebra',
-    ':dangerous_w1': false,
-    ':dangerous': true
+  "UpdateExpression": "SET #isPregnant = :isPregnant_u0, #lastEvaluation = :lastEvaluation_u0, #lastEvaluationBy = :lastEvaluationBy_u0, #offspring = list_append(#offspring, :offspring_u0)",
+  "ExpressionAttributeNames": {
+    "#isPregnant": "isPregnant",
+    "#lastEvaluation": "lastEvaluation",
+    "#lastEvaluationBy": "lastEvaluationBy",
+    "#offspring": "offspring"
   },
-  TableName: 'zoodirectory',
-  Key: {
-    pk: '$zoodirectory_1#habitat_africa',
-    sk: '$exibits#enclosure_5b'
+  "ExpressionAttributeValues": {
+    ":isPregnant0": true,
+    ":lastEvaluation0": "2021-09-12",
+    ":isPregnant_u0": false,
+    ":lastEvaluation_u0": "2021-09-12",
+    ":lastEvaluationBy_u0": "stephanie.adler",
+    ":offspring_u0": [
+      {
+        "name": "Ernesto",
+        "birthday": "2021-09-12",
+        "note": "healthy birth, mild pollen allergy"
+      }
+    ]
   },
-  ConditionExpression: '#animal = :animal_w1 AND #dangerous = :dangerous_w1'
+  "TableName": "zoo_manifest",
+  "Key": {
+    "pk": "$zoo#animal_blackbear",
+    "sk": "$animals_1#name_isabelle"
+  },
+  "ConditionExpression": "#isPregnant = :isPregnant0 AND #lastEvaluation < :lastEvaluation0"
 }
 ```
 
-```javascript
-animals.update({habitat: "Africa", enclosure: "5b"})
-	.set({dangerous: true})
-	.where(({animal, dangerous}, {value, name, eq}) => `
-		${name(animal)} = ${value(animal, "Zebra")} AND ${eq(dangerous)}
-	`)
-	.go()
-```
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=96&ssc=50&pln=96&pc=3#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MDVCc5G1MAEqSwCgAYtA5MEwAuklecFAEAI4ZwHPcFlwZBNMJW94oZKwQYhlz5TNwVTXMElCDAObx1omhgSBypzMXjtd3D15zi8sCKtzlANjsnl4UJIQJd8h9MNUvmkUPdQhDrNxpLciBAMrlLGdPsxeK52NJfnB0YZgGIAApzW5QtDvLxEpgkiBklCCLxUuAlWAFTH+AnwxFXZGo3k7bjAAgwFnWNm2cY7anZED4pjfFE8x47CA0GhiMA3FGKyoIy5MVg01UVOAYAiai1Kq2OV5gCleU0QaqwOX4uFnQxQmGuwnuiVmqUh7YOrwCmBCyQi4Nx85R7WSvVxvlnFAQbIRsXWnWxvMJykOyhonasSQSIZA13KnN10INptAgBCaYdbZjucp9cbMCQxDkGRSURQraz5eHfK748nrGn6FEffn4uzQ7RVnRg1MAA8coqTRxQD5XWAANYlww0OWsYFMe-emYicCHJ11JgvHIkxqiODpiA+opxs+bBvuBn5eN+kCRMWcD1GGBCTDWHZeAQJ4FOkGCuseuGOLckQxPeAC0ZHADE4GUcRJ6fvej60C+b40RRd7wdYiG-ih9RFCUMApMBNYgeBrHQa+pHkXBIEIQwSF-qhLB7AcRxzD0K7NtwmFnLW0qHh4iSICJvDsI4LgQAA+q8Mg0GMTCUAAlAA3EIgHyAAdBkYCYtkejPDIrysI4FmSGQd68AQkhQBS6GOAAkmIxRsOwequVYAD02UqBAcAHCiRBwKaBCMtI8AxWQkh4gQmhQKoEgFWojb8tAKAAIRWN5Kp6HAoQ0vS5VMgqtByLYo4SBOU4ztEzAAEwAAwLTElFLQAnJRMQLRSK4zeuc0oNuEoEGARQyAQ3mSNw7DxYeLk5XlahsN+9UwAVyb1Wo0Cvg1TUfd1hjXWA1QoNw-WhIaxqmncdTpqG0LWkgjVjG4IFJimIpMMtq3rVtO2foWKFMAUsWsMmmD8ssya4CAwB-ZArDsCgcByHdtyYEuEwPU9cB4nc5xk3Aahk3McD7LVtgS9IcC3NOUDcGztwDOI8CvHedx835AU5MrqsSHAEhyPVAWSD1otEAQOh6ENDKjbg+1rhus6mQgFO4AsrlKAAfHAAAGoQACQIAsOh2yNlW4OsBAudQDQAHIACJwCHFM6E7s2biguA4yta2bdtu1x1Y-uPcDtwQDo7kCEAA)
 
 ### Where with Complex Attributes
 
@@ -2358,28 +2440,22 @@ The following are examples on how to filter on complex attributes:
 ```javascript
 animals.query
 	.farm({habitat: "Africa"})
-	.where(({veterinarian}, {eq, between}) => eq(veterinarian.name, "Herb Peterson"))
+	.where(({veterinarian}, {eq}) => eq(veterinarian.name, "Herb Peterson"))
 	.go()
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MDVCc5G1MAEqSwCgAYtA5MEwAuklecFAEAI4ZwHPcFlwZBNMJW94oZKwQYhlz5TNwVTXMElCDAObx1omhgSBypzMXjtd3D15zi8sCKtzlANjsnl4UJIQJd8h9MNUvmkUPdQhDrNxpLciBAMrlLGdPsxeK52NJfnB0YZgGIAApzW5QtDvLxEpgkiBklCCLxUuAlWAFTH+AnwxFXZGo3k7bjAAgwFnWNm2cY7anZED4pjfFE8x47CA0GhiMA3FGKyoIy5MVg01UVOAYAiai1Kq2OV5gCleU0QaqwOX4uFnQxQmGuwnuiVmqUh7YOrwCmBCyQi4Nx85R7WSvVxvlnFAQbIRsXWnWxvMJykOyhonbhbJmyQ3aSutme71wX3+9A5Eth2FVy3i7Mx3MzfM2apkYByLAl4dlnNV2tnVf60KsSQSIZAttZ8vjvlbndAgBCaYdyuX0s325gSGIcgyKSiKH3I8PdbvEkfz9fogXh+S5jmiVjooMpgAB59qKhgmhwoA+K6YAANYLrQcqsMCTBoZ2XgiOAhxOnUTAvHIkxqpSVFiOhcEhjQWE4bR+HWIRkCRMWcD1AOkw1t+XgEFBBTpBgrqQUJji3JEMRoQAtNJwAxLRckSVBnZoRhjFsDhimyahrGGOxxFcfURQlDAKSUTWNF0emZzadhUkySxVEEQwHEkdxLB7AcRxzD0J4wLu3B8WuAnUQIiSIJZvDsI4LgQAA+q8Mg0GMTCUAAlAA3EI5HyAAdIsRCYFYhVCSJFl6OZpQKu0zRkK02XlWoBREAQOh6A2RCDM2s4oNFCALNlSgAHzePMOg9U2LYoIVA64EwAASRC8HAtLyhEohMFlWXlbcEA6PtAhAA)
 
 **Example 1: Filtering on an element in a `list` attribute**
 
 ```javascript
-animals.update({habitat: "Africa", enclosure: "5b"})
-	.where(({handlers}, {eq}) => eq(handlers[0], "jerry"))
-	.go()
-```
-
-**Example 3: Filtering on the a `set` item ("veal"), with a `map` attribute property ("meat"), that is an element of a `list` attribute ("meals")**
-
-```javascript
 animals.query
-	.farm({habitat: "Africa"})
-	.where(({meals}, {exists, between}) => `
-		${exists(meals[0].meat.veal)} AND ${between(meals[0].schedule, '6:00', '7:00')}
-	`)
-	.go()
+  .exhibit({habitat: "Tundra"})
+  .where(({offspring}, {eq}) => eq(offspring[0].name, "Blitzen"))
+  .go()
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=106&ssc=8&pln=103&pc=1#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MACoZKNxQrbhMAEqSwCgAYtA5MEwAuklecFAEAI4ZwIvcFlwZBHMJu94oZKwQYhmL5fNwVTXMElAjAObx1omhgSByF-PXjnePz15Fis1gQNlcoNt9q8vChJCAbvlvphqr80ignqFodZuNIHkQIBlcpZLj9mLxXOxpAC4FjDMAxAAFRYPWFoL5eUlMckQSkoQReWlwEqwAo4-zEpEo25ojEC-bcYAEGDs6yc2xTfZ07IgIlMP7o-kvfYQGg0MRge7olWVZE3JisekaipwDAEHXW1W2xwfMDUrwWiDVWCKomIy6GWHwj0kr3Sy2y8N7Z1eYUwUWScVhxNXWN6mWGxOCy4oCDZaOSu36hOF5M052UTH7cLZS2Se7SD2cn1+uABoPoHLlyMI2s2qV5+MF+ZFmzVMjAORYctjyv52sNy4bo2hViSCSjUGd3NVqeC3f70EAIUzzrVa7lO73MCQxDkGRSURQR-HJ8bj4kL5vh+ojXt+q6TpiVhYiMpgAB6DhKhjmhwoA+B6YAANbLrQiqsGCTCYT2XgiOAJyunUTDvHIMyajStFiFhiHhjQuH4QxRHWCRkCRGWcD1MOMz1n+XgELBBTpBgHowaJjgPJEMSYQAtHJwAxAxinSbBPaYdhLFsPhKkKRhHGGFxZG8fURQlDAKQ0fW9GMVmlx6XhsnyextHEQw3HkXxLCHMcpyLG09pPge3CCZuwl0QIiSIDZvDsI4LgQAA+h8Mg0JMTCUAAlAA3EIVHyAAdCsRCYFYJWieJ1l6FZpTKh0XQ9K0eVVWoBREAQOh6CaZoWo8cUIMseVKAAfN4Sw6P15rxrUAAM0wlcO-SXg6MBOD4TC5blVUPBAOi5UAA)
 
 ### Attributes and Operations
 
@@ -2390,33 +2466,55 @@ Where functions allow you to write a `FilterExpression` or `ConditionExpression`
 ```javascript
 // A single filter operation 
 animals.update({habitat: "Africa", enclosure: "5b"})
-	.set({keeper: "Joe Exotic"})
-	.where((attr, op) => op.eq(attr.dangerous, true))
-	.go();
+  .set({keeper: "Joe Exotic"})
+  .where((attr, op) => op.eq(attr.dangerous, true))
+  .go();
 
-// A single filter operation  
-animals.update({habitat: "Africa", enclosure: "5b"})
-	.set({keeper: "Joe Exotic"})
-	.where((attr, op) => op.eq(attr.dangerous, true))
-	.go();
+// A single filter operation w/ destructuring
+animals.update({animal: "tiger", name: "janet"})
+  .set({keeper: "Joe Exotic"})
+  .where(({dangerous}, {eq}) => eq(dangerous, true))
+  .go();
 
 // Multiple conditions - `op`
-animals.update({habitat: "Africa", enclosure: "5b"})
-	.set({keeper: "Joe Exotic"})
-	.where((attr, op) => `
-		${op.eq(attr.dangerous, true)} AND ${op.contains(attr.diet, "meat")}
-	`)
-	.go();
+animals.update({animal: "tiger", name: "janet"})
+  .set({keeper: "Joe Exotic"})
+  .where((attr, op) => `
+    ${op.eq(attr.dangerous, true)} AND ${op.notExists(attr.lastFed)}
+  `)
+  .go();
 
 // Multiple usages of `where` (implicit AND)
-animals.update({habitat: "Africa", enclosure: "5b"})
-	.set({keeper: "Joe Exotic"})
-	.where((attr, op) => `
-		${op.eq(attr.dangerous, true)} AND ${op.contains(attr.diet, "meat")}
-	`)
-	.where((attr, op)) => op.betweem(attr.schedule, "05:30", "19:00"))
-	.go();
+animals.update({animal: "tiger", name: "janet"})
+  .set({keeper: "Joe Exotic"})
+  .where((attr, op) => `
+    ${op.eq(attr.dangerous, true)} OR ${op.notExists(attr.lastFed)}
+  `)
+  .where(({birthday}, {between}) => {
+    const today = Date.now();
+    const lastMonth = today - 1000 * 60 * 60 * 24 * 30;
+    return between(birthday, lastMonth, today);
+  })
+  .go();
+
+// "dynamic" filtering
+function getAnimals(habitat, keepers) {
+  const query = animals.query.exhibit({habitat});
+  for (const name of keepers) {
+    query.where(({keeper}, {eq}) => eq(keeper, name));
+  }
+  return query.go();
+}
+
+const keepers = [
+  "Joe Exotic",
+  "Carol Baskin"
+];
+
+getAnimals("RainForest", keepers);
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvAAWAQ14ZpMMXAC8cANpMAgnXLSmuLVE7l9zAErTgKAGLQCEpgF040pSPEwA3AKxgCcAAlZeXhVXwIIGjgZORgFMTUUAFcQXiJHb2FRCRcUUGlWJVUUAgB3OFR0LAAKBAE4OBAIbjYALkR6hq6xIlIKdqYALwgIfU6uuAI0DEwB6TyQArExiYbiIjFgUQGARhW4SmxOhS5gXiSYe3a6iZiQ6-Gu8Pa7uMUj1bgoAgBHJOBvtx2lwkgQPl1Do8pmRWBAxElvg9Ps9mBIoFYAOb7BqQibzfKsJGrFFMNGY7Fdb5-AEEIFwEFgx64rooaQgAhEiYkskoLFM8ENbjzDFECBJMScp6YPwDXgjdjzCnMhrAMQABW+GNZaElDRJcogCpQggmyrgclgkiFsw6yOlHOYyVSRBNEIFcG4wAIMF19PtAx6MApKsuIAlqNOvNdOPdAGsCAQ-FBfdzI3zTe71pd0az0fMU-6Izn027HpEaGIwMWCzLmKxVUH3SGCGHfXrC0xFmBg10qxAk+grrbPiy2Q6biOuR2eSXJ2bPhaYFbpDaJ5P27XSWnoyP56sUBBLm3idPt49PpRzxCr5eM49WK4YNZaTWHVvizuzQ+JM-uAAhVcr1TD9+XvR8kGIAokgULYUFfAMzzvCZvxgCCoJg0QAPgotySZTpmSsFoAA8hzXOBKw4UApl9MBY2PBoaC9Vg6SYWiewmERwDhDAHQ0fFFlYJwmwOYSxDo4dJ0YtgWLE9iuk4yBNiPdQmFZdknBvUCJgIIjJDODBfUInSBgxTYdlogBaUzgB2MSLKMoie1o+jaCYljrPM2M5IaBTuOUjRXgUISb1E8SyM+KTmJMszZOEjiGEUnj2g0aFYXhb5TCYFDfw0i8tJEgRDkQOJeHYAZhggAB9RY8hoewg0oABKTIAHoACo2vqNq4AANWkPN0GyOBRGiCBykwMU4DIeY4HFfwl38AADUpJCIAhFqmh85q6lqhBalq4E0cjMXYVzWGzYakwwlA4AEfilgAOiSMAhUuWp7sJZh0BFKBTDUt8ACt5m9JgmoEABIB7A1qeNEyIAYACkIH8JAiMPEwwYaB6VrW6pqhOKBcH7RqVAAPkuh7fnxmAuAeoVeVFcVcAZRrGs6B6MQgapmr2g6js2XlTsY86iEuohrrgUoDpaNEkk4BFMTuhZHue16CHe5XPqYb6XVwf6BiBkoGrZyHoYQWGk0R5GKjR9AyFBtmsZx748YQemfrFMQioQX4mrJyYfmqd3GbEZmoFBVn2c57nWoOgBZJJzuAMBTvcT1BvEOALLgRb+0WpWCTEJ6XoUdWEA+gYdd+vWxwN4HjYhqHvRhhNLeYJGUdtjHHbgbHVpd6muCJsASeUcn84mAASBB+0pwOCbp4UQ7DiPqE0AA5AAROBp9ng9UKIhsxEHqAHuy2lGtvHOe45rmeYEfa4ATpOU-8cVpBFJRIhz531rgapQAp3IBgQ6W82YfSLqrUuGsCSV2AD9P6tdmCGxBmDU2zdzat3hu3a2qN0b20xr3X+eMCbD1HuPR4u8wBzxPovBm9Amb0nDgQS+cAADyZgd4z2ofvVGR9aHn24JfToi0b7ENqIuZcmBvZpBgKUBMKA-ZjwklNbI8AYDNBXCoOAm9S4PQPKUGOjx3A5BQnHUQS5tEaOtFnOAOwAAMji4DdQAGz2OcXANxHiABMAAWDxABmex3gJjfBgAiG6sj5FTGqJI60uAzEWMkMzTRmAeY4hvtHe+j8mDcEwGpEwZ1syKxoEkFAxgRoihgJoTWx9Ao+kCMEN4uALYbHaDONQjgSYThMfAP4RBMDaIgQ9fpUBMCU10vpGAtR6lNRCbQaA-9elwH+sNKIrSoBiG6Y8UZ4zxGYLhlAb2vtyEB2qBsmu7JWbzKvmEiJcBdm3yMZeLIHg4AbKKOoToTAO423wfsJgABhfqho4B-lcLGKwggMhCCqTUwu1QmAWCsLYb4DgWlYM2c1IAA)
 
 The `attributes` object contains every Attribute defined in the Entity's Model. The `operations` object contains the following methods:
 
@@ -2601,13 +2699,7 @@ let schema = {
 				composite: ["leaseEndDate"]
 			}  
 		}
-	},
-	filters: {
-		byCategory: ({category}, name) => category.eq(name),
-		rentDiscount: (attributes, discount, max, min) => {
-			return `${attributes.discount.lte(discount)} AND ${attributes.rent.between(max, min)}`
-		}
-	}  
+	}
 };
 const StoreLocations = new Entity(schema, {table: "StoreDirectory"});
 ```
