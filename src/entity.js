@@ -1095,12 +1095,14 @@ class Entity {
 		let restrict = ["pk"];
 		let keys = { pk };
 		sks = sks.filter(sk => sk !== undefined);
+
 		for (let i = 0; i < sks.length; i++) {
 			let id = `sk${i + 1}`;
 			keys[id] = sks[i];
 			restrict.push(id);
 			translate[id] = translate["sk"];
 		}
+
 		let keyExpressions = this._expressionAttributeBuilder(keys, ItemOperations.set, {
 			translate,
 			restrict,
