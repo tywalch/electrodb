@@ -145,6 +145,560 @@ describe("Entity", () => {
 	});
 	describe("Schema validation", () => {
 		let MallStores = new Entity(schema);
+		describe("skipping values if they at least result in a partial sort key", () => {
+			const entity = new Entity({
+				service: "test",
+				entity: "entityOne",
+				table: "test",
+				version: "1",
+				attributes: {
+					prop1: {
+						type: "string",
+					},
+					prop2: {
+						type: "string"
+					},
+					prop3: {
+						type: "string"
+					},
+					prop4: {
+						type: "string"
+					},
+					prop5: {
+						type: "string"
+					}
+				},
+				indexes: {
+					index1: {
+						collection: "collectionA",
+						pk: {
+							field: "pk",
+							facets: ["prop1", "prop2"],
+						},
+						sk: {
+							field: "sk",
+							facets: ["prop3", "prop4", "prop5"],
+						},
+					}
+				}
+			})
+			const tests = [
+				{
+					description : "undefined sort key property passed to main query method",
+					happy: true,
+					input: {
+						pk: {
+							prop1: "val1",
+							prop2: "val2",
+							prop3: undefined
+						},
+						sk: {}
+					},
+					output: {
+						gt: {
+							TableName: 'test',
+							ExpressionAttributeNames: {'#pk': 'pk', '#sk1': 'sk'},
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+						},
+						lt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+						},
+						gte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+						},
+						lte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+						},
+						main: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_'
+							}
+						},
+						begins: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone'
+							}
+						},
+						between: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone',
+								':sk2': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+						}
+					}
+				},
+				{
+					description : "undefined sort key property passed to main query method, but passed with value in sk method",
+					happy: true,
+					input: {
+						pk: {
+							prop1: "val1",
+							prop2: "val2",
+							prop3: undefined
+						},
+						sk: {
+							prop3: "val3"
+						},
+					},
+					output: {
+						gt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+						},
+						lt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+						},
+						gte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+						},
+						lte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+						},
+						main: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_'
+							}
+						},
+						begins: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							}
+						},
+						between: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3',
+								':sk2': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+						}
+					}
+				},
+				{
+					description : "sort key property passed to main query method and again to sort key method",
+					happy: true,
+					input: {
+						pk: {
+							prop1: "val1",
+							prop2: "val2",
+							prop3: "val3a"
+						},
+						sk: {
+							prop3: "val3"
+						},
+					},
+					output: {
+						gt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+						},
+						lt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+						},
+						gte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+						},
+						lte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+						},
+						main: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3a#prop4_'
+							}
+						},
+						begins: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3'
+							}
+						},
+						between: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3',
+								':sk2': '$collectiona#entityone#prop3_val3'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+						}
+					}
+				},
+				{
+					description : "second slot sort key property passed to main query method and first slot key property passed to sort key method",
+					happy: true,
+					input: {
+						pk: {
+							prop1: "val1",
+							prop2: "val2",
+							prop4: "val4"
+						},
+						sk: {
+							prop3: "val3"
+						},
+					},
+					output: {
+						gt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+						},
+						lt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+						},
+						gte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+						},
+						lte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+						},
+						main: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_'
+							}
+						},
+						begins: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+							}
+						},
+						between: {
+    						TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4',
+									':sk2': '$collectiona#entityone#prop3_val3#prop4_val4'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+						}
+					}
+				},
+				{
+					description : "second slot sort key property passed to main query method and first slot key property never passed to sort key method",
+					happy: true,
+					input: {
+						pk: {
+							prop1: "val1",
+							prop2: "val2",
+							prop4: "val4"
+						},
+						sk: {},
+					},
+					output: {
+						gt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+						},
+						lt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+						},
+						gte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+						},
+						lte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+						},
+						main: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_'
+							}
+						},
+						begins: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							}
+						},
+						between: {
+    						TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone',
+									':sk2': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+						}
+					}
+				},
+				{
+					description : "second slot sort key property passed to main query method, and third slot key property passed to sort key method, no first sort key property passed",
+					happy: true,
+					input: {
+						pk: {
+							prop1: "val1",
+							prop2: "val2",
+							prop4: "val4"
+						},
+						sk: {
+							prop5: "val5",
+						}
+					},
+					output: {
+						gt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+						},
+						lt: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+						},
+						gte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+						},
+						lte: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+						},
+						main: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone#prop3_'
+							}
+						},
+						begins: {
+							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone'
+							}
+						},
+						between: {
+    						TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeValues: {
+								':pk': '$test_1#prop1_val1#prop2_val2',
+									':sk1': '$collectiona#entityone',
+									':sk2': '$collectiona#entityone'
+							},
+							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+						}
+					}
+				},
+				{
+					description: "Partition key property passed to sort key method but not main query method",
+					happy: false,
+					input: {
+						pk: {
+							prop1: "val1",
+							prop4: "val4"
+						},
+						sk: {
+							prop5: "val5",
+							prop2: "val2",
+						}
+					},
+					output: {
+						gt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
+						lt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
+						gte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
+						lte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
+						main: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
+						begins: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
+						between: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
+					}
+				},
+			];
+			for (const test of tests) {
+				for (const method of Object.keys(test.output)) {
+					it(`should ${test.happy ? "allow" : "not allow"} ${test.description} on ${method} method`, () => {
+						const query = method === "main"
+							? entity.query.index1(test.input.pk)
+							: entity.query.index1(test.input.pk)[method](test.input.sk, test.input.sk);
+						if (test.happy) {
+							expect(query.params()).to.deep.equal(test.output[method]);
+							// console.log({count, method, params});
+						} else {
+							expect(() => query.params()).to.throw(test.output[method]);
+						}
+					});
+				}
+			}
+		});
 		it("Should enforce enum validation on enum type attribute", () => {
 			let [
 				isValid,
@@ -220,6 +774,7 @@ describe("Entity", () => {
 					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "any" but is a composite attribute of the the following indexes: Table Index`
 				}
 			];
+
 			let schema = {
 				service: "MallStoreDirectory",
 				entity: "MallStores",

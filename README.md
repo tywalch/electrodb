@@ -11,13 +11,13 @@
 
 ------------
 
-<h1 align="center">Introducing: ElectroDB Playground @ electrodb.fun</h1>
+<a href="https://electrodb.fun"><h1 align="center">Introducing: The NEW ElectroDB Playground</h1></a>
 
 <p align="center">
-  <a href="https://electrodb.fun"><img width="500" src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true"></a>
+  <a href="https://electrodb.fun"><img width="400" src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true"></a>
 </p>
 
-<p align="center">Try out and share ElectroDB Models, Services, and Single Table Design at <a href="https://electrodb.fun">https://electrodb.fun</a></p>
+<p align="center">Try out and share ElectroDB Models, Services, and Single Table Design at <a href="https://electrodb.fun">electrodb.fun</a></p>
 
 ------------
 
