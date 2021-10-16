@@ -1634,8 +1634,9 @@ describe("Entity", () => {
 				.set({ mall, store, building, category, unit, rent, leaseEnd })
 				.params();
 			expect(update).to.deep.equal({
-				UpdateExpression: "SET #mall = :mall_u0, #store = :store_u0, #building = :building_u0, #category = :category_u0, #unit = :unit_u0, #rent = :rent_u0, #leaseEnd = :leaseEnd_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #gsi4pk = :gsi4pk_u0, #gsi4sk = :gsi4sk_u0",
+				UpdateExpression: "SET #mall = :mall_u0, #store = :store_u0, #building = :building_u0, #category = :category_u0, #unit = :unit_u0, #rent = :rent_u0, #leaseEnd = :leaseEnd_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #gsi4pk = :gsi4pk_u0, #gsi4sk = :gsi4sk_u0, #id = :id_u0",
 				ExpressionAttributeNames: {
+					"#id": "id",
 					"#mall": "mall",
 					"#store": "storeId",
 					"#building": "buildingId",
@@ -1653,6 +1654,7 @@ describe("Entity", () => {
 					"#gsi4sk": "gsi4sk",
 				},
 				ExpressionAttributeValues: {
+					":id_u0": id,
 					":mall_u0": mall,
 					":store_u0": store,
 					":building_u0": building,
@@ -2010,9 +2012,19 @@ describe("Entity", () => {
 				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
 			});
 			expect(updateParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value_u0',
-				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value_u0': 'Ahssfh' },
+				UpdateExpression: "SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0",
+				"ExpressionAttributeNames": {
+					"#id": "id",
+					"#mall": "mall",
+					"#stores": "stores",
+					"#value": "value",
+				},
+				"ExpressionAttributeValues": {
+					":id_u0": "Abcd",
+					":mall_u0": "Defg",
+					":stores_u0": 1,
+					":value_u0": "Ahssfh",
+				},
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: "$MallStoreDirectory#id_Abcd",
@@ -2020,9 +2032,19 @@ describe("Entity", () => {
 				}
 			});
 			expect(patchParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value_u0',
-				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value_u0': 'Ahssfh' },
+				UpdateExpression: 'SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0',
+				ExpressionAttributeNames: {
+					"#id": "id",
+					"#mall": "mall",
+					"#stores": "stores",
+					"#value": "value",
+				},
+				ExpressionAttributeValues: {
+					":id_u0": "Abcd",
+					":mall_u0": "Defg",
+					":stores_u0": 1,
+					":value_u0": "Ahssfh",
+				},
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: "$MallStoreDirectory#id_Abcd",
@@ -2252,9 +2274,19 @@ describe("Entity", () => {
 				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
 			});
 			expect(updateParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value_u0',
-				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value_u0': 'Ahssfh' },
+				UpdateExpression: "SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0",
+				ExpressionAttributeNames: {
+					"#id": "id",
+					"#mall": "mall",
+					"#stores": "stores",
+					"#value": "value",
+				},
+				ExpressionAttributeValues: {
+					":id_u0": "Abcd",
+					":mall_u0": "Defg",
+					":stores_u0": 1,
+					":value_u0": "Ahssfh",
+				},
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: "mIxEdCaSe#Abcd",
@@ -2262,9 +2294,19 @@ describe("Entity", () => {
 				}
 			});
 			expect(patchParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value_u0',
-				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value_u0': 'Ahssfh' },
+				UpdateExpression: 'SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0',
+				ExpressionAttributeNames: {
+					'#value': 'value',
+					"#id": "id",
+					"#mall": "mall",
+					"#stores": "stores"
+				},
+				ExpressionAttributeValues: {
+					":id_u0": "Abcd",
+					":mall_u0": "Defg",
+					":stores_u0": 1,
+					':value_u0': 'Ahssfh'
+				},
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: "mIxEdCaSe#Abcd",
@@ -2606,9 +2648,19 @@ describe("Entity", () => {
 				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
 			});
 			expect(updateParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value_u0',
-				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value_u0': 'ahssfh' },
+				UpdateExpression: "SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0",
+				ExpressionAttributeNames: {
+					'#value': 'value',
+					"#id": "id",
+					"#mall": "mall",
+					"#stores": "stores"
+				},
+				ExpressionAttributeValues: {
+					':value_u0': 'ahssfh',
+					":id_u0": "abcd",
+					":mall_u0": "defg",
+					":stores_u0": 1
+				},
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: '$mallstoredirectory_1#id_abcd',
@@ -2616,9 +2668,19 @@ describe("Entity", () => {
 				}
 			});
 			expect(patchParams).to.deep.equal({
-				UpdateExpression: 'SET #value = :value_u0',
-				ExpressionAttributeNames: { '#value': 'value' },
-				ExpressionAttributeValues: { ':value_u0': 'ahssfh' },
+				UpdateExpression: "SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0",
+				ExpressionAttributeNames: {
+					'#value': 'value',
+					"#id": "id",
+					"#mall": "mall",
+					"#stores": "stores"
+				},
+				ExpressionAttributeValues: {
+					':value_u0': 'ahssfh',
+					":id_u0": "abcd",
+					":mall_u0": "defg",
+					":stores_u0": 1
+				},
 				TableName: 'StoreDirectory',
 				Key: {
 					parition_key: '$mallstoredirectory_1#id_abcd',
@@ -3185,9 +3247,17 @@ describe("Entity", () => {
 			let rent = "0.00";
 			let patchParams = MallStores.patch({id, mall}).set({rent}).params();
 			expect(patchParams).to.deep.equal({
-				UpdateExpression: 'SET #rent = :rent_u0',
-				ExpressionAttributeNames: { '#rent': 'rent' },
-				ExpressionAttributeValues: { ':rent_u0': '0.00' },
+				UpdateExpression: "SET #rent = :rent_u0, #id = :id_u0, #mall = :mall_u0",
+				ExpressionAttributeNames: {
+					"#id": "id",
+					"#mall": "mall",
+					"#rent": "rent",
+				},
+				ExpressionAttributeValues: {
+					":id_u0": "12345",
+					':rent_u0': '0.00',
+					":mall_u0": "EastPointe"
+				},
 				TableName: 'StoreDirectory',
 				Key: {
 					pk: '$mallstoredirectory_1#id_12345',
@@ -5061,9 +5131,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id" },
+								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789" },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
@@ -5077,9 +5147,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk)",
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id" },
+								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789" },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1$mallstores#id_123-456-789'
@@ -5210,9 +5280,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id" },
+								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789" },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1#id_123-456-789',
@@ -5226,9 +5296,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id" },
+								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789" },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory_1#id_123-456-789',
@@ -5366,9 +5436,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id" },
+								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789" },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
@@ -5381,9 +5451,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk)",
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id" },
+								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789" },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory$mallstores_1#id_123-456-789'
@@ -5521,9 +5591,9 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id" },
+								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789" },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -5537,9 +5607,9 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id" },
+								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789" },
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -5682,9 +5752,15 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: {
+									'#unit': 'unitId',
+									"#id": "id"
+								},
+								ExpressionAttributeValues: {
+									':unit_u0': 'abc',
+									":id_u0": "123-456-789",
+								},
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -5698,9 +5774,15 @@ describe("Entity", () => {
 							set: {unit: "abc"},
 							output: {
 								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
-								UpdateExpression: 'SET #unit = :unit_u0',
-								ExpressionAttributeNames: { '#unit': 'unitId' },
-								ExpressionAttributeValues: { ':unit_u0': 'abc' },
+								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0",
+								ExpressionAttributeNames: {
+									'#unit': 'unitId',
+									"#id": "id"
+								},
+								ExpressionAttributeValues: {
+									':unit_u0': 'abc',
+									":id_u0": "123-456-789",
+								},
 								TableName: 'StoreDirectory',
 								Key: {
 									pk: '$mallstoredirectory#id_123-456-789',
@@ -6281,15 +6363,17 @@ describe("Entity", () => {
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
-				UpdateExpression: 'SET #prop7 = :prop7_u0',
-				ExpressionAttributeNames: { '#prop7': 'prop7' },
-				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7' },
+				UpdateExpression: "SET #prop7 = :prop7_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
+				ExpressionAttributeNames: { '#prop7': 'prop7', "#prop1": "prop1", "#prop2": "prop2" },
+				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7', ":prop1_u0": "abc", ":prop2_u0": "def" },
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' }
 			});
 			expect(secondaryIndexParams).to.be.deep.equal({
-				UpdateExpression: 'SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0',
+				UpdateExpression: "SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
 				ExpressionAttributeNames: {
+					"#prop1": "prop1",
+					"#prop2": "prop2",
 					'#prop3': 'prop3',
 					'#prop4': 'prop4',
 					'#prop5': 'prop5',
@@ -6298,6 +6382,8 @@ describe("Entity", () => {
 					'#gsi2pk': 'gsi2pk'
 				},
 				ExpressionAttributeValues: {
+					":prop1_u0": "abc",
+					":prop2_u0": "def",
 					':prop3_u0': 'hij-prop3',
 					':prop4_u0': 'jkl-prop4',
 					':prop5_u0': 'lmn-prop5',
@@ -6422,16 +6508,18 @@ describe("Entity", () => {
 			expect(setCalls.prop6).to.equal(0);
 			expect(setCalls.prop7).to.equal(1);
 			expect(params).to.deep.equal({
-				UpdateExpression: 'SET #prop7 = :prop7_u0',
-				ExpressionAttributeNames: { '#prop7': 'prop7' },
-				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7' },
+				UpdateExpression: "SET #prop7 = :prop7_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
+				ExpressionAttributeNames: { '#prop7': 'prop7', "#prop1": "prop1", "#prop2": "prop2" },
+				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7', ":prop1_u0": "abc", ":prop2_u0": "def" },
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
 				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
 			});
 			expect(secondaryIndexParams).to.be.deep.equal({
-				UpdateExpression: 'SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0',
+				UpdateExpression: "SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
 				ExpressionAttributeNames: {
+					"#prop1": "prop1",
+					"#prop2": "prop2",
 					'#prop3': 'prop3',
 					'#prop4': 'prop4',
 					'#prop5': 'prop5',
@@ -6440,6 +6528,8 @@ describe("Entity", () => {
 					'#gsi2pk': 'gsi2pk'
 				},
 				ExpressionAttributeValues: {
+					":prop1_u0": "abc",
+					":prop2_u0": "def",
 					':prop3_u0': 'hij-prop3',
 					':prop4_u0': 'jkl-prop4',
 					':prop5_u0': 'lmn-prop5',
@@ -7088,9 +7178,9 @@ describe("Entity", () => {
 			});
 
 			expect(updateParams).to.deep.equal({
-				UpdateExpression: 'SET #number3 = :number3_u0',
-				ExpressionAttributeNames: { '#number3': 'number3' },
-				ExpressionAttributeValues: { ':number3_u0': 77 },
+				UpdateExpression: "SET #number3 = :number3_u0, #number1 = :number1_u0, #number2 = :number2_u0",
+				ExpressionAttributeNames: { '#number3': 'number3', "#number1": "number1", "#number2": "number2" },
+				ExpressionAttributeValues: { ':number3_u0': 77, ":number1_u0": 55, ":number2_u0": 66 },
 				TableName: 'electro_nostringkeys',
 				Key: { pk: 55, sk: 66 }
 			});
@@ -7234,5 +7324,296 @@ describe("Entity", () => {
 				}
 			]);
 		});
+	});
+	describe("Edge-cases around including composite attributes in updates", () => {
+		const entity = new Entity({
+			model: {
+				entity: "update-edgecases",
+				service: "test",
+				version: "1"
+			},
+			attributes: {
+				prop0: {
+					type: "string"
+				},
+				prop1: {
+					type: "string"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				},
+				prop4: {
+					type: "string"
+				},
+				prop5: {
+					type: "string"
+				},
+				prop6: {
+					type: "string"
+				},
+				prop7: {
+					type: "string"
+				},
+				prop8: {
+					type: "string"
+				},
+				prop9: {
+					type: "string"
+				},
+				prop10: {
+					type: "string"
+				},
+				prop11: {
+					type: "string"
+				},
+				prop12: {
+					type: "string"
+				},
+				prop13: {
+					type: "string"
+				},
+				prop14: {
+					type: "string"
+				},
+				prop15: {
+					type: "string"
+				},
+			},
+			indexes: {
+				accessPattern1: {
+					pk: {
+						field: "pk",
+						composite: ["prop1"]
+					},
+					sk: {
+						field: "sk",
+						composite: ["prop2"]
+					}
+				},
+				accessPattern2: {
+					index: "gsi1pk-gsi1sk-index",
+					pk: {
+						field: "gsi1pk",
+						composite: ["prop3"]
+					},
+					sk: {
+						field: "gsi1sk",
+						composite: ["prop2", "prop4"]
+					}
+				},
+				accessPattern3: {
+					index: "gsi2pk-gsi2sk-index",
+					pk: {
+						field: "gsi2pk",
+						composite: ["prop5"]
+					},
+					sk: {
+						field: "gsi2sk",
+						composite: ["prop2", "prop6", "prop7"]
+					}
+				},
+				accessPattern4: {
+					index: "gsi3pk-gsi3sk-index",
+					pk: {
+						field: "gsi3pk",
+						composite: ["prop8"]
+					},
+					sk: {
+						field: "gsi3sk",
+						composite: ["prop9", "prop2"]
+					}
+				},
+				accessPattern5: {
+					index: "gsi4pk-gsi4sk-index",
+					pk: {
+						field: "gsi4pk",
+						composite: ["prop10"]
+					},
+					sk: {
+						field: "gsi4sk",
+						composite: ["prop11", "prop2", "prop12"]
+					}
+				},
+				accessPattern6: {
+					index: "gsi5pk-gsi5sk-index",
+					pk: {
+						field: "gsi5pk",
+						composite: ["prop13"]
+					},
+					sk: {
+						field: "gsi5sk",
+						composite: ["prop14", "prop15", "prop2"]
+					}
+				},
+			},
+		}, {table: "test_table"});
+		const prop0 = "value0";
+		const prop1 = "value1";
+		const prop2 = "value2";
+		const prop4 = "value4";
+		const prop6 = "value6";
+		const prop7 = "value7";
+		const prop9 = "value9";
+		const prop11 = "value11";
+		const prop14 = "value14";
+		const prop15 = "value15";
+		const tests = [
+			{
+				description: "should not throw and only update prop0",
+				success: true,
+				input: {prop0},
+				output: {
+					"UpdateExpression": "SET #prop0 = :prop0_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
+					"ExpressionAttributeNames": {
+						"#prop0": "prop0",
+						"#prop1": "prop1",
+						"#prop2": "prop2"
+					},
+					"ExpressionAttributeValues": {
+						":prop0_u0": "value0",
+						":prop1_u0": "value1",
+						":prop2_u0": "value2"
+					},
+					"TableName": "test_table",
+					"Key": {
+						"pk": "$test#prop1_value1",
+						"sk": "$update-edgecases_1#prop2_value2"
+					}
+				}
+			},
+			{
+				description: "should update prop4 and set gsi1sk",
+				success: true,
+				input: { prop0, prop4 },
+				output: {
+					"UpdateExpression": "SET #prop0 = :prop0_u0, #prop4 = :prop4_u0, #gsi1sk = :gsi1sk_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
+					"ExpressionAttributeNames": {
+						"#prop0": "prop0",
+						"#prop4": "prop4",
+						"#gsi1sk": "gsi1sk",
+						"#prop1": "prop1",
+						"#prop2": "prop2"
+					},
+					"ExpressionAttributeValues": {
+						":prop0_u0": "value0",
+						":prop4_u0": "value4",
+						":gsi1sk_u0": "$update-edgecases_1#prop2_value2#prop4_value4",
+						":prop1_u0": "value1",
+						":prop2_u0": "value2"
+					},
+					"TableName": "test_table",
+					"Key": {
+						"pk": "$test#prop1_value1",
+						"sk": "$update-edgecases_1#prop2_value2"
+					}
+				}
+			},
+			{
+				description: "should throw because result would create incomplete key without prop7",
+				success: false,
+				input: { prop0, prop6 },
+				output: 'Incomplete composite attributes: Without the composite attributes "prop7" the following access patterns cannot be updated: "accessPattern3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+			},
+			{
+				description: "should throw because result would create incomplete key without prop6",
+				success: false,
+				input: { prop0, prop7 },
+				output: 'Incomplete composite attributes: Without the composite attributes "prop6" the following access patterns cannot be updated: "accessPattern3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+			},
+			{
+				description: "should update prop9 and build gsi3sk",
+				success: true,
+				input: { prop0, prop9 },
+				output: {
+					"UpdateExpression": "SET #prop0 = :prop0_u0, #prop9 = :prop9_u0, #gsi3sk = :gsi3sk_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
+					"ExpressionAttributeNames": {
+						"#prop0": "prop0",
+						"#prop9": "prop9",
+						"#gsi3sk": "gsi3sk",
+						"#prop1": "prop1",
+						"#prop2": "prop2"
+					},
+					"ExpressionAttributeValues": {
+						":prop0_u0": "value0",
+						":prop9_u0": "value9",
+						":gsi3sk_u0": "$update-edgecases_1#prop9_value9#prop2_value2",
+						":prop1_u0": "value1",
+						":prop2_u0": "value2"
+					},
+					"TableName": "test_table",
+					"Key": {
+						"pk": "$test#prop1_value1",
+						"sk": "$update-edgecases_1#prop2_value2"
+					}
+				}
+			},
+			{
+				description: "should throw because result would create incomplete key without prop12",
+				success: false,
+				input: { prop0, prop11 },
+				output: `Incomplete composite attributes: Without the composite attributes "prop12" the following access patterns cannot be updated: "accessPattern5"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+			},
+			{
+				description: "should throw because result would create incomplete key without prop15",
+				success: false,
+				input: { prop0, prop14 },
+				output: `Incomplete composite attributes: Without the composite attributes "prop15" the following access patterns cannot be updated: "accessPattern6"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+			},
+			{
+				description: "should throw because result would create incomplete key without prop14",
+				success: false,
+				input: { prop0, prop15 },
+				output: `Incomplete composite attributes: Without the composite attributes "prop14" the following access patterns cannot be updated: "accessPattern6"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+			},
+			{
+				description: "should update prop14, prop15, and set gsi5sk",
+				success: true,
+				input: {prop0, prop14, prop15},
+				output: {
+					"UpdateExpression": "SET #prop0 = :prop0_u0, #prop14 = :prop14_u0, #prop15 = :prop15_u0, #gsi5sk = :gsi5sk_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
+					"ExpressionAttributeNames": {
+						"#prop0": "prop0",
+						"#prop14": "prop14",
+						"#prop15": "prop15",
+						"#gsi5sk": "gsi5sk",
+						"#prop1": "prop1",
+						"#prop2": "prop2"
+					},
+					"ExpressionAttributeValues": {
+						":prop0_u0": "value0",
+						":prop14_u0": "value14",
+						":prop15_u0": "value15",
+						":gsi5sk_u0": "$update-edgecases_1#prop14_value14#prop15_value15#prop2_value2",
+						":prop1_u0": "value1",
+						":prop2_u0": "value2"
+					},
+					"TableName": "test_table",
+					"Key": {
+						"pk": "$test#prop1_value1",
+						"sk": "$update-edgecases_1#prop2_value2"
+					}
+				}
+			}
+		];
+
+		for (const test of tests) {
+			it(test.description, () => {
+				let output;
+				let success = true;
+				try {
+					output = entity.update({prop1, prop2})
+						.set(test.input)
+						.params()
+				} catch(err) {
+					success = false;
+					output = err.message;
+				}
+				expect(output).to.deep.equal(test.output);
+				expect(success).to.equal(test.success);
+			});
+		}
 	});
 });

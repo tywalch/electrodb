@@ -1003,6 +1003,7 @@ class Entity {
 	}
 
 	_makeUpdateParams(update = {}, pk = {}, sk = {}) {
+		let primaryIndexAttributes = {...pk, ...sk};
 		let modifiedAttributeValues = {};
 		let modifiedAttributeNames = {};
 		for (const path of Object.keys(update.paths)) {
@@ -1038,6 +1039,7 @@ class Entity {
 			const wasNotAlreadyModified = modifiedAttributeNames[indexKey] === undefined;
 			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
 				update.set(indexKey, updatedKeys[indexKey]);
+
 			}
 		}
 
@@ -1047,6 +1049,24 @@ class Entity {
 			const wasNotAlreadyModified = modifiedAttributeNames[indexKey] === undefined;
 			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
 				update.remove(indexKey);
+			}
+		}
+
+		// This loop adds the composite attributes to the Primary Index. This is important
+		// in the case an update results in an "upsert". We want to add the Primary Index
+		// composite attributes to the update so they will be included on the item when it
+		// is created. It is done after all of the above because it is not a true "update"
+		// so it should not be subject to the above "rules".
+		for (const primaryIndexAttribute of Object.keys(primaryIndexAttributes)) {
+			// isNotTablePK and isNotTableSK is important to check in case these properties
+			// are not also the name of the index (you cannot modify the PK or SK of an item
+			// after its creation)
+			const attribute = this.model.schema.attributes[primaryIndexAttribute];
+			const isNotTablePK = !!(attribute && attribute.field !== this.model.indexes[accessPattern].pk.field);
+			const isNotTableSK = !!(attribute && attribute.field !== this.model.indexes[accessPattern].sk.field);
+			const wasNotAlreadyModified = modifiedAttributeNames[primaryIndexAttribute] === undefined;
+			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
+				update.set(primaryIndexAttribute, primaryIndexAttributes[primaryIndexAttribute]);
 			}
 		}
 
@@ -1429,7 +1449,7 @@ class Entity {
 			{ ...keyAttributes },
 		);
 		const removedKeyImpact = this._expectIndexFacets(
-			{...removed},
+			{ ...removed },
 			{...keyAttributes}
 		)
 
