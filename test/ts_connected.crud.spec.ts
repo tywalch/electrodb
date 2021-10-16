@@ -1771,12 +1771,14 @@ describe("Entity", async () => {
                     .go({response: "updated_new"});
 
                 expect(update1).to.deep.equal({
+                    id,
+                    sub,
                     prop6: ['tsr', 'wvu', 'zyx'],
                     prop3: [
                         {prop4: 'abc', prop5: 123},
                         {prop4: 'def', prop5: 456},
                         {prop4: 'ghi', prop5: 789}
-                    ]
+                    ],
                 });
             });
 
@@ -1914,7 +1916,7 @@ describe("Entity", async () => {
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
                     .go({response: "updated_old"});
 
-                expect(update1).to.deep.equal({prop3, prop6});
+                expect(update1).to.deep.equal({prop3, prop6, id, sub});
             });
 
             it(`should return null when using ${method}`, async () => {

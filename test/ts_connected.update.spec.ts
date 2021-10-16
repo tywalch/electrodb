@@ -884,9 +884,22 @@ describe("Update Item", () => {
                 .params()
 
             expect(setParameters).to.deep.equal({
-                UpdateExpression: 'SET #category = :category_u0',
-                ExpressionAttributeNames: { '#category': 'category' },
-                ExpressionAttributeValues: { ':category0': 'food/coffee', ':category_u0': 'food/meal' },
+                UpdateExpression: "SET #category = :category_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0",
+                ExpressionAttributeNames: {
+                    '#category': 'category',
+                    "#buildingId": "buildingId",
+                    "#cityId": "cityId",
+                    "#mallId": "mallId",
+                    "#storeId": "storeId",
+                },
+                ExpressionAttributeValues: {
+                    ':category0': 'food/coffee',
+                    ':category_u0': 'food/meal',
+                    ":buildingId_u0": "A34",
+                    ":cityId_u0": cityId,
+                    ":mallId_u0": mallId,
+                    ":storeId_u0": storeId,
+                },
                 TableName: 'electro',
                 Key: {
                     pk: `$mallstoredirectory#cityid_${cityId}#mallid_eastpointe`,
@@ -902,12 +915,20 @@ describe("Update Item", () => {
                 .params();
 
             expect(removeParameters).to.deep.equal({
-                "UpdateExpression": "REMOVE #discount",
+                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0 REMOVE #discount",
                 "ExpressionAttributeNames": {
-                    "#discount": "discount"
+                    "#discount": "discount",
+                    "#buildingId": "buildingId",
+                    "#cityId": "cityId",
+                    "#mallId": "mallId",
+                    "#storeId": "storeId",
                 },
                 "ExpressionAttributeValues": {
-                    ":discount0": 10
+                    ":discount0": 10,
+                    ":buildingId_u0": "A34",
+                    ":cityId_u0": cityId,
+                    ":mallId_u0": mallId,
+                    ":storeId_u0": storeId,
                 },
                 "TableName": "electro",
                 "Key": {
@@ -927,16 +948,24 @@ describe("Update Item", () => {
                 .params()
 
             expect(JSON.parse(JSON.stringify(addParameters))).to.deep.equal({
-                "UpdateExpression": "SET #rent = #rent + :rent_u0 ADD #tenant :tenant_u0",
+                "UpdateExpression": "SET #rent = #rent + :rent_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0 ADD #tenant :tenant_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#rent": "rent",
-                    "#tenant": "tenant"
+                    "#tenant": "tenant",
+                    "#buildingId": "buildingId",
+                    "#cityId": "cityId",
+                    "#mallId": "mallId",
+                    "#storeId": "storeId",
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
                     ":rent_u0": 100,
-                    ":tenant_u0": ["larry"]
+                    ":tenant_u0": ["larry"],
+                    ":buildingId_u0": "A34",
+                    ":cityId_u0": cityId,
+                    ":mallId_u0": mallId,
+                    ":storeId_u0": storeId,
                 },
                 "TableName": "electro",
                 "Key": {
@@ -953,14 +982,22 @@ describe("Update Item", () => {
                 .params()
 
             expect(subtractParameters).to.deep.equal({
-                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0",
+                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
-                    "#deposit": "deposit"
+                    "#deposit": "deposit",
+                    "#buildingId": "buildingId",
+                    "#cityId": "cityId",
+                    "#mallId": "mallId",
+                    "#storeId": "storeId",
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
-                    ":deposit_u0": 500
+                    ":deposit_u0": 500,
+                    ":buildingId_u0": "A34",
+                    ":cityId_u0": cityId,
+                    ":mallId_u0": mallId,
+                    ":storeId_u0": storeId,
                 },
                 "TableName": "electro",
                 "Key": {
@@ -982,17 +1019,25 @@ describe("Update Item", () => {
                 .params()
 
             expect(appendParameters).to.deep.equal({
-                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0)",
+                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
-                    "#rentalAgreement": "rentalAgreement"
+                    "#rentalAgreement": "rentalAgreement",
+                    "#buildingId": "buildingId",
+                    "#cityId": "cityId",
+                    "#mallId": "mallId",
+                    "#storeId": "storeId",
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
                     ":rentalAgreement_u0": [{
                         "type": "ammendment",
                         "detail": "no soup for you"
-                    }]
+                    }],
+                    ":buildingId_u0": "A34",
+                    ":cityId_u0": cityId,
+                    ":mallId_u0": mallId,
+                    ":storeId_u0": storeId,
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1010,14 +1055,22 @@ describe("Update Item", () => {
 
 
             expect(JSON.parse(JSON.stringify(deleteParameters))).to.deep.equal({
-                "UpdateExpression": "DELETE #contact :contact_u0",
+                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0 DELETE #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
-                    "#contact": "contact"
+                    "#contact": "contact",
+                    "#buildingId": "buildingId",
+                    "#cityId": "cityId",
+                    "#mallId": "mallId",
+                    "#storeId": "storeId",
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
-                    ":contact_u0": ["555-345-2222"]
+                    ":contact_u0": ["555-345-2222"],
+                    ":buildingId_u0": "A34",
+                    ":cityId_u0": cityId,
+                    ":mallId_u0": mallId,
+                    ":storeId_u0": storeId,
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1046,7 +1099,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0 REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
@@ -1059,7 +1112,11 @@ describe("Update Item", () => {
                     "#totalFees": "totalFees",
                     "#petFee": "petFee",
                     "#leaseHolders": "leaseHolders",
-                    "#gsi2sk": "gsi2sk"
+                    "#gsi2sk": "gsi2sk",
+                    "#buildingId": "buildingId",
+                    "#cityId": "cityId",
+                    "#mallId": "mallId",
+                    "#storeId": "storeId",
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
@@ -1072,7 +1129,11 @@ describe("Update Item", () => {
                     }],
                     ":contact_u0": ["555-345-2222"],
                     ":tags_u0": ["coffee"],
-                    ":tenant_u0": ["larry"]
+                    ":tenant_u0": ["larry"],
+                    ":buildingId_u0": "A34",
+                    ":cityId_u0": cityId,
+                    ":mallId_u0": mallId,
+                    ":storeId_u0": storeId,
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1158,7 +1219,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #recentCommits[0].#views = #recentCommits[0].#views + :views_u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #recentCommits[0].#views = #recentCommits[0].#views + :views_u0, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -1171,7 +1232,9 @@ describe("Update Item", () => {
                 "#views": "views",
                 "#prop3": "prop3",
                 "#recentCommits": "recentCommits",
-                "#message": "message"
+                "#message": "message",
+                "#repoName": "repoName",
+                "#repoOwner": "repoOwner",
             },
             "ExpressionAttributeValues": {
                 ":followers_u0": params.ExpressionAttributeValues[":followers_u0"],
@@ -1182,7 +1245,9 @@ describe("Update Item", () => {
                 ":description_u0": "updated description",
                 ":tags_u0": params.ExpressionAttributeValues[":tags_u0"],
                 ":custom_u0": "def",
-                ":views_u0": 3
+                ":views_u0": 3,
+                ":repoName_u0": repoName,
+                ":repoOwner_u0": repoOwner
             },
             "TableName": "electro",
             "Key": {
@@ -1470,10 +1535,14 @@ describe("Update Item", () => {
                 .params();
 
             expect(params).to.deep.equal({
-                "UpdateExpression": "REMOVE #location, #gsi2pk",
+                "UpdateExpression": "SET #username = :username_u0 REMOVE #location, #gsi2pk",
                 "ExpressionAttributeNames": {
                     "#location": "location",
-                    "#gsi2pk": "gsi2pk"
+                    "#gsi2pk": "gsi2pk",
+                    "#username": "username"
+                },
+                "ExpressionAttributeValues": {
+                    ":username_u0": username,
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1608,10 +1677,14 @@ describe("Update Item", () => {
                 .params();
 
             expect(params).to.deep.equal({
-                "UpdateExpression": "REMOVE #device, #gsi1sk",
+                "UpdateExpression": "SET #username = :username_u0 REMOVE #device, #gsi1sk",
                 "ExpressionAttributeNames": {
                     "#device": "device",
-                    "#gsi1sk": "gsi1sk"
+                    "#gsi1sk": "gsi1sk",
+                    "#username": "username"
+                },
+                "ExpressionAttributeValues": {
+                    ":username_u0": username
                 },
                 "TableName": "electro",
                 "Key": {
@@ -2232,9 +2305,18 @@ describe("Update Item", () => {
                 .params();
 
             expect(updateParams).to.deep.equal({
-                UpdateExpression: 'SET #views = #views + :stars_u0, #stars = #stars + :stars_u0',
-                ExpressionAttributeNames: { '#stars': 'stars', '#views': 'views' },
-                ExpressionAttributeValues: { ':stars_u0': 20 },
+                UpdateExpression: "SET #views = #views + :stars_u0, #stars = #stars + :stars_u0, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0",
+                ExpressionAttributeNames: {
+                    '#stars': 'stars',
+                    '#views': 'views',
+                    "#repoName": "repoName",
+                    "#repoOwner": "repoOwner"
+                },
+                ExpressionAttributeValues: {
+                    ':stars_u0': 20,
+                    ":repoName_u0": repoName,
+                    ":repoOwner_u0": repoOwner
+                },
                 TableName: 'electro',
                 Key: {
                     pk: `$versioncontrol#repoowner_${repoOwner}`,
