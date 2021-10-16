@@ -92,4 +92,4 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [1.4.4] - 2021-10-16
 ### Added
-- Updates did not include composite attributes involved in primary index. Though these values cannot be changed, they should be `set` on update method calls in case the update results in an item insert [[read more]](./RELEASE.md)
+- Updates did not include composite attributes involved in primary index. Though these values cannot be changed, they should be `set` on update method calls in case the update results in an item insert. [[read more]](./README.md#updates-to-composite-attributes)

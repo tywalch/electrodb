@@ -176,6 +176,7 @@ tasks
     + [Put Record](#put-record)
     + [Batch Write Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
+      - [Updates to Composite Attributes](#updates-to-composite-attributes)
       - [Update Method: Set](#update-method-set)
       - [Update Method: Remove](#update-method-remove)
       - [Update Method: Add](#update-method-add)
@@ -3219,6 +3220,8 @@ entity.update({ attr1: "value1", attr2: "value2" })
   }
 }
 ```
+
+> Note: Included in the update are all attributes from the table's primary index. These values are automatically included on all updates in the event an update results in an insert. 
 
 #### Update Method: Set
 
