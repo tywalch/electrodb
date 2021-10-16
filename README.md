@@ -3129,6 +3129,97 @@ Update Method                          | Attribute Types                        
 [delete](#update-method-delete)        | `any` `set`                                                  | `object`
 [data](#update-method-data)            | `*`                                                          | `callback`
 
+#### Updates to Composite Attributes
+
+ElectroDB adds some constraints to update calls to prevent the accidental loss of data. If an access pattern is defined with multiple composite attributes, then ElectroDB ensure the attributes cannot be updated individually. If an attribute involved in an index composite is updated, then the index key also must be updated, and if the whole key cannot be formed by the attributes supplied to the update, then it cannot create a composite key without overwriting the old data. 
+
+This example shows why a partial update to a composite key is prevented by ElectroDB:
+
+```json
+{
+  "index": "my-gsi",
+  "pk": {
+    "field": "gsi1pk",
+    "composite": ["attr1"]
+  },
+  "sk": {
+    "field": "gsi1sk",
+    "composite": ["attr2", "attr3"]
+  }
+}
+```
+
+The above secondary index definition would generate the following index keys:
+
+```json
+{
+  "gsi1pk": "$service#attr1_value1",
+  "gsi1sk": "$entity_version#attr2_value2#attr3_value6"
+}
+```
+
+If a user attempts to update the attribute `attr2`, then ElectroDB has no way of knowing value of the attribute `attr3` or if forming the composite key without it would overwrite its value. The same problem exists if a user were to update `attr3`, ElectroDB cannot update the key without knowing each composite attribute's value. 
+
+In the event that a secondary index includes composite values from the table's primary index, ElectroDB will draw from the values supplied for the update key to address index gaps in the secondary index. For example:  
+
+For the defined indexes:
+
+```json
+{
+  "accessPattern1": {
+    "pk": {
+      "field": "pk",
+      "composite": ["attr1"]
+    },
+    "sk": {
+      "field": "sk",
+      "composite": ["attr2"]
+    }
+  },
+  "accessPattern2": {
+    "index": "my-gsi",
+    "pk": {
+      "field": "gsi1pk",
+      "composite": ["attr3"]
+    },
+    "sk": {
+      "field": "gsi1sk",
+      "composite": ["attr2", "attr4"]
+    }
+  }
+}
+```
+
+A user could update `attr4` alone because ElectroDB is able to leverage the value for `attr2` from values supplied to the `update()` method:
+
+```typescript
+entity.update({ attr1: "value1", attr2: "value2" })
+  .set({ attr4: "value4" })
+  .go();
+
+{
+  "UpdateExpression": "SET #attr4 = :attr4_u0, #gsi1sk = :gsi1sk_u0, #attr1 = :attr1_u0, #attr2 = :attr2_u0",
+  "ExpressionAttributeNames": {
+    "#attr4": "attr4",
+    "#gsi1sk": "gsi1sk",
+    "#attr1": "attr1",
+    "#attr2": "attr2"
+  },
+  "ExpressionAttributeValues": {
+    ":attr4_u0": "value6",
+    // This index was successfully built
+    ":gsi1sk_u0": "$update-edgecases_1#attr2_value2#attr4_value6",
+    ":attr1_u0": "value1",
+    ":attr2_u0": "value2"
+  },
+  "TableName": "test_table",
+  "Key": { 
+    "pk": "$service#attr1_value1", 
+    "sk": "$entity_version#attr2_value2" 
+  }
+}
+```
+
 #### Update Method: Set
 
 The `set()` method will accept all attributes defined on the model. Provide a value to apply or replace onto the item.
