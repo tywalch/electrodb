@@ -912,17 +912,19 @@ class Entity {
 		let setAttributes = this.model.schema.applyAttributeSetters(withoutKeyFacets);
 		let { indexKey, updatedKeys } = this._getUpdatedKeys(pk, sk, setAttributes);
 		let translatedFields = this.model.schema.translateToFields(setAttributes);
+		let translatedPrimaryKeys = this.model.schema.translateToFields({...pk, ...sk});
 
 		let item = {
 			...translatedFields,
 			...updatedKeys,
+			...translatedPrimaryKeys,
 		};
 
 		let {
 			UpdateExpression,
 			ExpressionAttributeNames,
 			ExpressionAttributeValues,
-		} = this._updateExpressionBuilder(item);
+		} = this._updateExpressionBuilder(item, Object.keys(translatedPrimaryKeys));
 
 		return {
 			UpdateExpression,
@@ -949,16 +951,18 @@ class Entity {
 		};
 	}
 
-	_updateExpressionBuilder(data) {
+	_updateExpressionBuilder(data, overrideSkip = []) {
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[""]
 		let skip = [
 			...this.model.schema.getReadOnly(),
 			// ...this.model.facets.fields,
 			this.model.indexes[accessPattern].pk.field,
 			this.model.indexes[accessPattern].sk.field
-		];
+		].filter(name => !overrideSkip.includes(name));
 		return this._expressionAttributeBuilder(data, { skip });
 	}
+
+	_getPrimaryKeyFacets
 
 	_queryKeyExpressionAttributeBuilder(index, pk, ...sks) {
 		let translate = { ...this.model.translations.keys[index] };
