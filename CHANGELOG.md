@@ -89,3 +89,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.4.3] - 2021-10-03
 ### Fixed
 - ElectroDB would throw when an `undefined` property was passed to query. This has been changed to not throw if a partial query on that index can be accomplished with the data provided.
+
+## [1.4.4] - 2021-10-16
+### Added
+- Updates did not include composite attributes involved in primary index. Though these values cannot be changed, they should be `set` on update method calls in case the update results in an item insert. [[read more]](./README.md#updates-to-composite-attributes)
