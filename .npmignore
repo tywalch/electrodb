@@ -9,3 +9,6 @@ assets/
 test/
 *.md
 index.test-d.ts
+playground/
+*.sh
+.idea/
