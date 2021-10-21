@@ -101,3 +101,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.4.5] = 2021-10-17
 ### Fixed
 - Improved .npmignore to remove playground oriented files, and created official directory to keep playground in sync with library changes.
+
+## [1.4.6] = 2021-10-20
+### Added, Fixed
+- Adding Entity identifiers to all update operations. When primary index composite attributes were added in 1.4.4, entities were written properly but did not include the identifiers. This resulted in entities being written but not being readable without the query option `ignoreOwnership` being used.

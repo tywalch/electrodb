@@ -881,13 +881,14 @@ describe("Update Item", () => {
                 .params()
 
             expect(setParameters).to.deep.equal({
-                UpdateExpression: "SET #category = :category_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0",
+                UpdateExpression: "SET #category = :category_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 ExpressionAttributeNames: {
                     "#buildingId": "buildingId",
                     "#category": "category",
                     "#cityId": "cityId",
                     "#mallId": "mallId",
-                    "#storeId": "storeId"
+                    "#storeId": "storeId",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 ExpressionAttributeValues: {
                     ":buildingId_u0": "A34",
@@ -895,7 +896,8 @@ describe("Update Item", () => {
                     ":category_u0": "food/meal",
                     ":cityId_u0": cityId,
                     ":mallId_u0": "EastPointe",
-                    ":storeId_u0": "LatteLarrys"
+                    ":storeId_u0": "LatteLarrys",
+                    ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1"
                 },
                 TableName: 'electro',
                 Key: {
@@ -920,13 +922,14 @@ describe("Update Item", () => {
                 .params();
 
             expect(removeParameters).to.deep.equal({
-                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0 REMOVE #discount",
+                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount",
                 "ExpressionAttributeNames": {
                     "#discount": "discount",
                     "#buildingId": "buildingId",
                     "#cityId": "cityId",
                     "#mallId": "mallId",
-                    "#storeId": "storeId"
+                    "#storeId": "storeId",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
                     ":buildingId_u0": "A34",
@@ -934,6 +937,7 @@ describe("Update Item", () => {
                     ":discount0": 10,
                     ":mallId_u0": "EastPointe",
                     ":storeId_u0": "LatteLarrys",
+                    ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1"
                 },
                 "TableName": "electro",
                 "Key": {
@@ -961,7 +965,7 @@ describe("Update Item", () => {
                 .params();
 
             expect(JSON.parse(JSON.stringify(addParameters))).to.deep.equal({
-                "UpdateExpression": "SET #rent = #rent + :rent_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0 ADD #tenant :tenant_u0",
+                "UpdateExpression": "SET #rent = #rent + :rent_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #tenant :tenant_u0",
                 "ExpressionAttributeNames": {
                     "#buildingId": "buildingId",
                     "#category": "category",
@@ -969,7 +973,8 @@ describe("Update Item", () => {
                     "#mallId": "mallId",
                     "#rent": "rent",
                     "#storeId": "storeId",
-                    "#tenant": "tenant"
+                    "#tenant": "tenant",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
                     ":buildingId_u0": "A34",
@@ -978,7 +983,8 @@ describe("Update Item", () => {
                     ":mallId_u0": "EastPointe",
                     ":storeId_u0": "LatteLarrys",
                     ":rent_u0": 100,
-                    ":tenant_u0": ["larry"]
+                    ":tenant_u0": ["larry"],
+                    ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1"
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1006,7 +1012,7 @@ describe("Update Item", () => {
                 .params();
 
             expect(subtractParameters).to.deep.equal({
-                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0",
+                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#buildingId": "buildingId",
                     "#category": "category",
@@ -1014,6 +1020,7 @@ describe("Update Item", () => {
                     "#deposit": "deposit",
                     "#mallId": "mallId",
                     "#storeId": "storeId",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
                 },
                 "ExpressionAttributeValues": {
                     ":buildingId_u0": "A34",
@@ -1021,7 +1028,8 @@ describe("Update Item", () => {
                     ":cityId_u0": cityId,
                     ":deposit_u0": 500,
                     ":mallId_u0": "EastPointe",
-                    ":storeId_u0": "LatteLarrys"
+                    ":storeId_u0": "LatteLarrys",
+                    ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1",
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1051,14 +1059,15 @@ describe("Update Item", () => {
                 .params();
 
             expect(appendParameters).to.deep.equal({
-                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0",
+                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#buildingId": "buildingId",
                     "#category": "category",
                     "#cityId": "cityId",
                     "#mallId": "mallId",
                     "#rentalAgreement": "rentalAgreement",
-                    "#storeId": "storeId"
+                    "#storeId": "storeId",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
                     ":buildingId_u0": "A34",
@@ -1069,7 +1078,8 @@ describe("Update Item", () => {
                     ":rentalAgreement_u0": [{
                         "type": "amendment",
                         "detail": "no soup for you"
-                    }]
+                    }],
+                    ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1"
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1100,14 +1110,15 @@ describe("Update Item", () => {
 
 
             expect(JSON.parse(JSON.stringify(deleteParameters))).to.deep.equal({
-                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0 DELETE #contact :contact_u0",
+                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 DELETE #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#contact": "contact",
                     "#buildingId": "buildingId",
                     "#cityId": "cityId",
                     "#mallId": "mallId",
-                    "#storeId": "storeId"
+                    "#storeId": "storeId",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
                     ":buildingId_u0": "A34",
@@ -1115,7 +1126,8 @@ describe("Update Item", () => {
                     ":storeId_u0": "LatteLarrys",
                     ":cityId_u0": cityId,
                     ":category0": "food/coffee",
-                    ":contact_u0": ["555-345-2222"]
+                    ":contact_u0": ["555-345-2222"],
+                    ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1"
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1152,7 +1164,7 @@ describe("Update Item", () => {
                 .params();
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0 REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
@@ -1170,6 +1182,7 @@ describe("Update Item", () => {
                     "#cityId": "cityId",
                     "#mallId": "mallId",
                     "#storeId": "storeId",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
 
                 },
                 "ExpressionAttributeValues": {
@@ -1188,6 +1201,7 @@ describe("Update Item", () => {
                     ":contact_u0": ["555-345-2222"],
                     ":mallId_u0": "EastPointe",
                     ":storeId_u0": "LatteLarrys",
+                    ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1",
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1289,7 +1303,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #recentCommits[0].#views = #recentCommits[0].#views + :views_u0, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #recentCommits[0].#views = #recentCommits[0].#views + :views_u0, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -1304,7 +1318,8 @@ describe("Update Item", () => {
                 "#recentCommits": "recentCommits",
                 "#message": "message",
                 "#repoName": "repoName",
-                "#repoOwner": "repoOwner"
+                "#repoOwner": "repoOwner",
+                "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
             },
             "ExpressionAttributeValues": {
                 ":followers_u0": params.ExpressionAttributeValues[":followers_u0"],
@@ -1317,7 +1332,8 @@ describe("Update Item", () => {
                 ":custom_u0": "def",
                 ":views_u0": 3,
                 ":repoName_u0": repoName,
-                ":repoOwner_u0": repoOwner
+                ":repoOwner_u0": repoOwner,
+                ":__edb_e___u0": "repositories", ":__edb_v___u0": "1",
             },
             "TableName": "electro",
             "Key": {
@@ -1601,14 +1617,16 @@ describe("Update Item", () => {
                 .params();
 
             expect(params).to.deep.equal({
-                "UpdateExpression": "SET #username = :username_u0 REMOVE #location, #gsi2pk",
+                "UpdateExpression": "SET #username = :username_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #location, #gsi2pk",
                 "ExpressionAttributeNames": {
                     "#location": "location",
                     "#gsi2pk": "gsi2pk",
-                    "#username": "username"
+                    "#username": "username",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
-                    ":username_u0": username
+                    ":username_u0": username,
+                    ":__edb_e___u0": "user", ":__edb_v___u0": "1"
                 },
                 "TableName": "electro",
                 "Key": {
@@ -1743,14 +1761,16 @@ describe("Update Item", () => {
                 .params();
 
             expect(params).to.deep.equal({
-                "UpdateExpression": "SET #username = :username_u0 REMOVE #device, #gsi1sk",
+                "UpdateExpression": "SET #username = :username_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #device, #gsi1sk",
                 "ExpressionAttributeNames": {
                     "#device": "device",
                     "#gsi1sk": "gsi1sk",
-                    "#username": "username"
+                    "#username": "username",
+                    "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
-                    ":username_u0": username
+                    ":username_u0": username,
+                    ":__edb_e___u0": "user", ":__edb_v___u0": "1"
                 },
                 "TableName": "electro",
                 "Key": {
