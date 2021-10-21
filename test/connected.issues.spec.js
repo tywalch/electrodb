@@ -31,11 +31,11 @@ it("#85 should upsert and retrieve record with the update method", async () => {
             transaction: {
                 pk: {
                     field: "pk",
-                    facets: ["accountId"],
+                    composite: ["accountId"],
                 },
                 sk: {
                     field: "sk",
-                    facets: ["transactionId"],
+                    composite: ["transactionId"],
                 },
             },
         },
