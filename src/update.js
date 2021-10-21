@@ -3,7 +3,7 @@ const {ItemOperations, BuilderTypes} = require("./types");
 
 class UpdateExpression extends ExpressionState {
     constructor(props = {}) {
-        super({...props, singleOccurrence: true});
+        super({...props});
         this.operations = {
             set: new Set(),
             remove: new Set(),

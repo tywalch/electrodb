@@ -1296,14 +1296,15 @@ describe("Update Item", () => {
             .delete({tags: updates.tags})
             .data((attr, op) => {
                 op.set(attr.custom.prop1, updates.prop1);
-                op.add(attr.views, op.name(attr.custom.prop3));
+                op.add(attr.views, created.custom.prop3);
+                op.set(attr.license, op.name(attr.files[0]));
                 op.add(attr.recentCommits[0].views, updates.recentCommitsViews);
-                op.remove(attr.recentCommits[1].message)
+                op.remove(attr.recentCommits[1].message);
             })
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #views #custom.#prop3, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #license = #files[0], #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #views :views_u0, #recentCommits[0].#views :views_u1 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -1314,12 +1315,13 @@ describe("Update Item", () => {
                 "#custom": "custom",
                 "#prop1": "prop1",
                 "#views": "views",
-                "#prop3": "prop3",
                 "#recentCommits": "recentCommits",
                 "#message": "message",
                 "#repoName": "repoName",
                 "#repoOwner": "repoOwner",
-                "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
+                "#license": "license",
+                "#__edb_e__": "__edb_e__",
+                "#__edb_v__": "__edb_v__",
             },
             "ExpressionAttributeValues": {
                 ":followers_u0": params.ExpressionAttributeValues[":followers_u0"],
@@ -1330,10 +1332,12 @@ describe("Update Item", () => {
                 ":description_u0": "updated description",
                 ":tags_u0": params.ExpressionAttributeValues[":tags_u0"],
                 ":custom_u0": "def",
-                ":views_u0": 3,
+                ":views_u0": 200,
+                ":views_u1": 3,
                 ":repoName_u0": repoName,
                 ":repoOwner_u0": repoOwner,
-                ":__edb_e___u0": "repositories", ":__edb_v___u0": "1",
+                ":__edb_e___u0": "repositories",
+                ":__edb_v___u0": "1",
             },
             "TableName": "electro",
             "Key": {
@@ -1351,9 +1355,10 @@ describe("Update Item", () => {
             .delete({tags: updates.tags})
             .data((attr, op) => {
                 op.set(attr.custom.prop1, updates.prop1);
-                op.add(attr.views, op.name(attr.custom.prop3));
+                op.add(attr.views, created.custom.prop3);
+                op.set(attr.license, op.name(attr.files[0]));
                 op.add(attr.recentCommits[0].views, updates.recentCommitsViews);
-                op.remove(attr.recentCommits[1].message)
+                op.remove(attr.recentCommits[1].message);
             })
             .go()
 
@@ -1389,7 +1394,7 @@ describe("Update Item", () => {
                 "tag2"
             ],
             "createdAt": createdAt,
-            "license": "apache-2.0",
+            "license": "index.ts",
             "followers": [
                 updates.followers,
                 ...created.followers,
@@ -1400,8 +1405,7 @@ describe("Update Item", () => {
             ],
             "views": created.views + created.custom.prop3,
             "username": repoOwner,
-        }
-
+        };
         expect(item).to.deep.equal(expected);
     });
 

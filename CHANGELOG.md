@@ -109,3 +109,6 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.4.7] = 2021-10-20
 ### Changed
 - Using `add()` update mutation now resolves to `ADD #prop :prop` update expression instead of a `SET #prop = #prop + :prop`
+
+### Fixed
+- Fixed param naming conflict during updates, when map attribute shares a name with another (separate) attribute.
