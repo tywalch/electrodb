@@ -918,6 +918,8 @@ class Entity {
 			...translatedFields,
 			...updatedKeys,
 			...translatedPrimaryKeys,
+			[this.identifiers.entity]: this.getName(),
+			[this.identifiers.version]:this.getVersion()
 		};
 
 		let {
