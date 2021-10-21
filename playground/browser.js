@@ -166,10 +166,6 @@ class Entity extends ElectroDB.Entity {
         return this._demoParams("_params", state, config);
     }
 
-    // go(type, params) {
-    //
-    // }
-
     _makeChain(index, clauses, rootClause, options) {
         const params = clauses.params.action;
         const go = clauses.go.action;

@@ -11,7 +11,8 @@
     "test-types": "node ./node_modules/tsd/dist/cli.js",
     "coverage": "nyc npm run test-all && nyc report --reporter=text-lcov | coveralls",
     "coverage-coveralls-local": "nyc npm run test-all-local && nyc report --reporter=text-lcov | coveralls",
-    "coverage-html-local": "nyc npm run test-all-local && nyc report --reporter=html"
+    "coverage-html-local": "nyc npm run test-all-local && nyc report --reporter=html",
+    "build:browser": "browserify playground/browser.js -o playground/bundle.js"
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,7 @@
     "@types/node": "^15.6.0",
     "@types/uuid": "^8.3.0",
     "aws-sdk": "2.630.0",
+    "browserify": "^17.0.0",
     "chai": "4.2.0",
     "coveralls": "^3.1.0",
     "istanbul": "0.4.5",
