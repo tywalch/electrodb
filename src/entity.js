@@ -1070,6 +1070,9 @@ class Entity {
 			}
 		}
 
+		update.set(this.identifiers.entity, this.getName());
+		update.set(this.identifiers.version, this.getVersion());
+
 		return {
 			UpdateExpression: update.build(),
 			ExpressionAttributeNames: update.getNames(),

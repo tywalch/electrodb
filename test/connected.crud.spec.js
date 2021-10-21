@@ -820,20 +820,20 @@ describe("Entity", async () => {
 				"TableName": "electro"
 			});
 			expect(updateParamsWithSparseSK).to.deep.equal({
-				"UpdateExpression": "SET #name = :name_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #section = :section_u0, #isle = :isle_u0",
+				"UpdateExpression": "SET #name = :name_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #section = :section_u0, #isle = :isle_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 				"ExpressionAttributeNames": {
 					"#name": "name",
 					"#gsi1pk": "gsi1pk",
 					"#gsi1sk": "gsi1sk",
 					"#isle": "isle",
-					"#section": "section"
+					"#section": "section", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
 				},
 				"ExpressionAttributeValues": {
 					":name_u0": "cookies",
 					":gsi1pk_u0": "$inventory#name_cookies",
 					":gsi1sk_u0": "$items_1",
 					":isle_u0": "14",
-					":section_u0": section
+					":section_u0": section, ":__edb_e___u0": "items", ":__edb_v___u0": "1"
 				},
 				"TableName": "electro",
 				"Key": {
@@ -915,18 +915,18 @@ describe("Entity", async () => {
 				"TableName": table
 			});
 			expect(updateParamsWithSparseSK).to.deep.equal({
-				"UpdateExpression": "SET #name = :name_u0, #partition_key_idx2 = :partition_key_idx2_u0, #section = :section_u0, #isle = :isle_u0",
+				"UpdateExpression": "SET #name = :name_u0, #partition_key_idx2 = :partition_key_idx2_u0, #section = :section_u0, #isle = :isle_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 				"ExpressionAttributeNames": {
 					"#name": "name",
 					"#partition_key_idx2": "partition_key_idx2",
 					"#isle": "isle",
-					"#section": "section"
+					"#section": "section", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
 				},
 				"ExpressionAttributeValues": {
 					":name_u0": "cookies",
 					":partition_key_idx2_u0": "$inventory$items_1#name_cookies",
 					":isle_u0": "14",
-					":section_u0": section
+					":section_u0": section, ":__edb_e___u0": "items", ":__edb_v___u0": "1"
 				},
 				"TableName": table,
 				"Key": {
@@ -1650,18 +1650,21 @@ describe("Entity", async () => {
 				let updateParams = entity.update({accountNumber, transactionId}).set({description}).params();
 				expect(updatedAtCount).to.equal(1, "updatedAt was not called the expected amount");
 				expect(updateParams).to.deep.equal({
-					"UpdateExpression": "SET #description = :description_u0, #updatedAt = :updatedAt_u0, #accountNumber = :accountNumber_u0, #transactionId = :transactionId_u0",
+					"UpdateExpression": "SET #description = :description_u0, #updatedAt = :updatedAt_u0, #accountNumber = :accountNumber_u0, #transactionId = :transactionId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 					"ExpressionAttributeNames": {
 						"#description": "description",
 						"#updatedAt": "updatedAt",
 						"#accountNumber": "accountNumber",
-						"#transactionId": "transactionId"
+						"#transactionId": "transactionId",
+						"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
 					},
 					"ExpressionAttributeValues": {
 						":accountNumber_u0": accountNumber,
 						":transactionId_u0": transactionId,
 						":description_u0": "My Description",
-						":updatedAt_u0": updatedAt
+						":updatedAt_u0": updatedAt,
+						":__edb_e___u0": "transaction",
+						":__edb_v___u0": "1"
 					},
 					"TableName": table,
 					"Key": {
@@ -1881,18 +1884,18 @@ describe("Entity", async () => {
 					}
 				]);
 				expect(updateParams).to.deep.equal({
-					"UpdateExpression": "SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
+					"UpdateExpression": "SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 					ExpressionAttributeNames: {
 						"#prop1": "prop1",
 						"#prop2": "prop2",
 						'#prop3': 'prop3',
-						'#prop4': 'prop4'
+						'#prop4': 'prop4', "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
 					},
 					ExpressionAttributeValues: {
 						":prop1_u0": prop1,
 						":prop2_u0": "prop2",
 						':prop3_u0': 'prop3_fromsetter',
-						':prop4_u0': 'prop4_fromsetter'
+						':prop4_u0': 'prop4_fromsetter', ":__edb_e___u0": "entity", ":__edb_v___u0": "1"
 					},
 					TableName: 'electro',
 					Key: {
@@ -1910,18 +1913,19 @@ describe("Entity", async () => {
 					}
 				]);
 				expect(patchParams).to.deep.equal({
-					UpdateExpression: "SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
+					UpdateExpression: "SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 					ExpressionAttributeNames: {
 						'#prop3': 'prop3',
 						'#prop4': 'prop4',
 						"#prop1": "prop1",
-						"#prop2": "prop2"
+						"#prop2": "prop2",
+						"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
 					},
-					ExpressionAttributeValues: { ':prop3_u0': 'prop3_fromsetter', ':prop4_u0': 'prop4_fromsetter', ":prop1_u0": prop1, ":prop2_u0": "prop2" },
+					ExpressionAttributeValues: { ':prop3_u0': 'prop3_fromsetter', ':prop4_u0': 'prop4_fromsetter', ":prop1_u0": prop1, ":prop2_u0": "prop2", ":__edb_e___u0": "entity", ":__edb_v___u0": "1" },
 					TableName: 'electro',
 					Key: {
 						pk: `$service#prop1_${prop1}`,
-						sk: '$entity_1#prop2_prop2'
+						sk: '$entity_1#prop2_prop2',
 					},
 					ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
 				});
@@ -2038,9 +2042,9 @@ describe("Entity", async () => {
 					}
 				]);
 				expect(updateParams).to.deep.equal({
-					UpdateExpression: "SET #prop6 = :prop6_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
-					ExpressionAttributeNames: { '#prop6': 'prop6', "#prop1": "prop1", "#prop2": "prop2" },
-					ExpressionAttributeValues: { ':prop6_u0': 'prop6_fromsetter', ":prop1_u0": prop1, ":prop2_u0": "prop2"},
+					UpdateExpression: "SET #prop6 = :prop6_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+					ExpressionAttributeNames: { '#prop6': 'prop6', "#prop1": "prop1", "#prop2": "prop2", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__" },
+					ExpressionAttributeValues: { ':prop6_u0': 'prop6_fromsetter', ":prop1_u0": prop1, ":prop2_u0": "prop2", ":__edb_e___u0": "entity", ":__edb_v___u0": "1"},
 					TableName: 'electro',
 					Key: {
 						pk: `$service#prop1_${prop1}`,
@@ -2051,12 +2055,13 @@ describe("Entity", async () => {
 					{ value: "prop6", attr: "prop6", method: "set" },
 				]);
 				expect(patchParams).to.deep.equal({
-					UpdateExpression: "SET #prop6 = :prop6_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
-					ExpressionAttributeNames: { '#prop6': 'prop6', "#prop1": "prop1", "#prop2": "prop2" },
+					UpdateExpression: "SET #prop6 = :prop6_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+					ExpressionAttributeNames: { '#prop6': 'prop6', "#prop1": "prop1", "#prop2": "prop2", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"},
 					ExpressionAttributeValues: {
 						':prop6_u0': 'prop6_fromsetter',
 						":prop2_u0": "prop2",
 						":prop1_u0": prop1,
+						":__edb_e___u0": "entity", ":__edb_v___u0": "1"
 					},
 					TableName: 'electro',
 					Key: {
@@ -2174,9 +2179,9 @@ describe("Entity", async () => {
 					},
 				]);
 				expect(updateParams).to.deep.equal({
-					UpdateExpression: "SET #prop6 = :prop6_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
-					ExpressionAttributeNames: { '#prop6': 'prop6', '#prop4': 'prop4', "#prop1": "prop1", "#prop2": "prop2" },
-					ExpressionAttributeValues: { ':prop6_u0': 'prop6_fromsetter', ':prop4_u0': 'prop4_fromvaluefromsetter', ":prop2_u0": "prop2", ":prop1_u0": prop1},
+					UpdateExpression: "SET #prop6 = :prop6_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+					ExpressionAttributeNames: { '#prop6': 'prop6', '#prop4': 'prop4', "#prop1": "prop1", "#prop2": "prop2", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__" },
+					ExpressionAttributeValues: { ':prop6_u0': 'prop6_fromsetter', ':prop4_u0': 'prop4_fromvaluefromsetter', ":prop2_u0": "prop2", ":prop1_u0": prop1, ":__edb_e___u0": "entity", ":__edb_v___u0": "1"},
 					TableName: 'electro',
 					Key: {
 						pk: `$service#prop1_${prop1}`,
@@ -2188,9 +2193,9 @@ describe("Entity", async () => {
 					{ value: "prop4", attr: "prop4", method: "set", watched: undefined },
 				]);
 				expect(patchParams).to.deep.equal({
-					UpdateExpression: "SET #prop6 = :prop6_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0",
-					ExpressionAttributeNames: { '#prop6': 'prop6', '#prop4': 'prop4', "#prop1": "prop1", "#prop2": "prop2" },
-					ExpressionAttributeValues: { ':prop6_u0': 'prop6_fromsetter', ':prop4_u0': 'prop4_fromvaluefromsetter', ":prop1_u0": prop1, ":prop2_u0": "prop2" },
+					UpdateExpression: "SET #prop6 = :prop6_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+					ExpressionAttributeNames: { '#prop6': 'prop6', '#prop4': 'prop4', "#prop1": "prop1", "#prop2": "prop2", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__" },
+					ExpressionAttributeValues: { ':prop6_u0': 'prop6_fromsetter', ':prop4_u0': 'prop4_fromvaluefromsetter', ":prop1_u0": prop1, ":prop2_u0": "prop2", ":__edb_e___u0": "entity", ":__edb_v___u0": "1" },
 					TableName: 'electro',
 					Key: {
 						pk: `$service#prop1_${prop1}`,
