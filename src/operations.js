@@ -56,14 +56,11 @@ const UpdateOperations = {
             let operation = "";
             let expression = "";
             switch(attr.type) {
+                case AttributeTypes.number:
                 case AttributeTypes.any:
                 case AttributeTypes.set:
                     operation = ItemOperations.add;
                     expression = `${path} ${value}`;
-                    break;
-                case AttributeTypes.number:
-                    operation = ItemOperations.set;
-                    expression = `${path} = ${path} + ${value}`;
                     break;
                 default:
                     throw new Error(`Invalid Update Attribute Operation: "ADD" Operation can only be performed on attributes with type "number", "set", or "any".`);
