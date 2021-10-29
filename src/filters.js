@@ -39,7 +39,7 @@ class FilterFactory {
 									);
 								}
 							}
-							let expression = template(attribute, prop, ...attrValues);
+							let expression = template({}, attribute, prop, ...attrValues);
 							return expression.trim();
 						};
 					},

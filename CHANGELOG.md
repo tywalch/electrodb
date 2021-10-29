@@ -105,3 +105,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.4.6] = 2021-10-20
 ### Added, Fixed
 - Adding Entity identifiers to all update operations. When primary index composite attributes were added in 1.4.4, entities were written properly but did not include the identifiers. This resulted in entities being written but not being readable without the query option `ignoreOwnership` being used.
+
+## [1.4.7] = 2021-10-20
+### Changed
+- Using `add()` update mutation now resolves to `ADD #prop :prop` update expression instead of a `SET #prop = #prop + :prop`
+
+### Fixed
+- Fixed param naming conflict during updates, when map attribute shares a name with another (separate) attribute.
