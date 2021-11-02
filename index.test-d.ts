@@ -482,8 +482,18 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<"paramtest">(entityWithSK.get({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.get({attr1: "abc"}).params<"paramtest">());
 
-    expectAssignable<Promise<[WithSKMyIndexCompositeAttributes[], Item[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
-    expectAssignable<Promise<[WithoutSKMyIndexCompositeAttributes[], ItemWithoutSK[]]>>(entityWithoutSK.get([{attr1: "abc"}]).go());
+    expectType<Promise<[Item[], WithSKMyIndexCompositeAttributes[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
+    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go()
+        .then(([items, unprocessed]) => {
+            expectAssignable<Item[]>(items);
+            expectAssignable<WithSKMyIndexCompositeAttributes[]>(unprocessed);
+        })
+    expectType<Promise<[ItemWithoutSK[], WithoutSKMyIndexCompositeAttributes[]]>>(entityWithoutSK.get([{attr1: "abc"}]).go());
+    entityWithoutSK.get([{attr1: "abc"}]).go()
+        .then(([items, unprocessed]) => {
+            expectAssignable<ItemWithoutSK[]>(items);
+            expectAssignable<WithoutSKMyIndexCompositeAttributes[]>(unprocessed);
+        })
 
 // Delete
     // Single
