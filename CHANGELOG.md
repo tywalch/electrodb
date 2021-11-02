@@ -112,3 +112,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Fixed
 - Fixed param naming conflict during updates, when map attribute shares a name with another (separate) attribute.
+
+## [1.4.8] = 2021-11-01
+### Fixed
+- Addressed issue#90 to flip batchGet's response tuple type definition.
