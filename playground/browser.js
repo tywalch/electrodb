@@ -123,13 +123,14 @@ class Entity extends ElectroDB.Entity {
     constructor(...params) {
         super(...params);
         this.client = {
-            get: () => promiseCallback({Item: {}}),
-            query: () => promiseCallback({Items: []}),
             put: () => promiseCallback({}),
             delete: () => promiseCallback({}),
             update: () => promiseCallback({}),
+            get: () => promiseCallback({Item: {}}),
+            query: () => promiseCallback({Items: []}),
+            scan: () => promiseCallback({Items: []}),
             batchWrite: () => promiseCallback({UnprocessedKeys: {[this._getTableName()]: {Keys: []}}}),
-            batchGet: () => promiseCallback({Responses: {[this._getTableName()]: []}, UnprocessedKeys: {[this._getTableName()]: {Keys: []}}})
+            batchGet: () => promiseCallback({Responses: {[this._getTableName()]: []}, UnprocessedKeys: {[this._getTableName()]: {Keys: []}}}),
         };
     }
 
