@@ -26,7 +26,6 @@ function createClient({mockResponses} = {}) {
             } else {
               return client.query(params).promise();
             }
-
           }
         }
       }
@@ -44,7 +43,7 @@ function makeTasksModel() {
     attributes: {
       task: {
         type: "string",
-        default: () => uuid(),
+        // default: () => uuid(),
       },
       project: {
         type: "string",
@@ -111,6 +110,7 @@ class Tasks extends Entity {
     super(model, {client, table});
     this.name = model.entity
     this.loaded = [];
+    this.data = [];
     this.occurrences = {
       employees: {},
       projects: {}
@@ -148,6 +148,7 @@ class Tasks extends Entity {
     this.occurrences.employees[employee]++;
     this.occurrences.projects[project]++;
     return {
+      task: uuid(),
       employee,
       project,
       type: Tasks.types[this.getRandomNumber(0, Tasks.types.length)],
@@ -183,13 +184,16 @@ class Tasks extends Entity {
     let inserts = [];
     for (let i = 0; i < n; i++) {
       let randomRecord = this.generateRandomRecord();
-      let putRecord = this.put(randomRecord).go()
+      let {Item} = this.put(randomRecord).params();
+      this.data.push(Item);
+      let putRecord = this.put(randomRecord)
+          .go()
           .then(result => {
             this.loaded.push(result);
-            return result;
           });
       inserts.push(putRecord);
     }
+
     return Promise.all(inserts)
   }
 
@@ -541,25 +545,111 @@ describe("Page", async () => {
       }
     });
 
+    it("entity query should continue to query until 'limit' option is reached", async () => {
+      const ExclusiveStartKey = {};
+      const [one, two, three, four, five, six] = tasks.data;
+      const {client, calls} = createClient({
+        mockResponses: [
+          {
+            Items: [one, two, three],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [four, five, six],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: undefined,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          }
+        ]
+      });
+      const pages = 3;
+      const limit = 5;
+      const entity = new Tasks(TasksModel, {client, table});
+      const results = await entity.query.task({task: "my_task"}).go({pages, limit});
+      expect(results).to.be.an("array").with.length(6);
+      expect(calls).to.have.length(2);
+      for (let i = 0; i < calls.length; i++) {
+        const call = calls[i];
+        if (i === 0) {
+          expect(call.ExclusiveStartKey).to.be.undefined;
+        } else {
+          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+        }
+      }
+    });
+
+    it("entity query should only count entities belonging to the collection entities to fulfill 'limit' option requirements", async () => {
+      const ExclusiveStartKey = {};
+      const [one, two, three, four, five, six] = tasks.data;
+      const {client, calls} = createClient({
+        mockResponses: [
+          {
+            Items: [{}, {}, one, two, three, {}, {}],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [four, five, six, {}],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: undefined,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          }
+        ]
+      });
+      const pages = 3;
+      const limit = 5;
+      const entity = new Tasks(TasksModel, {client, table});
+      const results = await entity.query.task({task: "my_task"}).go({pages, limit});
+      expect(results).to.be.an("array").with.length(6);
+      expect(calls).to.have.length(2);
+      for (let i = 0; i < calls.length; i++) {
+        const call = calls[i];
+        if (i === 0) {
+          expect(call.ExclusiveStartKey).to.be.undefined;
+        } else {
+          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+        }
+      }
+    });
+
     it("collection query should continue to query until LastEvaluatedKey is not returned", async () => {
       const ExclusiveStartKey = {};
       const {client, calls} = createClient({
         mockResponses: [
           {
             Items: [],
-            LastEvaluatedKey: ExclusiveStartKey
+            LastEvaluatedKey: ExclusiveStartKey,
           },
           {
             Items: [],
-            LastEvaluatedKey: ExclusiveStartKey
+            LastEvaluatedKey: ExclusiveStartKey,
           },
           {
             Items: [],
-            LastEvaluatedKey: ExclusiveStartKey
+            LastEvaluatedKey: ExclusiveStartKey,
           },
           {
             Items: [],
-            LastEvaluatedKey: undefined
+            LastEvaluatedKey: undefined,
           },
           {
             Items: [],
@@ -630,19 +720,130 @@ describe("Page", async () => {
       }
     });
 
+    it("collection query should continue to query until 'limit' option is reached", async () => {
+      const ExclusiveStartKey = {};
+      const tasks = new Tasks(makeTasksModel(), {client, table});
+      const tasks2 = new Tasks(makeTasksModel(), {client, table});
+
+      await tasks.load(10);
+      await tasks2.load(10);
+      const [one, two, three, four, five, six] = tasks.data;
+      const [seven, eight, nine, ten] = tasks2.data;
+      const created = createClient({
+        mockResponses: [
+          {
+            Items: [one, two, three, seven, eight, nine],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [four, five, six, ten],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: undefined
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          }
+        ]
+      });
+      const service = new Service({tasks, tasks2}, {client: created.client, table});
+      const pages = 3;
+      const limit = 9;
+      const employee = "my_employee";
+      const results = await service.collections.assignments({employee}).go({pages, limit});
+      expect(results.tasks).to.be.an("array").with.length(6);
+      expect(results.tasks2).to.be.an("array").with.length(4);
+      expect(created.calls).to.have.length(2);
+      for (let i = 0; i < created.calls.length; i++) {
+        const call = created.calls[i];
+        if (i === 0) {
+          expect(call.ExclusiveStartKey).to.be.undefined;
+        } else {
+          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+        }
+      }
+    });
+
+    it("collection query should only count entities belonging to the collection entities to fulfill 'limit' option requirements", async () => {
+      const ExclusiveStartKey = {};
+      const tasks = new Tasks(makeTasksModel(), {client, table});
+      const tasks2 = new Tasks(makeTasksModel(), {client, table});
+
+      await tasks.load(10);
+      await tasks2.load(10);
+      const [three, four, five, six] = tasks.data;
+      const [seven, eight, nine] = tasks2.data;
+      const created = createClient({
+        mockResponses: [
+          {
+            Items: [{}, {}, three, seven, eight, nine, {}, {}],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [four, five, six, {}],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: undefined
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          }
+        ]
+      });
+      const service = new Service({tasks, tasks2}, {client: created.client, table});
+      const pages = 3;
+      const limit = 6;
+      const employee = "my_employee";
+      const results = await service.collections.assignments({employee}).go({pages, limit});
+      expect(results.tasks).to.be.an("array").with.length(4);
+      expect(results.tasks2).to.be.an("array").with.length(3);
+      expect(created.calls).to.have.length(2);
+      for (let i = 0; i < created.calls.length; i++) {
+        const call = created.calls[i];
+        if (i === 0) {
+          expect(call.ExclusiveStartKey).to.be.undefined;
+        } else {
+          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+        }
+      }
+    });
+
     it("should automatically paginate all results with query", async () => {
-      const limit = Math.round(total * .2);
       const project = Tasks.projects[0];
-      const results = await tasks.query.projects({project}).go({limit});
+      const occurrences = tasks.occurrences.projects[project];
+      const overLimit = occurrences + 10;
+      const underLimit = occurrences - 10;
+      const results = await tasks.query.projects({project}).go({limit: overLimit});
+      const limited = await tasks.query.projects({project}).go({limit: underLimit});
       const loaded = tasks.filterLoaded({project});
       expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
-      expect(results).to.have.length(tasks.occurrences.projects[project]);
+      expect(results).to.have.length(occurrences);
+      expect(limited).to.have.length(underLimit);
     });
 
     it("should automatically paginate all results with collection", async () => {
-      const limit = Math.round(total * .2);
       const employee = Tasks.employees[0];
-      const results = await service.collections.assignments({employee}).go({limit});
+      const limit1 = tasks.occurrences.employees[employee];
+      const limit2 = tasks2.occurrences.employees[employee];
+      const limit3 = tasks3.occurrences.employees[employee];
+      const overLimit = limit1 + limit2 + limit3 + 10;
+      const underLimit = limit1 + limit2 + limit3 - 10;
+      const results = await service.collections.assignments({employee}).go({limit: overLimit});
+      const limited = await service.collections.assignments({employee}).go({limit: underLimit})
       const tasks1Loaded = tasks.filterLoaded({employee});
       const tasks2Loaded = tasks2.filterLoaded({employee});
       const tasks3Loaded = tasks3.filterLoaded({employee});
@@ -653,36 +854,115 @@ describe("Page", async () => {
       expect(results.tasks2).to.have.length(tasks2.occurrences.employees[employee]);
       expect(results.tasks3).to.have.length(tasks3.occurrences.employees[employee]);
       expect(results.tasks3).to.have.length(0);
+      expect(limited.tasks.length + limited.tasks2.length + limited.tasks3.length).to.equal(underLimit);
     });
 
-    it("should only iterate through the specified number of pages for entity queries", async () => {
-      const employee = Tasks.employees[0];
-      const occurrences = tasks.occurrences.employees[employee];
-      const pages = 2;
-      const limit = Math.floor(occurrences / 4);
-      const results = await tasks.query.assigned({employee}).go({limit, pages});
-      expect(limit).to.be.greaterThan(0);
-      expect(occurrences).to.be.greaterThan(limit * pages);
-      expect(results).to.have.length(limit * pages);
+    // it("should only iterate through the specified number of pages for entity queries", async () => {
+    //   const employee = Tasks.employees[0];
+    //   const occurrences = tasks.occurrences.employees[employee];
+    //   const pages = 2;
+    //   const limit = Math.floor(occurrences / 4);
+    //   const results = await tasks.query.assigned({employee}).go({limit, pages});
+    //   expect(limit).to.be.greaterThan(0);
+    //   expect(occurrences).to.be.greaterThan(limit * pages);
+    //   expect(results).to.have.length(limit * pages);
+    // });
+
+    // it("should only iterate through the specified number of pages for collections", async () => {
+    //   const employee = Tasks.employees[0];
+    //   const occurrences1 = tasks.occurrences.employees[employee];
+    //   const occurrences2 = tasks2.occurrences.employees[employee];
+    //   const limit = [ occurrences1, occurrences2 ]
+    //       .map((occurrence) => Math.floor(occurrence / 4))
+    //       .reduce((min, val) => Math.min(min, val), Number.MAX_VALUE);
+    //   const pages = 2;
+    //   expect(limit).to.be.greaterThan(0);
+    //   expect(occurrences1).to.be.greaterThan(limit * pages);
+    //   expect(occurrences2).to.be.greaterThan(limit * pages);
+    //   const results = await service.collections.assignments({employee}).go({limit, pages});
+    //   expect(results.tasks.length + results.tasks2.length + results.tasks3.length).to.equal(limit * pages);
+    // });
+
+    it("should throw if 'pages' option is less than one or not a valid number", async () => {
+      const employee = "employee";
+      const project = "project";
+      const message = "Query option 'pages' must be of type 'number' and greater than zero. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-pages-option";
+      const result1 = await service.collections.assignments({employee}).go({pages: -1})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result1.success).to.be.false;
+      expect(result1.message).to.equal(message);
+
+      const result2 = await service.collections.assignments({employee}).go({pages: 0})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result2.success).to.be.false;
+      expect(result2.message).to.equal(message);
+
+      const result3 = await service.collections.assignments({employee}).go({pages: "weasel"})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result3.success).to.be.false;
+      expect(result3.message).to.equal(message);
+
+      const result4 = await tasks.query.projects({project}).go({pages: -1})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result4.success).to.be.false;
+      expect(result4.message).to.equal(message);
+
+      const result5 = await tasks.query.projects({project}).go({pages: 0})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result5.success).to.be.false;
+      expect(result5.message).to.equal(message);
+
+      const result6 = await tasks.query.projects({project}).go({pages: "weasel"})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result6.success).to.be.false;
+      expect(result6.message).to.equal(message);
     });
 
-    it("should only iterate through the specified number of pages for collections", async () => {
-      const employee = Tasks.employees[0];
-      const occurrences1 = tasks.occurrences.employees[employee];
-      const occurrences2 = tasks2.occurrences.employees[employee];
-      const limit = [ occurrences1, occurrences2 ]
-          .map((occurrence) => Math.floor(occurrence / 4))
-          .reduce((min, val) => Math.min(min, val), Number.MAX_VALUE);
-      const pages = 2;
-      expect(limit).to.be.greaterThan(0);
-      expect(occurrences1).to.be.greaterThan(limit * pages);
-      expect(occurrences2).to.be.greaterThan(limit * pages);
-      const results = await service.collections.assignments({employee}).go({limit, pages});
-      expect(results.tasks.length + results.tasks2.length + results.tasks3.length).to.equal(limit * pages);
-    });
+    it("should throw if 'limit' option is less than one or not a valid number", async () => {
+      const employee = "employee";
+      const project = "project";
+      const message = "Query option 'limit' must be of type 'number' and greater than zero. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-limit-option";
+      const result1 = await service.collections.assignments({employee}).go({limit: -1})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result1.success).to.be.false;
+      expect(result1.message).to.equal(message);
 
-    it("should throw if number is less than one or not a valid number", async () => {
+      const result2 = await service.collections.assignments({employee}).go({limit: 0})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result2.success).to.be.false;
+      expect(result2.message).to.equal(message);
 
+      const result3 = await service.collections.assignments({employee}).go({limit: "weasel"})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result3.success).to.be.false;
+      expect(result3.message).to.equal(message);
+
+      const result4 = await tasks.query.projects({project}).go({limit: -1})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result4.success).to.be.false;
+      expect(result4.message).to.equal(message);
+
+      const result5 = await tasks.query.projects({project}).go({limit: 0})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result5.success).to.be.false;
+      expect(result5.message).to.equal(message);
+
+      const result6 = await tasks.query.projects({project}).go({limit: "weasel"})
+          .then(() => ({success: true}))
+          .catch(err => ({success: false, message: err.message}));
+      expect(result6.success).to.be.false;
+      expect(result6.message).to.equal(message);
     });
 
     it("should return the response received by options.parse if value is not array", async () => {

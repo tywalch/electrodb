@@ -2605,7 +2605,7 @@ Option            | Default | Notes
 
 ElectroDB queries use DynamoDB's `query` method to find records based on your table's indexes.
 
-> _NOTE: By default, ElectroDB will paginate through all items that match your query. To limit the number of pages ElectroDB will query through, read more about the [Query Option](#query-options) `pages`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
+> _NOTE: By default, ElectroDB will paginate through all items that match your query. To limit the number of items ElectroDB will retrieve, read more about the [Query Options](#query-options) `pages` and `limit`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
 
 Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is crucial to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
 1. You must always supply the **Partition Key** in full for all queries to **DynamoDB**.
@@ -2817,7 +2817,7 @@ The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete
 
 ElectroDB queries use DynamoDB's `query` method to find records based on your table's indexes. To read more about queries checkout the section [Building Queries](#building-queries)
 
-> _NOTE: By default, ElectroDB will paginate through all items that match your query. To limit the number of pages ElectroDB will query through, read more about the [Query Option](#query-options) `pages`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
+> _NOTE: By default, ElectroDB will paginate through all items that match your query. To limit the number of items ElectroDB will retrieve, read more about the [Query Options](#query-options) `pages` and `limit`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
 
 ### Get Method
 Provide all Table Index composite attributes in an object to the `get` method. In the event no record is found, a value of `null` will be returned.
@@ -4293,7 +4293,7 @@ concurrent      | `1`                  | When performing batch operations, how m
 unprocessed     | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
 response        | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
 ignoreOwnership | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
-limit           | _none_               | A convenience option for the query parameter `Limit`, used to specify the number of records to retrieve while performing a query.
+limit           | _none_               | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.
 pages           | ∞                    | How many DynamoDB pages should a query iterate through before stopping. By default ElectroDB paginate through all results for your query.
 
 # Errors:
@@ -4562,6 +4562,15 @@ When performing a query [Query](#building-queries) you can pass a [Query Options
 
 *What to do about it:*
 Expect this error only if you're providing a `pages` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
+
+### Invalid Limit Option
+*Code: 2006*
+
+*Why this occurred:*
+When performing a query [Query](#building-queries) you can pass a [Query Options](#query-options) called `limit`, which impacts how many DynamoDB items a query should return. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+
+*What to do about it:*
+Expect this error only if you're providing a `limit` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### aws-error
 *Code: 4001*

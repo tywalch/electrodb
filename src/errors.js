@@ -157,6 +157,12 @@ const ErrorCodes = {
     name: "InvalidPagesOption",
     sym: ErrorCode,
   },
+  InvalidLimitOption: {
+    code: 2006,
+    section: "invalid-limit-option",
+    name: "InvalidLimitOption",
+    sym: ErrorCode,
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",

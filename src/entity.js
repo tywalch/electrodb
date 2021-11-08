@@ -332,30 +332,45 @@ class Entity {
 			? {}
 			: [];
 		let ExclusiveStartKey;
-		let max = this._normalizePagesValue(config.pages);
+		let pages = this._normalizePagesValue(config.pages);
+		let max = this._normalizeLimitValue(config.limit);
+		let iterations = 0;
 		let count = 0;
 		do {
-			count++;
-			let response = await this._exec("query", {ExclusiveStartKey, ...parameters});
+			let limit = max === undefined
+				? parameters.Limit
+				: max - count;
+			let response = await this._exec("query", {ExclusiveStartKey, ...parameters, Limit: limit});
+
 			ExclusiveStartKey = response.LastEvaluatedKey;
+
 			if (validations.isFunction(config.parse)) {
 				response = config.parse(config, response);
 			} else {
 				response = this.formatResponse(response, parameters.IndexName, config);
 			}
+
 			if (config.raw || config._isPagination) {
 				return response;
 			} else if (config._isCollectionQuery) {
 				for (const entity in response) {
+					if (max) {
+						count += response[entity].length;
+					}
 					results[entity] = results[entity] || [];
 					results[entity] = [...results[entity], ...response[entity]];
 				}
 			} else if (Array.isArray(response)) {
+				if (max) {
+					count += response.length;
+				}
 				results = [...results, ...response];
 			} else {
 				return response;
 			}
-		} while(ExclusiveStartKey && count < max);
+
+			iterations++;
+		} while(ExclusiveStartKey && iterations < pages && (max === undefined || count < max));
 		return results;
 	}
 
@@ -609,6 +624,16 @@ class Entity {
 		return value;
 	}
 
+	_normalizeLimitValue(value) {
+		if (value !== undefined) {
+			value = parseInt(value);
+			if (isNaN(value) || value < 1) {
+				throw new e.ElectroError(e.ErrorCodes.InvalidLimitOption, "Query option 'limit' must be of type 'number' and greater than zero.");
+			}
+		}
+		return value;
+	}
+
 	_deconstructKeys(index, keyType, key, backupFacets = {}) {
 		if (typeof key !== "string" || key.length === 0) {
 			return null;
@@ -780,7 +805,8 @@ class Entity {
 				config.unprocessed = UnprocessedTypes.raw;
 			}
 
-			if (!isNaN(option.limit)) {
+			if (option.limit !== undefined) {
+				config.limit = option.limit;
 				config.params.Limit = option.limit;
 			}
 
