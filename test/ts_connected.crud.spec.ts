@@ -2370,8 +2370,7 @@ describe("Entity", async () => {
             const results = await paginateScan();
             const parsed = entity.parse(results);
             expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
-        // @ts-ignore
-        }, {timeout: 10000});
+        }).timeout(10000);
     });
     describe("Key fields that match Attribute fields", () => {
         const table = "electro_keynamesattributenames";
