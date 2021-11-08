@@ -119,4 +119,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [1.5.0] = 2021-11-07
 ### Changed
-- Queries will now fully paginate all responses. Prior to this change, ElectroDB would only return items from a single ElectroDB query result. Now ElectroDB will paginate through all query results. This will impact both uses of entity queries and service collections. If a finite number of pages is desired, use the query option [pages](./README.md#query-options) to set a max number of pagination iterations. [[read more](./README.md#query-method)]
+- Queries will now fully paginate all responses. Prior to this change, ElectroDB would only return items from a single ElectroDB query result. Now ElectroDB will paginate through all query results. This will impact both uses of entity queries and service collections. [[read more](./README.md#query-method)]
+- The query option `limit` has an extended meaning with the change to automatically paginate records on query. The option `limit` now represents a target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned. [[read more](./README.md#query-options)]
+### Added
+- A new query option `pages` has been added to coincide with the change to automatically paginate all records when queried. The `pages` option sets a max number of pagination iterations ElectroDB will perform on a query. When this option is paired with `limit`, ElectroDB will respect the first condition reached. [[read more](./README.md#query-options)]
