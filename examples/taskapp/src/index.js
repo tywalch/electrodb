@@ -25,16 +25,16 @@ async function execute() {
    * For more examples checkout the README.
   **/
   // Make table:
-  // await loader.makeTable();
+  await loader.makeTable();
 
   // Load table:
-  // await loader.loadTable({employees: 800, tasks: 800});
+  await loader.loadTable({employees: 800, tasks: 800});
 
   // Drop table:
   // await loader.dropTable()
 
   // Query table:
-  await query();
+  // await query();
 }
 
 async function query() {

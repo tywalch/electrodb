@@ -6,31 +6,28 @@
 	},
 	"attributes": {
 		"task": {
-      "type": "string",
-      "required": true
+		  "type": "string",
+		  "required": true
 		},
 		"project": {
-      "type": "string",
-      "required": true
+		  "type": "string",
+		  "required": true
 		},
 		"employee": {
-      "type": "string",
-      "required": true
+		  "type": "string",
+		  "required": true
 		},
 		"description": {
 			"type": "string"
 		},
 		"status": {
-      "type": ["open", "in-progress", "closed"],
-      "default": "open"
+		  "type": ["open", "in-progress", "closed"],
+		  "default": "open"
 		},
 		"points": {
-      "type": "number",
-      "required": true
-    },
-		"comments": {
-			"type": "any"
-    }
+		  "type": "number",
+		  "required": true
+    	}
 	},
 	"indexes": {
 		"task": {

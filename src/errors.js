@@ -151,6 +151,12 @@ const ErrorCodes = {
     name: "InvalidConcurrencyOption",
     sym: ErrorCode
   },
+  InvalidPagesOption: {
+    code: 2005,
+    section: "invalid-pages-option",
+    name: "InvalidPagesOption",
+    sym: ErrorCode,
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",

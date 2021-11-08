@@ -2338,23 +2338,40 @@ describe("Entity", async () => {
                 TableName: 'electro'
             }).promise();
 
-            const params = {
-                TableName: 'electro',
-                ReturnValues: 'ALL_OLD',
-                ExpressionAttributeNames: {
-                    '#pk': 'pk',
-                    '#sk': 'sk',
-                },
-                ExpressionAttributeValues: {
-                    ':pk': '$testing#prop1_',
-                    ':sk': `$parse_test_1#prop2_${prop2}`,
-                },
-                FilterExpression: 'begins_with(#pk, :pk) AND begins_with(#sk, :sk)'
+            async function paginateScan() {
+                let results: any;
+                let ExclusiveStartKey;
+                let count = 0;
+                do {
+                    count++;
+                    const params = {
+                        TableName: 'electro',
+                        ReturnValues: 'ALL_OLD',
+                        ExpressionAttributeNames: {
+                            '#pk': 'pk',
+                            '#sk': 'sk',
+                        },
+                        ExpressionAttributeValues: {
+                            ':pk': '$testing#prop1_',
+                            ':sk': `$parse_test_1#prop2_${prop2}`,
+                        },
+                        FilterExpression: 'begins_with(#pk, :pk) AND begins_with(#sk, :sk)'
+                    }
+                    results = await client.scan(params).promise();
+                    if (results?.Items?.length && results?.Items?.length > 0) {
+                        return results;
+                    } else if (results.LastEvaluatedKey) {
+                        ExclusiveStartKey = results.LastEvaluatedKey;
+                    } else {
+                        return results;
+                    }
+                } while (ExclusiveStartKey);
             }
-            const results = await client.scan(params).promise();
+            const results = await paginateScan();
             const parsed = entity.parse(results);
             expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
-        });
+        // @ts-ignore
+        }, {timeout: 10000});
     });
     describe("Key fields that match Attribute fields", () => {
         const table = "electro_keynamesattributenames";

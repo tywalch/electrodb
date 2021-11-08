@@ -1048,10 +1048,10 @@ let getKeys = ((val) => {}) as GetKeys;
     type MatchParamsParams = Parameter<typeof matchParams>;
     type MatchParamsParamsWithoutSK = Parameter<typeof matchParamsWithoutSK>;
 
-    expectAssignable<FindGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<FindGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<MatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<MatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<FindGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", pages: 123});
+    expectAssignable<FindGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", pages: 123});
+    expectAssignable<MatchGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", pages: 123});
+    expectAssignable<MatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", pages: 123});
 
     expectAssignable<FindParamsParams>({params: {}, table: "abc"});
     expectAssignable<FindParamsParamsWithoutSK>({params: {}, table: "abc"});
@@ -1081,10 +1081,10 @@ let getKeys = ((val) => {}) as GetKeys;
     type QueryPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
     type QueryPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
 
-    expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
-    expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
-    expectAssignable<MatchPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
-    expectAssignable<MatchPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
+    expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc", pages: 123}]);
+    expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc", pages: 123}]);
+    expectAssignable<MatchPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc", pages: 123}]);
+    expectAssignable<MatchPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc", pages: 123}]);
     expectAssignable<QueryPageParams>([{attr1: "abc", attr2: "def", attr6: 123, attr9: 456, attr5: "xyz", attr4: "abc"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
     expectAssignable<QueryPageParamsWithoutSK>([{attr1: "abc", attr6: 123, attr9: 456}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
 
@@ -1504,7 +1504,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     // .go params
     type GoParams = Parameter<typeof chainMethods.go>;
-    expectAssignable<GoParams>({table: "df", raw: true, params: {}, originalErr: true, includeKeys: true});
+    expectAssignable<GoParams>({table: "df", raw: true, params: {}, originalErr: true, includeKeys: true, pages: 123});
     complexService.collections
         .normalcollection({prop2: "abc", prop1: "def"})
         .go()

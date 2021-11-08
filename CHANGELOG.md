@@ -116,3 +116,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.4.8] = 2021-11-01
 ### Fixed
 - Addressed issue#90 to flip batchGet's response tuple type definition.
+
+## [1.5.0] = 2021-11-07
+### Changed
+- Queries will now fully paginate all responses. Prior to this change, ElectroDB would only return items from a single ElectroDB query result. Now ElectroDB will paginate through all query results. This will impact both uses of entity queries and service collections. If a finite number of pages is desired, use the query option [pages](./README.md#query-options) to set a max number of pagination iterations. [[read more](./README.md#query-method)]

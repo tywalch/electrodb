@@ -933,6 +933,7 @@ interface QueryOptions {
     includeKeys?: boolean;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
+    pages?: number;
 }
 
 // subset of QueryOptions
