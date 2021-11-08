@@ -92,7 +92,7 @@ module.exports = {
 				composite: ["dateHired", "title"],
 			},
 		},
-		employeeLookup: {
+		lookup: {
 			collection: "assignments",
 			index: "gsi3pk-gsi3sk-index",
 			pk: {

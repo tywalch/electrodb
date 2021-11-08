@@ -36,7 +36,7 @@ class EmployeeAppLoader {
       type: EmployeeAppLoader.types[this.getRandomNumber(0, EmployeeAppLoader.types.length)],
       points: EmployeeAppLoader.points[this.getRandomNumber(0, EmployeeAppLoader.points.length)],
       description: EmployeeAppLoader.sentences[this.getRandomNumber(0, EmployeeAppLoader.sentences.length)],
-      comments: this.generateRandomComments(employees),
+      // comments: this.generateRandomComments(employees),
       status: this.service.db.entities.tasks.model.schema.attributes.status.enumArray[this.getRandomNumber(0, this.service.db.entities.tasks.model.schema.attributes.status.enumArray.length)],
     }
   }
@@ -63,7 +63,7 @@ class EmployeeAppLoader {
       country: "United States of America",
       state: EmployeeAppLoader.states[this.getRandomNumber(0, EmployeeAppLoader.states.length)],
       city: city,
-      zip: String(this.getRandomNumber(11111, 99999)),
+      zip: `${this.getRandomNumber(11111, 99999)}`,
       address: `${this.getRandomNumber(0, 9999)} ${EmployeeAppLoader.streets[this.getRandomNumber(0, EmployeeAppLoader.streets.length)]} ${EmployeeAppLoader.roadTypes[this.getRandomNumber(0, EmployeeAppLoader.roadTypes.length)]}`
     }
   }

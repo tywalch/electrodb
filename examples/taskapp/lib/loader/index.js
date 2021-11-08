@@ -54,12 +54,16 @@ class TaskAppExampleLoader {
     }
     let loader = makeLoader(this);
     
-    return loader.load(employees, tasks, {offices})
+    const data = await loader.load(employees, tasks, {offices})
       .then(() => console.log("Table loaded!"))
       .catch(err => {
         console.log("Error loading table", err);
         throw err;
       });
+    console.log("employees", loader.employees.length, loader.employees[0]);
+    console.log("offices", loader.offices.length, loader.offices);
+    console.log("tasks", loader.tasks.length, loader.tasks[0]);
+    return data;
   }
 }
 

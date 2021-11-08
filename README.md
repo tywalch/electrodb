@@ -169,6 +169,7 @@ tasks
     - [Partition Key Composite Attributes](#partition-key-composite-attributes)
   + [Sort Key Operations](#sort-key-operations)
   * [Query Chains](#query-chains)
+    + [Query Method](#query-method)
     + [Get Method](#get-method)
     + [Batch Get](#batch-get)
     + [Delete Method](#delete-method)
@@ -1564,9 +1565,11 @@ name: "your_item_name"
 ## Collections
 A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities.
 
+> _NOTE: ElectroDB Collections use DynamoDB queries to retrieve results. One query is made to retrieve results for all Entities (the benefits of single table design), however like the [query method](#query-method), ElectroDB will paginate through all results for a given query._
+
 Collections are defined on an Index, and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
 
-> **Note**: A `collection` name should be unique to a single common index across entities.
+> _NOTE: A `collection` name should be unique to a single common index across entities._
 
 ```javascript
 const DynamoDB = require("aws-sdk/clients/dynamodb");
@@ -2600,6 +2603,10 @@ Option            | Default | Notes
 # Building Queries
 > For hands-on learners: the following example can be followed along with **and** executed on runkit: https://runkit.com/tywalch/electrodb-building-queries
 
+ElectroDB queries use DynamoDB's `query` method to find records based on your table's indexes.
+
+> _NOTE: By default, ElectroDB will paginate through all items that match your query. To limit the number of pages ElectroDB will query through, read more about the [Query Option](#query-options) `pages`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
+
 Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is crucial to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
 1. You must always supply the **Partition Key** in full for all queries to **DynamoDB**.
 2. You currently only have the following operators available on a **Sort Key**: `begins_with`, `between`, `>`, `>=`, `<`, `<=`, and `Equals`.
@@ -2805,6 +2812,12 @@ Queries in ***ElectroDB*** are built around the **Access Patterns** defined in t
 > Examples in this section using the `StoreLocations` schema defined [above](#shopping-mall-stores) and can be directly experiment with on runkit: https://runkit.com/tywalch/electrodb-building-queries
 
 The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all composite attributes described in the Entities' primary `PK` and `SK`.
+
+### Query Method
+
+ElectroDB queries use DynamoDB's `query` method to find records based on your table's indexes. To read more about queries checkout the section [Building Queries](#building-queries)
+
+> _NOTE: By default, ElectroDB will paginate through all items that match your query. To limit the number of pages ElectroDB will query through, read more about the [Query Option](#query-options) `pages`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
 
 ### Get Method
 Provide all Table Index composite attributes in an object to the `get` method. In the event no record is found, a value of `null` will be returned.
@@ -4032,7 +4045,7 @@ let stores = MallStores.query
 
 ### Page
 
-> As of September 29th 2020 the `.page()` now returns the composite attributes that make up the `ExclusiveStartKey` instead of the `ExclusiveStartKey` itself. To get back only the `ExclusiveStartKey`, add the [query option](#query-options) `{pager: "raw"}` to your query options. If you treated this value opaquely no changes are needed, or if you used the `raw` flag.
+> _NOTE: By Default, ElectroDB queries will paginate through all results with the [`go()`](#building-queries) method. ElectroDB's `page()` method can be used to manually iterate through DynamoDB query results._
 
 The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tuple.
 
@@ -4093,6 +4106,9 @@ let [pageTwo, moreStores] = await MallStores.query
 ```
 
 #### Service Pagination
+
+> _NOTE: By Default, ElectroDB will paginate through all results with the [`query()`](#building-queries) method. ElectroDB's `page()` method can be used to manually iterate through DynamoDB query results._
+
 Pagination with services is also possible. Similar to [Entity Pagination](#entity-pagination), calling the `.page()` method returns a `[pager, results]` tuple. Also, similar to pagination on Entities, the pager object returned by default is a deconstruction of the returned LastEvaluatedKey.
 
 #### Pager Query Options
@@ -4261,6 +4277,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   response?: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new";
   ignoreOwnership?: boolean;
   limit?: number;
+  pages?: number;
 };
 ```
 
@@ -4277,6 +4294,7 @@ unprocessed     | `"item"`             | Used in batch processing to override El
 response        | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
 ignoreOwnership | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
 limit           | _none_               | A convenience option for the query parameter `Limit`, used to specify the number of records to retrieve while performing a query.
+pages           | ∞                    | How many DynamoDB pages should a query iterate through before stopping. By default ElectroDB paginate through all results for your query.
 
 # Errors:
 
@@ -4531,10 +4549,19 @@ Tables can be defined on the [Service Options](#service-options) object when you
 *Code: 2004*
 
 *Why this occurred:*
-When performing a bulk operation ([Batch Get](#batch-get), [Batch Delete Records](#batch-write-delete-records), [Batch Put Records](#batch-write-put-records)) you can pass a [Query Options](#query-options) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+When performing a bulk operation ([Batch Get](#batch-get), [Batch Delete Records](#batch-write-delete-records), [Batch Put Records](#batch-write-put-records)) you can pass a [Query Options](#query-options) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 *What to do about it:*   
-Expect this error only if you're providing a concurrency value. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
+Expect this error only if you're providing a `concurrency` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
+
+### Invalid Pages Option
+*Code: 2005*
+
+*Why this occurred:*
+When performing a query [Query](#building-queries) you can pass a [Query Options](#query-options) called `pages`, which impacts how many DynamoDB pages a query should iterate through. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+
+*What to do about it:*
+Expect this error only if you're providing a `pages` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### aws-error
 *Code: 4001*
@@ -5462,4 +5489,3 @@ This change stems from the fact the `facets` is already a defined term in the Dy
 
 # Coming Soon
 - Default query options defined on the `model` to give more general control of interactions with the Entity.
-- Complex attributes (list, map, set)

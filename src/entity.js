@@ -150,7 +150,8 @@ class Entity {
 				names: expressions.names || {},
 				values: expressions.values || {},
 				expression: expressions.expression || ""
-			}
+			},
+			_isCollectionQuery: true,
 		};
 
 		let index = this.model.translations.collections.fromCollectionToIndex[collection];
@@ -241,8 +242,10 @@ class Entity {
 					return await this.executeBulkWrite(parameters, config);
 				case MethodTypes.batchGet:
 					return await this.executeBulkGet(parameters, config);
+				case MethodTypes.query:
+					return await this.executeQuery(parameters, config)
 				default:
-					return await this.executeQuery(method, parameters, config);
+					return await this.executeOperation(method, parameters, config);
 			}
 		} catch (err) {
 			if (config.originalErr || stackTrace === undefined) {
@@ -324,7 +327,39 @@ class Entity {
 		return [resultsAll, unprocessedAll];
 	}
 
-	async executeQuery(method, parameters, config) {
+	async executeQuery(parameters, config = {}) {
+		let results = config._isCollectionQuery
+			? {}
+			: [];
+		let ExclusiveStartKey;
+		let max = this._normalizePagesValue(config.pages);
+		let count = 0;
+		do {
+			count++;
+			let response = await this._exec("query", {ExclusiveStartKey, ...parameters});
+			ExclusiveStartKey = response.LastEvaluatedKey;
+			if (validations.isFunction(config.parse)) {
+				response = config.parse(config, response);
+			} else {
+				response = this.formatResponse(response, parameters.IndexName, config);
+			}
+			if (config.raw || config._isPagination) {
+				return response;
+			} else if (config._isCollectionQuery) {
+				for (const entity in response) {
+					results[entity] = results[entity] || [];
+					results[entity] = [...results[entity], ...response[entity]];
+				}
+			} else if (Array.isArray(response)) {
+				results = [...results, ...response];
+			} else {
+				return response;
+			}
+		} while(ExclusiveStartKey && count < max);
+		return results;
+	}
+
+	async executeOperation(method, parameters, config) {
 		let response = await this._exec(method, parameters);
 		if (validations.isFunction(config.parse)) {
 			return config.parse(config, response);
@@ -566,6 +601,14 @@ class Entity {
 		return value;
 	}
 
+	_normalizePagesValue(value = Number.MAX_SAFE_INTEGER) {
+		value = parseInt(value);
+		if (isNaN(value) || value < 1) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidPagesOption, "Query option 'pages' must be of type 'number' and greater than zero.");
+		}
+		return value;
+	}
+
 	_deconstructKeys(index, keyType, key, backupFacets = {}) {
 		if (typeof key !== "string" || key.length === 0) {
 			return null;
@@ -693,6 +736,8 @@ class Entity {
 			response: 'default',
 			ignoreOwnership: false,
 			_isPagination: false,
+			_isCollectionQuery: false,
+			pages: undefined,
 		};
 
 		config = options.reduce((config, option) => {
@@ -703,6 +748,14 @@ class Entity {
 				}
 				config.response = format;
 				config.params.ReturnValues = FormatToReturnValues[format];
+			}
+
+			if (option.pages !== undefined) {
+				config.pages = option.pages;
+			}
+
+			if (option._isCollectionQuery === true) {
+				config._isCollectionQuery = true;
 			}
 
 			if (option.includeKeys === true) {
