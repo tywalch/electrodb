@@ -2327,48 +2327,20 @@ describe("Entity", async () => {
             const prop1 = uuid();
             const prop2 = uuid();
             const prop3 = uuid();
-            await client.put({
-                Item: {
-                    prop1: prop1,
-                    prop2: prop2,
-                    prop3: prop3,
-                    pk: `$testing#prop1_${prop1}`,
-                    sk: `$parse_test_1#prop2_${prop2}`,
-                },
-                TableName: 'electro'
-            }).promise();
-
-            async function paginateScan() {
-                let results: any;
-                let ExclusiveStartKey;
-                let count = 0;
-                do {
-                    count++;
-                    const params = {
-                        TableName: 'electro',
-                        ReturnValues: 'ALL_OLD',
-                        ExpressionAttributeNames: {
-                            '#pk': 'pk',
-                            '#sk': 'sk',
-                        },
-                        ExpressionAttributeValues: {
-                            ':pk': '$testing#prop1_',
-                            ':sk': `$parse_test_1#prop2_${prop2}`,
-                        },
-                        FilterExpression: 'begins_with(#pk, :pk) AND begins_with(#sk, :sk)'
+            const scanResponse = {
+                "Items": [
+                    {
+                        "prop2": prop2,
+                        "sk": `$parse_test_1#prop2_${prop2}`,
+                        "prop1": prop1,
+                        "pk": `$testing#prop1_${prop1}`,
+                        "prop3": prop3
                     }
-                    results = await client.scan(params).promise();
-                    if (results?.Items?.length && results?.Items?.length > 0) {
-                        return results;
-                    } else if (results.LastEvaluatedKey) {
-                        ExclusiveStartKey = results.LastEvaluatedKey;
-                    } else {
-                        return results;
-                    }
-                } while (ExclusiveStartKey);
-            }
-            const results = await paginateScan();
-            const parsed = entity.parse(results);
+                ],
+                "Count": 1,
+                "ScannedCount": 1
+            };
+            const parsed = entity.parse(scanResponse);
             expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
         }).timeout(10000);
     });
