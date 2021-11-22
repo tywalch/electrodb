@@ -207,28 +207,107 @@ const ErrorCodes = {
   },
 };
 
+function makeMessage(message, section) {
+  return `${message} - For more detail on this error reference: ${getHelpLink(section)}`
+}
+
 class ElectroError extends Error {
-  constructor(err, message) {
+  constructor(code, message) {
     super(message);
     let detail = ErrorCodes.UnknownError;
-    if (err && err.sym === ErrorCode) {
-      detail = err
+    if (code && code.sym === ErrorCode) {
+      detail = code
     }
-    this.message = `${message} - For more detail on this error reference: ${getHelpLink(detail.section)}`;
-
+    this._message = message;
+    // this.message = `${message} - For more detail on this error reference: ${getHelpLink(detail.section)}`;
+    this.message = makeMessage(message, detail.section);
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ElectroError);
     }
 
     this.name = 'ElectroError';
-    this.ref = err;
+    this.ref = code;
     this.code = detail.code;
     this.date = new Date();
     this.isElectroError = true;
   }
 }
 
+class ElectroValidationError extends ElectroError {
+  constructor(errors = []) {
+    const fields = [];
+    const messages = [];
+    for (let i = 0; i < errors.length; i++) {
+      const error = errors[i] || {};
+      const message = (error._message || error.message);
+      messages.push(message);
+      if (error instanceof ElectroUserValidationError) {
+        fields.push({
+          field: error.field,
+          reason: message,
+          cause: error.cause,
+          type: 'validation'
+        });
+      } else if (error instanceof ElectroAttributeValidationError) {
+        fields.push({
+          field: error.field,
+          reason: message,
+          cause: error, // error | undefined
+          type: 'validation'
+        });
+      } else if (message) {
+        fields.push({
+          field: '',
+          reason: message,
+          cause: error,
+          type: 'fatal'
+        });
+      }
+    }
+
+    const message = messages
+        .filter(message => typeof message === "string" && message.length)
+        .join(', ') || `Invalid value(s) provided`;
+
+    super(ErrorCodes.InvalidAttribute, message);
+    this.fields = fields;
+  }
+}
+
+class ElectroUserValidationError extends ElectroError {
+  constructor(field, cause) {
+    let message;
+    let hasCause = false;
+    if (typeof cause === "string") {
+      message = cause;
+    } else if (cause && typeof cause._message === "string" && cause._message.length) {
+      message = cause._message;
+      hasCause = true;
+    } else if (cause && typeof cause.message === "string" && cause.message.length) {
+      message = cause.message;
+      hasCause = true;
+    } else {
+        message = "Invalid value provided";
+    }
+    super(ErrorCodes.InvalidAttribute, message);
+    this.field = field;
+    if (hasCause) {
+      this.cause = cause;
+    }
+  }
+}
+
+class ElectroAttributeValidationError extends ElectroError {
+  constructor(field, reason) {
+    super(ErrorCodes.InvalidAttribute, reason);
+    this.field = field;
+  }
+}
+
 module.exports = {
+  ErrorCodes,
   ElectroError,
-  ErrorCodes
+  ElectroValidationError,
+  ElectroUserValidationError,
+  ElectroAttributeValidationError
 };

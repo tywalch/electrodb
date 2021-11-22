@@ -1679,7 +1679,7 @@ describe("Entity", async () => {
 					.then((res) => [true, res])
 					.catch(err => [false, err])
 				expect(success).to.be.false;
-				expect(result.message).to.equal(`Attribute "updatedAt" is Read-Only and cannot be updated`);
+				expect(result.message).to.equal(`Attribute "updatedAt" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
 			});
 		});
 		describe("Setter Triggers", async () => {
@@ -3457,7 +3457,7 @@ describe("Entity", async () => {
 				throw null;
 			} catch(err) {
 				expect(err).to.not.be.null;
-				expect(err.message).to.equal(`Attribute "prop2" is Read-Only and cannot be updated`);
+				expect(err.message).to.equal(`Attribute "prop2" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
 			}
 		});
 
@@ -3469,7 +3469,7 @@ describe("Entity", async () => {
 				throw null;
 			} catch(err) {
 				expect(err).to.not.be.null;
-				expect(err.message).to.equal(`Attribute "prop2" is Read-Only and cannot be updated`);
+				expect(err.message).to.equal(`Attribute "prop2" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
 			}
 		});
 

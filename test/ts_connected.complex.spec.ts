@@ -1658,21 +1658,21 @@ describe("Simple Crud On Complex Entity", () => {
                 input: {
                     stringSet: [3456]
                 },
-                error: 'Invalid value type at entity path: "stringSet[*]". Received value of type "number", expected value of type "string"',
+                error: 'Invalid value type at entity path: "stringSet[*]". Received value of type "number", expected value of type "string" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 1,
             },
             {
                 input: {
                     numberSet: ["123"]
                 },
-                error: 'Invalid value type at entity path: "numberSet[*]". Received value of type "string", expected value of type "number"',
+                error: 'Invalid value type at entity path: "numberSet[*]". Received value of type "string", expected value of type "number" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 2,
             },
             {
                 input: {
                     numberSet: {}
                 },
-                error: 'Invalid attribute value supplied to "set" attribute "numberSet". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.',
+                error: 'Invalid attribute value supplied to "set" attribute "numberSet". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 3
             },
             {
@@ -1681,7 +1681,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedList1: {}
                     }
                 },
-                error: 'Invalid value type at entity path "mapVal.nestedList1. Received value of type "object", expected value of type "array"',
+                error: 'Invalid value type at entity path "mapVal.nestedList1. Received value of type "object", expected value of type "array" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 4
             },
             {
@@ -1690,7 +1690,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedList1: "abc"
                     }
                 },
-                error: 'Invalid value type at entity path "mapVal.nestedList1. Received value of type "string", expected value of type "array"',
+                error: 'Invalid value type at entity path "mapVal.nestedList1. Received value of type "string", expected value of type "array" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 5
             },
             {
@@ -1699,7 +1699,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedStringVal1: 234
                     }
                 },
-                error: 'Invalid value type at entity path: "mapVal.nestedStringVal1". Received value of type "number", expected value of type "string"',
+                error: 'Invalid value type at entity path: "mapVal.nestedStringVal1". Received value of type "number", expected value of type "string" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 6
             },
             {
@@ -1708,7 +1708,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedNumberVal1: "234"
                     }
                 },
-                error: 'Invalid value type at entity path: "mapVal.nestedNumberVal1". Received value of type "string", expected value of type "number"',
+                error: 'Invalid value type at entity path: "mapVal.nestedNumberVal1". Received value of type "string", expected value of type "number" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 7
             },
             {
@@ -1717,7 +1717,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedStringSetVal1: {}
                     }
                 },
-                error: 'Invalid attribute value supplied to "set" attribute "mapVal.nestedStringSetVal1". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.',
+                error: 'Invalid attribute value supplied to "set" attribute "mapVal.nestedStringSetVal1". Received value of type "object". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 8
             },
             {
@@ -1726,14 +1726,14 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedStringSetVal1: [123,456]
                     }
                 },
-                error: 'Invalid value type at entity path: "mapVal.nestedStringSetVal1[*]". Received value of type "number", expected value of type "string", Invalid value type at entity path: "mapVal.nestedStringSetVal1[*]". Received value of type "number", expected value of type "string"',
+                error: 'Invalid value type at entity path: "mapVal.nestedStringSetVal1[*]". Received value of type "number", expected value of type "string", Invalid value type at entity path: "mapVal.nestedStringSetVal1[*]". Received value of type "number", expected value of type "string" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 9
             },
             {
                 input: {
                     listVal: ["def"]
                 },
-                error: `Invalid value type at entity path: "listVal[*]". Expected value to be an object to fulfill attribute type "map"`,
+                error: `Invalid value type at entity path: "listVal[*]". Expected value to be an object to fulfill attribute type "map" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`,
                 t: 10
             },
             {
@@ -1742,7 +1742,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedList2: ""
                     }]
                 },
-                error: 'Invalid value type at entity path "listVal[*].nestedList2. Received value of type "string", expected value of type "array"',
+                error: 'Invalid value type at entity path "listVal[*].nestedList2. Received value of type "string", expected value of type "array" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 11
             },
             {
@@ -1751,7 +1751,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedList2: new Set()
                     }]
                 },
-                error: 'Invalid value type at entity path "listVal[*].nestedList2. Received value of type "set", expected value of type "array"',
+                error: 'Invalid value type at entity path "listVal[*].nestedList2. Received value of type "set", expected value of type "array" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 12
             },
             {
@@ -1760,7 +1760,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedStringVal2: []
                     }]
                 },
-                error: 'Invalid value type at entity path: "listVal[*].nestedStringVal2". Received value of type "object", expected value of type "string" at index "0"',
+                error: 'Invalid value type at entity path: "listVal[*].nestedStringVal2". Received value of type "object", expected value of type "string" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 13
             },
             {
@@ -1769,7 +1769,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedNumberVal2: "def"
                     }]
                 },
-                error: 'Invalid value type at entity path: "listVal[*].nestedNumberVal2". Received value of type "string", expected value of type "number" at index "0"',
+                error: 'Invalid value type at entity path: "listVal[*].nestedNumberVal2". Received value of type "string", expected value of type "number" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 14
             },
             {
@@ -1778,7 +1778,7 @@ describe("Simple Crud On Complex Entity", () => {
                         nestedStringSetVal2: [123, 356]
                     }]
                 },
-                error: 'Invalid value type at entity path: "listVal[*].nestedStringSetVal2[*]". Received value of type "number", expected value of type "string", Invalid value type at entity path: "listVal[*].nestedStringSetVal2[*]". Received value of type "number", expected value of type "string" at index "0"',
+                error: 'Invalid value type at entity path: "listVal[*].nestedStringSetVal2[*]". Received value of type "number", expected value of type "string", Invalid value type at entity path: "listVal[*].nestedStringSetVal2[*]". Received value of type "number", expected value of type "string" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute',
                 t: 15
             },
         ];

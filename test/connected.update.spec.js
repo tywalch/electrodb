@@ -1939,7 +1939,7 @@ describe("Update Item", () => {
                 .go()
                 .catch(err => err);
 
-            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed`);
+            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
 
         });
 
