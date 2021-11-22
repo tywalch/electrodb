@@ -26,7 +26,7 @@ interface ElectroValidationErrorFieldReference<T extends Error = Error> {
     readonly reason: string;
 
     /**
-     * Index of the value passed (present only in List attribute validation)
+     * Index of the value passed (present only in List attribute validation errors)
      */
     readonly index: number | undefined;
 

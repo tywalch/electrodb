@@ -107,11 +107,11 @@ tasks
   * [TypeScript Support](#typescript-support)
     + [TypeScript Services](#typescript-services)
   * [Join](#join)
-    - [Independent Models](#independent-models)
-    - [Joining Entity instances to a Service](#joining-entity-instances-to-a-service)
-    - [Joining models to a Service](#joining-models-to-a-service)
-    - [Joining Entities or Models with an alias](#joining-entities-or-models-with-an-alias)
-    - [Joining Entities at Service construction for TypeScript](#joining-entities-at-service-construction-for-typescript)
+      - [Independent Models](#independent-models)
+      - [Joining Entity instances to a Service](#joining-entity-instances-to-a-service)
+      - [Joining models to a Service](#joining-models-to-a-service)
+      - [Joining Entities or Models with an alias](#joining-entities-or-models-with-an-alias)
+      - [Joining Entities at Service construction for TypeScript](#joining-entities-at-service-construction-for-typescript)
   * [Model](#model)
     + [Model Properties](#model-properties)
     + [Service Options](#service-options)
@@ -125,7 +125,7 @@ tasks
       - [Set Attributes](#set-attributes)
       - [Attribute Getters and Setters](#attribute-getters-and-setters)
       - [Attribute Watching](#attribute-watching)
-        * [Attribute Watching: Watch All](#attribute-watching-watch-all)
+        * [Attribute Watching: Watch All](#attribute-watching--watch-all)
         * [Attribute Watching Examples](#attribute-watching-examples)
       - [Calculated Attributes](#calculated-attributes)
       - [Virtual Attributes](#virtual-attributes)
@@ -147,7 +147,7 @@ tasks
     + [Collection Queries vs Entity Queries](#collection-queries-vs-entity-queries)
     + [Collection Response Structure](#collection-response-structure)
   * [Sub-Collections](#sub-collections)
-    - [Sub-Collection Entities](#sub-collection-entities)
+      - [Sub-Collection Entities](#sub-collection-entities)
   * [Index and Collection Naming Conventions](#index-and-collection-naming-conventions)
     + [Index Naming Conventions](#index-naming-conventions)
   * [Collection Naming Conventions](#collection-naming-conventions)
@@ -163,11 +163,11 @@ tasks
     + [Multiple Where Clauses](#multiple-where-clauses)
   * [Parse](#parse)
 - [Building Queries](#building-queries)
-  + [Using composite attributes to make hierarchical keys](#using-composite-attributes-to-make-hierarchical-keys)
-    - [Shopping Mall Stores](#shopping-mall-stores)
-  + [Query App Records](#query-app-records)
-    - [Partition Key Composite Attributes](#partition-key-composite-attributes)
-  + [Sort Key Operations](#sort-key-operations)
+    + [Using composite attributes to make hierarchical keys](#using-composite-attributes-to-make-hierarchical-keys)
+      - [Shopping Mall Stores](#shopping-mall-stores)
+    + [Query App Records](#query-app-records)
+      - [Partition Key Composite Attributes](#partition-key-composite-attributes)
+    + [Sort Key Operations](#sort-key-operations)
   * [Query Chains](#query-chains)
     + [Query Method](#query-method)
     + [Get Method](#get-method)
@@ -178,14 +178,14 @@ tasks
     + [Batch Write Put Records](#batch-write-put-records)
     + [Update Record](#update-record)
       - [Updates to Composite Attributes](#updates-to-composite-attributes)
-      - [Update Method: Set](#update-method-set)
-      - [Update Method: Remove](#update-method-remove)
-      - [Update Method: Add](#update-method-add)
-      - [Update Method: Subtract](#update-method-subtract)
-      - [Update Method: Append](#update-method-append)
-      - [Update Method: Delete](#update-method-delete)
-      - [Update Method: Data](#update-method-data)
-    + [Update Method: Complex Data Types](#update-method-complex-data-types)
+      - [Update Method: Set](#update-method--set)
+      - [Update Method: Remove](#update-method--remove)
+      - [Update Method: Add](#update-method--add)
+      - [Update Method: Subtract](#update-method--subtract)
+      - [Update Method: Append](#update-method--append)
+      - [Update Method: Delete](#update-method--delete)
+      - [Update Method: Data](#update-method--data)
+    + [Update Method: Complex Data Types](#update-method--complex-data-types)
     + [Scan Records](#scan-records)
     + [Remove Method](#remove-method)
     + [Patch Record](#patch-record)
@@ -205,30 +205,33 @@ tasks
         * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
-- [Errors:](#errors)
-  + [No Client Defined On Model](#no-client-defined-on-model)
-  + [Invalid Identifier](#invalid-identifier)
-  + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
-  + [Duplicate Indexes](#duplicate-indexes)
-  + [Collection Without An SK](#collection-without-an-sk)
-  + [Duplicate Collections](#duplicate-collections)
-  + [Missing Primary Index](#missing-primary-index)
-  + [Invalid Attribute Definition](#invalid-attribute-definition)
-  + [Invalid Model](#invalid-model)
-  + [Invalid Options](#invalid-options)
-  + [Duplicate Index Fields](#duplicate-index-fields)
-  + [Duplicate Index Composite Attributes](#duplicate-index-composite-attributes)
-  + [Incompatible Key Composite Attribute Template](#incompatible-key-composite-attribute-template)
-  + [Invalid Index With Attribute Name](#invalid-index-with-attribute-name)
-  + [Invalid Collection on Index With Attribute Field Names](#invalid-collection-on-index-with-attribute-field-names)
-  + [Missing Composite Attributes](#missing-composite-attributes)
-  + [Missing Table](#missing-table)
-  + [Invalid Concurrency Option](#invalid-concurrency-option)
-  + [aws-error](#aws-error)
-  + [Unknown Errors](#unknown-errors)
-  + [Invalid Last Evaluated Key](#invalid-last-evaluated-key)
-  + [No Owner For Pager](#no-owner-for-pager)
-  + [Pager Not Unique](#pager-not-unique)
+- [Errors:](#errors-)
+    + [No Client Defined On Model](#no-client-defined-on-model)
+    + [Invalid Identifier](#invalid-identifier)
+    + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
+    + [Duplicate Indexes](#duplicate-indexes)
+    + [Collection Without An SK](#collection-without-an-sk)
+    + [Duplicate Collections](#duplicate-collections)
+    + [Missing Primary Index](#missing-primary-index)
+    + [Invalid Attribute Definition](#invalid-attribute-definition)
+    + [Invalid Model](#invalid-model)
+    + [Invalid Options](#invalid-options)
+    + [Duplicate Index Fields](#duplicate-index-fields)
+    + [Duplicate Index Composite Attributes](#duplicate-index-composite-attributes)
+    + [Incompatible Key Composite Attribute Template](#incompatible-key-composite-attribute-template)
+    + [Invalid Index With Attribute Name](#invalid-index-with-attribute-name)
+    + [Invalid Collection on Index With Attribute Field Names](#invalid-collection-on-index-with-attribute-field-names)
+    + [Missing Composite Attributes](#missing-composite-attributes)
+    + [Missing Table](#missing-table)
+    + [Invalid Concurrency Option](#invalid-concurrency-option)
+    + [Invalid Pages Option](#invalid-pages-option)
+    + [Invalid Limit Option](#invalid-limit-option)
+    + [Invalid Attribute](#invalid-attribute)
+    + [AWS Error](#aws-error)
+    + [Unknown Errors](#unknown-errors)
+    + [Invalid Last Evaluated Key](#invalid-last-evaluated-key)
+    + [No Owner For Pager](#no-owner-for-pager)
+    + [Pager Not Unique](#pager-not-unique)
 - [Examples](#examples)
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
@@ -4572,7 +4575,45 @@ When performing a query [Query](#building-queries) you can pass a [Query Options
 *What to do about it:*
 Expect this error only if you're providing a `limit` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
-### aws-error
+### Invalid Attribute
+*Code: 3001*
+
+*Why this occurred:*
+The value received for a validation either failed type expectations (e.g. a "number" instead of a "string"), or the user provided "validate" callback on an attribute rejected a value.
+
+*What to do about it:*
+Examine the error itself for more precise detail on why the failure occurred. The error object itself should have a property called "fields" which contains an array of every attribute that failed validation, and a reason for each. If the failure originated from a "validate" callback, the originally thrown error will be accessible via the `cause` property the corresponding element within the fields array.1
+
+Below is the type definition for an ElectroValidationError:
+
+```typescript
+ElectroValidationError<T extends Error = Error> extends Error {
+    readonly name: "ElectroValidationError"
+    readonly fields: ReadonlyArray<{
+        /**
+         * The json path to the attribute that had a validation error
+         */
+        readonly field: string;
+
+        /**
+         * A description of the validation error for that attribute
+         */
+        readonly reason: string;
+
+        /**
+         * Index of the value passed (present only in List attribute validation errors)
+         */
+        readonly index: number | undefined;
+
+        /**
+         * The error thrown from the attribute's validate callback (if applicable)
+         */
+        readonly cause: T | undefined;
+    }>
+}
+```
+
+### AWS Error
 *Code: 4001*
 
 *Why this occurred:*

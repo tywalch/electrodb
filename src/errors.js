@@ -274,6 +274,7 @@ class ElectroValidationError extends ElectroError {
 
     super(ErrorCodes.InvalidAttribute, message);
     this.fields = fields;
+    this.name = "ElectroValidationError";
   }
 }
 
@@ -294,6 +295,7 @@ class ElectroUserValidationError extends ElectroError {
     }
     super(ErrorCodes.InvalidAttribute, message);
     this.field = field;
+    this.name = "ElectroUserValidationError";
     if (hasCause) {
       this.cause = cause;
     }

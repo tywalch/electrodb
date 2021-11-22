@@ -240,6 +240,88 @@ describe("user attribute validation", () => {
             expect(updateResult.fields).to.have.length(1);
         });
 
+        it("should wrap a thrown error in the user validation callback for a map with an ElectroError and make it available on a 'causes' array", async () => {
+            const prop1 = uuid();
+            const prop2 = {
+                prop4: "value4"
+            };
+            const invalidProp2 = {
+                prop3: "value3",
+                prop4: "value4"
+            };
+            class MyCustomError extends Error {
+                constructor(message: string) {
+                    super(message);
+                    this.name = 'MyCustomError';
+                }
+            }
+            const message = "Oh no!";
+            const entity = new Entity({
+                model: {
+                    service: "MallStoreDirectory",
+                    entity: "MallStores",
+                    version: "1",
+                },
+                attributes: {
+                    prop1: {
+                        type: "string",
+                    },
+                    prop2: {
+                        type: "map",
+                        properties: {
+                            prop3: {
+                                type: "string"
+                            },
+                            prop4: {
+                                type: "string"
+                            },
+                            prop5: {
+                                type: "string"
+                            },
+                        },
+                        validate: (value = {}) => {
+                            if (value.prop3 !== undefined && value.prop5 === undefined){
+                                throw new MyCustomError(message);
+                            }
+                        }
+                    },
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: "partition_key",
+                            composite: ["prop1"]
+                        }
+                    }
+                }
+            }, {table, client});
+            await entity.put({prop1, prop2}).go();
+            await entity.update({prop1}).set({prop2}).go({response: "all_new"});
+            const [putSuccess, putResult] = await entity
+                .put({prop1, prop2: invalidProp2})
+                .go()
+                .then(data => [true, data])
+                .catch(err => [false, err]);
+            const [updateSuccess, updateResult] = await entity
+                .update({prop1})
+                .set({prop2: invalidProp2})
+                .go()
+                .then(data => [true, data])
+                .catch(err => [false, err]);
+            expect(putSuccess).to.be.false;
+            expect(putResult.message).to.equal(`${message} - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(updateSuccess).to.be.false;
+            expect(updateResult.message).to.equal(`${message} - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(putResult.fields).to.have.length(1);
+            expect(putResult.fields[0].cause.name).to.equal('MyCustomError');
+            expect(putResult.fields[0].cause.message).to.equal(message);
+            expect(putResult.fields[0].field).to.equal("prop2");
+            expect(updateResult.fields).to.have.length(1);
+            expect(updateResult.fields[0].cause.name).to.equal('MyCustomError');
+            expect(updateResult.fields[0].cause.message).to.equal(message);
+            expect(updateResult.fields[0].field).to.equal("prop2");
+        });
+
         it("should interpret a string return value as a validation error message", async () => {
             const prop1 = uuid();
             const prop2 = {
@@ -1086,7 +1168,63 @@ describe("user attribute validation", () => {
         });
 
         it("should wrap a thrown error in the user validation callback with an ElectroError and make it available on a 'causes' array", async () => {
-
+            const prop1 = uuid();
+            const prop2 = ["value1", "value2"];
+            const invalidProp2 = ["value1"];
+            const message = "oh no!";
+            const error = new Error(message);
+            const entity = new Entity({
+                model: {
+                    service: "MallStoreDirectory",
+                    entity: "MallStores",
+                    version: "1",
+                },
+                attributes: {
+                    prop1: {
+                        type: "string",
+                    },
+                    prop2: {
+                        type: "list",
+                        items: {
+                            type: "string",
+                        },
+                        validate: (value: string[] = []) => {
+                            if (value.length === 1) {
+                                throw error;
+                            }
+                        }
+                    },
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: "partition_key",
+                            composite: ["prop1"]
+                        }
+                    }
+                }
+            }, {table, client});
+            await entity.put({prop1, prop2}).go();
+            await entity.update({prop1}).set({prop2}).go({response: "all_new"});
+            const [putSuccess, putResult] = await entity
+                .put({prop1, prop2: invalidProp2})
+                .go()
+                .then(data => [true, data])
+                .catch(err => [false, err]);
+            const [updateSuccess, updateResult] = await entity
+                .update({prop1})
+                .set({prop2: invalidProp2})
+                .go()
+                .then(data => [true, data])
+                .catch(err => [false, err]);
+            expect(putSuccess).to.be.false;
+            expect(putResult.message).to.equal(`${message} - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(updateSuccess).to.be.false;
+            expect(updateResult.message).to.equal(`${message} - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(putResult.fields).to.have.length(1);
+            expect(putResult.fields[0].cause).to.equal(error);
+            expect(updateResult.fields).to.have.length(1);
+            expect(updateResult.fields[0].cause).to.equal(error);
         });
     });
 
