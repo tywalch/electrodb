@@ -228,7 +228,7 @@ class ElectroError extends Error {
     this.name = 'ElectroError';
     this.ref = code;
     this.code = detail.code;
-    this.date = new Date();
+    this.date = Date.now();
     this.isElectroError = true;
   }
 }

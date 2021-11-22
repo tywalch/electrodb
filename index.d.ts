@@ -4,7 +4,7 @@ declare const UpdateDataSymbol: unique symbol;
 export interface ElectroError extends Error {
     readonly name: 'ElectroError';
     readonly code: number;
-    readonly date: Date,
+    readonly date: number;
     readonly isElectroError: boolean;
     ref: {
         readonly code: number;
