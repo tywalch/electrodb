@@ -130,5 +130,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Exporting TypeScript interfaces for `ElectroError` and `ElectroValidationError`
 - Errors thrown within an attribute's validate callback are now wrapped and accessible after being thrown. Prior to this change, only the `message` of the error thrown by a validation function was persisted back through to the user, now the error itself is also accessible. Reference the exported interface typedef for `ElectroValidationError` [here](./index.d.ts) to see the new properties available on a thrown validation error.
 
+### Changed
+- As a byproduct of enhancing validation errors, the format of message text on a validation error has changed. This could be breaking if your app had a hardcoded dependency on the exact text of a thrown validation error.
+
 ### Fixed
 - For Set attributes, the callback functions `get`, `set`, and `validate` are now consistently given an Array of values. These functions would sometimes (incorrectly) be called with a DynamoDB DocClient Set.
