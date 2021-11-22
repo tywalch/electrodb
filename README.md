@@ -4587,7 +4587,7 @@ Examine the error itself for more precise detail on why the failure occurred. Th
 Below is the type definition for an ElectroValidationError:
 
 ```typescript
-ElectroValidationError<T extends Error = Error> extends Error {
+ElectroValidationError<T extends Error = Error> extends ElectroError {
     readonly name: "ElectroValidationError"
     readonly fields: ReadonlyArray<{
         /**
