@@ -703,7 +703,7 @@ class ListAttribute extends Attribute {
 				if (!isValid) {
 					for (const err of errorValues) {
 						if (err instanceof e.ElectroAttributeValidationError || err instanceof e.ElectroUserValidationError) {
-							err.index = i;
+							err.index = parseInt(i);
 						}
 						errors.push(err);
 					}
@@ -840,7 +840,9 @@ class SetAttribute extends Attribute {
 		this._checkGetSet(set, "set");
 		const setter = set || ((attr) => attr);
 		return (values, siblings) => {
-			const results = setter(values, siblings);
+			const results = values && values.wrapperName === 'Set'
+				? setter(values.values, siblings)
+				: setter(values, siblings)
 			if (results !== undefined) {
 				return this.toDDBSet(results);
 			}

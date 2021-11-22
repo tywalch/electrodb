@@ -238,12 +238,13 @@ class ElectroValidationError extends ElectroError {
     const fields = [];
     const messages = [];
     for (let i = 0; i < errors.length; i++) {
-      const error = errors[i] || {};
-      const message = (error._message || error.message);
+      const error = errors[i];
+      const message = error ? (error._message || error.message) : undefined;
       messages.push(message);
       if (error instanceof ElectroUserValidationError) {
         fields.push({
           field: error.field,
+          index: error.index,
           reason: message,
           cause: error.cause,
           type: 'validation'
@@ -251,15 +252,17 @@ class ElectroValidationError extends ElectroError {
       } else if (error instanceof ElectroAttributeValidationError) {
         fields.push({
           field: error.field,
+          index: error.index,
           reason: message,
-          cause: error, // error | undefined
+          cause: error.cause || error, // error | undefined
           type: 'validation'
         });
       } else if (message) {
         fields.push({
           field: '',
+          index: error.index,
           reason: message,
-          cause: error,
+          cause: error !== undefined ? error.cause || error : undefined,
           type: 'fatal'
         });
       }
@@ -280,10 +283,10 @@ class ElectroUserValidationError extends ElectroError {
     let hasCause = false;
     if (typeof cause === "string") {
       message = cause;
-    } else if (cause && typeof cause._message === "string" && cause._message.length) {
+    } else if (cause !== undefined && typeof cause._message === "string" && cause._message.length) {
       message = cause._message;
       hasCause = true;
-    } else if (cause && typeof cause.message === "string" && cause.message.length) {
+    } else if (cause !== undefined && typeof cause.message === "string" && cause.message.length) {
       message = cause.message;
       hasCause = true;
     } else {
