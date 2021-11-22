@@ -705,8 +705,9 @@ describe("Entity", () => {
 				reason,
 			] = MallStores.model.schema.attributes.category.isValid("BAD_CATEGORY");
 			expect(!isValid);
-			expect(reason).to.eq(
-				`Invalid value type at entity path: "category". Value not found in set of acceptable values: "food/coffee", "food/meal", "clothing", "electronics", "department", "misc"`,
+			expect(reason).to.be.an("array").with.length(1);
+			expect(reason[0].message).to.eq(
+				`Invalid value type at entity path: "category". Value not found in set of acceptable values: "food/coffee", "food/meal", "clothing", "electronics", "department", "misc" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`,
 			);
 		});
 		it("Should identify a missing definiton for the table's main index", () => {

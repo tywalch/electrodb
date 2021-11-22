@@ -88,8 +88,9 @@ describe("Attribute types", () => {
 			name: "property_name",
 			type: "string",
 		});
-		let [isValid, err] = attribute.isValid(123);
+		let [isValid, errs] = attribute.isValid(123);
 		expect(isValid).to.be.false;
-		expect(err).to.be.equal(`Invalid value type at entity path: "property_name". Received value of type "number", expected value of type "string"`,);
+		expect(errs).to.be.an("array").with.length(1);
+		expect(errs[0].message).to.be.equal(`Invalid value type at entity path: "property_name". Received value of type "number", expected value of type "string" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`,);
 	});
 });

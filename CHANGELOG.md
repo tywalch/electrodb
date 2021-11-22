@@ -98,28 +98,40 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Patched
 - Updates did not include composite attributes involved in primary index. Though these values cannot be changed, they should be `set` on update method calls in case the update results in an item insert. [[read more]](./README.md#updates-to-composite-attributes)
 
-## [1.4.5] = 2021-10-17
+## [1.4.5] - 2021-10-17
 ### Fixed
 - Improved .npmignore to remove playground oriented files, and created official directory to keep playground in sync with library changes.
 
-## [1.4.6] = 2021-10-20
+## [1.4.6] - 2021-10-20
 ### Added, Fixed
 - Adding Entity identifiers to all update operations. When primary index composite attributes were added in 1.4.4, entities were written properly but did not include the identifiers. This resulted in entities being written but not being readable without the query option `ignoreOwnership` being used.
 
-## [1.4.7] = 2021-10-20
+## [1.4.7] - 2021-10-20
 ### Changed
 - Using `add()` update mutation now resolves to `ADD #prop :prop` update expression instead of a `SET #prop = #prop + :prop`
 
 ### Fixed
 - Fixed param naming conflict during updates, when map attribute shares a name with another (separate) attribute.
 
-## [1.4.8] = 2021-11-01
+## [1.4.8] - 2021-11-01
 ### Fixed
 - Addressed issue#90 to flip batchGet's response tuple type definition.
 
-## [1.5.0] = 2021-11-07
+## [1.5.0] - 2021-11-07
 ### Changed
 - Queries will now fully paginate all responses. Prior to this change, ElectroDB would only return items from a single ElectroDB query result. Now ElectroDB will paginate through all query results. This will impact both uses of entity queries and service collections. [[read more](./README.md#query-method)]
 - The query option `limit` has an extended meaning with the change to automatically paginate records on query. The option `limit` now represents a target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned. [[read more](./README.md#query-options)]
+
 ### Added
 - A new query option `pages` has been added to coincide with the change to automatically paginate all records when queried. The `pages` option sets a max number of pagination iterations ElectroDB will perform on a query. When this option is paired with `limit`, ElectroDB will respect the first condition reached. [[read more](./README.md#query-options)]
+
+## [1.6.0] - 2021-11-21
+### Added
+- Exporting TypeScript interfaces for `ElectroError` and `ElectroValidationError`
+- Errors thrown within an attribute's validate callback are now wrapped and accessible after being thrown. Prior to this change, only the `message` of the error thrown by a validation function was persisted back through to the user, now the error itself is also accessible. Reference the exported interface typedef for `ElectroValidationError` [here](./index.d.ts) to see the new properties available on a thrown validation error.
+
+### Changed
+- As a byproduct of enhancing validation errors, the format of message text on a validation error has changed. This could be breaking if your app had a hardcoded dependency on the exact text of a thrown validation error.
+
+### Fixed
+- For Set attributes, the callback functions `get`, `set`, and `validate` are now consistently given an Array of values. These functions would sometimes (incorrectly) be called with a DynamoDB DocClient Set.

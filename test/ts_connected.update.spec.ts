@@ -1871,7 +1871,7 @@ describe("Update Item", () => {
                 .go()
                 .catch(err => err);
 
-            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed`);
+            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
         });
 
         it("should remove properties from an item", async () => {
@@ -2456,7 +2456,7 @@ describe("Update Item", () => {
             const nestedList = ["def"];
             const error = await entity.update({stringVal}).set({map: {nestedList}}).go({originalErr: true}).then(() => false).catch(err => err.message);
             console.log(error)
-            expect(error).to.be.string('Invalid value for attribute "map.nestedList[*]": Failed model defined regex at index "0"');
+            expect(error).to.be.string('Invalid value for attribute "map.nestedList[*]"');
         });
     });
 });

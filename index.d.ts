@@ -1,6 +1,45 @@
 declare const WhereSymbol: unique symbol;
 declare const UpdateDataSymbol: unique symbol;
 
+export interface ElectroError extends Error {
+    readonly name: 'ElectroError';
+    readonly code: number;
+    readonly date: Date,
+    readonly isElectroError: boolean;
+    ref: {
+        readonly code: number;
+        readonly section: string;
+        readonly name: string;
+        readonly sym: unique symbol;
+    }
+}
+
+interface ElectroValidationErrorFieldReference<T extends Error = Error> {
+    /**
+     * The json path to the attribute that had a validation error
+     */
+    readonly field: string;
+
+    /**
+     * A description of the validation error for that attribute
+     */
+    readonly reason: string;
+
+    /**
+     * Index of the value passed (present only in List attribute validation errors)
+     */
+    readonly index: number | undefined;
+
+    /**
+     * The error thrown from the attribute's validate callback (if applicable)
+     */
+    readonly cause: T | undefined;
+}
+
+export interface ElectroValidationError<T extends Error = Error> extends ElectroError {
+    readonly fields: ReadonlyArray<ElectroValidationErrorFieldReference<T>>;
+}
+
 interface ReadOnlyAttribute {
     readonly readOnly: true;
 }

@@ -289,7 +289,7 @@ class Attribute {
 
 	_makeCast(name, cast) {
 		if (cast !== undefined && !CastTypes.includes(cast)) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "cast" property for attribute: "${name}". Acceptable types include ${CastTypes.join(", ",)}`,
+			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "cast" property for attribute: "${name}". Acceptable types include ${CastTypes.join(", ")}`,
 		);
 		} else if (cast === AttributeTypes.string) {
 			return (val) => {
@@ -327,20 +327,34 @@ class Attribute {
 	_makeValidate(definition) {
 		if (typeof definition === "function") {
 			return (val) => {
-				let reason = definition(val);
-				return [!reason, reason || ""];
+				try {
+					let reason = definition(val);
+					const isValid = !reason;
+					if (isValid) {
+						return [isValid, []];
+					} else if (typeof reason === "boolean") {
+						return [isValid, [new e.ElectroUserValidationError(this.path, "Invalid value provided")]];
+					} else {
+						return [isValid, [new e.ElectroUserValidationError(this.path, reason)]];
+					}
+				} catch(err) {
+					return [false, [new e.ElectroUserValidationError(this.path, err)]];
+				}
 			};
 		} else if (definition instanceof RegExp) {
 			return (val) => {
 				if (val === undefined) {
-					return [true, ""];
+					return [true, []];
 				}
 				let isValid = definition.test(val);
-				let reason = isValid ? "" : `Invalid value for attribute "${this.path}": Failed model defined regex`;
+				let reason = [];
+				if (!isValid) {
+					reason.push(new e.ElectroUserValidationError(this.path, `Invalid value for attribute "${this.path}": Failed model defined regex`));
+				}
 				return [isValid, reason];
 			};
 		} else {
-			return (val) => [true, ""];
+			return () => [true, []];
 		}
 	}
 
@@ -385,15 +399,19 @@ class Attribute {
 
 	_isType(value) {
 		if (value === undefined) {
-			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+			let reason = [];
+			if (this.required) {
+				reason.push(new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Value is required.`));
+			}
+			return [!this.required, reason];
 		}
 		let isTyped = false;
-		let reason = "";
+		let reason = [];
 		switch (this.type) {
 			case AttributeTypes.enum:
 				isTyped = this.enumArray.includes(value);
 				if (!isTyped) {
-					reason = `Invalid value type at entity path: "${this.path}". Value not found in set of acceptable values: ${u.commaSeparatedString(this.enumArray)}`;
+					reason.push(new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Value not found in set of acceptable values: ${u.commaSeparatedString(this.enumArray)}`));
 				}
 				break;
 			case AttributeTypes.any:
@@ -405,7 +423,7 @@ class Attribute {
 			default:
 				isTyped = typeof value === this.type;
 				if (!isTyped) {
-					reason = `Invalid value type at entity path: "${this.path}". Received value of type "${typeof value}", expected value of type "${this.type}"`;
+					reason.push(new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Received value of type "${typeof value}", expected value of type "${this.type}"`));
 				}
 				break;
 		}
@@ -414,12 +432,12 @@ class Attribute {
 
 	isValid(value) {
 		try {
-			let [isTyped, typeError] = this._isType(value);
-			let [isValid, validationError] = this.validate(value);
-			let reason = [typeError, validationError].filter(Boolean).join(", ");
-			return [isTyped && isValid, reason];
+			let [isTyped, typeErrorReason] = this._isType(value);
+			let [isValid, validationError] = isTyped ? this.validate(value) : [false, []];
+			let errors = [...typeErrorReason, ...validationError].filter(value => value !== undefined);
+			return [isTyped && isValid, errors];
 		} catch (err) {
-			return [false, err.message];
+			return [false, [err]];
 		}
 	}
 
@@ -433,10 +451,9 @@ class Attribute {
 
 	getValidate(value) {
 		value = this.val(value);
-		let [isValid, validationError] = this.isValid(value);
+		let [isValid, validationErrors] = this.isValid(value);
 		if (!isValid) {
-			// todo: #electroerror
-			throw new Error(validationError);
+			throw new e.ElectroValidationError(validationErrors);
 		}
 		return value;
 	}
@@ -509,13 +526,17 @@ class MapAttribute extends Attribute {
 
 	_isType(value) {
 		if (value === undefined) {
-			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+			let reason = [];
+			if (this.required) {
+				reason.push(new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Value is required.`));
+			}
+			return [!this.required, reason];
 		}
 		const valueType = getValueType(value);
 		if (valueType !== ValueTypes.object) {
-			return [false, `Invalid value type at entity path "${this.path}. Received value of type "${valueType}", expected value of type "object"`];
+			return [false, [new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path "${this.path}. Received value of type "${valueType}", expected value of type "object"`)]];
 		}
-		let reason = "";
+		let reason = [];
 		const [childrenAreValid, childErrors] = this._validateChildren(value);
 		if (!childrenAreValid) {
 			reason = childErrors;
@@ -526,24 +547,24 @@ class MapAttribute extends Attribute {
 	_validateChildren(value) {
 		const valueType = getValueType(value);
 		const attributes = this.properties.attributes;
-		const errors = [];
+		let errors = [];
 		if (valueType === ValueTypes.object) {
 			for (const child of Object.keys(attributes)) {
-				const [isValid, errorMessages] = attributes[child].isValid(value === undefined ? value : value[child])
+				const [isValid, errorValues] = attributes[child].isValid(value === undefined ? value : value[child])
 				if (!isValid) {
-					errors.push(errorMessages);
+					errors = [...errors, ...errorValues]
 				}
 			}
 		} else if (valueType !== ValueTypes.object) {
 			errors.push(
-				`Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`
+				new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`)
 			);
 		} else if (this.properties.hasRequiredAttributes) {
 			errors.push(
-				`Invalid value type at entity path: "${this.path}". Map attribute requires at least the properties ${u.commaSeparatedString(Object.keys(attributes))}`
+				new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Map attribute requires at least the properties ${u.commaSeparatedString(Object.keys(attributes))}`)
 			);
 		}
-		return [errors.length === 0, errors.filter(Boolean).join(", ")];
+		return [errors.length === 0, errors];
 	}
 
 	val(value) {
@@ -560,7 +581,7 @@ class MapAttribute extends Attribute {
 		} else if (value && valueType !== "object" && Object.keys(value).length === 0) {
 			return getValue(value);
 		} else if (valueType !== "object") {
-			throw new Error(`Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`);
+			throw new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`);
 		}
 
 		const data = {};
@@ -643,24 +664,29 @@ class ListAttribute extends Attribute {
 	}
 
 	_validateArrayValue(value) {
+		const reason = [];
 		const valueType = getValueType(value);
 		if (value !== undefined && valueType !== ValueTypes.array) {
-			return [false, `Invalid value type at entity path "${this.path}. Received value of type "${valueType}", expected value of type "array"`];
+			return [false, [new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path "${this.path}. Received value of type "${valueType}", expected value of type "array"`)]];
 		} else {
-			return [true, ""];
+			return [true, []];
 		}
 	}
 
 	_isType(value) {
 		if (value === undefined) {
-			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+			let reason = [];
+			if (this.required) {
+				reason.push(new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Value is required.`));
+			}
+			return [!this.required, reason];
 		}
 
 		const [isValidArray, errors] = this._validateArrayValue(value);
 		if (!isValidArray) {
 			return [isValidArray, errors];
 		}
-		let reason = "";
+		let reason = [];
 		const [childrenAreValid, childErrors] = this._validateChildren(value);
 		if (!childrenAreValid) {
 			reason = childErrors;
@@ -673,17 +699,22 @@ class ListAttribute extends Attribute {
 		const errors = [];
 		if (valueType === ValueTypes.array) {
 			for (const i in value) {
-				const [isValid, errorMessages] = this.items.isValid(value[i]);
+				const [isValid, errorValues] = this.items.isValid(value[i]);
 				if (!isValid) {
-					errors.push(errorMessages + ` at index "${i}"`);
+					for (const err of errorValues) {
+						if (err instanceof e.ElectroAttributeValidationError || err instanceof e.ElectroUserValidationError) {
+							err.index = parseInt(i);
+						}
+						errors.push(err);
+					}
 				}
 			}
 		} else {
 			errors.push(
-				`Invalid value type at entity path: "${this.path}". Expected value to be an Array to fulfill attribute type "${this.type}"`
+				new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Expected value to be an Array to fulfill attribute type "${this.type}"`)
 			);
 		}
-		return [errors.length === 0, errors.filter(Boolean).join(", ")];
+		return [errors.length === 0, errors];
 	}
 
 	val(value) {
@@ -700,7 +731,7 @@ class ListAttribute extends Attribute {
 		} else if (Array.isArray(value) && value.length === 0) {
 			return value;
 		} else if (!Array.isArray(value)) {
-			throw new Error(`Invalid value type at entity path "${this.path}. Received value of type "${getValueType(value)}", expected value of type "array"`);
+			throw new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path "${this.path}. Received value of type "${getValueType(value)}", expected value of type "array"`);
 		}
 
 		const data = [];
@@ -731,6 +762,20 @@ class SetAttribute extends Attribute {
 		this.items = items;
 		this.get = this._makeGet(definition.get, items);
 		this.set = this._makeSet(definition.set, items);
+		this.validate = this._makeSetValidate(definition);
+	}
+
+	_makeSetValidate(definition) {
+		const validate = this._makeValidate(definition.validate);
+		return (value) => {
+			if (Array.isArray(value)) {
+				return validate([...value]);
+			} else if (value && value.wrapperName === 'Set') {
+				return validate([...value.values])
+			} else {
+				return validate(value);
+			}
+		}
 	}
 
 	fromDDBSet(value) {
@@ -768,7 +813,7 @@ class SetAttribute extends Attribute {
 				return this._createDDBSet(value);
 			}
 			default:
-				throw new Error(`Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.`)
+				throw new e.ElectroAttributeValidationError(this.path, `Invalid attribute value supplied to "set" attribute "${this.path}". Received value of type "${valueType}". Set values must be supplied as either Arrays, native JavaScript Set objects, DocumentClient Set objects, strings, or numbers.`)
 		}
 
 	}
@@ -795,7 +840,9 @@ class SetAttribute extends Attribute {
 		this._checkGetSet(set, "set");
 		const setter = set || ((attr) => attr);
 		return (values, siblings) => {
-			const results = setter(values, siblings);
+			const results = values && values.wrapperName === 'Set'
+				? setter(values.values, siblings)
+				: setter(values, siblings)
 			if (results !== undefined) {
 				return this.toDDBSet(results);
 			}
@@ -804,10 +851,14 @@ class SetAttribute extends Attribute {
 
 	_isType(value) {
 		if (value === undefined) {
-			return [!this.required, this.required ? `Invalid value type at entity path: "${this.path}". Value is required.` : ""];
+			const reason = [];
+			if (this.required) {
+				reason.push(new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Value is required.`));
+			}
+			return [!this.required, reason];
 		}
 
-		let reason = "";
+		let reason = [];
 		const [childrenAreValid, childErrors] = this._validateChildren(value);
 		if (!childrenAreValid) {
 			reason = childErrors;
@@ -817,7 +868,7 @@ class SetAttribute extends Attribute {
 
 	_validateChildren(value) {
 		const valueType = getValueType(value);
-		const errors = [];
+		let errors = [];
 		let arr = [];
 		if (valueType === ValueTypes.array) {
 			arr = value;
@@ -827,16 +878,16 @@ class SetAttribute extends Attribute {
 			arr = value.values;
 		} else {
 			errors.push(
-				`Invalid value type at attribute path: "${this.path}". Expected value to be an Expected value to be an Array, native JavaScript Set objects, or DocumentClient Set objects to fulfill attribute type "${this.type}"`
+				new e.ElectroAttributeValidationError(this.path, `Invalid value type at attribute path: "${this.path}". Expected value to be an Expected value to be an Array, native JavaScript Set objects, or DocumentClient Set objects to fulfill attribute type "${this.type}"`)
 			)
 		}
 		for (const item of arr) {
-			const [isValid, errorMessage] = this.items.isValid(item);
+			const [isValid, errorValues] = this.items.isValid(item);
 			if (!isValid) {
-				errors.push(errorMessage);
+				errors = [...errors, ...errorValues];
 			}
 		}
-		return [errors.length === 0, errors.filter(Boolean).join(", ")];
+		return [errors.length === 0, errors];
 	}
 
 	val(value) {
@@ -1232,11 +1283,11 @@ class Schema {
 		for (const path of paths) {
 			const attribute = this.traverser.getPath(path);
 			if (!attribute) {
-				throw new Error(`Attribute "${path}" does not exist on model.`);
+				throw new e.ElectroAttributeValidationError(path, `Attribute "${path}" does not exist on model.`);
 			} else if (attribute.readOnly) {
-				throw new Error(`Attribute "${attribute.path}" is Read-Only and cannot be removed`);
+				throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Read-Only and cannot be removed`);
 			} else if (attribute.required) {
-				throw new Error(`Attribute "${attribute.path}" is Required and cannot be removed`);
+				throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Required and cannot be removed`);
 			}
 		}
 		return paths;
@@ -1251,7 +1302,7 @@ class Schema {
 			}
 			if (attribute.readOnly) {
 				// todo: #electroerror
-				throw new Error(`Attribute "${attribute.path}" is Read-Only and cannot be updated`);
+				throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Read-Only and cannot be updated`);
 			} else {
 				record[path] = attribute.getValidate(value);
 			}
