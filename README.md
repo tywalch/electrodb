@@ -4589,7 +4589,6 @@ Below is the type definition for an ElectroValidationError:
 ```typescript
 ElectroValidationError<T extends Error = Error> extends ElectroError {
     readonly name: "ElectroValidationError"
-    readonly name: 'ElectroError';
     readonly code: number;
     readonly date: number;
     readonly isElectroError: boolean;
