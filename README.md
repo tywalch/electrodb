@@ -569,7 +569,7 @@ const TasksModel = {
 	attributes: {
 		task: {
 			type: "string",
-			default: () => uuidv4(),
+			default: () => uuid(),
 		},
 		project: {
 			type: "string",
@@ -819,11 +819,11 @@ myAttr: {
   watch: ["otherAttr"],
   set: (myAttr, {otherAttr}) => {
     // Whenever "myAttr" or "otherAttr" are updated from an `update` or `patch` operation, this callback will be fired. 
-    // Note: myAttr or otherAttr could be indendently undefined because either attribute could have triggered this callback  
+    // Note: myAttr or otherAttr could be independently undefined because either attribute could have triggered this callback
   },
   get: (myAttr, {otherAttr}) => {
     // Whenever "myAttr" or "otherAttr" are retrieved from a `query` or `get` operation, this callback will be fired. 
-    // Note: myAttr or otherAttr could be indendently undefined because either attribute could have triggered this callback.
+    // Note: myAttr or otherAttr could be independently undefined because either attribute could have triggered this callback.
   } 
 }
 ```
@@ -837,11 +837,11 @@ myAttr: {
   watch: "*", // "watch all"
   set: (myAttr, allAttributes) => {
     // Whenever an `update` or `patch` operation is performed, this callback will be fired. 
-    // Note: myAttr or the attributes under `allAttributes` could be indendently undefined because either attribute could have triggered this callback  
+    // Note: myAttr or the attributes under `allAttributes` could be independently undefined because either attribute could have triggered this callback
   },
   get: (myAttr, allAttributes) => {
     // Whenever a `query` or `get` operation is performed, this callback will be fired. 
-    // Note: myAttr or the attributes under `allAttributes` could be indendently undefined because either attribute could have triggered this callback
+    // Note: myAttr or the attributes under `allAttributes` could be independently undefined because either attribute could have triggered this callback
   } 
 }
 ```
@@ -1421,7 +1421,7 @@ As described in the above two sections ([Composite Attributes](#composite-attrib
 
 It may be the case that an index field is also an attribute. For example, if a table was created with a Primary Index partition key of `accountId`, and that same field is used to store the `accountId` value used by the application. The following are a few examples of how to model that schema with ElectroDB:
 
-> _NOTE: If you have the unique opportunity to use ElectroDB with a new project, it is strongly recommended to use genericly named index fields that are separate from your business attributes._  
+> _NOTE: If you have the unique opportunity to use ElectroDB with a new project, it is strongly recommended to use generically named index fields that are separate from your business attributes._
 
 **Using `composite`**
 
@@ -1762,7 +1762,7 @@ let results = await TaskApp.collections
 
 {
     tasks: [...],    // tasks for employeeId "JExotic" 
-    employees: [...] // employee record(s) with employeeId "JExpotic"
+    employees: [...] // employee record(s) with employeeId "JExotic"
 }
 ```
 
@@ -1777,7 +1777,7 @@ The following is an example of functionally identical collections, implemented a
 **As a string (collection):**
 ```typescript
 {
-  colleciton: "assignments"
+  collection: "assignments"
   pk: {
     field: "pk",
     composite: ["employeeId"]
@@ -1792,7 +1792,7 @@ The following is an example of functionally identical collections, implemented a
 **As a string array (sub-collections):**
 ```typescript
 {
-  colleciton: ["assignments"]
+  collection: ["assignments"]
   pk: {
     field: "pk",
             composite: ["employeeId"]
@@ -4228,7 +4228,7 @@ await StoreLocations.query.leases({storeId}).gte({leaseEndDate: "2020-03"}).go()
 // Lease Agreements by StoreId before 2021
 await StoreLocations.query.leases({storeId}).lt({leaseEndDate: "2021-01"}).go()
 
-// Lease Agreements by StoreId before Feburary 2021
+// Lease Agreements by StoreId before February 2021
 await StoreLocations.query.leases({storeId}).lte({leaseEndDate: "2021-02"}).go()
 
 // Lease Agreements by StoreId between 2010 and 2020
