@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.798.0",
+    "aws-sdk": "^2.814.0",
     "electrodb": "^0.9.32",
     "moment": "^2.29.1",
     "uuid": "^8.3.1"
