@@ -9,10 +9,6 @@ const validations = require("./validations");
 const utilities = require("./util");
 const e = require("./errors");
 
-const log = (...vals) => {
-	console.log(JSON.stringify(vals.length === 1 ? vals[0] : vals, null, 4))
-}
-
 class Entity {
 	constructor(model, config = {}) {
 		this._validateModel(model);
