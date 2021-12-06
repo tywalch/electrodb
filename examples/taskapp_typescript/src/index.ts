@@ -32,10 +32,10 @@ async function execute() {
    * For more examples checkout the README.
   **/
   // Make table:
-  // await loader.makeTable();
+  await loader.makeTable();
 
   // Load table:
-  // await loader.loadTable({employees: 500, tasks: 600});
+  await loader.loadTable({employees: 500, tasks: 600});
 
   // Drop table:
   // await loader.dropTable()
@@ -52,13 +52,14 @@ async function query() {
     `);
     process.exit(1);
   }
+  const office = records[0]?.office;
   // Use Collections to query across entities.
-  // Find office and staff information for the "Scranton Branch"
-  let scranton = await taskr.collections.workplaces({office: "Scranton Branch"}).go();
-  console.log("Workplace Collection:", scranton, "\r\n");
+  // Find office and staff information an office
+  let workplace = await taskr.collections.workplaces({office}).go();
+  console.log("Workplace Collection:", workplace, "\r\n");
 
   // Get employee details and all assigned
-  let {firstName, lastName, employee} = scranton.employees[0];
+  let {firstName, lastName, employee} = workplace.employees[0];
   let kanban = await taskr.collections.assignments({employee}).go();
   console.log(`Assignments for ${firstName} ${lastName}:`, kanban, "\r\n");
 
@@ -102,3 +103,5 @@ async function query() {
     //
   }
 }
+
+execute().catch(console.error);

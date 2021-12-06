@@ -135,3 +135,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Fixed
 - For Set attributes, the callback functions `get`, `set`, and `validate` are now consistently given an Array of values. These functions would sometimes (incorrectly) be called with a DynamoDB DocClient Set.
+
+## [1.6.1] - 2021-12-05
+### Fixed
+- In some cases the `find()` and `match()` methods would incorrectly select an index without a complete partition key. This would result in validation exceptions preventing the user from querying if an index definition and provided attribute object aligned improperly. This was fixed and a slightly more robust mechanism for ranking indexes was made.
