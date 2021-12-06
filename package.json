@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
@@ -50,6 +50,9 @@
     "electrodb",
     "dynamo",
     "dynamodb",
+    "nosql",
+    "single table design",
+    "typescript",
     "aws"
   ],
   "tsd": {

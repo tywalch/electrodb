@@ -3720,6 +3720,8 @@ DynamoDB offers three methods to query records: `get`, `query`, and `scan`. In *
 
 > _NOTE: The Find method is similar to the Match method with one exception: The attributes you supply directly to the `.find()` method will only be used to identify and fulfill your index access patterns. Any values supplied that do not contribute to a composite key will not be applied as query filters. Furthermore, if the values you provide do not resolve to an index access pattern, then a table scan will be performed. Use the `where()` chain method to further filter beyond keys, or use [Match](#match-records) for the convenience of automatic filtering based on the values given directly to that method._
 
+The Find method is useful when the index chosen does not matter or is not known. If your secondary indexes do not contain all attributes then this method might not be right for you. The mechanism that picks the best index for a given payload is subject to improvement and change without triggering a breaking change release version.
+
 ```javascript
 await StoreLocations.find({
     mallId: "EastPointe",
@@ -3750,7 +3752,10 @@ await StoreLocations.find({
 
 Match is a convenience method based off of ElectroDB's [find](#find-records) method. Similar to Find, Match does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on.
 
+> _NOTE: The Math method is useful when the index chosen does not matter or is not known. If your secondary indexes do not contain all attributes then this method might not be right for you. The mechanism that picks the best index for a given payload is subject to improvement and change without triggering a breaking change release version.
+
 Match differs from [Find](#find-records) in that it will also include all supplied values into a query filter.
+
 
 ```javascript
 await StoreLocations.find({
