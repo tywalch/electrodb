@@ -2,8 +2,8 @@ const { Entity, clauses } = require("../src/entity");
 const {Service} = require("../src/service");
 const { expect } = require("chai");
 const moment = require("moment");
-const uuidV4 = require("uuid/v4");
-
+const uuid = require("uuid/v4");
+const table = "electro";
 let schema = {
 	service: "MallStoreDirectory",
 	entity: "MallStores",
@@ -12,7 +12,7 @@ let schema = {
 	attributes: {
 		id: {
 			type: "string",
-			default: () => uuidV4(),
+			default: () => uuid(),
 			field: "storeLocationId",
 		},
 		mall: {
@@ -1263,7 +1263,7 @@ describe("Entity", () => {
 			).to.throw(`Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a composite attribute of the the following indexes: Table Index`);
 		});
 		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", async () => {
-			let id = uuidV4();
+			let id = uuid();
 			let rent = "0.00";
 			let category = "food/coffee";
 			let adjustments = "500.00";
@@ -1307,7 +1307,7 @@ describe("Entity", () => {
 			expect(() => new Entity(schema)).to.throw(error);
 		});
 		it("Should identify impacted indexes from attributes", () => {
-			let id = uuidV4();
+			let id = uuid();
 			let rent = "0.00";
 			let category = "food/coffee";
 			let mall = "EastPointe";
@@ -1486,7 +1486,7 @@ describe("Entity", () => {
 			let mall = "EastPointe";
 			let store = "LatteLarrys";
 			let building = "BuildingA";
-			let id = uuidV4();
+			let id = uuid();
 			let category = "food/coffee";
 			let unit = "B54";
 			let leaseEnd = "2020-01-20";
@@ -1610,7 +1610,7 @@ describe("Entity", () => {
 			let mall = "EastPointe";
 			let store = "LatteLarrys";
 			let building = "BuildingA";
-			let id = uuidV4();
+			let id = uuid();
 			let category = "food/coffee";
 			let unit = "B54";
 			let leaseEnd = "2020-01-20";
@@ -2420,7 +2420,7 @@ describe("Entity", () => {
 		let mall = "EastPointe";
 		let store = "LatteLarrys";
 		let building = "BuildingA";
-		let id = uuidV4();
+		let id = uuid();
 		let category = "coffee";
 		let unit = "B54";
 		let leaseEnd = "2020-01-20";
@@ -4248,7 +4248,7 @@ describe("Entity", () => {
 			]);
 			expect(index).to.be.deep.equal(schema.indexes.shops.index);
 		});
-		it("Should pick either gsi4pk-gsi4sk-index or gsi1pk-gsi1sk-index because both are viable indexes", () => {
+		it("Should pick either gsi4pk-gsi4sk-index or gsi3pk-gsi3sk-index because both are viable indexes", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({
 				mall,
 				store,
@@ -4256,16 +4256,168 @@ describe("Entity", () => {
 				category,
 			});
 			expect(keys).to.be.deep.equal([
-				{ name: "mall", type: "pk" },
-				{ name: "category", type: "sk" },
+				{ name: "store", type: "pk" },
+				{ name: "mall", type: "sk" },
 				{ name: "building", type: "sk" },
 			]);
-			expect(index).to.be.deep.equal(schema.indexes.categories.index);
+			expect(index).to.be.deep.equal(schema.indexes.shops.index);
 		});
 		it("Should match not match any index", () => {
 			let { index, keys } = MallStores._findBestIndexKeyMatch({ unit });
 			expect(keys).to.be.deep.equal([]);
 			expect(index).to.be.deep.equal("");
+		});
+
+		it("Should account for schemas with unfinished partition keys when tied", () => {
+			const entity = new Entity({
+				model: {
+					entity: 'group',
+					version: '1',
+					service: 'organizer'
+				},
+				attributes: {
+					accountId: {
+						type: 'string',
+					},
+					groupId: {
+						type: 'string',
+					},
+					groupName: {
+						type: 'string',
+					},
+				},
+				indexes: {
+					onPRIMARY: {
+						pk: {
+							field: 'PRIMARY_KEY',
+							composite: ['accountId', 'groupId'],
+						},
+						sk: {
+							field: 'SORT_KEY',
+							composite: [],
+						},
+					},
+					onACCOUNT: {
+						index: 'INDEX_1',
+						collection: ['account'],
+						pk: {
+							field: 'INDEX_1_PRIMARY',
+							composite: ['accountId'],
+						},
+						sk: {
+							field: 'INDEX_1_SORT',
+							composite: ['groupId']
+						}
+					}
+				}
+			}, {table});
+			const accountId = uuid();
+			let { index, keys, shouldScan } = entity._findBestIndexKeyMatch({
+				accountId,
+			});
+			expect(keys).to.be.deep.equal([
+				{ name: "accountId", type: "pk" },
+			]);
+			expect(index).to.be.deep.equal(entity.schema.indexes.onACCOUNT.index);
+			const params = entity.match({accountId}).params();
+			expect(params).to.deep.equal({
+				"KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+				"TableName": "electro",
+				"ExpressionAttributeNames": {
+					"#accountId": "accountId",
+					"#pk": "INDEX_1_PRIMARY",
+					"#sk1": "INDEX_1_SORT"
+				},
+				"ExpressionAttributeValues": {
+					":accountId0": accountId,
+					":pk": `$organizer#accountid_${accountId}`,
+					":sk1": "$account#group_1#groupid_"
+				},
+				"IndexName": "INDEX_1",
+				"FilterExpression": "#accountId = :accountId0"
+			});
+		});
+
+		it("Should account for schemas with unfinished partition keys", () => {
+			const entity = new Entity({
+				model: {
+					entity: 'group',
+					version: '1',
+					service: 'organizer'
+				},
+				attributes: {
+					accountId: {
+						type: 'string',
+					},
+					groupId: {
+						type: 'string',
+					},
+					userId: {
+						type: 'string',
+					},
+					transactionId: {
+						type: "string"
+					},
+					contractId: {
+						type: "string"
+					},
+					groupName: {
+						type: 'string',
+					},
+				},
+				indexes: {
+					onPRIMARY: {
+						pk: {
+							field: 'PRIMARY_KEY',
+							composite: ['accountId', 'groupId', 'userId', 'transactionId', 'contractId'],
+						},
+						sk: {
+							field: 'SORT_KEY',
+							composite: [],
+						},
+					},
+					onACCOUNT: {
+						index: 'INDEX_1',
+						pk: {
+							field: 'INDEX_1_PRIMARY',
+							composite: ['accountId', 'contractId', 'transactionId'],
+						},
+						sk: {
+							field: 'INDEX_1_SORT',
+							composite: ['groupName']
+						}
+					}
+				}
+			}, {table});
+			const accountId = uuid();
+			const groupId = uuid();
+			const userId = uuid();
+			const contractId = uuid();
+			let { keys, shouldScan } = entity._findBestIndexKeyMatch({
+				contractId,
+				accountId,
+				groupId,
+				userId,
+			});
+			expect(keys).to.be.deep.equal([]);
+			expect(shouldScan).to.be.true;
+			const params = entity.find({accountId, contractId, accountId, groupId, userId}).params();
+			expect(params).to.deep.equal({
+				"TableName": "electro",
+				"ExpressionAttributeNames": {
+					"#PRIMARY_KEY": "PRIMARY_KEY",
+					"#SORT_KEY": "SORT_KEY",
+					"#__edb_e__": "__edb_e__",
+					"#__edb_v__": "__edb_v__",
+				},
+				"ExpressionAttributeValues": {
+					":PRIMARY_KEY": "$organizer#accountid_",
+					":SORT_KEY": "$group_1",
+					":__edb_e__": "group",
+					":__edb_v__": "1",
+				},
+				"FilterExpression": "begins_with(#PRIMARY_KEY, :PRIMARY_KEY) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#SORT_KEY, :SORT_KEY)"
+			});
 		});
 	});
 	describe("_expectFacets", () => {
@@ -4776,7 +4928,7 @@ describe("Entity", () => {
 			attributes: {
 				id: {
 					type: "string",
-					default: () => uuidV4(),
+					default: () => uuid(),
 					field: "storeLocationId",
 				},
 				mall: {
@@ -5198,7 +5350,7 @@ describe("Entity", () => {
 						attributes: {
 							id: {
 								type: "string",
-								default: () => uuidV4(),
+								default: () => uuid(),
 								field: "storeLocationId",
 							},
 							mall: {
@@ -5351,7 +5503,7 @@ describe("Entity", () => {
 						attributes: {
 							id: {
 								type: "string",
-								default: () => uuidV4(),
+								default: () => uuid(),
 								field: "storeLocationId",
 							},
 							mall: {
@@ -5509,7 +5661,7 @@ describe("Entity", () => {
 						attributes: {
 							id: {
 								type: "string",
-								default: () => uuidV4(),
+								default: () => uuid(),
 								field: "storeLocationId",
 							},
 							mall: {
@@ -5668,7 +5820,7 @@ describe("Entity", () => {
 						attributes: {
 							id: {
 								type: "string",
-								default: () => uuidV4(),
+								default: () => uuid(),
 								field: "storeLocationId",
 							},
 							mall: {
@@ -5845,7 +5997,7 @@ describe("Entity", () => {
 						attributes: {
 							id: {
 								type: "string",
-								default: () => uuidV4(),
+								default: () => uuid(),
 								field: "storeLocationId",
 							},
 							mall: {

@@ -9,6 +9,10 @@ const validations = require("./validations");
 const utilities = require("./util");
 const e = require("./errors");
 
+const log = (...vals) => {
+	console.log(JSON.stringify(vals.length === 1 ? vals[0] : vals, null, 4))
+}
+
 class Entity {
 	constructor(model, config = {}) {
 		this._validateModel(model);
@@ -1885,54 +1889,105 @@ class Entity {
 		return utilities.formatKeyCasing(key, casing);
 	}
 
-	_findBestIndexKeyMatch(attributes) {
-		let candidates = this.model.facets.bySlot.map((val, i) => i);
+	_findBestIndexKeyMatch(attributes = {}) {
+		// an array of arrays, representing the order of pk and sk composites specified for each index, and then an
+		// array with each access pattern occupying the same array index.
 		let facets = this.model.facets.bySlot;
-		let match;
-		let keys = {};
-		for (let i = 0; i < facets.length; i++) {
-			let currentMatches = [];
-			let nextMatches = [];
-			for (let j = 0; j < candidates.length; j++) {
-				let slot = candidates[j];
-				if (!facets[i][slot]) {
+		// a flat array containing the match results of each access pattern, in the same array index they occur within
+		// bySlot above
+		let matches = [];
+		for (let f = 0; f < facets.length; f++) {
+			const slots = facets[f] || [];
+			for (let s = 0; s < slots.length; s++) {
+				const accessPatternSlot = slots[s];
+				matches[s] = matches[s] || {
+					index: accessPatternSlot.index,
+					allKeys: false,
+					hasSk: false,
+					count: 0,
+					done: false,
+					keys: []
+				}
+				// already determined to be out of contention on prior iteration
+				const indexOutOfContention = matches[s].done;
+				// composite shorter than other indexes
+				const lacksAttributeAtSlot = !accessPatternSlot;
+				// attribute at this slot is not in the object provided
+				const attributeNotProvided = accessPatternSlot && attributes[accessPatternSlot.name] === undefined;
+				// if the next attribute is a sort key then all partition keys were provided
+				const nextAttributeIsSortKey = accessPatternSlot && accessPatternSlot.next && facets[f+1][s].type === "sk";
+				// if no keys are left then all attribute requirements were met (remember indexes don't require a sort key)
+				const hasAllKeys = accessPatternSlot && !accessPatternSlot.next;
+
+				// no sense iterating on items we know to be "done"
+				if (indexOutOfContention || lacksAttributeAtSlot || attributeNotProvided) {
+					matches[s].done = true;
 					continue;
 				}
-				let name = facets[i][slot].name;
-				let next = facets[i][slot].next;
-				let index = facets[i][slot].index;
-				let type = facets[i][slot].type;
-				let match = !!attributes[name];
-				let matchNext = !!attributes[next];
-				if (match) {
-					keys[index] = keys[index] || [];
-					keys[index].push({ name, type });
-					currentMatches.push(slot);
-					if (matchNext) {
-						nextMatches.push(slot);
-					}
+
+				// if the next attribute is a sort key (and you reached this line) then you have fulfilled all the
+				// partition key requirements for this index
+				if (nextAttributeIsSortKey) {
+					matches[s].hasSk = true;
+				// if you reached this step and there are no more attributes, then you fulfilled the index
+				} else if (hasAllKeys) {
+					matches[s].allKeys = true;
 				}
-			}
-			if (currentMatches.length) {
-				if (nextMatches.length) {
-					candidates = [...nextMatches];
-					continue;
-				} else {
-					match = facets[i][currentMatches[0]].index;
-					break;
-				}
-			} else if (i === 0) {
-				break;
-			} else {
-				match = (candidates[0] !== undefined && facets[i][candidates[0]].index) || TableIndex;
-				break;
+
+				// number of successfully fulfilled attributes plays into the ranking heuristic
+				matches[s].count++;
+
+				// note the names/types of fulfilled attributes
+				matches[s].keys.push({
+					name: accessPatternSlot.name,
+					type: accessPatternSlot.type
+				});
 			}
 		}
-		return {
-			keys: keys[match] || [],
-			index: match || TableIndex,
-			shouldScan: match === undefined
-		};
+		// the highest count of matched attributes among all access patterns
+		let max = 0;
+		matches = matches
+			// remove incomplete indexes
+			.filter(match => match.hasSk || match.allKeys)
+			// calculate max attribute match
+			.map(match => {
+				max = Math.max(max, match.count);
+				return match;
+			});
+
+		// matched contains the ranked attributes. The closer an element is to zero the "higher" the rank.
+		const matched = [];
+		for (let m = 0; m < matches.length; m++) {
+			const match = matches[m];
+			// a finished primary index is most ideal (could be a get)
+			const primaryIndexIsFinished = match.index === "" && match.allKeys;
+			// if there is a tie for matched index attributes, primary index should win
+			const primaryIndexIsMostMatched = match.index === "" && match.count === max;
+			// composite attributes are complete
+			const indexRequirementsFulfilled = match.allKeys;
+			// having the most matches is important
+			const hasTheMostAttributeMatches = match.count === max;
+			if (primaryIndexIsFinished) {
+				matched[0] = match;
+			} else if (primaryIndexIsMostMatched) {
+				matched[1] = match;
+			} else if (indexRequirementsFulfilled) {
+				matched[2] = match;
+			} else if (hasTheMostAttributeMatches) {
+				matched[3] = match;
+			}
+		}
+		// find the first non-undefined element (best ranked) -- if possible
+		const match = matched.find(value => !!value);
+		let keys = [];
+		let index = "";
+		let shouldScan = true;
+		if (match) {
+			keys = match.keys;
+			index = match.index;
+			shouldScan = false;
+		}
+		return { keys, index, shouldScan };
 	}
 
 	/* istanbul ignore next */
@@ -1969,7 +2024,7 @@ class Entity {
 				type = "name";
 			} else if (char === "}" && type === "name") {
 				if (current.name.match(/^\s*$/)) {
-					throw new e.ElectroError(e.ErrorCodes.InvalidKeyCompositeAttributeTemplate, `Invalid key composite attribute template. Empty expression "\${${current.name}" provided. Expected attribute name.`);
+					throw new e.ElectroError(e.ErrorCodes.InvalidKeyCompositeAttributeTemplate, `Invalid key composite attribute template. Empty expression "\${${current.name}}" provided. Expected attribute name.`);
 				}
 				attributes.push({name: current.name, label: current.label});
 				current.name = "";
