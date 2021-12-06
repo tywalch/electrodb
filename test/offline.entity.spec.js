@@ -7385,6 +7385,72 @@ describe("Entity", () => {
 		});
 	});
 	describe("Composite Key Templates", () => {
+		it("Should not allow an empty values within template brackets", () => {
+			// empty template brackets
+			expect(() => new Entity({
+				model: {
+					entity: "templates",
+					service: "test",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: "myprefix1_${attr1}#${}"
+						},
+						sk: {
+							field: "sk",
+							template: "myprefix2_${attr2}#mypostfix2"
+						}
+					}
+				}
+			}, {table: "table"})).to.throw('Invalid key composite attribute template. Empty expression "${}" provided. Expected attribute name.');
+
+			// spaces within template brackets
+			expect(() => new Entity({
+				model: {
+					entity: "templates",
+					service: "test",
+					version: "1"
+				},
+				attributes: {
+					attr1: {
+						type: "string"
+					},
+					attr2: {
+						type: "string"
+					},
+					attr3: {
+						type: "string"
+					}
+				},
+				indexes: {
+					record: {
+						pk: {
+							field: "pk",
+							template: "myprefix1_${attr1}#${     }"
+						},
+						sk: {
+							field: "sk",
+							template: "myprefix2_${attr2}#mypostfix2"
+						}
+					}
+				}
+			}, {table: "table"})).to.throw('Invalid key composite attribute template. Empty expression "${     }" provided. Expected attribute name.');
+		});
+
 		it("Should allow composite templates to have trailing labels", () => {
 			const entity = new Entity({
 				model: {
