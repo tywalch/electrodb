@@ -1851,7 +1851,8 @@ describe("Entity", async () => {
 						__edb_v__: '1'
 					},
 					TableName: 'electro',
-					ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+					ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+					ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 				});
 				expect(counter.list(keys.create)).to.deep.equal([
 					{ value: 'prop3', attr: 'prop3', method: 'set' },
@@ -1919,7 +1920,8 @@ describe("Entity", async () => {
 						'#prop4': 'prop4',
 						"#prop1": "prop1",
 						"#prop2": "prop2",
-						"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
+						"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
+						"#pk": "pk", "#sk": "sk",
 					},
 					ExpressionAttributeValues: { ':prop3_u0': 'prop3_fromsetter', ':prop4_u0': 'prop4_fromsetter', ":prop1_u0": prop1, ":prop2_u0": "prop2", ":__edb_e___u0": "entity", ":__edb_v___u0": "1" },
 					TableName: 'electro',
@@ -1927,7 +1929,7 @@ describe("Entity", async () => {
 						pk: `$service#prop1_${prop1}`,
 						sk: '$entity_1#prop2_prop2',
 					},
-					ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+					ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)',
 				});
 				expect(counter.list(keys.patch)).to.deep.equal([
 					{ value: 'prop3', attr: 'prop3', method: 'set' },
@@ -2013,7 +2015,8 @@ describe("Entity", async () => {
 						__edb_v__: '1'
 					},
 					TableName: 'electro',
-					ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+					ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+					ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 				});
 				expect(counter.list(keys.create)).to.deep.equal([
 					{ value: undefined, attr: 'prop3', method: 'set' },
@@ -2056,7 +2059,7 @@ describe("Entity", async () => {
 				]);
 				expect(patchParams).to.deep.equal({
 					UpdateExpression: "SET #prop6 = :prop6_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
-					ExpressionAttributeNames: { '#prop6': 'prop6', "#prop1": "prop1", "#prop2": "prop2", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"},
+					ExpressionAttributeNames: { '#prop6': 'prop6', "#prop1": "prop1", "#prop2": "prop2", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", "#pk": "pk", "#sk": "sk"},
 					ExpressionAttributeValues: {
 						':prop6_u0': 'prop6_fromsetter',
 						":prop2_u0": "prop2",
@@ -2068,7 +2071,7 @@ describe("Entity", async () => {
 						pk: `$service#prop1_${prop1}`,
 						sk: '$entity_1#prop2_prop2'
 					},
-					ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+					ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)',
 				});
 				expect(counter.list(keys.patch)).to.deep.equal([
 					{ value: "prop6", attr: "prop6", method: "set" },
@@ -2150,7 +2153,8 @@ describe("Entity", async () => {
 						__edb_v__: '1'
 					},
 					TableName: 'electro',
-					ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+					ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+					ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 				});
 				expect(counter.list(keys.create)).to.deep.equal([
 					{ value: undefined, attr: 'prop3', method: 'set' },
@@ -2194,14 +2198,14 @@ describe("Entity", async () => {
 				]);
 				expect(patchParams).to.deep.equal({
 					UpdateExpression: "SET #prop6 = :prop6_u0, #prop4 = :prop4_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
-					ExpressionAttributeNames: { '#prop6': 'prop6', '#prop4': 'prop4', "#prop1": "prop1", "#prop2": "prop2", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__" },
+					ExpressionAttributeNames: { '#prop6': 'prop6', '#prop4': 'prop4', "#prop1": "prop1", "#prop2": "prop2", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", "#pk": "pk", "#sk": "sk" },
 					ExpressionAttributeValues: { ':prop6_u0': 'prop6_fromsetter', ':prop4_u0': 'prop4_fromvaluefromsetter', ":prop1_u0": prop1, ":prop2_u0": "prop2", ":__edb_e___u0": "entity", ":__edb_v___u0": "1" },
 					TableName: 'electro',
 					Key: {
 						pk: `$service#prop1_${prop1}`,
 						sk: '$entity_1#prop2_prop2'
 					},
-					ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+					ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)',
 				});
 				expect(counter.list(keys.patch)).to.deep.equal([
 					{ value: "prop6", attr: "prop6", method: "set" },
@@ -2321,7 +2325,8 @@ describe("Entity", async () => {
 						__edb_v__: '1'
 					},
 					TableName: 'electro',
-					ConditionExpression: "attribute_not_exists(pk) AND attribute_not_exists(sk)"
+					ConditionExpression: "attribute_not_exists(#pk) AND attribute_not_exists(#sk)",
+					ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 				});
 				expect(counter.list(keys.create)).to.deep.equal([
 					{ value: 'prop1', attr: 'prop1', method: 'set' },
@@ -2443,7 +2448,8 @@ describe("Entity", async () => {
 						__edb_v__: '1'
 					},
 					TableName: 'electro',
-					ConditionExpression: "attribute_not_exists(pk) AND attribute_not_exists(sk)"
+					ConditionExpression: "attribute_not_exists(#pk) AND attribute_not_exists(#sk)",
+					ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 				});
 				expect(counter.list(keys.create)).to.deep.equal([
 					{ value: 'prop1', attr: 'prop1', method: 'set' },
@@ -3913,7 +3919,8 @@ describe("Entity", async () => {
 					__edb_v__: '1'
 				},
 				TableName: 'electro',
-				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+				ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+				ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 			});
 			let createRecord = await MallStores.create({sector, store, mall, rent, category, leaseEnd, unit, building, id}).go();
 			expect(createRecord).to.deep.equal({
@@ -4138,4 +4145,49 @@ describe("Entity", async () => {
 			expect(deleteRecord).to.be.empty;
 		});
 	});
+	describe("Illegal key names", () => {
+		const table = "electro_leadingunderscorekeys";
+		const entity = new Entity({
+			model: {
+				entity: "illegalkeynames",
+				service: "testing",
+				version: "1"
+			},
+			attributes: {
+				prop1: {
+					type: "string"
+				},
+				prop2: {
+					type: "string"
+				},
+				prop3: {
+					type: "string"
+				},
+			},
+			indexes: {
+				record: {
+					pk: {
+						field: "_pk",
+						composite: ["prop1"]
+					},
+					sk: {
+						field: "_sk",
+						composite: ["prop2"]
+					}
+				}
+			}
+		}, {table, client});
+		it("should successfully perform a create, patch, and remove with illegal characters in key names", async () => {
+			const prop1 = "value1";
+			const prop2 = "value2";
+			const prop3 = "value3";
+			const prop3Patched = "value4";
+			const item = await entity.create({prop1, prop2, prop3}).go({response: ""});
+			expect(item).to.deep.equal({prop1, prop2, prop3});
+			const patched = await entity.patch({prop1, prop2}).set({prop3: prop3Patched}).go({response: "all_new"});
+			expect(patched).to.deep.equal({prop1, prop2, prop3: prop3Patched});
+			const removed = await entity.remove({prop1, prop2}).go({response: "all_old"});
+			expect(removed).to.deep.equal({prop1, prop2, prop3: prop3Patched});
+		});
+	})
 });

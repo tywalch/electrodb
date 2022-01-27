@@ -1919,7 +1919,7 @@ describe("Entity", () => {
 					store: {
 						collection: ["myCollection"],
 						pk: {
-							field: "parition_key",
+							field: "partition_key",
 							composite: ["id"],
 							casing: "none",
 						},
@@ -1933,7 +1933,7 @@ describe("Entity", () => {
 						index: "idx1",
 						collection: "otherCollection",
 						pk: {
-							field: "parition_key_idx1",
+							field: "partition_key_idx1",
 							composite: ["mall"],
 							casing: "upper",
 						},
@@ -1968,7 +1968,7 @@ describe("Entity", () => {
 			let collectionParams = MallService.collections.myCollection({id}).params();
 			expect(getParams).to.deep.equal({
 				Key: {
-					parition_key: "$MallStoreDirectory#id_Abcd",
+					partition_key: "$MallStoreDirectory#id_Abcd",
 					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
 				},
 				TableName: 'StoreDirectory'
@@ -1978,7 +1978,7 @@ describe("Entity", () => {
 					"StoreDirectory": {
 						"Keys": [
 							{
-								parition_key: "$MallStoreDirectory#id_Abcd",
+								partition_key: "$MallStoreDirectory#id_Abcd",
 								sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
 							}
 						]
@@ -1987,7 +1987,7 @@ describe("Entity", () => {
 			}]);
 			expect(deleteParams).to.deep.equal({
 				Key: {
-					parition_key: "$MallStoreDirectory#id_Abcd",
+					partition_key: "$MallStoreDirectory#id_Abcd",
 					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
 				},
 				TableName: 'StoreDirectory'
@@ -1998,7 +1998,7 @@ describe("Entity", () => {
 						{
 							"DeleteRequest": {
 								"Key": {
-									parition_key: "$MallStoreDirectory#id_Abcd",
+									partition_key: "$MallStoreDirectory#id_Abcd",
 									sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
 								}
 							}
@@ -2008,11 +2008,12 @@ describe("Entity", () => {
 			}]);
 			expect(removeParams).to.deep.equal({
 				Key: {
-					parition_key: "$MallStoreDirectory#id_Abcd",
+					partition_key: "$MallStoreDirectory#id_Abcd",
 					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
 				},
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+				ConditionExpression: 'attribute_exists(#partition_key) AND attribute_exists(#sort_key)',
+				ExpressionAttributeNames: { "#partition_key": "partition_key", "#sort_key": "sort_key" }
 			});
 			expect(updateParams).to.deep.equal({
 				UpdateExpression: "SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
@@ -2032,7 +2033,7 @@ describe("Entity", () => {
 				},
 				TableName: 'StoreDirectory',
 				Key: {
-					parition_key: "$MallStoreDirectory#id_Abcd",
+					partition_key: "$MallStoreDirectory#id_Abcd",
 					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
 				}
 			});
@@ -2043,7 +2044,9 @@ describe("Entity", () => {
 					"#mall": "mall",
 					"#stores": "stores",
 					"#value": "value",
-					"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
+					"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
+					"#partition_key": "partition_key",
+					"#sort_key": "sort_key"
 				},
 				ExpressionAttributeValues: {
 					":id_u0": "Abcd",
@@ -2054,10 +2057,10 @@ describe("Entity", () => {
 				},
 				TableName: 'StoreDirectory',
 				Key: {
-					parition_key: "$MallStoreDirectory#id_Abcd",
+					partition_key: "$MallStoreDirectory#id_Abcd",
 					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
 				},
-				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+				ConditionExpression: 'attribute_exists(#partition_key) AND attribute_exists(#sort_key)'
 			});
 			expect(createParams).to.deep.equal({
 				Item: {
@@ -2065,15 +2068,16 @@ describe("Entity", () => {
 					mall: 'Defg',
 					stores: 1,
 					value: 'Ahssfh',
-					parition_key: "$MallStoreDirectory#id_Abcd",
+					partition_key: "$MallStoreDirectory#id_Abcd",
 					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1',
-					parition_key_idx1: '$MALLSTOREDIRECTORY#MALL_DEFG',
+					partition_key_idx1: '$MALLSTOREDIRECTORY#MALL_DEFG',
 					sort_key_idx1: '$otherCollection#MallStores_1#id_Abcd#stores_1',
 					__edb_e__: 'MallStores',
 					__edb_v__: '1'
 				},
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_not_exists(parition_key) AND attribute_not_exists(sort_key)'
+				ConditionExpression: 'attribute_not_exists(#partition_key) AND attribute_not_exists(#sort_key)',
+				ExpressionAttributeNames: {"#partition_key": "partition_key", "#sort_key": "sort_key"}
 			});
 			expect(putParams).to.deep.equal({
 				Item: {
@@ -2081,9 +2085,9 @@ describe("Entity", () => {
 					mall: 'Defg',
 					stores: 1,
 					value: 'Ahssfh',
-					parition_key: "$MallStoreDirectory#id_Abcd",
+					partition_key: "$MallStoreDirectory#id_Abcd",
 					sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1',
-					parition_key_idx1: '$MALLSTOREDIRECTORY#MALL_DEFG',
+					partition_key_idx1: '$MALLSTOREDIRECTORY#MALL_DEFG',
 					sort_key_idx1: '$otherCollection#MallStores_1#id_Abcd#stores_1',
 					__edb_e__: 'MallStores',
 					__edb_v__: '1'
@@ -2100,8 +2104,8 @@ describe("Entity", () => {
 									"__edb_v__": "1",
 									"id": "Abcd",
 									"mall": "Defg",
-									"parition_key": "$MallStoreDirectory#id_Abcd",
-									"parition_key_idx1": "$MALLSTOREDIRECTORY#MALL_DEFG",
+									"partition_key": "$MallStoreDirectory#id_Abcd",
+									"partition_key_idx1": "$MALLSTOREDIRECTORY#MALL_DEFG",
 									sort_key: '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1',
 									"sort_key_idx1": "$otherCollection#MallStores_1#id_Abcd#stores_1",
 									"stores": 1,
@@ -2115,7 +2119,7 @@ describe("Entity", () => {
 			expect(query1).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'parition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
 				ExpressionAttributeValues: {
 					':pk': "$MallStoreDirectory#id_Abcd",
 					':sk1': '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
@@ -2124,7 +2128,7 @@ describe("Entity", () => {
 			expect(query2).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'parition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
 				ExpressionAttributeValues: {
 					':pk': '$MALLSTOREDIRECTORY#MALL_DEFG',
 					':sk1': '$otherCollection#MallStores_1#id_Abcd#stores_1'
@@ -2134,23 +2138,23 @@ describe("Entity", () => {
 			expect(scanParams).to.deep.equal({
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: {
-					'#parition_key': 'parition_key',
+					'#partition_key': 'partition_key',
 					'#sort_key': 'sort_key',
 					'#__edb_e__': '__edb_e__',
 					'#__edb_v__': '__edb_v__'
 				},
 				ExpressionAttributeValues: {
-					':parition_key': '$MallStoreDirectory#id_',
+					':partition_key': '$MallStoreDirectory#id_',
 					':sort_key': '$MYCOLLECTION#MALLSTORES_1#MALL_',
 					':__edb_e__': 'MallStores',
 					':__edb_v__': '1'
 				},
-				FilterExpression: 'begins_with(#parition_key, :parition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
+				FilterExpression: 'begins_with(#partition_key, :partition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
 			});
 			expect(collectionParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'parition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
 				ExpressionAttributeValues: {
 					':pk': "$MallStoreDirectory#id_Abcd",
 					':sk1': '$MYCOLLECTION'
@@ -2185,7 +2189,7 @@ describe("Entity", () => {
 				indexes: {
 					store: {
 						pk: {
-							field: "parition_key",
+							field: "partition_key",
 							composite: ["id"],
 							template: "mIxEdCaSe#${id}",
 							casing: "none",
@@ -2200,7 +2204,7 @@ describe("Entity", () => {
 					other: {
 						index: "idx1",
 						pk: {
-							field: "parition_key_idx1",
+							field: "partition_key_idx1",
 							composite: ["mall"],
 							template: "MaLl#${mall}",
 							casing: "upper",
@@ -2234,7 +2238,7 @@ describe("Entity", () => {
 			let scanParams = MallStores.scan.params();
 			expect(getParams).to.deep.equal({
 				Key: {
-					parition_key: "mIxEdCaSe#Abcd",
+					partition_key: "mIxEdCaSe#Abcd",
 					sort_key: 'MALL#DEFG#STORES#1'
 				},
 				TableName: 'StoreDirectory'
@@ -2244,7 +2248,7 @@ describe("Entity", () => {
 					"StoreDirectory": {
 						"Keys": [
 							{
-								parition_key: "mIxEdCaSe#Abcd",
+								partition_key: "mIxEdCaSe#Abcd",
 								sort_key: 'MALL#DEFG#STORES#1'
 							}
 						]
@@ -2253,7 +2257,7 @@ describe("Entity", () => {
 			}]);
 			expect(deleteParams).to.deep.equal({
 				Key: {
-					parition_key: "mIxEdCaSe#Abcd",
+					partition_key: "mIxEdCaSe#Abcd",
 					sort_key: 'MALL#DEFG#STORES#1'
 				},
 				TableName: 'StoreDirectory'
@@ -2264,7 +2268,7 @@ describe("Entity", () => {
 						{
 							"DeleteRequest": {
 								"Key": {
-									parition_key: "mIxEdCaSe#Abcd",
+									partition_key: "mIxEdCaSe#Abcd",
 									sort_key: 'MALL#DEFG#STORES#1'
 								}
 							}
@@ -2274,11 +2278,12 @@ describe("Entity", () => {
 			}]);
 			expect(removeParams).to.deep.equal({
 				Key: {
-					parition_key: "mIxEdCaSe#Abcd",
+					partition_key: "mIxEdCaSe#Abcd",
 					sort_key: 'MALL#DEFG#STORES#1'
 				},
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+				ConditionExpression: 'attribute_exists(#partition_key) AND attribute_exists(#sort_key)',
+				ExpressionAttributeNames: { "#partition_key": "partition_key", "#sort_key": "sort_key" }
 			});
 			expect(updateParams).to.deep.equal({
 				UpdateExpression: "SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
@@ -2298,7 +2303,7 @@ describe("Entity", () => {
 				},
 				TableName: 'StoreDirectory',
 				Key: {
-					parition_key: "mIxEdCaSe#Abcd",
+					partition_key: "mIxEdCaSe#Abcd",
 					sort_key: 'MALL#DEFG#STORES#1'
 				}
 			});
@@ -2309,7 +2314,9 @@ describe("Entity", () => {
 					"#id": "id",
 					"#mall": "mall",
 					"#stores": "stores",
-					"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
+					"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
+					"#partition_key": "partition_key",
+					"#sort_key": "sort_key"
 				},
 				ExpressionAttributeValues: {
 					":id_u0": "Abcd",
@@ -2320,10 +2327,10 @@ describe("Entity", () => {
 				},
 				TableName: 'StoreDirectory',
 				Key: {
-					parition_key: "mIxEdCaSe#Abcd",
+					partition_key: "mIxEdCaSe#Abcd",
 					sort_key: 'MALL#DEFG#STORES#1'
 				},
-				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+				ConditionExpression: 'attribute_exists(#partition_key) AND attribute_exists(#sort_key)'
 			});
 			expect(createParams).to.deep.equal({
 				Item: {
@@ -2331,15 +2338,16 @@ describe("Entity", () => {
 					mall: 'Defg',
 					stores: 1,
 					value: 'Ahssfh',
-					parition_key: "mIxEdCaSe#Abcd",
+					partition_key: "mIxEdCaSe#Abcd",
 					sort_key: 'MALL#DEFG#STORES#1',
-					parition_key_idx1: 'MALL#DEFG',
+					partition_key_idx1: 'MALL#DEFG',
 					sort_key_idx1: 'iD#Abcd#sToReS#1',
 					__edb_e__: 'MallStores',
 					__edb_v__: '1'
 				},
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_not_exists(parition_key) AND attribute_not_exists(sort_key)'
+				ConditionExpression: 'attribute_not_exists(#partition_key) AND attribute_not_exists(#sort_key)',
+				ExpressionAttributeNames: {"#partition_key": "partition_key", "#sort_key": "sort_key"}
 			});
 			expect(putParams).to.deep.equal({
 				Item: {
@@ -2347,9 +2355,9 @@ describe("Entity", () => {
 					mall: 'Defg',
 					stores: 1,
 					value: 'Ahssfh',
-					parition_key: "mIxEdCaSe#Abcd",
+					partition_key: "mIxEdCaSe#Abcd",
 					sort_key: 'MALL#DEFG#STORES#1',
-					parition_key_idx1: 'MALL#DEFG',
+					partition_key_idx1: 'MALL#DEFG',
 					sort_key_idx1: 'iD#Abcd#sToReS#1',
 					__edb_e__: 'MallStores',
 					__edb_v__: '1'
@@ -2366,8 +2374,8 @@ describe("Entity", () => {
 									"__edb_v__": "1",
 									"id": "Abcd",
 									"mall": "Defg",
-									"parition_key": "mIxEdCaSe#Abcd",
-									"parition_key_idx1": "MALL#DEFG",
+									"partition_key": "mIxEdCaSe#Abcd",
+									"partition_key_idx1": "MALL#DEFG",
 									"sort_key": 'MALL#DEFG#STORES#1',
 									"sort_key_idx1": "iD#Abcd#sToReS#1",
 									"stores": 1,
@@ -2381,7 +2389,7 @@ describe("Entity", () => {
 			expect(query1).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'parition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
 				ExpressionAttributeValues: {
 					':pk': "mIxEdCaSe#Abcd",
 					':sk1': 'MALL#DEFG#STORES#1'
@@ -2390,7 +2398,7 @@ describe("Entity", () => {
 			expect(query2).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'parition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
 				ExpressionAttributeValues: {
 					':pk': 'MALL#DEFG',
 					':sk1': 'iD#Abcd#sToReS#1'
@@ -2400,18 +2408,18 @@ describe("Entity", () => {
 			expect(scanParams).to.deep.equal({
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: {
-					'#parition_key': 'parition_key',
+					'#partition_key': 'partition_key',
 					'#sort_key': 'sort_key',
 					'#__edb_e__': '__edb_e__',
 					'#__edb_v__': '__edb_v__'
 				},
 				ExpressionAttributeValues: {
-					':parition_key': "mIxEdCaSe#",
+					':partition_key': "mIxEdCaSe#",
 					':sort_key': 'MALL#',
 					':__edb_e__': 'MallStores',
 					':__edb_v__': '1'
 				},
-				FilterExpression: 'begins_with(#parition_key, :parition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
+				FilterExpression: 'begins_with(#partition_key, :partition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
 			});
 		});
 	})
@@ -2600,7 +2608,7 @@ describe("Entity", () => {
 				indexes: {
 					store: {
 						pk: {
-							field: "parition_key",
+							field: "partition_key",
 							facets: ["id"],
 						},
 						sk: {
@@ -2611,7 +2619,7 @@ describe("Entity", () => {
 					other: {
 						index: "idx1",
 						pk: {
-							field: "parition_key_idx1",
+							field: "partition_key_idx1",
 							facets: ["mall"],
 						},
 						sk: {
@@ -2638,25 +2646,26 @@ describe("Entity", () => {
 			let scanParams = MallStores.scan.params();
 			expect(getParams).to.deep.equal({
 				Key: {
-					parition_key: '$mallstoredirectory_1#id_abcd',
+					partition_key: '$mallstoredirectory_1#id_abcd',
 					sort_key: '$mallstores#mall_defg#stores_1'
 				},
 				TableName: 'StoreDirectory'
 			});
 			expect(deleteParams).to.deep.equal({
 				Key: {
-					parition_key: '$mallstoredirectory_1#id_abcd',
+					partition_key: '$mallstoredirectory_1#id_abcd',
 					sort_key: '$mallstores#mall_defg#stores_1'
 				},
 				TableName: 'StoreDirectory'
 			});
 			expect(removeParams).to.deep.equal({
 				Key: {
-					parition_key: '$mallstoredirectory_1#id_abcd',
+					partition_key: '$mallstoredirectory_1#id_abcd',
 					sort_key: '$mallstores#mall_defg#stores_1'
 				},
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+				ConditionExpression: 'attribute_exists(#partition_key) AND attribute_exists(#sort_key)',
+				ExpressionAttributeNames: { "#partition_key": "partition_key", "#sort_key": "sort_key" }
 			});
 			expect(updateParams).to.deep.equal({
 				UpdateExpression: "SET #value = :value_u0, #id = :id_u0, #mall = :mall_u0, #stores = :stores_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
@@ -2676,7 +2685,7 @@ describe("Entity", () => {
 				},
 				TableName: 'StoreDirectory',
 				Key: {
-					parition_key: '$mallstoredirectory_1#id_abcd',
+					partition_key: '$mallstoredirectory_1#id_abcd',
 					sort_key: '$mallstores#mall_defg#stores_1'
 				}
 			});
@@ -2687,7 +2696,9 @@ describe("Entity", () => {
 					"#id": "id",
 					"#mall": "mall",
 					"#stores": "stores",
-					"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
+					"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
+					"#partition_key": "partition_key",
+					"#sort_key": "sort_key"
 				},
 				ExpressionAttributeValues: {
 					':value_u0': 'ahssfh',
@@ -2698,10 +2709,10 @@ describe("Entity", () => {
 				},
 				TableName: 'StoreDirectory',
 				Key: {
-					parition_key: '$mallstoredirectory_1#id_abcd',
+					partition_key: '$mallstoredirectory_1#id_abcd',
 					sort_key: '$mallstores#mall_defg#stores_1'
 				},
-				ConditionExpression: 'attribute_exists(parition_key) AND attribute_exists(sort_key)'
+				ConditionExpression: 'attribute_exists(#partition_key) AND attribute_exists(#sort_key)'
 			});
 			expect(createParams).to.deep.equal({
 				Item: {
@@ -2709,15 +2720,16 @@ describe("Entity", () => {
 					mall: 'defg',
 					stores: 1,
 					value: 'ahssfh',
-					parition_key: '$mallstoredirectory_1#id_abcd',
+					partition_key: '$mallstoredirectory_1#id_abcd',
 					sort_key: '$mallstores#mall_defg#stores_1',
-					parition_key_idx1: '$mallstoredirectory_1#mall_defg',
+					partition_key_idx1: '$mallstoredirectory_1#mall_defg',
 					sort_key_idx1: '$mallstores#id_abcd#stores_1',
 					__edb_e__: 'MallStores',
 					__edb_v__: '1'
 				},
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_not_exists(parition_key) AND attribute_not_exists(sort_key)'
+				ConditionExpression: 'attribute_not_exists(#partition_key) AND attribute_not_exists(#sort_key)',
+				ExpressionAttributeNames: {"#partition_key": "partition_key", "#sort_key": "sort_key"}
 			});
 			expect(putParams).to.deep.equal({
 				Item: {
@@ -2725,9 +2737,9 @@ describe("Entity", () => {
 					mall: 'defg',
 					stores: 1,
 					value: 'ahssfh',
-					parition_key: '$mallstoredirectory_1#id_abcd',
+					partition_key: '$mallstoredirectory_1#id_abcd',
 					sort_key: '$mallstores#mall_defg#stores_1',
-					parition_key_idx1: '$mallstoredirectory_1#mall_defg',
+					partition_key_idx1: '$mallstoredirectory_1#mall_defg',
 					sort_key_idx1: '$mallstores#id_abcd#stores_1',
 					__edb_e__: 'MallStores',
 					__edb_v__: '1'
@@ -2737,7 +2749,7 @@ describe("Entity", () => {
 			expect(query1).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'parition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
 				ExpressionAttributeValues: {
 					':pk': '$mallstoredirectory_1#id_abcd',
 					':sk1': '$mallstores#mall_defg#stores_1'
@@ -2746,7 +2758,7 @@ describe("Entity", () => {
 			expect(query2).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'parition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
 				ExpressionAttributeValues: {
 					':pk': '$mallstoredirectory_1#mall_defg',
 					':sk1': '$mallstores#id_abcd#stores_1'
@@ -2756,18 +2768,18 @@ describe("Entity", () => {
 			expect(scanParams).to.deep.equal({
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: {
-					'#parition_key': 'parition_key',
+					'#partition_key': 'partition_key',
 					'#sort_key': 'sort_key',
 					'#__edb_e__': '__edb_e__',
 					'#__edb_v__': '__edb_v__'
 				},
 				ExpressionAttributeValues: {
-					':parition_key': '$mallstoredirectory_1#id_',
+					':partition_key': '$mallstoredirectory_1#id_',
 					':sort_key': '$mallstores#mall_',
 					':__edb_e__': 'MallStores',
 					':__edb_v__': '1'
 				},
-				FilterExpression: 'begins_with(#parition_key, :parition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
+				FilterExpression: 'begins_with(#partition_key, :partition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
 			});
 		});
 		it("Should stop making a key early when there is a gap in the supplied composite attributes", () => {
@@ -3167,7 +3179,8 @@ describe("Entity", () => {
 					__edb_v__: "1",
 				},
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+				ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+				ExpressionAttributeNames: { "#pk": "pk", "#sk": "sk" }
 			});
 		})
 		it("Patch operation should include correct conditions to prevent insert record when trying to update existing", () => {
@@ -3267,7 +3280,8 @@ describe("Entity", () => {
 					"#id": "id",
 					"#mall": "mall",
 					"#rent": "rent",
-					"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
+					"#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
+					"#pk": "pk", "#sk": "sk"
 				},
 				ExpressionAttributeValues: {
 					":id_u0": "12345",
@@ -3280,7 +3294,7 @@ describe("Entity", () => {
 					pk: '$mallstoredirectory_1#id_12345',
 					sk: '$mallstores#mall_eastpointe'
 				},
-				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)'
 			})
 		});
 		it("Should allow for both a composite attribute array and a composite attribute template to be passed", () => {
@@ -3789,7 +3803,8 @@ describe("Entity", () => {
 			expect(removeParams).to.deep.equal({
 				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)',
+				ExpressionAttributeNames: { "#pk": "pk", "#sk": "sk" }
 			});
 		});
 		it("Allow for static template values with a composite", () => {
@@ -3851,7 +3866,8 @@ describe("Entity", () => {
 			expect(removeParams).to.deep.equal({
 				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)',
+				ExpressionAttributeNames: { "#pk": "pk", "#sk": "sk" }
 			});
 		});
 		it("Allow for static template values without a composite", () => {
@@ -3911,7 +3927,8 @@ describe("Entity", () => {
 			expect(removeParams).to.deep.equal({
 				Key: { pk: 'id_abc#p1_def', sk: 'dbsfhdfhsdshfshf' },
 				TableName: 'StoreDirectory',
-				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)',
+				ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 			});
 		});
 		it("Should accept attributes with string values and interpret them as the attribute's `type`", () => {
@@ -5292,7 +5309,10 @@ describe("Entity", () => {
 									__edb_v__: '1'
 								},
 								TableName: 'StoreDirectory',
-								ConditionExpression: 'attribute_not_exists(pk)'
+								ConditionExpression: 'attribute_not_exists(#pk)',
+								ExpressionAttributeNames: {
+									"#pk": "pk"
+								}
 							}
 						},
 						{
@@ -5316,10 +5336,10 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								ConditionExpression: "attribute_exists(pk)",
+								ConditionExpression: "attribute_exists(#pk)",
 								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id", "#__edb_e__": "__edb_e__",
-									"#__edb_v__": "__edb_v__" },
+									"#__edb_v__": "__edb_v__", "#pk": "pk" },
 								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789",":__edb_e___u0": "MallStores", ":__edb_v___u0": "1", },
 								TableName: 'StoreDirectory',
 								Key: {
@@ -5443,7 +5463,8 @@ describe("Entity", () => {
 									__edb_v__: '1'
 								},
 								TableName: 'StoreDirectory',
-								ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+								ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+								ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 							}
 						},
 						{
@@ -5467,10 +5488,10 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
+								ConditionExpression: "attribute_exists(#pk) AND attribute_exists(#sk)",
 								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id", "#__edb_e__": "__edb_e__",
-									"#__edb_v__": "__edb_v__" },
+									"#__edb_v__": "__edb_v__", "#pk": "pk", "#sk": "sk" },
 								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789",":__edb_e___u0": "MallStores", ":__edb_v___u0": "1", },
 								TableName: 'StoreDirectory',
 								Key: {
@@ -5601,7 +5622,10 @@ describe("Entity", () => {
 									__edb_v__: '1'
 								},
 								TableName: 'StoreDirectory',
-								ConditionExpression: 'attribute_not_exists(pk)'
+								ConditionExpression: 'attribute_not_exists(#pk)',
+								ExpressionAttributeNames: {
+									"#pk": "pk"
+								}
 							}
 						},
 						{
@@ -5624,10 +5648,10 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								ConditionExpression: "attribute_exists(pk)",
+								ConditionExpression: "attribute_exists(#pk)",
 								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id", "#__edb_e__": "__edb_e__",
-									"#__edb_v__": "__edb_v__" },
+									"#__edb_v__": "__edb_v__", "#pk": "pk" },
 								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789",":__edb_e___u0": "MallStores", ":__edb_v___u0": "1", },
 								TableName: 'StoreDirectory',
 								Key: {
@@ -5758,7 +5782,8 @@ describe("Entity", () => {
 									__edb_v__: '1'
 								},
 								TableName: 'StoreDirectory',
-								ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+								ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+								ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 							}
 						},
 						{
@@ -5782,10 +5807,10 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
+								ConditionExpression: "attribute_exists(#pk) AND attribute_exists(#sk)",
 								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 								ExpressionAttributeNames: { '#unit': 'unitId', "#id": "id", "#__edb_e__": "__edb_e__",
-									"#__edb_v__": "__edb_v__" },
+									"#__edb_v__": "__edb_v__", "#pk": "pk", "#sk": "sk" },
 								ExpressionAttributeValues: { ':unit_u0': 'abc', ":id_u0": "123-456-789",":__edb_e___u0": "MallStores", ":__edb_v___u0": "1", },
 								TableName: 'StoreDirectory',
 								Key: {
@@ -5921,7 +5946,10 @@ describe("Entity", () => {
 									__edb_v__: '1'
 								},
 								TableName: 'StoreDirectory',
-								ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+								ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+								ExpressionAttributeNames: {
+									"#pk": "pk", "#sk": "sk"
+								}
 							}
 						},
 						{
@@ -5953,11 +5981,12 @@ describe("Entity", () => {
 							input: {id},
 							set: {unit: "abc"},
 							output: {
-								ConditionExpression: "attribute_exists(pk) AND attribute_exists(sk)",
+								ConditionExpression: "attribute_exists(#pk) AND attribute_exists(#sk)",
 								UpdateExpression: "SET #unit = :unit_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
 								ExpressionAttributeNames: {
 									'#unit': 'unitId',
-									"#id": "id", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
+									"#id": "id", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
+									"#pk": "pk", "#sk": "sk"
 								},
 								ExpressionAttributeValues: {
 									':unit_u0': 'abc',
@@ -6700,12 +6729,13 @@ describe("Entity", () => {
 				ExpressionAttributeNames: {
 					'#prop7': 'prop7', "#prop1": "prop1", "#prop2": "prop2",
 					"#__edb_e__": "__edb_e__",
-					"#__edb_v__": "__edb_v__"
+					"#__edb_v__": "__edb_v__",
+					"#pk": "pk", "#sk": "sk"
 				},
 				ExpressionAttributeValues: { ':prop7_u0': 'hij-prop7', ":prop1_u0": "abc", ":prop2_u0": "def",":__edb_e___u0": "setters", ":__edb_v___u0": "1", },
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
-				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)'
 			});
 			expect(secondaryIndexParams).to.be.deep.equal({
 				UpdateExpression: "SET #prop3 = :prop3_u0, #prop4 = :prop4_u0, #prop5 = :prop5_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
@@ -6719,7 +6749,8 @@ describe("Entity", () => {
 					'#gsi1sk': 'gsi1sk',
 					'#gsi2pk': 'gsi2pk',
 					"#__edb_e__": "__edb_e__",
-					"#__edb_v__": "__edb_v__"
+					"#__edb_v__": "__edb_v__",
+					"#pk": "pk", "#sk": "sk"
 				},
 				ExpressionAttributeValues: {
 					":prop1_u0": "abc",
@@ -6733,7 +6764,7 @@ describe("Entity", () => {
 				},
 				TableName: 'test',
 				Key: { pk: '$testing#prop1_abc', sk: '$setters_1#prop2_def' },
-				ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+				ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)'
 			});
 		});
 		it("Should call the attribute setters when putting that attribute", () => {
@@ -7012,7 +7043,11 @@ describe("Entity", () => {
 					__edb_v__: '1'
 				},
 				TableName: 'test',
-				ConditionExpression: 'attribute_not_exists(pk) AND attribute_not_exists(sk)'
+				ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+				ExpressionAttributeNames: {
+					"#pk": "pk",
+					"#sk": "sk"
+				}
 			});
 		});
 		it("Should call the attribute setters when putting that attribute even if that attribute was not supplied", () => {

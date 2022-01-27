@@ -198,11 +198,7 @@ class Entity {
 
 	create(attributes = {}) {
 		let index = TableIndex;
-		let options = {
-			params: {
-				ConditionExpression: this._makeItemDoesntExistConditions(index)
-			}
-		};
+		let options = {};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).create(attributes);
 	}
 
@@ -213,21 +209,13 @@ class Entity {
 
 	patch(facets = {}) {
 		let index = TableIndex;
-		let options = {
-			params: {
-				ConditionExpression: this._makeItemExistsConditions(index)
-			}
-		};
+		let options = {};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).patch(facets);
 	}
 
 	remove(facets = {}) {
 		let index = TableIndex;
-		let options = {
-			params: {
-				ConditionExpression: this._makeItemExistsConditions(index)
-			}
-		};
+		let options = {};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).remove(facets);
 	}
 
@@ -866,29 +854,18 @@ class Entity {
 		return {parameters, config};
 	}
 
-	_makeItemDoesntExistConditions(index) {
-		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
-		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+	_getPrimaryIndexFieldNames() {
+		let hasSortKey = this.model.lookup.indexHasSortKeys[TableIndex];
+		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
 		let pkField = this.model.indexes[accessPattern].pk.field;
-		let filter = [`attribute_not_exists(${pkField})`];
+		let skField;
 		if (hasSortKey) {
-			let skField = this.model.indexes[accessPattern].sk.field;
-			filter.push(`attribute_not_exists(${skField})`);
+			skField = this.model.indexes[accessPattern].sk.field;
 		}
-		return filter.join(" AND ");
-	}
-
-	_makeItemExistsConditions(index) {
-		let hasSortKey = this.model.lookup.indexHasSortKeys[index];
-		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
-		let pkField = this.model.indexes[accessPattern].pk.field;
-
-		let filter = [`attribute_exists(${pkField})`];
-		if (hasSortKey) {
-			let skField = this.model.indexes[accessPattern].sk.field;
-			filter.push(`attribute_exists(${skField})`);
+		return {
+			pk: pkField,
+			sk: skField
 		}
-		return filter.join(" AND ");
 	}
 
 	_applyParameterExpressionTypes(params, filter) {

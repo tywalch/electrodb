@@ -23,4 +23,5 @@ The approach for "Watch All" syntax for attributes (e.g. `{watch: "*"}`) weighed
    
 ## [1.2.0]
 ### ExpressionAttributeValues Properties 
-To prevent clashes between `update` values and filter conditions, a change was made to how the property names of `ExpressionAttributeValues` are constructed. This is not a breaking change but if you have tests to specifically compare param results against static JSON you will need to update that JSON. Changes to JSON query parameters is not considered a breaking major version change.    
+To prevent clashes between `update` values and filter conditions, a change was made to how the property names of `ExpressionAttributeValues` are constructed. This is not a breaking change but if you have tests to specifically compare param results against static JSON you will need to update that JSON. Changes to JSON query parameters is not considered a breaking major version change.
+
