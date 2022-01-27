@@ -182,8 +182,8 @@ describe("Offline Where", () => {
         expect(removeParams).to.deep.equal({
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
             TableName: 'electro',
-            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal0',
-            ExpressionAttributeNames: { '#animal': 'a' },
+            ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk) AND #animal = :animal0',
+            ExpressionAttributeNames: { '#animal': 'a', "#pk": "pk", "#sk": "sk" },
             ExpressionAttributeValues: { ':animal0': 'cow' }
         });
 
@@ -199,11 +199,11 @@ describe("Offline Where", () => {
 
         expect(patchParams).to.deep.equal({
             UpdateExpression: "SET #dangerous = :dangerous_u0, #pen = :pen_u0, #row = :row_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
-            ExpressionAttributeNames: { '#animal': 'a', '#dangerous': 'd', "#pen": "pen", "#row": "row", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__" },
+            ExpressionAttributeNames: { '#animal': 'a', '#dangerous': 'd', "#pen": "pen", "#row": "row", "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", "#pk": "pk", "#sk": "sk" },
             ExpressionAttributeValues: { ':animal0': 'cow', ':dangerous_u0': false, ":pen_u0": "abc", ":row_u0": "def", ":__edb_e___u0": "filters", ":__edb_v___u0": "1" },
             TableName: 'electro',
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
-            ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk) AND #animal = :animal0'
+            ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk) AND #animal = :animal0'
         });
     })
 })

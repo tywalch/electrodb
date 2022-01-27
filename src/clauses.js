@@ -1,5 +1,5 @@
-const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes } = require("./types");
-const {AttributeOperationProxy, UpdateOperations} = require("./operations");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex } = require("./types");
+const {AttributeOperationProxy, UpdateOperations, FilterOperationNames} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
 const v = require("./validations");
@@ -134,6 +134,12 @@ let clauses = {
 			}
 			try {
 				const attributes = state.getCompositeAttributes();
+				const filter = state.query.filter[ExpressionTypes.ConditionExpression];
+				const {pk, sk} = entity._getPrimaryIndexFieldNames();
+				filter.unsafeSet(FilterOperationNames.exists, pk);
+				if (sk) {
+					filter.unsafeSet(FilterOperationNames.exists, sk);
+				}
 				return state
 					.setMethod(MethodTypes.delete)
 					.setType(QueryTypes.eq)
@@ -189,6 +195,12 @@ let clauses = {
 			try {
 				let record = entity.model.schema.checkCreate({...payload});
 				const attributes = state.getCompositeAttributes();
+				const filter = state.query.filter[ExpressionTypes.ConditionExpression];
+				const {pk, sk} = entity._getPrimaryIndexFieldNames();
+				filter.unsafeSet(FilterOperationNames.notExists, pk);
+				if (sk) {
+					filter.unsafeSet(FilterOperationNames.notExists, sk);
+				}
 				return state
 					.setMethod(MethodTypes.put)
 					.setType(QueryTypes.eq)
@@ -213,6 +225,12 @@ let clauses = {
 			}
 			try {
 				const attributes = state.getCompositeAttributes();
+				const filter = state.query.filter[ExpressionTypes.ConditionExpression];
+				const {pk, sk} = entity._getPrimaryIndexFieldNames();
+				filter.unsafeSet(FilterOperationNames.exists, pk);
+				if (sk) {
+					filter.unsafeSet(FilterOperationNames.exists, sk);
+				}
 				return state
 					.setMethod(MethodTypes.update)
 					.setType(QueryTypes.eq)

@@ -1,5 +1,5 @@
 const {MethodTypes, ExpressionTypes, BuilderTypes} = require("./types");
-const {AttributeOperationProxy, ExpressionState} = require("./operations");
+const {AttributeOperationProxy, ExpressionState, FilterOperations} = require("./operations");
 const e = require("./errors");
 
 class FilterExpression extends ExpressionState {
@@ -41,6 +41,22 @@ class FilterExpression extends ExpressionState {
 			expression = this._trim(newExpression);
 		}
 		this.expression = expression;
+	}
+
+	// applies operations without verifying them against known attributes. Used internally for key conditions.
+	unsafeSet(operation, name, ...values) {
+		const {template} = FilterOperations[operation] || {};
+		if (template === undefined) {
+			throw new Error(`Invalid operation: "${operation}". Please report`);
+		}
+		const names = this.setName({}, name, name);
+		if (values.length) {
+			for (const value of values) {
+				this.setValue(name, value);
+			}
+		}
+		const condition = template({}, name.expression, names.prop, ...values);
+		this.add(condition);
 	}
 
 	build() {

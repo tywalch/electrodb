@@ -453,4 +453,9 @@ class AttributeOperationProxy {
     }
 }
 
-module.exports = {UpdateOperations, FilterOperations, ExpressionState, AttributeOperationProxy};
+const FilterOperationNames = Object.keys(FilterOperations).reduce((ops, name) => {
+    ops[name] = name;
+    return ops;
+}, {});
+
+module.exports = {UpdateOperations, FilterOperations, FilterOperationNames, ExpressionState, AttributeOperationProxy};
