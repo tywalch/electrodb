@@ -140,6 +140,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - In some cases the `find()` and `match()` methods would incorrectly select an index without a complete partition key. This would result in validation exceptions preventing the user from querying if an index definition and provided attribute object aligned improperly. This was fixed and a slightly more robust mechanism for ranking indexes was made.
 
-## [1.6.2] = 2021-01-27
+## [1.6.2] = 2022-01-27
 ### Changed
 - The methods `create`, `patch`, and `remove` will now refer to primary table keys through parameters via ExpressionAttributeNames when using `attribute_exists()`/`attribute_not_exists()` DynamoDB conditions. Prior to this they were referenced directly which would fail in cases where key names include illegal characters. Parameter implementation change only, non-breaking.
+
+## [1.6.3] = 2022-02-22
+### Added
+- Add `data` update operation `ifNotExists` to allow for use of the UpdateExpression function "if_not_exists()"

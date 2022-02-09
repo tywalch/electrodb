@@ -2081,6 +2081,46 @@ describe("Update Item", () => {
             expect(results?.stars).to.equal(1);
         });
 
+        it("should only update attribute when it doesnt yet exist", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+
+            const description1 = uuid();
+            const description2 = uuid();
+
+            await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    isPrivate: true,
+                })
+                .go();
+
+            await repositories.update({repoName, repoOwner})
+                .data(({description}, {ifNotExists}) => {
+                    ifNotExists(description, description1);
+                })
+                .go();
+
+            const value1 = await repositories.get({repoName, repoOwner}).go();
+            if (!value1) {
+                throw new Error("expected value1");
+            }
+            await repositories.update({repoName, repoOwner})
+                .data(({description}, {ifNotExists}) => {
+                    ifNotExists(description, description2);
+                })
+                .go();
+
+            const value2 = await repositories.get({repoName, repoOwner}).go();
+            if (!value2) {
+                throw new Error("expected value1");
+            }
+
+            expect(value1.description).to.equal(value2.description);
+            expect(value1.description).to.equal(description1);
+        });
+
         it("should add 5 'stars' to the repository", async () => {
             const repoName = uuid();
             const repoOwner = uuid();

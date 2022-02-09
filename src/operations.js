@@ -1,6 +1,6 @@
 const {AttributeTypes, ItemOperations, AttributeProxySymbol, BuilderTypes} = require("./types");
 const e = require("./errors");
-const v = require("./util");
+const u = require("./util");
 
 const deleteOperations = {
     canNest: false,
@@ -21,6 +21,13 @@ const deleteOperations = {
 };
 
 const UpdateOperations = {
+    ifNotExists: {
+        template: function if_not_exists(options, attr, path, value) {
+            const operation = ItemOperations.set;
+            const expression = `${path} = if_not_exists(${path}, ${value})`;
+            return {operation, expression};
+        }
+    },
     name: {
         canNest: true,
         template: function name(options, attr, path) {
@@ -325,7 +332,7 @@ class AttributeOperationProxy {
     fromObject(operation, record) {
         for (let path of Object.keys(record)) {
             const value = record[path];
-            const parts = v.parseJSONPath(path);
+            const parts = u.parseJSONPath(path);
             let attribute = this.attributes;
             for (let part of parts) {
                 attribute = attribute[part];
@@ -342,7 +349,7 @@ class AttributeOperationProxy {
 
     fromArray(operation, paths) {
         for (let path of paths) {
-            const parts = v.parseJSONPath(path);
+            const parts = u.parseJSONPath(path);
             let attribute = this.attributes;
             for (let part of parts) {
                 attribute = attribute[part];

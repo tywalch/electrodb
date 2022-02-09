@@ -3462,7 +3462,8 @@ operation     | example                               | result                  
 `delete`      | `delete(tenant, name)`                | `#tenant :tenant1`                                                    | Remove item from existing `set` attribute
 `del`         | `del(tenant, name)`                   | `#tenant :tenant1`                                                    | Alias for `delete` operation
 `name`        | `name(rent)`                          | `#rent`                                                               | Reference another attribute's name, can be passed to other operation that allows leveraging existing attribute values in calculating new values
-`value`       | `value(rent, value)`                  | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
+`value`       | `value(rent, amount)`                 | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
+`ifNotExists` | `ifNotExists(rent, amount)`           | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record
 
 ```javascript
 await StoreLocations

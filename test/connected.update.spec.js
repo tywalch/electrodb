@@ -1940,7 +1940,41 @@ describe("Update Item", () => {
                 .catch(err => err);
 
             expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+        });
 
+        it("should only update attribute when it doesnt yet exist", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+
+            const description1 = uuid();
+            const description2 = uuid();
+
+            await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    isPrivate: true,
+                })
+                .go();
+
+            await repositories.update({repoName, repoOwner})
+                .data(({description}, {ifNotExists}) => {
+                    ifNotExists(description, description1);
+                })
+                .go();
+
+            const value1 = await repositories.get({repoName, repoOwner}).go();
+
+            await repositories.update({repoName, repoOwner})
+                .data(({description}, {ifNotExists}) => {
+                    ifNotExists(description, description2);
+                })
+                .go();
+
+            const value2 = await repositories.get({repoName, repoOwner}).go();
+
+            expect(value1.description).to.equal(value2.description);
+            expect(value1.description).to.equal(description1);
         });
 
         it("should remove properties from an item", async () => {
