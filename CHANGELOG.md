@@ -146,4 +146,4 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [1.6.3] = 2022-02-22
 ### Added
-- Add `data` update operation `ifNotExists` to allow for use of the UpdateExpression function "if_not_exists()"
+- Add `data` update operation `ifNotExists` to allow for use of the UpdateExpression function "if_not_exists()".
