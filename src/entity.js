@@ -5,12 +5,17 @@ const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
 const { clauses, ChainState } = require("./clauses");
+const {EventManager} = require('./events');
 const validations = require("./validations");
-const utilities = require("./util");
+const u = require("./util");
 const e = require("./errors");
 
 class Entity {
 	constructor(model, config = {}) {
+		this.eventManager = new EventManager({
+			listeners: config.listeners
+		});
+		this.eventManager.add(config.logger);
 		this._validateModel(model);
 		this.version = EntityVersions.v1;
 		this.config = config;
@@ -43,7 +48,7 @@ class Entity {
 
 	setIdentifier(type = "", identifier = "") {
 		if (!this.identifiers[type]) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: "${type}". Valid identifiers include: ${utilities.commaSeparatedString(Object.keys(this.identifiers))}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidIdentifier, `Invalid identifier type: "${type}". Valid identifiers include: ${u.commaSeparatedString(Object.keys(this.identifiers))}`);
 		} else {
 			this.identifiers[type] = identifier;
 		}
@@ -252,9 +257,32 @@ class Entity {
 		}
 	}
 
-	async _exec(method, parameters) {
-		return this.client[method](parameters).promise()
+	async _exec(method, params, config = {}) {
+		const notifyQuery = () => {
+			this.eventManager.trigger({
+				type: "query",
+				method,
+				params,
+				config,
+			}, config.listeners);
+		};
+		const notifyResults = (results, success) => {
+			this.eventManager.trigger({
+				type: "results",
+				method,
+				config,
+				success,
+				results,
+			}, config.listeners);
+		}
+		return this.client[method](params).promise()
+			.then((results) => {
+				notifyQuery();
+				notifyResults(results, true);
+				return results;
+			})
 			.catch(err => {
+				notifyResults(err, false);
 				err.__isAWSError = true;
 				throw err;
 			});
@@ -266,10 +294,10 @@ class Entity {
 		}
 		let results = [];
 		let concurrent = this._normalizeConcurrencyValue(config.concurrent)
-		let concurrentOperations = utilities.batchItems(parameters, concurrent);
+		let concurrentOperations = u.batchItems(parameters, concurrent);
 		for (let operation of concurrentOperations) {
 			await Promise.all(operation.map(async params => {
-				let response = await this._exec(MethodTypes.batchWrite, params);
+				let response = await this._exec(MethodTypes.batchWrite, params, config);
 				if (validations.isFunction(config.parse)) {
 					let parsed = await config.parse(config, response);
 					if (parsed) {
@@ -292,13 +320,13 @@ class Entity {
 			parameters = [parameters];
 		}
 		let concurrent = this._normalizeConcurrencyValue(config.concurrent)
-		let concurrentOperations = utilities.batchItems(parameters, concurrent);
+		let concurrentOperations = u.batchItems(parameters, concurrent);
 
 		let resultsAll = [];
 		let unprocessedAll = [];
 		for (let operation of concurrentOperations) {
 			await Promise.all(operation.map(async params => {
-				let response = await this._exec(MethodTypes.batchGet, params);
+				let response = await this._exec(MethodTypes.batchGet, params, config);
 				if (validations.isFunction(config.parse)) {
 					resultsAll.push(await config.parse(config, response));
 					return;
@@ -328,7 +356,7 @@ class Entity {
 			let limit = max === undefined
 				? parameters.Limit
 				: max - count;
-			let response = await this._exec("query", {ExclusiveStartKey, ...parameters, Limit: limit});
+			let response = await this._exec("query", {ExclusiveStartKey, ...parameters, Limit: limit}, config);
 
 			ExclusiveStartKey = response.LastEvaluatedKey;
 
@@ -363,7 +391,7 @@ class Entity {
 	}
 
 	async executeOperation(method, parameters, config) {
-		let response = await this._exec(method, parameters);
+		let response = await this._exec(method, parameters, config);
 		if (validations.isFunction(config.parse)) {
 			return config.parse(config, response);
 		}
@@ -751,13 +779,14 @@ class Entity {
 			_isPagination: false,
 			_isCollectionQuery: false,
 			pages: undefined,
+			listeners: [],
 		};
 
 		config = options.reduce((config, option) => {
 			if (typeof option.response === 'string' && option.response.length) {
 				const format = 	ReturnValues[option.response];
 				if (format === undefined) {
-					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "format" provided: "${option.format}". Allowed values include ${utilities.commaSeparatedString(Object.keys(ReturnValues))}.`);
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "format" provided: "${option.format}". Allowed values include ${u.commaSeparatedString(Object.keys(ReturnValues))}.`);
 				}
 				config.response = format;
 				config.params.ReturnValues = FormatToReturnValues[format];
@@ -814,7 +843,7 @@ class Entity {
 				if (typeof Pager[option.pager] === "string") {
 					config.pager = option.pager;
 				} else {
-					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provided: "${option.pager}". Allowed values include ${utilities.commaSeparatedString(Object.keys(Pager))}.`);
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provided: "${option.pager}". Allowed values include ${u.commaSeparatedString(Object.keys(Pager))}.`);
 				}
 			}
 
@@ -822,12 +851,26 @@ class Entity {
 				if (typeof UnprocessedTypes[option.unprocessed] === "string") {
 					config.unproessed = UnprocessedTypes[option.unprocessed];
 				} else {
-					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "unprocessed" provided: "${option.unprocessed}". Allowed values include ${utilities.commaSeparatedString(Object.keys(UnprocessedTypes))}.`);
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "unprocessed" provided: "${option.unprocessed}". Allowed values include ${u.commaSeparatedString(Object.keys(UnprocessedTypes))}.`);
 				}
 			}
 
 			if (option.ignoreOwnership) {
 				config.ignoreOwnership = option.ignoreOwnership;
+			}
+
+			if (option.listeners) {
+				if (Array.isArray(option.listeners)) {
+					config.listeners = config.listeners.concat(option.listeners);
+				}
+			}
+
+			if (option.logger) {
+				if (validations.isFunction(option.logger)) {
+					config.listeners.push(option.logger);
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.InvalidLoggerProvided, `Loggers must be of type function`);
+				}
 			}
 
 			config.page = Object.assign({}, config.page, option.page);
@@ -933,7 +976,7 @@ class Entity {
 				records.push(Key);
 			}
 		}
-		let batches = utilities.batchItems(records, MaxBatchItems.batchGet);
+		let batches = u.batchItems(records, MaxBatchItems.batchGet);
 		return batches.map(batch => {
 			return {
 				RequestItems: {
@@ -966,7 +1009,7 @@ class Entity {
 					throw new Error("Invalid method type");
 			}
 		}
-		let batches = utilities.batchItems(records, MaxBatchItems.batchWrite);
+		let batches = u.batchItems(records, MaxBatchItems.batchWrite);
 		return batches.map(batch => {
 			return {
 				RequestItems: {
@@ -1220,7 +1263,7 @@ class Entity {
 			let props = Object.keys(item);
 			let missing = require.filter((prop) => !props.includes(prop));
 			if (!missing) {
-				throw new e.ElectroError(e.ErrorCodes.MissingAttribute, `Item is missing attributes: ${utilities.commaSeparatedString(missing)}`);
+				throw new e.ElectroError(e.ErrorCodes.MissingAttribute, `Item is missing attributes: ${u.commaSeparatedString(missing)}`);
 			}
 		}
 
@@ -1229,7 +1272,7 @@ class Entity {
 				throw new Error(`Invalid attribute ${prop}`);
 			}
 			if (restrict.length && !restrict.includes(prop)) {
-				throw new Error(`${prop} is not a valid attribute: ${utilities.commaSeparatedString(restrict)}`);
+				throw new Error(`${prop} is not a valid attribute: ${u.commaSeparatedString(restrict)}`);
 			}
 			if (prop === undefined || skip.includes(prop)) {
 				continue;
@@ -1392,7 +1435,7 @@ class Entity {
 	_makeComparisonQueryParams(index = TableIndex, comparison = "", filter = {}, pk = {}, sk = {}) {
 		let operator = Comparisons[comparison];
 		if (!operator) {
-			throw new Error(`Unexpected comparison operator "${comparison}", expected ${utilities.commaSeparatedString(Object.values(Comparisons))}`);
+			throw new Error(`Unexpected comparison operator "${comparison}", expected ${u.commaSeparatedString(Object.values(Comparisons))}`);
 		}
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(
 			index,
@@ -1429,7 +1472,7 @@ class Entity {
 			let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index]);
 			let missingFacets = incomplete.reduce((result, { missing }) => [...result, ...missing], []);
 			throw new e.ElectroError(e.ErrorCodes.IncompleteCompositeAttributes,
-				`Incomplete composite attributes: Without the composite attributes ${utilities.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${utilities.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))} `,
+				`Incomplete composite attributes: Without the composite attributes ${u.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${u.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))} `,
 			);
 		}
 		return complete;
@@ -1648,7 +1691,7 @@ class Entity {
 	_expectFacets(obj = {}, properties = [], type = "key composite attributes") {
 		let [incompletePk, missing, matching] = this._expectProperties(obj, properties);
 		if (incompletePk) {
-			throw new e.ElectroError(e.ErrorCodes.IncompleteCompositeAttributes, `Incomplete or invalid ${type} supplied. Missing properties: ${utilities.commaSeparatedString(missing)}`);
+			throw new e.ElectroError(e.ErrorCodes.IncompleteCompositeAttributes, `Incomplete or invalid ${type} supplied. Missing properties: ${u.commaSeparatedString(missing)}`);
 		} else {
 			return matching;
 		}
@@ -1721,10 +1764,10 @@ class Entity {
 
 		// If keys arent custom, set the prefixes
 		if (!keys.pk.isCustom) {
-			keys.pk.prefix = utilities.formatKeyCasing(pk, tableIndex.pk.casing);
+			keys.pk.prefix = u.formatKeyCasing(pk, tableIndex.pk.casing);
 		}
 		if (!keys.sk.isCustom) {
-			keys.sk.prefix = utilities.formatKeyCasing(sk, tableIndex.sk.casing);
+			keys.sk.prefix = u.formatKeyCasing(sk, tableIndex.sk.casing);
 		}
 
 		return keys;
@@ -1735,7 +1778,7 @@ class Entity {
 			? this.model.indexes[accessPattern].sk.casing
 			: undefined;
 
-		return utilities.formatKeyCasing(key, casing);
+		return u.formatKeyCasing(key, casing);
 	}
 
 	_validateIndex(index) {
@@ -1859,7 +1902,7 @@ class Entity {
 			key = `${key}${supplied[name]}`;
 		}
 
-		return utilities.formatKeyCasing(key, casing);
+		return u.formatKeyCasing(key, casing);
 	}
 
 	_findBestIndexKeyMatch(attributes = {}) {
@@ -2139,7 +2182,7 @@ class Entity {
 			let indexName = index.index || TableIndex;
 			if (seenIndexes[indexName] !== undefined) {
 				if (indexName === TableIndex) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${utilities.formatIndexNameForDisplay(indexName)}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${u.formatIndexNameForDisplay(indexName)}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
 				} else {
 					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${indexName}'`);
 				}
@@ -2148,7 +2191,7 @@ class Entity {
 			let hasSk = !!index.sk;
 			let inCollection = !!index.collection;
 			if (!hasSk && inCollection) {
-				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid Access pattern definition for '${accessPattern}': '${utilities.formatIndexNameForDisplay(indexName)}', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
+				throw new e.ElectroError(e.ErrorCodes.CollectionNoSK, `Invalid Access pattern definition for '${accessPattern}': '${u.formatIndexNameForDisplay(indexName)}', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`);
 			}
 			let collection = index.collection || "";
 			let customFacets = {
@@ -2219,7 +2262,7 @@ class Entity {
 			if (Array.isArray(sk.facets)) {
 				let duplicates = pk.facets.filter(facet => sk.facets.includes(facet));
 				if (duplicates.length !== 0) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexCompositeAttributes, `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${utilities.commaSeparatedString(duplicates)}. Composite attributes may only be used once within an index. If this leaves the Sort Key (sk) without any composite attributes simply set this to be an empty array.`);
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexCompositeAttributes, `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${u.commaSeparatedString(duplicates)}. Composite attributes may only be used once within an index. If this leaves the Sort Key (sk) without any composite attributes simply set this to be an empty array.`);
 				}
 			}
 
@@ -2322,13 +2365,13 @@ class Entity {
 
 			let pkTemplateIsCompatible = this._compositeTemplateAreCompatible(parsedPKAttributes, index.pk.composite);
 			if (!pkTemplateIsCompatible) {
-				throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible PK 'template' and 'composite' properties for defined on index "${utilities.formatIndexNameForDisplay(indexName)}". PK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedPKAttributes.attributes)} while PK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.pk.composite)}`);
+				throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible PK 'template' and 'composite' properties for defined on index "${u.formatIndexNameForDisplay(indexName)}". PK "template" string is defined as having composite attributes ${u.commaSeparatedString(parsedPKAttributes.attributes)} while PK "composite" array is defined with composite attributes ${u.commaSeparatedString(index.pk.composite)}`);
 			}
 
 			if (index.sk !== undefined && Array.isArray(index.sk.composite) && typeof index.sk.template === "string") {
 				let skTemplateIsCompatible = this._compositeTemplateAreCompatible(parsedSKAttributes, index.sk.composite);
 				if (!skTemplateIsCompatible) {
-					throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible SK 'template' and 'composite' properties for defined on index "${utilities.formatIndexNameForDisplay(indexName)}". SK "template" string is defined as having composite attributes ${utilities.commaSeparatedString(parsedSKAttributes.attributes)} while SK "composite" array is defined with composite attributes ${utilities.commaSeparatedString(index.sk.composite)}`);
+					throw new e.ElectroError(e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate, `Incompatible SK 'template' and 'composite' properties for defined on index "${u.formatIndexNameForDisplay(indexName)}". SK "template" string is defined as having composite attributes ${u.commaSeparatedString(parsedSKAttributes.attributes)} while SK "composite" array is defined with composite attributes ${u.commaSeparatedString(index.sk.composite)}`);
 				}
 			}
 		}
@@ -2356,7 +2399,7 @@ class Entity {
 
 		for (let [name, fn] of Object.entries(filters)) {
 			if (invalidFilterNames.includes(name)) {
-				throw new e.ElectroError(e.ErrorCodes.InvalidFilter, `Invalid filter name: ${name}. Filter cannot be named ${utilities.commaSeparatedString(invalidFilterNames)}`);
+				throw new e.ElectroError(e.ErrorCodes.InvalidFilter, `Invalid filter name: ${name}. Filter cannot be named ${u.commaSeparatedString(invalidFilterNames)}`);
 			} else {
 				normalized[name] = fn;
 			}
@@ -2475,7 +2518,7 @@ class Entity {
 	_parseModel(model, config = {}) {
 		/** start beta/v1 condition **/
 		const {client} = config;
-		let modelVersion = utilities.getModelVersion(model);
+		let modelVersion = u.getModelVersion(model);
 		let service, entity, version, table, name;
 		switch(modelVersion) {
 			case ModelVersions.beta:

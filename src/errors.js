@@ -127,6 +127,12 @@ const ErrorCodes = {
     name: "InvalidIndexCompositeWithAttributeName",
     sym: ErrorCode,
   },
+  InvalidListenerProvided: {
+    code: 1020,
+    section: "invalid-listener-provided",
+    name: "InvalidListenerProvided",
+    sym: ErrorCode,
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",
@@ -204,7 +210,7 @@ const ErrorCodes = {
     section: "pager-not-unique",
     name: "NoOwnerForPager",
     sym: ErrorCode,
-  },
+  }
 };
 
 function makeMessage(message, section) {

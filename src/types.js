@@ -179,7 +179,12 @@ const KeyCasing = {
 	upper: "upper",
 	lower: "lower",
 	default: "default",
-}
+};
+
+const EventSubscriptionTypes = [
+	"query",
+	"results"
+];
 
 module.exports = {
 	Pager,
@@ -208,5 +213,6 @@ module.exports = {
 	FormatToReturnValues,
 	AttributeProxySymbol,
 	ElectroInstanceTypes,
+	EventSubscriptionTypes,
 	AttributeMutationMethods
 };

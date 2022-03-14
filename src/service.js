@@ -58,6 +58,9 @@ class Service {
 
 		this.config = config;
 		this.client = config.client;
+		if (v.isFunction(config.logger)) {
+			this.logger = config.logger;
+		}
 		this.entities = {};
 		this.find = {};
 		this.collectionSchema = {};
@@ -79,6 +82,9 @@ class Service {
 
 		this.config = config;
 		this.client = config.client;
+		if (v.isFunction(config.logger)) {
+			this.logger = config.logger;
+		}
 		this.entities = {};
 		this.find = {};
 		this.collectionSchema = {};
