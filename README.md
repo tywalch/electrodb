@@ -305,9 +305,9 @@ npm install electrodb --save
 # Usage
 Require/import `Entity` and/or `Service` from `electrodb`:
 ```javascript  
-const {Entity, Service} = require("electrodb");
+const { Entity, Service } = require("electrodb");
 // or 
-import {Entity, Service} from "electrodb";
+import { Entity, Service } from "electrodb";
 ```
 
 # Entities and Services
@@ -325,9 +325,9 @@ In ***ElectroDB*** an `Entity` is represents a single business object. For examp
 
 Require or import `Entity` from `electrodb`:
 ```javascript  
-const {Entity} = require("electrodb");
+const { Entity } = require("electrodb");
 // or
-import {Entity} from "electrodb";
+import { Entity } from "electrodb";
 ```
 
 > When using TypeScript, for strong type checking, be sure to either add your model as an object literal to the Entity constructor or create your model using const assertions with the `as const` syntax.
@@ -337,9 +337,9 @@ In ***ElectroDB*** a `Service` represents a collection of related Entities. Serv
 
 Require:
 ```javascript  
-const {Service} = require("electrodb");
+const { Service } = require("electrodb");
 // or
-import {Service} from "electrodb";
+import { Service } from "electrodb";
 ```
 
 ## TypeScript Support
@@ -371,7 +371,7 @@ The property name you assign the entity will then be "alias", or name, you can r
 
 Services take an optional second parameter, similar to Entities, with a `client` and `table`. Using this constructor interface, the Service will utilize the values from those entities, if they were provided, or be passed values to override the `client` or `table` name on the individual entities.
 
-Not yet available for TypeScript, this pattern will also accept Models, or a mix of Entities and Models, in the same object literal format.
+While not yet typed, this pattern will also accept Models, or a mix of Entities and Models, in the same object literal format.
 
 ## Join
 When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service.
@@ -4000,7 +4000,7 @@ TaskApp.collections
 ```
 
 ## Execute Queries
-Lastly, all query chains end with either a `.go()` or a `.params()` method invocation. These will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
+Lastly, all query chains end with either a `.go()`, `.params()`, or `page()` method invocation. These terminal methods will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
 
@@ -4287,6 +4287,8 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   ignoreOwnership?: boolean;
   limit?: number;
   pages?: number;
+  logger?: (event) => void;
+  listeners Array<(event) => void>;
 };
 ```
 
@@ -4304,6 +4306,253 @@ response        | `"default"`          | Used as a convenience for applying the 
 ignoreOwnership | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
 limit           | _none_               | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.
 pages           | ∞                    | How many DynamoDB pages should a query iterate through before stopping. By default ElectroDB paginate through all results for your query.
+listeners       | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](#events) occur.
+logger          | _none_               | A convenience option for a single event listener that semantically can be used for logging.
+
+# Events
+ElectroDB can be supplied with callbacks (see: [logging](#logging) and [listeners](#listeners) to learn how) to be invoked after certain request lifecycles. This can be useful for logging, analytics, expanding functionality, and more. The following are events currently supported by ElectroDB -- if you would like to see additional events feel free to create a github issue to discuss your concept/need!
+
+## Query Event
+The `query` event occurs when a query is made via the terminal methods [`go()`](#go) and [`page()`](#page). The event includes the exact parameters given to the provided client, the ElectroDB method used, and the ElectroDB configuration provided.
+
+*Type:*
+```typescript
+interface ElectroQueryEvent<P extends any = any> {
+    type: 'query';
+    method: "put" | "get" | "query" | "scan" | "update" | "delete" | "remove" | "patch" | "create" | "batchGet" | "batchWrite";
+    config: any;
+    params: P;
+}
+```
+
+*Example Input:*
+```typescript
+const prop1 = "22874c81-27c4-4264-92c3-b280aa79aa30";
+const prop2 = "366aade8-a7c0-4328-8e14-0331b185de4e";
+const prop3 = "3ec9ed0c-7497-4d05-bdb8-86c09a618047";
+
+entity.update({ prop1, prop2 })
+    .set({ prop3 })
+    .go()
+```
+
+*Example Output:*
+```json
+{
+    "type": "query",
+    "method": "update",
+    "params": {
+        "UpdateExpression": "SET #prop3 = :prop3_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+        "ExpressionAttributeNames": {
+            "#prop3": "prop3",
+            "#prop1": "prop1",
+            "#prop2": "prop2",
+            "#__edb_e__": "__edb_e__",
+            "#__edb_v__": "__edb_v__"
+        },
+        "ExpressionAttributeValues": {
+            ":prop3_u0": "3ec9ed0c-7497-4d05-bdb8-86c09a618047",
+            ":prop1_u0": "22874c81-27c4-4264-92c3-b280aa79aa30",
+            ":prop2_u0": "366aade8-a7c0-4328-8e14-0331b185de4e",
+            ":__edb_e___u0": "entity",
+            ":__edb_v___u0": "1"
+        },
+        "TableName": "electro",
+        "Key": {
+            "pk": "$test#prop1_22874c81-27c4-4264-92c3-b280aa79aa30",
+            "sk": "$testcollection#entity_1#prop2_366aade8-a7c0-4328-8e14-0331b185de4e"
+        }
+    },
+    "config": {  }
+}
+```
+
+## Results Event
+The `results` event occurs when results are returned from DynamoDB. The event includes the exact results returned from the provided client, the ElectroDB method used, and the ElectroDB configuration provided. Note this event handles both failed (or thrown) results in addition to returned (or resolved) results.
+
+> **Pro-Tip:**
+> Use this event to hook into the DyanmoDB's [consumed capacity](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-ReturnConsumedCapacity) statistics to learn more about the impact and cost associated with your queries.
+
+*Type::*
+```typescript
+interface ElectroResultsEvent<R extends any = any> {
+    type: 'results';
+    method: "put" | "get" | "query" | "scan" | "update" | "delete" | "remove" | "patch" | "create" | "batchGet" | "batchWrite";
+    config: any;
+    results: R;
+    success: boolean;
+}
+```
+
+*Example Input:*
+```typescript
+const prop1 = "22874c81-27c4-4264-92c3-b280aa79aa30";
+const prop2 = "366aade8-a7c0-4328-8e14-0331b185de4e";
+
+entity.get({ prop1, prop2 }).go();
+```
+
+*Example Output:*
+```typescript
+{
+  "type": "results",
+  "method": "get",
+  "config": {  },
+  "success": true,
+  "results": {
+    "Item": {
+      "prop2": "366aade8-a7c0-4328-8e14-0331b185de4e",
+      "sk": "$testcollection#entity_1#prop2_366aade8-a7c0-4328-8e14-0331b185de4e",
+      "prop1": "22874c81-27c4-4264-92c3-b280aa79aa30",
+      "prop3": "3ec9ed0c-7497-4d05-bdb8-86c09a618047",
+      "__edb_e__": "entity",
+      "__edb_v__": "1",
+      "pk": "$test_1#prop1_22874c81-27c4-4264-92c3-b280aa79aa30"
+    }
+  }
+}
+```
+
+# Logging
+A logger callback function can be provided both the at the instantiation of an `Entity` or `Service` instance or as a [Query Option](#query-options). The property `logger` is implemented as a convenience property; under the hood ElectroDB uses this property identically to how it uses a [Listener](#listeners).
+
+*On the instantiation of an `Entity`:*
+```typescript
+import { DynamoDB } from 'aws-sdk';
+import {Entity, ElectroEvent} from 'electrodb';
+
+const table = "my_table_name";
+const client = new DynamoDB.DocumentClient();
+const logger = (event: ElectroEvent) => {
+    console.log(JSON.stringify(event, null, 4));
+}
+
+const task = new Entity({
+    // your model
+}, {
+    client,
+    table,
+    logger // <----- logger listener
+});
+```
+
+*On the instantiation of an `Service`:*
+```typescript
+import { DynamoDB } from 'aws-sdk';
+import {Entity, ElectroEvent} from 'electrodb';
+
+const table = "my_table_name";
+const client = new DynamoDB.DocumentClient();
+const logger = (event: ElectroEvent) => {
+    console.log(JSON.stringify(event, null, 4));
+}
+
+const task = new Entity({
+    // your model
+});
+
+const user = new Entity({
+    // your model
+});
+
+const service = new Service({ task, user }, {
+   client,
+   table,
+   logger // <----- logger listener
+});
+```
+
+*As a [Query Option](#query-options):*
+```typescript
+const logger = (event: ElectroEvent) => {
+    console.log(JSON.stringify(event, null, 4));
+}
+
+task.query
+    .assigned({ userId })
+    .go({ logger });
+```
+
+# Listeners
+ElectroDB can be supplied with callbacks (called "Listeners") to be invoked after certain request lifecycles. Unlike [Attribute Getters and Setters](#attribute-getters-and-setters), Listeners are implemented to react to events passively, not to modify values during the request lifecycle. Listeners can be useful for logging, analytics, expanding functionality, and more. Listeners can be provide both the at the instantiation of an `Entity` or `Service` instance or as a [Query Option](#query-options).
+
+> _NOTE: Listeners treated as synchronous callbacks and are not awaited. In the event that a callback throws an exception, ElectroDB will quietly catch and log the exception with `console.error` to prevent the exception from impacting your query.
+
+*On the instantiation of an `Entity`:*
+```typescript
+import { DynamoDB } from 'aws-sdk';
+import {Entity, ElectroEvent} from 'electrodb';
+
+const table = "my_table_name";
+const client = new DynamoDB.DocumentClient();
+const listener1 = (event: ElectroEvent) => {
+    // do work
+}
+
+const listener2 = (event: ElectroEvent) => {
+    // do work
+}
+
+const task = new Entity({
+    // your model
+}, {
+    client,
+    table,
+    listeners: [
+        listener1,
+        listener2, // <----- supports multiple listeners
+    ]
+});
+```
+
+*On the instantiation of an `Service`:*
+```typescript
+import { DynamoDB } from 'aws-sdk';
+import {Entity, ElectroEvent} from 'electrodb';
+
+const table = "my_table_name";
+const client = new DynamoDB.DocumentClient();
+
+const listener1 = (event: ElectroEvent) => {
+    // do work
+}
+
+const listener2 = (event: ElectroEvent) => {
+    // do work
+}
+
+const task = new Entity({
+    // your model
+});
+
+const user = new Entity({
+    // your model
+});
+
+const service = new Service({ task, user }, {
+    client,
+    table,
+    listeners: [
+        listener1,
+        listener2, // <----- supports multiple listeners
+    ]
+});
+```
+
+*As a [Query Option](#query-options):*
+```typescript
+const listener1 = (event: ElectroEvent) => {
+    // do work
+}
+
+const listener2 = (event: ElectroEvent) => {
+    // do work
+}
+
+task.query
+    .assigned({ userId })
+    .go({ listeners: [listener1, listener2] });
+```
 
 # Errors:
 
@@ -4311,7 +4560,7 @@ Error Code | Description
 :--------: | -------------------- 
 1000s      | Configuration Errors
 2000s      | Invalid Queries     
-3000s      | User Defined Errors 
+3000s      | User Defined Errors
 4000s      | DynamoDB Errors     
 5000s      | Unexpected Errors   
 

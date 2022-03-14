@@ -1,5 +1,6 @@
-const v = require("./validations");
 const t = require("./types");
+const e = require("./errors");
+const v = require("./validations");
 
 function parseJSONPath(path = "") {
   if (typeof path !== "string") {

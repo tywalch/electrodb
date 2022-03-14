@@ -147,3 +147,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.6.3] - 2022-02-22
 ### Added
 - Add `data` update operation `ifNotExists` to allow for use of the UpdateExpression function "if_not_exists()".
+
+## [1.7.0] - 2022-03-13
+### Added
+- New feature: "Listeners". Listeners open the door to some really cool tooling that was not possible because of how ElectroDB augments raw DynamoDB responses and did not provide easy access to raw DyanmoDB parameters.

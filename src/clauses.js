@@ -540,8 +540,9 @@ let clauses = {
 				if (!v.isStringHasLength(options.table) && !v.isStringHasLength(entity._getTableName())) {
 					throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
 				}
+				const method = state.getMethod();
 				let results;
-				switch (state.getMethod()) {
+				switch (method) {
 					case MethodTypes.query:
 						results = entity._queryParams(state, options);
 						break;
@@ -556,7 +557,7 @@ let clauses = {
 						break;
 				}
 
-				if (state.getMethod() === MethodTypes.update && results.ExpressionAttributeValues && Object.keys(results.ExpressionAttributeValues).length === 0) {
+				if (method === MethodTypes.update && results.ExpressionAttributeValues && Object.keys(results.ExpressionAttributeValues).length === 0) {
 					// An update that only does a `remove` operation would result in an empty object
 					// todo: change the getValues() method to return undefined in this case (would potentially require a more generous refactor)
 					delete results.ExpressionAttributeValues;
