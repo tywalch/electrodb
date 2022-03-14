@@ -61,7 +61,7 @@ function createTestService(logger?: EventListener, listeners?: EventListener[]) 
     return new Service({
         entity1,
         entity2,
-    });
+    }, {client, table, logger, listeners});
 }
 
 type TestEntityCreateEntityItem = CreateEntityItem<ReturnType<typeof createTestEntity>>
@@ -122,18 +122,6 @@ const eventProperties: EventProperties = {
     query: ['config', 'method', 'params', 'type'],
     results: ['config', 'method', 'results', 'success', 'type']
 };
-
-// const keys = {} as (keyof EventProperties);
-
-// expectAssignable<ElectroEventType>(keys);
-
-// function expectKeys(type: any, event: ElectroEvent) {
-//     if (type in eventProperties) {
-//         expect(Object.keys(event)).to.include(eventProperties[type]);
-//     } else {
-//         throw new Error(`Unknown type: ${type}`);
-//     }
-// }
 
 async function testListeners(fn: TestListenerCallback) {
     const events: TestLoggerEvents = new Map();
@@ -211,7 +199,6 @@ describe("listener functions", async () => {
             return {
                 query: entity.put({ prop1, prop2, prop3, prop4 }),
                 test: (events) => equalCallCount(1, events),
-
             };
         });
     });
