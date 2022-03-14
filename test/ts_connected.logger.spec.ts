@@ -12,7 +12,6 @@ type TestLoggerEvents = Map<string, ElectroEvent[]>;
 
 function createLogger(name: string, events: TestLoggerEvents) {
     return (event: ElectroEvent) => {
-        console.log(JSON.stringify({event}, null, 4));
         const existing = events.get(name) || [];
         existing.push(event);
         events.set(name, existing);
