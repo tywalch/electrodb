@@ -2236,7 +2236,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						const counter = new TriggerListener();
 						let entity = new Entity({
 							model: {
-								entity: "entity",
+								entity: entityName,
 								service: "service",
 								version: "1"
 							},

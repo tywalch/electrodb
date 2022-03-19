@@ -59,6 +59,9 @@ function createEntity(client: (typeof v2Client | typeof v3Client)) {
 }
 
 describe('dynamodb sdk client compatibility', () => {
+    it('should validate the provide method has the require methods', () => {
+        expect(() => createEntity({} as any)).to.throw('Invalid DynamoDB Document Client provided. ElectroDB supports the v2 and v3 DynamoDB Document Clients from the aws-sdk - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-client-provided');
+    });
     for (const [version, client] of clients) {
         describe(`${version} client`, () => {
             const entity = createEntity(client);
@@ -129,7 +132,7 @@ describe('dynamodb sdk client compatibility', () => {
             it('should create valid params for the batchWrite (delete) method', async () => {
                 const prop1 = uuid();
                 const prop2 = uuid();
-                const results = await entity.delete([{
+                await entity.delete([{
                     prop1,
                     prop2,
                 }]).go({});
@@ -138,7 +141,7 @@ describe('dynamodb sdk client compatibility', () => {
             it('should create valid params for the batchGet method', async () => {
                 const prop1 = uuid();
                 const prop2 = uuid();
-                const results = await entity.get([{
+                await entity.get([{
                     prop1,
                     prop2,
                 }]).go();
@@ -147,7 +150,6 @@ describe('dynamodb sdk client compatibility', () => {
             it('should create valid params for the scan method', async () => {
                 const results = await entity.scan.go();
                 expect(results).to.be.an('array');
-                expect(results.length).to.be.greaterThan(0);
             });
 
             it('should create valid params for the query method', async () => {
@@ -247,7 +249,7 @@ describe('dynamodb sdk client compatibility', () => {
                     prop3: prop3Addition
                 }).go({response: 'all_new'});
                 expect(updateRecord.prop3).to.be.an('array').with.length(2);
-                expect(updateRecord.prop3).to.deep.equal([...prop3Addition, ...prop3]);
+                expect(updateRecord.prop3).to.include.members([...prop3Addition, ...prop3]);
             });
 
             it('should remove an element from an existing set', async () => {

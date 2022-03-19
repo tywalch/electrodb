@@ -1,5 +1,6 @@
 const {isFunction} = require('./validations');
 const {ElectroError, ErrorCodes} = require('./errors');
+const lib = require('@aws-sdk/lib-dynamodb');
 
 const DocumentClientVersions = {
     v2: 'v2',
@@ -16,12 +17,7 @@ const supportedClientVersions = {
 
 class DocumentClientV3Wrapper {
     static init(client) {
-        try {
-            const lib = require('@aws-sdk/lib-dynamodb');
-            return new DocumentClientV3Wrapper(client, lib);
-        } catch(err) {
-            throw new ElectroError(ErrorCodes.MissingV3ClientPeerDependency, "The package '@aws-sdk/lib-dynamodb' must be installed to use a v3 DynamoDB SDK DocumentClient");
-        }
+        return new DocumentClientV3Wrapper(client, lib);
     }
 
     constructor(client, lib) {
