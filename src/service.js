@@ -6,6 +6,7 @@ const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
 const { getInstanceType, getModelVersion, applyBetaModelOverrides } = require("./util");
 const v = require("./validations");
+const c = require('./client');
 const e = require("./errors");
 const u = require("./util");
 
@@ -104,6 +105,7 @@ class Service {
 	}
 
 	constructor(service = "", config = {}) {
+		config = c.normalizeConfig(config);
 		this.version = ServiceVersions.v1;
 		let type = inferConstructorType(service);
 		switch(type) {

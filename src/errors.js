@@ -133,6 +133,12 @@ const ErrorCodes = {
     name: "InvalidListenerProvided",
     sym: ErrorCode,
   },
+  InvalidClientProvided: {
+    code: 1021,
+    section: "invalid-client-provided",
+    name: "InvalidClientProvided",
+    sym: ErrorCode,
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",

@@ -7,11 +7,13 @@ const { WhereFactory } = require("./where");
 const { clauses, ChainState } = require("./clauses");
 const {EventManager} = require('./events');
 const validations = require("./validations");
+const c = require('./client');
 const u = require("./util");
 const e = require("./errors");
 
 class Entity {
 	constructor(model, config = {}) {
+		config = c.normalizeConfig(config);
 		this.eventManager = new EventManager({
 			listeners: config.listeners
 		});
@@ -588,7 +590,7 @@ class Entity {
 
 	_setClient(client) {
 		if (client) {
-			this.client = client;
+			this.client = c.normalizeClient(client);
 		}
 	}
 

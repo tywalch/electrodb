@@ -1120,6 +1120,8 @@ type DocumentClient = {
     batchWrite: DocumentClientMethod;
     batchGet: DocumentClientMethod;
     scan: DocumentClientMethod;
+} | {
+    send: (command: any) => Promise<any>;
 }
 
 type ElectroDBMethodTypes = "put" | "get" | "query" | "scan" | "update" | "delete" | "remove" | "patch" | "create" | "batchGet" | "batchWrite";
