@@ -205,6 +205,14 @@ tasks
         * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
+- [AWS DynamoDB Client](#aws-dynamodb-client)
+  * [V2 Client](#v2-client)
+  * [V3 Client](#v3-client)
+- [Events](#events)
+  * [Query Event](#query-event)
+  * [Results Event](#results-event)
+- [Logging](#logging)
+- [Listeners](#listeners)
 - [Errors:](#errors-)
     + [No Client Defined On Model](#no-client-defined-on-model)
     + [Invalid Identifier](#invalid-identifier)
@@ -4309,6 +4317,146 @@ pages           | ∞                    | How many DynamoDB pages should a quer
 listeners       | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](#events) occur.
 logger          | _none_               | A convenience option for a single event listener that semantically can be used for logging.
 
+# AWS DynamoDB Client
+ElectroDB supports both the [v2](https://www.npmjs.com/package/aws-sdk) and [v3](https://www.npmjs.com/package/@aws-sdk/client-dynamodb) aws clients. The client can be supplied creating a new Entity or Service, or added to a Entity/Service instance via the `setClient()` method.
+
+*On the instantiation of an `Entity`:*
+```typescript
+import { Entity } from 'electrodb';
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+const table = "my_table_name";
+const client = new DocumentClient({
+    region: "us-east-1"
+});
+
+const task = new Entity({
+    // your model
+}, {
+    client, // <----- client
+    table,
+});
+```
+
+*On the instantiation of an `Service`:*
+```typescript
+import { Entity } from 'electrodb';
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+const table = "my_table_name";
+const client = new DocumentClient({
+    region: "us-east-1"
+});
+
+const task = new Entity({
+    // your model
+});
+
+const user = new Entity({
+    // your model
+});
+
+const service = new Service({ task, user }, {
+   client, // <----- client
+   table,
+});
+```
+
+*Via the `setClient` method:*
+```typescript
+import { Entity } from 'electrodb';
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+const table = "my_table_name";
+const client = new DocumentClient({
+    region: "us-east-1"
+});
+
+const task = new Entity({
+    // your model
+});
+
+task.setClient(client);
+```
+
+## V2 Client
+The [v2](https://www.npmjs.com/package/aws-sdk) sdk will work out of the box with the the DynamoDB DocumentClient.
+
+*Example:*
+```typescript
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+const client = new DocumentClient({
+    region: "us-east-1"
+});
+```
+
+## V3 Client
+The [v3](https://www.npmjs.com/package/@aws-sdk/client-dynamodb) client will work out of the box with the the DynamoDBClient.
+
+```typescript
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+const client = new DynamoDBClient({
+    region: "us-east-1"
+});
+```
+
+# Logging
+A logger callback function can be provided both the at the instantiation of an `Entity` or `Service` instance or as a [Query Option](#query-options). The property `logger` is implemented as a convenience property; under the hood ElectroDB uses this property identically to how it uses a [Listener](#listeners).
+
+*On the instantiation of an `Entity`:*
+```typescript
+import { DynamoDB } from 'aws-sdk';
+import { Entity, ElectroEvent } from 'electrodb';
+
+const table = "my_table_name";
+const client = new DynamoDB.DocumentClient();
+const logger = (event: ElectroEvent) => {
+    console.log(JSON.stringify(event, null, 4));
+}
+
+const task = new Entity({
+    // your model
+}, {
+    client,
+    table,
+    logger // <----- logger listener
+});
+```
+
+*On the instantiation of an `Service`:*
+```typescript
+import { DynamoDB } from 'aws-sdk';
+import { Entity, ElectroEvent } from 'electrodb';
+
+const table = "my_table_name";
+const client = new DynamoDB.DocumentClient();
+const logger = (event: ElectroEvent) => {
+    console.log(JSON.stringify(event, null, 4));
+}
+
+const task = new Entity({
+    // your model
+});
+
+const user = new Entity({
+    // your model
+});
+
+const service = new Service({ task, user }, {
+   client,
+   table,
+   logger // <----- logger listener
+});
+```
+
+*As a [Query Option](#query-options):*
+```typescript
+const logger = (event: ElectroEvent) => {
+    console.log(JSON.stringify(event, null, 4));
+}
+
+task.query
+    .assigned({ userId })
+    .go({ logger });
+```
+
 # Events
 ElectroDB can be supplied with callbacks (see: [logging](#logging) and [listeners](#listeners) to learn how) to be invoked after certain request lifecycles. This can be useful for logging, analytics, expanding functionality, and more. The following are events currently supported by ElectroDB -- if you would like to see additional events feel free to create a github issue to discuss your concept/need!
 
@@ -4413,66 +4561,6 @@ entity.get({ prop1, prop2 }).go();
 }
 ```
 
-# Logging
-A logger callback function can be provided both the at the instantiation of an `Entity` or `Service` instance or as a [Query Option](#query-options). The property `logger` is implemented as a convenience property; under the hood ElectroDB uses this property identically to how it uses a [Listener](#listeners).
-
-*On the instantiation of an `Entity`:*
-```typescript
-import { DynamoDB } from 'aws-sdk';
-import {Entity, ElectroEvent} from 'electrodb';
-
-const table = "my_table_name";
-const client = new DynamoDB.DocumentClient();
-const logger = (event: ElectroEvent) => {
-    console.log(JSON.stringify(event, null, 4));
-}
-
-const task = new Entity({
-    // your model
-}, {
-    client,
-    table,
-    logger // <----- logger listener
-});
-```
-
-*On the instantiation of an `Service`:*
-```typescript
-import { DynamoDB } from 'aws-sdk';
-import {Entity, ElectroEvent} from 'electrodb';
-
-const table = "my_table_name";
-const client = new DynamoDB.DocumentClient();
-const logger = (event: ElectroEvent) => {
-    console.log(JSON.stringify(event, null, 4));
-}
-
-const task = new Entity({
-    // your model
-});
-
-const user = new Entity({
-    // your model
-});
-
-const service = new Service({ task, user }, {
-   client,
-   table,
-   logger // <----- logger listener
-});
-```
-
-*As a [Query Option](#query-options):*
-```typescript
-const logger = (event: ElectroEvent) => {
-    console.log(JSON.stringify(event, null, 4));
-}
-
-task.query
-    .assigned({ userId })
-    .go({ logger });
-```
-
 # Listeners
 ElectroDB can be supplied with callbacks (called "Listeners") to be invoked after certain request lifecycles. Unlike [Attribute Getters and Setters](#attribute-getters-and-setters), Listeners are implemented to react to events passively, not to modify values during the request lifecycle. Listeners can be useful for logging, analytics, expanding functionality, and more. Listeners can be provide both the at the instantiation of an `Entity` or `Service` instance or as a [Query Option](#query-options).
 
@@ -4481,7 +4569,7 @@ ElectroDB can be supplied with callbacks (called "Listeners") to be invoked afte
 *On the instantiation of an `Entity`:*
 ```typescript
 import { DynamoDB } from 'aws-sdk';
-import {Entity, ElectroEvent} from 'electrodb';
+import { Entity, ElectroEvent } from 'electrodb';
 
 const table = "my_table_name";
 const client = new DynamoDB.DocumentClient();
@@ -4508,7 +4596,7 @@ const task = new Entity({
 *On the instantiation of an `Service`:*
 ```typescript
 import { DynamoDB } from 'aws-sdk';
-import {Entity, ElectroEvent} from 'electrodb';
+import { Entity, ElectroEvent } from 'electrodb';
 
 const table = "my_table_name";
 const client = new DynamoDB.DocumentClient();

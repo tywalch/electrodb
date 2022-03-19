@@ -2,8 +2,14 @@ const {expect} = require("chai");
 const {Entity} = require("../src/entity");
 const uuid = require("uuid").v4;
 const moment = require("moment");
-
-
+const c = require('../src/client');
+function noOpClientMethods() {
+    return c.v2Methods
+        .reduce((client, method) => {
+            client[method] = () => {}
+            return client;
+        }, {});
+}
 
 describe("Query Options", () => {
    describe("table", () => {
@@ -219,6 +225,7 @@ describe("Query Options", () => {
             }
             const ops = [];
             return {
+                ...noOpClientMethods(),
                 ops,
                 addOp(data) {
                     this.ops.push({data, time: new Date()});

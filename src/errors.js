@@ -133,6 +133,18 @@ const ErrorCodes = {
     name: "InvalidListenerProvided",
     sym: ErrorCode,
   },
+  MissingV3ClientPeerDependency: {
+    code: 1021,
+    section: "missing-v3-client-peer-dependency",
+    name: "MissingV3ClientPeerDependency",
+    sym: ErrorCode,
+  },
+  InvalidClientProvided: {
+    code: 1022,
+    section: "invalid-client-provided",
+    name: "InvalidClientProvided",
+    sym: ErrorCode,
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",

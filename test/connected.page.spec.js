@@ -2,14 +2,26 @@ process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const AWS = require("aws-sdk");
 const uuid = require("uuid").v4;
 const {expect} = require("chai");
+const c = require('../src/client');
 const {Entity, Service} = require("../");
+
 const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
 const region = "us-east-1";
 const isLocal = endpoint !== undefined;
+
 AWS.config.update({region, endpoint});
+
 const client = new AWS.DynamoDB.DocumentClient();
 const table =  "electro";
 const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function noOpClientMethods() {
+  return c.v2Methods
+      .reduce((client, method) => {
+        client[method] = () => {}
+        return client;
+      }, {});
+}
 
 function createClient({mockResponses} = {}) {
   const calls = [];
@@ -17,6 +29,7 @@ function createClient({mockResponses} = {}) {
   return {
     calls,
     client: {
+      ...noOpClientMethods(),
       query(params) {
         calls.push(params);
         return {

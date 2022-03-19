@@ -25,6 +25,8 @@
   },
   "homepage": "https://github.com/tywalch/electrodb#readme",
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.54.1",
+    "@aws-sdk/lib-dynamodb": "^3.54.1",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
@@ -59,6 +61,7 @@
     "directory": "test"
   },
   "dependencies": {
-    "jsonschema": "1.2.7"
+    "jsonschema": "1.2.7",
+    "@aws-sdk/lib-dynamodb": "^3.54.1"
   }
 }
