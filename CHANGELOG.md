@@ -150,4 +150,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [1.7.0] - 2022-03-13
 ### Added
-- New feature: "Listeners". Listeners open the door to some really cool tooling that was not possible because of how ElectroDB augments raw DynamoDB responses and did not provide easy access to raw DyanmoDB parameters.
+- New feature: "Listeners". Listeners open the door to some really cool tooling that was not possible because of how ElectroDB augments raw DynamoDB responses and did not provide easy access to raw DyanmoDB parameters. [[read more](./README.md#listeners)]
+
+## [1.7.1] - 2022-03-19
+### Added
+- Adding support for the v3 DyanmoDBClient. This change also brings in a new ElectroDB dependency [@aws-sdk/lib-dynamodb](https://www.npmjs.com/package/@aws-sdk/client-dynamodb). [[read more](./README.md#aws-dynamodb-client)]

@@ -768,21 +768,28 @@ class SetAttribute extends Attribute {
 	_makeSetValidate(definition) {
 		const validate = this._makeValidate(definition.validate);
 		return (value) => {
-			if (Array.isArray(value)) {
-				return validate([...value]);
-			} else if (value && value.wrapperName === 'Set') {
-				return validate([...value.values])
-			} else {
-				return validate(value);
+			switch (getValueType(value)) {
+				case ValueTypes.array:
+					return validate([...value]);
+				case ValueTypes.aws_set:
+					return validate([...value.values]);
+				case ValueTypes.set:
+					return validate(Array.from(value));
+				default:
+					return validate(value);
 			}
 		}
 	}
 
 	fromDDBSet(value) {
-		if (getValueType(value) === ValueTypes.aws_set) {
-			return value.values;
+		switch (getValueType(value)) {
+			case ValueTypes.aws_set:
+				return [...value.values];
+			case ValueTypes.set:
+				return Array.from(value);
+			default:
+				return value;
 		}
-		return value;
 	}
 
 	_createDDBSet(value) {
@@ -820,15 +827,14 @@ class SetAttribute extends Attribute {
 
 	_makeGet(get, items) {
 		this._checkGetSet(get, "get");
-
 		const getter = get || ((attr) => attr);
-
 		return (values, siblings) => {
 			if (values !== undefined) {
 				const data = this.fromDDBSet(values);
 				return getter(data, siblings);
 			}
-			let results = getter(data, siblings);
+			const data = this.fromDDBSet(values);
+			const results = getter(data, siblings);
 			if (results !== undefined) {
 				// if not undefined, try to convert, else no need to return
 				return this.fromDDBSet(results);
@@ -840,9 +846,7 @@ class SetAttribute extends Attribute {
 		this._checkGetSet(set, "set");
 		const setter = set || ((attr) => attr);
 		return (values, siblings) => {
-			const results = values && values.wrapperName === 'Set'
-				? setter(values.values, siblings)
-				: setter(values, siblings)
+			const results = setter(this.fromDDBSet(values), siblings);
 			if (results !== undefined) {
 				return this.toDDBSet(results);
 			}
@@ -879,7 +883,7 @@ class SetAttribute extends Attribute {
 		} else {
 			errors.push(
 				new e.ElectroAttributeValidationError(this.path, `Invalid value type at attribute path: "${this.path}". Expected value to be an Expected value to be an Array, native JavaScript Set objects, or DocumentClient Set objects to fulfill attribute type "${this.type}"`)
-			)
+			);
 		}
 		for (const item of arr) {
 			const [isValid, errorValues] = this.items.isValid(item);

@@ -1,6 +1,11 @@
 const { Service } = require("../src/service");
 const { Entity } = require("../src/entity");
 const { expect } = require("chai");
+const DynamoDB = require("aws-sdk/clients/dynamodb");
+const client = new DynamoDB.DocumentClient({
+	region: "us-east-1",
+	endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
+});
 
 let modelOne = {
 	entity: "entityOne",
@@ -759,7 +764,6 @@ describe("Service Offline", async () => {
 				expect(query.TableName).to.equal(table)
 			});
 			it("Should apply a docClient to each entity", () => {
-				let client = {};
 				let table = "table_name";
 				let entity1 = new Entity(model1);
 				let entity2 = new Entity(model2 );
