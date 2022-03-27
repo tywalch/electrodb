@@ -3122,6 +3122,86 @@ expectError(() => {
         .go()
 });
 
+type ComplexShapesUpdateItem = UpdateEntityItem<typeof entityWithComplexShapes>;
+
+const updateWithWhere = entityWithComplexShapes.update({
+    prop1: 'abc', prop2: 'def',
+  })
+  .data((attr, op) => {
+  })
+  .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
+  .go;
+
+const updateWithoutWhere = entityWithComplexShapes.update({
+    prop1: 'abc', prop2: 'def',
+  })
+  .data((attr, op) => {
+  })
+  .go;
+
+type UpdateWithWhereGoOptions = Parameters<typeof updateWithWhere>;
+type UpdateWithOutWhereGoOptions = Parameters<typeof updateWithoutWhere>;
+
+const updateWithWhereGoOption = {} as UpdateWithWhereGoOptions;
+const updateWithOutWhereGoOptions = {} as UpdateWithOutWhereGoOptions;
+expectType<UpdateWithOutWhereGoOptions>(updateWithWhereGoOption);
+expectType<UpdateWithWhereGoOptions>(updateWithOutWhereGoOptions);
+
+entityWithComplexShapes.update({
+    prop1: 'abc', prop2: 'def',
+  })
+  .data((attr, op) => {
+  })
+  .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
+  .go({
+    response: "all_new",
+  }).then(data => {
+    expectType<ComplexShapesUpdateItem>(data);
+});
+
+entityWithComplexShapes.update({
+    prop1: 'abc', prop2: 'def',
+  })
+  .set({})
+  .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
+  .go({
+    originalErr: true,
+    response: "all_new",
+  }).then(data => {
+    expectType<ComplexShapesUpdateItem>(data);
+});
+
+entityWithComplexShapes.update({
+    prop1: 'abc', prop2: 'def',
+  })
+  .set({prop6: ['sb']})
+  .data((attr, op) => {
+      op.append(attr.prop5, ['sweet'])
+  })
+  .where((attr, op) => op.eq(attr.prop2, 'def'))
+  .go({
+    response: "all_new",
+  })
+  .then(data => {
+    expectType<ComplexShapesUpdateItem>(data);
+});
+
+entityWithComplexShapes.remove({
+    prop1: 'abc', prop2: 'def',
+  })
+  .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
+  .go({
+    response: "all_old",
+  });
+
+entityWithComplexShapes.put({
+    prop1: 'abc', prop2: 'def',
+  })
+  .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
+  .go({
+    response: "all_old",
+  });
+
 expectError(() => {    
     entityWithComplexShapes
         .update({prop1: "abc", prop2: "def"})
