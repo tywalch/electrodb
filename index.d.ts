@@ -1,3 +1,9 @@
+type Flatten<T> = T extends any[]
+  ? T
+  : T extends object
+    ? {[Key in keyof T]: Flatten<T[Key]>}
+    : T;
+
 declare const WhereSymbol: unique symbol;
 declare const UpdateDataSymbol: unique symbol;
 
@@ -987,6 +993,13 @@ interface UpdateQueryOptions extends QueryOptions {
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
 }
 
+interface UpdateQueryParams {
+    response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
+    table?: string;
+    params?: object;
+    originalErr?: boolean;
+}
+
 interface DeleteQueryOptions extends QueryOptions {
     response?: "default" | "none" | 'all_old';
 }
@@ -1042,7 +1055,13 @@ type SingleRecordOperationOptions<A extends string, F extends A, C extends strin
 type PutRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
     go: GoRecord<ResponseType, PutQueryOptions>;
     params: ParamRecord<PutQueryOptions>;
-    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,PutRecordOperationOptions<A,F,C,S,ResponseType>>;
+};
+
+type UpdateRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
+    go: GoRecord<ResponseType, UpdateQueryOptions>;
+    params: ParamRecord<UpdateQueryParams>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,PutRecordOperationOptions<A,F,C,S,ResponseType>>;
 };
 
 type DeleteRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
@@ -1058,7 +1077,7 @@ type BulkRecordOperationOptions<A extends string, F extends A, C extends string,
 
 type SetRecordActionOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> = {
     go: GoRecord<Partial<TableItem>, UpdateQueryOptions>;
-    params: ParamRecord<UpdateQueryOptions>;
+    params: ParamRecord<UpdateQueryParams>;
     set: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     remove: SetRecord<A,F,C,S, Array<keyof SetItem<A,F,C,S>>,IndexCompositeAttributes,TableItem>;
     add: SetRecord<A,F,C,S, AddItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
@@ -1066,7 +1085,7 @@ type SetRecordActionOptions<A extends string, F extends A, C extends string, S e
     append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>,IndexCompositeAttributes,TableItem>;
-    where: WhereClause<A,F,C,S, Item<A,F,C,S,S["attributes"]>,RecordsActionOptions<A,F,C,S,TableItem,IndexCompositeAttributes>>;
+    where: WhereClause<A,F,C,S, Item<A,F,C,S,S["attributes"]>,SetRecordActionOptions<A,F,C,S,SetAttr,IndexCompositeAttributes,TableItem>>;
 }
 
 type SetRecord<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
@@ -1482,7 +1501,7 @@ export type CreateEntityItem<E extends Entity<any, any, any, any>> =
 
 export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
-        ? SetItem<A, F, C, S>
+        ? Partial<ResponseItem<A,F,C,S>>
         : never;
 
 export type UpdateAddEntityItem<E extends Entity<any, any, any, any>> =

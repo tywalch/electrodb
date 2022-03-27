@@ -155,3 +155,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.7.1] - 2022-03-19
 ### Added
 - Adding support for the v3 DyanmoDBClient. This change also brings in a new ElectroDB dependency [@aws-sdk/lib-dynamodb](https://www.npmjs.com/package/@aws-sdk/client-dynamodb). [[read more](./README.md#aws-dynamodb-client)]
+
+## [1.7.2] - 2022-03-27
+### Fixed
+- Fixed issue#111, `update` method specific query option typing no longer lost when using a `where` method in a query chain
+- Fixing incorrect typing for exposed `UpdateEntityItem` type. Exported type was missing composite key attributes
