@@ -1139,6 +1139,8 @@ type DocumentClient = {
     batchWrite: DocumentClientMethod;
     batchGet: DocumentClientMethod;
     scan: DocumentClientMethod;
+    transactGet: DocumentClientMethod;
+    transactWrite: DocumentClientMethod;
 } | {
     send: (command: any) => Promise<any>;
 }

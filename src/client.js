@@ -9,7 +9,7 @@ const DocumentClientVersions = {
 };
 
 const v3Methods = ['send'];
-const v2Methods = ['get', 'put', 'update', 'delete', 'batchWrite', 'batchGet', 'scan', 'query', 'createSet'];
+const v2Methods = ['get', 'put', 'update', 'delete', 'batchWrite', 'batchGet', 'scan', 'query', 'createSet', 'transactWrite', 'transactGet'];
 const supportedClientVersions = {
     [DocumentClientVersions.v2]: v2Methods,
     [DocumentClientVersions.v3]: v3Methods,
@@ -78,6 +78,18 @@ class DocumentClientV3Wrapper {
     query(params) {
         return this.promiseWrap(async () => {
             const command = new this.lib.QueryCommand(params);
+            return this.client.send(command);
+        });
+    }
+    transactWrite(params) {
+        return this.promiseWrap(async () => {
+            const command = new this.lib.TransactWriteCommand(params);
+            return this.client.send(command);
+        });
+    }
+    transactGet(params) {
+        return this.promiseWrap(async () => {
+            const command = new this.lib.TransactGetCommand(params);
             return this.client.send(command);
         });
     }
