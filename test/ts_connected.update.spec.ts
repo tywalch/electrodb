@@ -380,6 +380,81 @@ const StoreLocations = new Entity({
 }, {table, client});
 
 describe("Update Item", () => {
+    describe('updating deeply nested attributes', () => {
+        it('should not clobber a deeply nested attribute when updating', async () => {
+            const customers = new Entity(
+                {
+                    model: {
+                        entity: "customer",
+                        service: "company",
+                        version: "1"
+                    },
+                    attributes: {
+                        id: { type: "string"},
+                        email: {type: "string" },
+                        name: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string" },
+                                        last: { type: "string" },
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        primary: {
+                            pk: {
+                                field: "pk",
+                                composite: ["id"]
+                            },
+                            sk: {
+                                field: "sk",
+                                composite: [],
+                            }
+                        }
+                    }
+                },
+                { table, client }
+            );
+
+            const id = uuid();
+            const email = "user@example.com";
+
+            await customers.create({ id, email }).go();
+
+            const retrieved = await customers.get({id}).go();
+
+            expect(retrieved).to.deep.equal({
+                id,
+                email,
+                name: {
+                    legal: {}
+                }
+            });
+
+            const updated = await customers.patch({id})
+                .data((attr, op) => {
+                    op.set(attr.name.legal.first, 'joe');
+                    op.set(attr.name.legal.last, 'exotic');
+                }).go({response: 'all_new'});
+
+            expect(updated).to.deep.equal({
+                id,
+                email,
+                name: {
+                    legal: {
+                        first: 'joe',
+                        last: 'exotic',
+                    }
+                }
+            });
+        });
+    })
     describe("conditions and updates", () => {
         let cityId = uuid();
         const mallId = "EastPointe";

@@ -575,30 +575,30 @@ class MapAttribute extends Attribute {
 			}
 			return v;
 		}
-		const valueType = getValueType(value);
-		if (value === undefined) {
-			return getValue(value);
-		} else if (value && valueType !== "object" && Object.keys(value).length === 0) {
-			return getValue(value);
+
+		let data = value === undefined
+			? getValue(value)
+			: value;
+
+		const valueType = getValueType(data);
+
+		if (data === undefined) {
+			data = {};
 		} else if (valueType !== "object") {
 			throw new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`);
 		}
 
-		const data = {};
+		const response = {};
 
 		for (const name of Object.keys(this.properties.attributes)) {
 			const attribute = this.properties.attributes[name];
-			const results = attribute.val(value[attribute.name]);
+			const results = attribute.val(data[attribute.name]);
 			if (results !== undefined) {
-				data[name] = results;
+				response[name] = results;
 			}
 		}
 
-		if (Object.keys(data).length > 0) {
-			return getValue(data);
-		} else {
-			return getValue();
-		}
+		return response;
 	}
 }
 
@@ -726,28 +726,25 @@ class ListAttribute extends Attribute {
 			return v;
 		}
 
-		if (value === undefined) {
-			return this.default();
-		} else if (Array.isArray(value) && value.length === 0) {
-			return value;
-		} else if (!Array.isArray(value)) {
+		const data = value === undefined
+			? getValue(value)
+			: value;
+
+		if (data === undefined) {
+			return data;
+		} else if (!Array.isArray(data)) {
 			throw new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path "${this.path}. Received value of type "${getValueType(value)}", expected value of type "array"`);
 		}
 
-		const data = [];
-
-		for (const v of value) {
-			const results = this.items.val(v);
+		const response = [];
+		for (const d of data) {
+			const results = this.items.val(d);
 			if (results !== undefined) {
-				data.push(results);
+				response.push(results);
 			}
 		}
 
-		if (data.filter(value => value !== undefined).length > 0) {
-			return getValue(data);
-		} else {
-			return getValue();
-		}
+		return response;
 	}
 }
 

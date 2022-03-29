@@ -131,6 +131,20 @@ class Entity extends ElectroDB.Entity {
             scan: () => promiseCallback({Items: []}),
             batchWrite: () => promiseCallback({UnprocessedKeys: {[this._getTableName()]: {Keys: []}}}),
             batchGet: () => promiseCallback({Responses: {[this._getTableName()]: []}, UnprocessedKeys: {[this._getTableName()]: {Keys: []}}}),
+            transactWrite: (params) => {
+                return {
+                    promise: async () => {
+                        printToScreen({params, entity: this, cache: true});
+                    }
+                }
+            },
+            transactGet: (params) => {
+                return {
+                    promise: async () => {
+                        printToScreen({params, entity: this, cache: true});
+                    }
+                }
+            },
         };
     }
 
