@@ -160,3 +160,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Fixed issue#111, `update` method specific query option typing no longer lost when using a `where` method in a query chain
 - Fixing incorrect typing for exposed `UpdateEntityItem` type. Exported type was missing composite key attributes
+
+## [1.8.0] - 2022-03-28
+### Added
+- Expected typings for the injected v2 client now include methods for `transactWrite` and `transactGet`
+### Changed
+- Map attributes will now always resolve to least an empty object on a `create` and `put` methods (instead of just the root map)
+- In the past, default values for property attributes on maps only resolves when a user provided an object to place the values on. Now default values within maps attributes will now always resolve onto the object on `create` and `put` methods.
