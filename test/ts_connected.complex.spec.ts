@@ -26,6 +26,24 @@ function getEntity(helper: Helper) {
             version: "1"
         },
         attributes: {
+            emptyNestedMap: {
+                type: 'map',
+                properties: {
+                    nestedMap: {
+                        type: 'map',
+                        properties: {
+                            deeplyNestedMap: {
+                                type: 'map',
+                                properties: {
+                                    deeplyNestedString: {
+                                        type: 'string'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             stringVal: {
                 type: "string",
                 default: () => "abc",
@@ -251,7 +269,6 @@ function getEntity(helper: Helper) {
                         return undefined
                     },
                     default: {
-                        stringVal: "abc",
                         numVal: 123,
                         boolValue: false,
                     },
@@ -355,7 +372,7 @@ function getEntity(helper: Helper) {
                                 return value;
                             }
                         },
-                        default: [],
+                        default: ['xyz'],
                         validate: (value: string[]) => undefined,
                         get: (value: string[]) => {
                             helper.triggerGetter( "stringListValue", value);
@@ -476,7 +493,7 @@ function getEntity(helper: Helper) {
                                 return value;
                             }
                         },
-                        default: [],
+                        default: [{stringVal: 'xyz'}, {}],
                         validate: (value: Record<string, any>[]) => undefined,
                         get: (value: Record<string, any>[]) => {
                             helper.triggerGetter( "map", "mapListValue", value);
@@ -585,6 +602,10 @@ describe("Simple Crud On Complex Entity", () => {
         };
         const putItem = await entity.put(data).go();
         const item = await entity.get({stringVal, stringVal2}).go();
+        console.log({
+            item: item?.emptyNestedMap,
+            putItem: putItem.emptyNestedMap,
+        })
         expect(item).to.deep.equal(putItem);
     });
 
@@ -593,6 +614,11 @@ describe("Simple Crud On Complex Entity", () => {
         const entity = getEntity(helper);
         const created = await entity.put({}).go();
         expect(created).to.deep.equal({
+            "emptyNestedMap": {
+                "nestedMap": {
+                    "deeplyNestedMap": {},
+                }
+            },
             "stringVal": "abc",
             "stringVal2": "abc",
             "enumVal": "abc",
@@ -600,7 +626,28 @@ describe("Simple Crud On Complex Entity", () => {
             "boolValue": true,
             "numberListValue": [],
             "stringListValue": [],
-            "mapValue": {}
+            "mapValue": {
+                "boolValue": false,
+                "enumVal": "abc",
+                "mapListValue": [
+                    {
+                        "boolValue": false,
+                        "enumVal": "abc",
+                        "numVal": 100,
+                        "stringVal": "xyz",
+                    },
+                    {
+                        "boolValue": false,
+                        "enumVal": "abc",
+                        "numVal": 100,
+                        "stringVal": "def",
+                    }
+                ],
+                "numVal": 10,
+                "numberListValue": [123, 123],
+                "stringListValue": ['xyz'],
+                "stringVal": "abc"
+            }
         })
     });
 
