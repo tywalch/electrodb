@@ -381,6 +381,200 @@ const StoreLocations = new Entity({
 
 describe("Update Item", () => {
     describe('updating deeply nested attributes', () => {
+        it('should apply nested defaults on creation', () => {
+            const customers = new Entity(
+                {
+                    model: {
+                        entity: "customer",
+                        service: "company",
+                        version: "1"
+                    },
+                    attributes: {
+                        id: { type: "string"},
+                        email: {type: "string" },
+                        name: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string" },
+                                    }
+                                }
+                            }
+                        },
+                        name2: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string", default: 'jorge' },
+                                    }
+                                }
+                            }
+                        },
+                        name3: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string", default: 'jorge' },
+                                    },
+                                    default: {}
+                                }
+                            }
+                        },
+                        name4: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string", default: 'jorge', required: true },
+                                    }
+                                }
+                            }
+                        },
+                        name5: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string", default: 'jorge', required: true },
+                                    },
+                                }
+                            }
+                        },
+                        name6: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string", default: 'jorge', required: true },
+                                    },
+                                    default: {},
+                                }
+                            }
+                        },
+                        name7: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string", default: 'jorge', required: true },
+                                    },
+                                    default: {},
+                                }
+                            },
+                            required: true,
+                            default: () => ({})
+                        },
+                        name8: {
+                            type: "map",
+                            properties: {
+                                legal: {
+                                    type: "map",
+                                    properties: {
+                                        first: { type: "string" },
+                                        middle: { type: "string", required: true },
+                                    },
+                                    default: {},
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        primary: {
+                            pk: {
+                                field: "pk",
+                                composite: ["id"]
+                            },
+                            sk: {
+                                field: "sk",
+                                composite: []
+                            }
+                        }
+                    }
+                },
+                { table }
+            );
+
+            const p1 = customers.create({
+                id: "test",
+                email: "user@example.com",
+
+                name: { // should save as is
+                    legal: {}
+                },
+                name2: {}, // should save as is
+                name3: {}, // should walk up defaults
+                name4: {}, // should stop when defaults stop
+                name5: {legal: {}}, // should be fine with nested required flag on 'middle' because 'middle' has default
+                name6: {}, // no typing issue with default missing because it
+                // name:7  does not need to be included despite being 'required', will be set by defaults
+            }).params();
+
+            expect(p1).to.deep.equal({
+                "Item": {
+                    "id": "test",
+                    "email": "user@example.com",
+                    "name": {
+                        "legal": {}
+                    },
+                    "name2": {},
+                    "name3": {
+                        "legal": {
+                            "middle": "jorge"
+                        }
+                    },
+                    "name4": {},
+                    "name5": {
+                        "legal": {
+                            "middle": "jorge"
+                        }
+                    },
+                    "name6": {
+                        "legal": {
+                            "middle": "jorge"
+                        }
+                    },
+                    "name7": {
+                        "legal": {
+                            "middle": "jorge"
+                        }
+                    },
+                    "name8": {},
+                    "pk": "$company#id_test",
+                    "sk": "$customer_1",
+                    "__edb_e__": "customer",
+                    "__edb_v__": "1"
+                },
+                "TableName": "electro",
+                "ConditionExpression": "attribute_not_exists(#pk) AND attribute_not_exists(#sk)",
+                "ExpressionAttributeNames": {
+                    "#pk": "pk",
+                    "#sk": "sk"
+                }
+            });
+
+            expect(() => customers.create({
+                id: "test",
+                email: "user@example.com",
+                name8: {}, // unfortunate combination, user defined illogical defaults that resulted in non-typed validation error
+            }).params()).to.throw('Invalid value type at entity path: "name8.legal.middle". Value is required. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute');
+        });
         it('should not clobber a deeply nested attribute when updating', async () => {
             const customers = new Entity(
                 {
@@ -422,29 +616,50 @@ describe("Update Item", () => {
                 { table, client }
             );
 
-            const id = uuid();
+            const id1 = uuid();
+            const id2 = uuid();
             const email = "user@example.com";
 
-            await customers.create({ id, email }).go();
+            await customers.create({ id: id1, email }).go();
+            await customers.create({ id: id2, email, name: {legal: {}} }).go();
 
-            const retrieved = await customers.get({id}).go();
+            const retrieved1 = await customers.get({id: id1}).go();
+            const retrieved2 = await customers.get({id: id2}).go();
 
-            expect(retrieved).to.deep.equal({
-                id,
+            expect(retrieved1).to.deep.equal({
                 email,
+                id: id1,
+                name: {}
+            });
+
+            expect(retrieved2).to.deep.equal({
+                email,
+                id: id2,
                 name: {
                     legal: {}
                 }
             });
 
-            const updated = await customers.patch({id})
+            const updated1 = await customers.patch({id: id1})
+                .data((attr, op) => {
+                    op.set(attr.name.legal.first, 'joe');
+                    op.set(attr.name.legal.last, 'exotic');
+                })
+                .go({response: 'all_new'})
+                .then((data) => ({success: true, result: data}))
+                .catch(err => ({success: false, result: err}));
+
+            expect(updated1.success).to.be.false;
+            expect(updated1.result.message).to.equal('The document path provided in the update expression is invalid for update - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error');
+
+            const updated2 = await customers.patch({id: id2})
                 .data((attr, op) => {
                     op.set(attr.name.legal.first, 'joe');
                     op.set(attr.name.legal.last, 'exotic');
                 }).go({response: 'all_new'});
 
-            expect(updated).to.deep.equal({
-                id,
+            expect(updated2).to.deep.equal({
+                id: id2,
                 email,
                 name: {
                     legal: {

@@ -27,12 +27,15 @@ function getEntity(helper: Helper) {
         },
         attributes: {
             emptyNestedMap: {
+                default: {},
                 type: 'map',
                 properties: {
                     nestedMap: {
+                        default: {},
                         type: 'map',
                         properties: {
                             deeplyNestedMap: {
+                                default: {},
                                 type: 'map',
                                 properties: {
                                     deeplyNestedString: {
@@ -602,10 +605,6 @@ describe("Simple Crud On Complex Entity", () => {
         };
         const putItem = await entity.put(data).go();
         const item = await entity.get({stringVal, stringVal2}).go();
-        console.log({
-            item: item?.emptyNestedMap,
-            putItem: putItem.emptyNestedMap,
-        })
         expect(item).to.deep.equal(putItem);
     });
 
