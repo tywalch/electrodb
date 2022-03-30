@@ -167,3 +167,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Changed
 - Map attributes will now always resolve to least an empty object on a `create` and `put` methods (instead of just the root map)
 - In the past, default values for property attributes on maps only resolves when a user provided an object to place the values on. Now default values within maps attributes will now always resolve onto the object on `create` and `put` methods.
+
+## [1.8.1] - 2022-03-29
+### Fixed
+- Solidifying default application methodology: default values for nested properties will be applied up until an undefined default occurs or default callback returns undefined

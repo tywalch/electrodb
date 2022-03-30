@@ -583,7 +583,7 @@ class MapAttribute extends Attribute {
 		const valueType = getValueType(data);
 
 		if (data === undefined) {
-			data = {};
+			return data;
 		} else if (valueType !== "object") {
 			throw new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Expected value to be an object to fulfill attribute type "${this.type}"`);
 		}

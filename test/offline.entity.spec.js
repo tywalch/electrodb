@@ -991,8 +991,8 @@ describe("Entity", () => {
 						},
 						value: undefined
 					},
-					fail: false,
-					// message: `Invalid value type at entity path: "data". Value is required.`,
+					fail: true,
+					message: `Invalid value type at entity path: "data". Value is required.`,
 				}, {
 					input: {
 						data: {
