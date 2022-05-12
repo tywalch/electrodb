@@ -899,6 +899,18 @@ class Entity {
 		return {parameters, config};
 	}
 
+	addListeners(logger) {
+		this.eventManager.add(logger);
+	}
+
+	_addLogger(logger) {
+		if (validations.isFunction(logger)) {
+			this.addListeners(logger);
+		} else {
+			throw new e.ElectroError(e.ErrorCodes.InvalidLoggerProvided, `Logger must be of type function`);
+		}
+	}
+
 	_getPrimaryIndexFieldNames() {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[TableIndex];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];

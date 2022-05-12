@@ -191,6 +191,14 @@ class Service {
 			entity._setClient(options.client);
 		}
 
+		if (options.logger) {
+			entity._addLogger(options.logger);
+		}
+
+		if (options.listeners) {
+			entity.addListeners(options.listeners);
+		}
+
 		if (this._modelVersion === ModelVersions.beta && this.service.version) {
 			entity.model.version = this.service.version;
 		}
