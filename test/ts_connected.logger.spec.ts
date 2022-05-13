@@ -86,22 +86,34 @@ type TestListenerCallback = (options: {entity: TestEntityInstance, service: Test
 type TestEventComparison = {
     calls: number;
     comparison: 'eq' | 'gt' | 'lt';
+} | {
+    calls: [number, number];
+    comparison: 'between'
+} | {
+    calls: number[],
+    comparison: 'in'
 }
 
 function applyEventComparisons(options: TestEventComparison, events: ElectroEvent[]) {
-    const { comparison, calls } = options;
-    switch (comparison) {
+    
+    switch (options.comparison) {
         case 'eq':
-            expect(events).to.have.lengthOf(calls);
+            expect(events).to.have.lengthOf(options.calls);
             break;
         case 'gt':
-            expect(events.length).to.be.greaterThan(calls);
+            expect(events.length).to.be.greaterThan(options.calls);
             break;
         case 'lt':
-            expect(events.length).to.be.lessThan(calls);
+            expect(events.length).to.be.lessThan(options.calls);
+            break;
+        case 'between':
+            expect(events.length).to.be.greaterThanOrEqual(options.calls[0]).and.lessThanOrEqual(options.calls[1]);
+            break;
+        case 'in':
+            expect(options.calls.includes(events.length)).to.be.true;
             break;
         default:
-            throw new Error(`Invalid comparison: '${comparison}'`);
+            throw new Error(`Invalid comparison: '${(options as any).comparison}'`);
     }
 }
 
@@ -110,6 +122,13 @@ function equalCallCount(calls: number, events: ElectroEvent[]) {
     const resultEventsListenedTo = events.filter(event => event.type === 'results');
     applyEventComparisons({calls, comparison: 'eq'}, queryEventsListenedTo);
     applyEventComparisons({calls, comparison: 'eq'}, resultEventsListenedTo);
+}
+
+function inCallCount(calls: number[], events: ElectroEvent[]) {
+    const queryEventsListenedTo = events.filter(event => event.type === 'query');
+    const resultEventsListenedTo = events.filter(event => event.type === 'results');
+    applyEventComparisons({calls, comparison: 'in'}, queryEventsListenedTo);
+    applyEventComparisons({calls, comparison: 'in'}, resultEventsListenedTo);
 }
 
 
@@ -228,7 +247,7 @@ describe("listener functions", async () => {
         await testListeners(async ({service}) => {
             return {
                 query: service.entities.entity1.query.record({ prop1 }).gt({ prop2 }),
-                test: (events) => equalCallCount(4, events),
+                test: (events) => inCallCount([2, 4], events),
             };
         });
     });
@@ -236,10 +255,9 @@ describe("listener functions", async () => {
     it("should notify listeners when an service query request is made", async () => {
         const prop1 = uuid();
         await testListeners(async ({service}) => {
-            
             return {
                 query: service.collections.testCollection({prop1}),
-                test: (events) => equalCallCount(4, events),
+                test: (events) => inCallCount([2, 4], events),
             };
         });
     });
