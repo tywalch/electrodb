@@ -228,7 +228,7 @@ describe("listener functions", async () => {
         await testListeners(async ({service}) => {
             return {
                 query: service.entities.entity1.query.record({ prop1 }).gt({ prop2 }),
-                test: (events) => equalCallCount(2, events),
+                test: (events) => equalCallCount(4, events),
             };
         });
     });
@@ -239,7 +239,7 @@ describe("listener functions", async () => {
             
             return {
                 query: service.collections.testCollection({prop1}),
-                test: (events) => equalCallCount(2, events),
+                test: (events) => equalCallCount(4, events),
             };
         });
     });
