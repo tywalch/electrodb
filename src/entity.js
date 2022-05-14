@@ -2258,9 +2258,14 @@ class Entity {
 			}
 
 			if (seenIndexFields[pk.field] !== undefined) {
-				throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Partition Key (pk) on Access Pattern '${accessPattern}' references the field '${pk.field}' which is already referenced by the Access Pattern '${seenIndexFields[pk.field]}'. Fields used for indexes need to be unique to avoid conflicts.`);
+				if (seenIndexFields[pk.field].length < 2) {
+					seenIndexFields[pk.field].push(accessPattern);
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Partition Key (pk) on Access Pattern '${accessPattern}' references the field '${pk.field}' which is already referenced by the Access Pattern(s) '${u.commaSeparatedString(seenIndexFields[pk.field])}'. Fields used for indexes need to be unique to avoid conflicts.`);
+				}
 			} else {
-				seenIndexFields[pk.field] = accessPattern;
+				seenIndexFields[pk.field] = [];
+				seenIndexFields[pk.field].push(accessPattern);
 			}
 
 			if (sk.field) {

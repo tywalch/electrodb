@@ -6,6 +6,7 @@ const noSortKeys = require("./definitions/nosortkey.json");
 const noStringKeys = require("./definitions/nostringkeys.json");
 const keyNamesAttributeNames = require("./definitions/keynamesattributenames.json");
 const leadingUnderscoreKeys = require('./definitions/leadingunderscorekeys.json');
+const localSecondaryIndexes = require('./definitions/localsecondaryindexes.json');
 
 const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
 const region = "us-east-1";
@@ -34,3 +35,4 @@ create(endpoint, region, "electro_nosort", noSortKeys);
 create(endpoint, region, "electro_nostringkeys", noStringKeys);
 create(endpoint, region, "electro_keynamesattributenames", keyNamesAttributeNames);
 create(endpoint, region, "electro_leadingunderscorekeys", leadingUnderscoreKeys);
+create(endpoint, region, "electro_localsecondaryindex", localSecondaryIndexes);
