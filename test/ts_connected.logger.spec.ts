@@ -86,22 +86,34 @@ type TestListenerCallback = (options: {entity: TestEntityInstance, service: Test
 type TestEventComparison = {
     calls: number;
     comparison: 'eq' | 'gt' | 'lt';
+} | {
+    calls: [number, number];
+    comparison: 'between'
+} | {
+    calls: number[],
+    comparison: 'in'
 }
 
 function applyEventComparisons(options: TestEventComparison, events: ElectroEvent[]) {
-    const { comparison, calls } = options;
-    switch (comparison) {
+    
+    switch (options.comparison) {
         case 'eq':
-            expect(events).to.have.lengthOf(calls);
+            expect(events).to.have.lengthOf(options.calls);
             break;
         case 'gt':
-            expect(events.length).to.be.greaterThan(calls);
+            expect(events.length).to.be.greaterThan(options.calls);
             break;
         case 'lt':
-            expect(events.length).to.be.lessThan(calls);
+            expect(events.length).to.be.lessThan(options.calls);
+            break;
+        case 'between':
+            expect(events.length).to.be.greaterThanOrEqual(options.calls[0]).and.lessThanOrEqual(options.calls[1]);
+            break;
+        case 'in':
+            expect(options.calls.includes(events.length)).to.be.true;
             break;
         default:
-            throw new Error(`Invalid comparison: '${comparison}'`);
+            throw new Error(`Invalid comparison: '${(options as any).comparison}'`);
     }
 }
 
@@ -110,6 +122,13 @@ function equalCallCount(calls: number, events: ElectroEvent[]) {
     const resultEventsListenedTo = events.filter(event => event.type === 'results');
     applyEventComparisons({calls, comparison: 'eq'}, queryEventsListenedTo);
     applyEventComparisons({calls, comparison: 'eq'}, resultEventsListenedTo);
+}
+
+function inCallCount(calls: number[], events: ElectroEvent[]) {
+    const queryEventsListenedTo = events.filter(event => event.type === 'query');
+    const resultEventsListenedTo = events.filter(event => event.type === 'results');
+    applyEventComparisons({calls, comparison: 'in'}, queryEventsListenedTo);
+    applyEventComparisons({calls, comparison: 'in'}, resultEventsListenedTo);
 }
 
 
@@ -228,7 +247,7 @@ describe("listener functions", async () => {
         await testListeners(async ({service}) => {
             return {
                 query: service.entities.entity1.query.record({ prop1 }).gt({ prop2 }),
-                test: (events) => equalCallCount(2, events),
+                test: (events) => inCallCount([2, 4], events),
             };
         });
     });
@@ -236,10 +255,9 @@ describe("listener functions", async () => {
     it("should notify listeners when an service query request is made", async () => {
         const prop1 = uuid();
         await testListeners(async ({service}) => {
-            
             return {
                 query: service.collections.testCollection({prop1}),
-                test: (events) => equalCallCount(2, events),
+                test: (events) => inCallCount([2, 4], events),
             };
         });
     });
@@ -368,4 +386,203 @@ describe("listener functions", async () => {
             expect(test).to.throw("Provided listener is not of type 'function' - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-listener-provided");
         });
     });
-})
+
+    describe("listener service to entity propagation", () => {
+        const table = "electro";
+        function createService(options: {logger?: (event: ElectroEvent) => void, listeners?: Array<(event: ElectroEvent) => void>}) {
+            const entity1 = new Entity({
+                model: {
+                    entity: "entity1",
+                    service: "service",
+                    version: "version"
+                },
+                attributes: {
+                    prop1: {
+                        type: "string"
+                    },
+                    prop2: {
+                        type: "string"
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: "pk",
+                            composite: ["prop1"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["prop2"]
+                        }
+                    }
+                }
+            }, {table});
+
+            const entity2 = new Entity({
+                model: {
+                    entity: "entity2",
+                    service: "service",
+                    version: "version"
+                },
+                attributes: {
+                    prop1: {
+                        type: "string"
+                    },
+                    prop2: {
+                        type: "string"
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: "pk",
+                            composite: ["prop1"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["prop2"]
+                        }
+                    }
+                }
+            }, {table});
+
+            return new Service({entity1, entity2}, {client, ...options});
+        }
+        it('should pass service provided logger down to entities', async () => {
+            const received: ElectroEvent[] = [];
+            const logger = (event: ElectroEvent) => {
+                received.push(event);
+            }
+            const service = createService({logger});
+            const prop1 = uuid();
+            const prop2 = uuid();
+            await service.entities.entity1.get({prop1, prop2}).go();
+            expect(received).to.deep.equal([
+                {
+                    type: 'query',
+                    method: 'get',
+                    params: { 
+                        Key: {
+                            pk: `$service#prop1_${prop1}`, 
+                            sk: `$entity1_version#prop2_${prop2}`
+                        }, 
+                        TableName: 'electro' 
+                    },
+                    config: {
+                      includeKeys: false,
+                      originalErr: false,
+                      raw: false,
+                      params: {},
+                      page: {},
+                      lastEvaluatedKeyRaw: false,
+                      table: undefined,
+                      concurrent: undefined,
+                      parse: undefined,
+                      pager: 'named',
+                      unprocessed: 'item',
+                      response: 'default',
+                      ignoreOwnership: false,
+                      _isPagination: false,
+                      _isCollectionQuery: false,
+                      pages: undefined,
+                      listeners: []
+                    }
+                },
+                {
+                    type: 'results',
+                    method: 'get',
+                    config: {
+                      includeKeys: false,
+                      originalErr: false,
+                      raw: false,
+                      params: {},
+                      page: {},
+                      lastEvaluatedKeyRaw: false,
+                      table: undefined,
+                      concurrent: undefined,
+                      parse: undefined,
+                      pager: 'named',
+                      unprocessed: 'item',
+                      response: 'default',
+                      ignoreOwnership: false,
+                      _isPagination: false,
+                      _isCollectionQuery: false,
+                      pages: undefined,
+                      listeners: []
+                    },
+                    success: true,
+                    results: {}
+                  }
+            ]);
+        });
+
+        it('should pass service provided listeners down to entities', async () => {
+            const received: ElectroEvent[] = [];
+            const listener = (event: ElectroEvent) => {
+                received.push(event)
+            }
+            const service = createService({listeners: [listener]});
+            const prop1 = uuid();
+            const prop2 = uuid();
+            await service.entities.entity1.get({prop1, prop2}).go();
+            expect(received).to.deep.equal([
+                {
+                    type: 'query',
+                    method: 'get',
+                    params: { 
+                        Key: {
+                            pk: `$service#prop1_${prop1}`, 
+                            sk: `$entity1_version#prop2_${prop2}`
+                        }, 
+                        TableName: 'electro' 
+                    },
+                    config: {
+                      includeKeys: false,
+                      originalErr: false,
+                      raw: false,
+                      params: {},
+                      page: {},
+                      lastEvaluatedKeyRaw: false,
+                      table: undefined,
+                      concurrent: undefined,
+                      parse: undefined,
+                      pager: 'named',
+                      unprocessed: 'item',
+                      response: 'default',
+                      ignoreOwnership: false,
+                      _isPagination: false,
+                      _isCollectionQuery: false,
+                      pages: undefined,
+                      listeners: []
+                    }
+                },
+                {
+                    type: 'results',
+                    method: 'get',
+                    config: {
+                      includeKeys: false,
+                      originalErr: false,
+                      raw: false,
+                      params: {},
+                      page: {},
+                      lastEvaluatedKeyRaw: false,
+                      table: undefined,
+                      concurrent: undefined,
+                      parse: undefined,
+                      pager: 'named',
+                      unprocessed: 'item',
+                      response: 'default',
+                      ignoreOwnership: false,
+                      _isPagination: false,
+                      _isCollectionQuery: false,
+                      pages: undefined,
+                      listeners: []
+                    },
+                    success: true,
+                    results: {}
+                  }
+            ]);
+        });
+
+    })
+});
