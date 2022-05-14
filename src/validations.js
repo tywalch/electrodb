@@ -81,7 +81,6 @@ const Index = {
 				},
 				facets: {
 					type: ["array", "string"],
-					minItems: 1,
 					items: {
 						type: "string",
 					},
@@ -89,7 +88,6 @@ const Index = {
 				},
 				composite: {
 					type: ["array"],
-					minItems: 1,
 					items: {
 						type: "string",
 					},
