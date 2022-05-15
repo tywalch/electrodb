@@ -19,8 +19,58 @@
       "AttributeType":"S"
     },
     {
+      "AttributeName":"gsi1pk",
+      "AttributeType":"S"
+    },
+    {
+      "AttributeName":"gsi2pk",
+      "AttributeType":"S"
+    },
+    {
       "AttributeName":"lsi1sk",
       "AttributeType":"S"
+    },
+    {
+      "AttributeName":"lsi2sk",
+      "AttributeType":"S"
+    },
+    {
+      "AttributeName":"lsi3sk",
+      "AttributeType":"S"
+    }
+  ],
+  "GlobalSecondaryIndexes":[
+    {
+      "IndexName":"gsi1pk-lsi1sk-index",
+      "KeySchema":[
+        {
+          "AttributeName":"gsi1pk",
+          "KeyType":"HASH"
+        },
+        {
+          "AttributeName":"lsi1sk",
+          "KeyType":"RANGE"
+        }
+      ],
+      "Projection":{
+        "ProjectionType":"ALL"
+      }
+    },
+    {
+      "IndexName":"gsi2pk-gsi1pk-index",
+      "KeySchema":[
+        {
+          "AttributeName":"gsi2pk",
+          "KeyType":"HASH"
+        },
+        {
+          "AttributeName":"gsi1pk",
+          "KeyType":"RANGE"
+        }
+      ],
+      "Projection":{
+        "ProjectionType":"ALL"
+      }
     }
   ],
   "LocalSecondaryIndexes": [
@@ -33,6 +83,22 @@
         },
         {
           "AttributeName": "lsi1sk",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection":{
+        "ProjectionType":"ALL"
+      }
+    },
+    {
+      "IndexName": "lsi2pk-lsi2sk-index",
+      "KeySchema": [
+        {
+          "AttributeName": "pk",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "lsi2sk",
           "KeyType": "RANGE"
         }
       ],

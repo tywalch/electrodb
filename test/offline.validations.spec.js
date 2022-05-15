@@ -75,7 +75,7 @@ describe("Model Validation", () => {
 		expect(() => new Entity(schema)).to.throw(`The Access Pattern 'record' contains duplicate references the composite attribute(s): "id", "prop3". Composite attributes may only be used once within an index. If this leaves the Sort Key (sk) without any composite attributes simply set this to be an empty array. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-composite-attributes`)
 	});
 
-	it("should not allow index fields to be used more than once in across indexes: duplicate pk", () => {
+	it("should not allow index fields to be used more than twice in across indexes: duplicate pk", () => {
 		const schema = {
 			service: "MallStoreDirectory",
 			entity: "MallStores",
@@ -112,7 +112,7 @@ describe("Model Validation", () => {
 					},
 				},
 				record2: {
-					index: "gsi1",
+					index: "local-secondary-index",
 					pk: {
 						field: "pk",
 						facets: ["id", "prop3"]
@@ -122,9 +122,20 @@ describe("Model Validation", () => {
 						facets: ["date", "prop2"],
 					},
 				},
+				record3: {
+					index: "global-secondary-index",
+					pk: {
+						field: "pk",
+						facets: ["id", "prop3"]
+					},
+					sk: {
+						field: "gsi2sk",
+						facets: ["date", "prop2"],
+					},
+				},
 			},
 		};
-		expect(() => new Entity(schema)).to.throw("Partition Key (pk) on Access Pattern 'record2' references the field 'pk' which is already referenced by the Access Pattern 'record'. Fields used for indexes need to be unique to avoid conflicts. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-fields")
+		expect(() => new Entity(schema)).to.throw(`Partition Key (pk) on Access Pattern 'record3' references the field 'pk' which is already referenced by the Access Pattern(s) 'record', 'record2'. Fields used for indexes need to be unique to avoid conflicts. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-fields`)
 	});
 
 	it("should not allow index fields to be used more than once in across indexes: duplicate sk", () => {
