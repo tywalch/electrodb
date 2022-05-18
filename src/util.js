@@ -75,8 +75,8 @@ function batchItems(arr = [], size) {
   return batched;
 }
 
-function commaSeparatedString(array = []) {
-  return array.map(value => `"${value}"`).join(", ");
+function commaSeparatedString(array = [], prefix = '"', postfix = '"') {
+  return array.map(value => `${prefix}${value}${postfix}`).join(", ");
 }
 
 function formatStringCasing(str, casing, defaultCase) {

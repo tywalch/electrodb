@@ -1444,4 +1444,398 @@ describe("user attribute validation", () => {
             expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
         });
     });
-})
+});
+
+describe('Index definition validations', function () {
+    it('should allow for index field maps to be used multiple times across indexes', async () => {
+        const table = "electro_localsecondaryindex";
+        const entity = new Entity({
+            model: {
+                entity: "entity",
+                service: "service",
+                version: "1"
+            },
+            attributes: {
+                prop1: {
+                    type: "string"
+                },
+                prop2: {
+                    type: "string"
+                },
+                prop3: {
+                    type: "string"
+                },
+                prop4: {
+                    type: "string"
+                },
+                prop5: {
+                    type: "string"
+                },
+                prop6: {
+                    type: "string"
+                },
+                prop7: {
+                    type: "string"
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"],
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["prop2"]
+                    }
+                },
+                local1: {
+                    index: "lsi1pk-lsi1sk-index",
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"]
+                    },
+                    sk: {
+                        field: "lsi1sk",
+                        composite: ["prop5", "prop2"]
+                    }
+                },
+                local2: {
+                    index: "lsi2pk-lsi2sk-index",
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"]
+                    },
+                    sk: {
+                        field: "lsi2sk",
+                        composite: ["prop6"]
+                    }
+                },
+                global1: {
+                    index: "gsi1pk-lsi1sk-index",
+                    pk: {
+                        field: "gsi1pk",
+                        composite: ["prop3", "prop1"]
+                    },
+                    sk: {
+                        field: "lsi1sk",
+                        composite: ["prop5", "prop2"]
+                    }
+                }
+            }
+        }, {table, client});
+
+
+        const prop1 = uuid();
+        const prop2 = "def";
+        const prop3 = "hij";
+        const prop4 = "klm";
+        const prop5 = "nop";
+        const prop6 = "qrs";
+        const prop7 = "tuv";
+
+        const item = {
+            prop1,
+            prop2,
+            prop3,
+            prop4,
+            prop5,
+            prop6,
+            prop7,
+        }
+
+        const putParams = entity.put(item).params();
+
+        expect(putParams).to.deep.equal({
+            "Item": {
+                "prop1": prop1,
+                "prop2": "def",
+                "prop3": "hij",
+                "prop4": "klm",
+                "prop5": "nop",
+                "prop6": "qrs",
+                "prop7": "tuv",
+                "pk": `$service#prop1_${prop1}`,
+                "sk": "$entity_1#prop2_def",
+                "lsi1sk": "$entity_1#prop5_nop#prop2_def",
+                "lsi2sk": "$entity_1#prop6_qrs",
+                "gsi1pk": `$service#prop3_hij#prop1_${prop1}`,
+                "__edb_e__": "entity",
+                "__edb_v__": "1"
+            },
+            "TableName": table
+        });
+
+        const put = await entity.put(item).go();
+
+        expect(put).to.deep.equal(item);
+
+        const queries = await Promise.all([
+            entity.query.record({prop1}).go(),
+            entity.query.global1({prop3, prop1, prop5}).go(),
+            entity.query.local1({prop1, prop5}).go(),
+            entity.query.local2({prop1}).go(),
+        ]);
+
+        expect(queries).to.deep.equal([
+            [item],
+            [item],
+            [item],
+            [item],
+        ]);
+    });
+
+    it('should not allow a field to map to both an sort key and a partition key', async () => {
+        const table = "electro_localsecondaryindex";
+        const createEntity = () => new Entity({
+            model: {
+                entity: "entity",
+                service: "service",
+                version: "1"
+            },
+            attributes: {
+                prop1: {
+                    type: "string"
+                },
+                prop2: {
+                    type: "string"
+                },
+                prop3: {
+                    type: "string"
+                },
+                prop4: {
+                    type: "string"
+                },
+                prop5: {
+                    type: "string"
+                },
+                prop6: {
+                    type: "string"
+                },
+                prop7: {
+                    type: "string"
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"],
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["prop2"]
+                    }
+                },
+                local1: {
+                    index: "lsi1pk-lsi1sk-index",
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"]
+                    },
+                    sk: {
+                        field: "lsi1sk",
+                        composite: ["prop5", "prop2"]
+                    }
+                },
+                local2: {
+                    index: "lsi2pk-lsi2sk-index",
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"]
+                    },
+                    sk: {
+                        field: "lsi2sk",
+                        composite: ["prop6"]
+                    }
+                },
+                global1: {
+                    index: "gsi1pk-lsi1sk-index",
+                    pk: {
+                        field: "gsi1pk",
+                        composite: ["prop3", "prop1"]
+                    },
+                    sk: {
+                        field: "lsi1sk",
+                        composite: ["prop5", "prop2"]
+                    }
+                },
+                global2: {
+                    index: "gsi2pk-gsi1pk-index",
+                    pk: {
+                        field: "gsi2pk",
+                        composite: ["prop7"]
+                    },
+                    sk: {
+                        field: "gsi1pk",
+                        composite: ["prop3", "prop1"]
+                    }
+                }
+            }
+        }, {table, client});
+
+        expect(createEntity).to.throw("The Sort Key (sk) on Access Pattern 'global2' references the field 'gsi2pk' which is already referenced by the Access Pattern(s) 'global1' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys. - For more detail on this error reference: https://github.com/tywalch/electrodb#inconsistent-index-definition");
+    });
+
+    it('enforce pk field definitions in cases where a field is used in multiple indexes', async () => {
+        const table = "electro_localsecondaryindex";
+        const createEntity = () => new Entity({
+            model: {
+                entity: "entity",
+                service: "service",
+                version: "1"
+            },
+            attributes: {
+                prop1: {
+                    type: "string"
+                },
+                prop2: {
+                    type: "string"
+                },
+                prop3: {
+                    type: "string"
+                },
+                prop4: {
+                    type: "string"
+                },
+                prop5: {
+                    type: "string"
+                },
+                prop6: {
+                    type: "string"
+                },
+                prop7: {
+                    type: "string"
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"],
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["prop2"]
+                    }
+                },
+                local1: {
+                    index: "lsi1pk-lsi1sk-index",
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"]
+                    },
+                    sk: {
+                        field: "lsi1sk",
+                        composite: ["prop5", "prop2"]
+                    }
+                },
+                local2: {
+                    index: "lsi2pk-lsi2sk-index",
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1", "prop7"]
+                    },
+                    sk: {
+                        field: "lsi2sk",
+                        composite: ["prop6"]
+                    }
+                },
+                global1: {
+                    index: "gsi1pk-lsi1sk-index",
+                    pk: {
+                        field: "gsi1pk",
+                        composite: ["prop3", "prop1"]
+                    },
+                    sk: {
+                        field: "lsi1sk",
+                        composite: ["prop5", "prop2"]
+                    }
+                }
+            }
+        }, {table, client});
+
+        expect(createEntity).to.throw(`Partition Key (pk) on Access Pattern 'local2' is defined with the composite attribute(s) "prop1", "prop7", but the accessPattern '(Primary Index)' defines this field with the composite attributes "prop1"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://github.com/tywalch/electrodb#inconsistent-index-definition`);
+    });
+
+    it('enforce sk field definitions in cases where a field is used in multiple indexes', async () => {
+        const table = "electro_localsecondaryindex";
+        const createEntity = () => new Entity({
+            model: {
+                entity: "entity",
+                service: "service",
+                version: "1"
+            },
+            attributes: {
+                prop1: {
+                    type: "string"
+                },
+                prop2: {
+                    type: "string"
+                },
+                prop3: {
+                    type: "string"
+                },
+                prop4: {
+                    type: "string"
+                },
+                prop5: {
+                    type: "string"
+                },
+                prop6: {
+                    type: "string"
+                },
+                prop7: {
+                    type: "string"
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"],
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["prop2"]
+                    }
+                },
+                local1: {
+                    index: "lsi1pk-lsi1sk-index",
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"]
+                    },
+                    sk: {
+                        field: "lsi1sk",
+                        composite: ["prop5", "prop2"]
+                    }
+                },
+                local2: {
+                    index: "lsi2pk-lsi2sk-index",
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"]
+                    },
+                    sk: {
+                        field: "lsi2sk",
+                        composite: ["prop6"]
+                    }
+                },
+                global1: {
+                    index: "gsi1pk-lsi1sk-index",
+                    pk: {
+                        field: "gsi1pk",
+                        composite: ["prop3", "prop1"]
+                    },
+                    sk: {
+                        field: "lsi1sk",
+                        composite: ["prop6", "prop7"]
+                    }
+                },
+            }
+        }, {table, client});
+
+        expect(createEntity).to.throw("Sort Key (sk) on Access Pattern 'global1' is defined with the composite attribute(s) \"prop6\", \"prop7\", but the accessPattern 'lsi1pk-lsi1sk-index' defines this field with the composite attributes \"prop5\", \"prop2\"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-fields");
+    });
+});

@@ -139,6 +139,12 @@ const ErrorCodes = {
     name: "InvalidClientProvided",
     sym: ErrorCode,
   },
+  InconsistentIndexDefinition: {
+    code: 1022,
+    section: "inconsistent-index-definition",
+    name: "InvalidClientProvided",
+    sym: ErrorCode,
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",

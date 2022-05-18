@@ -2257,22 +2257,6 @@ class Entity {
 				facets.fields.push(sk.field);
 			}
 
-			if (seenIndexFields[pk.field] !== undefined) {
-				throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Partition Key (pk) on Access Pattern '${accessPattern}' references the field '${pk.field}' which is already referenced by the Access Pattern '${seenIndexFields[pk.field]}'. Fields used for indexes need to be unique to avoid conflicts.`);
-			} else {
-				seenIndexFields[pk.field] = accessPattern;
-			}
-
-			if (sk.field) {
-				if (sk.field === pk.field) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `The Access Pattern '${accessPattern}' references the field '${sk.field}' as the field name for both the PK and SK. Fields used for indexes need to be unique to avoid conflicts.`);
-				} else if (seenIndexFields[sk.field] !== undefined) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Sort Key (sk) on Access Pattern '${accessPattern}' references the field '${sk.field}' which is already referenced by the Access Pattern '${seenIndexFields[sk.field]}'. Fields used for indexes need to be unique to avoid conflicts.`);
-				}else {
-					seenIndexFields[sk.field] = accessPattern;
-				}
-			}
-
 			if (Array.isArray(sk.facets)) {
 				let duplicates = pk.facets.filter(facet => sk.facets.includes(facet));
 				if (duplicates.length !== 0) {
@@ -2362,6 +2346,37 @@ class Entity {
 				facets.byField[sk.field][indexName] = sk;
 			}
 
+			if (seenIndexFields[pk.field] !== undefined) {
+				const definition = Object.values(facets.byField[pk.field]).find(definition => definition.index !== indexName)
+				const definitionsMatch = validations.stringArrayMatch(pk.facets, definition.facets);
+				if (!definitionsMatch) {
+					throw new e.ElectroError(e.ErrorCodes.InconsistentIndexDefinition, `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(accessPattern)}' is defined with the composite attribute(s) ${u.commaSeparatedString(pk.facets)}, but the accessPattern '${u.formatIndexNameForDisplay(definition.index)}' defines this field with the composite attributes ${u.commaSeparatedString(definition.facets)}'. Key fields must have the same composite attribute definitions across all indexes they are involved with`);
+				}
+				seenIndexFields[pk.field].push({accessPattern, type: 'pk'});
+			} else {
+				seenIndexFields[pk.field] = [];
+				seenIndexFields[pk.field].push({accessPattern, type: 'pk'});
+			}
+
+			if (sk.field) {
+				if (sk.field === pk.field) {
+					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `The Access Pattern '${u.formatIndexNameForDisplay(accessPattern)}' references the field '${sk.field}' as the field name for both the PK and SK. Fields used for indexes need to be unique to avoid conflicts.`);
+				} else if (seenIndexFields[sk.field] !== undefined) {
+					const isAlsoDefinedAsPK = seenIndexFields[sk.field].find(field => field.type === "pk");
+					if (isAlsoDefinedAsPK) {
+						throw new e.ElectroError(e.ErrorCodes.InconsistentIndexDefinition, `The Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(accessPattern)}' references the field '${pk.field}' which is already referenced by the Access Pattern(s) '${u.formatIndexNameForDisplay(isAlsoDefinedAsPK.accessPattern)}' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys.`);
+					}
+					const definition = Object.values(facets.byField[sk.field]).find(definition => definition.index !== indexName)
+					const definitionsMatch = validations.stringArrayMatch(sk.facets, definition.facets);
+					if (!definitionsMatch) {
+						throw new e.ElectroError(e.ErrorCodes.DuplicateIndexFields, `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(accessPattern)}' is defined with the composite attribute(s) ${u.commaSeparatedString(sk.facets)}, but the accessPattern '${u.formatIndexNameForDisplay(definition.index)}' defines this field with the composite attributes ${u.commaSeparatedString(definition.facets)}'. Key fields must have the same composite attribute definitions across all indexes they are involved with`);
+					}
+					seenIndexFields[sk.field].push({accessPattern, type: 'sk'});
+				} else {
+					seenIndexFields[sk.field] = [];
+					seenIndexFields[sk.field].push({accessPattern, type: 'sk'});
+				}
+			}
 
 			attributes.forEach(({index, type, name}, j) => {
 				let next = attributes[j + 1] !== undefined ? attributes[j + 1].name : "";
