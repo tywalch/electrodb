@@ -1071,7 +1071,7 @@ When using ElectroDB, indexes are referenced by their `AccessPatternName`. This 
 
 All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
 
-In your model, the _Table Index_ this is expressed as an _Access Pattern_ *without* an `index` property. For Secondary Indexes, use the `index` property to define the name of the index as defined on your DynamoDB table.
+In your model, the _Table Index_ this is expressed as an _Access Pattern_ *without* an `index` property. For Secondary Indexes (both GSIs and LSIs), use the `index` property to define the name of the index as defined on your DynamoDB table.
 
 Within these _AccessPatterns_, you define the PartitionKey and (optionally) SortKeys that are present on your DynamoDB table and map the key's name on the table with the `field` property.
 
@@ -2739,7 +2739,7 @@ const MallStore = new Entity(schema, {table: "StoreDirectory"});
 #### Partition Key Composite Attributes
 All queries require (*at minimum*) the **Composite Attributes** included in its defined **Partition Key**. **Composite Attributes** you define on the **Sort Key** can be partially supplied, but must be supplied in the order they are defined.
 
-> *Important: Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern***. This is because composite attributes are used to form a concatenated key string, and if attributes supplied out of order, it is not possible to fill the gaps in that concatenation.
+> *IMPORTANT: Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern***. This is because composite attributes are used to form a concatenated key string, and if attributes supplied out of order, it is not possible to fill the gaps in that concatenation.
 
 ```javascript
 const MallStore = new Entity({
@@ -3245,7 +3245,7 @@ entity.update({ attr1: "value1", attr2: "value2" })
 }
 ```
 
-> Note: Included in the update are all attributes from the table's primary index. These values are automatically included on all updates in the event an update results in an insert. 
+> _NOTE: Included in the update are all attributes from the table's primary index. These values are automatically included on all updates in the event an update results in an insert.__
 
 #### Update Method: Set
 
