@@ -171,3 +171,11 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.8.1] - 2022-03-29
 ### Fixed
 - Solidifying default application methodology: default values for nested properties will be applied up until an undefined default occurs or default callback returns undefined
+
+## [1.8.2] - 2022-05-13
+### Fixed
+- Issue impacting the successful propagation loggers and listeners from a Service definition to Entity children
+
+## [1.8.3] - 2022-05-14
+### Changed
+- Removing validation that requires at least one attribute to be provided in a PK composite. This opens the door to static PKs if the user so chooses
