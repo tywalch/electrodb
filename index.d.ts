@@ -1023,6 +1023,7 @@ interface PaginationOptions extends QueryOptions {
 interface BulkOptions extends QueryOptions {
     unprocessed?: "raw" | "item";
     concurrency?: number;
+    preserveBatchOrder?: boolean;
 }
 
 type OptionalDefaultEntityIdentifiers = {
@@ -1031,6 +1032,15 @@ type OptionalDefaultEntityIdentifiers = {
 }
 
 type GoRecord<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<T>;
+
+type BatchGoRecord<ResponseType, AlternateResponseType> = <O extends BulkOptions>(options?: O) =>
+    O extends infer Options
+        ? 'preserveBatchOrder' extends keyof Options
+        ? Options['preserveBatchOrder'] extends true
+            ? Promise<AlternateResponseType>
+            : Promise<ResponseType>
+        : Promise<ResponseType>
+        : never
 
 type PageRecord<ResponseType, CompositeAttributes> = (page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: PaginationOptions) => Promise<[
     (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
@@ -1070,8 +1080,8 @@ type DeleteRecordOperationOptions<A extends string, F extends A, C extends strin
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,DeleteRecordOperationOptions<A,F,C,S,ResponseType>>;
 };
 
-type BulkRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType> = {
-    go: GoRecord<ResponseType, BulkOptions>;
+type BulkRecordOperationOptions<A extends string, F extends A, C extends string, S extends Schema<A,F,C>, ResponseType, AlternateResponseType> = {
+    go: BatchGoRecord<ResponseType, AlternateResponseType>;
     params: ParamRecord<BulkOptions>;
 };
 
@@ -1221,9 +1231,9 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
     readonly schema: S;
     constructor(schema: S, config?: EntityConfiguration);
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S> | null>;
-    get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [Array<ResponseItem<A,F,C,S>>, Array<AllTableIndexCompositeAttributes<A,F,C,S>>]>;
+    get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [Array<Flatten<ResponseItem<A,F,C,S>>>, Array<Flatten<AllTableIndexCompositeAttributes<A,F,C,S>>>], [Array<Flatten<ResponseItem<A,F,C,S>> | null>, Array<Flatten<AllTableIndexCompositeAttributes<A,F,C,S>>>]>;
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
-    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
+    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -1244,7 +1254,7 @@ export class Entity<A extends string, F extends A, C extends string, S extends S
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
     put(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
-    put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
+    put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     find(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
     match(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;

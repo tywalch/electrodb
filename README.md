@@ -2908,6 +2908,8 @@ The two-dimensional array returned by batch get most easily used when deconstruc
 
 The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as other ElectroDB queries.
 
+> _NOTE: By default ElectroDB will return items without concern for order. If the order returned by ElectroDB must match the order provided, the [query option](#query-options) `preserveBatchOrder` can be used. When enabled, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index._
+
 Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Delete Method
@@ -4297,25 +4299,27 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   pages?: number;
   logger?: (event) => void;
   listeners Array<(event) => void>;
+  preserveBatchOrder?: boolean;
 };
 ```
 
-Option          | Default              | Description
---------------- | :------------------: | -----------   
-params          | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
-table           | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
-raw             | `false`              | Returns query results as they were returned by the docClient.
-includeKeys     | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
-pager           | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
-originalErr     | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
-concurrent      | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
-unprocessed     | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
-response        | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
-ignoreOwnership | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
-limit           | _none_               | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.
-pages           | ∞                    | How many DynamoDB pages should a query iterate through before stopping. By default ElectroDB paginate through all results for your query.
-listeners       | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](#events) occur.
-logger          | _none_               | A convenience option for a single event listener that semantically can be used for logging.
+Option             | Default              | Description
+------------------ | :------------------: | -----------
+params             | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
+table              | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
+raw                | `false`              | Returns query results as they were returned by the docClient.
+includeKeys        | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
+pager              | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
+originalErr        | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
+concurrent         | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
+unprocessed        | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
+response           | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
+ignoreOwnership    | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
+limit              | _none_               | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.
+pages              | ∞                    | How many DynamoDB pages should a query iterate through before stopping. By default ElectroDB paginate through all results for your query.
+listeners          | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](#events) occur.
+logger             | _none_               | A convenience option for a single event listener that semantically can be used for logging.
+preserveBatchOrder | `false`              | When used with a [batchGet](#batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index.
 
 # AWS DynamoDB Client
 ElectroDB supports both the [v2](https://www.npmjs.com/package/aws-sdk) and [v3](https://www.npmjs.com/package/@aws-sdk/client-dynamodb) aws clients. The client can be supplied creating a new Entity or Service, or added to a Entity/Service instance via the `setClient()` method.

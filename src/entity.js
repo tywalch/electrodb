@@ -277,6 +277,7 @@ class Entity {
 				results,
 			}, config.listeners);
 		}
+
 		return this.client[method](params).promise()
 			.then((results) => {
 				notifyQuery();
@@ -317,14 +318,36 @@ class Entity {
 		return results;
 	}
 
+	_createNewBatchGetOrderMaintainer(config = {}) {
+		const pkName = this.model.translations.keys[TableIndex].pk;
+		const skName = this.model.translations.keys[TableIndex].sk;
+		const enabled = !!config.preserveBatchOrder;
+		const table = this.config.table;
+		const keyFormatter = ((record = {}) => {
+			const pk = record[pkName];
+			const sk = record[skName];
+			return `${pk}${sk}`;
+		});
+
+		return new u.BatchGetOrderMaintainer({
+			table,
+			enabled,
+			keyFormatter,
+		});
+	}
+
 	async executeBulkGet(parameters, config) {
 		if (!Array.isArray(parameters)) {
 			parameters = [parameters];
 		}
-		let concurrent = this._normalizeConcurrencyValue(config.concurrent)
-		let concurrentOperations = u.batchItems(parameters, concurrent);
 
-		let resultsAll = [];
+		const orderMaintainer = this._createNewBatchGetOrderMaintainer(config);
+		orderMaintainer.defineOrder(parameters);
+		let concurrent = this._normalizeConcurrencyValue(config.concurrent);
+		let concurrentOperations = u.batchItems(parameters, concurrent);
+		let resultsAll = config.preserveBatchOrder
+			? new Array(orderMaintainer.getSize()).fill(null)
+			: [];
 		let unprocessedAll = [];
 		for (let operation of concurrentOperations) {
 			await Promise.all(operation.map(async params => {
@@ -333,13 +356,13 @@ class Entity {
 					resultsAll.push(await config.parse(config, response));
 					return;
 				}
-				let [results, unprocessed] = this.formatBulkGetResponse(response, config);
-				for (let r of results) {
-					resultsAll.push(r);
-				}
-				for (let u of unprocessed) {
-					unprocessedAll.push(u);
-				}
+				this.applyBulkGetResponseFormatting({
+					orderMaintainer,
+					resultsAll,
+					unprocessedAll,
+					response,
+					config
+				});
 			}));
 		}
 		return [resultsAll, unprocessedAll];
@@ -467,20 +490,26 @@ class Entity {
 		}
 	}
 
-	formatBulkGetResponse(response = {}, config = {}) {
-		let unprocessed = [];
-		let results = [];
+	applyBulkGetResponseFormatting({
+		resultsAll,
+		unprocessedAll,
+		orderMaintainer,
+		response = {},
+		config = {},
+	}) {
 		const table = config.table || this._getTableName();
 		const index = TableIndex;
+
 		if (!response.UnprocessedKeys || !response.Responses) {
 			throw new Error("Unknown response format");
 		}
+
 		if (response.UnprocessedKeys[table] && response.UnprocessedKeys[table].Keys && Array.isArray(response.UnprocessedKeys[table].Keys)) {
 			for (let value of response.UnprocessedKeys[table].Keys) {
 				if (config && config.unprocessed === UnprocessedTypes.raw) {
-					unprocessed.push(value);
+					unprocessedAll.push(value);
 				} else {
-					unprocessed.push(
+					unprocessedAll.push(
 						this._formatKeysToItem(index, value)
 					);
 				}
@@ -488,10 +517,18 @@ class Entity {
 		}
 
 		if (response.Responses[table] && Array.isArray(response.Responses[table])) {
-			results = this.formatResponse({Items: response.Responses[table]}, index, config);
+			const responses = response.Responses[table];
+			for (let i = 0; i < responses.length; i++) {
+				const item = responses[i];
+				const slot = orderMaintainer.getOrder(item);
+				const formatted = this.formatResponse({Item: item}, index, config);
+				if (slot !== -1) {
+					resultsAll[slot] = formatted;
+				} else {
+					resultsAll.push(formatted);
+				}
+			}
 		}
-
-		return [results, unprocessed];
 	}
 
 	formatResponse(response, index, config = {}) {
@@ -782,6 +819,7 @@ class Entity {
 			_isCollectionQuery: false,
 			pages: undefined,
 			listeners: [],
+			preserveBatchOrder: false,
 		};
 
 		config = options.reduce((config, option) => {
@@ -792,6 +830,10 @@ class Entity {
 				}
 				config.response = format;
 				config.params.ReturnValues = FormatToReturnValues[format];
+			}
+
+			if (option.preserveBatchOrder === true) {
+				config.preserveBatchOrder = true;
 			}
 
 			if (option.pages !== undefined) {

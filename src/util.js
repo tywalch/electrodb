@@ -118,6 +118,38 @@ function formatIndexNameForDisplay(index) {
   }
 }
 
+class BatchGetOrderMaintainer {
+  constructor({ table, enabled, keyFormatter }) {
+    this.table = table;
+    this.enabled = enabled;
+    this.keyFormatter = keyFormatter;
+    this.batchIndexMap = new Map();
+    this.currentSlot = 0;
+  }
+
+  getSize() {
+    return this.batchIndexMap.size;
+  }
+
+  getOrder(item) {
+    const key = this.keyFormatter(item);
+    return this.batchIndexMap.get(key) ?? -1;
+  }
+
+  defineOrder(parameters = []) {
+    if (this.enabled) {
+      for (let i = 0; i < parameters.length; i++) {
+        const batchParams = parameters[i];
+        const recordKeys = batchParams?.RequestItems?.[this.table]?.Keys ?? [];
+        for (const recordKey of recordKeys) {
+          const indexMapKey = this.keyFormatter(recordKey);
+          this.batchIndexMap.set(indexMapKey, this.currentSlot++);
+        }
+      }
+    }
+  }
+}
+
 module.exports = {
   batchItems,
   parseJSONPath,
@@ -128,5 +160,6 @@ module.exports = {
   commaSeparatedString,
   formatAttributeCasing,
   applyBetaModelOverrides,
-  formatIndexNameForDisplay
+  formatIndexNameForDisplay,
+  BatchGetOrderMaintainer,
 };

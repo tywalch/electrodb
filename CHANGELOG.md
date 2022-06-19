@@ -183,3 +183,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.8.4] - 2022-05-18
 ### Changed
 - Removing validation that an attribute used for one index cannot be used by another. ElectroDB will now simply validate that all composite attributes associated with an indexed field are identical, and that a field is not used as both a PK and SK in separate indexes. This change allows for LSIs to be used with ElectroDB
+
+## [1.9.0] - 2022-06-18
+### Added
+- Add new batchGet query option, `preserveBatchOrder`, which will ensure the order returned by a batchGet will be the same as the order provided. [[read more](./README.md#query-options)]

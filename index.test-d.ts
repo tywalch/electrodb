@@ -1,4 +1,4 @@
-import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, Schema} from ".";
+import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem} from ".";
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 let entityWithSK = new Entity({
     model: {
@@ -429,10 +429,10 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<GetParametersFinishers>(getBatchFinishersWithSK);
     expectAssignable<GetParametersFinishers>(getSingleFinishersWithoutSK);
     expectAssignable<GetParametersFinishers>(getBatchFinishersWithoutSK);
-    entityWithSK.get([{attr1: "adg", attr2: "ada"}]).go({concurrency: 24});
-    entityWithSK.get([{attr1: "adg", attr2: "ada"}]).params({concurrency: 24});
-    entityWithoutSK.get([{attr1: "adg"}]).go({concurrency: 24});
-    entityWithoutSK.get([{attr1: "adg"}]).params({concurrency: 24});
+    entityWithSK.get([{attr1: "adg", attr2: "ada"}]).go({concurrency: 24, preserveBatchOrder: true});
+    entityWithSK.get([{attr1: "adg", attr2: "ada"}]).params({concurrency: 24, preserveBatchOrder: true});
+    entityWithoutSK.get([{attr1: "adg"}]).go({concurrency: 24, preserveBatchOrder: true});
+    entityWithoutSK.get([{attr1: "adg"}]).params({concurrency: 24, preserveBatchOrder: true});
 
     let getSingleGoWithSK = entityWithSK.get({attr1: "adg", attr2: "ada"}).go;
     let getSingleGoWithoutSK = entityWithoutSK.get({attr1: "adg"}).go;
@@ -464,11 +464,11 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<GetSingleParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
     expectAssignable<GetSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
 
-    expectError<GetSingleGoParamsWithSK>({concurrency: 10, unprocessed: "raw"});
-    expectError<GetSingleGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
+    expectError<GetSingleGoParamsWithSK>({concurrency: 10, unprocessed: "raw", preserveBatchOrder: true});
+    expectError<GetSingleGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw", preserveBatchOrder: true});
 
-    expectError<GetSingleParamsParamsWithSK>({concurrency: 10, unprocessed: "raw"});
-    expectError<GetSingleParamsParamsWithoutSK>({concurrency: 10, unprocessed: "raw"});
+    expectError<GetSingleParamsParamsWithSK>({concurrency: 10, unprocessed: "raw", preserveBatchOrder: true});
+    expectError<GetSingleParamsParamsWithoutSK>({concurrency: 10, unprocessed: "raw", preserveBatchOrder: true});
 
     expectAssignable<GetBatchGoParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
     expectAssignable<GetBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
@@ -481,14 +481,81 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.get({attr1: "abc"}).go());
     expectAssignable<"paramtest">(entityWithSK.get({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.get({attr1: "abc"}).params<"paramtest">());
-
-    expectType<Promise<[Item[], WithSKMyIndexCompositeAttributes[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
+    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go().then(results => {
+        const [item] = results[0];
+        const [unprocessed] = results[1];
+        expectType<{
+            attr1: string;
+            attr2: string;
+            attr3?: "123" | "def" | "ghi" | undefined
+            attr4: "abc" | "ghi"
+            attr5?: string | undefined
+            attr6?: number | undefined;
+            attr7?: any;
+            attr8: boolean;
+            attr9?: number | undefined;
+            attr10?: boolean | undefined;
+        }>(item);
+        expectType<WithSKMyIndexCompositeAttributes>(unprocessed);
+    });
+    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go({preserveBatchOrder: true}).then(results => {
+        const [item] = results[0];
+        const [unprocessed] = results[1];
+        expectType<{
+            attr1: string;
+            attr2: string;
+            attr3?: "123" | "def" | "ghi" | undefined
+            attr4: "abc" | "ghi"
+            attr5?: string | undefined
+            attr6?: number | undefined;
+            attr7?: any;
+            attr8: boolean;
+            attr9?: number | undefined;
+            attr10?: boolean | undefined;
+        } | null>(item);
+        expectType<WithSKMyIndexCompositeAttributes>(unprocessed);
+    });
+    expectType<Promise<[EntityItem<typeof entityWithSK>[], WithSKMyIndexCompositeAttributes[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
     entityWithSK.get([{attr1: "abc", attr2: "def"}]).go()
         .then(([items, unprocessed]) => {
             expectAssignable<Item[]>(items);
             expectAssignable<WithSKMyIndexCompositeAttributes[]>(unprocessed);
         })
-    expectType<Promise<[ItemWithoutSK[], WithoutSKMyIndexCompositeAttributes[]]>>(entityWithoutSK.get([{attr1: "abc"}]).go());
+
+    entityWithoutSK.get([{attr1: "abc"}]).go()
+            .then(results => {
+                const [item] = results[0];
+                const [unprocessed] = results[1];
+                expectType<{
+                    attr1: string;
+                    attr2?: string | undefined;
+                    attr3?: "123" | "def" | "ghi" | undefined
+                    attr4: "abc" | "def"
+                    attr5?: string | undefined
+                    attr6?: number | undefined;
+                    attr7?: any;
+                    attr8: boolean;
+                    attr9?: number | undefined;
+                }>(item);
+                expectType<WithoutSKMyIndexCompositeAttributes>(unprocessed);
+            });
+    entityWithoutSK.get([{attr1: "abc"}]).go({preserveBatchOrder: true})
+        .then(results => {
+            const [item] = results[0];
+            const [unprocessed] = results[1];
+            expectType<{
+                attr1: string;
+                attr2?: string | undefined;
+                attr3?: "123" | "def" | "ghi" | undefined
+                attr4: "abc" | "def"
+                attr5?: string | undefined
+                attr6?: number | undefined;
+                attr7?: any;
+                attr8: boolean;
+                attr9?: number | undefined;
+            } | null>(item);
+            expectType<WithoutSKMyIndexCompositeAttributes>(unprocessed);
+        });
     entityWithoutSK.get([{attr1: "abc"}]).go()
         .then(([items, unprocessed]) => {
             expectAssignable<ItemWithoutSK[]>(items);
