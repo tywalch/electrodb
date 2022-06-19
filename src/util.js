@@ -118,6 +118,60 @@ function formatIndexNameForDisplay(index) {
   }
 }
 
+class BatchGetOrderMaintainer {
+  constructor({ table, enabled, keyFormatter }) {
+    this.table = table;
+    this.enabled = enabled;
+    this.keyFormatter = keyFormatter;
+    this.batchIndexMap = new Map();
+    this.currentSlot = 0;
+  }
+
+  getSize() {
+    return this.batchIndexMap.size;
+  }
+
+  getOrder(item) {
+    const key = this.keyFormatter(item);
+    return this.batchIndexMap.get(key) ?? -1;
+  }
+
+  defineOrder(parameters = []) {
+    if (this.enabled) {
+      for (let i = 0; i < parameters.length; i++) {
+        const batchParams = parameters[i];
+        const recordKeys = batchParams?.RequestItems?.[this.table]?.Keys ?? [];
+        for (const recordKey of recordKeys) {
+          const indexMapKey = this.keyFormatter(recordKey);
+          this.batchIndexMap.set(indexMapKey, this.currentSlot++);
+        }
+      }
+    }
+  }
+
+  applyOrder(response = {}) {
+    if (!this.enabled || this.batchIndexMap.size === 0) {
+      return response;
+    }
+
+    const results = response?.Responses?.[this.table] ?? [];
+    const ordered = new Array(this.batchIndexMap.size).fill(null);
+    for (const result of results) {
+      const indexMapKey = this.keyFormatter(result);
+      const slot = this.batchIndexMap.get(indexMapKey);
+      if (typeof slot === "number") {
+        ordered[slot] = result;
+      }
+    }
+
+    response = response || {};
+    response.Responses = response.Responses || {};
+    response.Responses[this.table] = ordered;
+
+    return response;
+  }
+}
+
 module.exports = {
   batchItems,
   parseJSONPath,
@@ -128,5 +182,6 @@ module.exports = {
   commaSeparatedString,
   formatAttributeCasing,
   applyBetaModelOverrides,
-  formatIndexNameForDisplay
+  formatIndexNameForDisplay,
+  BatchGetOrderMaintainer,
 };

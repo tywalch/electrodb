@@ -485,7 +485,8 @@ describe("listener functions", async () => {
                       _isPagination: false,
                       _isCollectionQuery: false,
                       pages: undefined,
-                      listeners: []
+                      listeners: [],
+                      preserveBatchOrder: false,
                     }
                 },
                 {
@@ -508,6 +509,7 @@ describe("listener functions", async () => {
                       _isPagination: false,
                       _isCollectionQuery: false,
                       pages: undefined,
+                      preserveBatchOrder: false,
                       listeners: []
                     },
                     success: true,
@@ -552,6 +554,7 @@ describe("listener functions", async () => {
                       ignoreOwnership: false,
                       _isPagination: false,
                       _isCollectionQuery: false,
+                      preserveBatchOrder: false,
                       pages: undefined,
                       listeners: []
                     }
@@ -575,6 +578,7 @@ describe("listener functions", async () => {
                       ignoreOwnership: false,
                       _isPagination: false,
                       _isCollectionQuery: false,
+                      preserveBatchOrder: false,
                       pages: undefined,
                       listeners: []
                     },
@@ -583,6 +587,5 @@ describe("listener functions", async () => {
                   }
             ]);
         });
-
     })
 });

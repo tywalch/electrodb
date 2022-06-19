@@ -2818,3 +2818,233 @@ describe("Entity", async () => {
        })
     });
 });
+
+function shuffle<T>(array: T[]) {
+    let currentIndex = array.length;
+    let randomIndex: number;
+
+    // While there remain elements to shuffle.
+    while (currentIndex != 0) {
+
+      // Pick a remaining element.
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+
+      // And swap it with the current element.
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+
+    return array;
+}
+
+describe('pagination order', () => {
+    it('should return batchGet results in the order their keys were provided regardless of the order returned by DynamoDB', async () => {
+        const mockClient = {
+            get: () => {},
+            put: () => {},
+            update: () => {},
+            delete: () => {},
+            scan: () => {},
+            query: () => {},
+            createSet: () => {},
+            transactWrite: () => {},
+            transactGet: () => {},
+            batchWrite: (params: any) => {
+                return client.batchWrite(params);
+            },
+            batchGet: (params: any) => {
+                return {
+                    promise: async (): Promise<any> => {
+                        const results = await client.batchGet(params).promise();
+                        const items = results.Responses?.[table] ?? [];
+                        const before = [...items];
+                        const shuffled = shuffle(items);
+                        const after = [...shuffled];
+                        const outOfOrderItem = after.find((item, i) => {
+                            return item.pk !== before[i].pk &&
+                                item.sk !== before[i].sk;
+                        });
+                        expect(outOfOrderItem).to.not.be.undefined;
+                        results.Responses = {[table]: shuffled};
+                        return results;
+                    }
+                }
+            }
+        } as unknown as DynamoDB.DocumentClient;
+
+        const entity = new Entity({
+            model: {
+                entity: "entity",
+                service: "service",
+                version: "1"
+            },
+            attributes: {
+                prop1: {
+                    type: "string"
+                },
+                prop2: {
+                    type: "string"
+                },
+                prop3: {
+                    type: "string"
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                      field: "pk",
+                        composite: ["prop1"],
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["prop2"]
+                    }
+                },
+            }
+        }, {table, client: mockClient});
+
+        const count = 250;
+        const batch: Array<any> = [];
+        for (let i = 0; i < count; i++) {
+            const prop1 = uuid();
+            const prop2 = uuid();
+            const prop3 = uuid();
+            batch.push({prop1, prop2, prop3});
+        }
+
+        await entity.put(batch).go();
+
+        const [ unOrderedRecords ] = await entity.get(batch).go();
+        expect(batch[0]).to.not.deep.equal(unOrderedRecords[0]);
+
+        const [ orderedRecords, orderedUnprocessed ] = await entity.get(batch).go({preserveBatchOrder: true});
+        expect(orderedUnprocessed).to.be.an("array").with.length(0);
+        expect(orderedRecords).to.be.an("array").with.length(batch.length);
+        for (let i = 0; i < orderedRecords.length; i++) {
+            const fromDb = orderedRecords[i];
+            const fromBatch = batch[i];
+            expect(fromDb).to.deep.equal(fromBatch);
+        }
+    });
+
+
+    it('should return batchGet results in the order their keys were provided with null values in the place of unprocessed keys', async () => {
+        const countToMakeUnprocessed = 10;
+        const mockClient = {
+            get: () => {
+            },
+            put: () => {
+            },
+            update: () => {
+            },
+            delete: () => {
+            },
+            scan: () => {
+            },
+            query: () => {
+            },
+            createSet: () => {
+            },
+            transactWrite: () => {
+            },
+            transactGet: () => {
+            },
+            batchWrite: (params: any) => {
+                return client.batchWrite(params);
+            },
+            batchGet: (params: any) => {
+                return {
+                    promise: async (): Promise<any> => {
+                        const results = await client.batchGet(params).promise();
+                        const items = results.Responses?.[table] ?? [];
+                        const before = [...items];
+                        const shuffled = shuffle(items);
+                        const after = [...shuffled];
+                        const outOfOrderItem = after.find((item, i) => {
+                            return item.pk !== before[i].pk &&
+                                item.sk !== before[i].sk;
+                        });
+                        expect(outOfOrderItem).to.not.be.undefined;
+                        for (let i = 0; i < countToMakeUnprocessed; i++) {
+                            const record = shuffled.pop();
+                            results.UnprocessedKeys = results.UnprocessedKeys ?? {};
+                            results.UnprocessedKeys[table] = results.UnprocessedKeys?.[table] ?? {
+                                Keys: []
+                            }
+                            if (record) {
+                                results.UnprocessedKeys[table].Keys.push(record);
+                            }
+                        }
+                        results.Responses = {[table]: shuffled};
+                        return results;
+                    }
+                }
+            }
+        } as unknown as DynamoDB.DocumentClient;
+
+        const entity = new Entity({
+            model: {
+                entity: "entity",
+                service: "service",
+                version: "1"
+            },
+            attributes: {
+                prop1: {
+                    type: "string"
+                },
+                prop2: {
+                    type: "string"
+                },
+                prop3: {
+                    type: "string"
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: "pk",
+                        composite: ["prop1"],
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["prop2"]
+                    }
+                },
+            }
+        }, {table, client: mockClient});
+
+        const batchCount = 250;
+        const batch: Array<any> = [];
+        for (let i = 0; i < batchCount; i++) {
+            const prop1 = uuid();
+            const prop2 = uuid();
+            const prop3 = uuid();
+            batch.push({prop1, prop2, prop3});
+        }
+
+        await entity.put(batch).go();
+        // countToMakeUnprocessed is for each batch, batchGet is limited to 100 items, 3 batches
+        const totalUnprocessed = Math.round(batchCount / 100) * countToMakeUnprocessed;
+        const [unOrderedRecords, unOrderedUnprocessed] = await entity.get(batch).go();
+        expect(batch[0]).to.not.deep.equal(unOrderedRecords[0]);
+        expect(unOrderedRecords).to.be.an("array").with.length(batch.length - totalUnprocessed);
+        expect(unOrderedUnprocessed).to.be.an("array").with.length(totalUnprocessed);
+
+        const [orderedRecords, orderedUnprocessed] = await entity.get(batch).go({preserveBatchOrder: true, });
+        expect(orderedUnprocessed).to.be.an("array").with.length(totalUnprocessed);
+        expect(orderedRecords).to.be.an("array").with.length(batch.length);
+        for (let i = 0; i < orderedRecords.length; i++) {
+            const fromDb = orderedRecords[i];
+            const fromBatch = batch[i];
+            if (fromDb === null) {
+                const fromOrderedUnprocessed = orderedUnprocessed.find(unprocessed => {
+                    return unprocessed.prop1 === fromBatch.prop1 && unprocessed.prop2 === fromBatch.prop2;
+                });
+                expect(fromOrderedUnprocessed).to.not.be.undefined;
+            } else {
+                expect(fromDb).to.deep.equal(fromBatch);
+            }
+        }
+    });
+});

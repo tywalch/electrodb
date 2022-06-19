@@ -329,11 +329,21 @@ describe("BatchGet", async () => {
         }
       }
     }
-    let results = MallStores.formatBulkGetResponse(response, {});
-    expect(results).to.be.an("array").with.length(2);
-    expect(results[0]).to.be.an("array").with.length(1);
-    expect(results[1]).to.be.an("array").with.length(2);
-    expect(results[0][0]).to.be.deep.equal({
+
+    const options = {
+      response,
+      resultsAll: [],
+      unprocessedAll: [],
+      config: {},
+      orderMaintainer: {
+        getOrder: () => -1
+      }
+    };
+    MallStores.applyBulkGetResponseFormatting(options);
+
+    expect(options.resultsAll).to.be.an("array").with.length(1);
+    expect(options.unprocessedAll).to.be.an("array").with.length(2);
+    expect(options.resultsAll[0]).to.be.deep.equal({
       "mall":"WashingtonSquare",
       "leaseEnd":"2020-01-20",
       "sector":"A1",
@@ -344,7 +354,7 @@ describe("BatchGet", async () => {
       "category":"food/coffee",
       "rent":"0.00"
     });
-    expect(results[1]).to.deep.equal([
+    expect(options.unprocessedAll).to.deep.equal([
       {
         "id":"868f6d45-d78b-4f7a-94ff-a016c10574d5",
         "sector":"a1"
@@ -399,9 +409,18 @@ describe("BatchGet", async () => {
         }
       }
     }
-    let results = MallStores.formatBulkGetResponse(response, {unprocessed: "raw"});
-    expect(results[1]).to.be.an("array").with.length(2);
-    expect(results[1]).to.deep.equal([
+    const options = {
+      response,
+      resultsAll: [],
+      unprocessedAll: [],
+      config: {unprocessed: "raw"},
+      orderMaintainer: {
+        getOrder: () => -1
+      }
+    };
+    MallStores.applyBulkGetResponseFormatting(options);
+    expect(options.unprocessedAll).to.be.an("array").with.length(2);
+    expect(options.unprocessedAll).to.deep.equal([
       {
         "pk": "$bugbeater#sector_a1",
         "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
@@ -456,10 +475,18 @@ describe("BatchGet", async () => {
         }
       }
     }
-    let results = MallStores.formatBulkGetResponse(response, {includeKeys: true});
-    expect(results).to.be.an("array").with.length(2);
-    expect(results[0]).to.be.an("array").with.length(1);
-    expect(results[0][0]).to.be.deep.equal({
+    const options = {
+      response,
+      resultsAll: [],
+      unprocessedAll: [],
+      config: {includeKeys: true},
+      orderMaintainer: {
+        getOrder: () => -1
+      }
+    };
+    MallStores.applyBulkGetResponseFormatting(options);
+    expect(options.resultsAll).to.be.an("array").with.length(1);
+    expect(options.resultsAll[0]).to.be.deep.equal({
       "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
       "mall": "WashingtonSquare",
       "leaseEnd": "2020-01-20",
