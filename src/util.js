@@ -148,28 +148,6 @@ class BatchGetOrderMaintainer {
       }
     }
   }
-
-  applyOrder(response = {}) {
-    if (!this.enabled || this.batchIndexMap.size === 0) {
-      return response;
-    }
-
-    const results = response?.Responses?.[this.table] ?? [];
-    const ordered = new Array(this.batchIndexMap.size).fill(null);
-    for (const result of results) {
-      const indexMapKey = this.keyFormatter(result);
-      const slot = this.batchIndexMap.get(indexMapKey);
-      if (typeof slot === "number") {
-        ordered[slot] = result;
-      }
-    }
-
-    response = response || {};
-    response.Responses = response.Responses || {};
-    response.Responses[this.table] = ordered;
-
-    return response;
-  }
 }
 
 module.exports = {
