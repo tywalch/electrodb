@@ -187,3 +187,9 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.9.0] - 2022-06-18
 ### Added
 - Add new batchGet query option, `preserveBatchOrder`, which will ensure the order returned by a batchGet will be the same as the order provided. [[read more](./README.md#query-options)]
+
+## [1.10.0] - 2022-06-29
+### Fixed
+- TypeScript 4.7 introduced changes that caused type inference issues with the Entity, Service, and exposed types. A re-vamp of some typing was done to rectify these issues, new tests and existing tests were made work with the latest versions of TypeScript and tsd.
+### Changed
+- Project now is more deliberate about the types exposed via the package. This is because I have moved away from a single type definition file (which by default exports all types). If you had a dependency on a type that used to be exposed, open a ticket and I can expose it. In the future exposed types will be the only types officially supported by semver.

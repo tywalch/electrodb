@@ -1841,7 +1841,7 @@ describe("Simple Crud On Complex Entity", () => {
             try {
                 entity.put({stringVal, stringVal2, ...test.input}).params();
                 throw invalid;
-            } catch (err) {
+            } catch (err: any) {
                 if (err === invalid) {
                     invalidErrors.push(`Expected test #${t} to throw error "${test.error}" when using "put" method.`);
                 } else {
@@ -1851,7 +1851,7 @@ describe("Simple Crud On Complex Entity", () => {
             try {
                 entity.update({stringVal, stringVal2}).set({...test.input}).params();
                 throw invalid;
-            } catch (err) {
+            } catch (err: any) {
                 if (err === invalid) {
                     invalidErrors.push(`Expected test #${t} to throw error "${test.error}" when using "update" method.`);
                 } else {

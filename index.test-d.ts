@@ -1,5 +1,13 @@
-import {Entity, Service, WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem} from ".";
+import { Entity, Service } from "./index";
+import { WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem } from './src/types';
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
+import * as tests from './src/types/tests.test-d';
+
+type Resolve<T> = T extends Function | string | number | boolean
+  ? T : {[Key in keyof T]: Resolve<T[Key]>}
+
+const magnify = <T>(value: T): Resolve<T> => { return {} as Resolve<T> };
+
 let entityWithSK = new Entity({
     model: {
         entity: "abc",
@@ -496,10 +504,12 @@ let getKeys = ((val) => {}) as GetKeys;
             attr9?: number | undefined;
             attr10?: boolean | undefined;
         }>(item);
-        expectType<WithSKMyIndexCompositeAttributes>(unprocessed);
+        
+        expectType<WithSKMyIndexCompositeAttributes>(magnify(unprocessed));
     });
     entityWithSK.get([{attr1: "abc", attr2: "def"}]).go({preserveBatchOrder: true}).then(results => {
-        const [item] = results[0];
+        const item = magnify(results[0]?.[0]);
+        
         const [unprocessed] = results[1];
         expectType<{
             attr1: string;
@@ -513,9 +523,13 @@ let getKeys = ((val) => {}) as GetKeys;
             attr9?: number | undefined;
             attr10?: boolean | undefined;
         } | null>(item);
-        expectType<WithSKMyIndexCompositeAttributes>(unprocessed);
+        expectType<WithSKMyIndexCompositeAttributes>(magnify(unprocessed));
     });
-    expectType<Promise<[EntityItem<typeof entityWithSK>[], WithSKMyIndexCompositeAttributes[]]>>(entityWithSK.get([{attr1: "abc", attr2: "def"}]).go());
+    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go().then(value => {
+        const [results, unprocessed] = value;
+        expectType<EntityItem<typeof entityWithSK>[]>(magnify(results));
+        expectType<WithSKMyIndexCompositeAttributes[]>(magnify(unprocessed));
+    });
     entityWithSK.get([{attr1: "abc", attr2: "def"}]).go()
         .then(([items, unprocessed]) => {
             expectAssignable<Item[]>(items);
@@ -537,11 +551,11 @@ let getKeys = ((val) => {}) as GetKeys;
                     attr8: boolean;
                     attr9?: number | undefined;
                 }>(item);
-                expectType<WithoutSKMyIndexCompositeAttributes>(unprocessed);
+                expectType<WithoutSKMyIndexCompositeAttributes>(magnify(unprocessed));
             });
     entityWithoutSK.get([{attr1: "abc"}]).go({preserveBatchOrder: true})
         .then(results => {
-            const [item] = results[0];
+            const item = results[0]?.[0];
             const [unprocessed] = results[1];
             expectType<{
                 attr1: string;
@@ -554,7 +568,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 attr8: boolean;
                 attr9?: number | undefined;
             } | null>(item);
-            expectType<WithoutSKMyIndexCompositeAttributes>(unprocessed);
+            expectType<WithoutSKMyIndexCompositeAttributes>(magnify(unprocessed));
         });
     entityWithoutSK.get([{attr1: "abc"}]).go()
         .then(([items, unprocessed]) => {
@@ -2193,6 +2207,12 @@ let getKeys = ((val) => {}) as GetKeys;
             prop10: {
                 type: "any",
                 readOnly: true
+            },
+            prop11: {
+                type: 'list',
+                items: {
+                    type: 'string'
+                }
             }
         },
         indexes: {
@@ -2246,6 +2266,7 @@ let getKeys = ((val) => {}) as GetKeys;
     });
 
     // readonly
+    // TODO: FIX ME
     expectError(() => {
         entityWithReadOnlyAttribute
             .update({prop1: "abc", prop2: "def"})
@@ -3846,7 +3867,9 @@ mapTests
     .go()
     .then(data => {
         if (data && data.mapObject !== undefined) {
-            expectNotAssignable<string>(data.mapObject.hidden);
+            expectError(() => {
+                data.mapObject?.hidden
+            });
             expectType<undefined|string>(data.mapObject.minimal);
             expectType<undefined|string>(data.mapObject.readOnly);
             expectType<string>(data.mapObject.required);
@@ -3908,24 +3931,6 @@ complexAttributeService.collections
         op.eq(attr.numberListValue[0], 123)
         op.eq(attr.mapListValue[1].enumVal, "def");
         op.eq(attr.mapListValue[1].numVal, 345);
-        return "";
-    })
-    .go()
-
-// `value` operation should return the type of value for more constrained usage
-complex.update({username: "abc"})
-    .data((attr, op) => {
-        const numberValue = op.value(attr.numVal, 10);
-        op.set(attr.numVal, numberValue);
-        op.set(attr.mapValue.numVal, numberValue);
-        expectError(() => op.set(attr.mapValue.stringVal, numberValue));
-    })
-    .where((attr, op) => {
-        const num = 10;
-        const numberValue = op.value(attr.numVal, num);
-        op.eq(attr.numVal, numberValue);
-        op.eq(attr.mapValue.numVal, numberValue);
-        expectError(() => op.eq(attr.mapValue.stringVal, numberValue));
         return "";
     })
     .go()
