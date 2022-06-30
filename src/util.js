@@ -133,14 +133,14 @@ class BatchGetOrderMaintainer {
 
   getOrder(item) {
     const key = this.keyFormatter(item);
-    return this.batchIndexMap.get(key) ?? -1;
+    return this.batchIndexMap.get(key) || -1;
   }
 
   defineOrder(parameters = []) {
     if (this.enabled) {
       for (let i = 0; i < parameters.length; i++) {
         const batchParams = parameters[i];
-        const recordKeys = batchParams?.RequestItems?.[this.table]?.Keys ?? [];
+        const recordKeys = (batchParams && batchParams.RequestItems && batchParams.RequestItems[this.table] && batchParams.RequestItems[this.table].Keys) || [];
         for (const recordKey of recordKeys) {
           const indexMapKey = this.keyFormatter(recordKey);
           this.batchIndexMap.set(indexMapKey, this.currentSlot++);

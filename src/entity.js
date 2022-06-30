@@ -702,7 +702,7 @@ class Entity {
 		let pattern = `^${this._regexpEscape(prefix)}`;
 		let labels = this.model.facets.labels[index][keyType] || [];
 		for (let {name, label} of labels) {
-			let { type } = this.model.schema.attributes[name];
+			let { type } = this.model.schema.attributes[name] || {};
 			if (isCustom) {
 				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
 			} else {

@@ -15,7 +15,7 @@ import {
   WhereAttributeSymbol
 } from './where';
 
-type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
+export type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
   [Name in keyof E]:
   E[Name] extends Entity<infer A, infer F, infer C, infer S>
       ? {
@@ -24,13 +24,13 @@ type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> 
       : never
 }[keyof E];
 
-type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
+export type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
   [Name in keyof E]: {
       [A in keyof E[Name]["schema"]["attributes"]]: A
   }[keyof E[Name]["schema"]["attributes"]]
 }[keyof E];
 
-type AllEntityAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
+export type AllEntityAttributes<E extends {[name: string]: Entity<any, any, any, any>}> = {
   [Attr in AllEntityAttributeNames<E>]: {
       [Name in keyof E]: Attr extends keyof E[Name]["schema"]["attributes"]
           ? ItemAttribute<E[Name]["schema"]["attributes"][Attr]>
@@ -48,7 +48,7 @@ export type CollectionAssociations<E extends {[name: string]: Entity<any, any, a
   }[keyof E];
 }
 
-type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
+export type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
   [Collection in keyof Collections]: {
       [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
           ? EntityName extends Collections[Collection]
@@ -58,7 +58,7 @@ type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}
   }[keyof E]
 }
 
-interface CollectionWhereOperations {
+export interface CollectionWhereOperations {
   eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
   ne: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
   gt: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
@@ -75,19 +75,19 @@ interface CollectionWhereOperations {
   name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
 }
 
-type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, any, any>}, I extends Partial<AllEntityAttributes<E>>> =
+export type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, any, any>}, I extends Partial<AllEntityAttributes<E>>> =
     <W extends {[A in keyof I]: WhereAttributeSymbol<I[A]>}>(attributes: W, operations: CollectionWhereOperations) => string;
 
-type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, T> = (where: CollectionWhereCallback<E, I>) => T;
+export type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, T> = (where: CollectionWhereCallback<E, I>) => T;
 
-interface WhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexCompositeAttributes> {
+export interface WhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexCompositeAttributes> {
     go: GoRecord<Items>;
     params: ParamRecord;
     page: PageRecord<Items,IndexCompositeAttributes>;
     where: CollectionWhereClause<E,A,F,C,S,I, WhereRecordsActionOptions<E,A,F,C,S,I,Items,IndexCompositeAttributes>>;
 }
 
-type CollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
+export type CollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
   [Collection in keyof Collections]: {
       [EntityResultName in Collections[Collection]]:
           EntityResultName extends keyof Entities
@@ -98,7 +98,7 @@ type CollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any,
   }[Collections[Collection]]
 }
 
-type CollectionPageKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
+export type CollectionPageKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
   [Collection in keyof Collections]: {
       [EntityResultName in Collections[Collection]]:
           EntityResultName extends keyof Entities
@@ -113,7 +113,7 @@ type CollectionPageKeys<Entities extends {[name: string]: Entity<any, any, any, 
   }[Collections[Collection]]
 }
 
-type CollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
+export type CollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
   [Collection in keyof CollectionIndexKeys<Entities, Collections>]: {
       [key in CollectionIndexKeys<Entities, Collections>[Collection]]:
           key extends keyof AllEntityAttributes<Entities>
@@ -122,7 +122,7 @@ type CollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any
   }
 }
 
-type CollectionPageAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
+export type CollectionPageAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
   [Collection in keyof CollectionPageKeys<Entities, Collections>]: {
       [key in CollectionPageKeys<Entities, Collections>[Collection]]:
           key extends keyof AllEntityAttributes<Entities>
@@ -131,17 +131,17 @@ type CollectionPageAttributes<Entities extends {[name: string]: Entity<any, any,
   }
 }
 
-type OptionalPropertyNames<T> =
+export type OptionalPropertyNames<T> =
   { [K in keyof T]: undefined extends T[K] ? K : never }[keyof T];
 
 // Common properties from L and R with undefined in R[K] replaced by type in L[K]
-type SpreadProperties<L, R, K extends keyof L & keyof R> =
+export type SpreadProperties<L, R, K extends keyof L & keyof R> =
 { [P in K]: L[P] | Exclude<R[P], undefined> };
 
-type Id<T> = {[K in keyof T]: T[K]} // see note at bottom*
+export type Id<T> = {[K in keyof T]: T[K]} // see note at bottom*
 
 // Type of { ...L, ...R }
-type Spread<L, R> = Id<
+export type Spread<L, R> = Id<
 // Properties in L that don't exist in R
 & Pick<L, Exclude<keyof L, keyof R>>
 // Properties in R with types that exclude undefined
@@ -152,7 +152,7 @@ type Spread<L, R> = Id<
 & SpreadProperties<L, R, OptionalPropertyNames<R> & keyof L>
 >;
 
-type RequiredProperties<T> = Pick<T, {[K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T]>
+export type RequiredProperties<T> = Pick<T, {[K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T]>
 
 export type CollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
   [Collection in keyof Collections]: {

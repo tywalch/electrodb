@@ -33,7 +33,7 @@ import {
 import { ElectroEventListener } from './types/events';
 import { DocumentClient } from './types/client';
 
-export type Resolve<T> = T extends Function | string | number | boolean
+type Resolve<T> = T extends Function | string | number | boolean
     ? T : {[Key in keyof T]: Resolve<T[Key]>}
 
 export type EntityConfiguration = {

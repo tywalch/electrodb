@@ -1,7 +1,7 @@
 import {Schema, Item, UpdateData} from './schema';
 
-declare const WhereSymbol: unique symbol;
-declare const UpdateDataSymbol: unique symbol;
+export declare const WhereSymbol: unique symbol;
+export declare const UpdateDataSymbol: unique symbol;
 
 export type WhereAttributeSymbol<T extends any> =
     { [WhereSymbol]: void }
@@ -35,7 +35,7 @@ export type DataUpdateAttributeSymbol<T extends any> =
                         ? never
                         : T
 
-type DataUpdateAttributeValues<A extends DataUpdateAttributeSymbol<any>> =
+export type DataUpdateAttributeValues<A extends DataUpdateAttributeSymbol<any>> =
     A extends DataUpdateAttributeSymbol<infer T>
         ? T extends string ? T
         : T extends number ? T
@@ -68,7 +68,7 @@ export interface WhereOperations<A extends string, F extends string, C extends s
     notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V : never) => A extends WhereAttributeSymbol<infer V> ? V : never;
     name: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
-};
+}
 
 export interface DataUpdateOperations<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> {
     set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
@@ -81,7 +81,7 @@ export interface DataUpdateOperations<A extends string, F extends string, C exte
     value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => Required<DataUpdateAttributeValues<A>>;
     name: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
     ifNotExists: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
-};
+}
 
 export type WhereCallback<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S,S["attributes"]>> =
     <W extends WhereAttributes<A,F,C,S,I>>(attributes: W, operations: WhereOperations<A,F,C,S,I>) => string;

@@ -3,8 +3,13 @@ import { ResponseItem, PutItem, AddItem, SubtractItem, AppendItem, RemoveItem, D
 import { Service } from '../service';
 import { CollectionAssociations } from './collections';
 
-export { WhereAttributeSymbol } from './where';
-export { Schema } from './schema';
+export * from './where';
+export * from './schema';
+export * from './options';
+export * from './client';
+export * from './collections';
+export * from './model';
+export * from './events';
 
 export type EntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>

@@ -373,7 +373,7 @@ export interface NumberSetAttribute {
   readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type Attribute =
+export type Attribute =
   BooleanAttribute
   | NumberAttribute
   | StringAttribute
@@ -386,7 +386,7 @@ type Attribute =
   | NumberListAttribute
   | MapListAttribute;
 
-type NestedAttributes =
+export type NestedAttributes =
 NestedBooleanAttribute
 | NestedNumberAttribute
 | NestedStringAttribute
@@ -407,7 +407,7 @@ export interface IndexWithSortKey {
   }
 }
 
-type AccessPatternCollection<C extends string> = C | ReadonlyArray<C>;
+export type AccessPatternCollection<C extends string> = C | ReadonlyArray<C>;
 
 export interface Schema<A extends string, F extends string, C extends string> {
   readonly model: {
@@ -436,9 +436,9 @@ export interface Schema<A extends string, F extends string, C extends string> {
           }
       }
   }
-};
+}
 
-type Attributes<A extends string> = Record<A, Attribute>
+export type Attributes<A extends string> = Record<A, Attribute>
 
 export type IndexCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
   [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends
@@ -464,7 +464,7 @@ export type EntityCollections<A extends string, F extends string, C extends stri
 declare const SkipSymbol: unique symbol;
 type SkipValue = typeof SkipSymbol;
 
-type DefinedKeys<T> = { 
+type DefinedKeys<T> = {
   [P in keyof T as 
     [undefined] extends [T[P]] 
       ? never 
@@ -540,7 +540,7 @@ type FormattedPutMapAttributes<A extends MapAttribute> = {
     : false
 }
 
-type ReturnedAttribute<A extends Attribute> =
+export type ReturnedAttribute<A extends Attribute> =
   A["type"] extends infer R
     ? R extends "string" ? string
     : R extends "number" ? number
@@ -612,7 +612,7 @@ type ReturnedAttribute<A extends Attribute> =
                                 : never
     : never
 
-type CreatedAttribute<A extends Attribute> =
+export type CreatedAttribute<A extends Attribute> =
   A["type"] extends infer R
   ? R extends "string" ? string
       : R extends "number" ? number
@@ -692,7 +692,7 @@ export type CreatedItem<A extends string, F extends string, C extends string, S 
   [a in keyof Attr]: CreatedAttribute<Attr[a]>
 }
 
-type EditableItemAttribute<A extends Attribute> =
+export type EditableItemAttribute<A extends Attribute> =
   A extends ReadOnlyAttribute
       ? never
       : A["type"] extends infer R
@@ -735,7 +735,7 @@ type EditableItemAttribute<A extends Attribute> =
                                       : never
           : never    
           
-type UpdatableItemAttribute<A extends Attribute> =
+export type UpdatableItemAttribute<A extends Attribute> =
   A extends ReadOnlyAttribute
       ? never
       : A["type"] extends infer R
@@ -793,7 +793,7 @@ type UpdatableItemAttribute<A extends Attribute> =
                                       : never
           : never
 
-type RemovableItemAttribute<A extends Attribute> =
+export type RemovableItemAttribute<A extends Attribute> =
   A extends ReadOnlyAttribute | RequiredAttribute
       ? never
       : A["type"] extends infer R
@@ -894,9 +894,9 @@ export type TableIndexPKCompositeAttributes<A extends string, F extends string, 
 
 export type TableIndexSKCompositeAttributes<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = Pick<SKCompositeAttributes<A,F,C,S>, TableIndexName<A,F,C,S>>;
 
-type IndexPKCompositeAttributes<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = Pick<PKCompositeAttributes<A,F,C,S>,I>;
+export type IndexPKCompositeAttributes<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = Pick<PKCompositeAttributes<A,F,C,S>,I>;
 
-type IndexSKCompositeAttributes<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = Pick<SKCompositeAttributes<A,F,C,S>,I>;
+export type IndexSKCompositeAttributes<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> = Pick<SKCompositeAttributes<A,F,C,S>,I>;
 
 export type TableIndexPKAttributes<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = 
   TableIndexName<A,F,C,S> extends keyof TableIndexPKCompositeAttributes<A,F,C,S>

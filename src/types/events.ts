@@ -1,13 +1,13 @@
-type ElectroDBMethodTypes = "put" | "get" | "query" | "scan" | "update" | "delete" | "remove" | "patch" | "create" | "batchGet" | "batchWrite";
+export type ElectroDBMethodTypes = "put" | "get" | "query" | "scan" | "update" | "delete" | "remove" | "patch" | "create" | "batchGet" | "batchWrite";
 
-interface ElectroQueryEvent<P extends any = any> {
+export interface ElectroQueryEvent<P extends any = any> {
     type: 'query';
     method: ElectroDBMethodTypes;
     config: any;
     params: P;
 }
 
-interface ElectroResultsEvent<R extends any = any> {
+export interface ElectroResultsEvent<R extends any = any> {
     type: 'results';
     method: ElectroDBMethodTypes;
     config: any;
@@ -15,11 +15,11 @@ interface ElectroResultsEvent<R extends any = any> {
     success: boolean;
 }
 
-type ElectroEvent = 
+export type ElectroEvent =
     ElectroQueryEvent
     | ElectroResultsEvent;
 
-type ElectroEventType = Pick<ElectroEvent, 'type'>;
+export type ElectroEventType = Pick<ElectroEvent, 'type'>;
 
 export type ElectroEventListener = (event: ElectroEvent) => void;
 

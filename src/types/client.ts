@@ -1,4 +1,4 @@
-type DocumentClientMethod = (parameters: any) => {promise: () => Promise<any>};
+export type DocumentClientMethod = (parameters: any) => {promise: () => Promise<any>};
 
 export type DocumentClient = {
     get: DocumentClientMethod;

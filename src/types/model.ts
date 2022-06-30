@@ -44,32 +44,32 @@ export interface SingleRecordOperationOptions<A extends string, F extends string
   go: GoRecord<ResponseType, QueryOptions>;
   params: ParamRecord<QueryOptions>;
   where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
-};
+}
 
 export interface PutRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
   go: GoRecord<ResponseType, PutQueryOptions>;
   params: ParamRecord<PutQueryOptions>;
   where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,PutRecordOperationOptions<A,F,C,S,ResponseType>>;
-};
+}
 
 export interface UpdateRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
   go: GoRecord<ResponseType, UpdateQueryOptions>;
   params: ParamRecord<UpdateQueryParams>;
   where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,PutRecordOperationOptions<A,F,C,S,ResponseType>>;
-};
+}
 
 export interface DeleteRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
   go: GoRecord<ResponseType, DeleteQueryOptions>;
   params: ParamRecord<DeleteQueryOptions>;
   where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,DeleteRecordOperationOptions<A,F,C,S,ResponseType>>;
-};
+}
 
 export interface BulkRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType, AlternateResponseType> {
   go: BatchGoRecord<ResponseType, AlternateResponseType>;
   params: ParamRecord<BulkOptions>;
-};
+}
 
-interface SetRecordActionOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
+export interface SetRecordActionOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
   go: GoRecord<Partial<TableItem>, UpdateQueryOptions>;
   params: ParamRecord<UpdateQueryParams>;
   set: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
