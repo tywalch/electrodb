@@ -1416,7 +1416,7 @@ describe("Simple Crud On Complex Entity", () => {
         expect(results.Item.stringSet.values).to.deep.equal([ 'abc', 'def', 'ghi' ]);
         expect(results.Item.stringSet.wrapperName).to.equal("Set");
         expect(results.Item.stringSet.type).to.equal("String");
-        expect(results.Item.numberSet.values).to.deep.equal([123,456,789]);
+        expect(results.Item.numberSet.values.sort()).to.deep.equal([123,456,789].sort());
         expect(results.Item.numberSet.wrapperName).to.equal("Set");
         expect(results.Item.numberSet.type).to.equal("Number");
         expect(JSON.parse(JSON.stringify(results))).to.deep.equal({

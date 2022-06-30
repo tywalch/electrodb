@@ -301,7 +301,7 @@ describe("Entity", async () => {
             let recordTwo = null;
             try {
                 recordTwo = await MallStores.create(record).go();
-            } catch(err) {
+            } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
             expect(recordTwo).to.be.null
@@ -335,7 +335,7 @@ describe("Entity", async () => {
             let patchResultsTwo = null;
             try {
                 patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
-            } catch(err) {
+            } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
             expect(patchResultsTwo).to.be.null
@@ -639,7 +639,7 @@ describe("Entity", async () => {
             let recordTwo = null;
             try {
                 recordTwo = await MallStores.create(record).go();
-            } catch(err) {
+            } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
             expect(recordTwo).to.be.null
@@ -671,7 +671,7 @@ describe("Entity", async () => {
             let patchResultsTwo = null;
             try {
                 patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
-            } catch(err) {
+            } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
             expect(patchResultsTwo).to.be.null
@@ -1463,7 +1463,7 @@ describe("Entity", async () => {
                     .set({prop9: "propz9", prop6: "propz6"})
                     .go()
                 throw null;
-            } catch(err) {
+            } catch(err: any) {
                 expect(err).to.not.be.null;
                 expect(err.message).to.equal('Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes');
             }
@@ -1475,7 +1475,7 @@ describe("Entity", async () => {
                     .set({prop9: "propz9", prop6: "propz6"})
                     .go()
                 throw null;
-            } catch(err) {
+            } catch(err: any) {
                 expect(err).to.not.be.null;
                 expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
             }

@@ -282,7 +282,7 @@ describe("Where Clause Queries", async () => {
 				`)
                 .go();
             throw new Error("Should have thrown")
-        } catch(err) {
+        } catch(err: any) {
             expect(err.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
         }
     });

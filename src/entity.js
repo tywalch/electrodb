@@ -702,14 +702,16 @@ class Entity {
 		let pattern = `^${this._regexpEscape(prefix)}`;
 		let labels = this.model.facets.labels[index][keyType] || [];
 		for (let {name, label} of labels) {
-			let { type } = this.model.schema.attributes[name] || {};
-			if (isCustom) {
-				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
-			} else {
-				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
+			let attr = this.model.schema.attributes[name];
+			if (attr) {
+				if (isCustom) {
+					pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
+				} else {
+					pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
+				}
+				names.push(name);
+				types.push(attr.type);
 			}
-			names.push(name);
-			types.push(type);
 		}
 		pattern += "$";
 		let regex = RegExp(pattern);

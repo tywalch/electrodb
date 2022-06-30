@@ -133,7 +133,11 @@ class BatchGetOrderMaintainer {
 
   getOrder(item) {
     const key = this.keyFormatter(item);
-    return this.batchIndexMap.get(key) || -1;
+    const value = this.batchIndexMap.get(key);
+    if (value === undefined) {
+      return -1;
+    }
+    return value;
   }
 
   defineOrder(parameters = []) {

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import {Entity, EventListener, ElectroEvent, CreateEntityItem, Service } from '../index';
+import {Entity, ElectroEventListener, ElectroEvent, CreateEntityItem, Service } from '../index';
 const uuid = require("uuid").v4;
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const table = "electro";
@@ -18,7 +18,7 @@ function createLogger(name: string, events: TestLoggerEvents) {
     }
 }
 
-function createTestEntity(entity: string = "entity1", logger?: EventListener, listeners?: EventListener[]) {
+function createTestEntity(entity: string = "entity1", logger?: ElectroEventListener, listeners?: ElectroEventListener[]) {
     return new Entity({
         model: {
             entity,
@@ -55,7 +55,7 @@ function createTestEntity(entity: string = "entity1", logger?: EventListener, li
     }, {client, table, logger, listeners});
 }
 
-function createTestService(logger?: EventListener, listeners?: EventListener[]) {
+function createTestService(logger?: ElectroEventListener, listeners?: ElectroEventListener[]) {
     const entity1 = createTestEntity('entity1', logger, listeners);
     const entity2 = createTestEntity('entity1', logger, listeners);
     return new Service({
