@@ -1,7 +1,6 @@
-import { Entity, Service } from "./index";
-import { WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem } from './src/types';
+import { WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem, Entity, Service } from './';
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
-import * as tests from './src/types/tests.test-d';
+import * as tests from './test/tests.test-d';
 
 type Resolve<T> = T extends Function | string | number | boolean
   ? T : {[Key in keyof T]: Resolve<T[Key]>}

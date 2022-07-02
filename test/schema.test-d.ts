@@ -1,19 +1,43 @@
-import { expectType, expectError, expectNotType } from 'tsd';
-import { Schema, Item, UpdateData } from './schema';
 import {
-  WhereAttributes,
-  DataUpdateAttributes,
-  WhereCallback,
-  DataUpdateCallback,
-} from './where';
-
+  Schema, 
+  IndexCollections,
+  EntityCollections,
+  ItemTypeDescription,
+  RequiredAttributes,
+  HiddenAttributes,
+  ReadOnlyAttributes,
+  TableIndexes,
+  TableIndexName,
+  PKCompositeAttributes,
+  SKCompositeAttributes,
+  TableIndexPKCompositeAttributes,
+  TableIndexSKCompositeAttributes,
+  TableIndexPKAttributes,
+  TableIndexSKAttributes,
+  TableIndexCompositeAttributes,
+  AllTableIndexCompositeAttributes,
+  IndexPKAttributes,
+  IndexSKAttributes,
+  TableItem,
+  ResponseItem,
+  RequiredPutItems,
+  PutItem,
+  CreatedItem,
+  UpdateData,
+  RemoveItem,
+  AppendItem,
+  SetItem,
+  AddItem,
+  SubtractItem,
+  DeleteItem,
+} from '../';
+import { expectType, expectError, expectNotType } from 'tsd';
 
 type Resolve<T> = T extends Function | string | number | boolean
   ? T : {[Key in keyof T]: Resolve<T[Key]>}
 
 const troubleshoot = <Params extends any[], Response>(fn: (...params: Params) => Response, response: Response) => {};
 const magnify = <T>(value: T): Resolve<T> => { return {} as Resolve<T> };
-const keys = <T>(value: T): keyof T => { return {} as keyof T };
 
 class MockEntity<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> {
   readonly schema: S;
@@ -21,21 +45,138 @@ class MockEntity<A extends string, F extends string, C extends string, S extends
     this.schema = schema;
   };
 
-  getWhereAttributes(): Resolve<WhereAttributes<A,F,C,S, Item<A,F,C,S,S["attributes"]>>>  {
-    return {} as Resolve<WhereAttributes<A,F,C,S, Item<A,F,C,S,S["attributes"]>>>;
+  // done
+  getIndexCollections(): IndexCollections<A,F,C,S> {
+    return {} as IndexCollections<A,F,C,S>
   }
 
-  getDataUpdateAttributes(): Resolve<DataUpdateAttributes<A,F,C,S, UpdateData<A,F,C,S>>> {
-    return {} as Resolve<DataUpdateAttributes<A,F,C,S, UpdateData<A,F,C,S>>>;
+  // done
+  getEntityCollections(): EntityCollections<A,F,C,S> {
+    return {} as EntityCollections<A,F,C,S>;
   }
 
-  getWhereCallback(fn: Resolve<WhereCallback<A,F,C,S, Item<A,F,C,S, S['attributes']>>>)  {
-    return fn;
+  // done
+  getItemTypeDescription(): ItemTypeDescription<A,F,C,S> {
+    return {} as ItemTypeDescription<A,F,C,S>;
   }
 
-  getDataUpdateCallback(fn: Resolve<DataUpdateCallback<A,F,C,S, UpdateData<A,F,C,S>>>)  {
-    return fn;
+  // done
+  getRequiredAttributes(): RequiredAttributes<A,F,C,S> {
+    return {} as RequiredAttributes<A,F,C,S>;
   }
+
+  // done
+  getHiddenAttributes(): HiddenAttributes<A,F,C,S> {
+    return {} as HiddenAttributes<A,F,C,S>;
+  }
+
+  // done
+  getReadOnlyAttributes(): ReadOnlyAttributes<A,F,C,S> {
+    return {} as ReadOnlyAttributes<A,F,C,S>;
+  }
+
+  // done
+  getTableIndexes(): TableIndexes<A,F,C,S> {
+    return {} as TableIndexes<A,F,C,S>;
+  }
+
+  // done
+  getTableIndexName(): TableIndexName<A,F,C,S> {
+    return {} as TableIndexName<A,F,C,S>;
+  }
+  
+  // done
+  getPKCompositeAttributes(): PKCompositeAttributes<A,F,C,S> {
+    return {} as PKCompositeAttributes<A,F,C,S>;
+  }
+
+  // done
+  getSKCompositeAttributes(): SKCompositeAttributes<A,F,C,S> {
+    return {} as SKCompositeAttributes<A,F,C,S>;
+  }
+
+  // done
+  getTableIndexPKCompositeAttributes(): TableIndexPKCompositeAttributes<A,F,C,S> {
+    return {} as TableIndexPKCompositeAttributes<A,F,C,S>;
+  }
+  
+  // done
+  getTableIndexSKCompositeAttributes(): TableIndexSKCompositeAttributes<A,F,C,S> {
+    return {} as TableIndexSKCompositeAttributes<A,F,C,S>;
+  }
+
+  getTableIndexPKAttributes(): TableIndexPKAttributes<A,F,C,S> {
+    return {} as TableIndexPKAttributes<A,F,C,S>;
+  }
+
+  getTableIndexSKAttributes(): TableIndexSKAttributes<A,F,C,S> {
+    return {} as TableIndexSKAttributes<A,F,C,S>;
+  }
+
+  getTableIndexCompositeAttributes(): Resolve<TableIndexCompositeAttributes<A,F,C,S>> {
+    return {} as Resolve<TableIndexCompositeAttributes<A,F,C,S>>;
+  }
+
+  getIndexPKAttributes<I extends keyof S['indexes']>(index: I): Resolve<IndexPKAttributes<A,F,C,S,I>> {
+    return {} as Resolve<IndexPKAttributes<A,F,C,S,I>>;
+  }
+
+  getIndexSKAttributes<I extends keyof S['indexes']>(index: I): IndexSKAttributes<A,F,C,S,I> {
+    return {} as IndexSKAttributes<A,F,C,S,I>;
+  }
+
+  getAllTableIndexCompositeAttributes(): Resolve<AllTableIndexCompositeAttributes<A,F,C,S>> {
+    return {} as Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>;
+  }
+
+  getTableItem(): Resolve<TableItem<A,F,C,S>> {
+    return {} as Resolve<TableItem<A,F,C,S>>;
+  }
+
+  getResponseItem(): ResponseItem<A,F,C,S> {
+    return {} as ResponseItem<A,F,C,S>;
+  }
+
+  getRequiredPutItems(): RequiredPutItems<A,F,C,S> {
+    return {} as RequiredPutItems<A,F,C,S>;
+  }
+
+  getCreatedItem(): CreatedItem<A,F,C,S,S['attributes']> {
+    return {} as CreatedItem<A,F,C,S,S['attributes']>
+  }
+
+  getPutItem(): Resolve<PutItem<A,F,C,S>> {
+    return {} as Resolve<PutItem<A,F,C,S>>;
+  }
+
+  getUpdateData(): Resolve<UpdateData<A,F,C,S>> {
+    return {} as Resolve<UpdateData<A,F,C,S>>;
+  }
+
+  getRemoveItem(): Resolve<RemoveItem<A,F,C,S>> {
+    return {} as Resolve<RemoveItem<A,F,C,S>>;
+  }
+
+  getAppendItem(): AppendItem<A,F,C,S> {
+    return {} as AppendItem<A,F,C,S>;
+  }
+
+  getSetItem(): Resolve<SetItem<A,F,C,S>> {
+    return {} as Resolve<SetItem<A,F,C,S>>;
+  }
+
+  getAddItem(): Resolve<AddItem<A,F,C,S>> {
+    return {} as Resolve<AddItem<A,F,C,S>>;
+  }
+
+  getSubtractItem(): Resolve<SubtractItem<A,F,C,S>> {
+    return {} as Resolve<SubtractItem<A,F,C,S>>;
+  }
+
+  getDeleteItem(): Resolve<DeleteItem<A,F,C,S>> {
+    return {} as Resolve<DeleteItem<A,F,C,S>>;
+  }
+
 }
 
 const entityWithoutCollection = new MockEntity({
@@ -1695,245 +1836,671 @@ const diverseTableKeyTypes = new MockEntity({
       }
     }
   }
-});
+})
 
-// WhereAttributes
+// getEntityCollections
+expectType<{normalcollection: 'tableIndex'}>(normalEntity1.getEntityCollections());
+
 expectType<{
-  attr1: string; 
-  attr2: string; 
-  attr3: "123" | "def" | "ghi"; 
-  attr4: "abc" | "ghi"; 
-  attr5: string; 
-  attr6: number; 
-  attr7: any; 
-  attr8: boolean; 
-  attr9: number; 
-  attr10: boolean;
-}>(entityWithSK.getWhereAttributes())
+  normalcollection: 'indexTable';
+  mycollection1: 'anotherIndex'
+}>(normalEntity2.getEntityCollections());
 
-expectType<{ 
+expectType<{}>(entityWithoutCollection.getEntityCollections());
+
+expectType<{
+  outercollection: 'myIndex',
+  innercollection: 'myIndex',
+  extracollection: 'myIndex2'
+}>(entityWithMultipleCollections2.getEntityCollections());
+
+expectType<{
+  outercollection: 'myIndex',
+  extracollection: 'myIndex2'
+}>(entityWithMultipleCollections3.getEntityCollections());
+
+// getIndexCollections
+expectType<'normalcollection'>(normalEntity1.getIndexCollections());
+expectType<'normalcollection' | 'mycollection1'>(normalEntity2.getIndexCollections());
+expectType<never>(entityWithoutCollection.getIndexCollections());
+expectType<'outercollection' | 'innercollection' | 'extracollection'>(entityWithMultipleCollections2.getIndexCollections());
+expectType<'outercollection' | 'extracollection'>(entityWithMultipleCollections3.getIndexCollections());
+
+// ItemTypeDescription
+// todo: current implementation is shallow, is that a problem?
+expectType<{attr1: 'string', attr2: 'string'}>(entityWithMultipleCollections2.getItemTypeDescription());
+expectType<{
+  attr1: 'string';
+  attr2: 'string';
+  attr3: Readonly<["123", "def", "ghi"]>;
+  attr4: Readonly<['abc', 'def']>;
+  attr5: 'string';
+  attr6: 'number';
+  attr7: 'any';
+  attr8: 'boolean';
+  attr9: 'number';
+}>(entityWithoutSK.getItemTypeDescription());
+
+expectType<{
+  username: 'string',
+  mapObject: 'map'
+}>(mapTests.getItemTypeDescription())
+
+// getRequiredAttributes
+expectType<'attr4' | 'attr8'>(entityWithoutSK.getRequiredAttributes());
+expectType<'prop3'>(normalEntity2.getRequiredAttributes());
+expectType<'attr3' | 'attr4' | 'attr5' | 'attr6'>(entityWithComplexShapesRequired.getRequiredAttributes());
+
+
+// getHiddenAttributes
+expectType<'prop4'>(entityWithHiddenAttributes2.getHiddenAttributes());
+
+// getReadOnlyAttributes
+expectType<'prop1' | 'prop4' | 'prop5' | 'prop6' | 'prop7'>(readOnlyEntity.getReadOnlyAttributes());
+
+// getTableIndexes
+expectType<{
+  store: 'table',
+  other: 'secondary'
+}>(casingEntity.getTableIndexes());
+
+expectType<{
+  myIndex: 'table';
+  myIndex2: 'secondary';
+  myIndex3: 'secondary';
+}>(entityWithSK.getTableIndexes());
+
+expectType<{
+  myIndex: 'table';
+  myIndex2: 'secondary';
+  myIndex3: 'secondary';
+}>(entityWithoutSK.getTableIndexes());
+
+// getTableIndexName
+expectType<'store'>(casingEntity.getTableIndexName());
+expectType<'myIndex'>(entityWithSK.getTableIndexName());
+expectType<'myIndex'>(entityWithoutSK.getTableIndexName());
+
+// getPKCompositeAttributes
+expectType<{
+  tableIndex: 'prop1' | 'prop2';
+}>(normalEntity1.getPKCompositeAttributes());
+
+expectType<{
+  myIndex: 'attr1';
+  myIndex2: 'attr6' | 'attr9'; 
+  myIndex3: 'attr5';
+}>(entityWithSK.getPKCompositeAttributes());
+
+expectType<{
+  myIndex: 'attr1';
+  myIndex2: 'attr6' | 'attr9'; 
+  myIndex3: 'attr5';
+}>(entityWithoutSK.getPKCompositeAttributes());
+
+// getSKCompositeAttributes
+expectType<{
+  tableIndex: 'prop4'
+}>(normalEntity1.getSKCompositeAttributes());
+
+expectType<{
+  myIndex: 'attr2';
+  myIndex2: 'attr4' | 'attr5'; 
+  myIndex3: 'attr4' | 'attr3' | 'attr9';
+}>(entityWithSK.getSKCompositeAttributes());
+
+expectType<{
+  myIndex: never;
+  myIndex2: never; 
+  myIndex3: never;
+}>(entityWithoutSK.getSKCompositeAttributes());
+
+// getTableIndexPKCompositeAttributes
+expectType<{
+  tableIndex: 'prop1' | 'prop2';
+}>(normalEntity1.getTableIndexPKCompositeAttributes());
+
+expectType<{
+  myIndex: 'attr1';
+}>(entityWithSK.getTableIndexPKCompositeAttributes());
+
+expectType<{
+  myIndex: 'attr1';
+}>(entityWithoutSK.getTableIndexPKCompositeAttributes());
+
+// getTableIndexSKCompositeAttributes
+expectType<{
+  tableIndex: 'prop4'
+}>(normalEntity1.getTableIndexSKCompositeAttributes());
+
+expectType<{
+  myIndex: 'attr2';
+}>(entityWithSK.getTableIndexSKCompositeAttributes());
+
+expectType<{
+  myIndex: never;
+}>(entityWithoutSK.getTableIndexSKCompositeAttributes());
+
+// getTableIndexPKAttributes
+expectType<{attr1: string}>(entityWithSK.getTableIndexPKAttributes());
+expectType<{prop1: string, prop2: string}>(normalEntity2.getTableIndexPKAttributes());
+expectType<{
+  prop1: string,
+  prop2: number,
+  prop3: boolean,
+  prop4: 'abc',
+}>(diverseTableKeyTypes.getTableIndexPKAttributes());
+
+// getTableIndexSKAttributes
+expectType<{attr2: string}>(entityWithSK.getTableIndexSKAttributes());
+expectType<{}>(entityWithoutSK.getTableIndexSKAttributes());
+expectType<{prop5: number}>(normalEntity2.getTableIndexSKAttributes());
+expectType<{
+  prop5: string,
+  prop6: number,
+  prop7: boolean,
+  prop8: 'abc',
+}>(diverseTableKeyTypes.getTableIndexSKAttributes());
+
+// getTableIndexCompositeAttributes
+expectType<{
+  attr1: string;
+  attr2?: string | undefined;
+}>(entityWithSK.getTableIndexCompositeAttributes());
+
+expectType<{
+  attr1: string;
+}>(entityWithoutSK.getTableIndexCompositeAttributes());
+
+expectType<{
   prop1: string; 
-  prop2: string; 
-  prop3: { 
-    val1: string; 
-  }; 
-  prop4: { 
-    val2: number; 
-    val3: string[]; 
-    val4: number[]; 
-  }[]; 
-  prop5: string[]; 
-  prop6: string[]; 
-}>(entityWithComplexShapes.getWhereAttributes());
-
-// DataUpdateAttributes
-
-expectType<{ 
-  attr3: "123" | "def" | "ghi"; 
-  attr4: "abc" | "ghi"; 
-  attr5: string; 
-  attr6: number; 
-  attr7: any; 
-  attr8: boolean; 
-  attr9: number; 
-  attr10: boolean; 
-}>(entityWithSK.getDataUpdateAttributes())
-
-expectType<{ 
-  mapObject: { 
-    minimal: string; 
-    required: string; 
-    hidden: string; 
-    anotherMap: { 
-      minimal: string; 
-      required: string; 
-      hidden: string; 
-    }; 
-  }; 
-}>(mapTests.getDataUpdateAttributes());
-
-expectType<{ 
-  prop3: { 
-    val1: string; 
-  }; 
-  prop4: { 
-    val2: number; 
-    val3: string[]; 
-    val4: number[]; 
-  }[]; 
-  prop5: string[]; 
-  prop6: string[]; 
-}>(entityWithComplexShapes.getDataUpdateAttributes());
+  prop2: string;
+  prop5?: number | undefined;
+}>(normalEntity2.getTableIndexCompositeAttributes());
 
 expectType<{
+  prop1: string;
+  prop2: number;
   prop3: boolean;
-}>(readOnlyEntity.getDataUpdateAttributes());
+  prop4: 'abc';
+  prop5?: string | undefined;
+  prop6?: number | undefined;
+  prop7?: boolean | undefined;
+  prop8?: 'abc' | undefined;
+}>(diverseTableKeyTypes.getTableIndexCompositeAttributes());
 
-// WhereCallback
-entityWithSK.getWhereCallback((a, o) => {
-  const attr = magnify(a);
-  const op = magnify(o);
-  expectType<string>(a.attr1);
-  expectType<string>(attr.attr2)
-  expectType<"123" | "def" | "ghi">(attr.attr3)
-  expectType<"abc" | "ghi">(attr.attr4)
-  expectType<string>(attr.attr5)
-  expectType<number>(attr.attr6)
-  expectType<any>(attr.attr7)
-  expectType<boolean>(attr.attr8)
-  expectType<number>(attr.attr9)
-  expectType<boolean>(attr.attr10)
-  expectType<
-    'eq'
-    | 'ne'
-    | 'gt'
-    | 'lt'
-    | 'gte'
-    | 'lte'
-    | 'between'
-    | 'begins'
-    | 'exists'
-    | 'notExists'
-    | 'contains'
-    | 'notContains'
-    | 'value'
-    | 'name'
-  >(keys(op));
+// getIndexPKAttributes
+expectType<{
+  attr1: string;
+}>(entityWithSK.getIndexPKAttributes('myIndex'));
 
-  expectType<string>(o.eq(a.attr1, ''));
-  expectType<string>(o.ne(a.attr1, ''));
-  expectType<string>(o.gt(a.attr1, ''));
-  expectType<string>(o.lt(a.attr1, ''));
-  expectType<string>(o.gte(a.attr1, ''));
-  expectType<string>(o.lte(a.attr1, ''));
-  expectType<string>(o.between(a.attr1, '', ''));
-  expectType<string>(o.begins(a.attr1, ''));
-  expectType<string>(o.exists(a.attr1));
-  expectType<string>(o.notExists(a.attr1));
-  expectType<string>(o.contains(a.attr1, ''));
-  expectType<string>(o.notContains(a.attr1, ''));
-  expectType<string>(o.value(a.attr1, ''));
-  expectType<string>(o.name(a.attr1));
+expectType<{
+  attr6: number;
+  attr9: number;
+}>(entityWithSK.getIndexPKAttributes('myIndex2'));
 
-  expectError(() => o.eq(a.attr1, 1));
-  expectError(() => o.ne(a.attr1, 1));
-  expectError(() => o.gt(a.attr1, 1));
-  expectError(() => o.lt(a.attr1, 1));
-  expectError(() => o.gte(a.attr1, 1));
-  expectError(() => o.lte(a.attr1, 1));
-  expectError(() => o.between(a.attr1, 1, 1));
-  expectError(() => o.begins(a.attr1, 1));
-  expectError(() => o.exists());
-  expectError(() => o.notExists());
-  expectError(() => o.contains(a.attr1, 1));
-  expectError(() => o.notContains(a.attr1, 1));
-  expectError(() => o.value(a.attr1, 1));
-  expectError(() => o.name());
+expectType<{
+  attr5: string;
+}>(entityWithSK.getIndexPKAttributes('myIndex3'));
 
-  expectError(() => {
-    o.between(a.attr1, '')
-  });
-  
-  expectError(() => {
-    o.exists(a.attr1, '')
-  });
-  
-  expectError(() => {
-    o.notExists(a.attr1, '')
-  });
+expectType<{
+  attr1: string;
+}>(entityWithoutSK.getIndexPKAttributes('myIndex'));
 
-  troubleshoot(() => keys(op), 'gte')
-  return '';
-});
+expectType<{
+  attr6: number;
+  attr9: number;
+}>(entityWithoutSK.getIndexPKAttributes('myIndex2'));
 
-entityWithComplexShapes.getWhereCallback((a, o) => {
-  expectType<string>(a.prop1);
-  expectType<string>(a.prop2);
-  expectType<{ 
-    val1: string; 
-  }>(a.prop3);
-  expectType<{ 
-    val2: number; 
-    val3: string[]; 
-    val4: number[]; 
-  }[]>(a.prop4);
-  expectType<string[]>(a.prop5);
-  expectType<string[]>(a.prop6);
+expectType<{
+  attr5: string;
+}>(entityWithoutSK.getIndexPKAttributes('myIndex3'));
 
-  expectError(() => o.eq(a.prop4, 1));
-  expectError(() => o.ne(a.prop4, 1));
-  expectError(() => o.gt(a.prop4, 1));
-  expectError(() => o.lt(a.prop4, 1));
-  expectError(() => o.gte(a.prop4, 1));
-  expectError(() => o.lte(a.prop4, 1));
-  expectError(() => o.between(a.prop4, 1, 1));
-  expectError(() => o.begins(a.prop4, 1));
-  expectError(() => o.contains(a.prop4, 1));
-  expectError(() => o.notContains(a.prop4, 1));
-  expectError(() => o.value(a.prop4, 1));
+expectType<{
+  prop1: string; 
+  prop2: string;
+}>(normalEntity2.getIndexPKAttributes('indexTable'));
 
-  o.eq(a.prop4[0].val2, 1);
-  o.ne(a.prop4[0].val2, 1);
-  o.gt(a.prop4[0].val2, 1);
-  o.lt(a.prop4[0].val2, 1);
-  o.gte(a.prop4[0].val2, 1);
-  o.lte(a.prop4[0].val2, 1);
-  o.between(a.prop4[0].val2, 1, 1);
-  o.begins(a.prop4[0].val2, 1);
-  o.contains(a.prop4[0].val2, 1);
-  o.notContains(a.prop4[0].val2, 1);
-  o.value(a.prop4[0].val2, 1);
+expectType<{
+  attr6: number; 
+  attr9: number;
+}>(normalEntity2.getIndexPKAttributes('anotherIndex'));
 
-  return '';
-});
+expectType<{
+  prop1: string;
+  prop2: number;
+  prop3: boolean;
+  prop4: 'abc';
+}>(diverseTableKeyTypes.getIndexPKAttributes('record'));
 
-// DataUpdateCallback
-mapTests.getDataUpdateCallback((a, o) => {
-  expectError(() => a.username);
-  expectError(() => a.mapObject.readOnly);
-});
+// getIndexSKAttributes
+expectType<{
+  attr2: string;
+}>(entityWithSK.getIndexSKAttributes('myIndex'));
 
-entityWithSK.getDataUpdateCallback((a, o) => {
-  o.add(a.attr6, 5);
-  o.subtract(a.attr6, 5);
-  o.set(a.attr6, 5);
-  o.value(a.attr6, 5);
-  o.name(a.attr6);
-  o.ifNotExists(a.attr6, 5);
+// troubleshoot(() => entityWithSK.getIndexSKAttributes('myIndex'), {attr2: 'poop'})
 
-  expectError(() => o.add(a.attr6, "5"));
-  expectError(() => o.subtract(a.attr6, "5"));
-  expectError(() => o.set(a.attr6, "5"));
-  expectError(() => o.value(a.attr6, "5"));
-  expectError(() => o.ifNotExists(a.attr6, "5"));
-  expectError(() => o.del(a.attr6));
-  expectError(() => o.delete(a.attr6));
-  expectError(() => o.append(a.attr6));
-  expectError(() => o.name());
-  expectError(() => o.ifNotExists());
-  expectError(() => o.ifNotExists(a.attr6));
-  expectError(() => o.value());
-  expectError(() => o.value(a.attr6));
-});
+expectType<{
+  attr4: "abc" | "ghi";
+  attr5: string;
+}>(entityWithSK.getIndexSKAttributes('myIndex2'));
 
-entityWithComplexShapes.getDataUpdateCallback((a, o) => {
-  o.add(a.prop5, ['abc']);
-  o.del(a.prop5, ['abc']);
-  o.delete(a.prop5, ['abc']);
-  o.append(a.prop4, [{
-    val2: 5,
-    val3: ['abc'],
-    val4: [5]
-  }]);
 
-  expectError(() => o.add(a.prop5, [4]));
-  expectError(() => o.add(a.prop5, 'abc'));
-  expectError(() => o.del(a.prop5, [4]));
-  expectError(() => o.del(a.prop5, 'abc'));
-  expectError(() => o.delete(a.prop5, [4]));
-  expectError(() => o.delete(a.prop5, 'abc'));
-  expectError(() => {
-    o.append(a.prop4, [{ val2: '5', val3: 34, val4: ['5'] }]);
-  });
-});
+expectType<{
+  attr4: "abc" | "ghi";
+  attr3: "123" | "def" | "ghi";
+  attr9: number;
+}>(entityWithSK.getIndexSKAttributes('myIndex3'));
 
+expectType<{}>(entityWithoutSK.getIndexSKAttributes('myIndex'));
+expectType<{}>(entityWithoutSK.getIndexSKAttributes('myIndex2'));
+expectType<{}>(entityWithoutSK.getIndexSKAttributes('myIndex3'));
+
+expectType<{
+  prop5: number;
+}>(normalEntity2.getIndexSKAttributes('indexTable'));
+
+expectType<{}>(normalEntity2.getIndexSKAttributes('anotherIndex'));
+
+expectType<{
+  prop5: string;
+  prop6: number;
+  prop7: boolean;
+  prop8: 'abc';
+}>(diverseTableKeyTypes.getIndexSKAttributes('record'));
+
+// getAllTableIndexCompositeAttributes
+expectType<{
+  attr1: string;
+  attr2: string;
+}>(entityWithSK.getAllTableIndexCompositeAttributes());
+
+expectType<{
+  attr1: string;
+}>(entityWithoutSK.getAllTableIndexCompositeAttributes());
+
+expectType<{
+  prop1: string; 
+  prop2: string;
+  prop5: number;
+}>(normalEntity2.getAllTableIndexCompositeAttributes());
+
+expectType<{
+  prop1: string;
+  prop2: number;
+  prop3: boolean;
+  prop4: 'abc';
+  prop5: string;
+  prop6: number;
+  prop7: boolean;
+  prop8: 'abc';
+}>(diverseTableKeyTypes.getAllTableIndexCompositeAttributes());
+
+// getTableItem
+
+expectType<{
+  prop1: string;
+  prop2: string;
+  prop3?: {
+    val1?: string | undefined
+  } | undefined;
+  prop4?: {
+    val2?: number | undefined;
+    val3?: string[] | undefined;
+    val4?: number[] | undefined;
+  }[]
+  prop5?: string[] | undefined;
+  prop6?: string[] | undefined;
+}>(entityWithComplexShapes.getTableItem());
+
+expectType<{
+  id: string;
+  mall: string;
+  stores: number;
+  value?: string | undefined;
+}>(casingEntity.getTableItem());
+
+expectType<{
+  prop1: string;
+  prop2: string;
+  prop3?: string | undefined;
+}>(entityWithWatchAll.getTableItem());
+
+expectType<{
+  prop1: string;
+  prop2: string;
+  attr3: {
+    val1: string;
+  };
+  attr4: Array<{
+    val2: number;
+    val3: string[];
+    val4: number[];
+  }>;
+  attr5: string[];
+  attr6: string[];
+}>(entityWithComplexShapesRequired.getTableItem());
+
+expectType<{
+  prop1: string;
+  prop2: string;
+  attrz3?: {
+    val1: string;
+  } | undefined;
+  attrz4?: {
+    val2: number;
+    val3?: string[] | undefined;
+    val4?: number[] | undefined;
+    val5?: {
+      val6: string;
+    } | undefined
+  }[] | undefined;
+  attrz5?: string[] | undefined
+  attrz6?: string[] | undefined
+}>(entityWithComplexShapesRequiredOnEdge.getTableItem());
+
+expectType<{
+  prop1: string;
+  prop2: string;
+  prop3?: {
+    val1?: string | undefined;
+  } | undefined;
+  prop4?: {
+    val2?: number | undefined;
+    val3?: string[] | undefined;
+    val4?: number[] | undefined;
+  }[] | undefined;
+  prop5?: string[] | undefined;
+  prop6?: string[] | undefined;
+}>(entityWithComplexShapes.getTableItem());
+
+expectNotType<{
+  prop1: string;
+  prop2: string;
+  attrz3: {
+    val1?: string | undefined;
+  };
+  attrz4: Array<{
+    val2: number | undefined;
+    val3: string[];
+    val4: number[];
+    val5: {
+      val6?: string | undefined;
+    };
+  }>;
+  attr5: string[];
+  attr6: string[];
+}>(entityWithComplexShapesRequiredOnEdge.getTableItem());
+
+expectType<{
+  prop1: string;
+  prop2: string;
+  prop3: string;
+}>(entityWithHiddenAttributes1.getTableItem());
+
+// getResponseItem
+expectType<{
+  prop1: string;
+  prop2: string;
+}>(entityWithHiddenAttributes1.getResponseItem());
+
+function hiddenKeysOnRoot() {
+  const item = entityWithHiddenAttributes1.getResponseItem();
+  if (item) {
+    const keys = "" as keyof typeof item;
+    expectType<'prop1' | 'prop2'>(keys);
+    expectNotType<'hidden'>(keys);
+  }
+}
+
+expectType<{
+  username: string;
+  mapObject?: {
+    minimal?: string | undefined;
+    readOnly?: string | undefined;
+    required: string;
+    anotherMap?: {
+      minimal?: string | undefined;
+      readOnly?: string | undefined;
+      required: string;
+    } | undefined
+  } | undefined
+}>(magnify(mapTests.getResponseItem()));
+
+function hiddenKeysInMap() {
+  const item = mapTests.getResponseItem();
+  if (item.mapObject) {
+    const keys = "" as keyof typeof item.mapObject;
+    expectType<'required' | 'readOnly' | 'minimal' | 'anotherMap'>(keys);
+    expectNotType<'hidden'>(keys);
+  }
+}
+
+expectType<{
+  prop1: string;
+  prop2: string;
+  prop3: string;
+  prop4?: string | undefined;
+  prop5: string;
+}>(standAloneEntityWithDefault.getResponseItem());
+
+// RequiredPutItems
+expectType<{
+  username: true, 
+  mapObject: false,
+}>(mapTests.getRequiredPutItems());
+
+expectType<{
+  prop1: false // is pk, but has default
+  prop2: true, // is pk
+  prop3: true, // is required
+  prop4: true, // is sk
+  prop10: false // optional default
+}>(normalEntity1.getRequiredPutItems());
+
+expectType<{
+  prop1: false // is pk, but has default
+  prop2: true, // is pk
+  prop3: false, // is sk, but has default
+  prop4: true, // is required
+  prop5: false, // is required, but has default
+}>(standAloneEntity2.getRequiredPutItems());
+
+// PutItem
+expectType<{
+  username: string, 
+  mapObject?: {
+    minimal?: string | undefined;
+    required: string;
+    readOnly?: string | undefined;
+    anotherMap?: {
+      minimal?: string | undefined;
+      required: string;
+      readOnly?: string | undefined;
+    } | undefined
+  } | undefined,
+}>(mapTests.getPutItem());
+
+expectType<{
+  prop1?: string | undefined;
+  prop2: string;
+  prop3: string;
+  prop4?: string | undefined;
+  prop5?: string | undefined;
+}>(standAloneEntityWithDefault.getPutItem());
+
+
+expectType<{
+  prop1: string;
+  prop2?: string | undefined;
+  attrz3?: {
+    val1: string;
+  } | undefined;
+  attrz4?: {
+    val2?: number | undefined;
+    val3?: string[] | undefined;
+    val4?: number[] | undefined;
+    val6?: boolean | undefined;
+    val5?: {
+      val6?: string | undefined;
+    } | undefined
+  }[] | undefined;
+  attrz5?: string[] | undefined
+  attrz6?: string[] | undefined
+}>(entityWithComplexShapesRequiredOnEdgeWithDefault.getPutItem());
+
+expectType<{
+  prop1?: string | undefined // is pk, but has default
+  prop2: string, // is pk
+  prop3: string, // is required
+  prop4: number, // is sk
+  prop10?: boolean | undefined // optional default
+}>(normalEntity1.getPutItem());
+
+expectType<{
+  prop1?: string | undefined // is pk, but has default
+  prop2: string, // is pk
+  prop3?: string | undefined, // is sk, but has default
+  prop4: {
+    prop1?: string | undefined;
+    prop2: string;
+    prop3?: string | undefined;
+  }, // is required
+  prop5?: {
+    prop1?: string | undefined;
+    prop2: string;
+    prop3?: string | undefined;
+  } | undefined, // is required, but has default
+}>(standAloneEntity2.getPutItem());
+
+// UpdateData
+expectType<{
+  mapObject: {
+    minimal: string;
+    required: string;
+    hidden: string;
+    anotherMap: {
+      minimal: string;
+    required: string;
+    hidden: string;
+    }
+  }
+}>(mapTests.getUpdateData());
+
+expectType<{prop3: boolean}>(
+  readOnlyEntity.getUpdateData()
+);
+
+// RemoveItem
+expectType<Array<'mapObject'>>(mapTests.getRemoveItem());
+
+expectType<Array<'prop3'>>(
+  readOnlyEntity.getRemoveItem()
+);
+
+expectType<Array<'prop10'>>(normalEntity1.getRemoveItem())
+
+expectType<
+  Array<"attr3" | "attr5" | "attr6" | "attr7" | "attr9" | "attr10">
+>(entityWithSK.getRemoveItem())
+
+// AppendItem
+expectType<{}>(magnify(readOnlyEntity.getAppendItem)());
+
+expectType<{
+  prop4?: {
+    val2?: number | undefined;
+    val3?: string[] | undefined;
+    val4?: number[] | undefined;
+  }[] | undefined;
+}>(magnify(entityWithComplexShapes.getAppendItem()));
+
+expectType<{
+  attr4?: {
+    val2: number;
+    val3: string[];
+    val4: number[];
+  }[] | undefined;
+}>(magnify(entityWithComplexShapesRequired.getAppendItem()));
+
+expectType<{
+  attrz4?: {
+    val2: number;
+    val3?: string[] | undefined;
+    val4?: number[] | undefined;
+    val5?: {
+        val6: string;
+    } | undefined;
+  }[] | undefined;
+}>(magnify(entityWithComplexShapesRequiredOnEdge.getAppendItem()));
+
+// AddItem
+expectType<{
+
+}>(complex.getAppendItem())
+
+expectType<{
+  attr5?: string[] | undefined;
+  attr6?: string[] | undefined;
+}>(entityWithComplexShapesRequired.getAddItem());
+
+expectType<{
+  attrz5?: string[] | undefined;
+  attrz6?: string[] | undefined;
+}>(entityWithComplexShapesRequiredOnEdge.getAddItem());
+
+expectType<{
+  // todo: would be great for these not to show up at all
+  prop4?: undefined
+}>(normalEntity1.getAddItem());
+
+expectType<{
+  attr6?: number | undefined;
+  attr7?: any;
+  attr9?: number | undefined;
+}>(entityWithSK.getAddItem())
+
+expectType<{
+  // todo: would be great for these not to show up at all
+  prop2?: undefined;
+  prop7?: undefined;
+}>(readOnlyEntity.getAddItem());
+
+// SubtractItem
+expectType<{
+  attr6?: number | undefined;
+  attr7?: any;
+  attr9?: number | undefined;
+}>(entityWithSK.getSubtractItem());
+
+expectType<{
+  // todo: would be great for these not to show up at all
+  prop4?: undefined
+}>(normalEntity1.getSubtractItem());
+
+// DeleteItem
+expectType<{
+  attr5?: string[] | undefined;
+  attr6?: string[] | undefined;
+}>(entityWithComplexShapesRequired.getDeleteItem());
+
+expectType<{
+  attrz5?: string[] | undefined;
+  attrz6?: string[] | undefined;
+}>(entityWithComplexShapesRequiredOnEdge.getDeleteItem());
+
+expectType<{
+  // todo: would be great for these not to show up at all
+  prop2?: undefined;
+}>(readOnlyEntity.getSubtractItem());
+
+expectType<{}>(normalEntity1.getDeleteItem());
+
+expectType<{
+  attr7?: any;
+}>(entityWithSK.getDeleteItem())
+
+expectType<{
+  // todo: would be great for these not to show up at all
+  prop7?: undefined;
+}>(readOnlyEntity.getDeleteItem());

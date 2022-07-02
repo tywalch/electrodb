@@ -197,3 +197,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.10.1] - 2022-06-30
 ### Fixed
 - Exported additional types
+
+## [1.10.2] - 2022-07-02
+### Fixed
+- Reorganizing type definition files into single file again to appease the frontend dependency overlords in https://electrodb.fun

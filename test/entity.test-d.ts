@@ -1,13 +1,4 @@
-import { expectType, expectError, expectAssignable, expectNotAssignable, expectNotType } from 'tsd';
-import { EntityItem } from './';
-import { Entity } from '../entity';
-
-export type Resolve<T> = T extends Function | string | number | boolean
-    ? T : {[Key in keyof T]: Resolve<T[Key]>}
-
-const magnify = <T>(value: T): Resolve<T> => { return {} as Resolve<T> };
-const get = <T>() => { return {} as Resolve<T> };
-const troubleshoot = <T>(value: T) => Text;
+import { Entity } from '../';
 
 const entityWithSK = new Entity({
   model: {
@@ -66,6 +57,12 @@ const entityWithSK = new Entity({
       },
       attr10: {
           type: "boolean"
+      },
+      attr11: {
+        type: 'list',
+        items: {
+            type: 'string'
+        }
       }
   },
   indexes: {
@@ -107,36 +104,7 @@ const entityWithSK = new Entity({
   }
 });
 
-type EntityWithSK = ReturnType<typeof entityWithSK.parse>[0];
-type EntityWithSKEntityItem = EntityItem<typeof entityWithSK>;
-type EntitySchema = typeof entityWithSK extends Entity<infer A, infer F, infer C, infer S>
-  ? { supposedly: 'can' }
-  : { cannot: 'ever' };
-
-expectType<{
-  attr1: string; 
-  attr2: string; 
-  attr3?: "123" | "def" | "ghi" | undefined; 
-  attr4: "abc" | "ghi"; 
-  attr5?: string | undefined; 
-  attr6?: number | undefined; 
-  attr7?: any; 
-  attr8: boolean; 
-  attr9?: number | undefined; 
-  attr10?: boolean | undefined;
-}>(get<EntityWithSK>());
-
-expectType<{
-  attr1: string; 
-  attr2: string; 
-  attr3?: "123" | "def" | "ghi" | undefined; 
-  attr4: "abc" | "ghi"; 
-  attr5?: string | undefined; 
-  attr6?: number | undefined; 
-  attr7?: any; 
-  attr8: boolean; 
-  attr9?: number | undefined; 
-  attr10?: boolean | undefined;
-}>(get<EntityWithSKEntityItem>());
-
-expectType<{supposedly: 'can'}>(get<EntitySchema>());
+entityWithSK.update({
+    attr1: 'abc', 
+    attr2: 'def'
+}).append({})
