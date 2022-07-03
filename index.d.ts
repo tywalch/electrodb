@@ -79,6 +79,7 @@ export type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, 
 
 export type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, T> = (where: CollectionWhereCallback<E, I>) => T;
 
+
 export interface WhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexCompositeAttributes> {
     go: GoRecord<Items>;
     params: ParamRecord;
@@ -349,6 +350,13 @@ export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyo
         : never>
         : never
 
+export interface QueryBranches<A extends string,
+    F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, IndexCompositeAttributes> {
+    go: GoQueryTerminal<A,F,C,S,ResponseItem>;
+    params: ParamTerminal<A,F,C,S,ResponseItem>;
+    page: PageQueryTerminal<A,F,C,S,ResponseItem,IndexCompositeAttributes>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,QueryBranches<A,F,C,S,ResponseItem,IndexCompositeAttributes>>
+}
 
 export interface RecordsActionOptions<A extends string,
     F extends string, C extends string, S extends Schema<A,F,C>, Items, IndexCompositeAttributes> {
@@ -359,8 +367,8 @@ export interface RecordsActionOptions<A extends string,
 }
 
 export interface SingleRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: GoRecord<ResponseType, QueryOptions>;
-    params: ParamRecord<QueryOptions>;
+    go: GoGetTerminal<A,F,C,S, ResponseType>;
+    params: ParamTerminal<A,F,C,S,ResponseType>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
 }
 
@@ -406,17 +414,17 @@ export type RemoveRecord<A extends string, F extends string, C extends string, S
 export type DataUpdateMethodRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> =
     DataUpdateMethod<A,F,C,S, UpdateData<A,F,C,S>, SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>>
 
-interface QueryOperations<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, CompositeAttributes, TableItem, IndexCompositeAttributes> {
-    between: (skCompositeAttributesStart: CompositeAttributes, skCompositeAttributesEnd: CompositeAttributes) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexCompositeAttributes>;
-    gt: (skCompositeAttributes: CompositeAttributes) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexCompositeAttributes>;
-    gte: (skCompositeAttributes: CompositeAttributes) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexCompositeAttributes>;
-    lt: (skCompositeAttributes: CompositeAttributes) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexCompositeAttributes>;
-    lte: (skCompositeAttributes: CompositeAttributes) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexCompositeAttributes>;
-    begins: (skCompositeAttributes: CompositeAttributes) => RecordsActionOptions<A,F,C,S, Array<TableItem>,IndexCompositeAttributes>;
-    go: GoRecord<Array<TableItem>>;
-    params: ParamRecord;
-    page: PageRecord<Array<TableItem>,IndexCompositeAttributes>;
-    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,RecordsActionOptions<A,F,C,S,Array<TableItem>,IndexCompositeAttributes>>
+interface QueryOperations<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, CompositeAttributes, ResponseItem, IndexCompositeAttributes> {
+    between: (skCompositeAttributesStart: CompositeAttributes, skCompositeAttributesEnd: CompositeAttributes) => QueryBranches<A,F,C,S, ResponseItem, IndexCompositeAttributes>;
+    gt: (skCompositeAttributes: CompositeAttributes) => QueryBranches<A,F,C,S, ResponseItem,IndexCompositeAttributes>;
+    gte: (skCompositeAttributes: CompositeAttributes) => QueryBranches<A,F,C,S, ResponseItem,IndexCompositeAttributes>;
+    lt: (skCompositeAttributes: CompositeAttributes) => QueryBranches<A,F,C,S, ResponseItem,IndexCompositeAttributes>;
+    lte: (skCompositeAttributes: CompositeAttributes) => QueryBranches<A,F,C,S, ResponseItem,IndexCompositeAttributes>;
+    begins: (skCompositeAttributes: CompositeAttributes) => QueryBranches<A,F,C,S, ResponseItem,IndexCompositeAttributes>;
+    go: GoQueryTerminal<A,F,C,S,ResponseItem>;
+    params: ParamTerminal<A,F,C,S,ResponseItem>;
+    page: PageQueryTerminal<A,F,C,S,ResponseItem,IndexCompositeAttributes>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,QueryBranches<A,F,C,S,ResponseItem,IndexCompositeAttributes>>
 }
 
 export type Queries<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
@@ -424,7 +432,7 @@ export type Queries<A extends string, F extends string, C extends string, S exte
         IndexSKAttributes<A,F,C,S,I> extends infer SK
             // If there is no SK, dont show query operations (when an empty array is provided)
             ? [keyof SK] extends [never]
-            ? RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S> & Required<CompositeAttributes>>
+            ? QueryBranches<A,F,C,S, ResponseItem<A,F,C,S>, AllTableIndexCompositeAttributes<A,F,C,S> & Required<CompositeAttributes>>
             // If there is no SK, dont show query operations (When no PK is specified)
             : S["indexes"][I] extends IndexWithSortKey
                 ? QueryOperations<
@@ -434,7 +442,7 @@ export type Queries<A extends string, F extends string, C extends string, S exte
                     ResponseItem<A,F,C,S>,
                     AllTableIndexCompositeAttributes<A,F,C,S> & Required<CompositeAttributes> & SK
                     >
-                : RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S> & Required<CompositeAttributes> & SK>
+                : QueryBranches<A,F,C,S, ResponseItem<A,F,C,S>, AllTableIndexCompositeAttributes<A,F,C,S> & Required<CompositeAttributes> & SK>
             : never
 }
 
@@ -509,6 +517,79 @@ export type OptionalDefaultEntityIdentifiers = {
     __edb_e__?: string;
     __edb_v__?: string;
 }
+
+interface GoQueryTerminalOptions<Attributes> {
+    raw?: boolean;
+    table?: string;
+    limit?: number;
+    params?: object;
+    includeKeys?: boolean;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+    pages?: number;
+    attributes?: ReadonlyArray<Attributes>
+}
+
+interface PageQueryTerminalOptions<Attributes> extends GoQueryTerminalOptions<Attributes> {
+    pager?: "raw" | "item" | "named";
+    raw?: boolean;
+    table?: string;
+    limit?: number;
+    includeKeys?: boolean;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+    attributes?: ReadonlyArray<Attributes>
+}
+
+export interface ParamTerminalOptions<Attributes> {
+    table?: string;
+    limit?: number;
+    params?: object;
+    originalErr?: boolean;
+    attributes?: ReadonlyArray<Attributes>;
+    response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
+}
+
+type GoGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoQueryTerminalOptions<keyof ResponseItem>>(options?: Options) =>
+    Options extends GoQueryTerminalOptions<infer Attr>
+        ? Promise<{
+            [
+            Name in keyof ResponseItem as Name extends Attr
+                ? Name
+                : never
+            ]: ResponseItem[Name]
+        } | null>
+        : Promise<ResponseItem | null>
+
+export type GoQueryTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Item> = <Options extends GoQueryTerminalOptions<keyof Item>>(options?: Options) =>
+    Options extends GoQueryTerminalOptions<infer Attr>
+        ? Promise<Array<{
+            [
+            Name in keyof Item as Name extends Attr
+                ? Name
+                : never
+            ]: Item[Name]
+        }>>
+        : Promise<Array<Item>>
+
+export type PageQueryTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Item, CompositeAttributes> = <Options extends PageQueryTerminalOptions<keyof Item>>(page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: Options) =>
+    Options extends GoQueryTerminalOptions<infer Attr>
+        ? Promise<[
+            (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
+            Array<{
+                [
+                Name in keyof Item as Name extends Attr
+                    ? Name
+                    : never
+                ]: Item[Name]
+            }>
+        ]>
+        : Promise<[
+            (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
+            Array<ResponseType>
+        ]>;
+
+export type ParamTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <P extends any = any, Options extends ParamTerminalOptions<keyof ResponseItem> = ParamTerminalOptions<keyof ResponseItem>>(options?: Options) => P;
 
 export type GoRecord<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<T>;
 
@@ -1632,7 +1713,7 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     private config?: EntityConfiguration;
     constructor(schema: S, config?: EntityConfiguration);
 
-    get(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S> | null>;
+    get(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [Array<Resolve<ResponseItem<A,F,C,S>>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>], [Array<Resolve<ResponseItem<A,F,C,S>> | null>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]>;
 
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
