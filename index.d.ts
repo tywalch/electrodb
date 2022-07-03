@@ -372,6 +372,11 @@ export interface SingleRecordOperationOptions<A extends string, F extends string
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
 }
 
+export interface BatchGetRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
+    go: GoBatchGetTerminal<A,F,C,S,ResponseType>
+    params: ParamTerminal<A,F,C,S,ResponseType>;
+}
+
 export interface PutRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
     go: GoRecord<ResponseType, PutQueryOptions>;
     params: ParamRecord<PutQueryOptions>;
@@ -518,6 +523,21 @@ export type OptionalDefaultEntityIdentifiers = {
     __edb_v__?: string;
 }
 
+interface GoBatchGetTerminalOptions<Attributes> {
+    raw?: boolean;
+    table?: string;
+    limit?: number;
+    params?: object;
+    includeKeys?: boolean;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+    pages?: number;
+    attributes?: ReadonlyArray<Attributes>;
+    unprocessed?: "raw" | "item";
+    concurrency?: number;
+    preserveBatchOrder?: boolean;
+}
+
 interface GoQueryTerminalOptions<Attributes> {
     raw?: boolean;
     table?: string;
@@ -549,6 +569,53 @@ export interface ParamTerminalOptions<Attributes> {
     attributes?: ReadonlyArray<Attributes>;
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
 }
+
+type GoBatchGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoBatchGetTerminalOptions<keyof ResponseItem>>(options?: Options) =>
+    Options extends GoBatchGetTerminalOptions<infer Attr>
+        ? 'preserveBatchOrder' extends keyof Options
+            ? Options['preserveBatchOrder'] extends true
+                ? Promise<[
+                    Array<Resolve<{
+                        [
+                        Name in keyof ResponseItem as Name extends Attr
+                            ? Name
+                            : never
+                        ]: ResponseItem[Name]
+                    } | null>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+                ]>
+                : Promise<[
+                    Array<Resolve<{
+                        [
+                        Name in keyof ResponseItem as Name extends Attr
+                            ? Name
+                            : never
+                        ]: ResponseItem[Name]
+                    }>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+                ]>
+            : Promise<[
+                Array<Resolve<{
+                    [
+                    Name in keyof ResponseItem as Name extends Attr
+                        ? Name
+                        : never
+                    ]: ResponseItem[Name]
+                }>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+            ]>
+        : 'preserveBatchOrder' extends keyof Options
+            ? Options['preserveBatchOrder'] extends true
+                ? [Array<Resolve<ResponseItem | null>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
+                : [Array<Resolve<ResponseItem>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
+            : [Array<Resolve<ResponseItem>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
+
+
+        // ? Promise<{
+        //     [
+        //     Name in keyof ResponseItem as Name extends Attr
+        //         ? Name
+        //         : never
+        //     ]: ResponseItem[Name]
+        // } | null>
+        // : Promise<ResponseItem | null>
 
 type GoGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoQueryTerminalOptions<keyof ResponseItem>>(options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
@@ -1714,8 +1781,8 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     constructor(schema: S, config?: EntityConfiguration);
 
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
-    get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [Array<Resolve<ResponseItem<A,F,C,S>>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>], [Array<Resolve<ResponseItem<A,F,C,S>> | null>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]>;
-
+    // get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [Array<Resolve<ResponseItem<A,F,C,S>>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>], [Array<Resolve<ResponseItem<A,F,C,S>> | null>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]>;
+    get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchGetRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>[]>;
 

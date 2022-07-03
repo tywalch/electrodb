@@ -437,9 +437,9 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<GetParametersFinishers>(getSingleFinishersWithoutSK);
     expectAssignable<GetParametersFinishers>(getBatchFinishersWithoutSK);
     entityWithSK.get([{attr1: "adg", attr2: "ada"}]).go({concurrency: 24, preserveBatchOrder: true});
-    entityWithSK.get([{attr1: "adg", attr2: "ada"}]).params({concurrency: 24, preserveBatchOrder: true});
+    expectError(entityWithSK.get([{attr1: "adg", attr2: "ada"}]).params({concurrency: 24, preserveBatchOrder: true}));
     entityWithoutSK.get([{attr1: "adg"}]).go({concurrency: 24, preserveBatchOrder: true});
-    entityWithoutSK.get([{attr1: "adg"}]).params({concurrency: 24, preserveBatchOrder: true});
+    expectError(entityWithoutSK.get([{attr1: "adg"}]).params({concurrency: 24, preserveBatchOrder: true}));
 
     let getSingleGoWithSK = entityWithSK.get({attr1: "adg", attr2: "ada"}).go;
     let getSingleGoWithoutSK = entityWithoutSK.get({attr1: "adg"}).go;
@@ -480,8 +480,13 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<GetBatchGoParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
     expectAssignable<GetBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
-    expectAssignable<GetBatchParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
-    expectAssignable<GetBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+    expectAssignable<GetBatchParamsParamsWithSK>({originalErr: true, params: {}, table: "abc", attributes: ['attr1']});
+    expectAssignable<GetBatchParamsParamsWithoutSK>({originalErr: true, params: {}, table: "abc", attributes: ['attr1']});
+
+    expectNotAssignable<GetBatchParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", attributes: ['attrz1']});
+    expectNotAssignable<GetBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", attributes: ['attrz1']});
+expectNotAssignable<GetBatchParamsParamsWithSK>({attributes: ['attrz1']});
+expectNotAssignable<GetBatchParamsParamsWithoutSK>({attributes: ['attrz1']});
 
     // Results
 // type Item = {
