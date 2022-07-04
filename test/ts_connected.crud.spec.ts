@@ -2143,6 +2143,8 @@ describe("Entity", async () => {
             const itemFromDocClient = await client.get(params).promise();
             const parsed = entity.parse(itemFromDocClient);
             expect(parsed).to.deep.equal({prop1, prop2, prop3});
+            const parsedTrimmed = entity.parse(itemFromDocClient, {attributes: ['prop1', 'prop3']});
+            expect(parsedTrimmed).to.deep.equal({prop1, prop3});
         });
 
         it("should parse the response from an query that lacks identifiers", async () => {
@@ -2171,6 +2173,8 @@ describe("Entity", async () => {
             const itemFromDocClient = await client.query(params).promise();
             const parsed = entity.parse(itemFromDocClient);
             expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
+            const parseTrimmed = entity.parse(itemFromDocClient, {attributes: ['prop1', 'prop3']});
+            expect(parseTrimmed).to.deep.equal([{prop1, prop3}]);
         });
 
         it("should parse the response from an update", async () => {
@@ -2202,6 +2206,8 @@ describe("Entity", async () => {
             const results = await client.update(params).promise();
             const parsed = entity.parse(results);
             expect(parsed).to.deep.equal({prop3: prop3b});
+            const parseTrimmed = entity.parse(results, {attributes: ['prop3']});
+            expect(parseTrimmed).to.deep.equal({prop3: prop3b});
         });
 
         it("should parse the response from a complex update", async () => {
@@ -2254,9 +2260,15 @@ describe("Entity", async () => {
                 ReturnValues: 'UPDATED_NEW'
             }
 
-            const results2 = await client.update(params).promise();
+            const results2 = await client.update(params2).promise();
             const parsed2 = entity.parse(results2);
-            expect(parsed2).to.be.null;
+            expect(parsed2).to.deep.equal({
+                prop4: {
+                    nested: {
+                        prop6: 'xyz'
+                    }
+                }
+            });
         });
 
         it("should parse the response from a delete", async () => {
@@ -2284,6 +2296,8 @@ describe("Entity", async () => {
             const results = await client.delete(params).promise();
             const parsed = entity.parse(results);
             expect(parsed).to.deep.equal({prop1, prop2, prop3});
+            const parseTrimmed = entity.parse(results, {attributes: ['prop1', 'prop3']});
+            expect(parseTrimmed).to.deep.equal({prop1, prop3});
         });
 
         it("should parse the response from a put", async () => {
@@ -2321,6 +2335,11 @@ describe("Entity", async () => {
                 prop2: prop2a,
                 prop3: prop3a,
             });
+            const parseTrimmed = entity.parse(results, {attributes: ['prop1', 'prop3']});
+            expect(parseTrimmed).to.deep.equal({
+                prop1: prop1a,
+                prop3: prop3a,
+            });
         });
 
         it("should parse the response from a scan", async () => {
@@ -2342,6 +2361,8 @@ describe("Entity", async () => {
             };
             const parsed = entity.parse(scanResponse);
             expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
+            const parseTrimmed = entity.parse(scanResponse, {attributes: ['prop1', 'prop3']});
+            expect(parseTrimmed).to.deep.equal([{prop1, prop3}]);
         }).timeout(10000);
     });
     describe("Key fields that match Attribute fields", () => {

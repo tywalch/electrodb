@@ -1,4 +1,4 @@
-import { WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem, Entity, Service } from './';
+import {WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem, Entity, Service, ResponseItem} from './';
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 import * as tests from './test/tests.test-d';
 
@@ -3104,6 +3104,32 @@ entityWithComplexShapes.query
             })
         )
     })
+
+expectError(() => {
+    entityWithSK.parse({Items: []}, {
+        attributes: ['attr1', 'oops']
+    });
+})
+const parsedWithAttributes = entityWithSK.parse({Items: []}, {
+    attributes: ['attr1', 'attr2', 'attr3']
+});
+
+const parsedWithAttributesSingle = entityWithSK.parse({Item: {}}, {
+    attributes: ['attr1', 'attr2', 'attr3']
+});
+
+expectType<{
+    attr1: string;
+    attr2: string;
+    attr3?: '123' | 'def' | 'ghi' | undefined;
+}[]>(magnify(parsedWithAttributes));
+
+expectType<{
+    attr1: string;
+    attr2: string;
+    attr3?: '123' | 'def' | 'ghi' | undefined;
+} | null>(magnify(parsedWithAttributesSingle));
+
 
 entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
     expectType<typeof parsed>(data);

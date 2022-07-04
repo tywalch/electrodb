@@ -477,7 +477,8 @@ export interface QueryOptions {
 }
 
 // subset of QueryOptions
-export interface ParseOptions {
+export interface ParseOptions<Attributes> {
+    attributes?: ReadonlyArray<Attributes>;
     ignoreOwnership?: boolean;
 }
 
@@ -549,7 +550,7 @@ interface GoQueryTerminalOptions<Attributes> {
     originalErr?: boolean;
     ignoreOwnership?: boolean;
     pages?: number;
-    attributes?: ReadonlyArray<Attributes>
+    attributes?: ReadonlyArray<Attributes>;
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
 }
@@ -644,6 +645,31 @@ export type GoQueryTerminal<A extends string, F extends string, C extends string
             ]: Item[Name]
         }>>
         : Promise<Array<Item>>
+
+export type EntityParseSingleItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> =
+    <Options extends ParseOptions<keyof ResponseItem>>(item: ParseSingleInput, options?: Options) =>
+        Options extends ParseOptions<infer Attr>
+            ? {
+                [
+                Name in keyof ResponseItem as Name extends Attr
+                    ? Name
+                    : never
+                ]: ResponseItem[Name]
+            } | null
+            : ResponseItem | null
+
+export type EntityParseMultipleItems<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> =
+    <Options extends ParseOptions<keyof ResponseItem>>(item: ParseMultiInput, options?: Options) =>
+        Options extends ParseOptions<infer Attr>
+            ? Array<{
+                [
+                Name in keyof ResponseItem as Name extends Attr
+                    ? Name
+                    : never
+                ]: ResponseItem[Name]
+            }>
+            : Array<ResponseItem>
+
 
 export type PageQueryTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Item, CompositeAttributes> = <Options extends PageQueryTerminalOptions<keyof Item>>(page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
@@ -1825,8 +1851,27 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>;
     query: Queries<A,F,C,S>;
 
-    parse(item: ParseSingleInput, options?: ParseOptions): ResponseItem<A,F,C,S> | null;
-    parse(item: ParseMultiInput, options?: ParseOptions): ResponseItem<A,F,C,S>[];
+    // parse: EntityParseSingleItem<A,F,C,S,ResponseItem<A,F,C,S>> | EntityParseMultipleItems<A,F,C,S,ResponseItem<A,F,C,S>>;
+    parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseSingleInput, options?: Options):
+        Options extends ParseOptions<infer Attr>
+        ? {
+                [
+                Name in keyof ResponseItem<A,F,C,S> as Name extends Attr
+                    ? Name
+                    : never
+            ]: ResponseItem<A,F,C,S>[Name]
+        } | null
+        : ResponseItem<A,F,C,S> | null
+    parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseMultiInput, options?: Options):
+            Options extends ParseOptions<infer Attr>
+        ? Array<{
+            [
+                Name in keyof ResponseItem<A,F,C,S> as Name extends Attr
+                    ? Name
+                    : never
+            ]: ResponseItem<A,F,C,S>[Name]
+        }>
+        : Array<ResponseItem<A,F,C,S>>
     setIdentifier(type: "entity" | "version", value: string): void;
     client: any;
 }
