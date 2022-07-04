@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 const schema = {
 	"model": {
 		"entity": "offices",

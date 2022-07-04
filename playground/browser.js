@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 const ElectroDB = require("../index");
 window.Prism = window.Prism || {};
 window.electroParams = window.electroParams || [];

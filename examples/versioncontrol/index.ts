@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 // VersionControl (git) Service
 // This example demonstrates more advanced modeling techniques using ElectroDB
 

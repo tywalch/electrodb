@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import {Service} from "../../../";
 
 import {repositories} from "./repositories";

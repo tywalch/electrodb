@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import {IssueCommentIds, PullRequestCommentIds} from "./index";
 
 export const StatusTypes = ["Open", "Closed"] as const;

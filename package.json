@@ -4,14 +4,11 @@
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
-    "test": "mocha ./test/offline**.spec.js",
-    "test-ts": "mocha -r ts-node/register ./test/**.spec.ts",
-    "test-all": "mocha ./test/**.spec.js",
-    "test-all-local": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha ./test/**.spec.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 npm run test-ts && npm run test-types",
+    "test": "npm run test-types && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha -r ts-node/register ./test/**.spec.*",
     "test-types": "tsd",
-    "coverage": "nyc npm run test-all && nyc report --reporter=text-lcov | coveralls",
-    "coverage-coveralls-local": "nyc npm run test-all-local && nyc report --reporter=text-lcov | coveralls",
-    "coverage-html-local": "nyc npm run test-all-local && nyc report --reporter=html",
+    "coverage": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
+    "coverage-coveralls-local": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
+    "coverage-html-local": "nyc npm test && nyc report --reporter=html",
     "build:browser": "browserify playground/browser.js -o playground/bundle.js"
   },
   "repository": {

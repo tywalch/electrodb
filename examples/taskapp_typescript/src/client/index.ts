@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import DynamoDB from "aws-sdk/clients/dynamodb";
 
 /**

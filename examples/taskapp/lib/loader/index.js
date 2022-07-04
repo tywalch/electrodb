@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 const makeLoader = require("./mock");
 const makeTabler = require("../table");
 const definition = require("../table/definition.json")
