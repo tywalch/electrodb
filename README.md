@@ -2607,9 +2607,10 @@ const formattedQueryResults = myEntity.parse(formattedQueryResults);
 
 Parse also accepts an optional `options` object as a second argument (see the section [Query Options](#query-options) to learn more). Currently, the following query options are relevant to the `parse()` method:
 
-Option            | Default | Notes
------------------ : ------- | -----
-`ignoreOwnership` | `true`  | This property defaults to `true` here, unlike elsewhere in the application when it defaults to `false`. You can overwrite the default here with your own preference. 
+Option            | Type     | Default            | Notes
+----------------- : -------- : ------------------ | -----
+ignoreOwnership   | boolean  | `true`             | This property defaults to `true` here, unlike elsewhere in the application when it defaults to `false`. You can overwrite the default here with your own preference.
+attributes        | string[] | _(all attributes)_ | The `attributes` option allows you to specify a subset of attributes to return
 
 # Building Queries
 > For hands-on learners: the following example can be followed along with **and** executed on runkit: https://runkit.com/tywalch/electrodb-building-queries
