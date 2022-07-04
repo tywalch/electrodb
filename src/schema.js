@@ -1263,12 +1263,18 @@ class Schema {
 	translateToFields(payload = {}) {
 		let record = {};
 		for (let [name, value] of Object.entries(payload)) {
-			let field = this.translationForTable[name];
+			let field = this.getFieldName(name);
 			if (value !== undefined) {
 				record[field] = value;
 			}
 		}
 		return record;
+	}
+
+	getFieldName(name) {
+		if (typeof name === 'string') {
+			return this.translationForTable[name];
+		}
 	}
 
 	checkCreate(payload = {}) {
@@ -1320,11 +1326,16 @@ class Schema {
 	}
 
 	formatItemForRetrieval(item, config) {
+		let returnAttributes = new Set(config.attributes || []);
+		let hasUserSpecifiedReturnAttributes = returnAttributes.size > 0;
 		let remapped = this.translateFromFields(item, config);
 		let data = this._fulfillAttributeMutationMethod("get", remapped);
-		if (this.hiddenAttributes.size > 0) {
+		if (this.hiddenAttributes.size > 0 || hasUserSpecifiedReturnAttributes) {
 			for (let attribute of Object.keys(data)) {
 				if (this.hiddenAttributes.has(attribute)) {
+					delete data[attribute];
+				}
+				if (hasUserSpecifiedReturnAttributes && !returnAttributes.has(attribute)) {
 					delete data[attribute];
 				}
 			}

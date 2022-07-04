@@ -365,7 +365,9 @@ describe("listener functions", async () => {
                     };
                 })
                 return {
-                    query: entity.get(keys),
+                    query: {
+                        go: async (options) => entity.get(keys).go(options),
+                    },
                     test: (events) => equalCallCount(callCount, events)
                 };
             });
@@ -469,6 +471,8 @@ describe("listener functions", async () => {
                         TableName: 'electro' 
                     },
                     config: {
+                      terminalOperation: "go",
+                      attributes: [],
                       includeKeys: false,
                       originalErr: false,
                       raw: false,
@@ -495,6 +499,8 @@ describe("listener functions", async () => {
                     config: {
                       includeKeys: false,
                       originalErr: false,
+                      terminalOperation: "go",
+                      attributes: [],
                       raw: false,
                       params: {},
                       page: {},
@@ -541,6 +547,8 @@ describe("listener functions", async () => {
                     config: {
                       includeKeys: false,
                       originalErr: false,
+                      terminalOperation: "go",
+                      attributes: [],
                       raw: false,
                       params: {},
                       page: {},
@@ -563,6 +571,8 @@ describe("listener functions", async () => {
                     type: 'results',
                     method: 'get',
                     config: {
+                      terminalOperation: "go",
+                      attributes: [],
                       includeKeys: false,
                       originalErr: false,
                       raw: false,

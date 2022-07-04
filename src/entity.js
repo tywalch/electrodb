@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { KeyCasing, TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems } = require("./types");
+const { KeyCasing, TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems, TerminalOperation } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -84,13 +84,14 @@ class Entity {
 		return pkMatch;
 	}
 
-	ownsPager(pager, index) {
+	ownsPager(pager, index = TableIndex) {
 		if (pager === null) {
 			return false;
 		}
-		let tableIndex = TableIndex;
-		let tableIndexFacets = this.model.facets.byIndex[tableIndex];
-		let indexFacets = this.model.facets.byIndex[tableIndex];
+		let tableIndexFacets = this.model.facets.byIndex[TableIndex];
+		// todo: is the fact it doesn't use the provided index a bug?
+		// feels like collections may have played a roll into why this is this way
+		let indexFacets = this.model.facets.byIndex[TableIndex];
 
 		// Unknown index
 		if (tableIndexFacets === undefined || indexFacets === undefined) {
@@ -260,6 +261,7 @@ class Entity {
 	}
 
 	async _exec(method, params, config = {}) {
+		const entity = this;
 		const notifyQuery = () => {
 			this.eventManager.trigger({
 				type: "query",
@@ -285,6 +287,7 @@ class Entity {
 				return results;
 			})
 			.catch(err => {
+				notifyQuery();
 				notifyResults(err, false);
 				err.__isAWSError = true;
 				throw err;
@@ -822,6 +825,8 @@ class Entity {
 			pages: undefined,
 			listeners: [],
 			preserveBatchOrder: false,
+			attributes: [],
+			terminalOperation: undefined,
 		};
 
 		config = options.reduce((config, option) => {
@@ -832,6 +837,14 @@ class Entity {
 				}
 				config.response = format;
 				config.params.ReturnValues = FormatToReturnValues[format];
+			}
+
+			if (option.terminalOperation in TerminalOperation) {
+				config.terminalOperation = TerminalOperation[option.terminalOperation];
+			}
+
+			if (Array.isArray(option.attributes)) {
+				config.attributes = config.attributes.concat(option.attributes);
 			}
 
 			if (option.preserveBatchOrder === true) {
@@ -1019,7 +1032,103 @@ class Entity {
 				throw new Error(`Invalid method: ${method}`);
 		}
 		let applied = this._applyParameterOptions(params, options, config);
-		return this._applyParameterExpressionTypes(applied.parameters, filter);
+		return this._applyParameterExpressions(method, applied.parameters, applied.config, filter);
+	}
+
+	_applyParameterExpressions(method, parameters, config, filter) {
+		if (method !== MethodTypes.get) {
+			return this._applyParameterExpressionTypes(parameters, filter);
+		} else {
+			parameters = this._applyProjectionExpressions({parameters, config});
+			return this._applyParameterExpressionTypes(parameters, filter);
+		}
+
+	}
+
+	_applyProjectionExpressions({parameters = {}, config = {}} = {}) {
+		const attributes = config.attributes || [];
+		if (attributes.length === 0) {
+			return parameters;
+		}
+
+		const requiresRawResponse = !!config.raw;
+		const enforcesOwnership = !config.ignoreOwnership;
+		const requiresUserInvolvedPagination = TerminalOperation[config.terminalOperation] === TerminalOperation.page;
+		const isServerBound = TerminalOperation[config.terminalOperation] === TerminalOperation.go ||
+			TerminalOperation[config.terminalOperation] === TerminalOperation.page;
+
+		// 1. Take stock of invalid attributes, if there are any this should be considered
+		//    unintentional and should throw to prevent unintended results
+		// 2. Convert all attribute names to their respective "field" names
+		const unknownAttributes = [];
+		let attributeFields = new Set();
+		for (const attributeName of attributes) {
+			const fieldName = this.model.schema.getFieldName(attributeName);
+			if (typeof fieldName !== "string") {
+				unknownAttributes.push(attributeName);
+			} else {
+				attributeFields.add(fieldName);
+			}
+		}
+
+		// Stop doing work, prepare error message and throw
+		if (attributeFields.size === 0 || unknownAttributes.length > 0) {
+			let message = 'Unknown attributes provided in query options';
+			if (unknownAttributes.length) {
+				message += `: ${u.commaSeparatedString(unknownAttributes)}`;
+			}
+			throw new e.ElectroError(e.ErrorCodes.InvalidOptions, message);
+		}
+
+		// add ExpressionAttributeNames if it doesn't exist already
+		parameters.ExpressionAttributeNames = parameters.ExpressionAttributeNames || {};
+
+		if (
+			// The response you're returning:
+			// 1. is not expected to be raw
+			!requiresRawResponse
+			// 2. is making a request to the server
+			&& isServerBound
+			// 3. will expect entity identifiers down stream
+			&& enforcesOwnership
+
+		) {
+			// add entity identifiers to so items can be identified
+			attributeFields.add(this.identifiers.entity);
+			attributeFields.add(this.identifiers.version);
+
+			// if pagination is required you may enter into a scenario where
+			// the LastEvaluatedKey doesn't belong to entity and one must be formed.
+			// We must add the attributes necessary to make that key to not break
+			// pagination. This stinks.
+			if (
+				requiresUserInvolvedPagination
+				&& config.pager !== Pager.raw
+			) {
+				// LastEvaluatedKeys return the TableIndex keys and the keys for the SecondaryIndex
+				let tableIndexFacets = this.model.facets.byIndex[TableIndex];
+				let indexFacets = this.model.facets.byIndex[parameters.IndexName] || { all: [] };
+
+				for (const attribute of [...tableIndexFacets.all, ...indexFacets.all]) {
+					const fieldName = this.model.schema.getFieldName(attribute.name);
+					attributeFields.add(fieldName);
+				}
+			}
+		}
+
+		for (const attributeField of attributeFields) {
+			// prefix the ExpressionAttributeNames because some prefixes are not allowed
+			parameters.ExpressionAttributeNames['#' + attributeField] = attributeField;
+		}
+
+		// if there is already a ProjectionExpression (e.g. config "params"), merge it
+		if (typeof parameters.ProjectionExpression === 'string') {
+			parameters.ProjectionExpression = [parameters.ProjectionExpression, ...Object.keys([parameters.ExpressionAttributeNames])].join(', ');
+		} else {
+			parameters.ProjectionExpression = Object.keys(parameters.ExpressionAttributeNames).join(', ');
+		}
+
+		return parameters;
 	}
 
 	_batchGetParams(state, config = {}) {
@@ -1411,7 +1520,7 @@ class Entity {
 				throw new Error(`Invalid query type: ${state.query.type}`);
 		}
 		let applied = this._applyParameterOptions(parameters, state.query.options, options);
-		return applied.parameters;
+		return this._applyProjectionExpressions(applied);
 	}
 
 	_makeBetweenQueryParams(index, filter, pk, ...sk) {

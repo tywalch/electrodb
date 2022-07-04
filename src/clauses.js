@@ -1,4 +1,4 @@
-const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex } = require("./types");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex, TerminalOperation } = require("./types");
 const {AttributeOperationProxy, UpdateOperations, FilterOperationNames} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
@@ -579,6 +579,7 @@ let clauses = {
 				if (entity.client === undefined) {
 					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 				}
+				options.terminalOperation = TerminalOperation.go;
 				let params = clauses.params.action(entity, state, options);
 				let {config} = entity._applyParameterOptions({}, state.getOptions(), options);
 				return entity.go(state.getMethod(), params, config);
@@ -595,11 +596,12 @@ let clauses = {
 				return Promise.reject(state.error);
 			}
 			try {
-				options.page = page;
-				options._isPagination = true;
 				if (entity.client === undefined) {
 					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 				}
+				options.page = page;
+				options._isPagination = true;
+				options.terminalOperation = TerminalOperation.page;
 				let params = clauses.params.action(entity, state, options);
 				let {config} = entity._applyParameterOptions({}, state.getOptions(), options);
 				return entity.go(state.getMethod(), params, config);

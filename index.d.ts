@@ -536,6 +536,8 @@ interface GoBatchGetTerminalOptions<Attributes> {
     unprocessed?: "raw" | "item";
     concurrency?: number;
     preserveBatchOrder?: boolean;
+    listeners?: Array<ElectroEventListener>;
+    logger?: ElectroEventListener;
 }
 
 interface GoQueryTerminalOptions<Attributes> {
@@ -548,6 +550,8 @@ interface GoQueryTerminalOptions<Attributes> {
     ignoreOwnership?: boolean;
     pages?: number;
     attributes?: ReadonlyArray<Attributes>
+    listeners?: Array<ElectroEventListener>;
+    logger?: ElectroEventListener;
 }
 
 interface PageQueryTerminalOptions<Attributes> extends GoQueryTerminalOptions<Attributes> {
@@ -558,7 +562,9 @@ interface PageQueryTerminalOptions<Attributes> extends GoQueryTerminalOptions<At
     includeKeys?: boolean;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
-    attributes?: ReadonlyArray<Attributes>
+    attributes?: ReadonlyArray<Attributes>;
+    listeners?: Array<ElectroEventListener>;
+    logger?: ElectroEventListener;
 }
 
 export interface ParamTerminalOptions<Attributes> {

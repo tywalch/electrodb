@@ -1,5 +1,5 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import {CreateEntityItem, Entity} from "../index";
+import {CreateEntityItem, Entity, EntityItem} from "../index";
 import { expect } from "chai";
 import {v4 as uuid} from "uuid";
 import moment from "moment";
@@ -3046,5 +3046,446 @@ describe('pagination order', () => {
                 expect(fromDb).to.deep.equal(fromBatch);
             }
         }
+    });
+});
+
+describe('attributes query option', () => {
+    const entityWithSK = new Entity({
+        model: {
+            entity: "abc",
+            service: "myservice",
+            version: "myversion"
+        },
+        attributes: {
+            attr1: {
+                type: "string",
+                default: "abc",
+            },
+            attr2: {
+                type: "string",
+            },
+            attr3: {
+                type: ["123", "def", "ghi"] as const,
+                default: "def"
+            },
+            attr4: {
+                type: ["abc", "ghi"] as const,
+                required: true
+            },
+            attr5: {
+                type: "string"
+            },
+            attr6: {
+                type: "number",
+            },
+            attr7: {
+                type: "any",
+            },
+            attr8: {
+                type: "boolean",
+                required: true,
+            },
+            attr9: {
+                type: "number",
+                field: 'prop9',
+            },
+            attr10: {
+                type: "boolean"
+            }
+        },
+        indexes: {
+            myIndex: {
+                collection: "mycollection2",
+                pk: {
+                    field: "pk",
+                    composite: ["attr1"]
+                },
+                sk: {
+                    field: "sk",
+                    composite: ["attr2"]
+                }
+            },
+            myIndex2: {
+                collection: "mycollection1",
+                index: "gsi1pk-gsi1sk-index",
+                pk: {
+                    field: "gsi1pk",
+                    composite: ["attr6", "attr9"]
+                },
+                sk: {
+                    field: "gsi1sk",
+                    composite: ["attr4", "attr5"]
+                }
+            }
+        }
+    }, {table, client});
+
+    it('should return only the attributes specified in query options', async () => {
+        const item: EntityItem<typeof entityWithSK> = {
+            attr1: uuid(),
+            attr2: "attr2",
+            attr9: 9,
+            attr6: 6,
+            attr4: 'abc',
+            attr8: true,
+            attr5: 'attr5',
+            attr3: '123',
+            attr7: 'attr7',
+            attr10: false,
+        };
+        await entityWithSK.put(item).go();
+        const getItem = await entityWithSK
+            .get({
+                attr1: item.attr1,
+                attr2: item.attr2,
+            }).go({
+                attributes: ['attr2', 'attr9', 'attr5', 'attr10']
+            });
+
+        expect(getItem).to.deep.equal({
+            attr2: item.attr2,
+            attr9: item.attr9,
+            attr5: item.attr5,
+            attr10: item.attr10,
+        });
+
+        const queryItem = await entityWithSK.query
+            .myIndex({
+                attr1: item.attr1,
+                attr2: item.attr2,
+            }).go({
+                attributes: ['attr2', 'attr9', 'attr5', 'attr10']
+            });
+
+        expect(queryItem).to.deep.equal([{
+            attr2: item.attr2,
+            attr9: item.attr9,
+            attr5: item.attr5,
+            attr10: item.attr10,
+        }]);
+    });
+
+    it('should not add entity identifiers', async () => {
+        const item: EntityItem<typeof entityWithSK> = {
+            attr1: uuid(),
+            attr2: "attr2",
+            attr9: 9,
+            attr6: 6,
+            attr4: 'abc',
+            attr8: true,
+            attr5: 'attr5',
+            attr3: '123',
+            attr7: 'attr7',
+            attr10: false,
+        };
+        await entityWithSK.put(item).go();
+
+        // params
+        const getParams = entityWithSK.get({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).params({attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        expect(getParams.ExpressionAttributeNames).to.deep.equal({
+            "#attr2": "attr2",
+            "#prop9": "prop9", // should convert attribute names to field names when specifying attributes
+            "#attr5": "attr5",
+            "#attr10": "attr10"
+        });
+        expect(getParams.ProjectionExpression).to.equal("#attr2, #prop9, #attr5, #attr10");
+        const queryParams = entityWithSK.query.myIndex({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).params({attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        expect(queryParams.ExpressionAttributeNames).to.deep.equal({
+            "#pk": "pk",
+            "#sk1": "sk",
+            "#attr2": "attr2",
+            "#prop9": "prop9", // should convert attribute names to field names when specifying attributes
+            "#attr5": "attr5",
+            "#attr10": "attr10"
+        });
+        expect(queryParams.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10");
+
+        // raw
+        const getRaw = await entityWithSK.get({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        expect(getRaw).to.deep.equal({
+            "Item": {
+                "attr5": item.attr5,
+                "prop9": item.attr9, // should convert attribute names to field names when specifying attributes
+                "attr2": item.attr2,
+                "attr10": item.attr10
+            }
+        });
+        const queryRawGo = await entityWithSK.query.myIndex({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        expect(queryRawGo).to.deep.equal({
+            "Items": [
+                {
+                    "sk": `$mycollection2#abc_myversion#attr2_${item.attr2}`,
+                    "attr5": item.attr5,
+                    "prop9": item.attr9, // should convert attribute names to field names when specifying attributes
+                    "pk": `$myservice#attr1_${item.attr1}`,
+                    "attr2": item.attr2,
+                    "attr10": item.attr10
+                }
+            ],
+            "Count": 1,
+            "ScannedCount": 1
+        });
+        const queryRawPage = await entityWithSK.query.myIndex({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).page(null, {raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        expect(queryRawPage).to.deep.equal([
+            null,
+            {
+                "Items": [
+                    {
+                        "sk": `$mycollection2#abc_myversion#attr2_${item.attr2}`,
+                        "attr5": item.attr5,
+                        "prop9": item.attr9, // should convert attribute names to field names when specifying attributes
+                        "pk": `$myservice#attr1_${item.attr1}`,
+                        "attr2": item.attr2,
+                        "attr10": item.attr10
+                    }
+                ],
+                "Count": 1,
+                "ScannedCount": 1
+            }
+        ]);
+
+        // pagerRaw
+        const queryRawPager = await entityWithSK.query.myIndex({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).page(null, {pager: 'raw', attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        expect(queryRawPager).to.deep.equal([
+            null,
+            [
+                {
+                    "attr5": item.attr5,
+                    "attr9": item.attr9,
+                    "attr2": item.attr2,
+                    "attr10": item.attr10,
+                }
+            ]
+        ]);
+        // ignoreOwnership
+        let getIgnoreOwnershipParams: any;
+        const getIgnoreOwnership = await entityWithSK.get({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).go({
+            logger: (event) => {
+                if (event.type === 'query') {
+                    getIgnoreOwnershipParams = event.params;
+                }
+            },
+            ignoreOwnership: true,
+            attributes: ['attr2', 'attr9', 'attr5', 'attr10']
+        });
+        expect(getIgnoreOwnership).to.deep.equal({
+            "attr5": item.attr5,
+            "attr9": item.attr9,
+            "attr2": item.attr2,
+            "attr10": item.attr10
+        })
+        expect(getIgnoreOwnershipParams.ExpressionAttributeNames).to.deep.equal({
+            "#attr2": "attr2",
+            "#prop9": "prop9", // should convert attribute names to field names when specifying attributes
+            "#attr5": "attr5",
+            "#attr10": "attr10",
+        });
+        expect(getIgnoreOwnershipParams.ProjectionExpression).to.equal("#attr2, #prop9, #attr5, #attr10");
+
+        const queryIgnoreOwnershipGo = await entityWithSK.query.myIndex({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).go({
+            ignoreOwnership: true,
+            attributes: ['attr2', 'attr9', 'attr5', 'attr10'],
+            logger: (event) => {
+                if (event.type === 'query') {
+                    getIgnoreOwnershipParams = event.params;
+                }
+            },
+        });
+        expect(queryIgnoreOwnershipGo).to.deep.equal([
+            {
+                "attr5": item.attr5,
+                "attr9": item.attr9,
+                "attr2": item.attr2,
+                "attr10": item.attr10,
+            }
+        ]);
+        expect(getIgnoreOwnershipParams.ExpressionAttributeNames).to.deep.equal({
+            "#pk": "pk",
+            "#sk1": "sk",
+            "#attr2": "attr2",
+            "#prop9": "prop9", // should convert attribute names to field names when specifying attributes
+            "#attr5": "attr5",
+            "#attr10": "attr10",
+        });
+        expect(getIgnoreOwnershipParams.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10");
+
+        const queryIgnoreOwnershipPage = await entityWithSK.query.myIndex({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).page(null, {
+            ignoreOwnership: true,
+            attributes: ['attr2', 'attr9', 'attr5', 'attr10'],
+            logger: (event) => {
+                if (event.type === 'query') {
+                    getIgnoreOwnershipParams = event.params;
+                }
+            },
+        });
+
+        expect(queryIgnoreOwnershipPage).to.deep.equal([
+            null,
+            [
+                {
+                    "attr5": item.attr5,
+                    "attr9": item.attr9,
+                    "attr2": item.attr2,
+                    "attr10": item.attr10,
+                }
+            ]
+        ])
+        expect(getIgnoreOwnershipParams.ExpressionAttributeNames).to.deep.equal({
+            "#pk": "pk",
+            "#sk1": "sk",
+            "#attr2": "attr2",
+            "#prop9": "prop9", // should convert attribute names to field names when specifying attributes
+            "#attr5": "attr5",
+            "#attr10": "attr10",
+        });
+        expect(getIgnoreOwnershipParams.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10");
+    });
+
+    it('should return all values if attributes is empty array', async () => {
+        const item: EntityItem<typeof entityWithSK> = {
+            attr1: uuid(),
+            attr2: "attr2",
+            attr9: 9,
+            attr6: 6,
+            attr4: 'abc',
+            attr8: true,
+            attr5: 'attr5',
+            attr3: '123',
+            attr7: 'attr7',
+            attr10: false,
+        };
+        await entityWithSK.put(item).go();
+
+        // params
+        const getParams = await entityWithSK.get({
+            attr1: item.attr1,
+            attr2: item.attr2,
+        }).go({attributes: []});
+
+        expect(getParams).to.deep.equal(item);
+    });
+
+    it('should include index composite attributes on automatically but not on the response', async () => {
+        const item: EntityItem<typeof entityWithSK> = {
+            attr1: uuid(),
+            attr2: "attr2",
+            attr9: 9,
+            attr6: 6,
+            attr4: 'abc',
+            attr8: true,
+            attr5: uuid(),
+            attr3: '123',
+            attr7: 'attr7',
+            attr10: false,
+        };
+        await entityWithSK.put(item).go();
+        let params: any;
+        const [, results] = await entityWithSK.query.myIndex2({
+            attr5: item.attr5,
+            attr4: item.attr4,
+            attr6: item.attr6!,
+            attr9: item.attr9!,
+        }).page(null, {
+            logger: (event) => {
+                if (event.type === 'query') {
+                    params = event.params;
+                }
+            },
+            attributes: ['attr2', 'attr9', 'attr5', 'attr10']
+        });
+        expect(results).to.deep.equal([{
+            attr2: item.attr2,
+            attr9: item.attr9,
+            attr5: item.attr5,
+            attr10: item.attr10,
+        }]);
+        expect(params.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__, #attr1, #attr6, #attr4");
+    });
+
+    it('should not include index composite attributes on automatically when pager is raw', async () => {
+        const item: EntityItem<typeof entityWithSK> = {
+            attr1: uuid(),
+            attr2: "attr2",
+            attr9: 9,
+            attr6: 6,
+            attr4: 'abc',
+            attr8: true,
+            attr5: uuid(),
+            attr3: '123',
+            attr7: 'attr7',
+            attr10: false,
+        };
+        await entityWithSK.put(item).go();
+        let params: any;
+        const [, results] = await entityWithSK.query.myIndex2({
+            attr5: item.attr5,
+            attr4: item.attr4,
+            attr6: item.attr6!,
+            attr9: item.attr9!,
+        }).page(null, {
+            logger: (event) => {
+                if (event.type === 'query') {
+                    params = event.params;
+                }
+            },
+            pager: 'raw',
+            attributes: ['attr2', 'attr9', 'attr5', 'attr10']
+        });
+        expect(results).to.deep.equal([{
+            attr2: item.attr2,
+            attr9: item.attr9,
+            attr5: item.attr5,
+            attr10: item.attr10,
+        }]);
+        expect(params.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__");
+    });
+
+    it('should throw when unknown attribute names are provided', () => {
+        const attr1 = 'attr1';
+        const attr2 = 'attr2';
+        const getParams = () => entityWithSK
+            .get({attr1, attr2})
+            .params({
+                // @ts-ignore
+                attributes: ['prop1']
+            });
+        expect(getParams).to.throw(`Unknown attributes provided in query options: "prop1"`);
+    });
+
+    it('should throw when non-string attributes are provided', () => {
+        const attr1 = 'attr1';
+        const attr2 = 'attr2';
+        const getParams = () => entityWithSK
+            .get({attr1, attr2})
+            // @ts-ignore
+            .params({attributes: [123, {abc: 'def'}]});
+        expect(getParams).to.throw(`Unknown attributes provided in query options: "123", "[object Object]"`);
     });
 });
