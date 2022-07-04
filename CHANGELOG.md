@@ -201,3 +201,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.10.2] - 2022-07-02
 ### Fixed
 - Reorganizing type definition files into single file again to appease the frontend dependency overlords in https://electrodb.fun
+
+## [1.11.0] - 2022-07-04
+### Added
+- Adding support for "ProjectionExpressions" via the Query Option: `attributes` [[read more](./README#query-options)]
