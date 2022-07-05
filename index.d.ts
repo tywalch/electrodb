@@ -614,16 +614,6 @@ type GoBatchGetTerminal<A extends string, F extends string, C extends string, S 
                 : [Array<Resolve<ResponseItem>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
             : [Array<Resolve<ResponseItem>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
 
-
-        // ? Promise<{
-        //     [
-        //     Name in keyof ResponseItem as Name extends Attr
-        //         ? Name
-        //         : never
-        //     ]: ResponseItem[Name]
-        // } | null>
-        // : Promise<ResponseItem | null>
-
 type GoGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoQueryTerminalOptions<keyof ResponseItem>>(options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
         ? Promise<{
@@ -1217,18 +1207,6 @@ export type ItemAttribute<A extends Attribute> =
                                     : never
         : never
 
-type FormattedPutMapAttributes<A extends MapAttribute> = {
-    [P in keyof A["properties"]]: A["properties"][P] extends infer M
-        ? M extends HiddenAttribute
-            ? false
-            : M extends DefaultedAttribute
-                ? false
-                : M extends RequiredAttribute
-                    ? true
-                    : false
-        : false
-}
-
 export type ReturnedAttribute<A extends Attribute> =
     A["type"] extends infer R
         ? R extends "string" ? string
@@ -1259,27 +1237,6 @@ export type ReturnedAttribute<A extends Attribute> =
                                     : never
                                 : never
                         }
-                            // SkipKeys<{
-                            //     [P in keyof A["properties"]]: A["properties"][P] extends infer M
-                            //         ? M extends Attribute
-                            //           ? M extends HiddenAttribute
-                            //             ? SkipValue
-                            //             : M extends RequiredAttribute
-                            //                 ? ReturnedAttribute<M>
-                            //                 : SkipValue
-                            //             : never
-                            //           : never
-                            // }> & SkipKeys<{
-                            //   [P in keyof A["properties"]]?: A["properties"][P] extends infer M
-                            //         ? M extends Attribute
-                            //           ? M extends HiddenAttribute
-                            //             ? SkipValue
-                            //             : M extends RequiredAttribute
-                            //                 ? SkipValue
-                            //                 : ReturnedAttribute<M> | undefined
-                            //             : never
-                            //           : never
-                            // }>
                             : never
                         : R extends "list"
                             ? "items" extends keyof A
@@ -1331,27 +1288,6 @@ export type CreatedAttribute<A extends Attribute> =
                                     : never
                                 : never
                         }
-                            // ? SkipKeys<{
-                            //     [P in keyof A["properties"]]: A["properties"][P] extends infer M
-                            //         ? M extends Attribute
-                            //             ? M extends HiddenAttribute
-                            //               ? SkipValue
-                            //               : M extends DefaultedAttribute
-                            //                   ? SkipValue
-                            //                   : M extends RequiredAttribute
-                            //                       ? CreatedAttribute<M>
-                            //                       : SkipValue
-                            //             : never
-                            //     : never
-                            // }> & SkipKeys<{
-                            //   [P in keyof A["properties"]]?: A["properties"][P] extends infer M
-                            //     ? M extends Attribute
-                            //       ? M extends HiddenAttribute
-                            //         ? SkipValue
-                            //         : CreatedAttribute<M> | undefined
-                            //       : never
-                            //     : never
-                            // }>
                             : never
                         : R extends "list"
                             ? "items" extends keyof A
@@ -1813,7 +1749,6 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     constructor(schema: S, config?: EntityConfiguration);
 
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
-    // get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, [Array<Resolve<ResponseItem<A,F,C,S>>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>], [Array<Resolve<ResponseItem<A,F,C,S>> | null>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]>;
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchGetRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>[]>;

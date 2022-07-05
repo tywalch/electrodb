@@ -485,22 +485,9 @@ let getKeys = ((val) => {}) as GetKeys;
 
     expectNotAssignable<GetBatchParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", attributes: ['attrz1']});
     expectNotAssignable<GetBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", attributes: ['attrz1']});
-expectNotAssignable<GetBatchParamsParamsWithSK>({attributes: ['attrz1']});
-expectNotAssignable<GetBatchParamsParamsWithoutSK>({attributes: ['attrz1']});
+    expectNotAssignable<GetBatchParamsParamsWithSK>({attributes: ['attrz1']});
+    expectNotAssignable<GetBatchParamsParamsWithoutSK>({attributes: ['attrz1']});
 
-    // Results
-// type Item = {
-//     attr1?: string;
-//     attr2: string;
-//     attr3?: "123" | "def" | "ghi" | undefined;
-//     attr4: 'abc' | 'ghi;
-//     attr5?: string;
-//     attr6?: number;
-//     attr7?: any;
-//     attr8: boolean;
-//     attr9?: number;
-//     attr10?: boolean;
-// }
     expectAssignable<Promise<Item | null>>(entityWithSK.get({attr1: "abc", attr2: "def"}).go());
     expectAssignable<Promise<ItemWithoutSK | null>>(entityWithoutSK.get({attr1: "abc"}).go());
     expectAssignable<"paramtest">(entityWithSK.get({attr1: "abc", attr2: "def"}).params<"paramtest">());
