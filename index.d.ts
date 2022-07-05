@@ -1786,7 +1786,6 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>;
     query: Queries<A,F,C,S>;
 
-    // parse: EntityParseSingleItem<A,F,C,S,ResponseItem<A,F,C,S>> | EntityParseMultipleItems<A,F,C,S,ResponseItem<A,F,C,S>>;
     parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseSingleInput, options?: Options):
         Options extends ParseOptions<infer Attr>
         ? {
