@@ -4309,7 +4309,7 @@ Option             | Default              | Description
 ------------------ | :------------------: | -----------
 params             | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
 table              | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
-attributes         | _(all attributes)_   | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes allow allowed to be specified.
+attributes         | _(all attributes)_   | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.
 raw                | `false`              | Returns query results as they were returned by the docClient.
 includeKeys        | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
 pager              | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
