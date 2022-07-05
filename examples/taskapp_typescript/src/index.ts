@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import path from "path";
 import moment from "moment";
 

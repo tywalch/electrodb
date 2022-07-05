@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* istanbul ignore file */
 const path = require("path");
 const taskr = require("../src/taskr");
 const Loader = require("../lib/loader");

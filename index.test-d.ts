@@ -1,4 +1,4 @@
-import { WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem, Entity, Service } from './';
+import {WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem, Entity, Service, ResponseItem} from './';
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 import * as tests from './test/tests.test-d';
 
@@ -330,7 +330,7 @@ type Item = {
     attr1?: string;
     attr2: string;
     attr3?: "123" | "def" | "ghi" | undefined;
-    attr4: string;
+    attr4: 'abc' | 'ghi';
     attr5?: string;
     attr6?: number;
     attr7?: any;
@@ -343,7 +343,7 @@ type ItemWithoutSK = {
     attr1?: string;
     attr2?: string;
     attr3?: "123" | "def" | "ghi" | undefined;
-    attr4: string;
+    attr4: 'abc' | 'def';
     attr5?: string;
     attr6?: number;
     attr7?: any;
@@ -355,7 +355,7 @@ const item: Item = {
     attr1: "attr1",
     attr2: "attr2",
     attr3: "def",
-    attr4: "attr4",
+    attr4: "abc",
     attr5: "attr5",
     attr6: 123,
     attr7: "attr7",
@@ -437,9 +437,9 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<GetParametersFinishers>(getSingleFinishersWithoutSK);
     expectAssignable<GetParametersFinishers>(getBatchFinishersWithoutSK);
     entityWithSK.get([{attr1: "adg", attr2: "ada"}]).go({concurrency: 24, preserveBatchOrder: true});
-    entityWithSK.get([{attr1: "adg", attr2: "ada"}]).params({concurrency: 24, preserveBatchOrder: true});
+    expectError(entityWithSK.get([{attr1: "adg", attr2: "ada"}]).params({concurrency: 24, preserveBatchOrder: true}));
     entityWithoutSK.get([{attr1: "adg"}]).go({concurrency: 24, preserveBatchOrder: true});
-    entityWithoutSK.get([{attr1: "adg"}]).params({concurrency: 24, preserveBatchOrder: true});
+    expectError(entityWithoutSK.get([{attr1: "adg"}]).params({concurrency: 24, preserveBatchOrder: true}));
 
     let getSingleGoWithSK = entityWithSK.get({attr1: "adg", attr2: "ada"}).go;
     let getSingleGoWithoutSK = entityWithoutSK.get({attr1: "adg"}).go;
@@ -465,11 +465,11 @@ let getKeys = ((val) => {}) as GetKeys;
     type GetBatchParamsParamsWithSK = Parameter<typeof getBatchParamsWithSK>;
     type GetBatchParamsParamsWithoutSK = Parameter<typeof getBatchParamsWithoutSK>;
 
-    expectAssignable<GetSingleGoParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<GetSingleGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<GetSingleGoParamsWithSK>({originalErr: true, params: {}, table: "abc"});
+    expectAssignable<GetSingleGoParamsWithoutSK>({originalErr: true, params: {}, table: "abc"});
 
-    expectAssignable<GetSingleParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
-    expectAssignable<GetSingleParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc"});
+    expectAssignable<GetSingleParamsParamsWithSK>({originalErr: true, params: {}, table: "abc"});
+    expectAssignable<GetSingleParamsParamsWithoutSK>({originalErr: true, params: {}, table: "abc"});
 
     expectError<GetSingleGoParamsWithSK>({concurrency: 10, unprocessed: "raw", preserveBatchOrder: true});
     expectError<GetSingleGoParamsWithoutSK>({concurrency: 10, unprocessed: "raw", preserveBatchOrder: true});
@@ -480,12 +480,16 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<GetBatchGoParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
     expectAssignable<GetBatchGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
 
-    expectAssignable<GetBatchParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
-    expectAssignable<GetBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw"});
+    expectAssignable<GetBatchParamsParamsWithSK>({originalErr: true, params: {}, table: "abc", attributes: ['attr1']});
+    expectAssignable<GetBatchParamsParamsWithoutSK>({originalErr: true, params: {}, table: "abc", attributes: ['attr1']});
 
-    // Results
-    expectAssignable<Promise<Item>>(entityWithSK.get({attr1: "abc", attr2: "def"}).go());
-    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.get({attr1: "abc"}).go());
+    expectNotAssignable<GetBatchParamsParamsWithSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", attributes: ['attrz1']});
+    expectNotAssignable<GetBatchParamsParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", concurrency: 10, unprocessed: "raw", attributes: ['attrz1']});
+    expectNotAssignable<GetBatchParamsParamsWithSK>({attributes: ['attrz1']});
+    expectNotAssignable<GetBatchParamsParamsWithoutSK>({attributes: ['attrz1']});
+
+    expectAssignable<Promise<Item | null>>(entityWithSK.get({attr1: "abc", attr2: "def"}).go());
+    expectAssignable<Promise<ItemWithoutSK | null>>(entityWithoutSK.get({attr1: "abc"}).go());
     expectAssignable<"paramtest">(entityWithSK.get({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.get({attr1: "abc"}).params<"paramtest">());
     entityWithSK.get([{attr1: "abc", attr2: "def"}]).go().then(results => {
@@ -3087,6 +3091,32 @@ entityWithComplexShapes.query
             })
         )
     })
+
+expectError(() => {
+    entityWithSK.parse({Items: []}, {
+        attributes: ['attr1', 'oops']
+    });
+})
+const parsedWithAttributes = entityWithSK.parse({Items: []}, {
+    attributes: ['attr1', 'attr2', 'attr3']
+});
+
+const parsedWithAttributesSingle = entityWithSK.parse({Item: {}}, {
+    attributes: ['attr1', 'attr2', 'attr3']
+});
+
+expectType<{
+    attr1: string;
+    attr2: string;
+    attr3?: '123' | 'def' | 'ghi' | undefined;
+}[]>(magnify(parsedWithAttributes));
+
+expectType<{
+    attr1: string;
+    attr2: string;
+    attr3?: '123' | 'def' | 'ghi' | undefined;
+} | null>(magnify(parsedWithAttributesSingle));
+
 
 entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
     expectType<typeof parsed>(data);

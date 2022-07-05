@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 const uuid = require("uuid").v4;
 const moment = require("moment");
 

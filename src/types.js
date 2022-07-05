@@ -186,6 +186,11 @@ const EventSubscriptionTypes = [
 	"results"
 ];
 
+const TerminalOperation = {
+	go: 'go',
+	page: 'page',
+}
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -210,6 +215,7 @@ module.exports = {
 	TraverserIndexes,
 	UnprocessedTypes,
 	AttributeWildCard,
+	TerminalOperation,
 	FormatToReturnValues,
 	AttributeProxySymbol,
 	ElectroInstanceTypes,

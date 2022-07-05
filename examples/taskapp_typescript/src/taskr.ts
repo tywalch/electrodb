@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 import {Entity, Service} from "../../../";
 import client from "./client";

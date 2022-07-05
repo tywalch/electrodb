@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 const path = require("path");
 const moment = require("moment");
 const taskr = require("./taskr");

@@ -2607,9 +2607,10 @@ const formattedQueryResults = myEntity.parse(formattedQueryResults);
 
 Parse also accepts an optional `options` object as a second argument (see the section [Query Options](#query-options) to learn more). Currently, the following query options are relevant to the `parse()` method:
 
-Option            | Default | Notes
------------------ : ------- | -----
-`ignoreOwnership` | `true`  | This property defaults to `true` here, unlike elsewhere in the application when it defaults to `false`. You can overwrite the default here with your own preference. 
+Option            | Type     | Default            | Notes
+----------------- : -------- : ------------------ | -----
+ignoreOwnership   | boolean  | `true`             | This property defaults to `true` here, unlike elsewhere in the application when it defaults to `false`. You can overwrite the default here with your own preference.
+attributes        | string[] | _(all attributes)_ | The `attributes` option allows you to specify a subset of attributes to return
 
 # Building Queries
 > For hands-on learners: the following example can be followed along with **and** executed on runkit: https://runkit.com/tywalch/electrodb-building-queries
@@ -4300,6 +4301,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   logger?: (event) => void;
   listeners Array<(event) => void>;
   preserveBatchOrder?: boolean;
+  attributes?: string[];
 };
 ```
 
@@ -4307,6 +4309,7 @@ Option             | Default              | Description
 ------------------ | :------------------: | -----------
 params             | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
 table              | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
+attributes         | _(all attributes)_   | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.
 raw                | `false`              | Returns query results as they were returned by the docClient.
 includeKeys        | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
 pager              | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).

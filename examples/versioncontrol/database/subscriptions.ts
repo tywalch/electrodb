@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import {Entity} from "../../../";
 import moment from "moment";
 import {TicketTypes, IsNotTicket} from "./types";
