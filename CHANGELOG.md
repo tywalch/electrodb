@@ -205,3 +205,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.11.0] - 2022-07-04
 ### Added
 - Adding support for "ProjectionExpressions" via the Query Option: `attributes` [[read more](./README#query-options)]
+
+## [1.11.1] - 2022-07-06
+### Fixed
+- Sort keys for queries will now match on equality when all sort key composite attributes are provided in full. Prior to this release, ElectroDB would use `begins_with(...)` which could potentially result in data leakages if a sort key's value was the starting prefix to another sort key value. [[read more](./README.md#begins-with-queries)]
