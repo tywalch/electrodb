@@ -154,7 +154,15 @@ class BatchGetOrderMaintainer {
   }
 }
 
+function getUnique(arr1, arr2) {
+  return Array.from(new Set([
+      ...arr1,
+      ...arr2
+  ]));
+}
+
 module.exports = {
+  getUnique,
   batchItems,
   parseJSONPath,
   getInstanceType,

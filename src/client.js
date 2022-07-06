@@ -1,5 +1,5 @@
-const {isFunction} = require('./validations');
-const {ElectroError, ErrorCodes} = require('./errors');
+const { isFunction } = require('./validations');
+const { ElectroError, ErrorCodes } = require('./errors');
 const lib = require('@aws-sdk/lib-dynamodb');
 
 const DocumentClientVersions = {

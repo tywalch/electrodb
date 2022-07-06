@@ -857,7 +857,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						}
 					});
 					expect(queryParamsWithSparseSK).to.deep.equal({
-						"KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+						"KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
 						"TableName": "electro",
 						"ExpressionAttributeNames": {
 							"#pk": "gsi1pk",
@@ -3556,7 +3556,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await sleep(100);
 					let beforeUpdateQueryParams = Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
 					expect(beforeUpdateQueryParams).to.deep.equal({
-						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
 						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
 						ExpressionAttributeValues: {
@@ -3573,7 +3573,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await sleep(100);
 					let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
 					expect(afterUpdateQueryParams).to.deep.equal({
-						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
 						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
 						ExpressionAttributeValues: {
@@ -3605,7 +3605,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await sleep(100);
 					let beforeUpdateQueryParams = Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
 					expect(beforeUpdateQueryParams).to.deep.equal({
-						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
 						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
 						ExpressionAttributeValues: {
@@ -3622,7 +3622,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await sleep(100);
 					let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
 					expect(afterUpdateQueryParams).to.deep.equal({
-						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
 						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
 						ExpressionAttributeValues: {
@@ -3654,7 +3654,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await sleep(100);
 					let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
 					expect(beforeUpdateQueryParams).to.deep.equal({
-						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
 						ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 						ExpressionAttributeValues: {
@@ -3671,7 +3671,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await sleep(100);
 					let afterUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4}).params();
 					expect(afterUpdateQueryParams).to.deep.equal({
-						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
 						ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 						ExpressionAttributeValues: {
@@ -3703,7 +3703,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await sleep(100);
 					let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
 					expect(beforeUpdateQueryParams).to.deep.equal({
-						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
 						ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 						ExpressionAttributeValues: {
@@ -3720,7 +3720,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await sleep(100);
 					let afterUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4}).params();
 					expect(afterUpdateQueryParams).to.deep.equal({
-						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
 						ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 						ExpressionAttributeValues: {

@@ -1478,6 +1478,14 @@ class Entity {
 		let parameters = {};
 		switch (state.query.type) {
 			case QueryTypes.is:
+				parameters = this._makeIsQueryParams(
+					state.query,
+					state.query.index,
+					state.query.filter[ExpressionTypes.FilterExpression],
+					indexKeys.pk,
+					...indexKeys.sk,
+				);
+				break;
 			case QueryTypes.begins:
 				parameters = this._makeBeginsWithQueryParams(
 					state.query.options,
@@ -1551,12 +1559,16 @@ class Entity {
 		return params;
 	}
 
-	_makeBeginsWithQueryParams(options, index, filter, pk, sk) {
+	_makeInclusiveQueryParams(options, index, filter, pk, sk, type) {
 		let keyExpressions = this._queryKeyExpressionAttributeBuilder(index, pk, sk);
 		let KeyConditionExpression = "#pk = :pk";
 
 		if (this.model.lookup.indexHasSortKeys[index] && typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "string" && keyExpressions.ExpressionAttributeValues[":sk1"].length > 0) {
-			KeyConditionExpression = `${KeyConditionExpression} and begins_with(#sk1, :sk1)`;
+			if (type === QueryTypes.is) {
+				KeyConditionExpression = `${KeyConditionExpression} and #sk1 = :sk1`;
+			} else {
+				KeyConditionExpression = `${KeyConditionExpression} and begins_with(#sk1, :sk1)`;
+			}
 		} else {
 			delete keyExpressions.ExpressionAttributeNames["#sk1"];
 			delete keyExpressions.ExpressionAttributeValues[":sk1"];
@@ -1586,6 +1598,35 @@ class Entity {
 		}
 
 		return params;
+	}
+
+	_makeIsQueryParams(query, index, filter, pk, sk) {
+		const { options, keys } = query;
+
+		const providedSks = keys.provided
+			.filter(item => item.type === KeyTypes.sk)
+			.map(item => item.attribute);
+
+		const skDefinition = (this.model.facets.byIndex[index] &&
+			this.model.facets.byIndex[index].sk &&
+			Array.isArray(this.model.facets.byIndex[index].sk) &&
+			this.model.facets.byIndex[index].sk
+		) || [];
+
+		const skCompositeAttributes = new Set(skDefinition);
+		const skIsCompletelyFulfilled = skCompositeAttributes.size === providedSks.length &&
+			skDefinition.every(attr => providedSks.includes(attr));
+
+		if (skIsCompletelyFulfilled) {
+			return this._makeInclusiveQueryParams(options, index, filter, pk, sk, QueryTypes.is);
+		} else {
+			return this._makeBeginsWithQueryParams(options, index, filter, pk, sk);
+		}
+
+	}
+
+	_makeBeginsWithQueryParams(options, index, filter, pk, sk) {
+		return this._makeInclusiveQueryParams(options, index, filter, pk, sk, QueryTypes.begins);
 	}
 
 	_mergeExpressionsAttributes(...expressionAttributes) {
