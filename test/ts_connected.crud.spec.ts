@@ -1499,7 +1499,7 @@ describe("Entity", async () => {
             await sleep(100);
             let beforeUpdateQueryParams = Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
             expect(beforeUpdateQueryParams).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
                 ExpressionAttributeValues: {
@@ -1516,7 +1516,7 @@ describe("Entity", async () => {
             await sleep(100);
             let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
             expect(afterUpdateQueryParams).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
                 ExpressionAttributeValues: {
@@ -1547,7 +1547,7 @@ describe("Entity", async () => {
             await sleep(100);
             let beforeUpdateQueryParams = Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
             expect(beforeUpdateQueryParams).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
                 ExpressionAttributeValues: {
@@ -1564,7 +1564,7 @@ describe("Entity", async () => {
             await sleep(100);
             let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
             expect(afterUpdateQueryParams).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
                 ExpressionAttributeValues: {
@@ -1595,7 +1595,7 @@ describe("Entity", async () => {
             await sleep(100);
             let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
             expect(beforeUpdateQueryParams).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
                 ExpressionAttributeValues: {
@@ -1612,7 +1612,7 @@ describe("Entity", async () => {
             await sleep(100);
             let afterUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4}).params();
             expect(afterUpdateQueryParams).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
                 ExpressionAttributeValues: {
@@ -1643,7 +1643,7 @@ describe("Entity", async () => {
             await sleep(100);
             let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
             expect(beforeUpdateQueryParams).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
                 ExpressionAttributeValues: {
@@ -1660,7 +1660,7 @@ describe("Entity", async () => {
             await sleep(100);
             let afterUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4}).params();
             expect(afterUpdateQueryParams).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
                 ExpressionAttributeValues: {
@@ -2162,7 +2162,7 @@ describe("Entity", async () => {
                 TableName: 'electro'
             }).promise();
             const params = {
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
                 ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
                 ExpressionAttributeValues: {
@@ -2556,7 +2556,7 @@ describe("Entity", async () => {
             });
             const query1Parameters = entity.query.organization(newRecord).params();
             expect(query1Parameters).to.deep.equal({
-                KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+                KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro_keynamesattributenames',
                 ExpressionAttributeNames: { '#pk': 'organizationId', '#sk1': 'accountId' },
                 ExpressionAttributeValues: {
@@ -3508,5 +3508,125 @@ describe('attributes query option', () => {
             // @ts-ignore
             .params({attributes: [123, {abc: 'def'}]});
         expect(getParams).to.throw(`Unknown attributes provided in query options: "123", "[object Object]"`);
+    });
+
+    it('should evaluate queries as complete when all sort keys are provided to the access pattern method', async () => {
+        const entity = new Entity({
+            model: {
+                service: 'service',
+                entity: 'entity',
+                version: '1',
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'string'
+                },
+                prop3: {
+                    type: 'string'
+                },
+                prop4: {
+                    type: 'string'
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['prop2', 'prop3']
+                    }
+                }
+            }
+        }, {client, table});
+
+        const prop1 = uuid();
+        const prop2 = uuid();
+        await entity.put({prop1, prop2, prop3: 'test'}).go();
+        await entity.put({prop1, prop2, prop3: 'test2'}).go();
+
+        const partial = entity.query.record({
+            prop1: 'prop1',
+            prop2: 'prop2',
+        }).params();
+
+        expect(partial.KeyConditionExpression).to.equal("#pk = :pk and begins_with(#sk1, :sk1)")
+
+        const full = entity.query.record({
+            prop1: 'prop1',
+            prop2: 'prop2',
+            prop3: 'prop3',
+        }).params();
+
+        expect(full.KeyConditionExpression).to.equal("#pk = :pk and #sk1 = :sk1")
+
+        const tests = await entity.query.record({prop1, prop2, prop3: 'test'}).go();
+        expect(tests).to.deep.equal([
+            { prop1, prop2, prop3: 'test' }
+        ]);
+        const testish = await entity.query.record({prop1, prop2}).begins({prop3: 'test'}).go();
+        expect(testish).to.deep.equal([
+            { prop1, prop2, prop3: 'test' },
+            { prop1, prop2, prop3: 'test2' }
+        ]);
+    });
+
+    it('should evaluate queries as complete when all sort keys are provided even when keys are duplicated', () => {
+        const entity = new Entity({
+            model: {
+                service: 'service',
+                entity: 'entity',
+                version: '1',
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'string'
+                },
+                prop3: {
+                    type: 'string'
+                },
+                prop4: {
+                    type: 'string'
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1']
+                    },
+                    sk: {
+                        field: 'sk',
+                        template: '${prop2}#${prop3}#${prop4}#${prop2}#${prop3}',
+                        composite: ['prop2', 'prop3', 'prop4', 'prop2' , 'prop3'],
+                    }
+                }
+            }
+        }, {client, table});
+
+        const partial = entity.query.record({
+            prop1: 'prop1',
+            prop2: 'prop2',
+            prop4: 'prop4',
+        }).params();
+
+        expect(partial.KeyConditionExpression).to.equal("#pk = :pk and begins_with(#sk1, :sk1)")
+
+        const full = entity.query.record({
+            prop1: 'prop1',
+            prop2: 'prop2',
+            prop3: 'prop3',
+            prop4: 'prop4',
+        }).params();
+
+        expect(full.KeyConditionExpression).to.equal("#pk = :pk and #sk1 = :sk1")
     });
 });

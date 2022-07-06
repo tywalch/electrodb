@@ -1,4 +1,4 @@
-const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex, TerminalOperation } = require("./types");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex, TerminalOperation, KeyTypes } = require("./types");
 const {AttributeOperationProxy, UpdateOperations, FilterOperationNames} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
@@ -403,7 +403,7 @@ let clauses = {
 					.setType(QueryTypes.is)
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -635,6 +635,7 @@ class ChainState {
 				data: {},
 			},
 			keys: {
+				provided: [],
 				pk: {},
 				sk: [],
 			},
@@ -676,8 +677,20 @@ class ChainState {
 		return this.query.options;
 	}
 
+	_appendProvided(type, attributes) {
+		const newAttributes = Object.keys(attributes).map(attribute => {
+			return {
+				type,
+				attribute
+			}
+		});
+		return u.getUnique(this.query.keys.provided, newAttributes);
+	}
+
 	setPK(attributes) {
 		this.query.keys.pk = attributes;
+		this.query.keys.provided = this._appendProvided(KeyTypes.pk, attributes);
+
 		return this;
 	}
 
@@ -698,6 +711,7 @@ class ChainState {
 				type: type,
 				facets: attributes
 			});
+			this.query.keys.provided = this._appendProvided(KeyTypes.sk, attributes);
 		}
 		return this;
 	}

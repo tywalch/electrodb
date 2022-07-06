@@ -1751,6 +1751,19 @@ describe("Entity", () => {
 				TableName: "StoreDirectory",
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 			});
+			let beingsWithFour = MallStores.query
+				.units({ mall, building, unit, store })
+				.params();
+			expect(beingsWithFour).to.deep.equal({
+				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
+				ExpressionAttributeValues: {
+					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
+					":sk1": `$MallStores#building_${building}#unit_${unit}#store_${store}`.toLowerCase(),
+				},
+				IndexName: "gsi1pk-gsi1sk-index",
+				TableName: "StoreDirectory",
+				KeyConditionExpression: "#pk = :pk and #sk1 = :sk1",
+			});
 
 			let queryUnitsBetweenOne = MallStores.query
 				.units({ mall })
@@ -2117,7 +2130,7 @@ describe("Entity", () => {
 				}
 			}]);
 			expect(query1).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
 				ExpressionAttributeValues: {
@@ -2126,7 +2139,7 @@ describe("Entity", () => {
 				}
 			});
 			expect(query2).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
 				ExpressionAttributeValues: {
@@ -2387,7 +2400,7 @@ describe("Entity", () => {
 				}
 			}]);
 			expect(query1).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
 				ExpressionAttributeValues: {
@@ -2396,7 +2409,7 @@ describe("Entity", () => {
 				}
 			});
 			expect(query2).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
 				ExpressionAttributeValues: {
@@ -2747,7 +2760,7 @@ describe("Entity", () => {
 				TableName: 'StoreDirectory'
 			});
 			expect(query1).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
 				ExpressionAttributeValues: {
@@ -2756,7 +2769,7 @@ describe("Entity", () => {
 				}
 			});
 			expect(query2).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
 				ExpressionAttributeValues: {
@@ -3544,7 +3557,7 @@ describe("Entity", () => {
 			let noSkFacetArrayParams = mallStore.query.noSkFacetArray(data).params();
 			let noSkFacetTemplateParams = mallStore.query.noSkFacetTemplate(data).params();
 			expect(recordParams).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 				ExpressionAttributeValues: {
@@ -3553,7 +3566,7 @@ describe("Entity", () => {
 				}
 			});
 			expect(mixedFacetTemplatesParams).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 				ExpressionAttributeValues: {
@@ -3563,7 +3576,7 @@ describe("Entity", () => {
 				IndexName: 'gsi1'
 			});
 			expect(justTemplateParams).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
 				ExpressionAttributeValues: {
@@ -3573,7 +3586,7 @@ describe("Entity", () => {
 				IndexName: 'gsi2'
 			});
 			expect(moreMixedParams).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'gsi3pk', '#sk1': 'gsi3sk' },
 				ExpressionAttributeValues: {
@@ -3787,7 +3800,7 @@ describe("Entity", () => {
 			const deleteParams = entity.delete({id: "abc", prop1: "def"}).params();
 			const removeParams = entity.remove({id: "abc", prop1: "def"}).params();
 			expect(queryParams).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 				ExpressionAttributeValues: { ':pk': 'id_abc#p1_def', ':sk1': 'dbsfhdfhsdshfshf' }
@@ -3850,7 +3863,7 @@ describe("Entity", () => {
 			const deleteParams = entity.delete({id: "abc", prop1: "def"}).params();
 			const removeParams = entity.remove({id: "abc", prop1: "def"}).params();
 			expect(queryParams).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 				ExpressionAttributeValues: { ':pk': 'id_abc#p1_def', ':sk1': 'dbsfhdfhsdshfshf' }
@@ -3911,7 +3924,7 @@ describe("Entity", () => {
 			const deleteParams = entity.delete({id: "abc", prop1: "def"}).params();
 			const removeParams = entity.remove({id: "abc", prop1: "def"}).params();
 			expect(queryParams).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 				ExpressionAttributeValues: { ':pk': 'id_abc#p1_def', ':sk1': 'dbsfhdfhsdshfshf' }
@@ -5505,7 +5518,7 @@ describe("Entity", () => {
 							index: "units",
 							input: {mall, building, store},
 							output: {
-								KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+								KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 								TableName: 'StoreDirectory',
 								ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 								ExpressionAttributeValues: {
@@ -5664,7 +5677,7 @@ describe("Entity", () => {
 							index: "units",
 							input: {mall, building, store},
 							output: {
-								KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+								KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 								TableName: 'StoreDirectory',
 								ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 								ExpressionAttributeValues: {
@@ -5824,7 +5837,7 @@ describe("Entity", () => {
 							index: "units",
 							input: {mall, building, store},
 							output: {
-								KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+								KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 								TableName: 'StoreDirectory',
 								ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 								ExpressionAttributeValues: {
@@ -6005,7 +6018,7 @@ describe("Entity", () => {
 							index: "units",
 							input: {mall, building, store},
 							output: {
-								KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+								KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 								TableName: 'StoreDirectory',
 								ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 								ExpressionAttributeValues: {
@@ -6219,7 +6232,7 @@ describe("Entity", () => {
 				TableName: 'test'
 			});
 			expect(tableIndexQueryFull).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 				ExpressionAttributeValues: {
@@ -6234,7 +6247,7 @@ describe("Entity", () => {
 				ExpressionAttributeValues: { ':pk': '$testing#prop1_abc', ':sk1': '$setters_1#prop2_' }
 			});
 			expect(gsiQueryFull).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'test',
 				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
 				ExpressionAttributeValues: {
@@ -7548,7 +7561,7 @@ describe("Entity", () => {
 				ExpressionAttributeValues: { ':pk': 'myprefix1_abc#mypostfix1', ':sk1': 'myprefix2_' }
 			});
 			expect(queryParams2).to.deep.equal({
-				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'table',
 				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 				ExpressionAttributeValues: {
