@@ -1097,17 +1097,17 @@ indexes: {
 | Property       | Type                                   | Required | Description |
 | -------------- | :------------------------------------: | :------: | ----------- |
 | `pk`           | `object`                               | yes      | Configuration for the pk of that index or table
-| `pk.composite` | `string | string[]`                    | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `pk.composite` | `string[]`                             | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
 | `pk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
-| `pk.casing`    | `default` | `upper` | `lower` | `none` | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`. 
+| `pk.casing`    | `default`, `upper`, `lower`, `none`    | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`. 
 | `sk`           | `object`                               | no       | Configuration for the sk of that index or table
-| `sk.composite` | `string | string[]`                    | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
+| `sk.composite` | `string[]`                             | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `sk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
 | `sk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
-| `pk.casing`    | `default` | `upper` | `lower` | `none` | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
+| `pk.casing`    | `default`, `upper`, `lower`, `none`,   | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
 | `index`        | `string`                               | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
-| `collection`   | `string | string[]`                    | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
+| `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
 
 ### Indexes Without Sort Keys
 When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail.
