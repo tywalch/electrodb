@@ -1465,7 +1465,7 @@ When your attribute's name, or [`field` property](#expanded-syntax) on an attrib
 }
 ```
 
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3jBUANwrpoOALxxUFAO4p0mLAAoEHOJrggIjagC5EGrSbEZshslggBXKAH0zy)
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwL5wGZQQhwDkApgDZkDGMhAJgEYkDcAUG9RCgM7zAoAbmTTRMcALxwUZAO5xU6LAAoEbOHBAR6lAFyJ1GuCKWZ9AIkwQArlAD6JjJjsoAhiDLmANIY08yUILA1GQWVrZ2-oHBZC7unj5GcMJQPMDcFgCM5obYiXCuMHTAjNYwZDz6akmu1FzWaACS9FW+RlhgoXDmfFACAOY5SXltYAzWtABy1iCMAa1JGh1d5igzc1BDRti5+QI6AB4VC0Zj2hMwlQaLcGAA1ic3eMCULd219U303m1JXOAQNLlfQAbXMHxsX3MAF1fnARjceA9rjd8C8KG9zGd6BdprMAj9UXB-pAgV0wdjcesCbCbjthrk2HlEDBXIwqPoSCBMAAVNlUEjYACU7E43D4BTqkJgzUk7zqMAAtAAWACsAGYAAzmdhcXjwSlTalQOUAJk1msyooEwlEUEwhgAdGAyqpJZ8ZfQvLdxkb8SbhU7+hBlCKODaTGJHQBHawBB1JZ2+y6qCENT2BxPB0PsIA)
 
 **Using `template`** 
 
