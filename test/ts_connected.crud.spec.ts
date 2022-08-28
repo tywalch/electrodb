@@ -3471,7 +3471,7 @@ describe('attributes query option', () => {
             attr5: item.attr5,
             attr10: item.attr10,
         }]);
-        expect(params.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__, #attr1, #attr6, #attr4");
+        expect(params.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__");
     });
 
     it('should not include index composite attributes on automatically when pager is raw', async () => {
