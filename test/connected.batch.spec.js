@@ -196,28 +196,28 @@ async function sleep(ms) {
 describe("BatchWrite", async () => {
 
   it("should perform a batchPut via array to put method", async () => {
-    let unprocessed = await MallStores.put([record1, record2, record3]).go();
+    let unprocessed = await MallStores.put([record1, record2, record3]).go().then(res => res.unprocessed);
     // eventually consistent
     await sleep(500);
     // empty array is no unprocessed
     expect(unprocessed).to.be.an("array").that.is.empty;
     // verify existance
-    let item = await MallStores.get(record1).go();
+    let item = await MallStores.get(record1).go().then(res => res.data);
     expect(item).to.be.deep.equal(record1);
   }).timeout(5000);
 
   it("should perform a batchDelete via array to delete method", async () => {
-    let unprocessed = await MallStores.put([record1, record2, record3]).go();
+    let unprocessed = await MallStores.put([record1, record2, record3]).go().then(res => res.unprocessed);
     // eventually consistent
     await sleep(500);
     // empty array is no unprocessed
     expect(unprocessed).to.be.an("array").that.is.empty;
     // verify existance
-    let item = await MallStores.get(record1).go();
+    let item = await MallStores.get(record1).go().then(res => res.data);
     expect(item).to.be.deep.equal(record1);
     
     // delete only record1, record2
-    let deleted = await MallStores.delete([record1, record3]).go();
+    let deleted = await MallStores.delete([record1, record3]).go().then(res => res.unprocessed);
     
     // empty array is no unprocessed
     expect(deleted).to.be.an("array").that.is.empty;
@@ -231,9 +231,9 @@ describe("BatchWrite", async () => {
       getRecord2,
       getRecord3
     ] = await Promise.all([
-      MallStores.get(record1).go(),
-      MallStores.get(record2).go(),
-      MallStores.get(record3).go(),
+      MallStores.get(record1).go().then(res => res.data),
+      MallStores.get(record2).go().then(res => res.data),
+      MallStores.get(record3).go().then(res => res.data),
     ]);
     expect(getRecord1).to.be.null;
     expect(getRecord2).to.be.deep.equal(record2);
@@ -251,11 +251,13 @@ describe("Batch Crud Large Arrays", async () => {
     }
 
     // Create all 101
-    let batchPutResults = await MallStores.put(records).go();
+    let batchPutResults = await MallStores.put(records).go().then(res => res.unprocessed);
     expect(batchPutResults).to.be.an("array").that.is.empty;
 
     // Do a batch get to find all the records, expect them to all be present
-    let [batchGetResults, batchGetUnprocessed] = await MallStores.get(records).go({params: {ConsistentRead: true}});
+    let [batchGetResults, batchGetUnprocessed] = await MallStores.get(records)
+        .go({params: {ConsistentRead: true}})
+        .then(res => [res.data, res.unprocessed]);
     expect(batchGetUnprocessed).to.be.an("array").that.is.empty;
     expect(batchGetResults).to.be.an("array").that.has.length(101);
     for (let result of batchGetResults) {
@@ -263,11 +265,13 @@ describe("Batch Crud Large Arrays", async () => {
     }
 
     // Do a batch delete of all records
-    let batchDeleteResults = await MallStores.delete(records).go();
+    let batchDeleteResults = await MallStores.delete(records).go().then(res => res.unprocessed);
     expect(batchDeleteResults).to.be.an("array").that.is.empty;
 
     // Do a batch get to verify they were all deleted
-    let [batchGetRemovedResults, batchGetRemovedUnprocessed] = await MallStores.get(records).go({params: {ConsistentRead: true}});
+    let [batchGetRemovedResults, batchGetRemovedUnprocessed] = await MallStores.get(records)
+        .go({params: {ConsistentRead: true}})
+        .then(res => [res.data, res.unprocessed]);
     expect(batchGetRemovedResults).to.be.an("array").that.is.empty;
     expect(batchGetRemovedUnprocessed).to.be.an("array").that.has.length(0);
   });
@@ -275,11 +279,11 @@ describe("Batch Crud Large Arrays", async () => {
 
 describe("BatchGet", async () => {
   it("Should consistently create then get a record in batch", async () => {
-    let created = await MallStores.put(record1).go({params: {ConsistentRead: true}});
+    let created = await MallStores.put(record1).go({params: {ConsistentRead: true}}).then(res => res.data);
     expect(created).to.deep.equal(record1);
-    let record = await MallStores.get(record1).go({params: {ConsistentRead: true}});
+    let record = await MallStores.get(record1).go({params: {ConsistentRead: true}}).then(res => res.data);
     expect(record).to.deep.equal(record1);
-    let records = await MallStores.get([record1]).go({params: {ConsistentRead: true}});
+    let records = await MallStores.get([record1]).go({params: {ConsistentRead: true}}).then(res => [res.data, res.unprocessed]);
     expect(records).to.be.an("array").with.length(2);
     expect(records[0]).to.be.an("array").with.length(1);
     expect(records[1]).to.be.an("array").with.length(0);

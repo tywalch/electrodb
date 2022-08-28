@@ -217,6 +217,12 @@ const ErrorCodes = {
     name: "NoOwnerForPager",
     sym: ErrorCode,
   },
+  NoOwnerForCursor: {
+    code: 5004,
+    section: "no-owner-for-pager",
+    name: "NoOwnerForCursor",
+    sym: ErrorCode,
+  },
   PagerNotUnique: {
     code: 5005,
     section: "pager-not-unique",

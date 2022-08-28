@@ -3,6 +3,7 @@ const AWS = require("aws-sdk");
 const uuid = require("uuid").v4;
 const {expect} = require("chai");
 const c = require('../src/client');
+const { cursorFormatter } = require('../src/util');
 const {Entity, Service} = require("../");
 
 const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
@@ -201,6 +202,7 @@ class Tasks extends Entity {
       this.data.push(Item);
       let putRecord = this.put(randomRecord)
           .go()
+          .then(res => res.data)
           .then(result => {
             this.loaded.push(result);
           });
@@ -281,86 +283,95 @@ describe("Page", async () => {
     await sleep(1000);
   });
 
-  it("Should paginate through all records", async () => {
-    let tests = [
-      {
-        type: "query",
-        input: {
-          facets: {project: Tasks.projects[0]},
-          index: "projects",
-        },
-        output: {
-          pageKeys: ["task", "project", "employee"]
-        },
-      }, {
-        type: "query",
-        input: {
-          facets: {employee: Tasks.employees[0]},
-          index: "assigned",
-        },
-        output: {
-          pageKeys: ["points", "project", "employee"]
-        },
-      }, {
-        type: "scan",
-        output: {
-          pageKeys: ["task", "project", "employee"]
-        },
-      }
-    ];
-    for (let test of tests) {
-      let query;
-      let loaded;
-      let testPage = (([page, tasks]) => {
-        if (page !== null) expect(page).to.include.keys(test.output.pageKeys);
-        return [page, tasks];
-      });
-      if (test.type === "scan") {
-        query = (next, limit) => tasks.scan.page(next, {limit});
-        loaded = tasks.loaded;
-      } else {
-        query = (next, limit) => tasks.query[test.input.index](test.input.facets).page(next, {limit});
-        loaded = tasks.filterLoaded(test.input.facets);
-      }
-      
-      let results = await tasks.paginate(2, total, query, testPage);
-      expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
-    }
-  }).timeout(10000);
+  // it("Should paginate through all records", async () => {
+  //   let tests = [
+  //     {
+  //       type: "query",
+  //       input: {
+  //         facets: {project: Tasks.projects[0]},
+  //         index: "projects",
+  //       },
+  //       output: {
+  //         pageKeys: ["task", "project", "employee"]
+  //       },
+  //     }, {
+  //       type: "query",
+  //       input: {
+  //         facets: {employee: Tasks.employees[0]},
+  //         index: "assigned",
+  //       },
+  //       output: {
+  //         pageKeys: ["points", "project", "employee"]
+  //       },
+  //     }, {
+  //       type: "scan",
+  //       output: {
+  //         pageKeys: ["task", "project", "employee"]
+  //       },
+  //     }
+  //   ];
+  //   for (let test of tests) {
+  //     let query;
+  //     let loaded;
+  //     let testPage = (([page, tasks]) => {
+  //       if (page !== null) expect(page).to.include.keys(test.output.pageKeys);
+  //       return [page, tasks];
+  //     });
+  //     if (test.type === "scan") {
+  //       query = (cursor, limit) => tasks.scan.go({cursor, limit});
+  //       loaded = tasks.loaded;
+  //     } else {
+  //       query = (cursor, limit) => tasks.query[test.input.index](test.input.facets)
+  //           .go({cursor, limit})
+  //           .then( res => [res.cursor, res.data]);
+  //       loaded = tasks.filterLoaded(test.input.facets);
+  //     }
+  //
+  //     let results = await tasks.paginate(2, total, query, testPage);
+  //     expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
+  //   }
+  // }).timeout(10000);
 
   it("Paginate without overlapping values", async () => {
     let limit = 30;
     let count = 0;
-    let page = null;
+    let cursor = null;
     let all = [];
     let keys = new Set();
     do {
       count++;
-      let [next, items] = await tasks.query.assigned({employee: Tasks.employees[0]}).page(page, {limit});
+      let [next, items] = await tasks.query.assigned({employee: Tasks.employees[0]})
+          .go({cursor, limit})
+          .then(res => [res.cursor, res.data]);
       if (next && count > 0) {
-        expect(next).to.have.keys(["project", "points", "employee", "task", "__edb_e__", "__edb_v__"]);
+        const deserialized = cursorFormatter.deserialize(next);
+        expect(deserialized).to.have.keys(["gsi2pk", "gsi2sk", "pk", "sk"]);
       }
       expect(items.length <= limit).to.be.true;
       for (let item of items) {
         keys.add(item.task + item.project + item.employee);
         all.push(item);
       }
-      page = next;
-    } while(page !== null);
+      cursor = next;
+    } while(cursor !== null);
     expect(all).to.have.length(keys.size);
   }).timeout(10000);
 
   it("Paginate without overlapping values with raw response", async () => {
     let limit = 30;
     let count = 0;
-    let page = null;
+    let cursor = null;
     let all = [];
 
     do {
       count++;
       let keys = new Set();
-      let [next, results] = await tasks.query.projects({project: Tasks.projects[0]}).page(page, {limit, raw: true});
+      let [next, results] = await tasks.query
+          .projects({project: Tasks.projects[0]})
+          .go({limit, cursor, raw: true})
+          .then(res => [res.cursor, res.data])
       if (next !== null && count > 1) {
+        console.log('Cannot convert undefined or null to object', {next});
         expect(next).to.have.keys(["sk", "pk", "gsi1sk", "gsi1pk"]);
       }
       expect(results.Items.length <= limit).to.be.true;
@@ -369,20 +380,20 @@ describe("Page", async () => {
         all.push(item);
       }
       expect(results.Items.length).to.equal(keys.size);
-      page = next;
-    } while(page !== null);
+      cursor = next;
+    } while(cursor !== null);
   }).timeout(10000);
 
   it("Paginate without overlapping values with pager='raw'", async () => {
     let limit = 30;
     let count = 0;
-    let page = null;
+    let cursor = null;
     let all = [];
 
     do {
       count++;
       let keys = new Set();
-      let [next, items] = await tasks.query.projects({project: Tasks.projects[0]}).page(page, {limit, pager: "raw"});
+      let [next, items] = await tasks.query.projects({project: Tasks.projects[0]}).go({limit, cursor, pager: "raw"}).then(res => [res.cursor, res.data]);
       if (next !== null && count > 1) {
         expect(next).to.have.keys(["sk", "pk", "gsi1sk", "gsi1pk"]);
       }
@@ -392,68 +403,67 @@ describe("Page", async () => {
         all.push(item);
       }
       expect(items.length).to.equal(keys.size);
-      page = next;
-    } while(page !== null);
+      cursor = next;
+    } while(cursor !== null);
   }).timeout(10000);
 
-  it("Should not accept incomplete page composite attributes", async () => {
-    let tests = [
-      {
-        type: "query",
-        input: {
-          facets: {project: Tasks.projects[0]},
-          index: "projects",
-          page: {task: "1234", project: undefined}
-        },
-        output: {
-          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
-        },
-      }, {
-        type: "query",
-        input: {
-          facets: {employee: Tasks.employees[0]},
-          index: "assigned",
-          page: {task: "1234", project: "anc"}
-        },
-        output: {
-          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
-        },
-      }, {
-        type: "scan",
-        input: {
-          page: {task: "1234", project: undefined}
-        },
-        output: {
-          error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
-        },
-      }
-    ];
-
-    for (let test of tests) {
-      let query = test.type === "scan"
-          ? () => tasks.scan.page(test.input.page)
-          : () => tasks.query[test.input.index](test.input.facets).page(test.input.page);
-      try {
-        await query();
-      } catch (err) {
-          expect(err.message).to.be.equal(test.output.error);
-      }
-    }
-  }).timeout(10000);
+  // it("Should not accept incomplete page composite attributes", async () => {
+  //   let tests = [
+  //     {
+  //       type: "query",
+  //       input: {
+  //         facets: {project: Tasks.projects[0]},
+  //         index: "projects",
+  //         page: {task: "1234", project: undefined}
+  //       },
+  //       output: {
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+  //       },
+  //     }, {
+  //       type: "query",
+  //       input: {
+  //         facets: {employee: Tasks.employees[0]},
+  //         index: "assigned",
+  //         page: {task: "1234", project: "anc"}
+  //       },
+  //       output: {
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+  //       },
+  //     }, {
+  //       type: "scan",
+  //       input: {
+  //         page: {task: "1234", project: undefined}
+  //       },
+  //       output: {
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+  //       },
+  //     }
+  //   ];
+  //
+  //   for (let test of tests) {
+  //     let query = test.type === "scan"
+  //         ? () => tasks.scan.go({cursor: test.input.page})
+  //         : () => tasks.query[test.input.index](test.input.facets).go({cursor: test.input.page});
+  //     try {
+  //       await query();
+  //     } catch (err) {
+  //         expect(err.message).to.be.equal(test.output.error);
+  //     }
+  //   }
+  // }).timeout(10000);
 
   it("Should paginate and return raw results", async () => {
-    let results = await tasks.scan.page(null, {raw: true});
-    expect(results).to.be.an("array").and.have.length(2);
-    let [page, items] = results;
-    expect(items.Items).to.not.be.undefined
-    expect(items.Items).to.be.an("array");
-    if (page) {
-      expect(page).to.be.an('object').that.has.all.keys('pk', 'sk');
+    let results = await tasks.scan.go({raw: true});
+    expect(results).to.have.keys(['cursor', 'data']);
+    expect(results.data.Items).to.not.be.undefined
+    expect(results.data.Items).to.be.an("array");
+    if (results.cursor) {
+      expect(results.cursor).to.be.an('object').that.has.all.keys('pk', 'sk');
     }
   }).timeout(10000);
 
   it("Should paginate and return normal results but the real lastEvaluated key as received via pager='raw'", async () => {
-    let results = await tasks.scan.page(null, {pager: "raw"});
+    let results = await tasks.scan.go({pager: "raw"}).then(res => [res.cursor, res.data])
     expect(results).to.be.an("array").and.have.length(2);
     let [page, items] = results;
     expect(items).to.be.an("array");
@@ -469,7 +479,8 @@ describe("Page", async () => {
     let tasks = new Tasks(TasksModel);
     let {success, results} = await tasks.query
         .task({task: "abc"})
-        .page()
+        .go()
+        .then(res => res.data)
         .then(results => ({success: true, results}))
         .catch(results => ({success: false, results}));
     expect(success).to.be.false;
@@ -477,46 +488,6 @@ describe("Page", async () => {
   });
 
   describe("query pagination", () => {
-    it("entity query should continue to query until LastEvaluatedKey is not returned", async () => {
-      const ExclusiveStartKey = {};
-      const {client, calls} = createClient({
-        mockResponses: [
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: undefined
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          }
-        ]
-      });
-      const entity = new Tasks(TasksModel, {client, table});
-      const results = await entity.query.task({task: "my_task"}).go();
-      expect(results).to.be.an("array").with.length(0);
-      expect(calls).to.have.length(4);
-      for (let i = 0; i < calls.length; i++) {
-        const call = calls[i];
-        if (i === 0) {
-          expect(call.ExclusiveStartKey).to.be.undefined;
-        } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
-        }
-      }
-    });
-
     it("entity query should continue to query until 'pages' limit is reached", async () => {
       const ExclusiveStartKey = {};
       const {client, calls} = createClient({
@@ -545,7 +516,7 @@ describe("Page", async () => {
       });
       const pages = 2;
       const entity = new Tasks(TasksModel, {client, table});
-      const results = await entity.query.task({task: "my_task"}).go({pages});
+      const results = await entity.query.task({task: "my_task"}).go({pages}).then(res => res.data);
       expect(results).to.be.an("array").with.length(0);
       expect(calls).to.have.length(pages);
       for (let i = 0; i < calls.length; i++) {
@@ -588,7 +559,8 @@ describe("Page", async () => {
       const pages = 3;
       const limit = 5;
       const entity = new Tasks(TasksModel, {client, table});
-      const results = await entity.query.task({task: "my_task"}).go({pages, limit});
+      const results = await entity.query.task({task: "my_task"}).go({pages, limit})
+          .then(res => res.data);
       expect(results).to.be.an("array").with.length(6);
       expect(calls).to.have.length(2);
       for (let i = 0; i < calls.length; i++) {
@@ -631,7 +603,7 @@ describe("Page", async () => {
       const pages = 3;
       const limit = 5;
       const entity = new Tasks(TasksModel, {client, table});
-      const results = await entity.query.task({task: "my_task"}).go({pages, limit});
+      const results = await entity.query.task({task: "my_task"}).go({pages, limit}).then(res => res.data);
       expect(results).to.be.an("array").with.length(6);
       expect(calls).to.have.length(2);
       for (let i = 0; i < calls.length; i++) {
@@ -644,49 +616,49 @@ describe("Page", async () => {
       }
     });
 
-    it("collection query should continue to query until LastEvaluatedKey is not returned", async () => {
-      const ExclusiveStartKey = {};
-      const {client, calls} = createClient({
-        mockResponses: [
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: undefined,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          }
-        ]
-      });
-      const tasks = new Tasks(TasksModel, {client, table});
-      const tasks2 = new Tasks(makeTasksModel(), {client, table});
-      const service = new Service({tasks, tasks2});
-      const employee = "my_employee";
-      const results = await service.collections.assignments({employee}).go();
-      expect(results.tasks).to.be.an("array").with.length(0);
-      expect(results.tasks2).to.be.an("array").with.length(0);
-      expect(calls).to.have.length(4);
-      for (let i = 0; i < calls.length; i++) {
-        const call = calls[i];
-        if (i === 0) {
-          expect(call.ExclusiveStartKey).to.be.undefined;
-        } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
-        }
-      }
-    });
+    // it("collection query should continue to query until LastEvaluatedKey is not returned", async () => {
+    //   const ExclusiveStartKey = {};
+    //   const {client, calls} = createClient({
+    //     mockResponses: [
+    //       {
+    //         Items: [],
+    //         LastEvaluatedKey: ExclusiveStartKey,
+    //       },
+    //       {
+    //         Items: [],
+    //         LastEvaluatedKey: ExclusiveStartKey,
+    //       },
+    //       {
+    //         Items: [],
+    //         LastEvaluatedKey: ExclusiveStartKey,
+    //       },
+    //       {
+    //         Items: [],
+    //         LastEvaluatedKey: undefined,
+    //       },
+    //       {
+    //         Items: [],
+    //         LastEvaluatedKey: ExclusiveStartKey,
+    //       }
+    //     ]
+    //   });
+    //   const tasks = new Tasks(TasksModel, {client, table});
+    //   const tasks2 = new Tasks(makeTasksModel(), {client, table});
+    //   const service = new Service({tasks, tasks2});
+    //   const employee = "my_employee";
+    //   const results = await service.collections.assignments({employee}).go().then(res => res.data);
+    //   expect(results.tasks).to.be.an("array").with.length(0);
+    //   expect(results.tasks2).to.be.an("array").with.length(0);
+    //   expect(calls).to.have.length(4);
+    //   for (let i = 0; i < calls.length; i++) {
+    //     const call = calls[i];
+    //     if (i === 0) {
+    //       expect(call.ExclusiveStartKey).to.be.undefined;
+    //     } else {
+    //       expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+    //     }
+    //   }
+    // });
 
     it("collection query should continue to query until 'pages' limit is reached", async () => {
       const ExclusiveStartKey = {};
@@ -719,7 +691,7 @@ describe("Page", async () => {
       const tasks2 = new Tasks(makeTasksModel(), {client, table});
       const service = new Service({tasks, tasks2});
       const employee = "my_employee";
-      const results = await service.collections.assignments({employee}).go({pages});
+      const results = await service.collections.assignments({employee}).go({pages}).then(res => res.data);
       expect(results.tasks).to.be.an("array").with.length(0);
       expect(results.tasks2).to.be.an("array").with.length(0);
       expect(calls).to.have.length(pages);
@@ -770,7 +742,7 @@ describe("Page", async () => {
       const pages = 3;
       const limit = 9;
       const employee = "my_employee";
-      const results = await service.collections.assignments({employee}).go({pages, limit});
+      const results = await service.collections.assignments({employee}).go({pages, limit}).then(res => res.data);
       expect(results.tasks).to.be.an("array").with.length(6);
       expect(results.tasks2).to.be.an("array").with.length(4);
       expect(created.calls).to.have.length(2);
@@ -821,7 +793,7 @@ describe("Page", async () => {
       const pages = 3;
       const limit = 6;
       const employee = "my_employee";
-      const results = await service.collections.assignments({employee}).go({pages, limit});
+      const results = await service.collections.assignments({employee}).go({pages, limit}).then(res => res.data);
       expect(results.tasks).to.be.an("array").with.length(4);
       expect(results.tasks2).to.be.an("array").with.length(3);
       expect(created.calls).to.have.length(2);
@@ -840,35 +812,36 @@ describe("Page", async () => {
       const occurrences = tasks.occurrences.projects[project];
       const overLimit = occurrences + 10;
       const underLimit = occurrences - 10;
-      const results = await tasks.query.projects({project}).go({limit: overLimit});
-      const limited = await tasks.query.projects({project}).go({limit: underLimit});
+      const results = await tasks.query.projects({project}).go({limit: overLimit}).then(res => res.data);
+      const limited = await tasks.query.projects({project}).go({limit: underLimit}).then(res => res.data);
       const loaded = tasks.filterLoaded({project});
       expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
       expect(results).to.have.length(occurrences);
       expect(limited).to.have.length(underLimit);
     });
 
-    it("should automatically paginate all results with collection", async () => {
-      const employee = Tasks.employees[0];
-      const limit1 = tasks.occurrences.employees[employee];
-      const limit2 = tasks2.occurrences.employees[employee];
-      const limit3 = tasks3.occurrences.employees[employee];
-      const overLimit = limit1 + limit2 + limit3 + 10;
-      const underLimit = limit1 + limit2 + limit3 - 10;
-      const results = await service.collections.assignments({employee}).go({limit: overLimit});
-      const limited = await service.collections.assignments({employee}).go({limit: underLimit})
-      const tasks1Loaded = tasks.filterLoaded({employee});
-      const tasks2Loaded = tasks2.filterLoaded({employee});
-      const tasks3Loaded = tasks3.filterLoaded({employee});
-      expect(() => Tasks.compareTasks(results.tasks, tasks1Loaded)).to.not.throw;
-      expect(() => Tasks.compareTasks(results.tasks2, tasks2Loaded)).to.not.throw;
-      expect(() => Tasks.compareTasks(results.tasks3, tasks3Loaded)).to.not.throw;
-      expect(results.tasks).to.have.length(tasks.occurrences.employees[employee]);
-      expect(results.tasks2).to.have.length(tasks2.occurrences.employees[employee]);
-      expect(results.tasks3).to.have.length(tasks3.occurrences.employees[employee]);
-      expect(results.tasks3).to.have.length(0);
-      expect(limited.tasks.length + limited.tasks2.length + limited.tasks3.length).to.equal(underLimit);
-    });
+
+    // it("should automatically paginate all results with collection", async () => {
+    //   const employee = Tasks.employees[0];
+    //   const limit1 = tasks.occurrences.employees[employee];
+    //   const limit2 = tasks2.occurrences.employees[employee];
+    //   const limit3 = tasks3.occurrences.employees[employee];
+    //   const overLimit = limit1 + limit2 + limit3 + 10;
+    //   const underLimit = limit1 + limit2 + limit3 - 10;
+    //   const results = await service.collections.assignments({employee}).go({limit: overLimit}).then(res => res.data);
+    //   const limited = await service.collections.assignments({employee}).go({limit: underLimit}).then(res => res.data);
+    //   const tasks1Loaded = tasks.filterLoaded({employee});
+    //   const tasks2Loaded = tasks2.filterLoaded({employee});
+    //   const tasks3Loaded = tasks3.filterLoaded({employee});
+    //   expect(() => Tasks.compareTasks(results.tasks, tasks1Loaded)).to.not.throw;
+    //   expect(() => Tasks.compareTasks(results.tasks2, tasks2Loaded)).to.not.throw;
+    //   expect(() => Tasks.compareTasks(results.tasks3, tasks3Loaded)).to.not.throw;
+    //   expect(results.tasks).to.have.length(tasks.occurrences.employees[employee]);
+    //   expect(results.tasks2).to.have.length(tasks2.occurrences.employees[employee]);
+    //   expect(results.tasks3).to.have.length(tasks3.occurrences.employees[employee]);
+    //   expect(results.tasks3).to.have.length(0);
+    //   expect(limited.tasks.length + limited.tasks2.length + limited.tasks3.length).to.equal(underLimit);
+    // });
 
     // it("should only iterate through the specified number of pages for entity queries", async () => {
     //   const employee = Tasks.employees[0];
@@ -995,7 +968,8 @@ describe("Page", async () => {
             }
           });
       expect(wasParsed).to.be.true;
-      expect(results === parserResponse).to.be.true;
+      console.log({results, parserResponse});
+      expect(results.data === parserResponse).to.be.true;
       expect(parseArgs.Items).to.be.an("array");
       expect(parseArgs.LastEvaluatedKey).to.have.keys("pk", "sk", "gsi1sk", "gsi1pk");
       expect(parseArgs.Count).to.equal(1);
@@ -1018,7 +992,7 @@ describe("Page", async () => {
         params: {
           ExclusiveStartKey: key
         }
-      });
+      }).then(res => res.data);
       expect(calls).to.be.an("array").and.have.length(1);
       expect(calls[0].ExclusiveStartKey === key).to.be.true;
     });
@@ -1040,7 +1014,7 @@ describe("Page", async () => {
       tasks._setClient(created.client);
       expect(limit).to.be.greaterThan(1);
       expect(limit).to.be.lessThan(occurrences);
-      const results = await tasks.query.projects({project}).go({limit, raw: true});
+      const results = await tasks.query.projects({project}).go({limit, raw: true}).then(res => res.data);
       expect(results.Items).to.be.an("array").and.have.length(limit);
       expect(created.calls).to.be.an("array").and.have.length(1);
     });

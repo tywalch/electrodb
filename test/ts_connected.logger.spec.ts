@@ -171,12 +171,6 @@ async function testListeners(fn: TestListenerCallback) {
             logger: optionsLogger,
             listeners: optionsListeners,
         });
-        if (typeof query.page === "function") {
-            await query.page(null, {
-                logger: optionsLogger,
-                listeners: optionsListeners,
-            });
-        }
     } catch(err) {
         error = err;
     }
@@ -459,7 +453,10 @@ describe("listener functions", async () => {
             const prop1 = uuid();
             const prop2 = uuid();
             await service.entities.entity1.get({prop1, prop2}).go();
-            expect(received).to.deep.equal([
+            expect(received.map(item => {
+                delete item.config.formatCursor;
+                return item;
+            })).to.deep.equal([
                 {
                     type: 'query',
                     method: 'get',
@@ -488,7 +485,9 @@ describe("listener functions", async () => {
                       ignoreOwnership: false,
                       _isPagination: false,
                       _isCollectionQuery: false,
-                      pages: undefined,
+                        cursor: null,
+                        data: "attributes",
+                        pages: 1,
                       listeners: [],
                       preserveBatchOrder: false,
                     }
@@ -514,7 +513,9 @@ describe("listener functions", async () => {
                       ignoreOwnership: false,
                       _isPagination: false,
                       _isCollectionQuery: false,
-                      pages: undefined,
+                      cursor: null,
+                      data: "attributes",
+                      pages: 1,
                       preserveBatchOrder: false,
                       listeners: []
                     },
@@ -533,7 +534,11 @@ describe("listener functions", async () => {
             const prop1 = uuid();
             const prop2 = uuid();
             await service.entities.entity1.get({prop1, prop2}).go();
-            expect(received).to.deep.equal([
+
+            expect(received.map(item => {
+                delete item.config.formatCursor;
+                return item;
+            })).to.deep.equal([
                 {
                     type: 'query',
                     method: 'get',
@@ -552,6 +557,9 @@ describe("listener functions", async () => {
                       raw: false,
                       params: {},
                       page: {},
+                      cursor: null,
+                      data: "attributes",
+                      pages: 1,
                       lastEvaluatedKeyRaw: false,
                       table: undefined,
                       concurrent: undefined,
@@ -563,7 +571,7 @@ describe("listener functions", async () => {
                       _isPagination: false,
                       _isCollectionQuery: false,
                       preserveBatchOrder: false,
-                      pages: undefined,
+
                       listeners: []
                     }
                 },
@@ -589,7 +597,9 @@ describe("listener functions", async () => {
                       _isPagination: false,
                       _isCollectionQuery: false,
                       preserveBatchOrder: false,
-                      pages: undefined,
+                      cursor: null,
+                      data: "attributes",
+                      pages: 1,
                       listeners: []
                     },
                     success: true,

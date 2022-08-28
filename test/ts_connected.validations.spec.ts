@@ -44,12 +44,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -98,12 +100,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -153,12 +157,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -224,12 +230,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -300,12 +308,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -377,12 +387,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -536,12 +548,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -619,12 +633,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -703,12 +719,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -764,12 +782,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -821,12 +841,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -934,12 +956,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -1015,12 +1039,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -1209,12 +1235,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -1266,12 +1294,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -1319,12 +1349,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -1373,12 +1405,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -1430,12 +1464,14 @@ describe("user attribute validation", () => {
             const [putSuccess, putResult] = await entity
                 .put({prop1, prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             const [updateSuccess, updateResult] = await entity
                 .update({prop1})
                 .set({prop2: invalidProp2})
                 .go()
+                .then(res => res.data)
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
@@ -1566,15 +1602,15 @@ describe('Index definition validations', function () {
             "TableName": table
         });
 
-        const put = await entity.put(item).go();
+        const put = await entity.put(item).go().then(res => res.data);
 
         expect(put).to.deep.equal(item);
 
         const queries = await Promise.all([
-            entity.query.record({prop1}).go(),
-            entity.query.global1({prop3, prop1, prop5}).go(),
-            entity.query.local1({prop1, prop5}).go(),
-            entity.query.local2({prop1}).go(),
+            entity.query.record({prop1}).go().then(res => res.data),
+            entity.query.global1({prop3, prop1, prop5}).go().then(res => res.data),
+            entity.query.local1({prop1, prop5}).go().then(res => res.data),
+            entity.query.local2({prop1}).go().then(res => res.data),
         ]);
 
         expect(queries).to.deep.equal([

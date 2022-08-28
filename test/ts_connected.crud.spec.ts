@@ -159,8 +159,8 @@ describe("Entity", async () => {
                 unit,
                 building,
             }).go();
-            expect(putOne).to.deep.equal({
-                id: putOne.id,
+            expect(putOne.data).to.deep.equal({
+                id: putOne.data.id,
                 sector,
                 mall: mall + "abc",
                 store,
@@ -199,7 +199,7 @@ describe("Entity", async () => {
                         store: storeNames[i],
                         unit: `B${i + 1}`,
                         building: `Building${letters[i]}`,
-                    }).go(),
+                    }).go().then(res => res.data),
                 );
             }
             stores = await Promise.all(stores);
@@ -214,27 +214,28 @@ describe("Entity", async () => {
                 .units({
                     mall: mallOne,
                 })
-                .go();
+                .go()
+                .then(res => res.data);
 
             let mallOneMatches = mallOneStores.every((store) =>
                 mallOneIds.includes(store.id),
             );
 
-            expect(mallOneMatches);
+            expect(mallOneMatches).to.be.true;
             expect(mallOneStores).to.be.an("array").and.have.length(5);
 
             let first = stores[0];
             let firstStore = await MallStores.get({
                 sector,
                 id: first.id,
-            }).go();
+            }).go().then(res => res.data);
             expect(firstStore).to.be.deep.equal(first);
 
             let buildingsAfterB = await MallStores.query
                 .categories({ category, mall: mallOne })
                 .gt({ building: "BuildingB" })
-                .go();
-            let buildingsAfterBStores = stores.filter((store) => {
+                .go().then(res => res.data);
+            let buildingsAfterBStores = stores.filter(store => {
                 return (
                     store.mall === mallOne &&
                     store.building !== "BuildingA" &&
@@ -246,9 +247,9 @@ describe("Entity", async () => {
             let buildingsBetweenBH = await MallStores.query
                 .categories({ category, mall: mallOne })
                 .between({ building: "BuildingB" }, { building: "BuildingH" })
-                .go();
+                .go().then(res => res.data);
 
-            let buildingsBetweenBHStores = stores.filter((store) => {
+            let buildingsBetweenBHStores = stores.filter(store => {
                 return (
                     store.mall === mallOne &&
                     store.building !== "BuildingA" &&
@@ -261,17 +262,20 @@ describe("Entity", async () => {
                 .and.to.be.deep.equal(buildingsBetweenBHStores);
 
             let secondStore = { sector, id: stores[1].id };
-            let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
+            let secondStoreBeforeUpdate = await MallStores.get(secondStore).go().then(res => res.data);
             let newRent = "5000.00";
+            if (secondStoreBeforeUpdate === null) {
+                throw new Error('Expected secondStoreBeforeUpdate value');
+            }
             expect(secondStoreBeforeUpdate?.rent)
                 .to.equal(rent)
                 .and.to.not.equal(newRent);
             let updatedStore = await MallStores.update(secondStore)
                 .set({ rent: newRent })
                 .go();
-            expect(updatedStore).to.be.empty;
+            expect(updatedStore.data).to.be.empty;
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
-            expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
+            expect(secondStoreAfterUpdate.data?.rent).to.equal(newRent);
         }).timeout(20000);
 
         it("Should not create a overwrite existing record", async () => {
@@ -295,12 +299,12 @@ describe("Entity", async () => {
                 building,
                 unit
             };
-            let recordOne = await MallStores.create(record).go();
+            let recordOne = await MallStores.create(record).go().then(res => res.data);
             // mall would be changed by the setter;
             expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
             let recordTwo = null;
             try {
-                recordTwo = await MallStores.create(record).go();
+                recordTwo = await MallStores.create(record).go().then(res => res.data);
             } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
@@ -328,13 +332,19 @@ describe("Entity", async () => {
                 building,
                 unit
             };
-            let recordOne = await MallStores.create(record).go();
+            let recordOne = await MallStores.create(record).go().then(res => res.data);
             // mall would be changed by the setter
             expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
-            let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go();
+            let patchResultsOne = await MallStores.patch({sector, id})
+                .set({rent: "100.00"})
+                .go()
+                .then(res => res.data);
             let patchResultsTwo = null;
             try {
-                patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
+                patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`})
+                    .set({rent: "200.00"})
+                    .go()
+                    .then(res => res.data);
             } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
@@ -497,7 +507,7 @@ describe("Entity", async () => {
                 leaseEnd,
                 unit,
                 building,
-            }).go();
+            }).go().then(res => res.data);
             expect(putOne).to.deep.equal({
                 id: putOne.id,
                 sector,
@@ -538,7 +548,7 @@ describe("Entity", async () => {
                         store: storeNames[i],
                         unit: `B${i + 1}`,
                         building: `Building${letters[i]}`,
-                    }).go(),
+                    }).go().then(res => res.data),
                 );
             }
             stores = await Promise.all(stores);
@@ -553,7 +563,7 @@ describe("Entity", async () => {
                 .units({
                     mall: mallOne,
                 })
-                .go();
+                .go().then(res => res.data);
 
             let mallOneMatches = mallOneStores.every((store) =>
                 mallOneIds.includes(store.id),
@@ -566,13 +576,13 @@ describe("Entity", async () => {
             let firstStore = await MallStores.get({
                 sector,
                 id: first.id,
-            }).go();
+            }).go().then(res => res.data);
             expect(firstStore).to.be.deep.equal(first);
 
             let buildingsAfterB = await MallStores.query
                 .categories({ category, mall: mallOne })
                 .gt({ building: "BuildingB" })
-                .go();
+                .go().then(res => res.data);
             let buildingsAfterBStores = stores.filter((store) => {
                 return (
                     store.mall === mallOne &&
@@ -585,7 +595,7 @@ describe("Entity", async () => {
             let buildingsBetweenBH = await MallStores.query
                 .categories({ category, mall: mallOne })
                 .between({ building: "BuildingB" }, { building: "BuildingH" })
-                .go();
+                .go().then(res => res.data);
 
             let buildingsBetweenBHStores = stores.filter((store) => {
                 return (
@@ -600,16 +610,17 @@ describe("Entity", async () => {
                 .and.to.be.deep.equal(buildingsBetweenBHStores);
 
             let secondStore = { sector, id: stores[1].id };
-            let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
+            let secondStoreBeforeUpdate = await MallStores.get(secondStore).go().then(res => res.data);
             let newRent = "5000.00";
             expect(secondStoreBeforeUpdate?.rent)
                 .to.equal(rent)
                 .and.to.not.equal(newRent);
             let updatedStore = await MallStores.update(secondStore)
                 .set({ rent: newRent })
-                .go();
+                .go()
+                .then(res => res.data);
             expect(updatedStore).to.be.empty;
-            let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
+            let secondStoreAfterUpdate = await MallStores.get(secondStore).go().then(res => res.data);
             expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
         }).timeout(20000);
 
@@ -634,11 +645,11 @@ describe("Entity", async () => {
                 building,
                 unit
             };
-            let recordOne = await MallStores.create(record).go();
+            let recordOne = await MallStores.create(record).go().then(res => res.data);
             expect(recordOne).to.deep.equal(record);
             let recordTwo = null;
             try {
-                recordTwo = await MallStores.create(record).go();
+                recordTwo = await MallStores.create(record).go().then(res => res.data);
             } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
@@ -666,11 +677,11 @@ describe("Entity", async () => {
                 building,
                 unit
             };
-            let recordOne = await MallStores.create(record).go();
+            let recordOne = await MallStores.create(record).go().then(res => res.data);
             expect(recordOne).to.deep.equal(record);
             let patchResultsTwo = null;
             try {
-                patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
+                patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go().then(res => res.data);
             } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
@@ -682,7 +693,7 @@ describe("Entity", async () => {
             let sector = "A1";
 
             let [electroSuccess, electroErr] = await MallStores.get({sector, id})
-                .go({params: {TableName: "blahblah"}})
+                .go({params: {TableName: "blahblah"}}).then(res => res.data)
                 .then(() => [true, null])
                 .catch(err => [false, err]);
 
@@ -745,10 +756,10 @@ describe("Entity", async () => {
                 isle: "A23",
                 name: "eggs"
             };
-            await labeler.put([item1, item2]).go();
+            await labeler.put([item1, item2]).go().then(res => res.unprocessed);
             await sleep(500);
-            let beginsWithIsle = await labeler.query.locations({section}).begins({isle: "A2"}).go();
-            let specificIsle = await labeler.query.locations({section, isle: "A2"}).go();
+            let beginsWithIsle = await labeler.query.locations({section}).begins({isle: "A2"}).go().then(res => res.data);
+            let specificIsle = await labeler.query.locations({section, isle: "A2"}).go().then(res => res.data);
             expect(beginsWithIsle).to.be.an("array").with.lengthOf(2);
             expect(beginsWithIsle).to.be.deep.equal([item1, item2]);
             expect(specificIsle).to.be.an("array").with.lengthOf(1);
@@ -1018,10 +1029,10 @@ describe("Entity", async () => {
             let prop1 = uuid();
             let prop2 = uuid();
             await record.put({ prop1, prop2 }).go();
-            let recordExists = await record.get({ prop1, prop2 }).go();
+            let recordExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
             await record.delete({ prop1, prop2 }).go();
             await sleep(150);
-            let recordNoLongerExists = await record.get({ prop1, prop2 }).go();
+            let recordNoLongerExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
             expect(!!Object.keys(recordExists || {}).length).to.be.true;
             expect(recordNoLongerExists).to.be.null;
         });
@@ -1083,14 +1094,14 @@ describe("Entity", async () => {
             let id = uuid();
             let prop1 = "aaa";
             let prop2 = "bbb";
-            let record = await db.put({ date, id, prop1, prop2 }).go();
+            let record = await db.put({ date, id, prop1, prop2 }).go().then(res => res.data);
             expect(record).to.deep.equal({
                 id,
                 date,
                 prop1: `${prop1} SET ${id} GET`,
                 prop2: `${prop2} GET ${id}`,
             });
-            let fetchedRecord = await db.get({ date, id }).go();
+            let fetchedRecord = await db.get({ date, id }).go().then(res => res.data);
             expect(fetchedRecord).to.deep.equal({
                 id,
                 date,
@@ -1101,9 +1112,9 @@ describe("Entity", async () => {
             let updatedRecord = await db
                 .update({ date, id })
                 .set({ prop1: updatedProp1 })
-                .go();
+                .go().then(res => res.data);
             expect(updatedRecord).to.be.empty;
-            let getUpdatedRecord = await db.get({ date, id }).go();
+            let getUpdatedRecord = await db.get({ date, id }).go().then(res => res.data);
             expect(getUpdatedRecord).to.deep.equal({
                 id,
                 date,
@@ -1154,9 +1165,10 @@ describe("Entity", async () => {
             let id = uuid();
             let date = moment.utc().format();
             let someValue = "ABDEF";
-            let putRecord = await db.put({ id, date, someValue }).go({ raw: true });
+            let putRecord = await db.put({ id, date, someValue }).go({ raw: true })
+                .then( res => res.data );
             expect(putRecord).to.deep.equal({});
-            let getRecord = await db.get({ id, date }).go({ raw: true });
+            let getRecord = await db.get({ id, date }).go({ raw: true }).then(res => res.data);
             expect(getRecord).to.deep.equal({
                 Item: {
                     __edb_e__: entity,
@@ -1171,9 +1183,11 @@ describe("Entity", async () => {
             let updateRecord = await db
                 .update({ id, date })
                 .set({ someValue })
-                .go({ raw: true });
+                .go({ raw: true })
+                .then(res => res.data);
             expect(updateRecord).to.deep.equal({});
-            let queryRecord = await db.query.record({ id, date }).go({ raw: true });
+            let queryRecord = await db.query.record({ id, date }).go({ raw: true })
+                .then(res => res.data);
             expect(queryRecord).to.deep.equal({
                 Items: [
                     {
@@ -1189,7 +1203,7 @@ describe("Entity", async () => {
                 Count: 1,
                 ScannedCount: 1,
             });
-            let recordWithKeys = await db.get({id, date}).go({includeKeys: true});
+            let recordWithKeys = await db.get({id, date}).go({includeKeys: true}).then(res => res.data);
             expect(recordWithKeys).to.deep.equal({
                 id,
                 date,
@@ -1237,7 +1251,7 @@ describe("Entity", async () => {
                         rent: i + rent,
                         store: storeNames[i],
                         unit: `B${i + 1}`,
-                    }).go(),
+                    }).go().then(res => res.data),
                 );
             }
 
@@ -1255,7 +1269,7 @@ describe("Entity", async () => {
             let belowMarketUnits = await MallStores.query
                 .units({ mall: mall + "abc", building })
                 .where(({rent}, {lte}) => lte(rent, max))
-                .go();
+                .go().then(res => res.data);
 
             expect(belowMarketUnits)
                 .to.be.an("array")
@@ -1302,11 +1316,11 @@ describe("Entity", async () => {
             );
             let date = moment.utc().format();
             let property = "ABDEF";
-            let record = await db.put({ date, property }).go();
+            let record = await db.put({ date, property }).go().then(res => res.data);
             let found = await db.query
                 .record({ date })
                 .where((attr, {eq}) => eq(attr.property, property))
-                .go();
+                .go().then(res => res.data);
 
             let foundParams = db.query
                 .record({ date })
@@ -1363,7 +1377,7 @@ describe("Entity", async () => {
             let records = await Promise.all(
                 properties.map((property, i) => {
                     let color = colors[i % 2];
-                    return db.put({ id, property, color }).go();
+                    return db.put({ id, property, color }).go().then(res => res.data);
                 }),
             );
             let expectedMembers = records.filter(
@@ -1377,7 +1391,7 @@ describe("Entity", async () => {
                     ${notContains(color, "green")} OR ${contains(id, "weird_value")}
                 `)
                 .where((attr, op) => op.notContains(attr.property, "Z"))
-                .go();
+                .go().then(res => res.data);
 
             expect(found)
                 .to.be.an("array")
@@ -1508,11 +1522,11 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
-            let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+            let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
             expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
             await Dummy.update({prop1: record.prop1, prop2: record.prop2})
                 .set({prop9, prop5})
-                .go();
+                .go().then(res => res.data);
             await sleep(100);
             let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
             expect(afterUpdateQueryParams).to.deep.equal({
@@ -1525,7 +1539,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
-            let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+            let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop5}]);
         });
 
@@ -1556,7 +1570,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
-            let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+            let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
             expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
             await Dummy.patch({prop1: record.prop1, prop2: record.prop2})
                 .set({prop9, prop5})
@@ -1573,7 +1587,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
-            let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+            let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop5}]);
         });
 
@@ -1591,7 +1605,7 @@ describe("Entity", async () => {
                 prop8: uuid(),
                 prop9: uuid(),
             }
-            await Dummy.put(record).go();
+            await Dummy.put(record).go().then(res => res.data);
             await sleep(100);
             let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
             expect(beforeUpdateQueryParams).to.deep.equal({
@@ -1604,7 +1618,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi1pk-gsi1sk-index'
             });
-            let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go();
+            let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go().then(res => res.data);
             expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
             await Dummy.update({prop1: record.prop1, prop2: record.prop2})
                 .set({prop9, prop4})
@@ -1621,7 +1635,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi1pk-gsi1sk-index'
             });
-            let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go();
+            let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go().then(res => res.data);
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
         });
 
@@ -1652,7 +1666,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi1pk-gsi1sk-index'
             });
-            let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go();
+            let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go().then(res => res.data);
             expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
             await Dummy.patch({prop1: record.prop1, prop2: record.prop2})
                 .set({prop9, prop4})
@@ -1669,7 +1683,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi1pk-gsi1sk-index'
             });
-            let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go();
+            let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go().then(res => res.data);
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
         });
     });
@@ -1756,7 +1770,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const updateParams1 = db[method]({id, sub})
                     .add({prop6: ['tsr']})
@@ -1768,7 +1782,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "updated_new"});
+                    .go({response: "updated_new"}).then(res => res.data);
 
                 expect(update1).to.deep.equal({
                     id,
@@ -1807,7 +1821,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const updateParams1 = db[method]({id, sub})
                     .add({prop6: ['tsr']})
@@ -1819,7 +1833,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "all_new"});
+                    .go({response: "all_new"}).then(res => res.data);
 
                 expect(update1).to.deep.equal({
                     id,
@@ -1860,7 +1874,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const updateParams1 = db[method]({id, sub})
                     .add({prop6: ['tsr']})
@@ -1872,7 +1886,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "all_old"});
+                    .go({response: "all_old"}).then(res => res.data);
 
                 expect(update1).to.deep.equal(initialData);
             });
@@ -1914,7 +1928,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "updated_old"});
+                    .go({response: "updated_old"}).then(res => res.data);
 
                 expect(update1).to.deep.equal({prop3, prop6, id, sub});
             });
@@ -1944,7 +1958,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const updateParams1 = db[method]({id, sub})
                     .add({prop6: ['tsr']})
@@ -1956,7 +1970,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "none"});
+                    .go({response: "none"}).then(res => res.data);
 
                 expect(update1).to.be.null;
             })
@@ -1987,14 +2001,14 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const deleteParams1: any = db[method]({id, sub}).params({response: "all_old"});
 
                 expect(deleteParams1.ReturnValues).to.equal("ALL_OLD");
 
                 const delete1 = await db[method]({id, sub})
-                    .go({response: "all_old"});
+                    .go({response: "all_old"}).then(res => res.data);
 
                 expect(delete1).to.deep.equal(initial);
             });
@@ -2025,14 +2039,14 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const deleteParams1: any = db[method]({id, sub}).params({response: "none"});
 
                 expect(deleteParams1.ReturnValues).to.equal("NONE");
 
                 const delete1 = await db[method]({id, sub})
-                    .go({response: "none"});
+                    .go({response: "none"}).then(res => res.data);
 
                 expect(delete1).to.be.null;
             });
@@ -2064,7 +2078,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go({response: "none"});
+                }).go({response: "none"}).then(res => res?.data);
 
                 expect(result).to.be.null;
             })
@@ -2142,9 +2156,9 @@ describe("Entity", async () => {
 
             const itemFromDocClient = await client.get(params).promise();
             const parsed = entity.parse(itemFromDocClient);
-            expect(parsed).to.deep.equal({prop1, prop2, prop3});
+            expect(parsed.data).to.deep.equal({prop1, prop2, prop3});
             const parsedTrimmed = entity.parse(itemFromDocClient, {attributes: ['prop1', 'prop3']});
-            expect(parsedTrimmed).to.deep.equal({prop1, prop3});
+            expect(parsedTrimmed.data).to.deep.equal({prop1, prop3});
         });
 
         it("should parse the response from an query that lacks identifiers", async () => {
@@ -2172,9 +2186,9 @@ describe("Entity", async () => {
             }
             const itemFromDocClient = await client.query(params).promise();
             const parsed = entity.parse(itemFromDocClient);
-            expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
+            expect(parsed.data).to.deep.equal([{prop1, prop2, prop3}]);
             const parseTrimmed = entity.parse(itemFromDocClient, {attributes: ['prop1', 'prop3']});
-            expect(parseTrimmed).to.deep.equal([{prop1, prop3}]);
+            expect(parseTrimmed.data).to.deep.equal([{prop1, prop3}]);
         });
 
         it("should parse the response from an update", async () => {
@@ -2205,9 +2219,9 @@ describe("Entity", async () => {
             }
             const results = await client.update(params).promise();
             const parsed = entity.parse(results);
-            expect(parsed).to.deep.equal({prop3: prop3b});
+            expect(parsed.data).to.deep.equal({prop3: prop3b});
             const parseTrimmed = entity.parse(results, {attributes: ['prop3']});
-            expect(parseTrimmed).to.deep.equal({prop3: prop3b});
+            expect(parseTrimmed.data).to.deep.equal({prop3: prop3b});
         });
 
         it("should parse the response from a complex update", async () => {
@@ -2247,7 +2261,7 @@ describe("Entity", async () => {
 
             const results1 = await client.update(params).promise();
             const parsed1 = entity.parse(results1);
-            expect(parsed1).to.be.null;
+            expect(parsed1.data).to.be.null;
             const params2 = {
                 UpdateExpression: 'SET #prop4.#nested.#prop6 = :prop6_u0',
                 ExpressionAttributeNames: { '#prop4': 'prop4', '#nested': 'nested', '#prop6': 'prop6' },
@@ -2262,7 +2276,7 @@ describe("Entity", async () => {
 
             const results2 = await client.update(params2).promise();
             const parsed2 = entity.parse(results2);
-            expect(parsed2).to.deep.equal({
+            expect(parsed2.data).to.deep.equal({
                 prop4: {
                     nested: {
                         prop6: 'xyz'
@@ -2295,9 +2309,9 @@ describe("Entity", async () => {
             };
             const results = await client.delete(params).promise();
             const parsed = entity.parse(results);
-            expect(parsed).to.deep.equal({prop1, prop2, prop3});
+            expect(parsed.data).to.deep.equal({prop1, prop2, prop3});
             const parseTrimmed = entity.parse(results, {attributes: ['prop1', 'prop3']});
-            expect(parseTrimmed).to.deep.equal({prop1, prop3});
+            expect(parseTrimmed.data).to.deep.equal({prop1, prop3});
         });
 
         it("should parse the response from a put", async () => {
@@ -2330,13 +2344,13 @@ describe("Entity", async () => {
             };
             const results = await client.put(params).promise();
             const parsed = entity.parse(results);
-            expect(parsed).to.deep.equal({
+            expect(parsed.data).to.deep.equal({
                 prop1: prop1a,
                 prop2: prop2a,
                 prop3: prop3a,
             });
             const parseTrimmed = entity.parse(results, {attributes: ['prop1', 'prop3']});
-            expect(parseTrimmed).to.deep.equal({
+            expect(parseTrimmed.data).to.deep.equal({
                 prop1: prop1a,
                 prop3: prop3a,
             });
@@ -2360,9 +2374,9 @@ describe("Entity", async () => {
                 "ScannedCount": 1
             };
             const parsed = entity.parse(scanResponse);
-            expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
+            expect(parsed.data).to.deep.equal([{prop1, prop2, prop3}]);
             const parseTrimmed = entity.parse(scanResponse, {attributes: ['prop1', 'prop3']});
-            expect(parseTrimmed).to.deep.equal([{prop1, prop3}]);
+            expect(parseTrimmed.data).to.deep.equal([{prop1, prop3}]);
         }).timeout(10000);
     });
     describe("Key fields that match Attribute fields", () => {
@@ -2475,7 +2489,7 @@ describe("Entity", async () => {
                 },
                 TableName: 'electro_keynamesattributenames'
             });
-            const oldPut = await entity.put(oldRecord).go();
+            const oldPut = await entity.put(oldRecord).go().then(res => res.data);
             expect(oldPut).to.deep.equal({
                 accountId: oldRecord.accountId.toUpperCase(),
                 organizationId: oldRecord.organizationId,
@@ -2498,7 +2512,7 @@ describe("Entity", async () => {
                 },
                 TableName: 'electro_keynamesattributenames'
             });
-            const newPut = await entity.put(newRecord).go();
+            const newPut = await entity.put(newRecord).go().then(res => res.data);
             expect(newPut).to.deep.equal({
                 accountId: newRecord.accountId.toUpperCase(),
                 organizationId: newRecord.organizationId,
@@ -2526,7 +2540,7 @@ describe("Entity", async () => {
             const newUpdate = await entity.update(newRecord)
                 .set({createdAt})
                 .add({incrementId: 1})
-                .go({response: "all_new"});
+                .go({response: "all_new"}).then(res => res.data);
 
             expect(newUpdate).to.deep.equal({
                 accountId: newRecord.accountId.toUpperCase(),
@@ -2545,7 +2559,7 @@ describe("Entity", async () => {
                 },
                 TableName: 'electro_keynamesattributenames'
             });
-            const newGet = await entity.get(newRecord).go();
+            const newGet = await entity.get(newRecord).go().then(res => res.data);
             expect(newGet).to.deep.equal({
                 accountId: newRecord.accountId.toUpperCase(),
                 organizationId: newRecord.organizationId,
@@ -2564,7 +2578,7 @@ describe("Entity", async () => {
                     ':sk1': `PREFIX_${newRecord.accountId.toUpperCase()}_POSTFIX`,
                 }
             });
-            const query1 = await entity.query.organization(newRecord).go();
+            const query1 = await entity.query.organization(newRecord).go().then(res => res.data);
             expect(query1).to.deep.equal([newUpdate]);
             const query2Parameters = entity.query
                 .onboarded({type: newRecord.type})
@@ -2587,16 +2601,16 @@ describe("Entity", async () => {
             const query2 = await entity.query
                 .onboarded({type: newRecord.type})
                 .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId.toUpperCase()))
-                .go();
+                .go().then(res => res.data);
 
             expect(query2).to.deep.equal([{...newUpdate, incrementId: 1}]);
 
-            const newPaginate = await entity.query
-                .onboarded({type: newRecord.type})
-                .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId.toUpperCase()))
-                .page(oldRecord);
-
-            expect(newPaginate).to.deep.equal([null, [{...newUpdate, incrementId: 1}]]);
+            // const newPaginate = await entity.query
+            //     .onboarded({type: newRecord.type})
+            //     .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId.toUpperCase()))
+            //     .page(oldRecord);
+            //
+            // expect(newPaginate).to.deep.equal([null, [{...newUpdate, incrementId: 1}]]);
         });
         it("Should throw when trying to add a collection to an attribute field index", () => {
             expect(() => {
@@ -2810,12 +2824,12 @@ describe("Entity", async () => {
                    username,
                    organization,
                    email,
-               }).go(),
+               }).go().then(res => res.data),
                constraint.query.properties({
                    entity: user.schema.model.entity,
                    attribute: 'email',
                    value: email,
-               }).go()
+               }).go().then(res => res.data)
            ]);
 
            expect(userData).to.deep.equal([{
@@ -2934,12 +2948,15 @@ describe('pagination order', () => {
             batch.push({prop1, prop2, prop3});
         }
 
-        await entity.put(batch).go();
+        await entity.put(batch).go().then(res => res.unprocessed);
 
-        const [ unOrderedRecords ] = await entity.get(batch).go();
+        const unOrderedRecords = await entity.get(batch).go()
+            .then(res => res.unprocessed);
         expect(batch[0]).to.not.deep.equal(unOrderedRecords[0]);
-
-        const [ orderedRecords, orderedUnprocessed ] = await entity.get(batch).go({preserveBatchOrder: true});
+        
+        const res = await entity.get(batch).go({preserveBatchOrder: true});
+        const orderedRecords = res.data;
+        const orderedUnprocessed = res.unprocessed;
         expect(orderedUnprocessed).to.be.an("array").with.length(0);
         expect(orderedRecords).to.be.an("array").with.length(batch.length);
         for (let i = 0; i < orderedRecords.length; i++) {
@@ -3047,12 +3064,16 @@ describe('pagination order', () => {
         await entity.put(batch).go();
         // countToMakeUnprocessed is for each batch, batchGet is limited to 100 items, 3 batches
         const totalUnprocessed = Math.round(batchCount / 100) * countToMakeUnprocessed;
-        const [unOrderedRecords, unOrderedUnprocessed] = await entity.get(batch).go();
+        const [unOrderedRecords, unOrderedUnprocessed] = await entity.get(batch)
+            .go()
+            .then(res => [res.data, res.unprocessed] as const);
+
         expect(batch[0]).to.not.deep.equal(unOrderedRecords[0]);
         expect(unOrderedRecords).to.be.an("array").with.length(batch.length - totalUnprocessed);
         expect(unOrderedUnprocessed).to.be.an("array").with.length(totalUnprocessed);
-
-        const [orderedRecords, orderedUnprocessed] = await entity.get(batch).go({preserveBatchOrder: true, });
+        // todo: internals now need to care about .data
+        const [orderedRecords, orderedUnprocessed] = await entity.get(batch).go({preserveBatchOrder: true, })
+            .then(res => [res.data, res.unprocessed] as const);
         expect(orderedUnprocessed).to.be.an("array").with.length(totalUnprocessed);
         expect(orderedRecords).to.be.an("array").with.length(batch.length);
         for (let i = 0; i < orderedRecords.length; i++) {
@@ -3161,7 +3182,7 @@ describe('attributes query option', () => {
                 attr2: item.attr2,
             }).go({
                 attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-            });
+            }).then(res => res.data);
 
         expect(getItem).to.deep.equal({
             attr2: item.attr2,
@@ -3176,7 +3197,7 @@ describe('attributes query option', () => {
                 attr2: item.attr2,
             }).go({
                 attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-            });
+            }).then(res => res.data);
 
         expect(queryItem).to.deep.equal([{
             attr2: item.attr2,
@@ -3231,7 +3252,7 @@ describe('attributes query option', () => {
         const getRaw = await entityWithSK.get({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']}).then(res => res.data);
         expect(getRaw).to.deep.equal({
             "Item": {
                 "attr5": item.attr5,
@@ -3243,7 +3264,8 @@ describe('attributes query option', () => {
         const queryRawGo = await entityWithSK.query.myIndex({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']})
+            .then(res => res.data);
         expect(queryRawGo).to.deep.equal({
             "Items": [
                 {
@@ -3259,12 +3281,12 @@ describe('attributes query option', () => {
             "ScannedCount": 1
         });
         const queryRawPage = await entityWithSK.query.myIndex({
-            attr1: item.attr1,
-            attr2: item.attr2,
-        }).page(null, {raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
-        expect(queryRawPage).to.deep.equal([
-            null,
-            {
+                attr1: item.attr1,
+                attr2: item.attr2,
+            })
+            .go({cursor: null, raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']})
+
+            expect(queryRawPage.data).to.deep.equal({
                 "Items": [
                     {
                         "sk": `$mycollection2#abc_myversion#attr2_${item.attr2}`,
@@ -3277,14 +3299,15 @@ describe('attributes query option', () => {
                 ],
                 "Count": 1,
                 "ScannedCount": 1
-            }
-        ]);
+            });
+            expect(queryRawPage.cursor).to.equal(null);
 
         // pagerRaw
         const queryRawPager = await entityWithSK.query.myIndex({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).page(null, {pager: 'raw', attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        }).go({cursor: null, pager: 'raw', attributes: ['attr2', 'attr9', 'attr5', 'attr10']})
+            .then(res => [res.cursor, res.data] as const);
         expect(queryRawPager).to.deep.equal([
             null,
             [
@@ -3309,7 +3332,7 @@ describe('attributes query option', () => {
             },
             ignoreOwnership: true,
             attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-        });
+        }).then(res => res.data);
         expect(getIgnoreOwnership).to.deep.equal({
             "attr5": item.attr5,
             "attr9": item.attr9,
@@ -3335,7 +3358,7 @@ describe('attributes query option', () => {
                     getIgnoreOwnershipParams = event.params;
                 }
             },
-        });
+        }).then(res => res.data);
         expect(queryIgnoreOwnershipGo).to.deep.equal([
             {
                 "attr5": item.attr5,
@@ -3357,7 +3380,7 @@ describe('attributes query option', () => {
         const queryIgnoreOwnershipPage = await entityWithSK.query.myIndex({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).page(null, {
+        }).go({
             ignoreOwnership: true,
             attributes: ['attr2', 'attr9', 'attr5', 'attr10'],
             logger: (event) => {
@@ -3365,7 +3388,7 @@ describe('attributes query option', () => {
                     getIgnoreOwnershipParams = event.params;
                 }
             },
-        });
+        }).then(res => [res.cursor, res.data] as const);
 
         expect(queryIgnoreOwnershipPage).to.deep.equal([
             null,
@@ -3408,7 +3431,7 @@ describe('attributes query option', () => {
         const getParams = await entityWithSK.get({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).go({attributes: []});
+        }).go({attributes: []}).then(res => res.data);
 
         expect(getParams).to.deep.equal(item);
     });
@@ -3428,19 +3451,20 @@ describe('attributes query option', () => {
         };
         await entityWithSK.put(item).go();
         let params: any;
-        const [, results] = await entityWithSK.query.myIndex2({
+        const results = await entityWithSK.query.myIndex2({
             attr5: item.attr5,
             attr4: item.attr4,
             attr6: item.attr6!,
             attr9: item.attr9!,
-        }).page(null, {
+        }).go({
+            cursor: null,
             logger: (event) => {
                 if (event.type === 'query') {
                     params = event.params;
                 }
             },
             attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-        });
+        }).then(res => res.data);
         expect(results).to.deep.equal([{
             attr2: item.attr2,
             attr9: item.attr9,
@@ -3465,12 +3489,13 @@ describe('attributes query option', () => {
         };
         await entityWithSK.put(item).go();
         let params: any;
-        const [, results] = await entityWithSK.query.myIndex2({
+        const results = await entityWithSK.query.myIndex2({
             attr5: item.attr5,
             attr4: item.attr4,
             attr6: item.attr6!,
             attr9: item.attr9!,
-        }).page(null, {
+        }).go({
+            cursor: null,
             logger: (event) => {
                 if (event.type === 'query') {
                     params = event.params;
@@ -3478,7 +3503,7 @@ describe('attributes query option', () => {
             },
             pager: 'raw',
             attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-        });
+        }).then(res => res.data);
         expect(results).to.deep.equal([{
             attr2: item.attr2,
             attr9: item.attr9,
@@ -3565,11 +3590,11 @@ describe('attributes query option', () => {
 
         expect(full.KeyConditionExpression).to.equal("#pk = :pk and #sk1 = :sk1")
 
-        const tests = await entity.query.record({prop1, prop2, prop3: 'test'}).go();
+        const tests = await entity.query.record({prop1, prop2, prop3: 'test'}).go().then(res => res.data);
         expect(tests).to.deep.equal([
             { prop1, prop2, prop3: 'test' }
         ]);
-        const testish = await entity.query.record({prop1, prop2}).begins({prop3: 'test'}).go();
+        const testish = await entity.query.record({prop1, prop2}).begins({prop3: 'test'}).go().then(res => res.data);
         expect(testish).to.deep.equal([
             { prop1, prop2, prop3: 'test' },
             { prop1, prop2, prop3: 'test2' }

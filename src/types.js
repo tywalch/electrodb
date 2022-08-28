@@ -107,7 +107,8 @@ const AttributeMutationMethods = {
 const Pager = {
 	raw: "raw",
 	named: "named",
-	item: "item"
+	item: "item",
+	cursor: "cursor"
 }
 
 const UnprocessedTypes = {

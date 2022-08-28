@@ -50,11 +50,11 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go", "page"],
+		children: ["params", "go"],
 	},
 	scan: {
 		name: "scan",
-		action(entity, state) {
+		action(entity, state, config) {
 			if (state.getError() !== null) {
 				return state;
 			}
@@ -65,7 +65,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go", "page"],
+		children: ["params", "go"],
 	},
 	get: {
 		name: "get",
@@ -397,6 +397,7 @@ let clauses = {
 				return state;
 			}
 			try {
+				state.addOption('_isPagination', true);
 				const attributes = state.getCompositeAttributes();
 				return state
 					.setMethod(MethodTypes.query)
@@ -410,7 +411,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go", "page"],
+		children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go"],
 	},
 	between: {
 		name: "between",
@@ -430,7 +431,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["go", "params", "page"],
+		children: ["go", "params"],
 	},
 	begins: {
 		name: "begins",
@@ -450,7 +451,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["go", "params", "page"],
+		children: ["go", "params"],
 	},
 	gt: {
 		name: "gt",
@@ -470,7 +471,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["go", "params", "page"],
+		children: ["go", "params"],
 	},
 	gte: {
 		name: "gte",
@@ -490,7 +491,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["go", "params", "page"],
+		children: ["go", "params"],
 	},
 	lt: {
 		name: "lt",
@@ -509,7 +510,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["go", "params", "page"],
+		children: ["go", "params"],
 	},
 	lte: {
 		name: "lte",
@@ -528,7 +529,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["go", "params", "page"],
+		children: ["go", "params"],
 	},
 	params: {
 		name: "params",
@@ -588,28 +589,6 @@ let clauses = {
 			}
 		},
 		children: [],
-	},
-	page: {
-		name: "page",
-		action(entity, state, page = null, options = {}) {
-			if (state.getError() !== null) {
-				return Promise.reject(state.error);
-			}
-			try {
-				if (entity.client === undefined) {
-					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
-				}
-				options.page = page;
-				options._isPagination = true;
-				options.terminalOperation = TerminalOperation.page;
-				let params = clauses.params.action(entity, state, options);
-				let {config} = entity._applyParameterOptions({}, state.getOptions(), options);
-				return entity.go(state.getMethod(), params, config);
-			} catch(err) {
-				return Promise.reject(err);
-			}
-		},
-		children: []
 	},
 };
 
@@ -675,6 +654,10 @@ class ChainState {
 
 	getOptions() {
 		return this.query.options;
+	}
+
+	addOption(key, value) {
+		this.query.options[key] = value;
 	}
 
 	_appendProvided(type, attributes) {

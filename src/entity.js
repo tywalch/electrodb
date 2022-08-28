@@ -10,6 +10,7 @@ const validations = require("./validations");
 const c = require('./client');
 const u = require("./util");
 const e = require("./errors");
+const { validate } = require("jsonschema");
 
 class Entity {
 	constructor(model, config = {}) {
@@ -30,7 +31,7 @@ class Entity {
 		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterOperations);
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(clauses, this.model.filters);
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
-		this.scan = this._makeChain(TableIndex, this._clausesWithFilters, clauses.index).scan();
+		this.scan = this._makeChain(TableIndex, this._clausesWithFilters, clauses.index, {_isPagination: true}).scan();
 		this.query = {};
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
@@ -84,14 +85,30 @@ class Entity {
 		return pkMatch;
 	}
 
+	ownsCursor(cursor) {
+		if (typeof cursor === 'string') {
+			cursor = u.cursorFormatter.deserialize(cursor);
+		}
+		return this.ownsLastEvaluatedKey(cursor);
+	}
+
+	serializeCursor(key) {
+		return u.cursorFormatter.serialize(key);
+	}
+
+	deserializeCursor(cursor) {
+		return u.cursorFormatter.deserialize(cursor);
+	}
+
+	/** @depricated pagers no longer exist, use the new cursor api */
 	ownsPager(pager, index = TableIndex) {
 		if (pager === null) {
 			return false;
 		}
-		let tableIndexFacets = this.model.facets.byIndex[TableIndex];
+		let tableIndexFacets = this.model.facets.byIndex[index];
 		// todo: is the fact it doesn't use the provided index a bug?
 		// feels like collections may have played a roll into why this is this way
-		let indexFacets = this.model.facets.byIndex[TableIndex];
+		let indexFacets = this.model.facets.byIndex[index];
 
 		// Unknown index
 		if (tableIndexFacets === undefined || indexFacets === undefined) {
@@ -114,9 +131,10 @@ class Entity {
 	}
 
 	match(facets = {}) {
-		let match = this._findBestIndexKeyMatch(facets);
+		const options = { _isPagination: true };
+		const match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
-			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index)
+			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index, options)
 				.scan()
 				.filter(attr => {
 					let eqFilters = [];
@@ -128,7 +146,7 @@ class Entity {
 				return eqFilters.join(" AND ");
 			});
 		} else {
-			return this._makeChain(match.index, this._clausesWithFilters, clauses.index)
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index, options)
 				.query(facets)
 				.filter(attr => {
 					let eqFilters = [];
@@ -143,16 +161,17 @@ class Entity {
 	}
 
 	find(facets = {}) {
-		let match = this._findBestIndexKeyMatch(facets);
+		const options = { _isPagination: true };
+		const match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
-			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index).scan();
+			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index, options).scan();
 		} else {
-			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(facets);
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index, options).query(facets);
 		}
 	}
 
 	collection(collection = "", clauses = {}, facets = {}, {expressions = {}, parse} = {}) {
-		let options = {
+		const options = {
 			parse,
 			expressions: {
 				names: expressions.names || {},
@@ -239,7 +258,8 @@ class Entity {
 				case MethodTypes.batchGet:
 					return await this.executeBulkGet(parameters, config);
 				case MethodTypes.query:
-					return await this.executeQuery(parameters, config)
+				case MethodTypes.scan:
+					return await this.executeQuery(method, parameters, config);
 				default:
 					return await this.executeOperation(method, parameters, config);
 			}
@@ -305,20 +325,20 @@ class Entity {
 			await Promise.all(operation.map(async params => {
 				let response = await this._exec(MethodTypes.batchWrite, params, config);
 				if (validations.isFunction(config.parse)) {
-					let parsed = await config.parse(config, response);
+					let parsed = config.parse(config, response);
 					if (parsed) {
 						results.push(parsed);
 					}
-					return;
-				}
-				let unprocessed = this.formatBulkWriteResponse(response, config);
-				for (let u of unprocessed) {
-					results.push(u);
+				} else {
+					let {unprocessed} = this.formatBulkWriteResponse(response, config);
+					for (let u of unprocessed) {
+						results.push(u);
+					}
 				}
 			}));
 		}
 
-		return results;
+		return { unprocessed: results };
 	}
 
 	_createNewBatchGetOrderMaintainer(config = {}) {
@@ -356,26 +376,29 @@ class Entity {
 			await Promise.all(operation.map(async params => {
 				let response = await this._exec(MethodTypes.batchGet, params, config);
 				if (validations.isFunction(config.parse)) {
-					resultsAll.push(await config.parse(config, response));
-					return;
+					resultsAll.push(config.parse(config, response));
+				} else {
+					this.applyBulkGetResponseFormatting({
+						orderMaintainer,
+						resultsAll,
+						unprocessedAll,
+						response,
+						config
+					});
 				}
-				this.applyBulkGetResponseFormatting({
-					orderMaintainer,
-					resultsAll,
-					unprocessedAll,
-					response,
-					config
-				});
 			}));
 		}
-		return [resultsAll, unprocessedAll];
+		return { data: resultsAll, unprocessed: unprocessedAll };
 	}
 
-	async executeQuery(parameters, config = {}) {
+	async executeQuery(method, parameters, config = {}) {
 		let results = config._isCollectionQuery
 			? {}
 			: [];
-		let ExclusiveStartKey;
+		let ExclusiveStartKey = this._formatExclusiveStartKey(config);
+		if (ExclusiveStartKey === null) {
+			ExclusiveStartKey = undefined;
+		}
 		let pages = this._normalizePagesValue(config.pages);
 		let max = this._normalizeLimitValue(config.limit);
 		let iterations = 0;
@@ -384,53 +407,46 @@ class Entity {
 			let limit = max === undefined
 				? parameters.Limit
 				: max - count;
-			let response = await this._exec("query", {ExclusiveStartKey, ...parameters, Limit: limit}, config);
-
+			let response = await this._exec(method, {ExclusiveStartKey, ...parameters, Limit: limit}, config);
 			ExclusiveStartKey = response.LastEvaluatedKey;
-
-			if (validations.isFunction(config.parse)) {
-				response = config.parse(config, response);
-			} else {
-				response = this.formatResponse(response, parameters.IndexName, config);
-			}
-
-			if (config.raw || config._isPagination) {
+			response = this.formatResponse(response, parameters.IndexName, config);
+			if (config.raw) {
 				return response;
 			} else if (config._isCollectionQuery) {
-				for (const entity in response) {
+				for (const entity in response.data) {
 					if (max) {
-						count += response[entity].length;
+						count += response.data[entity].length;
 					}
 					results[entity] = results[entity] || [];
-					results[entity] = [...results[entity], ...response[entity]];
+					results[entity] = [...results[entity], ...response.data[entity]];
 				}
-			} else if (Array.isArray(response)) {
+			} else if (Array.isArray(response.data)) {
 				if (max) {
 					count += response.length;
 				}
-				results = [...results, ...response];
+				results = [...results, ...response.data];
 			} else {
 				return response;
 			}
 
 			iterations++;
 		} while(ExclusiveStartKey && iterations < pages && (max === undefined || count < max));
-		return results;
+
+		const cursor = this._formatReturnPager(config, ExclusiveStartKey);
+
+		return { data: results, cursor };
 	}
 
 	async executeOperation(method, parameters, config) {
 		let response = await this._exec(method, parameters, config);
-		if (validations.isFunction(config.parse)) {
-			return config.parse(config, response);
-		}
 		switch (parameters.ReturnValues) {
 			case FormatToReturnValues.none:
-				return null;
+				return { data: null };
 			case FormatToReturnValues.all_new:
 			case FormatToReturnValues.all_old:
 			case FormatToReturnValues.updated_new:
 			case FormatToReturnValues.updated_old:
-				return this.formatResponse(response, parameters.IndexName, config);
+				return this.formatResponse(response, config);
 			case FormatToReturnValues.default:
 			default:
 				return this._formatDefaultResponse(method, parameters.IndexName, parameters, config, response);
@@ -475,9 +491,9 @@ class Entity {
 		const index = TableIndex;
 		let unprocessed = response.UnprocessedItems[table];
 		if (Array.isArray(unprocessed) && unprocessed.length) {
-			return unprocessed.map(request => {
+			unprocessed = unprocessed.map(request => {
 				if (request.PutRequest) {
-					return this.formatResponse(request.PutRequest, index, config);
+					return this.formatResponse(request.PutRequest, index, config).data;
 				} else if (request.DeleteRequest) {
 					if (config.unprocessed === UnprocessedTypes.raw) {
 						return request.DeleteRequest.Key;
@@ -487,10 +503,12 @@ class Entity {
 				} else {
 					throw new Error("Unknown response format");
 				}
-			})
+			});
 		} else {
-			return []
+			unprocessed = [];
 		}
+		
+		return { unprocessed };
 	}
 
 	applyBulkGetResponseFormatting({
@@ -526,9 +544,9 @@ class Entity {
 				const slot = orderMaintainer.getOrder(item);
 				const formatted = this.formatResponse({Item: item}, index, config);
 				if (slot !== -1) {
-					resultsAll[slot] = formatted;
+					resultsAll[slot] = formatted.data;
 				} else {
-					resultsAll.push(formatted);
+					resultsAll.push(formatted.data);
 				}
 			}
 		}
@@ -541,14 +559,16 @@ class Entity {
 		}
 		try {
 			let results = {};
-			if (config.raw && !config._isPagination) {
+			if (validations.isFunction(config.parse)) {
+				results = config.parse(config, response);
+			} else if (config.raw && !config._isPagination) {
 				if (response.TableName) {
 					results = {};
 				} else {
 					results = response;
 				}
 			} else if (config.raw && (config._isPagination || config.lastEvaluatedKeyRaw)) {
-				return [response.LastEvaluatedKey || null, response];
+				results = response;
 			} else {
 				if (response.Item) {
 					if (config.ignoreOwnership || this.ownsItem(response.Item)) {
@@ -573,18 +593,18 @@ class Entity {
 						results = null;
 					}
 				} else if (config._objectOnEmpty) {
-					return {};
+					return { data: {} };
 				} else {
 					results = null;
 				}
 			}
 
-			if (config._isPagination) {
-				let nextPage = this._formatReturnPager(config, index, response.LastEvaluatedKey, results[results.length - 1]);
-				results = [nextPage, results];
+			if (config._isPagination || response.LastEvaluatedKey) {
+				const nextPage = this._formatReturnPager(config, response.LastEvaluatedKey);
+				return { cursor: nextPage ?? null, data: results };
 			}
 
-			return results;
+			return { data: results };
 
 		} catch (err) {
 			if (config.originalErr || stackTrace === undefined) {
@@ -608,16 +628,20 @@ class Entity {
 		return this.formatResponse(item, TableIndex, config);
 	}
 
-	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {
-		let page = lastEvaluatedKey || null;
-		if (config.pager !== Pager.raw) {
-			page = this._formatKeysToItem(index, page, lastReturned);
-			if (page && config.pager === Pager.named) {
-				page[this.identifiers.entity] = this.getName();
-				page[this.identifiers.version] = this.getVersion();
-			}
+	_formatReturnPager(config, lastEvaluatedKey) {
+		let page = lastEvaluatedKey ?? null;
+		if (config.raw || config.pager === Pager.raw) {
+			return page;
 		}
-		return page;
+		return config.formatCursor.serialize(page) ?? null;
+	}
+
+	_formatExclusiveStartKey(config) {
+		let exclusiveStartKey = config.cursor;
+		if (config.raw || config.pager === Pager.raw) {
+			return exclusiveStartKey ?? null;
+		}
+		return config.formatCursor.deserialize(exclusiveStartKey) ?? null;
 	}
 
 	_getTableName() {
@@ -819,14 +843,17 @@ class Entity {
 			pager: Pager.named,
 			unprocessed: UnprocessedTypes.item,
 			response: 'default',
+			cursor: null,
+			data: 'attributes',
 			ignoreOwnership: false,
 			_isPagination: false,
 			_isCollectionQuery: false,
-			pages: undefined,
+			pages: 1,
 			listeners: [],
 			preserveBatchOrder: false,
 			attributes: [],
 			terminalOperation: undefined,
+			formatCursor: u.cursorFormatter,
 		};
 
 		config = options.reduce((config, option) => {
@@ -837,6 +864,18 @@ class Entity {
 				}
 				config.response = format;
 				config.params.ReturnValues = FormatToReturnValues[format];
+			}
+
+			if (option.formatCursor) {
+				const isValid = ['serialize', 'deserialize'].every(method => 
+					method in option.formatCursor && 
+						validate.isFunction(option.formatCursor[method])
+				);
+				if (isValid) {
+					config.formatCursor = option.formatCursor;
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "formatCursor" provided. Formatter interface must have serialize and deserialize functions`);
+				}
 			}
 
 			if (option.terminalOperation in TerminalOperation) {
@@ -879,6 +918,22 @@ class Entity {
 				config.lastEvaluatedKeyRaw = true;
 				config.pager = Pager.raw;
 				config.unprocessed = UnprocessedTypes.raw;
+			}
+
+			if (option.cursor) {
+				config.cursor = option.cursor;
+			}
+
+			if (option.data) {
+				config.data = option.data;
+				switch(option.data) {
+					case 'raw':
+						config.raw = true;
+						break;
+					case 'includeKeys':
+						config.includeKeys = true;
+						break;
+				}
 			}
 
 			if (option.limit !== undefined) {
@@ -945,15 +1000,7 @@ class Entity {
 			}
 		}
 
-		if (Object.keys(config.page || {}).length) {
-			if (config.raw || config.pager === Pager.raw) {
-				parameters.ExclusiveStartKey = config.page;
-			} else {
-				parameters.ExclusiveStartKey = this._formatSuppliedPager(params.IndexName, config.page);
-			}
-		}
-
-		return {parameters, config};
+		return { parameters, config };
 	}
 
 	addListeners(logger) {

@@ -500,7 +500,7 @@ describe("Query Options", () => {
               let records = makeRecords(size);
               let client = makeMockClient(delay);
               let MallStores = new Entity(schema, {client});
-              let result = await MallStores.put(records).go({concurrent});
+              let result = await MallStores.put(records).go({concurrent}).then(res => res.data);
               expect(result).to.be.an("array").and.to.have.length(totalBatches);
               let concurrencyPattern = client.getOpConcurrency();
 
@@ -522,7 +522,7 @@ describe("Query Options", () => {
                let records = makeRecords(size);
                let client = makeMockClient(delay);
                let MallStores = new Entity(schema, {client});
-               let result = await MallStores.delete(records).go({concurrent});
+               let result = await MallStores.delete(records).go({concurrent}).then(res => res.data);
                expect(result).to.be.an("array").and.to.have.length(totalBatches);
                let concurrencyPattern = client.getOpConcurrency();
                expect(concurrencyPattern).to.be.an("array").with.length(expectedConcurrencyPattern.length);
@@ -543,7 +543,7 @@ describe("Query Options", () => {
                let records = makeRecords(size);
                let client = makeMockClient(delay);
                let MallStores = new Entity(schema, {client});
-               let result = await MallStores.get(records).go({concurrent});
+               let result = await MallStores.get(records).go({concurrent}).then(res => res.data);
                expect(result).to.be.an("array").and.to.have.length(2);
                expect(result[0]).to.be.an("array").and.to.have.length(totalBatches);
                expect(result[1]).to.be.an("array").and.to.have.length(0);

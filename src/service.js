@@ -243,13 +243,8 @@ class Service {
 
 	cleanseRetrievedData(collection = "", entities, data = {}, config = {}) {
 		if (config.raw) {
-			if (config._isPagination) {
-				return [data.LastEvaluatedKey, data];
-			} else {
-				return data;
-			}
+			return data;
 		}
-
 		data.Items = data.Items || [];
 		let index = this.collectionSchema[collection].index;
 		let results = {};
@@ -268,18 +263,15 @@ class Service {
 			if (!entityAlias) {
 				continue;
 			}
-
 			// pager=false because we don't want the entity trying to parse the lastEvaluatedKey
-			let items = this.collectionSchema[collection].entities[entityAlias].formatResponse({Item: record}, index, {...config, pager: false});
-			results[entityAlias].push(items);
+			let items = this.collectionSchema[collection].entities[entityAlias].formatResponse({Item: record}, index, {
+				...config,
+				pager: false,
+				parse: undefined
+			});
+			results[entityAlias].push(items.data);
 		}
-
-		if (config._isPagination) {
-			let page = this._formatReturnPager(config, index, data.LastEvaluatedKey, data.Items[data.Items.length - 1]);
-			return [page, results];
-		} else {
-			return results;
-		}
+		return results;
 	}
 
 	findKeyOwner(lastEvaluatedKey) {
@@ -287,92 +279,25 @@ class Service {
 			.find((entity) => entity.ownsLastEvaluatedKey(lastEvaluatedKey));
 	}
 
-	findItemPagerOwner(collection, pager = {}) {
-		if (this.collectionSchema[collection] === undefined) {
-			throw new Error("Invalid collection");
+	expectKeyOwner(lastEvaluatedKey) {
+		const owner = this.findKeyOwner(lastEvaluatedKey);
+		if (owner === undefined) {
+			throw new e.ElectroError(e.ErrorCodes.NoOwnerForCursor, `Supplied cursor does not resolve to Entity within the Service ${this.service.name}`);
 		}
-		let matchingEntities = [];
-		if (pager === null) {
-			return matchingEntities;
-		}
-		for (let entity of Object.values(this.collectionSchema[collection].entities)) {
-			if (entity.ownsPager(pager, this.collectionSchema[collection].index)) {
-				matchingEntities.push(entity);
-			}
-		}
-		return matchingEntities;
+		return owner;
 	}
 
-	findNamedPagerOwner(pager = {}) {
-		let identifiers = this._getEntityIdentifiers(this.entities);
-		for (let identifier of identifiers) {
-			let hasCorrectFieldProperties = typeof pager[identifier.nameField] === "string" && typeof pager[identifier.versionField] === "string";
-			let hasMatchingFieldValues = pager[identifier.nameField] === identifier.name && pager[identifier.versionField] === identifier.version;
-			if (hasCorrectFieldProperties && hasMatchingFieldValues) {
-				return identifier.entity;
-			}
-		}
+	findCursorOwner(cursor) {
+		return Object.values(this.entities)
+			.find(entity => entity.ownsCursor(cursor));
 	}
 
-	expectPagerOwner(type, collection, pager) {
-		if (type === Pager.raw) {
-			return Object.values(this.collectionSchema[collection].entities)[0];
-		} else if (type === Pager.named || type === undefined) {
-			let owner = this.findNamedPagerOwner(pager);
-			if (owner === undefined) {
-				throw new e.ElectroError(e.ErrorCodes.NoOwnerForPager, "Supplied Pager does not resolve to Entity within Service");
-			}
-			return owner;
-		} else if (type === Pager.item) {
-			let owners = this.findItemPagerOwner(collection, pager);
-			if (owners.length === 1) {
-				return owners[0];
-			} else {
-				throw new e.ElectroError(e.ErrorCodes.PagerNotUnique, "Supplied Pager did not resolve to single Entity");
-			}
-		} else {
-			throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for option "pager" provider: "${pager}". Allowed values include ${u.commaSeparatedString(Object.keys(Pager))}.`)
+	expectCursorOwner(cursor) {
+		const owner = this.findCursorOwner(cursor);
+		if (owner === undefined) {
+			throw new e.ElectroError(e.ErrorCodes.NoOwnerForCursor, `Supplied cursor does not resolve to Entity within the Service ${this.service.name}`);
 		}
-	}
-
-	findPagerIdentifiers(collection, pager = {}) {
-		if (this.collectionSchema[collection] === undefined) {
-			throw new Error("Invalid collection");
-		}
-		let matchingIdentifiers = [];
-		if (pager === null) {
-			return matchingIdentifiers;
-		}
-		for (let entity of Object.values(this.collectionSchema[collection].entities)) {
-			if (entity.ownsPager(pager, this.collectionSchema[collection].index)) {
-				matchingIdentifiers.push({
-					[entity.identifiers.entity]: entity.getName(),
-					[entity.identifiers.version]: entity.getVersion(),
-				});
-			}
-		}
-		return matchingIdentifiers;
-	}
-
-	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {
-		if (config.pager === "raw") {
-			return lastEvaluatedKey;
-		} else if (!lastEvaluatedKey) {
-			return null;
-		} else {
-			let entity = this.findKeyOwner(lastEvaluatedKey);
-			if (!entity) {
-				return lastReturned !== undefined
-					? this._formatReturnPager(config, index, lastReturned)
-					: null
-			}
-			let page = entity._formatKeysToItem(index, lastEvaluatedKey);
-			if (config.pager === "named") {
-				page[entity.identifiers.entity] = entity.getName();
-				page[entity.identifiers.version] = entity.getVersion();
-			}
-			return page;
-		}
+		return owner;
 	}
 
 	_getTableName() {
@@ -389,21 +314,7 @@ class Service {
 	_makeCollectionChain(name = "", attributes = {}, initialClauses = {}, expressions = {}, entities = {}, entity = {}, facets = {}) {
 		let filterBuilder = new FilterFactory(attributes, FilterOperations);
 		let whereBuilder = new WhereFactory(attributes, FilterOperations);
-
-		let pageClause = {...initialClauses.page};
-		let pageAction = initialClauses.page.action;
-		pageClause.action = (entity, state, page = null, options = {}) => {
-			try {
-				if (page === null) {
-					return pageAction(entity, state, page, options);
-				}
-				let owner = this.expectPagerOwner(options.pager, name, page);
-				return pageAction(owner, state, page, options);
-			} catch(err) {
-				return Promise.reject(err);
-			}
-		}
-		let clauses = {...initialClauses, page: pageClause};
+		let clauses = {...initialClauses};
 
 		clauses = filterBuilder.injectFilterClauses(clauses);
 		clauses = whereBuilder.injectWhereClauses(clauses);
@@ -412,6 +323,14 @@ class Service {
 			// expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
 			parse: (options, data) => {
 				return this.cleanseRetrievedData(name, entities, data, options);
+			},
+			formatCursor: {
+				serialize: (key) => {
+					return this.expectKeyOwner(key).serializeCursor(key);
+				},
+				deserialize: (cursor) => {
+					return this.expectCursorOwner(cursor).deserilizeCursor(cursor);
+				}
 			}
 		};
 
