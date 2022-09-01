@@ -371,7 +371,6 @@ describe("Page", async () => {
           .go({limit, cursor, raw: true})
           .then(res => [res.cursor, res.data])
       if (next !== null && count > 1) {
-        console.log('Cannot convert undefined or null to object', {next});
         expect(next).to.have.keys(["sk", "pk", "gsi1sk", "gsi1pk"]);
       }
       expect(results.Items.length <= limit).to.be.true;
@@ -488,6 +487,46 @@ describe("Page", async () => {
   });
 
   describe("query pagination", () => {
+    it("entity query should continue to query until LastEvaluatedKey is not returned", async () => {
+      const ExclusiveStartKey = {};
+      const {client, calls} = createClient({
+        mockResponses: [
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: undefined
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          }
+        ]
+      });
+      const entity = new Tasks(TasksModel, {client, table});
+      const results = await entity.query.task({task: "my_task"}).go().then(res => res.data);
+      expect(results).to.be.an("array").with.length(0);
+      expect(calls).to.have.length(4);
+      for (let i = 0; i < calls.length; i++) {
+        const call = calls[i];
+        if (i === 0) {
+          expect(call.ExclusiveStartKey).to.be.undefined;
+        } else {
+          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+        }
+      }
+    });
+
     it("entity query should continue to query until 'pages' limit is reached", async () => {
       const ExclusiveStartKey = {};
       const {client, calls} = createClient({
@@ -559,8 +598,7 @@ describe("Page", async () => {
       const pages = 3;
       const limit = 5;
       const entity = new Tasks(TasksModel, {client, table});
-      const results = await entity.query.task({task: "my_task"}).go({pages, limit})
-          .then(res => res.data);
+      const results = await entity.query.task({task: "my_task"}).go({pages, limit}).then(res => res.data);
       expect(results).to.be.an("array").with.length(6);
       expect(calls).to.have.length(2);
       for (let i = 0; i < calls.length; i++) {
@@ -616,49 +654,49 @@ describe("Page", async () => {
       }
     });
 
-    // it("collection query should continue to query until LastEvaluatedKey is not returned", async () => {
-    //   const ExclusiveStartKey = {};
-    //   const {client, calls} = createClient({
-    //     mockResponses: [
-    //       {
-    //         Items: [],
-    //         LastEvaluatedKey: ExclusiveStartKey,
-    //       },
-    //       {
-    //         Items: [],
-    //         LastEvaluatedKey: ExclusiveStartKey,
-    //       },
-    //       {
-    //         Items: [],
-    //         LastEvaluatedKey: ExclusiveStartKey,
-    //       },
-    //       {
-    //         Items: [],
-    //         LastEvaluatedKey: undefined,
-    //       },
-    //       {
-    //         Items: [],
-    //         LastEvaluatedKey: ExclusiveStartKey,
-    //       }
-    //     ]
-    //   });
-    //   const tasks = new Tasks(TasksModel, {client, table});
-    //   const tasks2 = new Tasks(makeTasksModel(), {client, table});
-    //   const service = new Service({tasks, tasks2});
-    //   const employee = "my_employee";
-    //   const results = await service.collections.assignments({employee}).go().then(res => res.data);
-    //   expect(results.tasks).to.be.an("array").with.length(0);
-    //   expect(results.tasks2).to.be.an("array").with.length(0);
-    //   expect(calls).to.have.length(4);
-    //   for (let i = 0; i < calls.length; i++) {
-    //     const call = calls[i];
-    //     if (i === 0) {
-    //       expect(call.ExclusiveStartKey).to.be.undefined;
-    //     } else {
-    //       expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
-    //     }
-    //   }
-    // });
+    it("collection query should continue to query until LastEvaluatedKey is not returned", async () => {
+      const ExclusiveStartKey = {};
+      const {client, calls} = createClient({
+        mockResponses: [
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: undefined,
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          }
+        ]
+      });
+      const tasks = new Tasks(TasksModel, {client, table});
+      const tasks2 = new Tasks(makeTasksModel(), {client, table});
+      const service = new Service({tasks, tasks2});
+      const employee = "my_employee";
+      const results = await service.collections.assignments({employee}).go().then(res => res.data);
+      expect(results.tasks).to.be.an("array").with.length(0);
+      expect(results.tasks2).to.be.an("array").with.length(0);
+      expect(calls).to.have.length(4);
+      for (let i = 0; i < calls.length; i++) {
+        const call = calls[i];
+        if (i === 0) {
+          expect(call.ExclusiveStartKey).to.be.undefined;
+        } else {
+          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+        }
+      }
+    });
 
     it("collection query should continue to query until 'pages' limit is reached", async () => {
       const ExclusiveStartKey = {};
@@ -820,54 +858,59 @@ describe("Page", async () => {
       expect(limited).to.have.length(underLimit);
     });
 
+    it("should automatically paginate all results with collection", async () => {
+      const employee = Tasks.employees[0];
+      const limit1 = tasks.occurrences.employees[employee];
+      const limit2 = tasks2.occurrences.employees[employee];
+      const limit3 = tasks3.occurrences.employees[employee];
+      const overLimit = limit1 + limit2 + limit3 + 10;
+      const underLimit = limit1 + limit2 + limit3 - 10;
+      const results = await service.collections.assignments({employee}).go({limit: overLimit}).then(res => res.data);
+      const limited = await service.collections.assignments({employee}).go({limit: underLimit}).then(res => res.data);
+      const tasks1Loaded = tasks.filterLoaded({employee});
+      const tasks2Loaded = tasks2.filterLoaded({employee});
+      const tasks3Loaded = tasks3.filterLoaded({employee});
+      expect(() => Tasks.compareTasks(results.tasks, tasks1Loaded)).to.not.throw;
+      expect(() => Tasks.compareTasks(results.tasks2, tasks2Loaded)).to.not.throw;
+      expect(() => Tasks.compareTasks(results.tasks3, tasks3Loaded)).to.not.throw;
+      expect(results.tasks).to.have.length(tasks.occurrences.employees[employee]);
+      expect(results.tasks2).to.have.length(tasks2.occurrences.employees[employee]);
+      expect(results.tasks3).to.have.length(tasks3.occurrences.employees[employee]);
+      expect(results.tasks3).to.have.length(0);
+      expect(limited.tasks.length + limited.tasks2.length + limited.tasks3.length).to.equal(underLimit);
+    });
 
-    // it("should automatically paginate all results with collection", async () => {
-    //   const employee = Tasks.employees[0];
-    //   const limit1 = tasks.occurrences.employees[employee];
-    //   const limit2 = tasks2.occurrences.employees[employee];
-    //   const limit3 = tasks3.occurrences.employees[employee];
-    //   const overLimit = limit1 + limit2 + limit3 + 10;
-    //   const underLimit = limit1 + limit2 + limit3 - 10;
-    //   const results = await service.collections.assignments({employee}).go({limit: overLimit}).then(res => res.data);
-    //   const limited = await service.collections.assignments({employee}).go({limit: underLimit}).then(res => res.data);
-    //   const tasks1Loaded = tasks.filterLoaded({employee});
-    //   const tasks2Loaded = tasks2.filterLoaded({employee});
-    //   const tasks3Loaded = tasks3.filterLoaded({employee});
-    //   expect(() => Tasks.compareTasks(results.tasks, tasks1Loaded)).to.not.throw;
-    //   expect(() => Tasks.compareTasks(results.tasks2, tasks2Loaded)).to.not.throw;
-    //   expect(() => Tasks.compareTasks(results.tasks3, tasks3Loaded)).to.not.throw;
-    //   expect(results.tasks).to.have.length(tasks.occurrences.employees[employee]);
-    //   expect(results.tasks2).to.have.length(tasks2.occurrences.employees[employee]);
-    //   expect(results.tasks3).to.have.length(tasks3.occurrences.employees[employee]);
-    //   expect(results.tasks3).to.have.length(0);
-    //   expect(limited.tasks.length + limited.tasks2.length + limited.tasks3.length).to.equal(underLimit);
-    // });
+    it("should only iterate through the specified number of pages for entity queries", async () => {
+      const employee = Tasks.employees[0];
+      const occurrences = tasks.occurrences.employees[employee];
+      const pages = 2;
+      const limit = Math.floor(occurrences / 4);
+      const results = await tasks.query.assigned({employee}).go({limit, pages}).then(res => res.data);
+      expect(limit).to.be.greaterThan(0);
+      expect(occurrences).to.be.greaterThan(limit * pages);
+      expect(results).to.have.length(limit * pages);
+    });
 
-    // it("should only iterate through the specified number of pages for entity queries", async () => {
-    //   const employee = Tasks.employees[0];
-    //   const occurrences = tasks.occurrences.employees[employee];
-    //   const pages = 2;
-    //   const limit = Math.floor(occurrences / 4);
-    //   const results = await tasks.query.assigned({employee}).go({limit, pages});
-    //   expect(limit).to.be.greaterThan(0);
-    //   expect(occurrences).to.be.greaterThan(limit * pages);
-    //   expect(results).to.have.length(limit * pages);
-    // });
-
-    // it("should only iterate through the specified number of pages for collections", async () => {
-    //   const employee = Tasks.employees[0];
-    //   const occurrences1 = tasks.occurrences.employees[employee];
-    //   const occurrences2 = tasks2.occurrences.employees[employee];
-    //   const limit = [ occurrences1, occurrences2 ]
-    //       .map((occurrence) => Math.floor(occurrence / 4))
-    //       .reduce((min, val) => Math.min(min, val), Number.MAX_VALUE);
-    //   const pages = 2;
-    //   expect(limit).to.be.greaterThan(0);
-    //   expect(occurrences1).to.be.greaterThan(limit * pages);
-    //   expect(occurrences2).to.be.greaterThan(limit * pages);
-    //   const results = await service.collections.assignments({employee}).go({limit, pages});
-    //   expect(results.tasks.length + results.tasks2.length + results.tasks3.length).to.equal(limit * pages);
-    // });
+    it("should only iterate through the specified number of pages for collections", async () => {
+      const employee = Tasks.employees[0];
+      const occurrences1 = tasks.occurrences.employees[employee];
+      const occurrences2 = tasks2.occurrences.employees[employee];
+      const limit = [ occurrences1, occurrences2 ]
+          .map((occurrence) => Math.floor(occurrence / 4))
+          .reduce((min, val) => Math.min(min, val), Number.MAX_VALUE);
+      const pages = 2;
+      expect(limit).to.be.greaterThan(0);
+      expect(occurrences1).to.be.greaterThan(limit * pages);
+      expect(occurrences2).to.be.greaterThan(limit * pages);
+      const results = await service.collections.assignments({employee}).go({limit, pages}).then(res => res.data);
+      console.log(JSON.stringify({
+        lengths: {
+          tasks: results.tasks.length,
+          tasks2: results.tasks2.length,
+          tasks3: results.tasks3.length
+        }, limit, pages, limitPages: limit * pages}, null, 4))
+      expect(results.tasks.length + results.tasks2.length + results.tasks3.length).to.equal(limit * pages);
+    });
 
     it("should throw if 'pages' option is less than one or not a valid number", async () => {
       const employee = "employee";

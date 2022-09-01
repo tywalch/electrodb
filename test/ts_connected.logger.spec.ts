@@ -231,7 +231,7 @@ describe("listener functions", async () => {
         await testListeners(async ({entity}) => {
             return {
                 query: entity.query.record({ prop1 }).gt({ prop2 }),
-                test: (events) => equalCallCount(2, events),
+                test: (events) => equalCallCount(1, events),
             };
         });
     });
@@ -241,7 +241,7 @@ describe("listener functions", async () => {
         await testListeners(async ({service}) => {
             return {
                 query: service.entities.entity1.query.record({ prop1 }).gt({ prop2 }),
-                test: (events) => inCallCount([2, 4], events),
+                test: (events) => inCallCount([1, 2], events),
             };
         });
     });
@@ -251,7 +251,7 @@ describe("listener functions", async () => {
         await testListeners(async ({service}) => {
             return {
                 query: service.collections.testCollection({prop1}),
-                test: (events) => inCallCount([2, 4], events),
+                test: (events) => inCallCount([1, 2], events),
             };
         });
     });
@@ -260,7 +260,7 @@ describe("listener functions", async () => {
         await testListeners(async ({entity}) => {
             return {
                 query: entity.scan,
-                test: (events) => equalCallCount(2, events)
+                test: (events) => equalCallCount(1, events)
             };
         });
     });

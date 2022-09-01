@@ -422,7 +422,7 @@ class Entity {
 				}
 			} else if (Array.isArray(response.data)) {
 				if (max) {
-					count += response.length;
+					count += response.data.length;
 				}
 				results = [...results, ...response.data];
 			} else {
@@ -430,6 +430,21 @@ class Entity {
 			}
 
 			iterations++;
+			console.log({
+				whileCond: ExclusiveStartKey && iterations < pages && (max === undefined || count < max),
+				cond1: !!ExclusiveStartKey,
+				cond2: iterations < pages,
+				cond3: (max === undefined || count < max),
+				cond3a: (max === undefined),
+				cond3b: count < max,
+				detail: {
+					ExclusiveStartKey,
+					iterations,
+					pages,
+					max,
+					count,
+				}
+			})
 		} while(ExclusiveStartKey && iterations < pages && (max === undefined || count < max));
 
 		const cursor = this._formatReturnPager(config, ExclusiveStartKey);
