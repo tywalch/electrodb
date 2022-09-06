@@ -365,7 +365,7 @@ If you experience any issues using TypeScript with ElectroDB, your feedback is v
 
 See the section [Exported TypeScript Types](#exported-typescript-types) to read more about the useful types exported from ElectroDB.  
 
-### TypeScript Services
+### Services
 
 New with version `0.10.0` is TypeScript support. To ensure accurate types with, TypeScript users should create their services by passing an Object literal or const object that maps Entity alias names to Entity instances.
 ```typescript
@@ -381,48 +381,7 @@ Services take an optional second parameter, similar to Entities, with a `client`
 
 While not yet typed, this pattern will also accept Models, or a mix of Entities and Models, in the same object literal format.
 
-## Join
-When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service.
-
-> _NOTE: If using TypeScript, see [Joining Entities at Service construction for TypeScript](#joining-entities-at-service-construction-for-typescript) to learn how to "join" entities for use in a TypeScript project._
-
-#### Independent Models
-
-```javascript
-let table = "my_table_name";
-let employees = new Entity(EmployeesModel, { client, table });
-let tasks = new Entity(TasksModel, { client, table });
-```
-
-#### Joining Entity instances to a Service
-
-```javascript
-// Joining Entity instances to a Service
-let TaskApp = new Service("TaskApp", { client, table });
-TaskApp
-	.join(employees) // available at TaskApp.entities.employees
-	.join(tasks);    // available at TaskApp.entities.tasks
-```
-
-#### Joining models to a Service
-
-```javascript
-let TaskApp = new Service("TaskApp", { client, table });
-TaskApp
-	.join(EmployeesModel) // available at TaskApp.entities.employees (based on entity name in model)
-	.join(TasksModel);    // available at TaskApp.entities.tasks (based on entity name in model)
-```
-
-#### Joining Entities or Models with an alias
-
-```javascript
-let TaskApp = new Service("TaskApp", { client, table });
-TaskApp
-    .join("personnel", EmployeesModel) // available at TaskApp.entities.personnel
-    .join("directives", TasksModel); // available at TaskApp.entities.directives
-```
-
-#### Joining Entities at Service construction for TypeScript
+#### Joining Entities together
 
 ```typescript
 let TaskApp = new Service({
@@ -633,7 +592,7 @@ Property       | Description
 -------------- | ----------- 
 model.service  | Name of the application using the entity, used to namespace all entities
 model.entity   | Name of the entity that the schema represents
-model.version  | (optional) The version number of the schema, used to namespace keys
+model.version  | The version number of the schema, used to namespace keys
 attributes     | An object containing each attribute that makes up the schema
 indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
 
@@ -651,15 +610,7 @@ client   | (optional) An instance of the `docClient` from the `aws-sdk` for use 
 > **Pro-Tip:**
 > Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. For example, you may refer to an attribute as `organization` but want to save the attribute with a field name of `org` in DynamoDB.
 
-### Simple Syntax
-Assign just the `type` of the attribute directly to the attribute name. Types currently supported options are "string", "number", "boolean", an array of strings representing a fixed set of possible values, or "any" which disables value type checking on that attribute.
-```typescript
-attributes: {
-	<AttributeName>: "string" | "number" | "boolean" | "list" | "map" | "set" | "any" | string[] | ReadonlyArray<string> 
-}
-```
-
-### Expanded Syntax
+### Attribute Definition
 Use the expanded syntax build out more robust attribute options.
 ```typescript
 attributes: {
@@ -693,7 +644,6 @@ Property      | Type                                                       | Req
 `field`       | `string`                                                   | no       | all       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
 `readOnly`    | `boolean`                                                  | no       | all       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail. 
 `label`       | `string`                                                   | no       | all       | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
-`cast`        | `"number"`, `"string"`, `"boolean"`                        | no       | all       | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
 `set`         | `(attribute, schema) => value`                             | no       | all       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
 `get`         | `(attribute, schema) => value`                             | no       | all       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
 `watch`       | `Attribute[], "*"`                                         | no       | root-only | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed. Only available on root level attributes.
@@ -842,7 +792,7 @@ If your attributes needs to watch for any changes to an item, you can model this
 ```typescript
 myAttr: { 
   type: "string",
-  watch: "*", // "watch all"
+  watch: "*", // <- "watch all"
   set: (myAttr, allAttributes) => {
     // Whenever an `update` or `patch` operation is performed, this callback will be fired. 
     // Note: myAttr or the attributes under `allAttributes` could be independently undefined because either attribute could have triggered this callback
@@ -1064,14 +1014,14 @@ signature               | behavior
 `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid.
 `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query
 
-
-
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
 
 All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
 
 In your model, the _Table Index_ this is expressed as an _Access Pattern_ *without* an `index` property. For Secondary Indexes (both GSIs and LSIs), use the `index` property to define the name of the index as defined on your DynamoDB table.
+
+> _NOTE: The 'index' property is simply a mapping of your AccessPatternName to your DynamoDB index name. ElectroDB does not create or alter DynamoDB tables, so your indexes will need to be created prior to use_
 
 Within these _AccessPatterns_, you define the PartitionKey and (optionally) SortKeys that are present on your DynamoDB table and map the key's name on the table with the `field` property.
 
@@ -1099,14 +1049,14 @@ indexes: {
 | `pk`           | `object`                               | yes      | Configuration for the pk of that index or table
 | `pk.composite` | `string[]`                             | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
-| `pk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `pk.field`     | `string`                               | yes      | The name of the index Partition Key field as it exists in DynamoDB, if named differently in the schema attributes.
 | `pk.casing`    | `default`, `upper`, `lower`, `none`    | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`. 
 | `sk`           | `object`                               | no       | Configuration for the sk of that index or table
 | `sk.composite` | `string[]`                             | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `sk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
-| `sk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `sk.field`     | `string`                               | yes      | The name of the index Sort Key field as it exists in DynamoDB, if named differently in the schema attributes.
 | `pk.casing`    | `default`, `upper`, `lower`, `none`,   | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
-| `index`        | `string`                               | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
+| `index`        | `string`                               | no       | Required when the `Index` defined is a *Global/Local Secondary Index*; but is omitted for the table's primary index.
 | `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
 
 ### Indexes Without Sort Keys
@@ -1487,7 +1437,7 @@ Another approach allows you to use the `template` property, which allows you to 
     "your_access_pattern_name": {
       pk: {
         field: "accountId",
-        composite: ["accountId"], // `composite` is optional when using `template` but is required when using TypeScript
+        composite: ["accountId"], 
         template: "${accountId}"
       },
       sk: {...}
@@ -1769,8 +1719,11 @@ let results = await TaskApp.collections
         .go();
 
 {
+  data: {
     tasks: [...],    // tasks for employeeId "JExotic" 
     employees: [...] // employee record(s) with employeeId "JExotic"
+  },
+  cursor: null
 }
 ```
 
@@ -1988,8 +1941,11 @@ const results = await TaskApp.collections
 
 // results 
 { 
-  tasks: [...],         // tasks associated with projectId "SD-204
-  projectMembers: [...] // employees of project "SD-204"
+  data: {
+    tasks: [...],         // tasks associated with projectId "SD-204
+    projectMembers: [...] // employees of project "SD-204"
+  },
+  cursor: null,
 }
 
 // parameters
@@ -2017,9 +1973,12 @@ const results = await TaskApp.collections
 
 // results 
 {
-  tasks: [...], // tasks assigned to employeeId "JExotic" 
-  projectMembers: [...], // projects with employeeId "JExotic"
-  employees: [...] // employee record(s) with employeeId "JExotic"
+  data: {
+    tasks: [...], // tasks assigned to employeeId "JExotic" 
+    projectMembers: [...], // projects with employeeId "JExotic"
+    employees: [...] // employee record(s) with employeeId "JExotic"
+  },
+  cursor: null,
 }
 
 {
@@ -2041,8 +2000,11 @@ const results = await TaskApp.collections
 
 // results 
 {
-  tasks: [...],          // tasks assigned to employeeId "JExotic" 
-  projectMembers: [...], // projects with employeeId "JExotic"
+  data: {
+    tasks: [...],          // tasks assigned to employeeId "JExotic" 
+    projectMembers: [...], // projects with employeeId "JExotic"
+  },
+  cursor: null,
 }
 
 {
@@ -3657,14 +3619,14 @@ await StoreLocations.remove({
 }).go();
 
 // Equivalent Params:
-// {
-//   Key: {
-//     pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-//     sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-//   },
-//   TableName: 'StoreDirectory'
-//   ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
-// }
+{
+  Key: {
+    pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+  },
+  TableName: 'StoreDirectory'
+  ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
+}
 ```
 
 ### Patch Record
@@ -4081,31 +4043,31 @@ const results2 = await MallStores.query
 	.go({cursor: results1.cursor}); // Paginate by querying with the "cursor" from your first query
 
 // results1
-// {
-//   cursor: '...'
-//   data: [{
-//     mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
-//     leaseEnd: '2020-01-20',
-//     sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
-//     store: 'MNO',
-//     unit: 'B5',
-//     id: 'e0705325-d735-4fe4-906e-74091a551a04',
-//     building: 'BuildingE',
-//     category: 'food/coffee',
-//     rent: '0.00'
-//   },
-//   {
-//     mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
-//     leaseEnd: '2020-01-20',
-//     sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
-//     store: 'ZYX',
-//     unit: 'B9',
-//     id: 'f201a1d3-2126-46a2-aec9-758ade8ab2ab',
-//     building: 'BuildingI',
-//     category: 'food/coffee',
-//     rent: '0.00'
-//   }]
-// }
+{
+  cursor: '...'
+  data: [{
+    mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
+    leaseEnd: '2020-01-20',
+    sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
+    store: 'MNO',
+    unit: 'B5',
+    id: 'e0705325-d735-4fe4-906e-74091a551a04',
+    building: 'BuildingE',
+    category: 'food/coffee',
+    rent: '0.00'
+  },
+  {
+    mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
+    leaseEnd: '2020-01-20',
+    sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
+    store: 'ZYX',
+    unit: 'B9',
+    id: 'f201a1d3-2126-46a2-aec9-758ade8ab2ab',
+    building: 'BuildingI',
+    category: 'food/coffee',
+    rent: '0.00'
+  }]
+}
 ```
 
 #### Service Pagination
@@ -5057,16 +5019,7 @@ const EmployeesModel = {
 				composite: ["team", "office", "employee"],
 			},
 		},
-	},
-	filters: {
-		upcomingCelebrations: (attributes, startDate, endDate) => {
-			let { dateHired, birthday } = attributes;
-			return `${dateHired.between(startDate, endDate)} OR ${birthday.between(
-				startDate,
-				endDate,
-			)}`;
-		},
-	},
+	}
 };
 
 const TasksModel = {
@@ -5164,12 +5117,13 @@ const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({region: "us-east-1"});
 const { Service } = require("electrodb");
 const table = "projectmanagement";
-const EmployeeApp = new Service("EmployeeApp", { client, table });
 
-EmployeeApp
-	.join(EmployeesModel) // EmployeeApp.entities.employees
-	.join(TasksModel)     // EmployeeApp.entities.tasks
-	.join(OfficesModel);  // EmployeeApp.entities.tasks
+const EmployeeApp = new Service({
+  employees: EmployeesModel,
+  tasks: TasksModel,
+  offices: OfficesModel,
+}, { client, table });
+
 ```
 ### Query Records
 #### All tasks and employee information for a given employee
@@ -5181,29 +5135,32 @@ EmployeeApp.collections.assignements({employee: "CBaskin"}).go();
 Returns the following:
 ```javascript
 {
-	employees: [{
-		employee: "cbaskin",
-		firstName: "carol",
-		lastName: "baskin",
-		office: "big cat rescue",
-		title: "owner",
-		team: "cool cats and kittens",
-		salary: "1,000,000",
-		manager: "",
-		dateHired: "1992-11-04",
-		birthday: "1961-06-06",
-	}],
-	tasks: [{
-		task: "Feed tigers",
-		description: "Prepare food for tigers to eat",
-		project: "Keep tigers alive",
-		employee: "cbaskin"
-	}, {
-		task: "Fill water bowls",
-		description: "Ensure the tigers have enough water",
-		project: "Keep tigers alive",
-		employee: "cbaskin"
-	}]
+  data: {
+    employees: [{
+      employee: "cbaskin",
+      firstName: "carol",
+      lastName: "baskin",
+      office: "big cat rescue",
+      title: "owner",
+      team: "cool cats and kittens",
+      salary: "1,000,000",
+      manager: "",
+      dateHired: "1992-11-04",
+      birthday: "1961-06-06",
+    }],
+    tasks: [{
+      task: "Feed tigers",
+      description: "Prepare food for tigers to eat",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }, {
+      task: "Fill water bowls",
+      description: "Ensure the tigers have enough water",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }]
+  },
+  cursor: '...'
 }
 ```
 
@@ -5216,26 +5173,29 @@ EmployeeApp.collections.workplaces({office: "big cat rescue"}).go()
 Returns the following:
 ```javascript
 {
-	employees: [{
-		employee: "cbaskin",
-		firstName: "carol",
-		lastName: "baskin",
-		office: "big cat rescue",
-		title: "owner",
-		team: "cool cats and kittens",
-		salary: "1,000,000",
-		manager: "",
-		dateHired: "1992-11-04",
-		birthday: "1961-06-06",
-	}],
-	offices: [{
-		office: "big cat rescue",
-		country: "usa",
-		state: "florida",
-		city: "tampa",
-		zip: "12345",
-		address: "123 Kitty Cat Lane"
-	}]
+  data: {
+    employees: [{
+      employee: "cbaskin",
+      firstName: "carol",
+      lastName: "baskin",
+      office: "big cat rescue",
+      title: "owner",
+      team: "cool cats and kittens",
+      salary: "1,000,000",
+      manager: "",
+      dateHired: "1992-11-04",
+      birthday: "1961-06-06",
+    }],
+    offices: [{
+      office: "big cat rescue",
+      country: "usa",
+      state: "florida",
+      city: "tampa",
+      zip: "12345",
+      address: "123 Kitty Cat Lane"
+    }]
+  },
+  cursor: '...'
 }
 ```
 
@@ -5247,19 +5207,22 @@ EmployeeApp.entities.tasks.query.assigned({employee: "cbaskin"}).go();
 ```
 Returns the following:
 ```javascript
-[
-	{
-		task: "Feed tigers",
-		description: "Prepare food for tigers to eat",
-		project: "Keep tigers alive",
-		employee: "cbaskin"
-	}, {
-		task: "Fill water bowls",
-		description: "Ensure the tigers have enough water",
-		project: "Keep tigers alive",
-		employee: "cbaskin"
-	}
-]
+{
+  data: [
+    {
+      task: "Feed tigers",
+      description: "Prepare food for tigers to eat",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }, {
+      task: "Fill water bowls",
+      description: "Ensure the tigers have enough water",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }
+  ],
+  cursor: '...',
+}
 ```
 #### Tasks for a given project
 Fulfilling [Requirement #4](#employee-app-requirements).
@@ -5268,14 +5231,17 @@ EmployeeApp.entities.tasks.query.project({project: "Murder Carol"}).go();
 ```
 Returns the following:
 ```javascript
-[
-	{
-		task: "Hire hitman",
-		description: "Find someone to murder Carol",
-		project: "Murder Carol",
-		employee: "jexotic"
-	}
-];
+{
+  data: [
+    {
+      task: "Hire hitman",
+      description: "Find someone to murder Carol",
+      project: "Murder Carol",
+      employee: "jexotic"
+    }
+  ],
+  cursor: '...'
+}
 ```
 
 #### Find office locations
@@ -5285,16 +5251,19 @@ EmployeeApp.entities.office.locations({country: "usa", state: "florida"}).go()
 ```
 Returns the following:
 ```javascript
-[
-	{
-		office: "big cat rescue",
-		country: "usa",
-		state: "florida",
-		city: "tampa",
-		zip: "12345",
-		address: "123 Kitty Cat Lane"
-	}
-]
+{
+  data: [
+    {
+      office: "big cat rescue",
+      country: "usa",
+      state: "florida",
+      city: "tampa",
+      zip: "12345",
+      address: "123 Kitty Cat Lane"
+    }
+  ],
+  cursor: '...'
+}
 ```
 
 #### Find employee salaries and titles
@@ -5307,20 +5276,23 @@ EmployeeApp.entities.employees
 ```
 Returns the following:
 ```javascript
-[
-	{
-		employee: "ssaffery",
-		firstName: "saff",
-		lastName: "saffery",
-		office: "gw zoo",
-		title: "animal wrangler",
-		team: "keepers",
-		salary: "105.00",
-		manager: "jexotic",
-		dateHired: "1999-02-23",
-		birthday: "1960-07-11",
-	}
-]
+{
+  data: [
+    {
+      employee: "ssaffery",
+      firstName: "saff",
+      lastName: "saffery",
+      office: "gw zoo",
+      title: "animal wrangler",
+      team: "keepers",
+      salary: "105.00",
+      manager: "jexotic",
+      dateHired: "1999-02-23",
+      birthday: "1960-07-11",
+    }
+  ],
+  cursor: '...'
+}
 ```
 
 #### Find employee birthdays or anniversaries
@@ -5333,20 +5305,23 @@ EmployeeApp.entities.employees
 ```
 Returns the following:
 ```javascript
-[
-	{
-		employee: "jexotic",
-		firstName: "joe",
-		lastName: "maldonado-passage",
-		office: "gw zoo",
-		title: "tiger king",
-		team: "founders",
-		salary: "10000.00",
-		manager: "jlowe",
-		dateHired: "1999-02-23",
-		birthday: "1963-03-05",
-	}
-]
+{
+  data: [
+    {
+      employee: "jexotic",
+      firstName: "joe",
+      lastName: "maldonado-passage",
+      office: "gw zoo",
+      title: "tiger king",
+      team: "founders",
+      salary: "10000.00",
+      manager: "jlowe",
+      dateHired: "1999-02-23",
+      birthday: "1963-03-05",
+    }
+  ],
+  cursor: '...'
+}
 ```
 #### Find direct reports
 Fulfilling [Requirement #8](#employee-app-requirements).
@@ -5357,20 +5332,23 @@ EmployeeApp.entities.employees
 ```
 Returns the following:
 ```javascript
-[
-	{
-		employee: "jexotic",
-		firstName: "joe",
-		lastName: "maldonado-passage",
-		office: "gw zoo",
-		title: "tiger king",
-		team: "founders",
-		salary: "10000.00",
-		manager: "jlowe",
-		dateHired: "1999-02-23",
-		birthday: "1963-03-05",
-	}
-]
+{
+  data: [
+    {
+      employee: "jexotic",
+      firstName: "joe",
+      lastName: "maldonado-passage",
+      office: "gw zoo",
+      title: "tiger king",
+      team: "founders",
+      salary: "10000.00",
+      manager: "jlowe",
+      dateHired: "1999-02-23",
+      birthday: "1963-03-05",
+    }
+  ],
+  cursor: '...'
+}
 ```
 
 ## Shopping Mall Property Management App
@@ -5407,14 +5385,16 @@ await StoreLocations.create({
 Returns the following:
 ```json
 {
-	"mallId": "EastPointe",
-	"storeId": "LatteLarrys",
-	"buildingId": "BuildingA1",
-	"unitId": "B47",
-	"category": "spite store",
-	"leaseEndDate": "2020-02-29",
-	"rent": "5000.00",
-	"discount": "0.00"
+  "data": {
+    "mallId": "EastPointe",
+    "storeId": "LatteLarrys",
+    "buildingId": "BuildingA1",
+    "unitId": "B47",
+    "category": "spite store",
+    "leaseEndDate": "2020-02-29",
+    "rent": "5000.00",
+    "discount": "0.00"
+  }
 }
 ```
 ---
@@ -5433,7 +5413,9 @@ await StoreLocations.update({storeId, mallId, buildingId, unitId}).set({
 Returns the following:
 ```json
 {
-	"leaseEndDate": "2021-02-28"
+  "data": {
+	  "leaseEndDate": "2021-02-28"
+  }
 }
 ```
 
@@ -5473,8 +5455,9 @@ let storeId = "LatteLarrys";
 await StoreLocations.delete({storeId, mallId, buildingId, unitId}).go();
 ```
 Returns the following:
-```
-{}
+
+```json
+{ "data": {} }
 ```
 
 ### Query Mall Records
@@ -5780,6 +5763,7 @@ let old_schema = {
   attributes: {...},
   indexes: {...}
 };
+
 new Entity(old_schema, {client});
 
 // new way
@@ -5792,6 +5776,7 @@ let new_schema = {
   attributes: {...},
   indexes: {...}
 };
+
 new Entity(new_schema, {client, table});
 ```    
 
