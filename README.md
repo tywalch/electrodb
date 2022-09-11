@@ -5634,19 +5634,21 @@ If you have a need for a custom attribute type (beyond those supported by Electr
 > _NOTE: creating a custom type, ElectroDB will enforce attribute constraints based on the attribute definition provided, but will yield typing control to the user. This may result in some mismatches between your typing and the constraints enforced by ElectroDB._
 
 ```typescript
-import { Entity, createCustomAttribute } from 'electrodb';
+import { Entity, createCustomAttribute } from "electrodb";
+
+const table = 'workplace_table';
 
 type PersonnelRole = {
     type: 'employee';
-    startDate: string;
-    endDate?: string;
+    startDate: number;
+    endDate?: number;
 } | {
     type: 'contractor';
-    contractStartDate: string;
-    contractEndDate: string;
+    contractStartDate: number;
+    contractEndDate: number;
 };
 
-const table = 'workplace_table';
+
 const person = new Entity({
     model: {
         entity: 'personnel',
@@ -5665,16 +5667,18 @@ const person = new Entity({
         record: {
             pk: {
                 field: 'pk',
-                compose: ['id']
+                composite: ['id']
             },
             sk: {
                 field: 'sk',
-                compose: [],
+                composite: [],
             }
         }
     }
 }, { table });
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgYygFMBDGIgYQFcBnGCEAQRhimACMry4BfOAMygM4AIiIAbIvlYQAJuxEBuAFDL8EVHTgwS7SXAC8cAOQB3aAGsw4kviIB9HXqLGVy7GCJwACkSg0NVAkAJQh9IwRlOGjtLE8ALhMicHEILCIXFRi4OhJYABEyIkTUKhB2PyyYolRZQvIAfhKyiqgVPgAfRCiYj2KTdXQoW3ooVx7owdYRgGUdAqLm8sqJgg1p6TQ6xbhS5bblHjc1DS1Pfw1DXaJTFHRMLAAKSOyQOQlEl+zq++xE43OAVQQXExhwq2yND8ADdgHZ-uYoFYbHYwRCYtC-DRgBp-gBGYyrHjg7JkVgcLhEGifdHRYCyGnfJmxBImOhsVAAc0JzN4JOZQkkiUIpHI1DoDGY5M45AAPL4LsCQmEiAA+Z6077EACOVGAxAZ2igVCI-KZPAAlGa+atgLUiAAPKmMgVSaCGr686JgCwur3ffjACSGgEWNH+pnqcAQbHkRIAbWM9OMAF1NdliemYjRfd0IwGg+IQznw-mYlHILH+vGU9beTxNQ2M4c8EgnPpLW5Blp6VdjEQALQAFgADABOAluAD0U7giIsNGUgI0ADowFwNdl6dbBf1Pd8+v9ktY0hlS0zcgs43B6kQV6gIKZHlaiYcLSvORBn9PZ304H4hCgJcsVXdcYE3GJt1WXc-QPOJ+mMKZhmkaBz2+S8YFvRJb3vR9n2tBtLQ-L8LUUIA)
 
 ## Exported Types
 
