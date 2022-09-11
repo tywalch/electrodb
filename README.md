@@ -94,7 +94,6 @@ tasks
 
 ------------
 
-## Table of Contents
 - [ElectroDB](#electrodb)
   * [Features](#features)
   * [Table of Contents](#table-of-contents)
@@ -208,10 +207,10 @@ tasks
 - [AWS DynamoDB Client](#aws-dynamodb-client)
   * [V2 Client](#v2-client)
   * [V3 Client](#v3-client)
+- [Logging](#logging)
 - [Events](#events)
   * [Query Event](#query-event)
   * [Results Event](#results-event)
-- [Logging](#logging)
 - [Listeners](#listeners)
 - [Errors:](#errors-)
     + [No Client Defined On Model](#no-client-defined-on-model)
@@ -273,17 +272,19 @@ tasks
       - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
-- [TypeScript](#exported-typescript-types)
-  * [EntityRecord Type](#entityrecord-type)
-  * [EntityItem Type](#entityitem-type)
-  * [CollectionItem Type](#collectionitem-type)
-  * [CreateEntityItem Type](#createentityitem-type)
-  * [UpdateEntityItem Type](#updateentityitem-type)
-  * [UpdateAddEntityItem Type](#updateaddentityitem-type)
-  * [UpdateSubtractEntityItem Type](#updatesubtractentityitem-type)
-  * [UpdateAppendEntityItem Type](#updateappendentityitem-type)
-  * [UpdateRemoveEntityItem Type](#updateremoveentityitem-type)
-  * [UpdateDeleteEntityItem Type](#updatedeleteentityitem-type)
+- [TypeScript](#typescript)
+  * [Custom Attributes](#custom-attributes)
+  * [Exported Types](#exported-types)
+    + [EntityRecord Type](#entityrecord-type)
+    + [EntityItem Type](#entityitem-type)
+    + [CollectionItem Type](#collectionitem-type)
+    + [CreateEntityItem Type](#createentityitem-type)
+    + [UpdateEntityItem Type](#updateentityitem-type)
+    + [UpdateAddEntityItem Type](#updateaddentityitem-type)
+    + [UpdateSubtractEntityItem Type](#updatesubtractentityitem-type)
+    + [UpdateAppendEntityItem Type](#updateappendentityitem-type)
+    + [UpdateRemoveEntityItem Type](#updateremoveentityitem-type)
+    + [UpdateDeleteEntityItem Type](#updatedeleteentityitem-type)
 - [Using ElectroDB With Existing Data](#using-electrodb-with-existing-data)
 - [Electro CLI](#electro-cli)
 - [Version 1 Migration](#version-1-migration)
@@ -776,7 +777,7 @@ attributes: {
 
 #### Set Attributes
 
-The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports String and Number Sets using the `items` property set as either `"string"` or `"number"`. 
+The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports String and Number Sets using the `items` property set as either `"string"`, `"number"`, or an array of strings or numbers. When a ReadonlyArray is provided, ElectroDB will enforce those values as a finite list of acceptable values, similar to an [Enum Attribute](#enum-attributes)
 
 In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by removing the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval.
 
@@ -791,6 +792,14 @@ attributes: {
   myNumberSet: {
     type: "set",
     items: "number"
+  },
+  myEnumStringSet: {
+    type: "set",
+    items: ["RED", "GREEN", "BLUE"] as const // electrodb will only accept the included values "RED", "GREEN", and/or "BLUE"
+  },
+  myEnumNumberSet: {
+    type: "set",
+    items: [1, 2, 3] as const // electrodb will only accept the included values 1, 2, and/or 3
   }
 }
 ```
