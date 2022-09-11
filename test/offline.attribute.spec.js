@@ -1,5 +1,5 @@
 const { CastTypes } = require("../src/types");
-const { Attribute } = require("../src/schema");
+const { Attribute, SetAttribute } = require("../src/schema");
 const { expect } = require("chai");
 describe("constructor", () => {
 	it("Should validate 'get' property type", () => {
@@ -92,5 +92,30 @@ describe("Attribute types", () => {
 		expect(isValid).to.be.false;
 		expect(errs).to.be.an("array").with.length(1);
 		expect(errs[0].message).to.be.equal(`Invalid value type at entity path: "property_name". Received value of type "number", expected value of type "string" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`,);
+	});
+});
+
+describe("Enum Set", () => {
+	it("should accept a set with enum items", () => {
+		expect(() => new SetAttribute({
+			type: 'set',
+			items: ['GREEN', 'BLUE', 'RED']
+		})).not.to.throw();
+	});
+
+	it("should validate a set with enum items", () => {
+		const setEnum = new SetAttribute({
+			type: 'set',
+			items: ['GREEN', 'BLUE', 'RED']
+		});
+		const [redIsValid, redErrors] = setEnum.isValid(['RED']);
+		expect(redIsValid).to.equal(true);
+		expect(redErrors).to.be.an('array').with.length(0);
+		const [purpleIsValid, purpleErrors] = setEnum.isValid(['PURPLE']);
+		expect(purpleIsValid).to.equal(false);
+		expect(purpleErrors).to.be.an('array').with.length(1);
+		expect(purpleErrors[0].message).to.equal('Invalid value type at entity path: "prop". Value not found in set of acceptable values: "GREEN", "BLUE", "RED" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute');
+
+
 	});
 });

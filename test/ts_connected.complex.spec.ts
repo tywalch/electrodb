@@ -1,6 +1,6 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 import {expect} from "chai";
-import { Entity, Service } from "../index";
+import { Entity, createCustomAttribute } from "../index";
 import DynamoDB from "aws-sdk/clients/dynamodb";
 import {v4 as uuid} from "uuid";
 const client = new DynamoDB.DocumentClient({
@@ -1882,5 +1882,144 @@ describe("Simple Crud On Complex Entity", () => {
         expect(putErrors).to.have.length(tests.length);
         expect(updateErrors).to.have.length(tests.length);
         expect(putErrors).to.deep.equal(tests.map(test => test.error));
-    })
+    });
+
+    it('should throw if any attributes are typed as any within map properties', async () => {
+        expect(() => new Entity({
+            model: {
+                service: 'any_service',
+                entity: uuid(),
+                version: '1'
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'map',
+                    properties: {
+                        any1: {
+                            type: 'any'
+                        }
+                    }
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1'],
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: [],
+                    }
+                }
+            }
+        }, {table, client})).to.throw('Invalid attribute "any1" defined within "prop2". Attributes with type "any", "custom" are only supported as root level attributes. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition');
+    });
+
+    it('should throw if any attributes are typed as any within map list', async () => {
+        expect(() => new Entity({
+            model: {
+                service: 'any_service',
+                entity: uuid(),
+                version: '1'
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'list',
+                    items: {
+                        // @ts-ignore
+                        type: 'any',
+                    }
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1'],
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: [],
+                    }
+                }
+            }
+        }, {table, client})).to.throw('Invalid attribute "*" defined within "prop2". Attributes with type "any", "custom" are only supported as root level attributes. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition');
+    });
+
+    it('should throw if any attributes are typed as custom within map properties', async () => {
+        expect(() => new Entity({
+            model: {
+                service: 'any_service',
+                entity: uuid(),
+                version: '1'
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'map',
+                    properties: {
+                        // @ts-ignore
+                        custom1: createCustomAttribute<{abc: string}>({
+                            required: true,
+                        })
+                    }
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1'],
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: [],
+                    }
+                }
+            }
+        }, {table, client})).to.throw('Invalid attribute "custom1" defined within "prop2". Attributes with type "any", "custom" are only supported as root level attributes. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition');
+    });
+
+    it('should throw if any attributes are typed as custom within map list', async () => {
+        expect(() => new Entity({
+            model: {
+                service: 'any_service',
+                entity: uuid(),
+                version: '1'
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'list',
+                    // @ts-ignore
+                    items: createCustomAttribute({
+                        default: 'abc'
+                    })
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1'],
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: [],
+                    }
+                }
+            }
+        }, {table, client})).to.throw('Invalid attribute "*" defined within "prop2". Attributes with type "any", "custom" are only supported as root level attributes. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition');
+    });
 });

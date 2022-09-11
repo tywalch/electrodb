@@ -30,6 +30,7 @@ import {
   AddItem,
   SubtractItem,
   DeleteItem,
+  createCustomAttribute,
 } from '../';
 import { expectType, expectError, expectNotType } from 'tsd';
 
@@ -176,8 +177,120 @@ class MockEntity<A extends string, F extends string, C extends string, S extends
   getDeleteItem(): Resolve<DeleteItem<A,F,C,S>> {
     return {} as Resolve<DeleteItem<A,F,C,S>>;
   }
-
 }
+
+type CustomAttributeType = {
+  strAttr: string;
+  numAttr: number;
+  boolAttr: boolean;
+  mapAttr: {
+    nestedAttr: string;
+    maybeNestedAttr?: string;
+  },
+  maybeMapAttr: {
+    nestedAttr: string;
+    maybeNestedAttr?: string;
+  },
+  listAttr: {
+    mapAttr: {
+      nestedAttr: string;
+      maybeNestedAttr?: string;
+    }
+  }[];
+  maybeListAttr?: {
+    maybeMapAttr?: {
+      nestedAttr: string;
+      maybeNestedAttr?: string;
+    }
+  }[];
+  maybeStrAttr?: string;
+  maybeNumAttr?: number;
+  maybeBoolAttr?: boolean;
+}
+
+const entityWithCustomAttribute = new MockEntity({
+  model: {
+    entity: "withcustomattribute",
+    service: "myservice",
+    version: "myversion"
+  },
+  attributes: {
+      attr1: {
+          type: "string",
+      },
+      attr2: createCustomAttribute<CustomAttributeType>({
+        get: (attr) => {
+          expectType<CustomAttributeType>(attr);
+          return attr;
+        },
+        set: (attr) => {
+          expectType<CustomAttributeType|undefined>(attr);
+          return attr;
+        },
+        validate: (attr) => {
+          expectType<CustomAttributeType>(attr);
+        },
+      })
+  },
+  indexes: {
+    myIndex: {
+      pk: {
+        field: "pk",
+        composite: ["attr1"]
+      },
+      sk: {
+        field: "sk",
+        composite: []
+      }
+    },
+  }
+});
+
+const entityWithEnumSets = new MockEntity({
+  model: {
+    entity: "withcustomattribute",
+    service: "myservice",
+    version: "myversion"
+  },
+  attributes: {
+    attr1: {
+      type: "string",
+    },
+    strEnumSet: {
+      type: 'set',
+      items: ['ONE', 'TWO', 'THREE'] as const,
+    },
+    numEnumSet: {
+      type: 'set',
+      items: [1, 2, 3] as const,
+    },
+    mapAttr: {
+      type: 'map',
+      properties: {
+        nestedStrEnumSet: {
+          type: 'set',
+          items: ['ONE', 'TWO', 'THREE'] as const,
+        },
+        nestedNumEnumSet: {
+          type: 'set',
+          items: [1, 2, 3] as const,
+        },
+      }
+    }
+  },
+  indexes: {
+    myIndex: {
+      pk: {
+        field: "pk",
+        composite: ["attr1"]
+      },
+      sk: {
+        field: "sk",
+        composite: []
+      }
+    },
+  }
+});
 
 const entityWithoutCollection = new MockEntity({
   model: {
@@ -1836,7 +1949,9 @@ const diverseTableKeyTypes = new MockEntity({
       }
     }
   }
-})
+});
+
+
 
 // getEntityCollections
 expectType<{normalcollection: 'tableIndex'}>(normalEntity1.getEntityCollections());
@@ -2284,6 +2399,16 @@ expectType<{
   prop5: string;
 }>(standAloneEntityWithDefault.getResponseItem());
 
+expectType<{
+  attr1: string;
+  strEnumSet?: ('ONE' | 'TWO' | 'THREE')[] | undefined;
+  numEnumSet?: (1 | 2 | 3)[] | undefined;
+  mapAttr?: {
+    nestedStrEnumSet?: ('ONE' | 'TWO' | 'THREE')[] | undefined;
+    nestedNumEnumSet?: (1 | 2 | 3)[] | undefined;
+  } | undefined
+}>(magnify(entityWithEnumSets.getResponseItem()));
+
 // RequiredPutItems
 expectType<{
   username: true, 
@@ -2328,7 +2453,6 @@ expectType<{
   prop4?: string | undefined;
   prop5?: string | undefined;
 }>(standAloneEntityWithDefault.getPutItem());
-
 
 expectType<{
   prop1: string;
@@ -2436,6 +2560,11 @@ expectType<{
 
 // AddItem
 expectType<{
+  strEnumSet?: ('ONE' | 'TWO' | 'THREE')[];
+  numEnumSet?: (1 | 2 | 3)[];
+}>(entityWithEnumSets.getAddItem());
+
+expectType<{
 
 }>(complex.getAppendItem())
 
@@ -2474,6 +2603,10 @@ expectType<{
 }>(entityWithSK.getSubtractItem());
 
 expectType<{
+  attr2?: CustomAttributeType;
+}>(entityWithCustomAttribute.getSubtractItem());
+
+expectType<{
   // todo: would be great for these not to show up at all
   prop4?: undefined
 }>(normalEntity1.getSubtractItem());
@@ -2483,6 +2616,10 @@ expectType<{
   attr5?: string[] | undefined;
   attr6?: string[] | undefined;
 }>(entityWithComplexShapesRequired.getDeleteItem());
+
+expectType<{
+  attr2?: CustomAttributeType
+}>(entityWithCustomAttribute.getDeleteItem());
 
 expectType<{
   attrz5?: string[] | undefined;
@@ -2495,6 +2632,11 @@ expectType<{
 }>(readOnlyEntity.getSubtractItem());
 
 expectType<{}>(normalEntity1.getDeleteItem());
+
+expectType<{
+  strEnumSet?: ('ONE' | 'TWO' | 'THREE')[];
+  numEnumSet?: (1 | 2 | 3)[];
+}>(entityWithEnumSets.getDeleteItem())
 
 expectType<{
   attr7?: any;

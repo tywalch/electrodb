@@ -1,3 +1,4 @@
+
 export type DocumentClientMethod = (parameters: any) => {promise: () => Promise<any>};
 
 export type DocumentClient = {
@@ -848,7 +849,6 @@ export interface NestedEnumAttribute {
     readonly label?: string;
 }
 
-
 export interface EnumAttribute {
     readonly type: ReadonlyArray<string>;
     readonly required?: boolean;
@@ -1032,6 +1032,60 @@ export interface NestedStringSetAttribute {
     readonly field?: string;
 }
 
+export interface NestedEnumNumberSetAttribute {
+    readonly type: "set";
+    readonly items: ReadonlyArray<number>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: Array<number>, item: any) => Array<number> | undefined | void;
+    readonly set?: (val?: Array<number>, item?: any) => Array<number> | undefined | void;
+    readonly default?: Array<number> | (() => Array<number>);
+    readonly validate?: ((val: Array<number>) => boolean) | ((val: Array<number>) => void) | ((val: Array<number>) => string | void) | RegExp;
+    readonly field?: string;
+}
+
+export interface EnumNumberSetAttribute {
+    readonly type: "set";
+    readonly items: ReadonlyArray<number>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: Array<number>, item: any) => Array<number> | undefined | void;
+    readonly set?: (val?: Array<number>, item?: any) => Array<number> | undefined | void;
+    readonly default?: Array<number> | (() => Array<number>);
+    readonly validate?: ((val: Array<number>) => boolean) | ((val: Array<number>) => void) | ((val: Array<number>) => string | void) | RegExp;
+    readonly field?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
+}
+
+export interface NestedEnumStringSetAttribute {
+    readonly type: "set";
+    readonly items: ReadonlyArray<string>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: Array<string>, item: any) => Array<string> | undefined | void;
+    readonly set?: (val?: Array<string>, item?: any) => Array<string> | undefined | void;
+    readonly default?: Array<string> | (() => Array<string>);
+    readonly validate?: ((val: Array<string>) => boolean) | ((val: Array<string>) => void) | ((val: Array<string>) => string | void) | RegExp;
+    readonly field?: string;
+}
+
+export interface EnumStringSetAttribute {
+    readonly type: "set";
+    readonly items: ReadonlyArray<string>;
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: Array<string>, item: any) => Array<string> | undefined | void;
+    readonly set?: (val?: Array<string>, item?: any) => Array<string> | undefined | void;
+    readonly default?: Array<string> | (() => Array<string>);
+    readonly validate?: ((val: Array<string>) => boolean) | ((val: Array<string>) => void) | ((val: Array<string>) => string | void) | RegExp;
+    readonly field?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
+}
+
 export interface StringSetAttribute {
     readonly type: "set";
     readonly items: "string";
@@ -1073,6 +1127,25 @@ export interface NumberSetAttribute {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
+type StaticAttribute = {
+    readonly type: "static";
+    readonly hidden?: boolean;
+    value: string | number | boolean;
+    readonly field?: string;
+}
+
+type CustomAttribute<T extends any = any> = {
+    readonly type: "custom";
+    readonly [CustomAttributeSymbol]: T;
+    readonly hidden?: boolean;
+    readonly get?: (val: T, item: any) => T | undefined | void;
+    readonly set?: (val?: T, item?: any) => T | undefined | void;
+    readonly default?: T | (() => T);
+    readonly validate?: ((val: T) => boolean) | ((val: T) => void) | ((val: T) => string | void);
+    readonly field?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
+};
+
 export type Attribute =
     BooleanAttribute
     | NumberAttribute
@@ -1084,7 +1157,11 @@ export type Attribute =
     | NumberSetAttribute
     | StringListAttribute
     | NumberListAttribute
-    | MapListAttribute;
+    | MapListAttribute
+    | StaticAttribute
+    | CustomAttribute
+    | EnumNumberSetAttribute
+    | EnumStringSetAttribute;
 
 export type NestedAttributes =
     NestedBooleanAttribute
@@ -1097,7 +1174,10 @@ export type NestedAttributes =
     | NestedMapListAttribute
     | NestedStringSetAttribute
     | NestedNumberSetAttribute
-    | NestedEnumAttribute;
+    | NestedEnumAttribute
+    | NestedEnumAttribute
+    | NestedEnumNumberSetAttribute
+    | NestedEnumStringSetAttribute;
 
 export interface IndexWithSortKey {
     readonly sk: {
@@ -1171,7 +1251,9 @@ type PartialDefinedKeys<T> = {
 }
 
 export type ItemAttribute<A extends Attribute> =
-    A["type"] extends infer R
+    A extends CustomAttribute<infer T>
+        ? T
+    : A["type"] extends infer R
         ? R extends "string" ? string
         : R extends "number" ? number
             : R extends "boolean" ? boolean
@@ -1200,7 +1282,8 @@ export type ItemAttribute<A extends Attribute> =
                                     ? A["items"] extends infer I
                                         ? I extends "string" ? string[]
                                             : I extends "number" ? number[]
-                                                : never
+                                                : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                    : never
                                         : never
                                     : never
                                 : R extends "any" ? any
@@ -1208,8 +1291,11 @@ export type ItemAttribute<A extends Attribute> =
         : never
 
 export type ReturnedAttribute<A extends Attribute> =
-    A["type"] extends infer R
-        ? R extends "string" ? string
+    A extends CustomAttribute<infer T>
+    ? T
+    : A["type"] extends infer R
+        ? R extends "static" ? never
+        : R extends "string" ? string
         : R extends "number" ? number
             : R extends "boolean" ? boolean
                 : R extends ReadonlyArray<infer E> ? E
@@ -1251,7 +1337,8 @@ export type ReturnedAttribute<A extends Attribute> =
                                     ? A["items"] extends infer I
                                         ? I extends "string" ? string[]
                                             : I extends "number" ? number[]
-                                                : never
+                                                : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                    : never
                                         : never
                                     : never
                                 : R extends "any" ? any
@@ -1259,8 +1346,11 @@ export type ReturnedAttribute<A extends Attribute> =
         : never
 
 export type CreatedAttribute<A extends Attribute> =
-    A["type"] extends infer R
-        ? R extends "string" ? string
+    A extends CustomAttribute<infer T>
+        ? T
+        : A["type"] extends infer R
+        ? R extends "static" ? never
+        : R extends "string" ? string
         : R extends "number" ? number
             : R extends "boolean" ? boolean
                 : R extends ReadonlyArray<infer E> ? E
@@ -1302,7 +1392,8 @@ export type CreatedAttribute<A extends Attribute> =
                                     ? A["items"] extends infer I
                                         ? I extends "string" ? string[]
                                             : I extends "number" ? number[]
-                                                : never
+                                                : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                    : never
                                         : never
                                     : never
                                 : R extends "any" ? any
@@ -1318,10 +1409,13 @@ export type CreatedItem<A extends string, F extends string, C extends string, S 
 }
 
 export type EditableItemAttribute<A extends Attribute> =
-    A extends ReadOnlyAttribute
+    A extends CustomAttribute<infer T>
+    ? T
+    : A extends ReadOnlyAttribute
         ? never
         : A["type"] extends infer R
-        ? R extends "string" ? string
+            ? R extends "static" ? never
+                : R extends "string" ? string
             : R extends "number" ? number
                 : R extends "boolean" ? boolean
                     : R extends ReadonlyArray<infer E> ? E
@@ -1353,7 +1447,8 @@ export type EditableItemAttribute<A extends Attribute> =
                                         ? A["items"] extends infer I
                                             ? I extends "string" ? string[]
                                                 : I extends "number" ? number[]
-                                                    : never
+                                                    : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                        : never
                                             : never
                                         : never
                                     : R extends "any" ? any
@@ -1361,10 +1456,13 @@ export type EditableItemAttribute<A extends Attribute> =
         : never
 
 export type UpdatableItemAttribute<A extends Attribute> =
-    A extends ReadOnlyAttribute
+    A extends CustomAttribute<infer T>
+        ? T
+        : A extends ReadOnlyAttribute
         ? never
         : A["type"] extends infer R
-        ? R extends "string" ? string
+            ? R extends "static" ? never
+                : R extends "string" ? string
             : R extends "number" ? number
                 : R extends "boolean" ? boolean
                     : R extends ReadonlyArray<infer E> ? E
@@ -1411,7 +1509,8 @@ export type UpdatableItemAttribute<A extends Attribute> =
                                         ? A["items"] extends infer I
                                             ? I extends "string" ? string[]
                                                 : I extends "number" ? number[]
-                                                    : never
+                                                    : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                        : never
                                             : never
                                         : never
                                     : R extends "any" ? any
@@ -1419,10 +1518,13 @@ export type UpdatableItemAttribute<A extends Attribute> =
         : never
 
 export type RemovableItemAttribute<A extends Attribute> =
-    A extends ReadOnlyAttribute | RequiredAttribute
+    A extends CustomAttribute<infer T>
+        ? T
+        : A extends ReadOnlyAttribute | RequiredAttribute
         ? never
         : A["type"] extends infer R
-        ? R extends "string" ? string
+            ? R extends "static" ? never
+                : R extends "string" ? string
             : R extends "number" ? number
                 : R extends "boolean" ? boolean
                     : R extends ReadonlyArray<infer E> ? E
@@ -1454,7 +1556,8 @@ export type RemovableItemAttribute<A extends Attribute> =
                                         ? A["items"] extends infer I
                                             ? I extends "string" ? string[]
                                                 : I extends "number" ? number[]
-                                                    : never
+                                                    : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                        : never
                                             : never
                                         : never
                                     : R extends "any" ? any
@@ -1599,7 +1702,7 @@ export type RemoveItem<A extends string, F extends string, C extends string, S e
 export type AppendItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'list' | 'any'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'list' | 'any' | 'custom'
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -1610,7 +1713,7 @@ export type AppendItem<A extends string, F extends string, C extends string, S e
 export type AddItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends "number" | "any" | "set"
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'set' | 'custom'
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -1621,7 +1724,7 @@ export type AddItem<A extends string, F extends string, C extends string, S exte
 export type SubtractItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends "number" | "any"
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'custom'
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -1632,7 +1735,7 @@ export type SubtractItem<A extends string, F extends string, C extends string, S
 export type DeleteItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends "any" | "set"
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'any' | 'set' | 'custom'
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -1642,6 +1745,7 @@ export type DeleteItem<A extends string, F extends string, C extends string, S e
 
 export declare const WhereSymbol: unique symbol;
 export declare const UpdateDataSymbol: unique symbol;
+export declare const CustomAttributeSymbol: unique symbol;
 
 export type WhereAttributeSymbol<T extends any> =
         { [WhereSymbol]: void }
@@ -1822,3 +1926,17 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     collections: CollectionQueries<E, CollectionAssociations<E>>
     constructor(entities: E, config?: ServiceConfiguration);
 }
+
+type CustomAttributeDefinition<T> = {
+    readonly required?: boolean;
+    readonly hidden?: boolean;
+    readonly readOnly?: boolean;
+    readonly get?: (val: T, item: any) => T | undefined | void;
+    readonly set?: (val?: T, item?: any) => T | undefined | void;
+    readonly default?: T | (() => T);
+    readonly validate?: ((val: T) => boolean) | ((val: T) => void) | ((val: T) => string | void);
+    readonly field?: string;
+    readonly watch?: ReadonlyArray<string> | "*";
+}
+
+declare function createCustomAttribute<T>(definition?: CustomAttributeDefinition<T>): CustomAttribute<T>;

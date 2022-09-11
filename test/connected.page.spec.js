@@ -326,7 +326,7 @@ describe("Page", async () => {
       let results = await tasks.paginate(2, total, query, testPage);
       expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
     }
-  }).timeout(10000);
+  }).timeout(15000);
 
   it("Paginate without overlapping values", async () => {
     let limit = 30;
