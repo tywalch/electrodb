@@ -1,5 +1,5 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import { Entity } from "../index";
+import {createCustomAttribute, Entity} from "../index";
 import { expect } from "chai";
 import {v4 as uuid} from "uuid";
 import moment from "moment";
@@ -2787,6 +2787,235 @@ describe("Update Item", () => {
             const error = await entity.update({stringVal}).set({map: {nestedList}}).go({originalErr: true}).then(() => false).catch(err => err.message);
             console.log(error)
             expect(error).to.be.string('Invalid value for attribute "map.nestedList[*]"');
+        });
+    });
+
+    it('should perform crud on custom attribute', async () => {
+        const entity = new Entity({
+            model: {
+                service: 'any_service',
+                entity: uuid(),
+                version: '1'
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: createCustomAttribute<{strProp: string; numProp: number; maybeProp?: string}>(),
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1'],
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: [],
+                    }
+                }
+            }
+        }, {table, client});
+
+        const prop1 = uuid();
+        const numProp = 10;
+        const strProp = 'value1';
+        await entity.put({prop1, prop2: {numProp, strProp}}).go();
+        const getVal = await entity.get({prop1}).go();
+        expect(getVal).to.deep.equal({prop1, prop2: {numProp, strProp}});
+        const updated = await entity.update({prop1}).data((attr, op) => {
+            op.add(attr.prop2.numProp, numProp);
+            op.set(attr.prop2.strProp, 'value2');
+        }).go({response: 'all_new'});
+        expect(updated.prop2).to.deep.equal({
+            numProp: 20,
+            strProp: 'value2',
+        });
+    });
+    
+    describe('enum sets', () => {
+        const prop1 = uuid();
+        const STRING_SET = ['ONE', 'TWO', 'THREE'] as const;
+        const STRING_VAL = 'ONE';
+        const NUM_SET = [1, 2, 3] as const;
+        const NUM_VAL = 1;
+
+        it('should allow for enum string set attributes', async () => {
+            const entity = new Entity({
+                model: {
+                    service: 'any_service',
+                    entity: uuid(),
+                    version: '1'
+                },
+                attributes: {
+                    prop1: {
+                        type: 'string'
+                    },
+                    prop2: {
+                        type: 'set',
+                        items: STRING_SET,
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['prop1'],
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            }, {table, client});
+            await entity.put({
+                prop1,
+                prop2: [STRING_VAL],
+            }).go();
+            const result = await entity.get({prop1}).go();
+            expect(result).to.deep.equal({
+                prop1,
+                prop2: [STRING_VAL],
+            });
+        });
+
+        it('should allow for enum number set attributes', async () => {
+            const entity = new Entity({
+                model: {
+                    service: 'any_service',
+                    entity: uuid(),
+                    version: '1'
+                },
+                attributes: {
+                    prop1: {
+                        type: 'string'
+                    },
+                    prop2: {
+                        type: 'set',
+                        items: NUM_SET,
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['prop1'],
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            }, {table, client});
+            await entity.put({
+                prop1,
+                prop2: [NUM_VAL],
+            }).go();
+            const result = await entity.get({prop1}).go();
+            expect(result).to.deep.equal({
+                prop1,
+                prop2: [NUM_VAL],
+            });
+        });
+
+        it('should allow for nested enum string set attributes', async () => {
+            const entity = new Entity({
+                model: {
+                    service: 'any_service',
+                    entity: uuid(),
+                    version: '1'
+                },
+                attributes: {
+                    prop1: {
+                        type: 'string'
+                    },
+                    prop2: {
+                        type: 'map',
+                        properties: {
+                            nested: {
+                                type: 'set',
+                                items: STRING_SET,
+                            }
+                        }
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['prop1'],
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            }, {table, client});
+            await entity.put({
+                prop1,
+                prop2: {
+                    nested: [STRING_VAL]
+                },
+            }).go();
+            const result = await entity.get({prop1}).go();
+            expect(result).to.deep.equal({
+                prop1,
+                prop2: {
+                    nested: [STRING_VAL],
+                },
+            });   
+        });
+
+        it('should allow for enum string set attributes', async () => {
+            const entity = new Entity({
+                model: {
+                    service: 'any_service',
+                    entity: uuid(),
+                    version: '1'
+                },
+                attributes: {
+                    prop1: {
+                        type: 'string'
+                    },
+                    prop2: {
+                        type: 'map',
+                        properties: {
+                            nested: {
+                                type: 'set',
+                                items: NUM_SET,
+                            }
+                        }
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['prop1'],
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            }, {table, client});
+            await entity.put({
+                prop1,
+                prop2: {
+                    nested: [NUM_VAL]
+                },
+            }).go();
+            const result = await entity.get({prop1}).go();
+            expect(result).to.deep.equal({
+                prop1,
+                prop2: {
+                    nested: [NUM_VAL],
+                },
+            });   
         });
     });
 });
