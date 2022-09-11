@@ -94,7 +94,6 @@ tasks
 
 ------------
 
-## Table of Contents
 - [ElectroDB](#electrodb)
   * [Features](#features)
   * [Table of Contents](#table-of-contents)
@@ -208,10 +207,10 @@ tasks
 - [AWS DynamoDB Client](#aws-dynamodb-client)
   * [V2 Client](#v2-client)
   * [V3 Client](#v3-client)
+- [Logging](#logging)
 - [Events](#events)
   * [Query Event](#query-event)
   * [Results Event](#results-event)
-- [Logging](#logging)
 - [Listeners](#listeners)
 - [Errors:](#errors-)
     + [No Client Defined On Model](#no-client-defined-on-model)
@@ -273,17 +272,19 @@ tasks
       - [Stores will renewals for Q4](#stores-will-renewals-for-q4)
       - [Spite-stores with release renewals this year](#spite-stores-with-release-renewals-this-year)
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
-- [Exported TypeScript Types](#exported-typescript-types)
-  * [EntityRecord Type](#entityrecord-type)
-  * [EntityItem Type](#entityitem-type)
-  * [CollectionItem Type](#collectionitem-type)
-  * [CreateEntityItem Type](#createentityitem-type)
-  * [UpdateEntityItem Type](#updateentityitem-type)
-  * [UpdateAddEntityItem Type](#updateaddentityitem-type)
-  * [UpdateSubtractEntityItem Type](#updatesubtractentityitem-type)
-  * [UpdateAppendEntityItem Type](#updateappendentityitem-type)
-  * [UpdateRemoveEntityItem Type](#updateremoveentityitem-type)
-  * [UpdateDeleteEntityItem Type](#updatedeleteentityitem-type)
+- [TypeScript](#typescript)
+  * [Custom Attributes](#custom-attributes)
+  * [Exported Types](#exported-types)
+    + [EntityRecord Type](#entityrecord-type)
+    + [EntityItem Type](#entityitem-type)
+    + [CollectionItem Type](#collectionitem-type)
+    + [CreateEntityItem Type](#createentityitem-type)
+    + [UpdateEntityItem Type](#updateentityitem-type)
+    + [UpdateAddEntityItem Type](#updateaddentityitem-type)
+    + [UpdateSubtractEntityItem Type](#updatesubtractentityitem-type)
+    + [UpdateAppendEntityItem Type](#updateappendentityitem-type)
+    + [UpdateRemoveEntityItem Type](#updateremoveentityitem-type)
+    + [UpdateDeleteEntityItem Type](#updatedeleteentityitem-type)
 - [Using ElectroDB With Existing Data](#using-electrodb-with-existing-data)
 - [Electro CLI](#electro-cli)
 - [Version 1 Migration](#version-1-migration)
@@ -726,7 +727,7 @@ attributes: {
 
 #### Set Attributes
 
-The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports String and Number Sets using the `items` property set as either `"string"` or `"number"`. 
+The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports String and Number Sets using the `items` property set as either `"string"`, `"number"`, or an array of strings or numbers. When a ReadonlyArray is provided, ElectroDB will enforce those values as a finite list of acceptable values, similar to an [Enum Attribute](#enum-attributes)
 
 In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by removing the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval.
 
@@ -741,6 +742,14 @@ attributes: {
   myNumberSet: {
     type: "set",
     items: "number"
+  },
+  myEnumStringSet: {
+    type: "set",
+    items: ["RED", "GREEN", "BLUE"] as const // electrodb will only accept the included values "RED", "GREEN", and/or "BLUE"
+  },
+  myEnumNumberSet: {
+    type: "set",
+    items: [1, 2, 3] as const // electrodb will only accept the included values 1, 2, and/or 3
   }
 }
 ```
@@ -1415,7 +1424,7 @@ When your attribute's name, or [`field` property](#expanded-syntax) on an attrib
 }
 ```
 
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3jBUANwrpoOALxxUFAO4p0mLAAoEHOJrggIjagC5EGrSbEZshslggBXKAH0zy)
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwL5wGZQQhwDkApgDZkDGMhAJgEYkDcAUG9RCgM7zAoAbmTTRMcALxwUZAO5xU6LAAoEbOHBAR6lAFyJ1GuCKWZ9AIkwQArlAD6JjJjsoAhiDLmANIY08yUILA1GQWVrZ2-oHBZC7unj5GcMJQPMDcFgCM5obYiXCuMHTAjNYwZDz6akmu1FzWaACS9FW+RlhgoXDmfFACAOY5SXltYAzWtABy1iCMAa1JGh1d5igzc1BDRti5+QI6AB4VC0Zj2hMwlQaLcGAA1ic3eMCULd219U303m1JXOAQNLlfQAbXMHxsX3MAF1fnARjceA9rjd8C8KG9zGd6BdprMAj9UXB-pAgV0wdjcesCbCbjthrk2HlEDBXIwqPoSCBMAAVNlUEjYACU7E43D4BTqkJgzUk7zqMAAtAAWACsAGYAAzmdhcXjwSlTalQOUAJk1msyooEwlEUEwhgAdGAyqpJZ8ZfQvLdxkb8SbhU7+hBlCKODaTGJHQBHawBB1JZ2+y6qCENT2BxPB0PsIA)
 
 **Using `template`** 
 
@@ -5535,11 +5544,62 @@ let storeId = "LatteLarrys";
 let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).go();
 ```
 
-# Exported TypeScript Types
+# TypeScript
+ElectroDB using advanced dynamic typing techniques to automatically create types based on the configurations in your model. Changes to your model will automatically change the types returned by ElectroDB.
+
+## Custom Attributes
+If you have a need for a custom attribute type (beyond those supported by ElectroDB) you can use the the export function `createCustomAttribute`. This function takes an attribute definition and allows you to specify a custom typed attribute with ElectroDB:
+
+> _NOTE: creating a custom type, ElectroDB will enforce attribute constraints based on the attribute definition provided, but will yield typing control to the user. This may result in some mismatches between your typing and the constraints enforced by ElectroDB._
+
+```typescript
+import { Entity, createCustomAttribute } from 'electrodb';
+
+type PersonnelRole = {
+    type: 'employee';
+    startDate: string;
+    endDate?: string;
+} | {
+    type: 'contractor';
+    contractStartDate: string;
+    contractEndDate: string;
+};
+
+const table = 'workplace_table';
+const person = new Entity({
+    model: {
+        entity: 'personnel',
+        service: 'workplace',
+        version: '1'
+    },
+    attributes: {
+        id: {
+            type: 'string'
+        },
+        role: createCustomAttribute<PersonnelRole>({
+            required: true,
+        }),
+    },
+    indexes: {
+        record: {
+            pk: {
+                field: 'pk',
+                compose: ['id']
+            },
+            sk: {
+                field: 'sk',
+                compose: [],
+            }
+        }
+    }
+}, { table });
+```
+
+## Exported Types
 
 The following types are exported for easier use while using ElectroDB with TypeScript:
 
-## EntityRecord Type
+### EntityRecord Type
 
 The EntityRecord type is an object containing every attribute an Entity's model.
 
@@ -5557,7 +5617,7 @@ _Use:_
 type EntiySchema = EntityRecord<typeof MyEntity>
 ```
 
-## EntityItem Type
+### EntityItem Type
 
 This type represents an item as it is returned from a query. This is different from the `EntityRecord` in that this type reflects the `required`, `hidden`, `default`, etc properties defined on the attribute.
 
@@ -5576,7 +5636,7 @@ _Use:_
 type Thing = EntityItem<typeof MyEntityInstance>;
 ```
 
-## CollectionItem Type
+### CollectionItem Type
 
 This type represents the value returned from a collection query, and is similar to EntityItem.
 
@@ -5586,7 +5646,7 @@ _Use:_
 type CollectionResults = CollectionItem<typeof MyServiceInstance, "collectionName">
 ``` 
 
-## CreateEntityItem Type
+### CreateEntityItem Type
 
 This type represents an item that you would pass your entity's `put` or `create` method
 
@@ -5605,7 +5665,7 @@ _Use:_
 type NewThing = CreateEntityItem<typeof MyEntityInstance>;
 ```
 
-## UpdateEntityItem Type
+### UpdateEntityItem Type
 
 This type represents an item that you would pass your entity's `set` method when using `create` or `update`.
 
@@ -5624,8 +5684,7 @@ _Use:_
 type UpdateProperties = UpdateEntityItem<typeof MyEntityInstance>;
 ```
 
-
-## UpdateAddEntityItem Type
+### UpdateAddEntityItem Type
 
 This type represents an item that you would pass your entity's `add` method when using `create` or `update`.
 
@@ -5638,7 +5697,7 @@ export type UpdateAddEntityItem<E extends Entity<any, any, any, any>> =
 
 `````
 
-## UpdateSubtractEntityItem Type
+### UpdateSubtractEntityItem Type
 
 This type represents an item that you would pass your entity's `subtract` method when using `create` or `update`.
 
@@ -5650,7 +5709,7 @@ export type UpdateSubtractEntityItem<E extends Entity<any, any, any, any>> =
         : never;
 ```
 
-## UpdateAppendEntityItem Type
+### UpdateAppendEntityItem Type
 
 This type represents an item that you would pass your entity's `append` method when using `create` or `update`.
 
@@ -5662,7 +5721,7 @@ export type UpdateAppendEntityItem<E extends Entity<any, any, any, any>> =
         : never;
 ```
 
-## UpdateRemoveEntityItem Type
+### UpdateRemoveEntityItem Type
 
 This type represents an item that you would pass your entity's `remove` method when using `create` or `update`.
 
@@ -5674,7 +5733,7 @@ export type UpdateRemoveEntityItem<E extends Entity<any, any, any, any>> =
         : never;
 ```
 
-## UpdateDeleteEntityItem Type
+### UpdateDeleteEntityItem Type
 
 This type represents an item that you would pass your entity's `delete` method when using `create` or `update`.
 

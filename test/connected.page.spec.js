@@ -283,54 +283,52 @@ describe("Page", async () => {
     await sleep(1000);
   });
 
-  // it("Should paginate through all records", async () => {
-  //   let tests = [
-  //     {
-  //       type: "query",
-  //       input: {
-  //         facets: {project: Tasks.projects[0]},
-  //         index: "projects",
-  //       },
-  //       output: {
-  //         pageKeys: ["task", "project", "employee"]
-  //       },
-  //     }, {
-  //       type: "query",
-  //       input: {
-  //         facets: {employee: Tasks.employees[0]},
-  //         index: "assigned",
-  //       },
-  //       output: {
-  //         pageKeys: ["points", "project", "employee"]
-  //       },
-  //     }, {
-  //       type: "scan",
-  //       output: {
-  //         pageKeys: ["task", "project", "employee"]
-  //       },
-  //     }
-  //   ];
-  //   for (let test of tests) {
-  //     let query;
-  //     let loaded;
-  //     let testPage = (([page, tasks]) => {
-  //       if (page !== null) expect(page).to.include.keys(test.output.pageKeys);
-  //       return [page, tasks];
-  //     });
-  //     if (test.type === "scan") {
-  //       query = (cursor, limit) => tasks.scan.go({cursor, limit});
-  //       loaded = tasks.loaded;
-  //     } else {
-  //       query = (cursor, limit) => tasks.query[test.input.index](test.input.facets)
-  //           .go({cursor, limit})
-  //           .then( res => [res.cursor, res.data]);
-  //       loaded = tasks.filterLoaded(test.input.facets);
-  //     }
-  //
-  //     let results = await tasks.paginate(2, total, query, testPage);
-  //     expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
-  //   }
-  // }).timeout(10000);
+  it("Should paginate through all records", async () => {
+    let tests = [
+      {
+        type: "query",
+        input: {
+          facets: {project: Tasks.projects[0]},
+          index: "projects",
+        },
+        output: {
+          pageKeys: ["task", "project", "employee"]
+        },
+      }, {
+        type: "query",
+        input: {
+          facets: {employee: Tasks.employees[0]},
+          index: "assigned",
+        },
+        output: {
+          pageKeys: ["points", "project", "employee"]
+        },
+      }, {
+        type: "scan",
+        output: {
+          pageKeys: ["task", "project", "employee"]
+        },
+      }
+    ];
+    for (let test of tests) {
+      let query;
+      let loaded;
+      let testPage = (([page, tasks]) => {
+        if (page !== null) expect(page).to.include.keys(test.output.pageKeys);
+        return [page, tasks];
+      });
+      if (test.type === "scan") {
+        query = (next, limit) => tasks.scan.page(next, {limit});
+        loaded = tasks.loaded;
+      } else {
+        query = (next, limit) => tasks.query[test.input.index](test.input.facets).page(next, {limit});
+        loaded = tasks.filterLoaded(test.input.facets);
+      }
+      
+      let results = await tasks.paginate(2, total, query, testPage);
+      expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
+    }
+  }).timeout(15000);
 
   it("Paginate without overlapping values", async () => {
     let limit = 30;

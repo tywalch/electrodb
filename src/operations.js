@@ -62,7 +62,13 @@ const UpdateOperations = {
         template: function add(options, attr, path, value) {
             let operation = "";
             let expression = "";
-            switch(attr.type) {
+            let type = attr.type;
+            if (type === AttributeTypes.any) {
+                type = typeof value === 'number'
+                    ? AttributeTypes.number
+                    : AttributeTypes.any;
+            }
+            switch(type) {
                 case AttributeTypes.any:
                 case AttributeTypes.set:
                     operation = ItemOperations.add;

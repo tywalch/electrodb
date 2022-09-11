@@ -52,8 +52,11 @@ const AttributeTypes = {
 	enum: "enum",
 	map: "map",
 	set: "set",
+	// enumSet: "enumSet",
 	list: "list",
 	any: "any",
+	custom: "custom",
+	static: "static",
 };
 
 const PathTypes = {

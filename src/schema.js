@@ -107,7 +107,7 @@ class Attribute {
 		this.watchedBy = watchedBy;
 		this.watching = watching;
 		this.watchAll = watchAll;
-		let { type, enumArray } = this._makeType(this.name, definition.type);
+		let { type, enumArray } = this._makeType(this.name, definition);
 		this.type = type;
 		this.enumArray = enumArray;
 		this.parentType = definition.parentType;
@@ -145,7 +145,7 @@ class Attribute {
 		const {items, client} = definition;
 		const prop = {...items, ...parent};
 		// The use of "*" is to ensure the child's name is "*" when added to the traverser and searching for the children of a list
-		return Schema.normalizeAttributes({ '*': prop }, {}, {client, traverser: parent.traverser}).attributes["*"];
+		return Schema.normalizeAttributes({ '*': prop }, {}, {client, traverser: parent.traverser, parent}).attributes["*"];
 	}
 
 	static buildChildSetItems(definition, parent) {
@@ -156,7 +156,7 @@ class Attribute {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "items" definition for Set attribute: "${definition.path}". Acceptable item types include ${u.commaSeparatedString(allowedTypes)}`);
 		}
 		const prop = {type: items, ...parent};
-		return Schema.normalizeAttributes({ prop }, {}, {client, traverser: parent.traverser}).attributes.prop;
+		return Schema.normalizeAttributes({ prop }, {}, {client, traverser: parent.traverser, parent}).attributes.prop;
 	}
 
 	static buildChildMapProperties(definition, parent) {
@@ -168,7 +168,7 @@ class Attribute {
 		for (let name of Object.keys(properties)) {
 			attributes[name] = {...properties[name], ...parent};
 		}
-		return Schema.normalizeAttributes(attributes, {}, {client, traverser: parent.traverser});
+		return Schema.normalizeAttributes(attributes, {}, {client, traverser: parent.traverser, parent});
 	}
 
 	static buildPath(name, type, parentPath) {
@@ -369,11 +369,14 @@ class Attribute {
 	_makeType(name, definition) {
 		let type = "";
 		let enumArray = [];
-		if (Array.isArray(definition)) {
+		if (Array.isArray(definition.type)) {
 			type = AttributeTypes.enum;
-			enumArray = [...definition];
+			enumArray = [...definition.type];
+		// } else if (definition.type === AttributeTypes.set && Array.isArray(definition.items)) {
+			// type = AttributeTypes.enumSet;
+			// enumArray = [...definition.items];
 		} else {
-			type = definition || "string";
+			type = definition.type || "string";
 		}
 		if (!AttributeTypeNames.includes(type)) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "type" property for attribute: "${name}". Acceptable types include ${AttributeTypeNames.join(", ")}`);
@@ -409,12 +412,19 @@ class Attribute {
 		let reason = [];
 		switch (this.type) {
 			case AttributeTypes.enum:
+			case AttributeTypes.enumSet:
+				// isTyped = this.enumArray.every(enumValue => {
+				// 	const val = Array.isArray(value) ? value : [value];
+				// 	return val.includes(enumValue);
+				// })
 				isTyped = this.enumArray.includes(value);
 				if (!isTyped) {
 					reason.push(new e.ElectroAttributeValidationError(this.path, `Invalid value type at entity path: "${this.path}". Value not found in set of acceptable values: ${u.commaSeparatedString(this.enumArray)}`));
 				}
 				break;
 			case AttributeTypes.any:
+			case AttributeTypes.static:
+			case AttributeTypes.custom:
 				isTyped = true;
 				break;
 			case AttributeTypes.string:
@@ -903,9 +913,9 @@ class SetAttribute extends Attribute {
 }
 
 class Schema {
-	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client} = {}) {
-		this._validateProperties(properties);
-		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client});
+	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client, parent} = {}) {
+		this._validateProperties(properties, parent);
+		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client, parent});
 		this.client = client;
 		this.attributes = schema.attributes;
 		this.enums = schema.enums;
@@ -918,7 +928,8 @@ class Schema {
 		this.traverser = traverser;
 	}
 
-	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client} = {}) {
+	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client, parent} = {}) {
+		const attributeHasParent = !!parent;
 		let invalidProperties = [];
 		let normalized = {};
 		let usedAttrs = {};
@@ -1024,6 +1035,10 @@ class Schema {
 				parentType: attribute.parentType,
 			};
 
+			if (definition.type === AttributeTypes.custom) {
+				definition.type = AttributeTypes.any;
+			}
+
 			if (attribute.watch !== undefined) {
 				if (attribute.watch === AttributeWildCard) {
 					definition.watchAll = true;
@@ -1095,6 +1110,10 @@ class Schema {
 				case AttributeTypes.set:
 					normalized[name] = new SetAttribute(definition);
 					break;
+				case AttributeTypes.any:
+					if (attributeHasParent) {
+						throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid attribute "${definition.name}" defined within "${parent.parentPath}". Attributes with type ${u.commaSeparatedString([AttributeTypes.any, AttributeTypes.custom])} are only supported as root level attributes.`);
+					}
 				default:
 					normalized[name] = new Attribute(definition);
 			}
@@ -1344,8 +1363,17 @@ class Schema {
 	}
 }
 
+function createCustomAttribute(definition = {}) {
+	return {
+		...definition,
+		type: 'custom'
+	};
+}
+
 module.exports = {
 	Schema,
 	Attribute,
+	SetAttribute,
 	CastTypes,
+	createCustomAttribute,
 };
