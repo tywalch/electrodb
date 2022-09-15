@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 const makeLoader = require("./mock");
-const makeTabler = require("../table");
-const definition = require("../table/definition.json")
+const makeTabler = require("../../../taskmanager/src/client");
+const definition = require("../../../taskmanager/src/config/definition.json")
 
 class TaskAppExampleLoader {
   constructor(service) {
@@ -43,7 +43,7 @@ class TaskAppExampleLoader {
    * @param {number} tasks the number of task records create
    */
 
-  async loadTable({employees = 1, tasks = 1, offices = []} = {}) {
+  loadTable({employees = 1, tasks = 1, offices = []} = {}) {
     if (this.db.client === undefined) {
       throw new Error("Operation requires DynamoDB DocumentClient. Please include a DynamoDB DocumentClient on class instantiation.")
     }
@@ -55,16 +55,7 @@ class TaskAppExampleLoader {
     }
     let loader = makeLoader(this);
     
-    const data = await loader.load(employees, tasks, {offices})
-      .then(() => console.log("Table loaded!"))
-      .catch(err => {
-        console.log("Error loading table", err);
-        throw err;
-      });
-    console.log("employees", loader.employees.length, loader.employees[0]);
-    console.log("offices", loader.offices.length, loader.offices);
-    console.log("tasks", loader.tasks.length, loader.tasks[0]);
-    return data;
+    return loader.load(employees, tasks, {offices})
   }
 }
 

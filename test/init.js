@@ -1,6 +1,6 @@
 /* istanbul ignore file */
-const makeTable = require("../examples/taskapp/lib/table");
-const definition = require("../examples/taskapp/lib/table/definition.json");
+const makeTable = require("../examples/taskmanager/src/client");
+const definition = require("../examples/taskmanager/src/config/definition.json");
 const customKeys = require("./definitions/customkeys.json");
 const noSortKeys = require("./definitions/nosortkey.json");
 const noStringKeys = require("./definitions/nostringkeys.json");

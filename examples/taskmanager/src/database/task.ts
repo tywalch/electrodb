@@ -1,37 +1,42 @@
 /* istanbul ignore file */
-const schema = {
+import moment from "moment";
+import { v4 as uuid } from "uuid";
+import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../../";
+import { table, client } from '../config';
+
+export const task = new Entity({
 	"model": {
-		"entity": "tasks",
+		"entity": "task",
 		"version": "1",
-		"service": "taskapp"
+		"service": "taskmanager"
 	},
 	"attributes": {
-		"task": {
-			"type": "string",
-			"required": true
+		task: {
+			type: "string",
+			required: true
 		},
-		"project": {
-			"type": "string",
-			"required": true
+		project: {
+			type: "string",
+			required: true
 		},
-		"employee": {
-			"type": "string",
-			"required": true
+		employee: {
+			type: "string",
+			required: true
 		},
-		"description": {
-			"type": "string"
+		description: {
+			type: "string"
 		},
-		"status": {
-			"type": ["open", "in-progress", "closed"] as const,
-			"default": "open"
+		status: {
+			type: ["open", "in-progress", "closed"] as const,
+			default: "open"
 		},
-		"points": {
-			"type": "number",
-			"required": true
+		points: {
+			type: "number",
+			required: true
 		},
-		"comments": {
-			"type": "any"
-		}
+		comments: {
+			type: "any"
+		},
 	},
 	"indexes": {
 		"task": {
@@ -79,6 +84,8 @@ const schema = {
 			}
 		}
 	}
-} as const;
+}, { table, client });
 
-export default schema;
+export type TaskItem = EntityItem<typeof task>;
+export type CreateTaskItem = CreateEntityItem<typeof task>;
+export type TaskQueryResponse = QueryResponse<typeof task>;

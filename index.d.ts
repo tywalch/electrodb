@@ -323,6 +323,14 @@ export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyo
         : never>
         : never
 
+export type QueryResponse<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? {
+            data: ResponseItem<A,F,C,S>[];
+            cursor: string | null;
+        }
+        : never
+
 export interface QueryBranches<A extends string,
     F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, IndexCompositeAttributes> {
     go: GoQueryTerminal<A,F,C,S,ResponseItem>;

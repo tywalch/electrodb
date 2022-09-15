@@ -362,9 +362,9 @@ library.collections
     .works({authorLastName: 'king', authorFirstName: 'stephen'})
     .go()
     .then(works => {
-        const [writer] = works.author;
-        const books = works.book;
-        const genres = works.genre;
+        const [writer] = works.data.author;
+        const books = works.data.book;
+        const genres = works.data.genre;
         return {
             writer,
             books,
@@ -389,7 +389,7 @@ book.query
 book.query
     .loans({memberId: '0000001'})
     .go()
-    .then(loans => loans.length)
+    .then(loans => loans.data.length)
 
 // get member information and their checked out books
 // in a single dynamodb query
@@ -397,8 +397,8 @@ library.collections
     .account({memberId: '0000001'})
     .go()
     .then(result => {
-        const [member] = result.member;
-        const books = result.book;
+        const [member] = result.data.member;
+        const books = result.data.book;
         return {
             member,
             books,
@@ -468,7 +468,7 @@ genre.query
     .go()
     .then(results => {
         const uniqueGenres = new Set<string>();
-        for (const {genre} of results) {
+        for (const {genre} of results.data) {
             uniqueGenres.add(genre);
         }
         return Array.from(uniqueGenres);

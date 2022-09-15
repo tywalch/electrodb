@@ -5599,6 +5599,27 @@ const person = new Entity({
 
 The following types are exported for easier use while using ElectroDB with TypeScript:
 
+### QueryResponse Type
+
+The QueryResponse type is the same type returned by an ElectroDB Query.
+
+_Definition:_
+
+```typescript
+export type QueryResponse<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? {
+            data: ResponseItem<A,F,C,S>[];
+            cursor: string | null;
+        }
+        : never
+```
+
+_Use:_
+```typescript
+type EntitySchema = EntityRecord<typeof MyEntity>
+```
+
 ### EntityRecord Type
 
 The EntityRecord type is an object containing every attribute an Entity's model.
@@ -5614,7 +5635,7 @@ type EntityRecord<E extends Entity<any, any, any, any>> =
 
 _Use:_
 ```typescript
-type EntiySchema = EntityRecord<typeof MyEntity>
+type Item = EntityRecord<typeof MyEntity>
 ```
 
 ### EntityItem Type
@@ -5633,7 +5654,7 @@ export type EntityItem<E extends Entity<any, any, any, any>> =
 _Use:_
 
 ```typescript
-type Thing = EntityItem<typeof MyEntityInstance>;
+type Item = EntityItem<typeof MyEntityInstance>;
 ```
 
 ### CollectionItem Type

@@ -37,7 +37,7 @@ class EmployeeAppLoader {
       type: EmployeeAppLoader.types[this.getRandomNumber(0, EmployeeAppLoader.types.length)],
       points: EmployeeAppLoader.points[this.getRandomNumber(0, EmployeeAppLoader.points.length)],
       description: EmployeeAppLoader.sentences[this.getRandomNumber(0, EmployeeAppLoader.sentences.length)],
-      // comments: this.generateRandomComments(employees),
+      comments: this.generateRandomComments(employees),
       status: this.service.db.entities.tasks.model.schema.attributes.status.enumArray[this.getRandomNumber(0, this.service.db.entities.tasks.model.schema.attributes.status.enumArray.length)],
     }
   }
@@ -91,27 +91,27 @@ class EmployeeAppLoader {
     }
   }
 
-  async loadTasks(n = 0, employees) {
+  loadTasks(n = 0, employees) {
     let inserts = [];
     for (let i = 0; i < n; i++) {
       let randomRecord = this.generateRandomTask(employees);
       this.tasks.push(randomRecord);
       inserts.push(randomRecord);
     }
-    return this.service.db.entities.tasks.put(inserts).go();
+    return inserts;
   }
 
-  async loadEmployees(n = 0, offices) {
+  loadEmployees(n = 0, offices) {
     let inserts = [];
     for (let i = 0; i < n; i++) {
       let randomRecord = this.generateRandomEmployee(offices);
       this.employees.push(randomRecord);
       inserts.push(randomRecord);
     }
-    return this.service.db.entities.employees.put(inserts).go();
+    return inserts;
   }
 
-  async loadOffices(cities = []) {
+  loadOffices(cities = []) {
     let inserts = [];
     if (cities.length === 0) {
       cities = EmployeeAppLoader.cities;
@@ -122,13 +122,18 @@ class EmployeeAppLoader {
       this.offices.push(randomRecord);
       inserts.push(randomRecord);
     }
-    return this.service.db.entities.offices.put(inserts).go();
+    return inserts;
   }
 
-  async load(employees = 1, tasks = 1, {offices = []} = {}) {
-    await this.loadOffices(offices);
-    await this.loadEmployees(employees, this.offices);
-    await this.loadTasks(tasks, this.employees);
+  load(employees = 1, tasks = 1, {offices = []} = {}) {
+    this.loadOffices(offices);
+    this.loadEmployees(employees, this.offices);
+    this.loadTasks(tasks, this.employees);
+    return {
+      offices: this.offices,
+      employees: this.employees,
+      tasks: this.tasks,
+    }
   }
 
   async paginate(limit, pages, query, test = (data) => data) {

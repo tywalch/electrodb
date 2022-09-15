@@ -1,7 +1,7 @@
 const {Entity, Service} = require("../index");
 const {v2Methods} = require('../src/client');
 const {data} = require("./pagination.data");
-const taskr = require("../examples/taskapp/src/taskr");
+const taskr = require("../examples/taskapp2/src/taskr");
 const { expect } = require("chai");
 const { cursorFormatter } = require('../src/util');
 

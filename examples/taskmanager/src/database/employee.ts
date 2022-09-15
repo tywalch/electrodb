@@ -1,12 +1,14 @@
 /* istanbul ignore file */
-import {v4 as uuid} from "uuid";
 import moment from "moment";
+import { v4 as uuid } from "uuid";
+import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../../";
+import { table, client } from '../config';
 
-const schema = {
+export const employee = new Entity({
 	model: {
-		entity: "employees",
+		entity: "employee",
 		version: "1",
-		service: "taskapp",
+		service: "taskmanager",
 	},
 	attributes: {
 		employee: {
@@ -126,6 +128,8 @@ const schema = {
 			},
 		},
 	}
-} as const;
+}, { table, client });
 
-export default schema;
+export type EmployeeItem = EntityItem<typeof employee>;
+export type CreateEmployeeItem = CreateEntityItem<typeof employee>;
+export type EmployeeQueryResponse = QueryResponse<typeof employee>;
