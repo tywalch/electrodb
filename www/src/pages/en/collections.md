@@ -1,0 +1,602 @@
+---
+title: Collections
+description: How collections work
+layout: ../../layouts/MainLayout.astro
+---
+
+## Collections
+
+A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities.
+
+> _NOTE: ElectroDB Collections use DynamoDB queries to retrieve results. One query is made to retrieve results for all Entities (the benefits of single table design), however like the [query method](#query-method), ElectroDB will paginate through all results for a given query._
+
+Collections are defined on an Index, and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
+
+> _NOTE: A `collection` name should be unique to a single common index across entities._
+
+```javascript
+const DynamoDB = require("aws-sdk/clients/dynamodb");
+const table = "projectmanagement";
+const client = new DynamoDB.DocumentClient();
+
+const employees = new Entity({
+  model: {
+    entity: "employees",
+    version: "1",
+    service: "taskapp",
+  },
+  attributes: {
+    employeeId: {
+      type: "string"
+    },
+    organizationId: {
+      type: "string"
+    },
+    name: {
+      type: "string"
+    },
+    team: {
+      type: ["jupiter", "mercury", "saturn"]
+    }
+  },
+  indexes: {
+    staff: {
+      pk: {
+        field: "pk",
+        composite: ["organizationId"]
+      },
+      sk: {
+        field: "sk",
+        composite: ["employeeId"]
+      }
+    },
+    employee: {
+      collection: "assignments",
+      index: "gsi2",
+      pk: {
+        field: "gsi2pk",
+        composite: ["employeeId"],
+      },
+      sk: {
+        field: "gsi2sk",
+        composite: [],
+      },
+    }
+  }
+}, { client, table })
+
+const tasks = new Entity({
+  model: {
+    entity: "tasks",
+    version: "1",
+    service: "taskapp",
+  },
+  attributes: {
+    taskId: {
+      type: "string"
+    },
+    employeeId: {
+      type: "string"
+    },
+    projectId: {
+      type: "string"
+    },
+    title: {
+      type: "string"
+    },
+    body: {
+      type: "string"
+    }
+  },
+  indexes: {
+    project: {
+      pk: {
+        field: "pk",
+        composite: ["projectId"]
+      },
+      sk: {
+        field: "sk",
+        composite: ["taskId"]
+      }
+    },
+    assigned: {
+      collection: "assignments",
+      index: "gsi2",
+      pk: {
+        field: "gsi2pk",
+        composite: ["employeeId"],
+      },
+      sk: {
+        field: "gsi2sk",
+        composite: ["projectId"],
+      },
+    }
+  }
+}, { client, table });
+
+const TaskApp = new Service({employees, tasks});
+
+await TaskApp.collections
+	.assignments({employeeId: "JExotic"})
+	.go();
+
+// Equivalent Parameters
+{
+  "TableName": 'projectmanagement',
+  "ExpressionAttributeNames": { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+  "ExpressionAttributeValues": { ':pk': '$taskapp_1#employeeid_joeexotic', ':sk1': '$assignments' },
+  "KeyConditionExpression": '#pk = :pk and begins_with(#sk1, :sk1)',
+  "IndexName": 'gsi2'
+}
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHQSPJdqdiIACQeXKapcRSKlIwpsqABSyBEhAGDkCwbZlXlBgQL4rZCEAA)
+
+### Collection Queries vs Entity Queries
+
+To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection Queries only leverage [Composite Attributes](#composite-attributes) from an access pattern's Partition Key.
+
+To better explain how Collection Queries are formed, here is a juxtaposition of an Entity Query's parameters vs a Collection Query's parameters:
+
+**Entity Query**
+
+```javascript
+await TaskApp.entities
+    .tasks.query
+	.assigned({employeeId: "JExotic"})
+	.go();
+
+// Equivalent Parameters
+{
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  TableName: 'projectmanagement',
+  ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+  ExpressionAttributeValues: {
+    ':pk': '$taskapp#employeeid_jexotic',
+    ':sk1': '$assignments#tasks_1'
+  },
+  IndexName: 'gsi2'
+}
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHRThgTjRHlmV5QAjt0xBYCIACQeXKS6hC8KlIwpsqABSyBEhAGDkCwbZ1XlBgQL4rZCEAA)
+
+**Collection Query**
+
+```javascript
+await TaskApp.collections
+	.assignments({employeeId: "JExotic"})
+	.go();
+
+// Equivalent Parameters
+{
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  TableName: 'projectmanagement',
+  ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+  ExpressionAttributeValues: { ':pk': '$taskapp#employeeid_jexotic', ':sk1': '$assignments' },
+  IndexName: 'gsi2'
+}
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHQSPJdqdiIACQeXKapcRSKlIwpsqABSyBEhAGDkCwbZlXlBgQL4rZCEAA)
+
+The notable difference between the two is how much of the Sort Key is specified at query time.
+
+**Entity Query:**
+
+```
+ExpressionAttributeValues: { ':sk1': '$assignments#tasks_1' },
+```
+
+**Collection Query:**
+
+```
+ExpressionAttributeValues: { ':sk1': '$assignments' },
+```
+
+### Collection Response Structure
+
+Unlike Entity Queries which return an array, Collection Queries return an object. This object will have a key for every Entity name (or [Entity Alias](#join)) associated with that Collection, and an array for all results queried that belong to that Entity.
+
+For example, using the "TaskApp" models defined [above](#collections), we would expect the following response from a query to the "assignments" collection:
+
+```typescript
+let results = await TaskApp.collections
+        .assignments({employeeId: "JExotic"})
+        .go();
+
+{
+    tasks: [...],    // tasks for employeeId "JExotic"
+    employees: [...] // employee record(s) with employeeId "JExotic"
+}
+```
+
+Because the Tasks and Employee Entities both associated their index (`gsi2`) with the same collection name (`assignments`), ElectroDB is able to associate the two entities via a shared Partition Key. As stated in the [collections section](#collections), querying across Entities by PK can be comparable to querying across a foreign key in a traditional relational database.
+
+## Sub-Collections
+
+Sub-Collections are an extension of [Collection](#collections) functionality that allow you to model more advanced access patterns. Collections and Sub-Collections are defined on [Indexes](#indexes) via a property called `collection`, as either a string or string array respectively.
+
+The following is an example of functionally identical collections, implemented as a string (referred to as a "collection") and then as a string array (referred to as sub-collections):
+
+**As a string (collection):**
+
+```typescript
+{
+  collection: "assignments"
+  pk: {
+    field: "pk",
+    composite: ["employeeId"]
+  },
+  sk: {
+    field: "sk",
+    composite: ["projectId"]
+  }
+}
+```
+
+**As a string array (sub-collections):**
+
+```typescript
+{
+  collection: ["assignments"]
+  pk: {
+    field: "pk",
+            composite: ["employeeId"]
+  },
+  sk: {
+    field: "sk",
+            composite: ["projectId"]
+  }
+}
+```
+
+Both implementations above will create a "collections" method called `assignments` when added to a Service.
+
+```typescript
+const results = await TaskApp.collections
+  .assignments({ employeeId: "JExotic" })
+  .go();
+```
+
+The advantage to using a string array to define collections is the ability to express sub-collections. Below is an example of three entities using sub-collections, followed by an explanation of their sub-collection definitions:
+
+#### Sub-Collection Entities
+
+```typescript
+import { Entity, Service } from "electrodb";
+import DynamoDB from "aws-sdk/clients/dynamodb";
+const table = "projectmanagement";
+const client = new DynamoDB.DocumentClient();
+
+const employees = new Entity(
+  {
+    model: {
+      entity: "employees",
+      version: "1",
+      service: "taskapp",
+    },
+    attributes: {
+      employeeId: {
+        type: "string",
+      },
+      organizationId: {
+        type: "string",
+      },
+      name: {
+        type: "string",
+      },
+      team: {
+        type: ["jupiter", "mercury", "saturn"] as const,
+      },
+    },
+    indexes: {
+      staff: {
+        pk: {
+          field: "pk",
+          composite: ["organizationId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["employeeId"],
+        },
+      },
+      employee: {
+        collection: "contributions",
+        index: "gsi2",
+        pk: {
+          field: "gsi2pk",
+          composite: ["employeeId"],
+        },
+        sk: {
+          field: "gsi2sk",
+          composite: [],
+        },
+      },
+    },
+  },
+  { client, table }
+);
+
+const tasks = new Entity(
+  {
+    model: {
+      entity: "tasks",
+      version: "1",
+      service: "taskapp",
+    },
+    attributes: {
+      taskId: {
+        type: "string",
+      },
+      employeeId: {
+        type: "string",
+      },
+      projectId: {
+        type: "string",
+      },
+      title: {
+        type: "string",
+      },
+      body: {
+        type: "string",
+      },
+    },
+    indexes: {
+      project: {
+        collection: "overview",
+        pk: {
+          field: "pk",
+          composite: ["projectId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["taskId"],
+        },
+      },
+      assigned: {
+        collection: ["contributions", "assignments"] as const,
+        index: "gsi2",
+        pk: {
+          field: "gsi2pk",
+          composite: ["employeeId"],
+        },
+        sk: {
+          field: "gsi2sk",
+          composite: ["projectId"],
+        },
+      },
+    },
+  },
+  { client, table }
+);
+
+const projectMembers = new Entity(
+  {
+    model: {
+      entity: "projectMembers",
+      version: "1",
+      service: "taskapp",
+    },
+    attributes: {
+      employeeId: {
+        type: "string",
+      },
+      projectId: {
+        type: "string",
+      },
+      name: {
+        type: "string",
+      },
+    },
+    indexes: {
+      members: {
+        collection: "overview",
+        pk: {
+          field: "pk",
+          composite: ["projectId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["employeeId"],
+        },
+      },
+      projects: {
+        collection: ["contributions", "assignments"] as const,
+        index: "gsi2",
+        pk: {
+          field: "gsi2pk",
+          composite: ["employeeId"],
+        },
+        sk: {
+          field: "gsi2sk",
+          composite: [],
+        },
+      },
+    },
+  },
+  { client, table }
+);
+
+const TaskApp = new Service({ employees, tasks, projectMembers });
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1SYg7wPbYxOMeriSKwZAABbGKYJvVObYAAHRk-9YiRLHNObXTdu7bjNWJ9oEDeP2ATRzAwcGN43CtJI8gAHwcQA9NXbloCnlluX9-pwFABAwNijjt6InSsDAohFLXtD0Iwhc9jQv02K4bzRF4PIUUUXuIPbojO0TLVtVkjv3u7Til1IJiNP2AgR1UUdJy3lmJ0zKAOQPafmntmf59nueJ+PKAl2Xlc13XZkdG6E3OOrd26dygGINuDg+4DyHnXOgDBOxF1oFPCAM8lhzwwAvUIS93KIBdlvTcO9qh7wUAfSQR8+wmCAA)
+
+> TypeScript Note: Use `as const` syntax when defining `collection` as a string array for improved type support
+
+The last line of the code block above creates a Service called `TaskApp` using the Entity instances created above its declaration. By creating a Service, ElectroDB will identify and validate the sub-collections defined across all three models. The result in this case are four unique collections: "overview", "contributions", and "assignments".
+
+The simplest collection to understand is `overview`. This collection is defined on the table's Primary Index, composed of a `projectId` in the Partition Key, and is _currently_ implemented by two Entities: `tasks` and `projectMembers`. If another entity were to be added to our service, it could "join" this collection by implementing an identical Partition Key composite (`projectId`) and labeling itself as part of the `overview` collection. The following is an example of using the `overview` collection:
+
+```typescript
+// overview
+const results = await TaskApp.collections
+    .overview({projectId: "SD-204"})
+    .go();
+
+// results
+{
+  tasks: [...],         // tasks associated with projectId "SD-204
+  projectMembers: [...] // employees of project "SD-204"
+}
+
+// parameters
+{
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  TableName: 'projectmanagement',
+  ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+  ExpressionAttributeValues: { ':pk': '$taskapp#projectid_sd-204', ':sk1': '$overview' }
+}
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1XVJvVObYAAHRk-9YhFL7TE224vhw-EeAACIALQRgADAALEwNXB9oEDeLVQA)
+
+Unlike `overview`, the collections `contributions`, and `assignments` are more complex.
+
+In the case of `contributions`, _all three_ entities implement this collection on the `gsi2` index, and compose their Partition Key with the `employeeId` attribute. The `assignments` collection, however, is only implemented by the `tasks` and `projectMembers` Entities. Below is an example of using these collections:
+
+> _NOTE: Collection values of `collection: "contributions"` and `collection: ["contributions"]` are interpreted by ElectroDB as being the same implementation._
+
+```typescript
+// contributions
+const results = await TaskApp.collections
+        .contributions({employeeId: "JExotic"})
+        .go();
+
+// results
+{
+  tasks: [...], // tasks assigned to employeeId "JExotic"
+  projectMembers: [...], // projects with employeeId "JExotic"
+  employees: [...] // employee record(s) with employeeId "JExotic"
+}
+
+{
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  TableName: 'projectmanagement',
+  ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+  ExpressionAttributeValues: { ':pk': '$taskapp#employeeid_jexotic', ':sk1': '$contributions' },
+  IndexName: 'gsi2'
+}
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=158&ssc=9&pln=157&pc=1#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1XVJvVObYAAHRk-9YiRP7NObXTdu7bj8QAFJINSEDoGQTA1cH2gQN4tVAA)
+
+```typescript
+// assignments
+const results = await TaskApp.collections
+        .assignments({employeeId: "JExotic"})
+        .go();
+
+// results
+{
+  tasks: [...],          // tasks assigned to employeeId "JExotic"
+  projectMembers: [...], // projects with employeeId "JExotic"
+}
+
+{
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  TableName: 'projectmanagement',
+  ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+  ExpressionAttributeValues: {
+    ':pk': '$taskapp#employeeid_jexotic',
+    ':sk1': '$contributions#assignments'
+  },
+  IndexName: 'gsi2'
+}
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1XVJvVObYAAHRk-9YiRL7TMoA5MCiHbu24-EABSSDUhA6BkEwNXB9oEDeL2QA)
+
+Looking above we can see that the `assignments` collection is actually a subset of the results that could be queried with the `contributions` collection. The power behind having the `assignments` sub-collection is the flexibility to further slice and dice your cross-entity queries into more specific and performant queries.
+
+> If you're interested in the naming used in the collection and access pattern definitions above, checkout the section on [Naming Conventions](#index-and-collection-naming-conventions)
+
+## Index and Collection Naming Conventions
+
+ElectroDB puts an emphasis on allowing users to define more domain specific naming. Instead of referring to indexes by their name on the table, ElectroDB allows users to define their indexes as Access Patterns.
+
+> Please refer to the Entities defined in the section [Sub-Collection Entities](#sub-collection-entities) as the source of examples within this section.
+
+### Index Naming Conventions
+
+The following is an access pattern on the "employees" entity defined [here](#sub-collection-entities):
+
+```typescript
+staff: {
+  pk: {
+    field: "pk",
+    composite: ["organizationId"]
+  },
+  sk: {
+    field: "sk",
+    composite: ["employeeId"]
+  }
+}
+```
+
+This Access Pattern is defined on the table's Primary Index (note the lack of an `index` property), is given the name `staff`, and is composed of an `organiztionId` and an `employeeId`.
+
+When deciding on an Access Pattern name, ask yourself, "What would the array of items returned represent if I only supplied the Partition Key". In this example case, the entity defines an "Employee" by its `organizationId` and `employeeId`. If you performed a query against this index, and only provided `organizationId` you would then expect to receive all Employees for that Organization. From there, the name `staff` was chosen because the focus becomes "What _are_ these Employees _to_ that Organization?".
+
+This convention also becomes evident when you consider Access Pattern name becomes the name of the method you use query that index.
+
+```typescript
+await employee.query.staff({ organizationId: "nike" }).go();
+```
+
+## Collection Naming Conventions
+
+The following are access patterns on entities defined [here](#sub-collection-entities):
+
+```typescript
+// employees entity
+employee: {
+  collection: "contributions",
+  index: "gsi2",
+  pk: {
+    field: "gsi2pk",
+    composite: ["employeeId"],
+  },
+  sk: {
+    field: "gsi2sk",
+    composite: [],
+  },
+}
+
+// tasks entity
+assigned: {
+  collection: ["contributions", "assignments"],
+  index: "gsi2",
+  pk: {
+    field: "gsi2pk",
+    composite: ["employeeId"],
+  },
+  sk: {
+    field: "gsi2sk",
+    composite: ["projectId"],
+  },
+}
+
+// projectMembers entity
+projects: {
+  collection: ["contributions", "assignments"] as const,
+  index: "gsi2",
+  pk: {
+    field: "gsi2pk",
+    composite: ["employeeId"],
+  },
+  sk: {
+    field: "gsi2sk",
+    composite: [],
+  },
+}
+```
+
+In the case of the entities above, we see an example of a [sub-collection](#sub-collections). ElectroDB will use the above definitions to generate two collections: `contributions`, `assignments`.
+
+The considerations for naming a collection are nearly identical to the considerations for [naming an index](#index-naming-conventions): What do the query results from supplying just the Partition Key represent? In the case of collections you must also consider what the results represent across _all_ of the involved entities, and the entities that may be added in the future.
+
+For example, the `contributions` collection is named such because when given an `employeeId` we receive the employee's details, the tasks the that employee, and the projects where they are currently a member.
+
+In the case of `assignments`, we receive a subset of `contributions` when supplying an `employeeId`: Only the tasks and projects they are "assigned" are returned.
