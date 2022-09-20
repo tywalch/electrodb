@@ -498,6 +498,7 @@ export interface QueryOptions {
     raw?: boolean;
     /** @depricated use 'data=includeKeys' instead */ 
     includeKeys?: boolean;
+    order?: 'asc' | 'desc';
 }
 
 // subset of QueryOptions
@@ -577,10 +578,11 @@ interface GoQueryTerminalOptions<Attributes> {
     params?: object;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
-    pages?: number;
+    pages?: number | 'all';
     attributes?: ReadonlyArray<Attributes>;
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
+    order?: 'asc' | 'desc';
 }
 
 export interface ParamTerminalOptions<Attributes> {

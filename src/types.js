@@ -197,6 +197,13 @@ const TerminalOperation = {
 
 const AllPages = 'all';
 
+const ResultOrderOption = {
+	'asc': true,
+	'desc': false
+};
+
+const ResultOrderParam = 'ScanIndexForward';
+
 module.exports = {
 	Pager,
 	KeyTypes,
