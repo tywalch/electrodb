@@ -4208,8 +4208,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 {
   params?: object;
   table?: string;
-  raw?: boolean;
-  includeKeys?: boolean;
+  data?: 'raw' | 'includeKeys' | 'attributes';
   pager?: "raw";
   originalErr?: boolean;
   concurrent?: number;
