@@ -1,6 +1,6 @@
 "use strict";
 const { Schema } = require("./schema");
-const { KeyCasing, TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems, TerminalOperation } = require("./types");
+const { AllPages, KeyCasing, TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems, TerminalOperation } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -428,27 +428,14 @@ class Entity {
 			} else {
 				return response;
 			}
-
 			iterations++;
-			console.log({
-				whileCond: ExclusiveStartKey && iterations < pages && (max === undefined || count < max),
-				cond1: !!ExclusiveStartKey,
-				cond2: iterations < pages,
-				cond3: (max === undefined || count < max),
-				cond3a: (max === undefined),
-				cond3b: count < max,
-				detail: {
-					ExclusiveStartKey,
-					iterations,
-					pages,
-					max,
-					count,
-				}
-			})
-		} while(ExclusiveStartKey && iterations < pages && (max === undefined || count < max));
+		} while(
+			ExclusiveStartKey &&
+			(pages === AllPages || iterations < pages) &&
+			(max === undefined || count < max)
+		);
 
 		const cursor = this._formatReturnPager(config, ExclusiveStartKey);
-
 		return { data: results, cursor };
 	}
 
@@ -713,10 +700,13 @@ class Entity {
 		return value;
 	}
 
-	_normalizePagesValue(value = Number.MAX_SAFE_INTEGER) {
+	_normalizePagesValue(value) {
+		if (value === AllPages) {
+			return value;
+		}
 		value = parseInt(value);
 		if (isNaN(value) || value < 1) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidPagesOption, "Query option 'pages' must be of type 'number' and greater than zero.");
+			throw new e.ElectroError(e.ErrorCodes.InvalidPagesOption, `Query option 'pages' must be of type 'number' and greater than zero or the string value '${AllPages}'`);
 		}
 		return value;
 	}

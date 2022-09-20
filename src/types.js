@@ -195,6 +195,8 @@ const TerminalOperation = {
 	page: 'page',
 }
 
+const AllPages = 'all';
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -224,5 +226,6 @@ module.exports = {
 	AttributeProxySymbol,
 	ElectroInstanceTypes,
 	EventSubscriptionTypes,
-	AttributeMutationMethods
+	AttributeMutationMethods,
+	AllPages
 };

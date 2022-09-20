@@ -232,9 +232,7 @@ export interface ElectroResultsEvent<R extends any = any> {
     success: boolean;
 }
 
-export type ElectroEvent =
-    ElectroQueryEvent
-    | ElectroResultsEvent;
+export type ElectroEvent = ElectroQueryEvent | ElectroResultsEvent;
 
 export type ElectroEventType = Pick<ElectroEvent, 'type'>;
 
@@ -271,6 +269,16 @@ export type EntityItem<E extends Entity<any, any, any, any>> =
 export type CreateEntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
         ? PutItem<A, F, C, S>
+        : never;
+
+export type BatchWriteEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? PutItem<A, F, C, S>[]
+        : never;
+
+export type BatchGetEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? ResponseItem<A, F, C, S>[]
         : never;
 
 export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
@@ -323,13 +331,49 @@ export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyo
         : never>
         : never
 
-export type QueryResponse<E extends Entity<any, any, any, any>> =
-    E extends Entity<infer A, infer F, infer C, infer S>
-        ? {
-            data: ResponseItem<A,F,C,S>[];
-            cursor: string | null;
-        }
-        : never
+export type QueryResponse<E extends Entity<any, any, any, any>> = {
+    data: EntityItem<E>[];
+    cursor: string | null;
+}
+
+export type CreateEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: CreateEntityItem<E>;
+}
+
+export type BatchWriteResponse<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S> ? {
+        unprocessed: AllTableIndexCompositeAttributes<A,F,C,S>[];
+    } : never
+
+export type BatchGetResponse<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S> ? {
+        data: EntityItem<E>[];
+        unprocessed: AllTableIndexCompositeAttributes<A,F,C,S>[];
+    } : never;
+
+export type UpdateEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateEntityItem<E>;
+}
+export type UpdateAddEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateAddEntityItem<E>;
+}
+export type UpdateSubtractEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateSubtractEntityItem<E>;
+}
+export type UpdateAppendEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateAppendEntityItem<E>;
+}
+export type UpdateRemoveEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateRemoveEntityItem<E>;
+}
+export type UpdateDeleteEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateDeleteEntityItem<E>;
+}
+
+export type CollectionResponse<SERVICE extends Service<any>, COLLECTION extends keyof SERVICE["collections"]> = {
+    data: CollectionItem<SERVICE, COLLECTION>;
+    cursor: string | null;
+}
 
 export interface QueryBranches<A extends string,
     F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, IndexCompositeAttributes> {
@@ -445,7 +489,7 @@ export interface QueryOptions {
     limit?: number;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
-    pages?: number;
+    pages?: number | 'all';
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
     data?: 'raw' | 'includeKeys' | 'attributes';

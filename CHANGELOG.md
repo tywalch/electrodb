@@ -210,6 +210,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Sort keys for queries will now match on equality when all sort key composite attributes are provided in full. Prior to this release, ElectroDB would use `begins_with(...)` which could potentially result in data leakages if a sort key's value was the starting prefix to another sort key value. [[read more](./README.md#begins-with-queries)]
 
-## [1.12.0] = 2022-08-11
+## [1.12.0] - 2022-08-11
 ### Added
 - Added support for attribute types "enum string set" and "enum number set". This will allow users to defined a finite list of values (strings or numbers ) supported for a set [[read more](./README#set-attributes)]
+
+## [2.0.0] - 2022-09-19
+### Changed
+- Changing response structure to be an object with query results on a `data` property

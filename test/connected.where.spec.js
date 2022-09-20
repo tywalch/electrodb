@@ -301,7 +301,6 @@ describe("Where Clause Queries", async () => {
 			.set({dangerous: true})
 			.where(({dangerous}, {notExists}) => notExists(dangerous))
 			.go().then(res => res.data);
-		console.log({results});
 		expect(results).to.be.empty;
 		let after = await WhereTests.get(penRow).go(consistentRead).then(res => res.data);
 		expect(after.dangerous).to.be.true;

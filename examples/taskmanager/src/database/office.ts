@@ -4,7 +4,7 @@ import { table, client } from '../config';
 
 export const office = new Entity({
 	"model": {
-		"entity": "offices",
+		"entity": "office",
 		"version": "1",
 		"service": "taskmanager"
 	},

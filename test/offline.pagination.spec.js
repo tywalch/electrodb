@@ -1,9 +1,273 @@
+const uuid = require("uuid").v4;
+const moment = require('moment');
 const {Entity, Service} = require("../index");
 const {v2Methods} = require('../src/client');
 const {data} = require("./pagination.data");
-const taskr = require("../examples/taskapp2/src/taskr");
 const { expect } = require("chai");
 const { cursorFormatter } = require('../src/util');
+
+const table = 'electro';
+
+const employees = new Entity({
+    model: {
+        entity: "employees",
+        version: "1",
+        service: "taskmanager",
+    },
+    attributes: {
+        employee: {
+            type: "string",
+            default: () => uuid(),
+        },
+        firstName: {
+            type: "string",
+            required: true,
+        },
+        lastName: {
+            type: "string",
+            required: true,
+        },
+        office: {
+            type: "string",
+            required: true,
+        },
+        title: {
+            type: "string",
+            required: true,
+        },
+        team: {
+            type: ["development", "marketing", "finance", "product", "cool cats and kittens"],
+            required: true,
+        },
+        salary: {
+            type: "string",
+            required: true,
+        },
+        manager: {
+            type: "string",
+        },
+        dateHired: {
+            type: "string",
+            validate: (date) => {
+                if (!moment(date).isValid) {
+                    throw new Error("Invalid date format");
+                }
+            }
+        },
+        birthday: {
+            type: "string",
+            validate: (date) => {
+                if (!moment(date).isValid) {
+                    throw new Error("Invalid date format");
+                }
+            }
+        },
+    },
+    indexes: {
+        employee: {
+            pk: {
+                field: "pk",
+                composite: ["employee"],
+            },
+            sk: {
+                field: "sk",
+                composite: [],
+            },
+        },
+        coworkers: {
+            index: "gsi1pk-gsi1sk-index",
+            collection: "workplaces",
+            pk: {
+                field: "gsi1pk",
+                composite: ["office"],
+            },
+            sk: {
+                field: "gsi1sk",
+                composite: ["team", "title", "employee"],
+            },
+        },
+        teams: {
+            index: "gsi2pk-gsi2sk-index",
+            pk: {
+                field: "gsi2pk",
+                composite: ["team"],
+            },
+            sk: {
+                field: "gsi2sk",
+                composite: ["dateHired", "title"],
+            },
+        },
+        employeeLookup: {
+            collection: "assignments",
+            index: "gsi3pk-gsi3sk-index",
+            pk: {
+                field: "gsi3pk",
+                composite: ["employee"],
+            },
+            sk: {
+                field: "gsi3sk",
+                composite: [],
+            },
+        },
+        roles: {
+            index: "gsi4pk-gsi4sk-index",
+            pk: {
+                field: "gsi4pk",
+                composite: ["title"],
+            },
+            sk: {
+                field: "gsi4sk",
+                composite: ["salary"],
+            },
+        },
+        directReports: {
+            index: "gsi5pk-gsi5sk-index",
+            pk: {
+                field: "gsi5pk",
+                composite: ["manager"],
+            },
+            sk: {
+                field: "gsi5sk",
+                composite: ["team", "office"],
+            },
+        },
+    }
+}, { table });
+const offices = new Entity({
+    "model": {
+        "entity": "offices",
+        "version": "1",
+        "service": "taskmanager"
+    },
+    "attributes": {
+        "office": {
+            "type": "string"
+        },
+        "country": {
+            "type": "string"
+        },
+        "state": {
+            "type": "string"
+        },
+        "city": {
+            "type": "string"
+        },
+        "zip": {
+            "type": "string"
+        },
+        "address": {
+            "type": "string"
+        }
+    },
+    "indexes": {
+        "locations": {
+            "pk": {
+                "field": "pk",
+                "composite": ["country", "state"]
+            },
+            "sk": {
+                "field": "sk",
+                "composite": ["city", "zip", "office"]
+            }
+        },
+        "office": {
+            "index": "gsi1pk-gsi1sk-index",
+            "collection": "workplaces",
+            "pk": {
+                "field": "gsi1pk",
+                "composite": ["office"]
+            },
+            "sk": {
+                "field": "gsi1sk",
+                "composite": []
+            }
+        }
+    }
+}, { table,});
+
+const tasks = new Entity({
+    "model": {
+        "entity": "tasks",
+        "version": "1",
+        "service": "taskmanager"
+    },
+    "attributes": {
+        task: {
+            type: "string",
+            required: true
+        },
+        project: {
+            type: "string",
+            required: true
+        },
+        employee: {
+            type: "string",
+            required: true
+        },
+        description: {
+            type: "string"
+        },
+        status: {
+            type: ["open", "in-progress", "closed"],
+            default: "open"
+        },
+        points: {
+            type: "number",
+            required: true
+        },
+        comments: {
+            type: "any"
+        },
+    },
+    "indexes": {
+        "task": {
+            "pk": {
+                "field": "pk",
+                "composite": ["task"]
+            },
+            "sk": {
+                "field": "sk",
+                "composite": ["project", "employee"]
+            }
+        },
+        "project": {
+            "index": "gsi1pk-gsi1sk-index",
+            "pk": {
+                "field": "gsi1pk",
+                "composite": ["project"]
+            },
+            "sk": {
+                "field": "gsi1sk",
+                "composite": ["employee", "status"]
+            }
+        },
+        "assigned": {
+            "collection": "assignments",
+            "index": "gsi3pk-gsi3sk-index",
+            "pk": {
+                "field": "gsi3pk",
+                "composite": ["employee"]
+            },
+            "sk": {
+                "field": "gsi3sk",
+                "composite": ["project", "status"]
+            }
+        },
+        "statuses": {
+            "index": "gsi4pk-gsi4sk-index",
+            "pk": {
+                "field": "gsi4pk",
+                "composite": ["status"]
+            },
+            "sk": {
+                "field": "gsi4sk",
+                "composite": ["project", "employee"]
+            }
+        }
+    }
+}, { table,});
+
+const taskr = new Service({tasks, offices, employees});
 
 function makeClient(lastEvaluatedKey) {
     let queries = [];

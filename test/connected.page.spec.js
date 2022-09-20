@@ -219,7 +219,7 @@ class Tasks extends Entity {
       if (next === null) {
         break;
       }
-      var [next, tasks] = await query(next, limit).then(test);
+      var [next, tasks] = await query(next, limit).then(results => test(results.cursor, results.data));
       results = [...results, ...tasks];
     }
     return results
@@ -282,53 +282,94 @@ describe("Page", async () => {
     ]);
     await sleep(1000);
   });
-
-  it("Should paginate through all records", async () => {
-    let tests = [
-      {
-        type: "query",
-        input: {
-          facets: {project: Tasks.projects[0]},
-          index: "projects",
-        },
-        output: {
-          pageKeys: ["task", "project", "employee"]
-        },
-      }, {
-        type: "query",
-        input: {
-          facets: {employee: Tasks.employees[0]},
-          index: "assigned",
-        },
-        output: {
-          pageKeys: ["points", "project", "employee"]
-        },
-      }, {
-        type: "scan",
-        output: {
-          pageKeys: ["task", "project", "employee"]
-        },
-      }
-    ];
-    for (let test of tests) {
-      let query;
-      let loaded;
-      let testPage = (([page, tasks]) => {
-        if (page !== null) expect(page).to.include.keys(test.output.pageKeys);
-        return [page, tasks];
-      });
-      if (test.type === "scan") {
-        query = (next, limit) => tasks.scan.page(next, {limit});
-        loaded = tasks.loaded;
-      } else {
-        query = (next, limit) => tasks.query[test.input.index](test.input.facets).page(next, {limit});
-        loaded = tasks.filterLoaded(test.input.facets);
-      }
-      
-      let results = await tasks.paginate(2, total, query, testPage);
-      expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
+  const paginationTests = [
+    {
+      type: 'query',
+      input: {
+        index: 'assigned',
+        key: { employee: Tasks.employees[0] }
+      },
+      output: tasks.filterLoaded({ employee: Tasks.employees[0] })
+    },
+    {
+      type: 'query',
+      input: {
+        index: 'projects',
+        key: { project: Tasks.projects[0] }
+      },
+      output: tasks.filterLoaded({ project: Tasks.projects[0] }),
+    },
+    {
+      type: 'scan',
+      output: tasks.loaded,
     }
-  }).timeout(15000);
+  ];
+  for (const test of paginationTests) {
+    it('should paginate through all records for a given query', async () => {
+      const pages = 'all';
+      const limit = 2;
+      let results = [];
+      let cursor = null;
+      do {
+        const response = test.type === 'query'
+          ? await tasks.query[test.input.index](test.input.key).go({cursor, limit, pages})
+          : await tasks.scan.go({cursor, limit, pages});
+        results = results.concat(response.data);
+        cursor = response.cursor;
+      } while (cursor !== null);
+      expect(() => Tasks.compareTasks(
+          results,
+          test.output,
+      )).to.not.throw;
+    }).timeout(10000);
+  }
+  //
+  // it("Should paginate through all records", async () => {
+  //   let tests = [
+  //     {
+  //       type: "query",
+  //       input: {
+  //         facets: {project: Tasks.projects[0]},
+  //         index: "projects",
+  //       },
+  //       output: {
+  //         pageKeys: ["task", "project", "employee"]
+  //       },
+  //     }, {
+  //       type: "query",
+  //       input: {
+  //         facets: {employee: Tasks.employees[0]},
+  //         index: "assigned",
+  //       },
+  //       output: {
+  //         pageKeys: ["points", "project", "employee"]
+  //       },
+  //     }, {
+  //       type: "scan",
+  //       output: {
+  //         pageKeys: ["task", "project", "employee"]
+  //       },
+  //     }
+  //   ];
+  //   for (let test of tests) {
+  //     let query;
+  //     let loaded;
+  //     let testPage = ((page, tasks) => {
+  //       if (page !== null) expect(page).to.include.keys(test.output.pageKeys);
+  //       return [page, tasks];
+  //     });
+  //     if (test.type === "scan") {
+  //       query = (cursor, limit) => tasks.scan.go({cursor, limit});
+  //       loaded = tasks.loaded;
+  //     } else {
+  //       query = (cursor, limit) => tasks.query[test.input.index](test.input.facets).go({cursor, limit});
+  //       loaded = tasks.filterLoaded(test.input.facets);
+  //     }
+  //
+  //     let results = await tasks.paginate(2, total, query, testPage);
+  //     expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
+  //   }
+  // }).timeout(15000);
 
   it("Paginate without overlapping values", async () => {
     let limit = 30;
@@ -485,8 +526,8 @@ describe("Page", async () => {
   });
 
   describe("query pagination", () => {
-    it("entity query should continue to query until LastEvaluatedKey is not returned", async () => {
-      const ExclusiveStartKey = {};
+    it("query should always return string or null", async () => {
+      const ExclusiveStartKey = {key: 'hi'};
       const {client, calls} = createClient({
         mockResponses: [
           {
@@ -512,7 +553,60 @@ describe("Page", async () => {
         ]
       });
       const entity = new Tasks(TasksModel, {client, table});
-      const results = await entity.query.task({task: "my_task"}).go().then(res => res.data);
+      let count = 0;
+      let cursor;
+      do {
+        count++;
+        const results = await entity.query.task({task: "my_task"}).go({cursor});
+        cursor = results.cursor;
+        console.log({cursor, results});
+        if (typeof cursor !== 'string' && cursor !== null) {
+          throw new Error('Not string or null!');
+        }
+      } while(cursor !== null);
+      expect(cursor).to.equal(null);
+      expect(count).to.be.greaterThan(1);
+      console.log('calls', calls);
+      expect(calls).to.have.length(4);
+      for (let i = 0; i < calls.length; i++) {
+        const call = calls[i];
+        if (i === 0) {
+          expect(call.ExclusiveStartKey).to.be.undefined;
+        } else {
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
+        }
+      }
+    });
+
+    it("entity query should continue to query until LastEvaluatedKey is not returned", async () => {
+      const ExclusiveStartKey = {key: 'hi'};
+      const {client, calls} = createClient({
+        mockResponses: [
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: undefined
+          },
+          {
+            Items: [],
+            LastEvaluatedKey: ExclusiveStartKey,
+          }
+        ]
+      });
+      const entity = new Tasks(TasksModel, {client, table});
+      const results = await entity.query.task({task: "my_task"}).go({pages: 'all'}).then(res => res.data);
       expect(results).to.be.an("array").with.length(0);
       expect(calls).to.have.length(4);
       for (let i = 0; i < calls.length; i++) {
@@ -520,13 +614,14 @@ describe("Page", async () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
         }
       }
     });
 
     it("entity query should continue to query until 'pages' limit is reached", async () => {
-      const ExclusiveStartKey = {};
+      const ExclusiveStartKey = {key: 'hi'};
       const {client, calls} = createClient({
         mockResponses: [
           {
@@ -561,13 +656,14 @@ describe("Page", async () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
         }
       }
     });
 
     it("entity query should continue to query until 'limit' option is reached", async () => {
-      const ExclusiveStartKey = {};
+      const ExclusiveStartKey = {key: 'hi'};
       const [one, two, three, four, five, six] = tasks.data;
       const {client, calls} = createClient({
         mockResponses: [
@@ -604,13 +700,14 @@ describe("Page", async () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
         }
       }
     });
 
     it("entity query should only count entities belonging to the collection entities to fulfill 'limit' option requirements", async () => {
-      const ExclusiveStartKey = {};
+      const ExclusiveStartKey = {key: 'hi'};
       const [one, two, three, four, five, six] = tasks.data;
       const {client, calls} = createClient({
         mockResponses: [
@@ -647,13 +744,14 @@ describe("Page", async () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
         }
       }
     });
 
     it("collection query should continue to query until LastEvaluatedKey is not returned", async () => {
-      const ExclusiveStartKey = {};
+      const ExclusiveStartKey = {key: 'hi'};
       const {client, calls} = createClient({
         mockResponses: [
           {
@@ -682,7 +780,7 @@ describe("Page", async () => {
       const tasks2 = new Tasks(makeTasksModel(), {client, table});
       const service = new Service({tasks, tasks2});
       const employee = "my_employee";
-      const results = await service.collections.assignments({employee}).go().then(res => res.data);
+      const results = await service.collections.assignments({employee}).go({pages: 'all'}).then(res => res.data);
       expect(results.tasks).to.be.an("array").with.length(0);
       expect(results.tasks2).to.be.an("array").with.length(0);
       expect(calls).to.have.length(4);
@@ -691,13 +789,14 @@ describe("Page", async () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
         }
       }
     });
 
     it("collection query should continue to query until 'pages' limit is reached", async () => {
-      const ExclusiveStartKey = {};
+      const ExclusiveStartKey = {key: 'hi'};
       const {client, calls} = createClient({
         mockResponses: [
           {
@@ -736,13 +835,14 @@ describe("Page", async () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
         }
       }
     });
 
     it("collection query should continue to query until 'limit' option is reached", async () => {
-      const ExclusiveStartKey = {};
+      const ExclusiveStartKey = {key: 'hi'};
       const tasks = new Tasks(makeTasksModel(), {client, table});
       const tasks2 = new Tasks(makeTasksModel(), {client, table});
 
@@ -787,13 +887,14 @@ describe("Page", async () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
         }
       }
     });
 
     it("collection query should only count entities belonging to the collection entities to fulfill 'limit' option requirements", async () => {
-      const ExclusiveStartKey = {};
+      const ExclusiveStartKey = {key: 'hi'};
       const tasks = new Tasks(makeTasksModel(), {client, table});
       const tasks2 = new Tasks(makeTasksModel(), {client, table});
 
@@ -838,7 +939,8 @@ describe("Page", async () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey === ExclusiveStartKey).to.be.true;
+          expect(call.ExclusiveStartKey.key).to.equal('hi');
+          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
         }
       }
     });
@@ -883,7 +985,9 @@ describe("Page", async () => {
       const occurrences = tasks.occurrences.employees[employee];
       const pages = 2;
       const limit = Math.floor(occurrences / 4);
-      const results = await tasks.query.assigned({employee}).go({limit, pages}).then(res => res.data);
+      console.log({limit, pages, occurrences});
+      const results = await tasks.query.assigned({employee}).go({pages, params: {Limit: limit}}).then(res => res.data);
+      console.log({results: results.length});
       expect(limit).to.be.greaterThan(0);
       expect(occurrences).to.be.greaterThan(limit * pages);
       expect(results).to.have.length(limit * pages);
@@ -893,27 +997,37 @@ describe("Page", async () => {
       const employee = Tasks.employees[0];
       const occurrences1 = tasks.occurrences.employees[employee];
       const occurrences2 = tasks2.occurrences.employees[employee];
+      const occurrences3 = tasks3.occurrences.employees[employee];
       const limit = [ occurrences1, occurrences2 ]
+          .filter(occurrence => occurrence !== 0)
           .map((occurrence) => Math.floor(occurrence / 4))
           .reduce((min, val) => Math.min(min, val), Number.MAX_VALUE);
+      console.log({
+        occurrences1,
+        occurrences2,
+        occurrences3,
+        limit,
+      })
       const pages = 2;
       expect(limit).to.be.greaterThan(0);
       expect(occurrences1).to.be.greaterThan(limit * pages);
       expect(occurrences2).to.be.greaterThan(limit * pages);
-      const results = await service.collections.assignments({employee}).go({limit, pages}).then(res => res.data);
+      const results = await service.collections.assignments({employee}).go({pages, params: {Limit: limit}}).then(res => res.data);
+      const total = Object.values(results).map(result => result.length).reduce((total, length) => total + length, 0);
       console.log(JSON.stringify({
         lengths: {
           tasks: results.tasks.length,
           tasks2: results.tasks2.length,
-          tasks3: results.tasks3.length
+          tasks3: results.tasks3.length,
+          total,
         }, limit, pages, limitPages: limit * pages}, null, 4))
-      expect(results.tasks.length + results.tasks2.length + results.tasks3.length).to.equal(limit * pages);
+      expect(total).to.equal(limit * pages);
     });
 
     it("should throw if 'pages' option is less than one or not a valid number", async () => {
       const employee = "employee";
       const project = "project";
-      const message = "Query option 'pages' must be of type 'number' and greater than zero. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-pages-option";
+      const message = "Query option 'pages' must be of type 'number' and greater than zero or the string value 'all' - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-pages-option";
       const result1 = await service.collections.assignments({employee}).go({pages: -1})
           .then(() => ({success: true}))
           .catch(err => ({success: false, message: err.message}));
@@ -1009,7 +1123,6 @@ describe("Page", async () => {
             }
           });
       expect(wasParsed).to.be.true;
-      console.log({results, parserResponse});
       expect(results.data === parserResponse).to.be.true;
       expect(parseArgs.Items).to.be.an("array");
       expect(parseArgs.LastEvaluatedKey).to.have.keys("pk", "sk", "gsi1sk", "gsi1pk");

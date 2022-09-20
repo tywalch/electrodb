@@ -2826,12 +2826,12 @@ describe("Update Item", () => {
         const strProp = 'value1';
         await entity.put({prop1, prop2: {numProp, strProp}}).go();
         const getVal = await entity.get({prop1}).go();
-        expect(getVal).to.deep.equal({prop1, prop2: {numProp, strProp}});
+        expect(getVal.data).to.deep.equal({prop1, prop2: {numProp, strProp}});
         const updated = await entity.update({prop1}).data((attr, op) => {
             op.add(attr.prop2.numProp, numProp);
             op.set(attr.prop2.strProp, 'value2');
         }).go({response: 'all_new'});
-        expect(updated.prop2).to.deep.equal({
+        expect(updated.data.prop2).to.deep.equal({
             numProp: 20,
             strProp: 'value2',
         });
@@ -2878,7 +2878,7 @@ describe("Update Item", () => {
                 prop2: [STRING_VAL],
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: [STRING_VAL],
             });
@@ -2918,7 +2918,7 @@ describe("Update Item", () => {
                 prop2: [NUM_VAL],
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: [NUM_VAL],
             });
@@ -2965,7 +2965,7 @@ describe("Update Item", () => {
                 },
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: {
                     nested: [STRING_VAL],
@@ -3014,7 +3014,7 @@ describe("Update Item", () => {
                 },
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: {
                     nested: [NUM_VAL],
