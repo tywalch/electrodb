@@ -1,6 +1,27 @@
 "use strict";
 const { Schema } = require("./schema");
-const { AllPages, KeyCasing, TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems, TerminalOperation } = require("./types");
+const { AllPages, 
+	KeyCasing, 
+	TableIndex, 
+	FormatToReturnValues, 
+	ReturnValues, 
+	EntityVersions, 
+	ItemOperations, 
+	UnprocessedTypes, 
+	Pager, 
+	ElectroInstance, 
+	KeyTypes, 
+	QueryTypes, 
+	MethodTypes, 
+	Comparisons, 
+	ExpressionTypes, 
+	ModelVersions, 
+	ElectroInstanceTypes, 
+	MaxBatchItems, 
+	TerminalOperation, 
+	ResultOrderOption,
+	ResultOrderParam
+} = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -859,9 +880,23 @@ class Entity {
 			attributes: [],
 			terminalOperation: undefined,
 			formatCursor: u.cursorFormatter,
+			order: ResultOrderOption.asc
 		};
 
 		config = options.reduce((config, option) => {
+			if (typeof option.order === 'string') {
+				switch (option.order.toLowerCase()) {
+					case ResultOrderOption.asc:
+						config.params[ResultOrderParam] = ResultOrderOption.asc;
+						break;
+					case ResultOrderOption.desc:
+						config.params[ResultOrderParam] = ResultOrderOption.desc;
+						break;
+					default:
+						throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc`);
+				}
+			}
+
 			if (typeof option.response === 'string' && option.response.length) {
 				const format = 	ReturnValues[option.response];
 				if (format === undefined) {
