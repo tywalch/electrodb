@@ -217,3 +217,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.0.0] - 2022-09-19
 ### Changed
 - Changing response structure to be an object with query results on a `data` property
+- The `go()` terminal method now only queries one page by default. To auto-page (to match functionality prior to this change), pass the query option `pages` with a value of `'all'`.
+### Deprecated
+- The boolean query option `raw` and `returnKeys` have been deprecated (still accepted for the time being) and replaced with the query option `data`, which accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`.
+### Removed
+- `.page()` terminal method. All pagination is now done through the `.go()` method. Queries and scans now return a `cursor` property (of type "string") to be passed on subsequent pagination requests.
