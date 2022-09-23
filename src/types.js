@@ -110,7 +110,8 @@ const AttributeMutationMethods = {
 const Pager = {
 	raw: "raw",
 	named: "named",
-	item: "item"
+	item: "item",
+	cursor: "cursor"
 }
 
 const UnprocessedTypes = {
@@ -194,6 +195,15 @@ const TerminalOperation = {
 	page: 'page',
 }
 
+const AllPages = 'all';
+
+const ResultOrderOption = {
+	'asc': true,
+	'desc': false
+};
+
+const ResultOrderParam = 'ScanIndexForward';
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -223,5 +233,8 @@ module.exports = {
 	AttributeProxySymbol,
 	ElectroInstanceTypes,
 	EventSubscriptionTypes,
-	AttributeMutationMethods
+	AttributeMutationMethods,
+	AllPages,
+	ResultOrderOption,
+	ResultOrderParam,
 };

@@ -210,7 +210,19 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Sort keys for queries will now match on equality when all sort key composite attributes are provided in full. Prior to this release, ElectroDB would use `begins_with(...)` which could potentially result in data leakages if a sort key's value was the starting prefix to another sort key value. [[read more](./README.md#begins-with-queries)]
 
-## [1.12.0] = 2022-08-11
+## [1.12.0] - 2022-08-11
 ### Added
 - Added support for attribute types "enum string set" and "enum number set". This will allow users to defined a finite list of values (strings or numbers ) supported for a set [[read more](./README#set-attributes)]
-- TypeScript support for "Custom Attributes", bring your own types to express complex attributes [[read more](https://github.com/tywalch/electrodb#custom-attributes)].
+- TypeScript support for "Custom Attributes", bring your own types to express complex attributes. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
+
+## [2.0.0] - 2022-09-19 [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#version-2-migration)]
+### Added
+- Additional exported exported types to match new response structures. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
+### Changed
+- Changing response structure on all methods to be an object with query results on a `data` property. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#version-2-migration)]
+- Pagination is now performed via the `.go()` terminal method, and the LastEvaluatedKey is now returned a string `cursor`.  [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#cursor-pagination)]
+- The `go()` terminal method now only queries one page by default. To auto-page (to match functionality prior to this change), pass the query option `pages` with a value of `'all'`. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#unified-pagination-apis)]
+### Deprecated
+- The boolean query option `raw` and `returnKeys` have been deprecated (still accepted for the time being) and replaced with the query option `data`, which accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`.
+### Removed
+- `.page()` terminal method. All pagination is now done through the `.go()` method. Queries and scans now return a `cursor` property (of type "string") to be passed on subsequent pagination requests. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#unified-pagination-apis)]

@@ -138,6 +138,7 @@ describe("Entity", () => {
 		let MallStores = new Entity(schema);
 		let {success, results} = await MallStores.put({store, mall, building, rent, category, leaseEnd, unit})
 			.go()
+			.then(res => res.data)
 			.then(results => ({success: true, results}))
 			.catch(results => ({success: false, results}));
 		expect(success).to.be.false;
@@ -691,7 +692,6 @@ describe("Entity", () => {
 							: entity.query.index1(test.input.pk)[method](test.input.sk, test.input.sk);
 						if (test.happy) {
 							expect(query.params()).to.deep.equal(test.output[method]);
-							// console.log({count, method, params});
 						} else {
 							expect(() => query.params()).to.throw(test.output[method]);
 						}
@@ -1529,7 +1529,6 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
-				"page",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitGt = MallStores.query.units({ mall }).gt({ building });
@@ -1538,7 +1537,6 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
-				"page",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitsGte = MallStores.query.units({ mall }).gte({ building });
@@ -1547,7 +1545,6 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
-				"page",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitsLte = MallStores.query.units({ mall }).lte({ building });
@@ -1556,7 +1553,6 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
-				"page",
 				"rentsLeaseEndFilter",
 			);
 			let queryUnitsLt = MallStores.query.units({ mall }).lt({ building });
@@ -1565,7 +1561,6 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
-				"page",
 				"rentsLeaseEndFilter",
 			);
 			let find = MallStores.query.units({ mall });
@@ -1580,7 +1575,6 @@ describe("Entity", () => {
 				"filter",
 				"go",
 				"params",
-				"page",
 				"rentsLeaseEndFilter",
 			);
 		});

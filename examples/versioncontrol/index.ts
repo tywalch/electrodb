@@ -20,25 +20,34 @@ import {
 
 // Get Public Repositories By Username
 export async function getPublicRepository(username: string) {
-    return store.entities.repositories.query.created({username, isPrivate: false});
+    return store.entities.repositories
+        .query.created({username, isPrivate: false});
 }
 
 // Get PullRequest and Associated Comments -- newest comments first
-export async function reviewPullRequest(pr: PullRequestIds) {
+export async function reviewPullRequest(options: { pr: PullRequestIds, cursor?: string }) {
+    const { pr, cursor } = options;
     return store.collections.PRReview(pr)
-        .page(null, {params: {ScanIndexForward: false}})
+        .go({ cursor, params: {ScanIndexForward: false} });
 }
 
 // Get Issue and Associated Comments -- newest comments first
-export async function reviewIssue(issue: IssueIds) {
-    return store.collections.issueReview(issue).go({params: {ScanIndexForward: false}});
+export async function reviewIssue(options: {issue: IssueIds, cursor?: string}) {
+    const { issue, cursor } = options;
+    return store.collections.issueReview(issue)
+        .go({cursor, params: {ScanIndexForward: false}});
 }
 
 // Get PullRequests Created By User
-export async function getUserPullRequests(username: string, status?: Status) {
+export async function getUserPullRequests(options: {
+    username: string;
+    status?: Status;
+    cursor?: string;
+}) {
+    const { username, status, cursor } = options;
     return store.entities.pullRequests
         .query.created({username, status})
-        .go({params: {ScanIndexForward: false}});
+        .go({cursor, params: {ScanIndexForward: false}});
 }
 
 // Close pull request -- guards: can only be performed by user who opened PR or the repo owner
@@ -61,23 +70,25 @@ export async function getFirstPageLoad(username: string) {
         users: [],
     };
     
-    let page = null;
+    let next = null;
 
     do {
-        const [next, data] = await store.collections.owned({username}).page();
+        const {cursor, data} = await store.collections.owned({username}).go();
         results.issues = results.issues.concat(data.issues);
         results.pullRequests = results.pullRequests.concat(data.pullRequests);
         results.repositories = results.repositories.concat(data.repositories);
         results.users = results.users.concat(data.users);
-        page = next;
-    } while (page !== null);
+        next = cursor;
+    } while (next !== null);
 
     return results;
 }
 
 // Get Subscriptions for a given Repository, PullRequest, or Issue.
 export async function getSubscribed(repoOwner: string, repoName: string, ticketNumber: string = IsNotTicket) {
-    return store.collections.subscribers({repoOwner, repoName, ticketNumber}).go();
+    return store.collections
+        .subscribers({repoOwner, repoName, ticketNumber})
+        .go();
 }
 
 const MinDate = "0000-00-00";
@@ -144,14 +155,14 @@ export async function approvePullRequest(repoOwner: string, repoName: string, pu
         .get({repoOwner, repoName, pullRequestNumber})
         .go();
 
-    if (!pullRequest || !pullRequest.reviewers) {
+    if (!pullRequest.data || !pullRequest.data.reviewers) {
         return false;
     }
 
     let index: number = -1;
 
-    for (let i = 0; i < pullRequest.reviewers.length; i++) {
-        const reviewer = pullRequest.reviewers[i];
+    for (let i = 0; i < pullRequest.data.reviewers.length; i++) {
+        const reviewer = pullRequest.data.reviewers[i];
         if (reviewer.username === username) {
             index = i;
         }
@@ -178,6 +189,6 @@ export async function followRepository(repoOwner: string, repoName: string, foll
     await store.entities
         .repositories.update({repoOwner, repoName})
         .add({followers: [follower]})
-        .go()
+        .go();
 }
 

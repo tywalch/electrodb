@@ -11,6 +11,11 @@
 
 ------------
 
+<h1 align="center">ElectroDB has now reached 2.0.0!</h1>
+For existing users, checkout the [CHANGELOG](./CHANGELOG.md) and/or the section [Version 2 Migration](#version-2-migration) to learn more about the recent move to 2.0.0 and the changes neccessary to move to the newest version.
+
+------------
+
 <a href="https://electrodb.fun"><h1 align="center">Introducing: The NEW ElectroDB Playground</h1></a>
 
 <p align="center">
@@ -31,7 +36,7 @@
 - [**Simplified Update Expression Composition**](#update-record) - Easily compose type safe update operations without having to format tedious `ExpressionAttributeNames`, `ExpressionAttributeValues`, and `UpdateExpressions`. 
 - [**Easily Query Across Entities**](#collections) - Define "collections" to create powerful/idiomatic queries that return multiple entities in a single request.
 - [**Automatic Index Selection**](#find-records) - Use `.find()` or `.match()` methods to dynamically and efficiently query based on defined sort key structures.
-- [**Simplified Pagination API**](#page) - Use `.page()` to easily paginate through result sets.
+- [**Simplified Pagination API**](#entity-pagination) - ElectroDB generates url safe cursors for pagination, allows for fine grain automated pagination, and supports async iteration.
 - [**Use With Your Existing Solution**](#composite-attribute-templates) - If you are already using DynamoDB, and want to use ElectroDB, use custom Composite Attribute Templates to leverage your existing key structures.
 - [**TypeScript Support**](#typescript-support) - Strong **TypeScript** support for both Entities and Services now in Beta.
 - [**Query Directly via the Terminal**](#electro-cli) - Execute queries against your  `Entities`, `Services`, `Models` directly from the command line.
@@ -94,30 +99,25 @@ tasks
 
 ------------
 
+## Table of Contents
 - [ElectroDB](#electrodb)
   * [Features](#features)
-  * [Table of Contents](#table-of-contents)
 - [Project Goals](#project-goals)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Entities and Services](#entities-and-services)
+- [Getting Started](#getting-started)
 - [Entities](#entities)
 - [Services](#services)
   * [TypeScript Support](#typescript-support)
-    + [TypeScript Services](#typescript-services)
-  * [Join](#join)
-      - [Independent Models](#independent-models)
-      - [Joining Entity instances to a Service](#joining-entity-instances-to-a-service)
-      - [Joining models to a Service](#joining-models-to-a-service)
-      - [Joining Entities or Models with an alias](#joining-entities-or-models-with-an-alias)
-      - [Joining Entities at Service construction for TypeScript](#joining-entities-at-service-construction-for-typescript)
+    + [Services](#services-1)
+      - [Joining Entities together](#joining-entities-together)
   * [Model](#model)
     + [Model Properties](#model-properties)
     + [Service Options](#service-options)
   * [Attributes](#attributes)
-    + [Simple Syntax](#simple-syntax)
-    + [Expanded Syntax](#expanded-syntax)
-      - [Attribute Definition](#attribute-definition)
+    + [Attribute Definition](#attribute-definition)
+      - [Attribute Definition](#attribute-definition-1)
       - [Enum Attributes](#enum-attributes)
       - [Map Attributes](#map-attributes)
       - [List Attributes](#list-attributes)
@@ -135,7 +135,6 @@ tasks
     + [Indexes With Sort Keys](#indexes-with-sort-keys)
     + [Numeric Keys](#numeric-keys)
     + [Index Casing](#index-casing)
-  * [Facets](#facets)
   * [Composite Attributes](#composite-attributes)
     + [Composite Attribute Arrays](#composite-attribute-arrays)
     + [Composite Attribute Templates](#composite-attribute-templates)
@@ -150,10 +149,6 @@ tasks
   * [Index and Collection Naming Conventions](#index-and-collection-naming-conventions)
     + [Index Naming Conventions](#index-naming-conventions)
   * [Collection Naming Conventions](#collection-naming-conventions)
-  * [Filters](#filters)
-    + [Defined on the model](#defined-on-the-model)
-    + [Defined via Filter method after query operators](#defined-via-filter-method-after-query-operators)
-    + [Multiple Filters](#multiple-filters)
   * [Where](#where)
     + [FilterExpressions](#filterexpressions)
     + [ConditionExpressions](#conditionexpressions)
@@ -167,7 +162,7 @@ tasks
     + [Query App Records](#query-app-records)
       - [Partition Key Composite Attributes](#partition-key-composite-attributes)
     + [Sort Key Operations](#sort-key-operations)
-  * [Query Chains](#query-chains)
+  * [Performing Queries](#performing-queries)
     + [Query Method](#query-method)
     + [Get Method](#get-method)
     + [Batch Get](#batch-get)
@@ -193,14 +188,15 @@ tasks
     + [Match Records](#match-records)
     + [Access Pattern Queries](#access-pattern-queries)
       - [Begins With Queries](#begins-with-queries)
-  * [Collection Chains](#collection-chains)
-  * [Execute Queries](#execute-queries)
+  * [Collection Queries](#collection-queries)
+  * [Executing Queries](#executing-queries)
     + [Params](#params)
     + [Go](#go)
-    + [Page](#page)
       - [Entity Pagination](#entity-pagination)
+        * [Pagination Cursor](#pagination-cursor)
       - [Service Pagination](#service-pagination)
-      - [Pager Query Options](#pager-query-options)
+      - [Pagination Query Options](#pagination-query-options)
+        * [Query Option Pager](#query-option-pager)
         * [Pagination Example](#pagination-example)
   * [Query Examples](#query-examples)
   * [Query Options](#query-options)
@@ -212,7 +208,7 @@ tasks
   * [Query Event](#query-event)
   * [Results Event](#results-event)
 - [Listeners](#listeners)
-- [Errors:](#errors-)
+- [ElectroDB Errors](#electrodb-errors)
     + [No Client Defined On Model](#no-client-defined-on-model)
     + [Invalid Identifier](#invalid-identifier)
     + [Invalid Key Composite Attribute Template](#invalid-key-composite-attribute-template)
@@ -236,7 +232,6 @@ tasks
     + [Invalid Attribute](#invalid-attribute)
     + [AWS Error](#aws-error)
     + [Unknown Errors](#unknown-errors)
-    + [Invalid Last Evaluated Key](#invalid-last-evaluated-key)
     + [No Owner For Pager](#no-owner-for-pager)
     + [Pager Not Unique](#pager-not-unique)
 - [Examples](#examples)
@@ -275,9 +270,11 @@ tasks
 - [TypeScript](#typescript)
   * [Custom Attributes](#custom-attributes)
   * [Exported Types](#exported-types)
+    + [QueryResponse Type](#queryresponse-type)
     + [EntityRecord Type](#entityrecord-type)
     + [EntityItem Type](#entityitem-type)
     + [CollectionItem Type](#collectionitem-type)
+    + [CollectionResponse](#collectionresponse)
     + [CreateEntityItem Type](#createentityitem-type)
     + [UpdateEntityItem Type](#updateentityitem-type)
     + [UpdateAddEntityItem Type](#updateaddentityitem-type)
@@ -287,11 +284,13 @@ tasks
     + [UpdateDeleteEntityItem Type](#updatedeleteentityitem-type)
 - [Using ElectroDB With Existing Data](#using-electrodb-with-existing-data)
 - [Electro CLI](#electro-cli)
+- [Version 2 Migration](#version-2-migration)
+  * [New response format for all query methods.](#new-response-format-for-all-query-methods)
+  * [Unified Pagination APIs](#unified-pagination-apis)
 - [Version 1 Migration](#version-1-migration)
   * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
   * [The renaming of index property Facets to Composite and Template](#the-renaming-of-index-property-facets-to-composite-and-template)
   * [Get Method to Return null](#get-method-to-return-null)
-- [Coming Soon](#coming-soon)
 
 ----------
 
@@ -327,6 +326,9 @@ import { Entity, Service } from "electrodb";
 `Service` allows you to build relationships across Entities. A service imports Entity [Models](#model), builds individual Entities, and creates [Collections](#collections) to allow cross Entity querying. For more detail, read [Services](#services).
 
 You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, If you intend to make queries that `join` or span multiple Entities you will need to use a Service.
+
+# Getting Started
+If you're looking to get started right away with ElectroDB, checkout code examples in the `/examples` directory, or for [guided examples](#examples) in this document below. Additionally the section [Building Queries](#building-queries) shows examples of every and has descriptions of all methods available in ElectroDB. If you use TypeScript, the section [TypeScript](#typescript) contains useful exported types to use in your project.
 
 # Entities
 
@@ -366,7 +368,7 @@ If you experience any issues using TypeScript with ElectroDB, your feedback is v
 
 See the section [Exported TypeScript Types](#exported-typescript-types) to read more about the useful types exported from ElectroDB.  
 
-### TypeScript Services
+### Services
 
 New with version `0.10.0` is TypeScript support. To ensure accurate types with, TypeScript users should create their services by passing an Object literal or const object that maps Entity alias names to Entity instances.
 ```typescript
@@ -382,48 +384,7 @@ Services take an optional second parameter, similar to Entities, with a `client`
 
 While not yet typed, this pattern will also accept Models, or a mix of Entities and Models, in the same object literal format.
 
-## Join
-When using JavaScript, use `join` to add [Entities](#entities) or [Models](#model) onto a Service.
-
-> _NOTE: If using TypeScript, see [Joining Entities at Service construction for TypeScript](#joining-entities-at-service-construction-for-typescript) to learn how to "join" entities for use in a TypeScript project._
-
-#### Independent Models
-
-```javascript
-let table = "my_table_name";
-let employees = new Entity(EmployeesModel, { client, table });
-let tasks = new Entity(TasksModel, { client, table });
-```
-
-#### Joining Entity instances to a Service
-
-```javascript
-// Joining Entity instances to a Service
-let TaskApp = new Service("TaskApp", { client, table });
-TaskApp
-	.join(employees) // available at TaskApp.entities.employees
-	.join(tasks);    // available at TaskApp.entities.tasks
-```
-
-#### Joining models to a Service
-
-```javascript
-let TaskApp = new Service("TaskApp", { client, table });
-TaskApp
-	.join(EmployeesModel) // available at TaskApp.entities.employees (based on entity name in model)
-	.join(TasksModel);    // available at TaskApp.entities.tasks (based on entity name in model)
-```
-
-#### Joining Entities or Models with an alias
-
-```javascript
-let TaskApp = new Service("TaskApp", { client, table });
-TaskApp
-    .join("personnel", EmployeesModel) // available at TaskApp.entities.personnel
-    .join("directives", TasksModel); // available at TaskApp.entities.directives
-```
-
-#### Joining Entities at Service construction for TypeScript
+#### Joining Entities together
 
 ```typescript
 let TaskApp = new Service({
@@ -634,7 +595,7 @@ Property       | Description
 -------------- | ----------- 
 model.service  | Name of the application using the entity, used to namespace all entities
 model.entity   | Name of the entity that the schema represents
-model.version  | (optional) The version number of the schema, used to namespace keys
+model.version  | The version number of the schema, used to namespace keys
 attributes     | An object containing each attribute that makes up the schema
 indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
 
@@ -652,15 +613,7 @@ client   | (optional) An instance of the `docClient` from the `aws-sdk` for use 
 > **Pro-Tip:**
 > Using the `field` property, you can map an `AttributeName` to a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. For example, you may refer to an attribute as `organization` but want to save the attribute with a field name of `org` in DynamoDB.
 
-### Simple Syntax
-Assign just the `type` of the attribute directly to the attribute name. Types currently supported options are "string", "number", "boolean", an array of strings representing a fixed set of possible values, or "any" which disables value type checking on that attribute.
-```typescript
-attributes: {
-	<AttributeName>: "string" | "number" | "boolean" | "list" | "map" | "set" | "any" | string[] | ReadonlyArray<string> 
-}
-```
-
-### Expanded Syntax
+### Attribute Definition
 Use the expanded syntax build out more robust attribute options.
 ```typescript
 attributes: {
@@ -694,7 +647,6 @@ Property      | Type                                                       | Req
 `field`       | `string`                                                   | no       | all       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
 `readOnly`    | `boolean`                                                  | no       | all       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail. 
 `label`       | `string`                                                   | no       | all       | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
-`cast`        | `"number"`, `"string"`, `"boolean"`                        | no       | all       | Optionally cast attribute values when interacting with DynamoDB. Current options include: "number", "string", and "boolean".
 `set`         | `(attribute, schema) => value`                             | no       | all       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
 `get`         | `(attribute, schema) => value`                             | no       | all       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
 `watch`       | `Attribute[], "*"`                                         | no       | root-only | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed. Only available on root level attributes.
@@ -851,7 +803,7 @@ If your attributes needs to watch for any changes to an item, you can model this
 ```typescript
 myAttr: { 
   type: "string",
-  watch: "*", // "watch all"
+  watch: "*", // <- "watch all"
   set: (myAttr, allAttributes) => {
     // Whenever an `update` or `patch` operation is performed, this callback will be fired. 
     // Note: myAttr or the attributes under `allAttributes` could be independently undefined because either attribute could have triggered this callback
@@ -1073,14 +1025,14 @@ signature               | behavior
 `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid.
 `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query
 
-
-
 ## Indexes
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
 
 All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
 
 In your model, the _Table Index_ this is expressed as an _Access Pattern_ *without* an `index` property. For Secondary Indexes (both GSIs and LSIs), use the `index` property to define the name of the index as defined on your DynamoDB table.
+
+> _NOTE: The 'index' property is simply a mapping of your AccessPatternName to your DynamoDB index name. ElectroDB does not create or alter DynamoDB tables, so your indexes will need to be created prior to use_
 
 Within these _AccessPatterns_, you define the PartitionKey and (optionally) SortKeys that are present on your DynamoDB table and map the key's name on the table with the `field` property.
 
@@ -1108,14 +1060,14 @@ indexes: {
 | `pk`           | `object`                               | yes      | Configuration for the pk of that index or table
 | `pk.composite` | `string[]`                             | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
-| `pk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `pk.field`     | `string`                               | yes      | The name of the index Partition Key field as it exists in DynamoDB, if named differently in the schema attributes.
 | `pk.casing`    | `default`, `upper`, `lower`, `none`    | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`. 
 | `sk`           | `object`                               | no       | Configuration for the sk of that index or table
 | `sk.composite` | `string[]`                             | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `sk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
-| `sk.field`     | `string`                               | yes      | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes.
+| `sk.field`     | `string`                               | yes      | The name of the index Sort Key field as it exists in DynamoDB, if named differently in the schema attributes.
 | `pk.casing`    | `default`, `upper`, `lower`, `none`,   | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
-| `index`        | `string`                               | no       | Required when the `Index` defined is a *Secondary Index*; but is left blank for the table's primary index.
+| `index`        | `string`                               | no       | Required when the `Index` defined is a *Global/Local Secondary Index*; but is omitted for the table's primary index.
 | `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
 
 ### Indexes Without Sort Keys
@@ -1236,14 +1188,6 @@ Casing Option | Effect
 `lower`       | Will convert the key to lowercase prior it its use
 `upper`       | Will convert the key to uppercase prior it its use
 `none`        | Will not perform any casing changes when building keys
-
-## Facets
-
-As of version `0.11.1`, "Facets" have been renamed to "Composite Attributes", and all documentation has been updated to reflect that change.
-
-- To learn about the latest syntax, checkout [Composite Attributes](#composite-attributes).
-- To learn about why this change was made in preparation for 1.0 checkout [Renaming Facets](#the-renaming-of-index-property-facets-to-composite-and-template).
-
 
 ## Composite Attributes
 A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key**, or a **Sort Key** key, which define an `index`.
@@ -1496,7 +1440,7 @@ Another approach allows you to use the `template` property, which allows you to 
     "your_access_pattern_name": {
       pk: {
         field: "accountId",
-        composite: ["accountId"], // `composite` is optional when using `template` but is required when using TypeScript
+        composite: ["accountId"],
         template: "${accountId}"
       },
       sk: {...}
@@ -1778,8 +1722,11 @@ let results = await TaskApp.collections
         .go();
 
 {
-    tasks: [...],    // tasks for employeeId "JExotic" 
+  data: {
+    tasks: [...],    // tasks for employeeId "JExotic"
     employees: [...] // employee record(s) with employeeId "JExotic"
+  },
+  cursor: null
 }
 ```
 
@@ -1997,8 +1944,11 @@ const results = await TaskApp.collections
 
 // results 
 { 
-  tasks: [...],         // tasks associated with projectId "SD-204
-  projectMembers: [...] // employees of project "SD-204"
+  data: {
+    tasks: [...],         // tasks associated with projectId "SD-204
+    projectMembers: [...] // employees of project "SD-204"
+  },
+  cursor: null,
 }
 
 // parameters
@@ -2026,9 +1976,12 @@ const results = await TaskApp.collections
 
 // results 
 {
-  tasks: [...], // tasks assigned to employeeId "JExotic" 
-  projectMembers: [...], // projects with employeeId "JExotic"
-  employees: [...] // employee record(s) with employeeId "JExotic"
+  data: {
+    tasks: [...], // tasks assigned to employeeId "JExotic"
+    projectMembers: [...], // projects with employeeId "JExotic"
+    employees: [...] // employee record(s) with employeeId "JExotic"
+  },
+  cursor: null,
 }
 
 {
@@ -2050,8 +2003,11 @@ const results = await TaskApp.collections
 
 // results 
 {
-  tasks: [...],          // tasks assigned to employeeId "JExotic" 
-  projectMembers: [...], // projects with employeeId "JExotic"
+  data: {
+    tasks: [...],          // tasks assigned to employeeId "JExotic"
+    projectMembers: [...], // projects with employeeId "JExotic"
+  },
+  cursor: null,
 }
 
 {
@@ -2157,195 +2113,6 @@ The considerations for naming a collection are nearly identical to the considera
 For example, the `contributions` collection is named such because when given an `employeeId` we receive the employee's details, the tasks the that employee, and the projects where they are currently a member.
 
 In the case of `assignments`, we receive a subset of `contributions` when supplying an `employeeId`: Only the tasks and projects they are "assigned" are returned.
-
-## Filters
-
-> Filters are no longer the preferred way to add FilterExpressions. Checkout the [Where](#where) section to find out about how to apply FilterExpressions and ConditionExpressions.
-
-Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further. By adding Filters to your model, you can extend your queries with custom filters. Below is the traditional way you would add a filter to Dynamo's DocumentClient directly alongside how you would accomplish the same using a Filter function.
-
-```json
-{
-  "IndexName": "idx2",
-  "TableName": "StoreDirectory",
-  "ExpressionAttributeNames": {
-    "#rent": "rent",
-    "#discount": "discount",
-    "#pk": "idx2pk",
-    "#sk1": "idx2sk"
-  },
-  "ExpressionAttributeValues": {
-    ":rent1": "2000.00",
-    ":rent2": "5000.00",
-    ":discount1": "1000.00",
-    ":pk": "$mallstoredirectory_1#mallid_eastpointe",
-    ":sk1": "$mallstore#leaseenddate_2020-04-01#rent_",
-    ":sk2": "$mallstore#leaseenddate_2020-07-01#rent_"
-  },
-  "KeyConditionExpression": ",#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
-  "FilterExpression": "(#rent between :rent1 and :rent2) AND #discount <= :discount1"
-}
-```
-### Defined on the model
-
-> Deprecated but functional with 1.x
-
-Filters can be defined on the model and used in your query chain.
-
-```javascript
-/**
-	* Filter by low rent a specific mall or a leaseEnd withing a specific range  
-	* @param {Object} attributes - All attributes from the model with methods for each filter operation  
-	* @param {...*} values - Values passed when calling the filter in a query chain.
-**/
-filters: {
-	rentPromotions: function(attributes, minRent, maxRent, promotion)  {
-		let {rent, discount} = attributes;
-		return `
-			${rent.between(minRent, maxRent)} AND ${discount.lte(promotion)}
-		`
-	}
-}
-
-
-let StoreLocations  =  new Entity(model, {table: "StoreDirectory"});
-let maxRent = "5000.00";
-let minRent = "2000.00";
-let promotion = "1000.00";
-let stores = await MallStores.query
-	.stores({ mallId: "EastPointe" })
-	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
-	.rentPromotions(minRent, maxRent, promotion)
-	.go();
-
-// Equivalent Parameters
-{
-  IndexName: 'idx2',
-  TableName: 'StoreDirectory',
-  ExpressionAttributeNames: {
-    '#rent': 'rent',
-    '#discount': 'discount',
-    '#pk': 'idx2pk',
-    '#sk1': 'idx2sk'
-  },
-  ExpressionAttributeValues: {
-    ':rent1': '2000.00',
-    ':rent2': '5000.00',
-    ':discount1': '1000.00',
-    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
-    ':sk1': '$mallstore#leaseenddate_2020-04-01#rent_',
-    ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
-  },
-  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
-}
-```
-### Defined via Filter method after query operators
-
-> Filters are no longer the preferred way to add FilterExpressions. Checkout the [Where](#where) section to find out about how to apply FilterExpressions and ConditionExpressions.
-
-The easiest way to use filters is to use them inline in your query chain.
-
-```javascript
-let StoreLocations  =  new Entity(model, {table: "StoreDirectory"});
-let maxRent = "5000.00";
-let minRent = "2000.00";
-let promotion = "1000.00";
-let stores  =  await StoreLocations.query
-	.leases({ mallId: "EastPointe" })
-	.between({ leaseEndDate:  "2020-04-01" }, { leaseEndDate:  "2020-07-01" })
-	.filter(({rent, discount}) => `
-		${rent.between(minRent, maxRent)} AND ${discount.lte(promotion)}
-	`)
-	.go();
-
-// Equivalent Parameters
-{
-  IndexName: 'idx2',
-  TableName: 'StoreDirectory',
-  ExpressionAttributeNames: {
-    '#rent': 'rent',
-    '#discount': 'discount',
-    '#pk': 'idx2pk',
-    '#sk1': 'idx2sk'
-  },
-  ExpressionAttributeValues: {
-    ':rent1': '2000.00',
-    ':rent2': '5000.00',
-    ':discount1': '1000.00',
-    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
-    ':sk1': '$mallstore#leaseenddate_2020-04-01#rent_',
-    ':sk2': '$mallstore#leaseenddate_2020-07-01#rent_'
-  },
-  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND #discount <= :discount1'
-}
-```
-
-Filter functions allow you to write a `FilterExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions. This object contains every Attribute defined in the Entity's Model with the following operators as methods:
-
-operator      | example                          | result
-| ----------- | -------------------------------- |  
-`gte`         | `rent.gte(maxRent)`              | `#rent >= :rent1`
-`gt`          | `rent.gt(maxRent)`               | `#rent > :rent1`
-`lte`         | `rent.lte(maxRent)`              | `#rent <= :rent1`
-`lt`          | `rent.lt(maxRent)`               | `#rent < :rent1`
-`eq`          | `rent.eq(maxRent)`               | `#rent = :rent1`
-`ne`          | `rent.ne(maxRent)`               | `#rent <> :rent1`
-`begins`      | `rent.begins(maxRent)`           | `begins_with(#rent, :rent1)`
-`exists`      | `rent.exists()`                  | `attribute_exists(#rent)`
-`notExists`   | `rent.notExists()`               | `attribute_not_exists(#rent)`
-`contains`    | `rent.contains(maxRent)`         | `contains(#rent = :rent1)`
-`notContains` | `rent.notContains(maxRent)`      | `not contains(#rent = :rent1)`
-`between`     | `rent.between(minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
-`name`        | `rent.name()`                    | `#rent`
-`value`       | `rent.value(maxRent)`            | `:rent1`
-
-This functionality allows you to write the remaining logic of your `FilterExpression` with ease. Add complex nested `and`/`or` conditions or other `FilterExpression` logic while ElectroDB handles the  `ExpressionAttributeNames` and `ExpressionAttributeValues`.
-
-### Multiple Filters
-
-> Filters are no longer the preferred way to add FilterExpressions. Checkout the [Where](#where) section to find out about how to apply FilterExpressions and ConditionExpressions.
-
-It is possible to chain together multiple filters. The resulting FilterExpressions are concatenated with an implicit `AND` operator.
-
-```javascript
-let MallStores = new Entity(model, {table: "StoreDirectory"});
-let stores = await MallStores.query
-	.leases({ mallId: "EastPointe" })
-	.between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
-	.filter(({ rent, discount }) => `
-		${rent.between("2000.00", "5000.00")} AND ${discount.eq("1000.00")}
-	`)
-	.filter(({ category }) => `
-		${category.eq("food/coffee")}
-	`)
-	.go();
-
-// Equivalent Parameters
-{
-  TableName: 'StoreDirectory',
-  ExpressionAttributeNames: {
-    '#rent': 'rent',
-    '#discount': 'discount',
-    '#category': 'category',
-    '#pk': 'idx2pk',
-    '#sk1': 'idx2sk'
-  },
-  ExpressionAttributeValues: {
-    ':rent1': '2000.00',
-    ':rent2': '5000.00',
-    ':discount1': '1000.00',
-    ':category1': 'food/coffee',
-    ':pk': '$mallstoredirectory_1#mallid_eastpointe',
-    ':sk1': '$mallstore#leaseenddate_2020-04-01#storeid_',
-    ':sk2': '$mallstore#leaseenddate_2020-07-01#storeid_'
-  },
-  KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
-  IndexName: 'idx2',
-  FilterExpression: '(#rent between :rent1 and :rent2) AND (#discount = :discount1 AND #category = :category1)'
-}
-```
 
 ## Where
 
@@ -2626,7 +2393,7 @@ attributes        | string[] | _(all attributes)_ | The `attributes` option allo
 
 ElectroDB queries use DynamoDB's `query` method to find records based on your table's indexes.
 
-> _NOTE: By default, ElectroDB will paginate through all items that match your query. To limit the number of items ElectroDB will retrieve, read more about the [Query Options](#query-options) `pages` and `limit`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
+> _NOTE: To limit the number of items ElectroDB will retrieve, read more about the [Query Options](#query-options) `pages` and `limit`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
 
 Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is crucial to consider the order in which they are *composed*.  As of the time of writing this documentation, **DynamoDB**  has the following constraints that should be taken into account when planning your **Access Patterns**:
 1. You must always supply the **Partition Key** in full for all queries to **DynamoDB**.
@@ -2827,7 +2594,7 @@ The `StoreLocations` entity above, using just the `stores` **Index** alone enabl
 3. All `LatteLarrys` locations inside a specific *Mall*
 4. A specific `LatteLarrys` inside of a *Mall* and *Building*
 
-## Query Chains
+## Performing Queries
 Queries in ***ElectroDB*** are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Composite Attributes** to create performant lookups. To accomplish this, ***ElectroDB*** offers a predictable chainable API.
 
 > Examples in this section using the `StoreLocations` schema defined [above](#shopping-mall-stores) and can be directly experiment with on runkit: https://runkit.com/tywalch/electrodb-building-queries
@@ -2838,13 +2605,14 @@ The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete
 
 ElectroDB queries use DynamoDB's `query` method to find records based on your table's indexes. To read more about queries checkout the section [Building Queries](#building-queries)
 
-> _NOTE: By default, ElectroDB will paginate through all items that match your query. To limit the number of items ElectroDB will retrieve, read more about the [Query Options](#query-options) `pages` and `limit`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
+> _NOTE: To limit the number of items ElectroDB will retrieve, read more about the [Query Options](#query-options) `pages` and `limit`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
 
 ### Get Method
 Provide all Table Index composite attributes in an object to the `get` method. In the event no record is found, a value of `null` will be returned.
 
 > _NOTE: As part of ElectroDB's roll out of 1.0.0, a breaking change was made to the `get` method. Prior to 1.0.0, the `get` method would return an empty object if a record was not found. This has been changed to now return a value of `null` in this case._
 
+Example:
 ```javascript
 let results = await StoreLocations.get({
 	storeId: "LatteLarrys", 
@@ -2852,15 +2620,24 @@ let results = await StoreLocations.get({
 	buildingId: "F34", 
 	cityId: "Atlanta1"
 }).go();
+```
+Response Format:
+```typescript
+{
+  data: Array<YOUR_SCHEMA>,
+  cursor: string | undefined
+}
+```
 
-// Equivalent Params:
-// {
-//   Key: {
-//     pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-//     sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-//   },
-//   TableName: 'StoreDirectory'
-// }
+Equivalent DocClient Parameters:
+```json
+{
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+  },
+  "TableName": "YOUR_TABLE_NAME"
+}
 ```
 
 ### Batch Get
@@ -2879,6 +2656,7 @@ If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB wil
 
 It is important to consider your Table's throughput considerations when setting this value.
 
+Example:
 ```javascript
 let [results, unprocessed] = await StoreLocations.get([
     {
@@ -2894,24 +2672,34 @@ let [results, unprocessed] = await StoreLocations.get([
         cityId: "Madison2"
     }   
 ]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
+```
 
-// Equivalent Params:
-// {
-//   "RequestItems": {
-//     "electro": {
-//       "Keys": [
-//         {
-//           "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-//           "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-//         },
-//         {
-//           "pk": "$mallstoredirectory#cityid_madison2#mallid_westend",
-//           "sk": "$mallstore_1#buildingid_a21#storeid_mochajoes"
-//         }
-//       ]
-//     }
-//   }
-// }
+Response Format:
+```typescript
+{
+  data: Array<YOUR_SCHEMA>,
+  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
+}
+```
+
+Equivalent DocClient Parameters:
+```json
+{
+  "RequestItems": {
+    "YOUR_TABLE_NAME": {
+      "Keys": [
+        {
+          "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+          "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+        },
+        {
+          "pk": "$mallstoredirectory#cityid_madison2#mallid_westend",
+          "sk": "$mallstore_1#buildingid_a21#storeid_mochajoes"
+        }
+      ]
+    }
+  }
+}
 ```
 
 The two-dimensional array returned by batch get most easily used when deconstructed into two variables, in the above case: `results` and `unprocessed`.
@@ -2925,6 +2713,7 @@ Elements of the `unprocessed` array are unlike results received from a query. In
 ### Delete Method
 Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
 
+Example:
 ```javascript
 await StoreLocations.delete({
 	storeId: "LatteLarrys", 
@@ -2932,15 +2721,24 @@ await StoreLocations.delete({
 	buildingId: "F34", 
 	cityId: "Atlanta1"
 }).go();
+```
 
-// Equivalent Params:
-// {
-//   Key: {
-//     pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-//     sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-//   },
-//   TableName: 'StoreDirectory'
-// }
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
+{
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+  },
+  "TableName": "YOUR_TABLE_NAME"
+}
 ```
 
 ### Batch Write Delete Records
@@ -2959,6 +2757,7 @@ If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB wil
 
 It is important to consider your Table's throughput considerations when setting this value.
 
+Example:
 ```javascript
 let unprocessed = await StoreLocations.delete([
     {
@@ -2974,8 +2773,17 @@ let unprocessed = await StoreLocations.delete([
         cityId: "LosAngeles1"
     }
 ]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1` 
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "RequestItems": {
     "StoreDirectory": [
@@ -3005,7 +2813,9 @@ Elements of the `unprocessed` array are unlike results received from a query. In
 ### Put Record
 Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after performing a `put()` or `create()` operation, ElectroDB will format and return the record through the same process as a Get/Query. This process will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.     
 
-This example includes an optional conditional expression
+Note: This example includes an optional conditional expression
+
+Example:
 ```javascript
 await StoreLocations
   .put({
@@ -3020,8 +2830,17 @@ await StoreLocations
   })
   .where((attr, op) => op.eq(attr.rent, "4500.00"))
   .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "Item": {
     "cityId": "Atlanta1",
@@ -3069,6 +2888,7 @@ If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB wil
 
 It is important to consider your Table's throughput considerations when setting this value.
 
+Example:
 ```javascript
 let unprocessed = await StoreLocations.put([
     {
@@ -3092,8 +2912,17 @@ let unprocessed = await StoreLocations.put([
         rent: "1500.00"
     }
 ]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "RequestItems": {
     "StoreDirectory": [
@@ -3229,11 +3058,23 @@ For the defined indexes:
 
 A user could update `attr4` alone because ElectroDB is able to leverage the value for `attr2` from values supplied to the `update()` method:
 
+
+Example:
 ```typescript
 entity.update({ attr1: "value1", attr2: "value2" })
   .set({ attr4: "value4" })
   .go();
+```
 
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "UpdateExpression": "SET #attr4 = :attr4_u0, #gsi1sk = :gsi1sk_u0, #attr1 = :attr1_u0, #attr2 = :attr2_u0",
   "ExpressionAttributeNames": {
@@ -3249,7 +3090,7 @@ entity.update({ attr1: "value1", attr2: "value2" })
     ":attr1_u0": "value1",
     ":attr2_u0": "value2"
   },
-  "TableName": "test_table",
+  "TableName": "YOUR_TABLE_NAME",
   "Key": { 
     "pk": "$service#attr1_value1", 
     "sk": "$entity_version#attr2_value2" 
@@ -3263,14 +3104,24 @@ entity.update({ attr1: "value1", attr2: "value2" })
 
 The `set()` method will accept all attributes defined on the model. Provide a value to apply or replace onto the item.
 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .set({category: "food/meal"})
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "UpdateExpression": "SET #category = :category",
   "ExpressionAttributeNames": {
@@ -3295,14 +3146,24 @@ The `remove()` method will accept all attributes defined on the model. Unlike mo
 
 > _NOTE that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed._  
 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .remove(["category"])
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "UpdateExpression": "REMOVE #category",
   "ExpressionAttributeNames": {
@@ -3326,6 +3187,7 @@ The `add()` method will accept attributes with type `number`, `set`, and `any` d
 
 If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a `number`. 
 
+Example:
 ```javascript
 const newTenant = client.createSet("larry");
 
@@ -3337,8 +3199,17 @@ await StoreLocations
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "UpdateExpression": "SET #rent = #rent + :rent0 ADD #tenant :tenant0",
   "ExpressionAttributeNames": {
@@ -3364,14 +3235,24 @@ await StoreLocations
 
 The `subtract()` method will accept attributes with type `number`. In the case of a `number` attribute, provide a number to _subtract_ from the existing attribute's value on the item.
 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .subtract({deposit: 500})
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "UpdateExpression": "SET #deposit = #deposit - :deposit0",
   "ExpressionAttributeNames": {
@@ -3395,6 +3276,7 @@ await StoreLocations
 
 The `append()` method will accept attributes with type `any`. This is a convenience method for working with DynamoDB lists, and is notably different that [`set`](#update-method-set) because it will add an element to an existing array, rather than overwrite the existing value.
 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -3406,8 +3288,17 @@ await StoreLocations
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0)",
   "ExpressionAttributeNames": {
@@ -3436,14 +3327,24 @@ await StoreLocations
 
 The `delete()` method will accept attributes with type `any` or `set` . This operation removes items from a the `contract` attribute, defined as a `set` attribute.
 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .delete({contact: ['555-345-2222']})
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "UpdateExpression": "DELETE #contact :contact0",
   "ExpressionAttributeNames": {
@@ -3485,6 +3386,7 @@ operation     | example                               | result                  
 `value`       | `value(rent, amount)`                 | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
 `ifNotExists` | `ifNotExists(rent, amount)`           | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record
 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -3506,8 +3408,17 @@ await StoreLocations
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
   "ExpressionAttributeNames": {
@@ -3619,6 +3530,7 @@ When scanning for rows, you can use filters the same as you would any query. For
 
 *Note: `Scan` functionality will be scoped to your Entity. This means your results will only include records that match the Entity defined in the model.*
 
+Example:
 ```javascript
 await StoreLocations.scan
     .where(({category}, {eq}) => `
@@ -3628,8 +3540,18 @@ await StoreLocations.scan
         ${between(leaseEndDate, "2020-03", "2020-04")}
     `)
     .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: Array<YOUR_SCHEMA>,
+  cursor: string | undefined
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "TableName": "StoreDirectory",
   "ExpressionAttributeNames": {
@@ -3664,19 +3586,67 @@ await StoreLocations.remove({
 	buildingId: "F34", 
 	cityId: "Atlanta1"
 }).go();
+```
 
-// Equivalent Params:
-// {
-//   Key: {
-//     pk: "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-//     sk: "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-//   },
-//   TableName: 'StoreDirectory'
-//   ConditionExpression: 'attribute_exists(pk) AND attribute_exists(sk)'
-// }
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
+{
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+  },
+  "TableName": "YOUR_TABLE_TABLE"
+  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
+}
 ```
 
 ### Patch Record
+
+```javascript
+await entity.update({ attr1: "value1", attr2: "value2" })
+  .set({ attr4: "value4" })
+  .go();
+```
+
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
+{
+  "UpdateExpression": "SET #attr4 = :attr4_u0, #gsi1sk = :gsi1sk_u0, #attr1 = :attr1_u0, #attr2 = :attr2_u0",
+  "ExpressionAttributeNames": {
+    "#attr4": "attr4",
+    "#gsi1sk": "gsi1sk",
+    "#attr1": "attr1",
+    "#attr2": "attr2"
+  },
+  "ExpressionAttributeValues": {
+    ":attr4_u0": "value6",
+    // This index was successfully built
+    ":gsi1sk_u0": "$update-edgecases_1#attr2_value2#attr4_value6",
+    ":attr1_u0": "value1",
+    ":attr2_u0": "value2"
+  },
+  "TableName": "YOUR_TABLE_NAME",
+  "Key": {
+    "pk": "$service#attr1_value1",
+    "sk": "$entity_version#attr2_value2"
+  },
+  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
+}
+```
 
 In DynamoDB, `update` operations by default will insert a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not inserted when updating.
 
@@ -3688,6 +3658,7 @@ In DynamoDB, `put` operations by default will overwrite a record if record being
 
 A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.
 
+Example:
 ```javascript
 await StoreLocations
   .create({
@@ -3702,8 +3673,17 @@ await StoreLocations
   })
   .where((attr, op) => op.eq(attr.rent, "4500.00"))
   .go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "Item": {
     "cityId": "Atlanta1",
@@ -3743,13 +3723,24 @@ DynamoDB offers three methods to query records: `get`, `query`, and `scan`. In *
 
 The Find method is useful when the index chosen does not matter or is not known. If your secondary indexes do not contain all attributes then this method might not be right for you. The mechanism that picks the best index for a given payload is subject to improvement and change without triggering a breaking change release version.
 
+Example:
 ```javascript
 await StoreLocations.find({
     mallId: "EastPointe",
     buildingId: "BuildingA1",
 }).go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: Array<YOUR_SCHEMA>,
+  cursor: string | undefined
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
   "TableName": "StoreDirectory",
@@ -3777,7 +3768,7 @@ Match is a convenience method based off of ElectroDB's [find](#find-records) met
 
 Match differs from [Find](#find-records) in that it will also include all supplied values into a query filter.
 
-
+Example:
 ```javascript
 await StoreLocations.find({
     mallId: "EastPointe",
@@ -3785,8 +3776,18 @@ await StoreLocations.find({
     leaseEndDate: "2020-03-22",
     rent: "1500.00"
 }).go()
+```
 
-// Equivalent Params:
+Response Format:
+```typescript
+{
+  data: Array<YOUR_SCHEMA>,
+  cursor: string | undefined
+}
+```
+
+Equivalent DocClient Parameters:
+```json
 {
   "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
   "TableName": "StoreDirectory",
@@ -3876,7 +3877,7 @@ The second example allows you to make queries that do include buildings such as 
 
 For these reasons it is important to consider that attributes passed to the Access Pattern method are considered to be full, known, data.
 
-## Collection Chains
+## Collection Queries
 Collections allow you to query across Entities. They can be used on `Service` instance.
 
 ```javascript
@@ -4019,7 +4020,7 @@ TaskApp.collections
 }
 ```
 
-## Execute Queries
+## Executing Queries
 Lastly, all query chains end with either a `.go()`, `.params()`, or `page()` method invocation. These terminal methods will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Query Options](#query-options).
@@ -4072,126 +4073,73 @@ let stores = MallStores.query
 
 ```
 
-### Page
-
-> _NOTE: By Default, ElectroDB queries will paginate through all results with the [`go()`](#building-queries) method. ElectroDB's `page()` method can be used to manually iterate through DynamoDB query results._
-
-The `page` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model. Unlike the `.go()`, the `.page()` method returns a tuple.
-
-The first element for a page query is the "pager": an object contains the composite attributes that make up the `ExclusiveStartKey` that is returned by the DynamoDB client. This is very useful in multi-tenant applications where only some composite attributes are exposed to the client, or there is a need to prevent leaking keys between entities. If there is no `ExclusiveStartKey` this value will be null. On subsequent calls to `.page()`, pass the results returned from the previous call to `.page()` or construct the composite attributes yourself.
-
-The "pager" includes the associated entity's Identifiers.
-
-> _NOTE: It is *highly recommended* to use the [query option](#query-options) `pager: "raw""` flag when using `.page()` with `scan` operations. This is because when using scan on large tables the docClient may return an `ExclusiveStartKey` for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records._
-
-The second element is the results of the query, exactly as it would be returned through a `query` operation.
-
-> _NOTE: When calling `.page()` the first argument is reserved for the "page" returned from a previous query, the second parameter is for Query Options. For more information on the options available in the `config` object, check out the section [Query Options](#query-options)._
-
 #### Entity Pagination
 
-```javascript
-let [next, stores] = await MallStores.query
+##### Pagination Cursor
+
+All ElectroDB `query` and `scan` operations return a `cursor`, which is a stringified and copy of DynamoDB's `LastEvaluatedKey` with a `base64url` encoding.
+
+The terminal method `go()` accepts a `cursor` when executing a `query` or `scan` to continue paginating for more results. Pass the cursor from the previous query to your next query and ElectroDB will continue its pagination where it left off.
+
+```typescript
+const results1 = await MallStores.query
 	.leases({ mallId })
-	.page(); // no "pager" passed to `.page()`
+	.go(); // no "cursor" passed to `.go()`
 
-let [pageTwo, moreStores] = await MallStores.query
+const results2 = await MallStores.query
 	.leases({ mallId })
-	.page(next, {}); // the "pager" from the first query (`next`) passed to the second query
+	.go({cursor: results1.cursor}); // Paginate by querying with the "cursor" from your first query
 
-// page:
-// { 
-//   storeId: "LatteLarrys", 
-//   mallId: "EastPointe", 
-//   buildingId: "BuildingA1", 
-//   unitId: "B47"
-//   __edb_e__: "MallStore",
-//   __edb_v__: "version" 
-// }
-
-// stores
-// [{
-//   mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
-//   leaseEnd: '2020-01-20',
-//   sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
-//   store: 'MNO',
-//   unit: 'B5',
-//   id: 'e0705325-d735-4fe4-906e-74091a551a04',
-//   building: 'BuildingE',
-//   category: 'food/coffee',
-//   rent: '0.00'
-// },
-// {
-//   mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
-//   leaseEnd: '2020-01-20',
-//   sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
-//   store: 'ZYX',
-//   unit: 'B9',
-//   id: 'f201a1d3-2126-46a2-aec9-758ade8ab2ab',
-//   building: 'BuildingI',
-//   category: 'food/coffee',
-//   rent: '0.00'
-// }]
+// results1
+{
+  cursor: '...'
+  data: [{
+    mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
+    leaseEnd: '2020-01-20',
+    sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
+    store: 'MNO',
+    unit: 'B5',
+    id: 'e0705325-d735-4fe4-906e-74091a551a04',
+    building: 'BuildingE',
+    category: 'food/coffee',
+    rent: '0.00'
+  },
+  {
+    mall: '3010aa0d-5591-4664-8385-3503ece58b1c',
+    leaseEnd: '2020-01-20',
+    sector: '7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5',
+    store: 'ZYX',
+    unit: 'B9',
+    id: 'f201a1d3-2126-46a2-aec9-758ade8ab2ab',
+    building: 'BuildingI',
+    category: 'food/coffee',
+    rent: '0.00'
+  }]
+}
 ```
 
 #### Service Pagination
 
-> _NOTE: By Default, ElectroDB will paginate through all results with the [`query()`](#building-queries) method. ElectroDB's `page()` method can be used to manually iterate through DynamoDB query results._
+Pagination with services is also possible. Similar to [Entity Pagination](#entity-pagination), calling the `.go()` method returns the following structure:
 
-Pagination with services is also possible. Similar to [Entity Pagination](#entity-pagination), calling the `.page()` method returns a `[pager, results]` tuple. Also, similar to pagination on Entities, the pager object returned by default is a deconstruction of the returned LastEvaluatedKey.
-
-#### Pager Query Options
-
-The `.page()` method also accepts [Query Options](#query-options) just like the `.go()` and `.params()` methods. Unlike those methods, however, the `.page()` method accepts Query Options as the _second_ parameter (the first parameter is reserved for the "pager").
-
-A notable Query Option, that is available only to the `.page()` method, is an option called `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
-
-> _NOTE: Because the "pager" object is destructured from the keys DynamoDB returns as the `LastEvaluatedKey`, these composite attributes differ from the record's actual attribute values in one important way: Their string values will all be lowercase. If you intend to use these attributes in ways where their casing _will_ matter (e.g. in a `where` filter), keep in mind this may result in unexpected outcomes._
-
-The three options for the query option `pager` are as follows:
-
-```javascript
-// LastEvaluatedKey
-{
-  pk: '$taskapp#country_united states of america#state_oregon',
-  sk: '$offices_1#city_power#zip_34706#office_mobile branch',
-  gsi1pk: '$taskapp#office_mobile branch',
-  gsi1sk: '$workplaces#offices_1'
+```typescript
+type GoResults = {
+    cursor: string | null;
+    data: {
+        [entityName: string]: { /** EntityItem */ }[]
+    }
 }
 ```
 
-**"named" (default):** By default, ElectroDB will deconstruct the LastEvaluatedKey returned by the DocClient into it's individual composite attribute parts. The "named" option, chosen by default, also includes the Entity's column "identifiers" -- this is useful with Services where destructured pagers may be identical between more than one Entity in that Service.
+#### Pagination Query Options
 
-```javascript
-// {pager: "named"} | {pager: undefined} 
-{  
-  "city": "power",
-  "country": "united states of america",
-  "state": "oregon",
-  "zip": "34706",
-  "office": "mobile branch",
-  "__edb_e__": "offices",
-  "__edb_v__": "1"
-}
-```
-
-**"item":**  Similar to "named", however without the Entity's "identifiers". If two Entities with a service have otherwise identical index definitions, using the "item" pager option can result in errors while paginating a Collection. If this is not a concern with your Service, or you are paginating with only an Entity, this option could be preferable because it has fewer properties.
-
-```javascript
-// {pager: "item"} 
-{  
-  "city": "power",
-  "country": "united states of america",
-  "state": "oregon",
-  "zip": "34706",
-  "office": "mobile branch",
-}
-```
+##### Query Option Pager
+A notable Pagination Option is `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
 
 **"raw":** The `"raw"` option returns the LastEvaluatedKey as it was returned by the DynamoDB DocClient.
 
-```javascript
-// {pager: "raw"} 
+```typescript
+// {pager: "raw"}
 {
   pk: '$taskapp#country_united states of america#state_oregon',
   sk: '$offices_1#city_power#zip_34706#office_mobile branch',
@@ -4207,14 +4155,14 @@ Simple pagination example:
 ```javascript
 async function getAllStores(mallId) {
   let stores = [];
-  let pager = null;
+  let cursor = null;
 
   do {
-    let [next, results] = await MallStores.query
+    const results = await MallStores.query
       .leases({ mallId })
-      .page(pager);
-    stores = [...stores, ...results]; 
-    pager = next;
+      .go({ pager });
+    stores = [...stores, ...results.data];
+    cursor = results.cursor;
   } while(pager !== null);
   
   return stores;
@@ -4289,7 +4237,7 @@ await StoreLocations.query
 ```
 
 ## Query Options
-Query options can be added the `.params()`, `.go()` and `.page()` to change query behavior or add customer parameters to a query.
+Query options can be added the `.params()` and `.go()`` to change query behavior or add customer parameters to a query.
 
 By default, **ElectroDB** enables you to work with records as the names and properties defined in the model. Additionally, it removes the need to deal directly with the docClient parameters which can be complex for a team without as much experience with DynamoDB. The Query Options object can be passed to both the `.params()` and `.go()` methods when building you query. Below are the options available:
 
@@ -4297,16 +4245,15 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 {
   params?: object;
   table?: string;
-  raw?: boolean;
-  includeKeys?: boolean;
-  pager?: "raw" | "named" | "item";
+  data?: 'raw' | 'includeKeys' | 'attributes';
+  pager?: 'raw' | 'cursor';
   originalErr?: boolean;
   concurrent?: number;
   unprocessed?: "raw" | "item";
   response?: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new";
   ignoreOwnership?: boolean;
   limit?: number;
-  pages?: number;
+  pages?: number | 'all';
   logger?: (event) => void;
   listeners Array<(event) => void>;
   preserveBatchOrder?: boolean;
@@ -4319,16 +4266,16 @@ Option             | Default              | Description
 params             | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
 table              | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)
 attributes         | _(all attributes)_   | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.
-raw                | `false`              | Returns query results as they were returned by the docClient.
-includeKeys        | `false`              | By default, **ElectroDB** does not return partition, sort, or global keys in its response.
-pager              | `"named"`            | Used in with pagination (`.pages()`) calls to override ElectroDBs default behaviour to break apart `LastEvaluatedKeys` records into composite attributes. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
+data               | `"attributes"`       | Accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`. Use `'raw'` to return query results as they were returned by the docClient. Use `'includeKeys'` to include item partition and sort key values in your return object. By default, **ElectroDB** does not return partition, sort, or global keys in its response.
+pager              | `cursor`             | Used in with pagination calls to override ElectroDBs default behaviour to return a serialized string cursor. See more detail about this in the sections for [Pager Query Options](#pager-query-options).
 originalErr        | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
-concurrent         | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations
+concurrent         | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations.
 unprocessed        | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](#batch-get), [BatchDelete](#batch-write-delete-records), and [BatchPut](#batch-write-put-records).
 response           | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
 ignoreOwnership    | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
 limit              | _none_               | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.
-pages              | ∞                    | How many DynamoDB pages should a query iterate through before stopping. By default ElectroDB paginate through all results for your query.
+pages              | 1                    | How many DynamoDB pages should a query iterate through before stopping. To have ElectroDB automatically paginate through all results, pass the string value `'all'`.
+sort               | 'asc'                | Convenience option for `ScanIndexForward`, to the change the order of queries based on your index's Sort Key -- valid options include 'asc' and 'desc'. [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html)]
 listeners          | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](#events) occur.
 logger             | _none_               | A convenience option for a single event listener that semantically can be used for logging.
 preserveBatchOrder | `false`              | When used with a [batchGet](#batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index.
@@ -4477,7 +4424,7 @@ task.query
 ElectroDB can be supplied with callbacks (see: [logging](#logging) and [listeners](#listeners) to learn how) to be invoked after certain request lifecycles. This can be useful for logging, analytics, expanding functionality, and more. The following are events currently supported by ElectroDB -- if you would like to see additional events feel free to create a github issue to discuss your concept/need!
 
 ## Query Event
-The `query` event occurs when a query is made via the terminal methods [`go()`](#go) and [`page()`](#page). The event includes the exact parameters given to the provided client, the ElectroDB method used, and the ElectroDB configuration provided.
+The `query` event occurs when a query is made via the terminal method [`go()`](#go) . The event includes the exact parameters given to the provided client, the ElectroDB method used, and the ElectroDB configuration provided.
 
 *Type:*
 ```typescript
@@ -4497,7 +4444,7 @@ const prop3 = "3ec9ed0c-7497-4d05-bdb8-86c09a618047";
 
 entity.update({ prop1, prop2 })
     .set({ prop3 })
-    .go()
+    .go();
 ```
 
 *Example Output:*
@@ -4658,7 +4605,7 @@ task.query
     .go({ listeners: [listener1, listener2] });
 ```
 
-# Errors:
+# ElectroDB Errors
 
 Error Code | Description
 :--------: | -------------------- 
@@ -4992,19 +4939,6 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 
 ### Unknown Errors
 
-### Invalid Last Evaluated Key
-*Code: 5003*
-
-*Why this occurred:*
-_Likely_ you were calling `.page()` on a `scan`. If you weren't please make an issue and include as much detail about your query as possible.
-
-*What to do about it:*
-When paginating with *scan* queries, it is highly recommended that the query option, `{pager: "raw"}`. This is because when using scan on large tables the docClient may return an ExclusiveStartKey for a record that does not belong to entity making the query (regardless of the filters set). In these cases ElectroDB will return null (to avoid leaking the keys of other entities) when further pagination may be needed to find your records.
-```javascript
-// example
-myModel.scan.page(null, {pager: "raw"});
-```
-
 ### No Owner For Pager
 *Code: 5004*
 
@@ -5130,16 +5064,7 @@ const EmployeesModel = {
 				composite: ["team", "office", "employee"],
 			},
 		},
-	},
-	filters: {
-		upcomingCelebrations: (attributes, startDate, endDate) => {
-			let { dateHired, birthday } = attributes;
-			return `${dateHired.between(startDate, endDate)} OR ${birthday.between(
-				startDate,
-				endDate,
-			)}`;
-		},
-	},
+	}
 };
 
 const TasksModel = {
@@ -5237,12 +5162,13 @@ const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({region: "us-east-1"});
 const { Service } = require("electrodb");
 const table = "projectmanagement";
-const EmployeeApp = new Service("EmployeeApp", { client, table });
 
-EmployeeApp
-	.join(EmployeesModel) // EmployeeApp.entities.employees
-	.join(TasksModel)     // EmployeeApp.entities.tasks
-	.join(OfficesModel);  // EmployeeApp.entities.tasks
+const EmployeeApp = new Service({
+  employees: EmployeesModel,
+  tasks: TasksModel,
+  offices: OfficesModel,
+}, { client, table });
+
 ```
 ### Query Records
 #### All tasks and employee information for a given employee
@@ -5254,29 +5180,32 @@ EmployeeApp.collections.assignements({employee: "CBaskin"}).go();
 Returns the following:
 ```javascript
 {
-	employees: [{
-		employee: "cbaskin",
-		firstName: "carol",
-		lastName: "baskin",
-		office: "big cat rescue",
-		title: "owner",
-		team: "cool cats and kittens",
-		salary: "1,000,000",
-		manager: "",
-		dateHired: "1992-11-04",
-		birthday: "1961-06-06",
-	}],
-	tasks: [{
-		task: "Feed tigers",
-		description: "Prepare food for tigers to eat",
-		project: "Keep tigers alive",
-		employee: "cbaskin"
-	}, {
-		task: "Fill water bowls",
-		description: "Ensure the tigers have enough water",
-		project: "Keep tigers alive",
-		employee: "cbaskin"
-	}]
+  data: {
+    employees: [{
+      employee: "cbaskin",
+      firstName: "carol",
+      lastName: "baskin",
+      office: "big cat rescue",
+      title: "owner",
+      team: "cool cats and kittens",
+      salary: "1,000,000",
+      manager: "",
+      dateHired: "1992-11-04",
+      birthday: "1961-06-06",
+    }],
+    tasks: [{
+      task: "Feed tigers",
+      description: "Prepare food for tigers to eat",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }, {
+      task: "Fill water bowls",
+      description: "Ensure the tigers have enough water",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }]
+  },
+  cursor: '...'
 }
 ```
 
@@ -5289,26 +5218,29 @@ EmployeeApp.collections.workplaces({office: "big cat rescue"}).go()
 Returns the following:
 ```javascript
 {
-	employees: [{
-		employee: "cbaskin",
-		firstName: "carol",
-		lastName: "baskin",
-		office: "big cat rescue",
-		title: "owner",
-		team: "cool cats and kittens",
-		salary: "1,000,000",
-		manager: "",
-		dateHired: "1992-11-04",
-		birthday: "1961-06-06",
-	}],
-	offices: [{
-		office: "big cat rescue",
-		country: "usa",
-		state: "florida",
-		city: "tampa",
-		zip: "12345",
-		address: "123 Kitty Cat Lane"
-	}]
+  data: {
+    employees: [{
+      employee: "cbaskin",
+      firstName: "carol",
+      lastName: "baskin",
+      office: "big cat rescue",
+      title: "owner",
+      team: "cool cats and kittens",
+      salary: "1,000,000",
+      manager: "",
+      dateHired: "1992-11-04",
+      birthday: "1961-06-06",
+    }],
+    offices: [{
+      office: "big cat rescue",
+      country: "usa",
+      state: "florida",
+      city: "tampa",
+      zip: "12345",
+      address: "123 Kitty Cat Lane"
+    }]
+  },
+  cursor: '...'
 }
 ```
 
@@ -5320,19 +5252,22 @@ EmployeeApp.entities.tasks.query.assigned({employee: "cbaskin"}).go();
 ```
 Returns the following:
 ```javascript
-[
-	{
-		task: "Feed tigers",
-		description: "Prepare food for tigers to eat",
-		project: "Keep tigers alive",
-		employee: "cbaskin"
-	}, {
-		task: "Fill water bowls",
-		description: "Ensure the tigers have enough water",
-		project: "Keep tigers alive",
-		employee: "cbaskin"
-	}
-]
+{
+  data: [
+    {
+      task: "Feed tigers",
+      description: "Prepare food for tigers to eat",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }, {
+      task: "Fill water bowls",
+      description: "Ensure the tigers have enough water",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }
+  ],
+  cursor: '...',
+}
 ```
 #### Tasks for a given project
 Fulfilling [Requirement #4](#employee-app-requirements).
@@ -5341,14 +5276,17 @@ EmployeeApp.entities.tasks.query.project({project: "Murder Carol"}).go();
 ```
 Returns the following:
 ```javascript
-[
-	{
-		task: "Hire hitman",
-		description: "Find someone to murder Carol",
-		project: "Murder Carol",
-		employee: "jexotic"
-	}
-];
+{
+  data: [
+    {
+      task: "Hire hitman",
+      description: "Find someone to murder Carol",
+      project: "Murder Carol",
+      employee: "jexotic"
+    }
+  ],
+  cursor: '...'
+}
 ```
 
 #### Find office locations
@@ -5358,16 +5296,19 @@ EmployeeApp.entities.office.locations({country: "usa", state: "florida"}).go()
 ```
 Returns the following:
 ```javascript
-[
-	{
-		office: "big cat rescue",
-		country: "usa",
-		state: "florida",
-		city: "tampa",
-		zip: "12345",
-		address: "123 Kitty Cat Lane"
-	}
-]
+{
+  data: [
+    {
+      office: "big cat rescue",
+      country: "usa",
+      state: "florida",
+      city: "tampa",
+      zip: "12345",
+      address: "123 Kitty Cat Lane"
+    }
+  ],
+  cursor: '...'
+}
 ```
 
 #### Find employee salaries and titles
@@ -5380,70 +5321,87 @@ EmployeeApp.entities.employees
 ```
 Returns the following:
 ```javascript
-[
-	{
-		employee: "ssaffery",
-		firstName: "saff",
-		lastName: "saffery",
-		office: "gw zoo",
-		title: "animal wrangler",
-		team: "keepers",
-		salary: "105.00",
-		manager: "jexotic",
-		dateHired: "1999-02-23",
-		birthday: "1960-07-11",
-	}
-]
+{
+  data: [
+    {
+      employee: "ssaffery",
+      firstName: "saff",
+      lastName: "saffery",
+      office: "gw zoo",
+      title: "animal wrangler",
+      team: "keepers",
+      salary: "105.00",
+      manager: "jexotic",
+      dateHired: "1999-02-23",
+      birthday: "1960-07-11",
+    }
+  ],
+  cursor: '...'
+}
 ```
 
 #### Find employee birthdays or anniversaries
 Fulfilling [Requirement #7](#employee-app-requirements).
 ```javascript
+const startDate = "2020-05-01";
+const endDate = "2020-06-01";
+
 EmployeeApp.entities.employees
 	.workplaces({office: "gw zoo"})
+  .where(({ birthday, dateHired }, { between }) => `
+    ${between(dateHired, startDate, endDate)} OR
+    ${between(birthday, startDate, endDate)}
+  `)
 	.upcomingCelebrations("2020-05-01", "2020-06-01")
 	.go()
 ```
 Returns the following:
 ```javascript
-[
-	{
-		employee: "jexotic",
-		firstName: "joe",
-		lastName: "maldonado-passage",
-		office: "gw zoo",
-		title: "tiger king",
-		team: "founders",
-		salary: "10000.00",
-		manager: "jlowe",
-		dateHired: "1999-02-23",
-		birthday: "1963-03-05",
-	}
-]
+{
+  data: [
+    {
+      employee: "jexotic",
+      firstName: "joe",
+      lastName: "maldonado-passage",
+      office: "gw zoo",
+      title: "tiger king",
+      team: "founders",
+      salary: "10000.00",
+      manager: "jlowe",
+      dateHired: "1999-02-23",
+      birthday: "1963-03-05",
+    }
+  ],
+  cursor: '...'
+}
 ```
 #### Find direct reports
 Fulfilling [Requirement #8](#employee-app-requirements).
 ```javascript
+
 EmployeeApp.entities.employees
 	.reports({manager: "jlowe"})
 	.go()
 ```
 Returns the following:
 ```javascript
-[
-	{
-		employee: "jexotic",
-		firstName: "joe",
-		lastName: "maldonado-passage",
-		office: "gw zoo",
-		title: "tiger king",
-		team: "founders",
-		salary: "10000.00",
-		manager: "jlowe",
-		dateHired: "1999-02-23",
-		birthday: "1963-03-05",
-	}
-]
+{
+  data: [
+    {
+      employee: "jexotic",
+      firstName: "joe",
+      lastName: "maldonado-passage",
+      office: "gw zoo",
+      title: "tiger king",
+      team: "founders",
+      salary: "10000.00",
+      manager: "jlowe",
+      dateHired: "1999-02-23",
+      birthday: "1963-03-05",
+    }
+  ],
+  cursor: '...'
+}
 ```
 
 ## Shopping Mall Property Management App
@@ -5480,14 +5438,16 @@ await StoreLocations.create({
 Returns the following:
 ```json
 {
-	"mallId": "EastPointe",
-	"storeId": "LatteLarrys",
-	"buildingId": "BuildingA1",
-	"unitId": "B47",
-	"category": "spite store",
-	"leaseEndDate": "2020-02-29",
-	"rent": "5000.00",
-	"discount": "0.00"
+  "data": {
+    "mallId": "EastPointe",
+    "storeId": "LatteLarrys",
+    "buildingId": "BuildingA1",
+    "unitId": "B47",
+    "category": "spite store",
+    "leaseEndDate": "2020-02-29",
+    "rent": "5000.00",
+    "discount": "0.00"
+  }
 }
 ```
 ---
@@ -5506,7 +5466,9 @@ await StoreLocations.update({storeId, mallId, buildingId, unitId}).set({
 Returns the following:
 ```json
 {
-	"leaseEndDate": "2021-02-28"
+  "data": {
+	  "leaseEndDate": "2021-02-28"
+  }
 }
 ```
 
@@ -5546,8 +5508,9 @@ let storeId = "LatteLarrys";
 await StoreLocations.delete({storeId, mallId, buildingId, unitId}).go();
 ```
 Returns the following:
-```
-{}
+
+```json
+{ "data": {} }
 ```
 
 ### Query Mall Records
@@ -5634,7 +5597,7 @@ If you have a need for a custom attribute type (beyond those supported by Electr
 > _NOTE: creating a custom type, ElectroDB will enforce attribute constraints based on the attribute definition provided, but will yield typing control to the user. This may result in some mismatches between your typing and the constraints enforced by ElectroDB._
 
 ```typescript
-import { Entity, createCustomAttribute } from "electrodb";
+import { Entity, createCustomAttribute } from 'electrodb';
 
 const table = 'workplace_table';
 
@@ -5678,11 +5641,35 @@ const person = new Entity({
 }, { table });
 ```
 
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgYygFMBDGIgYQFcBnGCEAQRhimACMry4BfOAMygM4AIiIAbIvlYQAJuxEBuAFDL8EVHTgwS7SXAC8cAOQB3aAGsw4kviIB9HXqLGVy7GCJwACkSg0NVAkAJQh9IwRlOGjtLE8ALhMicHEILCIXFRi4OhJYABEyIkTUKhB2PyyYolRZQvIAfhKyiqgVPgAfRCiYj2KTdXQoW3ooVx7owdYRgGUdAqLm8sqJgg1p6TQ6xbhS5bblHjc1DS1Pfw1DXaJTFHRMLAAKSOyQOQlEl+zq++xE43OAVQQXExhwq2yND8ADdgHZ-uYoFYbHYwRCYtC-DRgBp-gBGYyrHjg7JkVgcLhEGifdHRYCyGnfJmxBImOhsVAAc0JzN4JOZQkkiUIpHI1DoDGY5M45AAPL4LsCQmEiAA+Z6077EACOVGAxAZ2igVCI-KZPAAlGa+atgLUiAAPKmMgVSaCGr686JgCwur3ffjACSGgEWNH+pnqcAQbHkRIAbWM9OMAF1NdliemYjRfd0IwGg+IQznw-mYlHILH+vGU9beTxNQ2M4c8EgnPpLW5Blp6VdjEQALQAFgADABOAluAD0U7giIsNGUgI0ADowFwNdl6dbBf1Pd8+v9ktY0hlS0zcgs43B6kQV6gIKZHlaiYcLSvORBn9PZ304H4hCgJcsVXdcYE3GJt1WXc-QPOJ+mMKZhmkaBz2+S8YFvRJb3vR9n2tBtLQ-L8LUUIA)
-
 ## Exported Types
 
-The following types are exported for easier use while using ElectroDB with TypeScript:
+The following types are exported for easier use while using ElectroDB with TypeScript. The naming convention for the types include three different kinds:
+
+- `xResponse` -- Types with the postfix `Response` represent the returned interfaces directly from ElectroDB.
+
+- `xItem` -- Types with the postfix `Item` represent an Entity row. Queries return multiple items, a get returns a single item, etc. The type for an item is inferred based on the attributes and index definitions within your model. For example if your attribute is marked as `required` then that attribute will never be undefined, if your attribute has a default value then it won't be required to be supplied on `put`, `list` attributes must be an array, etc.
+
+- `xRecord` -- In some cases it is helpful to have a type that respresents all attributes of an item without nullable properties. Types with the postfix `Record` contain all properties in a non-nullable format.
+
+The follow highlight many of the types exported utility types from ElectroDB:
+
+### QueryResponse Type
+
+The QueryResponse type is the same type returned by an ElectroDB Query.
+
+_Definition:_
+
+```typescript
+export type QueryResponse<E extends Entity<any, any, any, any>> = {
+    data: EntityItem<E>;
+    cursor: string | null;
+}
+```
+
+_Use:_
+```typescript
+type EntitySchema = QueryResponse<typeof MyEntity>
+```
 
 ### EntityRecord Type
 
@@ -5699,7 +5686,7 @@ type EntityRecord<E extends Entity<any, any, any, any>> =
 
 _Use:_
 ```typescript
-type EntiySchema = EntityRecord<typeof MyEntity>
+type Item = EntityRecord<typeof MyEntity>
 ```
 
 ### EntityItem Type
@@ -5718,18 +5705,55 @@ export type EntityItem<E extends Entity<any, any, any, any>> =
 _Use:_
 
 ```typescript
-type Thing = EntityItem<typeof MyEntityInstance>;
+type Item = EntityItem<typeof MyEntityInstance>;
 ```
 
 ### CollectionItem Type
 
-This type represents the value returned from a collection query, and is similar to EntityItem.
+This type represents an item returned from a collection query, and is similar to EntityItem.
+
+_Definition:_
+```typescript
+export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyof SERVICE["collections"]> =
+    SERVICE extends Service<infer E>
+        ? Pick<{
+            [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ? COLLECTION extends keyof CollectionAssociations<E>
+                ? EntityName extends CollectionAssociations<E>[COLLECTION]
+                    ? ResponseItem<A,F,C,S>[]
+                    : never
+                : never
+            : never
+        }, COLLECTION extends keyof CollectionAssociations<E>
+        ? CollectionAssociations<E>[COLLECTION]
+        : never>
+        : never
+```
 
 _Use:_
 
-```
+```typescript
 type CollectionResults = CollectionItem<typeof MyServiceInstance, "collectionName">
 ``` 
+
+### CollectionResponse
+
+This type represents the value returned the collection query itself
+
+_Definition:_
+
+```typescript
+export type CollectionResponse<SERVICE extends Service<any>, COLLECTION extends keyof SERVICE["collections"]> = {
+    data: CollectionItem<SERVICE, COLLECTION>;
+    cursor: string | null;
+}
+```
+
+_Use:_
+
+```typescript
+type CollectionResults = CollectionResponse<typeof MyServiceInstance, "collectionName">
+```
 
 ### CreateEntityItem Type
 
@@ -5840,8 +5864,6 @@ Whenever using ElectroDB with existing tables/data, it is best to use the [Query
 .params({ignoreOwnership: true})
 // when querying the table
 .go({ignoreOwnership: true})
-// when using pagination
-.page(null, {ignoreOwnership: true})
 ```
 
 **Your existing index fields have values with mixed case:**
@@ -5865,6 +5887,22 @@ Electro is a CLI utility toolbox for extending the functionality of **ElectroDB*
 2. Dynamically stand up an HTTP Service to interact with your `Entities`, `Services`, `Models`.
 
 For usage and installation details you can learn more [here](https://github.com/tywalch/electrocli).
+
+# Version 2 Migration
+## New response format for all query methods.
+Prior to 2.0.0, ElectroDB had multiple unique response signatures depending on the method used. Queries now return responses within an envelope object with results typically on a property called `data`. The section [Building Queries](#building-queries) now has response format examples for all methods, and the section [Exported Types](#exported-types) has new utility types you can use to express response types in your code.
+
+## Unified pagination APIs
+Version 2.0.0 removes the `.page()` terminal function and unifies pagination under the `.go()` method. The response signature for queries, scans, finds, and matches now include a cursor string that can be passed back into the go method as a query option (e.g. `go({cursor})`. This new cursor is a departure from the destructure object ElectroDB returned prior for pagination, and is a `base64url` type string making it url safe.
+
+Note: It is still possible to return the native DynamoDB LastEvaluatedKey using the `pager` and/or `data` [query options](#query-options). This new `cursor`
+
+Another change to pagination involves the "auto-pagination" used with the `.go()` method. Prior to 2.0.0 the `.go()` method would paginate through all _query_ results automatically. This was not the behavior for `scan` which caused some confusion. All queries and and query-like methods (scan, find, match, etc) now query a single page by default. You can use the [query options](#query-options) `pages` and `limit` to instruct electrodb to automatically iterate through multiple pages, or use `pages: 'all'` to have electrodb automatically exhaust pagination.
+
+Checkout the section [#pagination-query-options] to read more on this topic and to find an example of how to perform pagination with ElectroDB 2.0.0.
+
+## Pagination with a string cursor
+All ElectroDB `query` and `scan` operations return a `cursor`, which is a stringified and copy of DynamoDB's `LastEvaluatedKey` with a `base64url` encoding. Read the section [Pagination Cursor](#pagination-cursor) to learn more about how the cursor is formed and how to use it to accomplish pagination in ElectroDB.
 
 # Version 1 Migration
 This section is to detail any breaking changes made on the journey to a stable 1.0 product.
@@ -5909,6 +5947,7 @@ let old_schema = {
   attributes: {...},
   indexes: {...}
 };
+
 new Entity(old_schema, {client});
 
 // new way
@@ -5921,6 +5960,7 @@ let new_schema = {
   attributes: {...},
   indexes: {...}
 };
+
 new Entity(new_schema, {client, table});
 ```    
 
@@ -5939,9 +5979,6 @@ new Service({
 }, {client});
 
 // new way
-new Service("service_name", {client, table});
-
-// new way (for better TypeScript support)
 new Service({entity1, entity2, ...})
 ```
 
@@ -5958,6 +5995,3 @@ This change stems from the fact the `facets` is already a defined term in the Dy
 ## Get Method to Return null
 
 1.0.0 brings back a `null` response from the `get()` method when a record could not be found. Prior to `1.0.0` ElectroDB returned an empty object.
-
-# Coming Soon
-- Default query options defined on the `model` to give more general control of interactions with the Entity.

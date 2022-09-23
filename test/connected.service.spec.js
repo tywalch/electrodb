@@ -287,7 +287,7 @@ describe("Service Connected", async () => {
 			prop8: "prop8-one",
 			prop9: "prop9-one",
 		};
-		let addOne = database.entities.entityOne.put(recordOne).go();
+		let addOne = database.entities.entityOne.put(recordOne).go().then(res => res.data);
 		let paramsOne = database.entities.entityOne.put(recordOne).params();
 		expect(paramsOne).to.deep.equal({
 			Item: {
@@ -324,7 +324,7 @@ describe("Service Connected", async () => {
 			prop8: "prop8-two",
 			prop9: "prop9-two",
 		};
-		let addTwo = database.entities.entityTwo.put(recordTwo).go();
+		let addTwo = database.entities.entityTwo.put(recordTwo).go().then(res => res.data);
 		let paramsTwo = database.entities.entityTwo.put(recordTwo).params();
 		expect(paramsTwo).to.deep.equal({
 			Item: {
@@ -361,7 +361,7 @@ describe("Service Connected", async () => {
 			prop8: "prop8-three",
 			prop9: "prop9-three",
 		};
-		let addThree = database.entities.entityThree.put(recordThree).go();
+		let addThree = database.entities.entityThree.put(recordThree).go().then(res => res.data);
 		let paramsThree = database.entities.entityThree.put(recordThree).params();
 		expect(paramsThree).to.deep.equal({
 			Item: {
@@ -392,13 +392,13 @@ describe("Service Connected", async () => {
 		let prop3 = "prop3";
 		let prop5 = "prop5";
 		let prop7 = "prop7";
-		let getCollectionA = database.collections.collectionA({ prop1 }).go();
-		let getCollectionB = database.collections.collectionB({ prop3 }).go();
-		let getCollectionC = database.collections.collectionC({ prop5 }).go();
-		let getCollectionD = database.collections.collectionD({ prop7 }).go();
-		let getCollectionE = database.collections.collectionE({ prop1 }).go();
-		let getCollectionF = database.collections.collectionF({ prop5 }).go();
-		let getCollectionG = database.collections.collectionG({ prop7 }).go();
+		let getCollectionA = database.collections.collectionA({ prop1 }).go().then(res => res.data);
+		let getCollectionB = database.collections.collectionB({ prop3 }).go().then(res => res.data);
+		let getCollectionC = database.collections.collectionC({ prop5 }).go().then(res => res.data);
+		let getCollectionD = database.collections.collectionD({ prop7 }).go().then(res => res.data);
+		let getCollectionE = database.collections.collectionE({ prop1 }).go().then(res => res.data);
+		let getCollectionF = database.collections.collectionF({ prop5 }).go().then(res => res.data);
+		let getCollectionG = database.collections.collectionG({ prop7 }).go().then(res => res.data);
 		let [
 			collectionA,
 			collectionB,
@@ -858,11 +858,12 @@ describe("Entities with custom identifiers and versions", () => {
 			prop7: "prop7Value",
 			prop8: "prop8Value",
 			prop9: "prop9Value",
-		}).go();
+		}).go().then(res => res.data);
 		let collectionA = await service.collections
 			.collectionA({prop1})
 			.where(({prop2}, {eq}) => eq(prop2, "prop2Value"))
 			.go({raw: true})
+			.then(res => res.data)
 			.then((data) => ({success: true, data}))
 			.catch(err => ({success: false, err}));
 		expect(collectionA.success).to.be.true;
@@ -926,7 +927,7 @@ describe("Entities with custom identifiers and versions", () => {
 			prop7: "prop7Value",
 			prop8: "prop8Value",
 			prop9: "prop9Value",
-		}).go();
+		}).go().then(res => res.data);
 
 		await entityThree.put({
 			uniqueToModelTwo: "uniqueToModelTwoValue",
@@ -939,7 +940,7 @@ describe("Entities with custom identifiers and versions", () => {
 			prop7: "prop7Value",
 			prop8: "prop8Value",
 			prop9: "prop9ValueV1",
-		}).go();
+		}).go().then(res => res.data);
 
 		await entityThreeV2.put({
 			uniqueToModelTwo: "uniqueToModelTwoValue",
@@ -952,12 +953,13 @@ describe("Entities with custom identifiers and versions", () => {
 			prop7: "prop7Value",
 			prop8: "prop8Value",
 			prop9: "prop9ValueV2",
-		}).go();
+		}).go().then(res => res.data);
 
 		let collectionA = await service.collections
 			.collectionA({prop1: prop1})
 			.where(({prop2}, {eq}) => eq(prop2, "prop2Value"))
 			.go()
+			.then(res => res.data)
 			.then((data) => ({success: true, data}))
 			.catch(err => ({success: false, err}));
 
@@ -965,12 +967,14 @@ describe("Entities with custom identifiers and versions", () => {
 			.collectionB({prop3: prop3})
 			.where(({prop2}, {eq}) => eq(prop2, "prop2Value"))
 			.go()
+			.then(res => res.data)
 			.then((data) => ({success: true, data}))
 			.catch(err => ({success: false, err}));
 
 		let collectionB2 = await service.collections
 			.collectionB({prop3: prop3})
 			.go()
+			.then(res => res.data)
 			.then((data) => ({success: true, data}))
 			.catch(err => ({success: false, err}));
 
@@ -1105,6 +1109,7 @@ describe("Entities with custom identifiers and versions", () => {
 			.collectionA({prop1})
 			.where(({prop2}, {eq}) => eq(prop2, "value2"))
 			.go()
+			.then(res => res.data)
 			.then((data) => {
 				let success = true;
 				return { data, success };
@@ -1118,6 +1123,7 @@ describe("Entities with custom identifiers and versions", () => {
 			.collectionB({prop3})
 			.where(({prop2}, {eq}) => eq(prop2, "value2"))
 			.go()
+			.then(res => res.data)
 			.then((data) => {
 				let success = true;
 				return { data, success };
@@ -1148,7 +1154,7 @@ describe("Entities with custom identifiers and versions", () => {
 				prop7: "prop7Value",
 				prop8: "prop8Value",
 				prop9: "prop9Value",
-		}).go();
+		}).go().then(res => res.data);
 
 		await entityTwo.put({
 				uniqueToModelTwo: "uniqueToModelTwoValue",
@@ -1161,12 +1167,13 @@ describe("Entities with custom identifiers and versions", () => {
 				prop7: "prop7Value",
 				prop8: "prop8Value",
 				prop9: "prop9Value",
-		}).go();
+		}).go().then(res => res.data);
 
 		let collectionAAfterPut = await service.collections
 			.collectionA({prop1})
 			.where(({prop2}, {eq}) => eq(prop2, "prop2Value"))
 			.go()
+			.then(res => res.data)
 			.then((data) => {
 				let success = true;
 				return { data, success };
@@ -1180,6 +1187,7 @@ describe("Entities with custom identifiers and versions", () => {
 			.collectionB({prop3: prop3})
 			.where(({prop2}, {eq}) => eq(prop2, "prop2Value"))
 			.go()
+			.then(res => res.data)
 			.then((data) => {
 				let success = true;
 				return { data, success };
@@ -1429,21 +1437,21 @@ describe("Entities with custom identifiers and versions", () => {
 				prop2: "prop2Value",
 				prop3: "prop3Value_entityOne",
 				uniqueToModelOne: "uniqueToModelOneValue",
-			}).go(),
+			}).go().then(res => res.data),
 			entityTwo.put({
 				prop1,
 				prop2: "prop2Value",
 				prop3: "prop3Value_entityTwo",
 				uniqueToModelTwo: "uniqueToModelTwoValue",
-			}).go()
+			}).go().then(res => res.data)
 		]);
 		let record = await service.collections
 			.collectionA({prop1})
-			.go();
+			.go().then(res => res.data);
 		let recordWithWhere = await service.collections
 			.collectionA({prop1})
 			.where(({prop2}, {eq}) => eq(prop2, "prop2Value"))
-			.go();
+			.go().then(res => res.data);
 
 		expect(record).to.deep.equal({
 			"entityOne": [
@@ -1618,18 +1626,18 @@ describe("Sub-Collections", async () => {
 			entity2Record,
 			entity3Record,
 		] = await Promise.all([
-			entity1.put(record).go(),
-			entity2.put(record).go(),
-			entity3.put(record).go(),
+			entity1.put(record).go().then(res => res.data),
+			entity2.put(record).go().then(res => res.data),
+			entity3.put(record).go().then(res => res.data),
 		]);
 		let [
 			innercollection,
 			outercollection,
 			extracollection
 		] = await Promise.all([
-			service.collections.innercollection(record).go(),
-			service.collections.outercollection(record).go(),
-			service.collections.extracollection(record).go()
+			service.collections.innercollection(record).go().then(res => res.data),
+			service.collections.outercollection(record).go().then(res => res.data),
+			service.collections.extracollection(record).go().then(res => res.data),
 		]);
 
 		expect(innercollection).to.have.keys("entity1", "entity2");

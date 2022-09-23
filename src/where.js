@@ -120,7 +120,7 @@ class WhereFactory {
 			injected[name] = {
 				name,
 				action: this.buildClause(filter),
-				children: ["params", "go", "page", "where", ...modelFilters],
+				children: ["params", "go", "where", ...modelFilters],
 			};
 		}
 		filterChildren.push("where");
@@ -129,7 +129,7 @@ class WhereFactory {
 			action: (entity, state, fn) => {
 				return this.buildClause(fn)(entity, state);
 			},
-			children: ["params", "go", "page", "where", ...modelFilters],
+			children: ["params", "go", "where", ...modelFilters],
 		};
 		for (let parent of filterParents) {
 			injected[parent] = { ...injected[parent] };

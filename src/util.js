@@ -161,6 +161,29 @@ function getUnique(arr1, arr2) {
   ]));
 }
 
+const cursorFormatter = {
+  serialize: (key) => {
+    if (!key) {
+      return null;
+    } else if (typeof val !== 'string') {
+      key = JSON.stringify(key);
+    }
+    return Buffer.from(key).toString('base64url');
+  },
+  deserialize: (cursor) => {
+    if (!cursor) {
+      return undefined;
+    } else if (typeof cursor !== 'string') {
+      throw new Error(`Invalid cursor provided, expected type 'string' recieved: ${JSON.stringify(cursor)}`);
+    }
+    try {
+      return JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+    } catch(err) {
+      throw new Error('Unable to parse cursor');
+    }
+  }
+}
+
 module.exports = {
   getUnique,
   batchItems,
@@ -171,6 +194,7 @@ module.exports = {
   genericizeJSONPath,
   commaSeparatedString,
   formatAttributeCasing,
+  cursorFormatter,
   applyBetaModelOverrides,
   formatIndexNameForDisplay,
   BatchGetOrderMaintainer,

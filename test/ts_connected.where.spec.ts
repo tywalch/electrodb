@@ -78,9 +78,9 @@ describe("Where Clause Queries", async () => {
             let row = uuid();
             penRows.push({pen, row, animal});
             if (animal === "Shark") {
-                return WhereTests.put({pen, row, animal, dangerous: true}).go()
+                return WhereTests.put({pen, row, animal, dangerous: true}).go().then(res => res.data)
             } else {
-                return WhereTests.put({pen, row, animal}).go()
+                return WhereTests.put({pen, row, animal}).go().then(res => res.data)
             }
         }));
     })
@@ -88,7 +88,7 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, op) => op.eq(animal, "Cow"))
-            .go()
+            .go().then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(1)
@@ -98,7 +98,7 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, {gt}) => gt(animal, "Dog"))
-            .go()
+            .go().then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(4);
@@ -113,7 +113,7 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, {lt}) => lt(animal, "Pig"))
-            .go()
+            .go().then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(4);
@@ -128,7 +128,7 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where((attr, op) => op.gte(attr.animal, "Dog"))
-            .go()
+            .go().then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(5);
@@ -144,7 +144,7 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, {lte}) => lte(animal, "Pig"))
-            .go()
+            .go().then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(5);
@@ -160,7 +160,7 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, {between}) => between(animal, "Dog", "Rooster"))
-            .go()
+            .go().then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(3);
@@ -174,7 +174,7 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, {begins}) => begins(animal, "Sh"))
-            .go();
+            .go().then(res => res.data);
 
         expect(animals)
             .to.be.an("array")
@@ -189,7 +189,7 @@ describe("Where Clause Queries", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({dangerous}, {exists}) => exists(dangerous))
-            .go()
+            .go().then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(1);
@@ -202,6 +202,7 @@ describe("Where Clause Queries", async () => {
             .farm({pen})
             .where(({dangerous}, {notExists}) => notExists(dangerous))
             .go()
+            .then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(7);
@@ -220,6 +221,7 @@ describe("Where Clause Queries", async () => {
             .farm({pen})
             .where(({animal}, op) => op.contains(animal, "Chick"))
             .go()
+            .then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(2);
@@ -233,6 +235,7 @@ describe("Where Clause Queries", async () => {
             .farm({pen})
             .where(({animal}, {notContains}) => notContains(animal, "o"))
             .go()
+            .then(res => res.data)
         expect(animals)
             .to.be.an("array")
             .and.have.length(5);
@@ -250,7 +253,7 @@ describe("Where Clause Queries", async () => {
             .where(({animal}, {value, name}) => `
 				${name(animal)} = ${value(animal, "Pig")}
 			`)
-            .go();
+            .go().then(res => res.data);
         expect(animals)
             .to.be.an("array")
             .and.have.length(1);
@@ -266,7 +269,7 @@ describe("Where Clause Queries", async () => {
                     ${eq(animal, "Pig")} 
                     OR (${gt(animal, piggy)} AND ${eq(dangerous, true)})`;
             })
-            .go();
+            .go().then(res => res.data);
         expect(animals)
             .to.be.an("array")
             .and.have.length(2);
@@ -280,7 +283,7 @@ describe("Where Clause Queries", async () => {
                 .where(({animal}, {value, name}) => `
 					${name(animal)} = ${value(animal, "Bear")}
 				`)
-                .go();
+                .go().then(res => res.data);
             throw new Error("Should have thrown")
         } catch(err: any) {
             expect(err.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
@@ -289,16 +292,16 @@ describe("Where Clause Queries", async () => {
     it("Should update an animal which does exist", async () => {
         let consistentRead = {params: {ConsistentRead: true}};
         let penRow = penRows[0];
-        let before = await WhereTests.get(penRow).go(consistentRead);
+        let before = await WhereTests.get(penRow).go(consistentRead).then(res => res.data);
         expect(before?.dangerous).to.be.undefined;
         let results = await WhereTests.update(penRow)
             .set({dangerous: true})
             .where(({animal, dangerous}, {value, name, notExists}) => `
 				${name(animal)} = ${value(animal, penRow.animal)} AND ${notExists(dangerous)}
 			`)
-            .go({raw: true});
+            .go({raw: true}).then(res => res.data);
         expect(results).to.be.empty;
-        let after = await WhereTests.get(penRow).go(consistentRead);
+        let after = await WhereTests.get(penRow).go(consistentRead).then(res => res.data);
         expect(after?.dangerous).to.be.true;
         let doesExist = await WhereTests.update(penRow)
             .set({dangerous: true})
@@ -311,19 +314,19 @@ describe("Where Clause Queries", async () => {
     it("Should not patch an animal which does exist", async () => {
         let consistentRead = {params: {ConsistentRead: true}};
         let penRow = penRows[1];
-        let before = await WhereTests.get(penRow).go(consistentRead);
+        let before = await WhereTests.get(penRow).go(consistentRead).then(res => res.data);
         expect(before?.dangerous).to.be.undefined;
         let results = await WhereTests.patch(penRow)
             .set({dangerous: true})
             .where(({dangerous}, {notExists}) => notExists(dangerous))
-            .go();
+            .go().then(res => res.data);
         expect(results).to.be.empty;
-        let after = await WhereTests.get(penRow).go(consistentRead);
+        let after = await WhereTests.get(penRow).go(consistentRead).then(res => res.data);
         expect(after?.dangerous).to.be.true;
         let doesExist = await WhereTests.patch(penRow)
             .set({dangerous: true})
             .where(({dangerous}, {notExists}) => notExists(dangerous))
-            .go({raw: true})
+            .go({raw: true}).then(res => res.data)
             .then(() => false)
             .catch(() => true);
         expect(doesExist).to.be.true;
@@ -331,11 +334,12 @@ describe("Where Clause Queries", async () => {
     it("Should not delete an animal which does exist", async () => {
         let consistentRead = {params: {ConsistentRead: true}};
         let penRow = penRows[3];
-        let existing = await WhereTests.get(penRow).go(consistentRead);
+        let existing = await WhereTests.get(penRow).go(consistentRead).then(res => res.data);
         expect(existing?.dangerous).to.be.undefined;
         let wontMatch = await WhereTests.delete(penRow)
             .where(({dangerous}, {exists}) => exists(dangerous))
             .go()
+            .then(res => res.data)
             .then(data => data)
             .catch(err => err);
         expect(wontMatch.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");

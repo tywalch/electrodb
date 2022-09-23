@@ -4,7 +4,7 @@ import {
     Resolve,
     ResponseItem,
     GoQueryTerminal,
-    PageQueryTerminal,
+    // PageQueryTerminal,
     Queries
 } from '../';
 import { expectType, expectError, expectNotType } from 'tsd';
@@ -36,9 +36,9 @@ class MockEntity<A extends string, F extends string, C extends string, S extends
         return {} as GoQueryTerminal<A,F,C,S, ResponseItem<A,F,C,S>>;
     }
 
-    getPageQueryTerminal(): PageQueryTerminal<A,F,C,S, ResponseItem<A,F,C,S>, {abc: string}> {
-        return {} as PageQueryTerminal<A,F,C,S, ResponseItem<A,F,C,S>, {abc: string}>;
-    }
+    // getPageQueryTerminal(): PageQueryTerminal<A,F,C,S, ResponseItem<A,F,C,S>, {abc: string}> {
+    //     return {} as PageQueryTerminal<A,F,C,S, ResponseItem<A,F,C,S>, {abc: string}>;
+    // }
 
     getQueries(): Queries<A,F,C,S> {
         return {} as Queries<A,F,C,S>;
@@ -435,25 +435,25 @@ entityWithSKGo({attributes: ['attr2', 'attr3', 'attr4', 'attr6', 'attr8']}).then
         attr4: 'abc' | 'ghi';
         attr6?: number | undefined;
         attr8: boolean;
-    }[]>(results);
+    }[]>(results.data);
 });
 
-const entityWithSKPage = entityWithSK.getPageQueryTerminal();
-entityWithSKPage(null, {attributes: ['attr2', 'attr3', 'attr4', 'attr6', 'attr8']}).then(data => {
-    const [page, results] = data;
-    expectType<{
-        attr2: string;
-        attr3?: '123' | 'def' | 'ghi' | undefined;
-        attr4: 'abc' | 'ghi';
-        attr6?: number | undefined;
-        attr8: boolean;
-    }[]>(results);
-    expectType<{
-        __edb_e__?: string | undefined;
-        __edb_v__?: string | undefined;
-        abc: string;
-    } | null>(magnify(page));
-});
+// const entityWithSKPage = entityWithSK.getPageQueryTerminal();
+// entityWithSKPage(null, {attributes: ['attr2', 'attr3', 'attr4', 'attr6', 'attr8']}).then(data => {
+//     const [page, results] = data;
+//     expectType<{
+//         attr2: string;
+//         attr3?: '123' | 'def' | 'ghi' | undefined;
+//         attr4: 'abc' | 'ghi';
+//         attr6?: number | undefined;
+//         attr8: boolean;
+//     }[]>(results);
+//     expectType<{
+//         __edb_e__?: string | undefined;
+//         __edb_v__?: string | undefined;
+//         abc: string;
+//     } | null>(magnify(page));
+// });
 
 const entityWithoutSKGo = entityWithoutSK.getGoQueryTerminal();
 entityWithoutSKGo({attributes: ['attr2', 'attr3', 'attr4', 'attr6', 'attr8']}).then(results => {
@@ -463,25 +463,25 @@ entityWithoutSKGo({attributes: ['attr2', 'attr3', 'attr4', 'attr6', 'attr8']}).t
         attr4: 'abc' | 'def';
         attr6?: number | undefined;
         attr8: boolean;
-    }[]>(magnify(results));
+    }[]>(magnify(results.data));
 });
 
-const entityWithoutSKPage = entityWithoutSK.getPageQueryTerminal();
-entityWithoutSKPage(null, {attributes: ['attr2', 'attr3', 'attr4', 'attr6', 'attr8']}).then(data => {
-    const [page, results] = data;
-    expectType<{
-        attr2?: string | undefined;
-        attr3?: '123' | 'def' | 'ghi' | undefined;
-        attr4: 'abc' | 'def';
-        attr6?: number | undefined;
-        attr8: boolean;
-    }[]>(magnify(results));
-    expectType<{
-        __edb_e__?: string | undefined;
-        __edb_v__?: string | undefined;
-        abc: string;
-    } | null>(magnify(page));
-});
+// const entityWithoutSKPage = entityWithoutSK.getPageQueryTerminal();
+// entityWithoutSKPage(null, {attributes: ['attr2', 'attr3', 'attr4', 'attr6', 'attr8']}).then(data => {
+//     const [page, results] = data;
+//     expectType<{
+//         attr2?: string | undefined;
+//         attr3?: '123' | 'def' | 'ghi' | undefined;
+//         attr4: 'abc' | 'def';
+//         attr6?: number | undefined;
+//         attr8: boolean;
+//     }[]>(magnify(results));
+//     expectType<{
+//         __edb_e__?: string | undefined;
+//         __edb_v__?: string | undefined;
+//         abc: string;
+//     } | null>(magnify(page));
+// });
 
 expectType<'myIndex' | 'myIndex2' | 'myIndex3'>(entityWithSK.getKeyofQueries());
 expectType<'myIndex' | 'myIndex2' | 'myIndex3'>(entityWithoutSK.getKeyofQueries());
@@ -497,12 +497,12 @@ expectType<{
 
 const entityWithSKMyIndexSKOperations = entityWithSKQueries.myIndex2({attr6: 10, attr9: 5, attr4: 'abc'});
 
-type EntityWithSKMyIndexOperationsTerminals = Pick<typeof entityWithSKMyIndexSKOperations, 'go' | 'page' | 'params' | 'where'>;
+type EntityWithSKMyIndexOperationsTerminals = Pick<typeof entityWithSKMyIndexSKOperations, 'go' | 'params' | 'where'>;
 const afterWhere = entityWithSKMyIndexSKOperations.where((attr, op) => op.eq(attr.attr4, 'zz'));
 expectType<EntityWithSKMyIndexOperationsTerminals>(afterWhere);
 
 const entityWithSKMyIndexSKOperationsKeys = {} as keyof typeof entityWithSKMyIndexSKOperations;
-expectType<'go' | 'params' | 'page' | 'where' | 'begins' | 'between' | 'gt' | 'gte' | 'lt' | 'lte'>(entityWithSKMyIndexSKOperationsKeys);
+expectType<'go' | 'params' | 'where' | 'begins' | 'between' | 'gt' | 'gte' | 'lt' | 'lte'>(entityWithSKMyIndexSKOperationsKeys);
 
 const entityWithSKMyIndexSKOperationsBegins = {} as Parameters<typeof entityWithSKMyIndexSKOperations.begins>[0];
 expectType<{
@@ -547,7 +547,7 @@ expectType<{
 
 const entityWithoutSKMyIndex2SKOperations = entityWithoutSKQueries.myIndex2({attr6: 10, attr9: 5});
 const entityWithoutSKMyIndex2SKOperationsKeys = {} as keyof typeof entityWithoutSKMyIndex2SKOperations;
-expectType<'go' | 'params' | 'page' | 'where'>(entityWithoutSKMyIndex2SKOperationsKeys);
+expectType<'go' | 'params' | 'where'>(entityWithoutSKMyIndex2SKOperationsKeys);
 
 
 const afterGetOperations = entityWithSKE.get({attr1: 'abc', attr2: 'def'})

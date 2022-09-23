@@ -56,9 +56,9 @@ describe("Issue #85", () => {
             ...transaction,
         }
 
-        const updated = await txn.update(transaction).set(updates).go({response: "all_new"});
+        const updated = await txn.update(transaction).set(updates).go({response: "all_new"}).then(res => res.data);
         expect(updated).to.deep.equal(item);
-        const result = await txn.get(transaction).go();
+        const result = await txn.get(transaction).go().then(res => res.data);
         expect(result).to.deep.equal(item);
     });
 

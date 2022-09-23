@@ -65,9 +65,9 @@ describe("General", async () => {
 		let results = await Promise.all(animals.map(animal => {
 			let row = uuidV4();
 			if (animal === "Shark") {
-				return FilterTests.put({pen, row, animal, dangerous: true}).go()
+				return FilterTests.put({pen, row, animal, dangerous: true}).go().then(res => res.data)
 			} else {
-				return FilterTests.put({pen, row, animal}).go()
+				return FilterTests.put({pen, row, animal}).go().then(res => res.data)
 			}
 		}));
 	})
@@ -75,7 +75,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.eq("Cow"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(1)
@@ -85,7 +85,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.gt("Dog"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(4);
@@ -100,7 +100,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.lt("Pig"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(4);
@@ -115,7 +115,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.gte("Dog"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
@@ -131,7 +131,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.lte("Pig"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
@@ -147,7 +147,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.between("Dog", "Rooster"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(3);
@@ -161,7 +161,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.begins("Sh"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(2);
@@ -174,7 +174,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({dangerous}) => dangerous.exists())
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(1);
@@ -186,7 +186,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({dangerous}) => dangerous.notExists())
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(7);
@@ -204,7 +204,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.contains("Chick"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(2);
@@ -217,7 +217,7 @@ describe("General", async () => {
 		let animals = await FilterTests.query
 			.farm({pen})
 			.filter(({animal}) => animal.notContains("o"))
-			.go()
+			.go().then(res => res.data)
 		expect(animals)
 			.to.be.an("array")
 			.and.have.length(5);
@@ -235,7 +235,7 @@ describe("General", async () => {
 			.filter(({animal}) => `
 				${animal.name()} = ${animal.value("Pig")}
 			`)
-			.go();
+			.go().then(res => res.data);
 			expect(animals)
 				.to.be.an("array")
 				.and.have.length(1);

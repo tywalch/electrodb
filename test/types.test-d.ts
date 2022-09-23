@@ -106,7 +106,7 @@ const entityWithSK = new Entity({
   }
 });
 
-type EntityWithSK = ReturnType<typeof entityWithSK.parse>[0];
+type EntityWithSK = ReturnType<typeof entityWithSK.parse>['data'][0];
 type EntityWithSKEntityItem = EntityItem<typeof entityWithSK>;
 type EntitySchema = typeof entityWithSK extends Entity<infer A, infer F, infer C, infer S>
   ? { supposedly: 'can' }

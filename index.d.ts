@@ -81,11 +81,10 @@ export type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, 
 export type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, T> = (where: CollectionWhereCallback<E, I>) => T;
 
 
-export interface WhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexCompositeAttributes> {
-    go: GoRecord<Items>;
+export interface ServiceWhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexCompositeAttributes> {
+    go: ServiceQueryRecordsGo<Items>;
     params: ParamRecord;
-    page: PageRecord<Items,IndexCompositeAttributes>;
-    where: CollectionWhereClause<E,A,F,C,S,I, WhereRecordsActionOptions<E,A,F,C,S,I,Items,IndexCompositeAttributes>>;
+    where: CollectionWhereClause<E,A,F,C,S,I, ServiceWhereRecordsActionOptions<E,A,F,C,S,I,Items,IndexCompositeAttributes>>;
 }
 
 export type CollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
@@ -171,7 +170,7 @@ export type CollectionQueries<E extends {[name: string]: Entity<any, any, any, a
                                ]
                            >[0]
                        >) => {
-                go: GoRecord<{
+                go: ServiceQueryRecordsGo<{
                     [EntityResultName in Collections[Collection]]:
                     EntityResultName extends keyof E
                         ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
@@ -180,40 +179,13 @@ export type CollectionQueries<E extends {[name: string]: Entity<any, any, any, a
                         : never
                 }>;
                 params: ParamRecord;
-                page: {
-                    [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-                        ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
-                            ?
-                            PageRecord<
-                                {
-                                    [EntityResultName in Collections[Collection]]:
-                                    EntityResultName extends keyof E
-                                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                        ? ResponseItem<A,F,C,S>[]
-                                        : never
-                                        : never
-                                },
-                                Partial<
-                                    Spread<
-                                        Collection extends keyof CollectionPageAttributes<E, Collections>
-                                            ? CollectionPageAttributes<E, Collections>[Collection]
-                                            : {},
-                                        Collection extends keyof CollectionIndexAttributes<E, Collections>
-                                            ? CollectionIndexAttributes<E, Collections>[Collection]
-                                            : {}
-                                        >
-                                    >
-                                >
-                            : never
-                        : never
-                }[Collections[Collection]];
                 where: {
                     [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
                         ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
                             ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
                                 ? CollectionWhereClause<E,A,F,C,S,
                                     Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>>,
-                                    WhereRecordsActionOptions<E,A,F,C,S,
+                                    ServiceWhereRecordsActionOptions<E,A,F,C,S,
                                         Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>>,
                                         {
                                             [EntityResultName in Collections[Collection]]:
@@ -260,9 +232,7 @@ export interface ElectroResultsEvent<R extends any = any> {
     success: boolean;
 }
 
-export type ElectroEvent =
-    ElectroQueryEvent
-    | ElectroResultsEvent;
+export type ElectroEvent = ElectroQueryEvent | ElectroResultsEvent;
 
 export type ElectroEventType = Pick<ElectroEvent, 'type'>;
 
@@ -299,6 +269,16 @@ export type EntityItem<E extends Entity<any, any, any, any>> =
 export type CreateEntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
         ? PutItem<A, F, C, S>
+        : never;
+
+export type BatchWriteEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? PutItem<A, F, C, S>[]
+        : never;
+
+export type BatchGetEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? ResponseItem<A, F, C, S>[]
         : never;
 
 export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
@@ -351,19 +331,61 @@ export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyo
         : never>
         : never
 
+export type QueryResponse<E extends Entity<any, any, any, any>> = {
+    data: EntityItem<E>[];
+    cursor: string | null;
+}
+
+export type CreateEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: CreateEntityItem<E>;
+}
+
+export type BatchWriteResponse<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S> ? {
+        unprocessed: AllTableIndexCompositeAttributes<A,F,C,S>[];
+    } : never
+
+export type BatchGetResponse<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S> ? {
+        data: EntityItem<E>[];
+        unprocessed: AllTableIndexCompositeAttributes<A,F,C,S>[];
+    } : never;
+
+export type UpdateEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateEntityItem<E>;
+}
+export type UpdateAddEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateAddEntityItem<E>;
+}
+export type UpdateSubtractEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateSubtractEntityItem<E>;
+}
+export type UpdateAppendEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateAppendEntityItem<E>;
+}
+export type UpdateRemoveEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateRemoveEntityItem<E>;
+}
+export type UpdateDeleteEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateDeleteEntityItem<E>;
+}
+
+export type CollectionResponse<SERVICE extends Service<any>, COLLECTION extends keyof SERVICE["collections"]> = {
+    data: CollectionItem<SERVICE, COLLECTION>;
+    cursor: string | null;
+}
+
 export interface QueryBranches<A extends string,
     F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, IndexCompositeAttributes> {
     go: GoQueryTerminal<A,F,C,S,ResponseItem>;
     params: ParamTerminal<A,F,C,S,ResponseItem>;
-    page: PageQueryTerminal<A,F,C,S,ResponseItem,IndexCompositeAttributes>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,QueryBranches<A,F,C,S,ResponseItem,IndexCompositeAttributes>>
 }
 
 export interface RecordsActionOptions<A extends string,
     F extends string, C extends string, S extends Schema<A,F,C>, Items, IndexCompositeAttributes> {
-    go: GoRecord<Items>;
+    go: QueryRecordsGo<Items>;
     params: ParamRecord;
-    page: PageRecord<Items,IndexCompositeAttributes>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,RecordsActionOptions<A,F,C,S,Items,IndexCompositeAttributes>>;
 }
 
@@ -379,30 +401,24 @@ export interface BatchGetRecordOperationOptions<A extends string, F extends stri
 }
 
 export interface PutRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: GoRecord<ResponseType, PutQueryOptions>;
+    go: PutRecordGo<ResponseType, PutQueryOptions>;
     params: ParamRecord<PutQueryOptions>;
-    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,PutRecordOperationOptions<A,F,C,S,ResponseType>>;
-}
-
-export interface UpdateRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: GoRecord<ResponseType, UpdateQueryOptions>;
-    params: ParamRecord<UpdateQueryParams>;
-    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,PutRecordOperationOptions<A,F,C,S,ResponseType>>;
+    where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, PutRecordOperationOptions<A, F, C, S, ResponseType>>;
 }
 
 export interface DeleteRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: GoRecord<ResponseType, DeleteQueryOptions>;
+    go: DeleteRecordOperationGo<ResponseType, DeleteQueryOptions>;
     params: ParamRecord<DeleteQueryOptions>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,DeleteRecordOperationOptions<A,F,C,S,ResponseType>>;
 }
 
-export interface BulkRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType, AlternateResponseType> {
-    go: BatchGoRecord<ResponseType, AlternateResponseType>;
+export interface BatchWriteOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
+    go: BatchWriteGo<ResponseType>;
     params: ParamRecord<BulkOptions>;
 }
 
 export interface SetRecordActionOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
-    go: GoRecord<Partial<TableItem>, UpdateQueryOptions>;
+    go: UpdateRecordGo<Partial<TableItem>, UpdateQueryOptions>;
     params: ParamRecord<UpdateQueryParams>;
     set: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     remove: SetRecord<A,F,C,S, Array<keyof SetItem<A,F,C,S>>,IndexCompositeAttributes,TableItem>;
@@ -414,8 +430,11 @@ export interface SetRecordActionOptions<A extends string, F extends string, C ex
     where: WhereClause<A,F,C,S, Item<A,F,C,S,S["attributes"]>,SetRecordActionOptions<A,F,C,S,SetAttr,IndexCompositeAttributes,TableItem>>;
 }
 
-export type SetRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
-export type RemoveRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: RemoveAttr) => SetRecordActionOptions<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
+export type SetRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) =>
+    SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
+
+export type RemoveRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: RemoveAttr) =>
+    SetRecordActionOptions<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
 
 export type DataUpdateMethodRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> =
     DataUpdateMethod<A,F,C,S, UpdateData<A,F,C,S>, SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>>
@@ -429,7 +448,6 @@ interface QueryOperations<A extends string, F extends string, C extends string, 
     begins: (skCompositeAttributes: CompositeAttributes) => QueryBranches<A,F,C,S, ResponseItem,IndexCompositeAttributes>;
     go: GoQueryTerminal<A,F,C,S,ResponseItem>;
     params: ParamTerminal<A,F,C,S,ResponseItem>;
-    page: PageQueryTerminal<A,F,C,S,ResponseItem,IndexCompositeAttributes>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,QueryBranches<A,F,C,S,ResponseItem,IndexCompositeAttributes>>
 }
 
@@ -465,16 +483,22 @@ export type ParseMultiInput = {
 export type ReturnValues = "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
 
 export interface QueryOptions {
-    raw?: boolean;
+    cursor?: string | null;
+    params?: object;
     table?: string;
     limit?: number;
-    params?: object;
-    includeKeys?: boolean;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
-    pages?: number;
+    pages?: number | 'all';
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
+    data?: 'raw' | 'includeKeys' | 'attributes';
+
+    /** @depricated use 'data=raw' instead */ 
+    raw?: boolean;
+    /** @depricated use 'data=includeKeys' instead */ 
+    includeKeys?: boolean;
+    order?: 'asc' | 'desc';
 }
 
 // subset of QueryOptions
@@ -503,15 +527,12 @@ export interface PutQueryOptions extends QueryOptions {
 }
 
 export interface ParamOptions {
+    cursor?: string | null;
     params?: object;
     table?: string;
     limit?: number;
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
-}
-
-export interface PaginationOptions extends QueryOptions {
-    pager?: "raw" | "item" | "named";
-    limit?: number;
+    order?: 'asc' | 'desc';
 }
 
 export interface BulkOptions extends QueryOptions {
@@ -526,11 +547,15 @@ export type OptionalDefaultEntityIdentifiers = {
 }
 
 interface GoBatchGetTerminalOptions<Attributes> {
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    /** @depricated use 'data=raw' instead */
     raw?: boolean;
+    /** @depricated use 'data=raw' instead */
+    includeKeys?: boolean;
+    
     table?: string;
     limit?: number;
     params?: object;
-    includeKeys?: boolean;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
     pages?: number;
@@ -543,30 +568,22 @@ interface GoBatchGetTerminalOptions<Attributes> {
 }
 
 interface GoQueryTerminalOptions<Attributes> {
+    cursor?: string | null,
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    /** @depricated use 'data=raw' instead */
     raw?: boolean;
+    /** @depricated use 'data=raw' instead */
+    includeKeys?: boolean;
     table?: string;
     limit?: number;
     params?: object;
-    includeKeys?: boolean;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
-    pages?: number;
+    pages?: number | 'all';
     attributes?: ReadonlyArray<Attributes>;
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
-}
-
-interface PageQueryTerminalOptions<Attributes> extends GoQueryTerminalOptions<Attributes> {
-    pager?: "raw" | "item" | "named";
-    raw?: boolean;
-    table?: string;
-    limit?: number;
-    includeKeys?: boolean;
-    originalErr?: boolean;
-    ignoreOwnership?: boolean;
-    attributes?: ReadonlyArray<Attributes>;
-    listeners?: Array<ElectroEventListener>;
-    logger?: ElectroEventListener;
+    order?: 'asc' | 'desc';
 }
 
 export interface ParamTerminalOptions<Attributes> {
@@ -576,126 +593,108 @@ export interface ParamTerminalOptions<Attributes> {
     originalErr?: boolean;
     attributes?: ReadonlyArray<Attributes>;
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
+    order?: 'asc' | 'desc';
 }
 
 type GoBatchGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoBatchGetTerminalOptions<keyof ResponseItem>>(options?: Options) =>
     Options extends GoBatchGetTerminalOptions<infer Attr>
         ? 'preserveBatchOrder' extends keyof Options
-            ? Options['preserveBatchOrder'] extends true
-                ? Promise<[
-                    Array<Resolve<{
-                        [
-                        Name in keyof ResponseItem as Name extends Attr
-                            ? Name
-                            : never
-                        ]: ResponseItem[Name]
-                    } | null>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
-                ]>
-                : Promise<[
-                    Array<Resolve<{
-                        [
-                        Name in keyof ResponseItem as Name extends Attr
-                            ? Name
-                            : never
-                        ]: ResponseItem[Name]
-                    }>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
-                ]>
-            : Promise<[
-                Array<Resolve<{
+        ? Options['preserveBatchOrder'] extends true
+            ? Promise<{
+                data: Array<Resolve<{
                     [
                     Name in keyof ResponseItem as Name extends Attr
                         ? Name
                         : never
                     ]: ResponseItem[Name]
-                }>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
-            ]>
+                } | null>>,
+                unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+            }>
+            : Promise<{
+                data: Array<Resolve<{
+                    [
+                    Name in keyof ResponseItem as Name extends Attr
+                        ? Name
+                        : never
+                    ]: ResponseItem[Name]
+                }>>,
+                unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+            }>
+        : Promise<{
+            data: Array<Resolve<{
+                [
+                Name in keyof ResponseItem as Name extends Attr
+                    ? Name
+                    : never
+                ]: ResponseItem[Name]
+            }>>,
+            unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+        }>
         : 'preserveBatchOrder' extends keyof Options
-            ? Options['preserveBatchOrder'] extends true
-                ? [Array<Resolve<ResponseItem | null>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
-                : [Array<Resolve<ResponseItem>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
-            : [Array<Resolve<ResponseItem>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
+        ? Options['preserveBatchOrder'] extends true
+            ? { data: Array<Resolve<ResponseItem | null>>, unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>> }
+            : { data: Array<Resolve<ResponseItem>>, unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>> }
+        : { data: Array<Resolve<ResponseItem>>, unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>> }
 
 type GoGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoQueryTerminalOptions<keyof ResponseItem>>(options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
         ? Promise<{
-            [
-            Name in keyof ResponseItem as Name extends Attr
-                ? Name
-                : never
-            ]: ResponseItem[Name]
-        } | null>
-        : Promise<ResponseItem | null>
+            data: {
+                [Name in keyof ResponseItem as Name extends Attr
+                    ? Name
+                    : never]: ResponseItem[Name]
+            } | null
+        }>
+        : Promise<{ data: ResponseItem | null }>
 
 export type GoQueryTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Item> = <Options extends GoQueryTerminalOptions<keyof Item>>(options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
-        ? Promise<Array<{
-            [
-            Name in keyof Item as Name extends Attr
-                ? Name
-                : never
-            ]: Item[Name]
-        }>>
-        : Promise<Array<Item>>
-
-export type EntityParseSingleItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> =
-    <Options extends ParseOptions<keyof ResponseItem>>(item: ParseSingleInput, options?: Options) =>
-        Options extends ParseOptions<infer Attr>
-            ? {
-                [
-                Name in keyof ResponseItem as Name extends Attr
-                    ? Name
-                    : never
-                ]: ResponseItem[Name]
-            } | null
-            : ResponseItem | null
-
-export type EntityParseMultipleItems<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> =
-    <Options extends ParseOptions<keyof ResponseItem>>(item: ParseMultiInput, options?: Options) =>
-        Options extends ParseOptions<infer Attr>
-            ? Array<{
-                [
-                Name in keyof ResponseItem as Name extends Attr
-                    ? Name
-                    : never
-                ]: ResponseItem[Name]
-            }>
-            : Array<ResponseItem>
-
-
-export type PageQueryTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Item, CompositeAttributes> = <Options extends PageQueryTerminalOptions<keyof Item>>(page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: Options) =>
-    Options extends GoQueryTerminalOptions<infer Attr>
-        ? Promise<[
-            (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
-            Array<{
+        ? Promise<{ 
+            data: Array<{
                 [
                 Name in keyof Item as Name extends Attr
                     ? Name
                     : never
                 ]: Item[Name]
-            }>
-        ]>
-        : Promise<[
-            (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
-            Array<ResponseType>
-        ]>;
+            }>,
+            cursor: string | null
+        }>
+        : Promise<{ data: Array<Item>, cursor: string | null }>
+
+export type EntityParseMultipleItems<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> =
+    <Options extends ParseOptions<keyof ResponseItem>>(item: ParseMultiInput, options?: Options) =>
+        Options extends ParseOptions<infer Attr>
+            ? {
+                data: Array<{
+                    [
+                    Name in keyof ResponseItem as Name extends Attr
+                        ? Name
+                        : never
+                    ]: ResponseItem[Name]
+                }>,
+                cursor?: string | null
+            }
+            : { data: Array<ResponseItem>, cursor?: string | null }
 
 export type ParamTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <P extends any = any, Options extends ParamTerminalOptions<keyof ResponseItem> = ParamTerminalOptions<keyof ResponseItem>>(options?: Options) => P;
 
-export type GoRecord<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<T>;
+export type ServiceQueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type BatchGoRecord<ResponseType, AlternateResponseType> = <O extends BulkOptions>(options?: O) =>
-    O extends infer Options
-        ? 'preserveBatchOrder' extends keyof Options
-        ? Options['preserveBatchOrder'] extends true
-            ? Promise<AlternateResponseType>
-            : Promise<ResponseType>
-        : Promise<ResponseType>
-        : never
+export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type PageRecord<ResponseType, CompositeAttributes> = (page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: PaginationOptions) => Promise<[
-        (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
-    ResponseType
-]>;
+export type UpdateRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
+
+export type PutRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
+
+export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
+
+export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
+    Promise<{ unprocessed: ResponseType }>
+
+// export type PageRecord<ResponseType, CompositeAttributes> = (page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: PaginationOptions) => Promise<[
+//         (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
+//     ResponseType
+// ]>;
 
 export type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
 
@@ -1854,13 +1853,15 @@ export class Entity<A extends string, F extends string, C extends string, S exte
 
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchGetRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
-    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>[]>;
+    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
+    remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
     put(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
-    put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>[]>;
+    put(record: PutItem<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
+    create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
-    remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -1870,7 +1871,6 @@ export class Entity<A extends string, F extends string, C extends string, S exte
         delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
-
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -1881,7 +1881,6 @@ export class Entity<A extends string, F extends string, C extends string, S exte
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
 
-    create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
     find(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
 
@@ -1893,23 +1892,25 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseSingleInput, options?: Options):
         Options extends ParseOptions<infer Attr>
         ? {
+            data: {
                 [
                 Name in keyof ResponseItem<A,F,C,S> as Name extends Attr
                     ? Name
                     : never
-            ]: ResponseItem<A,F,C,S>[Name]
-        } | null
-        : ResponseItem<A,F,C,S> | null
+                ]: ResponseItem<A,F,C,S>[Name]
+            } | null
+        }
+        : { data: ResponseItem<A,F,C,S> | null }
     parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseMultiInput, options?: Options):
             Options extends ParseOptions<infer Attr>
-        ? Array<{
+        ? { data: Array<{
             [
                 Name in keyof ResponseItem<A,F,C,S> as Name extends Attr
                     ? Name
                     : never
             ]: ResponseItem<A,F,C,S>[Name]
-        }>
-        : Array<ResponseItem<A,F,C,S>>
+        }>, cursor: string | null }
+        : { data: Array<ResponseItem<A,F,C,S>>, cursor: string | null }
     setIdentifier(type: "entity" | "version", value: string): void;
     client: any;
 }

@@ -623,8 +623,8 @@ describe("Update Item", () => {
             await customers.create({ id: id1, email }).go();
             await customers.create({ id: id2, email, name: {legal: {}} }).go();
 
-            const retrieved1 = await customers.get({id: id1}).go();
-            const retrieved2 = await customers.get({id: id2}).go();
+            const retrieved1 = await customers.get({id: id1}).go().then(res => res.data);
+            const retrieved2 = await customers.get({id: id2}).go().then(res => res.data);
 
             expect(retrieved1).to.deep.equal({
                 email,
@@ -646,6 +646,7 @@ describe("Update Item", () => {
                     op.set(attr.name.legal.last, 'exotic');
                 })
                 .go({response: 'all_new'})
+                .then(res => res.data)
                 .then((data) => ({success: true, result: data}))
                 .catch(err => ({success: false, result: err}));
 
@@ -656,7 +657,7 @@ describe("Update Item", () => {
                 .data((attr, op) => {
                     op.set(attr.name.legal.first, 'joe');
                     op.set(attr.name.legal.last, 'exotic');
-                }).go({response: 'all_new'});
+                }).go({response: 'all_new'}).then(res => res.data);
 
             expect(updated2).to.deep.equal({
                 id: id2,
@@ -714,7 +715,7 @@ describe("Update Item", () => {
 
         it("should conditionally update a map attribute", async () => {
             const composite = {cityId, mallId, storeId, buildingId};
-            const results1 = await StoreLocations.get(composite).go();
+            const results1 = await StoreLocations.get(composite).go().then(res => res.data);
 
             await StoreLocations.update(composite)
                 .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "after1"))
@@ -723,9 +724,9 @@ describe("Update Item", () => {
                         ? eq(mapAttribute.mapProperty, results1.mapAttribute.mapProperty)
                         : ""
                 })
-                .go();
+                .go().then(res => res.data);
 
-            const results2 = await StoreLocations.get(composite).go();
+            const results2 = await StoreLocations.get(composite).go().then(res => res.data);
 
             expect(results2).to.deep.equal({
                 cityId,
@@ -776,7 +777,7 @@ describe("Update Item", () => {
 
         it("should conditionally update a list attribute", async () => {
             const composite = {cityId, mallId, storeId, buildingId};
-            const results1 = await StoreLocations.get(composite).go();
+            const results1 = await StoreLocations.get(composite).go().then(res => res.data);
 
             await StoreLocations.update(composite)
                 .data(({rentalAgreement}, {set}) => set(rentalAgreement[0].detail, "no soup for you"))
@@ -785,9 +786,9 @@ describe("Update Item", () => {
                         ? eq(rentalAgreement[0].detail, results1.rentalAgreement[0].detail)
                         : ""
                 })
-                .go();
+                .go().then(res => res.data);
 
-            const results2 = await StoreLocations.get(composite).go();
+            const results2 = await StoreLocations.get(composite).go().then(res => res.data);
 
             expect(results2).to.deep.equal({
                 cityId,
@@ -888,7 +889,7 @@ describe("Update Item", () => {
 
             let item1 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item1).to.deep.equal({
                 cityId,
@@ -930,7 +931,7 @@ describe("Update Item", () => {
 
             let item2 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item2).to.deep.equal({
                 cityId,
@@ -976,11 +977,11 @@ describe("Update Item", () => {
                 .update({cityId, mallId, storeId, buildingId})
                 // @ts-ignore
                 .remove(['listAttribute[0]'])
-                .go();
+                .go().then(res => res.data);
 
             let item1 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item1).to.deep.equal({
                 cityId,
@@ -1025,7 +1026,7 @@ describe("Update Item", () => {
 
             let item2 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item2).to.deep.equal({
                 cityId,
@@ -1068,11 +1069,11 @@ describe("Update Item", () => {
                 .update({cityId, mallId, storeId, buildingId})
                 // @ts-ignore
                 .add({'listAttribute[1].setAttribute': newSetValue1})
-                .go();
+                .go().then(res => res.data);
 
             let item1 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item1).to.deep.equal({
                 cityId,
@@ -1118,11 +1119,11 @@ describe("Update Item", () => {
                 .data(({listAttribute}, {add}) => {
                     add(listAttribute[1].setAttribute, newSetValue2)
                 })
-                .go();
+                .go().then(res => res.data);
 
             let item2 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item2).to.deep.equal({
                 cityId,
@@ -1492,7 +1493,7 @@ describe("Update Item", () => {
                 views: 99,
                 files: ["index.ts", "package.json"]
             })
-            .go();
+            .go().then(res => res.data);
 
         const updates = {
             prop2: 15,
@@ -1575,9 +1576,9 @@ describe("Update Item", () => {
                 op.add(attr.recentCommits[0].views, updates.recentCommitsViews);
                 op.remove(attr.recentCommits[1].message)
             })
-            .go()
+            .go().then(res => res.data)
 
-        const item = await repositories.get({repoName, repoOwner}).go();
+        const item = await repositories.get({repoName, repoOwner}).go().then(res => res.data);
 
         const expected = {
             "repoOwner": repoOwner,
@@ -1668,7 +1669,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })
-                .go();
+                .go().then(res => res.data);
 
             await repositories
                 .update({repoName, repoOwner})
@@ -1679,7 +1680,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 ...created,
@@ -1727,7 +1728,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })
-                .go();
+                .go().then(res => res.data);
 
             await repositories
                 .update({repoName, repoOwner})
@@ -1741,7 +1742,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 ...created,
@@ -1780,7 +1781,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })
-                .go();
+                .go().then(res => res.data);
 
             await repositories
                 .update({repoName, repoOwner})
@@ -1789,7 +1790,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 ...created,
@@ -1809,7 +1810,8 @@ describe("Update Item", () => {
                 fullName: "tyler walch"
             }).go();
 
-            const itemBefore = await users.get({username}).go({raw: true});
+            const itemBefore = await users.get({username}).go({raw: true})
+                .then(res => res.data);
 
             expect(itemBefore).to.deep.equal({
                 "Item": {
@@ -1868,7 +1870,8 @@ describe("Update Item", () => {
 
             const itemAfter = await users
                 .get({username})
-                .go({raw: true});
+                .go({raw: true})
+                .then(res => res.data);
 
             expect(itemAfter).to.deep.equal({
                 "Item": {
@@ -1954,7 +1957,7 @@ describe("Update Item", () => {
                 fullName: "tyler walch"
             }).go();
 
-            const itemBefore = await users.get({username}).go({raw: true});
+            const itemBefore = await users.get({username}).go({raw: true}).then(res => res.data);
 
             expect(itemBefore).to.deep.equal({
                 "Item": {
@@ -2012,7 +2015,8 @@ describe("Update Item", () => {
 
             const itemAfter = await users
                 .get({username})
-                .go({raw: true});
+                .go({raw: true})
+                .then(res => res.data);
 
             expect(itemAfter).to.deep.equal({
                 "Item": {
@@ -2099,7 +2103,8 @@ describe("Update Item", () => {
                 fullName: "tyler walch"
             }).go();
 
-            const itemBefore = await users.get({username}).go({raw: true});
+            const itemBefore = await users.get({username}).go({raw: true})
+                .then(res => res.data);
 
             expect(itemBefore).to.deep.equal({
                 "Item": {
@@ -2208,7 +2213,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 createdAt,
@@ -2264,7 +2269,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 createdAt,
@@ -2298,7 +2303,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.tags).to.deep.equal(["tag2"]);
         });
@@ -2315,7 +2320,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })
-                .go();
+                .go().then(res => res.data);
 
             await repositories
                 .update({repoName, repoOwner})
@@ -2324,7 +2329,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.tags).to.deep.equal(["tag2"]);
         });
@@ -2356,7 +2361,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
             expect(repo.stars).to.equal(0);
 
             await repositories
@@ -2366,7 +2371,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(1);
         });
@@ -2392,7 +2397,7 @@ describe("Update Item", () => {
                 })
                 .go();
 
-            const value1 = await repositories.get({repoName, repoOwner}).go();
+            const value1 = await repositories.get({repoName, repoOwner}).go().then(res => res.data);
             if (!value1) {
                 throw new Error("expected value1");
             }
@@ -2402,7 +2407,7 @@ describe("Update Item", () => {
                 })
                 .go();
 
-            const value2 = await repositories.get({repoName, repoOwner}).go();
+            const value2 = await repositories.get({repoName, repoOwner}).go().then(res => res.data);
             if (!value2) {
                 throw new Error("expected value1");
             }
@@ -2423,7 +2428,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(10);
 
@@ -2434,7 +2439,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(15);
         });
@@ -2450,18 +2455,18 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(10);
 
             await repositories
                 .update({repoName, repoOwner})
                 .data(({stars}, {add}) => add(stars, 5))
-                .go();
+                .go().then(res => res.data);
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(15);
         });
@@ -2488,7 +2493,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.tags).to.deep.equal(["tag1", "tag2", "tag3"]);
         });
@@ -2521,7 +2526,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
 
@@ -2532,7 +2537,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(4);
         });
@@ -2549,7 +2554,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
 
@@ -2560,7 +2565,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(2);
         });
@@ -2577,7 +2582,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
 
@@ -2588,7 +2593,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(2);
         });
@@ -2607,7 +2612,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     views: 10
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
 
@@ -2618,7 +2623,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.views).to.equal(15);
         });
@@ -2640,7 +2645,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     views: 10,
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
             expect(repo.views).to.equal(10);
@@ -2687,7 +2692,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.views).to.equal(30);
             expect(results?.stars).to.equal(25);
@@ -2785,7 +2790,6 @@ describe("Update Item", () => {
             const stringVal = `abc${uuid()}`;
             const nestedList = ["def"];
             const error = await entity.update({stringVal}).set({map: {nestedList}}).go({originalErr: true}).then(() => false).catch(err => err.message);
-            console.log(error)
             expect(error).to.be.string('Invalid value for attribute "map.nestedList[*]"');
         });
     });
@@ -2822,12 +2826,12 @@ describe("Update Item", () => {
         const strProp = 'value1';
         await entity.put({prop1, prop2: {numProp, strProp}}).go();
         const getVal = await entity.get({prop1}).go();
-        expect(getVal).to.deep.equal({prop1, prop2: {numProp, strProp}});
+        expect(getVal.data).to.deep.equal({prop1, prop2: {numProp, strProp}});
         const updated = await entity.update({prop1}).data((attr, op) => {
             op.add(attr.prop2.numProp, numProp);
             op.set(attr.prop2.strProp, 'value2');
         }).go({response: 'all_new'});
-        expect(updated.prop2).to.deep.equal({
+        expect(updated.data.prop2).to.deep.equal({
             numProp: 20,
             strProp: 'value2',
         });
@@ -2874,7 +2878,7 @@ describe("Update Item", () => {
                 prop2: [STRING_VAL],
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: [STRING_VAL],
             });
@@ -2914,7 +2918,7 @@ describe("Update Item", () => {
                 prop2: [NUM_VAL],
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: [NUM_VAL],
             });
@@ -2961,7 +2965,7 @@ describe("Update Item", () => {
                 },
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: {
                     nested: [STRING_VAL],
@@ -3010,7 +3014,7 @@ describe("Update Item", () => {
                 },
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: {
                     nested: [NUM_VAL],
