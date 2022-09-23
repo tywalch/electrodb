@@ -323,53 +323,6 @@ describe("Page", async () => {
       )).to.not.throw;
     }).timeout(10000);
   }
-  //
-  // it("Should paginate through all records", async () => {
-  //   let tests = [
-  //     {
-  //       type: "query",
-  //       input: {
-  //         facets: {project: Tasks.projects[0]},
-  //         index: "projects",
-  //       },
-  //       output: {
-  //         pageKeys: ["task", "project", "employee"]
-  //       },
-  //     }, {
-  //       type: "query",
-  //       input: {
-  //         facets: {employee: Tasks.employees[0]},
-  //         index: "assigned",
-  //       },
-  //       output: {
-  //         pageKeys: ["points", "project", "employee"]
-  //       },
-  //     }, {
-  //       type: "scan",
-  //       output: {
-  //         pageKeys: ["task", "project", "employee"]
-  //       },
-  //     }
-  //   ];
-  //   for (let test of tests) {
-  //     let query;
-  //     let loaded;
-  //     let testPage = ((page, tasks) => {
-  //       if (page !== null) expect(page).to.include.keys(test.output.pageKeys);
-  //       return [page, tasks];
-  //     });
-  //     if (test.type === "scan") {
-  //       query = (cursor, limit) => tasks.scan.go({cursor, limit});
-  //       loaded = tasks.loaded;
-  //     } else {
-  //       query = (cursor, limit) => tasks.query[test.input.index](test.input.facets).go({cursor, limit});
-  //       loaded = tasks.filterLoaded(test.input.facets);
-  //     }
-  //
-  //     let results = await tasks.paginate(2, total, query, testPage);
-  //     expect(() => Tasks.compareTasks(results, loaded)).to.not.throw;
-  //   }
-  // }).timeout(15000);
 
   it("Paginate without overlapping values", async () => {
     let limit = 30;
@@ -559,14 +512,12 @@ describe("Page", async () => {
         count++;
         const results = await entity.query.task({task: "my_task"}).go({cursor});
         cursor = results.cursor;
-        console.log({cursor, results});
         if (typeof cursor !== 'string' && cursor !== null) {
           throw new Error('Not string or null!');
         }
       } while(cursor !== null);
       expect(cursor).to.equal(null);
       expect(count).to.be.greaterThan(1);
-      console.log('calls', calls);
       expect(calls).to.have.length(4);
       for (let i = 0; i < calls.length; i++) {
         const call = calls[i];
@@ -965,8 +916,16 @@ describe("Page", async () => {
       const limit3 = tasks3.occurrences.employees[employee];
       const overLimit = limit1 + limit2 + limit3 + 10;
       const underLimit = limit1 + limit2 + limit3 - 10;
+      let queryCount = 0;
+      let underQueryResults = [];
+      let queryCounter = (event) => {
+        if (event.type === 'query') {
+          queryCount = queryCount + 1;
+          underQueryResults = underQueryResults.concat(event.results.Items);
+        }
+      }
       const results = await service.collections.assignments({employee}).go({limit: overLimit}).then(res => res.data);
-      const limited = await service.collections.assignments({employee}).go({limit: underLimit}).then(res => res.data);
+      const limited = await service.collections.assignments({employee}).go({limit: underLimit, listeners: [queryCounter]}).then(res => res.data);
       const tasks1Loaded = tasks.filterLoaded({employee});
       const tasks2Loaded = tasks2.filterLoaded({employee});
       const tasks3Loaded = tasks3.filterLoaded({employee});
@@ -976,8 +935,12 @@ describe("Page", async () => {
       expect(results.tasks).to.have.length(tasks.occurrences.employees[employee]);
       expect(results.tasks2).to.have.length(tasks2.occurrences.employees[employee]);
       expect(results.tasks3).to.have.length(tasks3.occurrences.employees[employee]);
-      expect(results.tasks3).to.have.length(0);
-      expect(limited.tasks.length + limited.tasks2.length + limited.tasks3.length).to.equal(underLimit);
+      const resultSize = Object.values(limited).map(items => items.length).reduce((total, length) => total + length, 0);
+      if (resultSize < underLimit && queryCount === 2) {
+        expect(resultSize).to.equal(underQueryResults.length);
+      } else {
+        expect(resultSize).to.equal(underLimit);
+      }
     });
 
     it("should only iterate through the specified number of pages for entity queries", async () => {
@@ -985,9 +948,7 @@ describe("Page", async () => {
       const occurrences = tasks.occurrences.employees[employee];
       const pages = 2;
       const limit = Math.floor(occurrences / 4);
-      console.log({limit, pages, occurrences});
       const results = await tasks.query.assigned({employee}).go({pages, params: {Limit: limit}}).then(res => res.data);
-      console.log({results: results.length});
       expect(limit).to.be.greaterThan(0);
       expect(occurrences).to.be.greaterThan(limit * pages);
       expect(results).to.have.length(limit * pages);
@@ -1002,26 +963,25 @@ describe("Page", async () => {
           .filter(occurrence => occurrence !== 0)
           .map((occurrence) => Math.floor(occurrence / 4))
           .reduce((min, val) => Math.min(min, val), Number.MAX_VALUE);
-      console.log({
-        occurrences1,
-        occurrences2,
-        occurrences3,
-        limit,
-      })
       const pages = 2;
       expect(limit).to.be.greaterThan(0);
       expect(occurrences1).to.be.greaterThan(limit * pages);
       expect(occurrences2).to.be.greaterThan(limit * pages);
-      const results = await service.collections.assignments({employee}).go({pages, params: {Limit: limit}}).then(res => res.data);
+      let queryCount = 0;
+      let items = [];
+      let queryCounter = (event) => {
+        if (event.type === 'query') {
+          queryCount = queryCount + 1;
+          items = items.concat(event.results.Items);
+        }
+      }
+      const results = await service.collections.assignments({employee}).go({pages, params: {Limit: limit}, listeners: [queryCounter]}).then(res => res.data);
       const total = Object.values(results).map(result => result.length).reduce((total, length) => total + length, 0);
-      console.log(JSON.stringify({
-        lengths: {
-          tasks: results.tasks.length,
-          tasks2: results.tasks2.length,
-          tasks3: results.tasks3.length,
-          total,
-        }, limit, pages, limitPages: limit * pages}, null, 4))
-      expect(total).to.equal(limit * pages);
+      if (total < limit * pages && queryCount === 2) {
+        expect(total).to.equal(items.length);
+      } else {
+        expect(total).to.equal(limit * pages);
+      }
     });
 
     it("should throw if 'pages' option is less than one or not a valid number", async () => {

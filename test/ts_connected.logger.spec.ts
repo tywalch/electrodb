@@ -490,6 +490,7 @@ describe("listener functions", async () => {
                         pages: 1,
                       listeners: [],
                       preserveBatchOrder: false,
+                      order: undefined,
                     }
                 },
                 {
@@ -517,7 +518,8 @@ describe("listener functions", async () => {
                       data: "attributes",
                       pages: 1,
                       preserveBatchOrder: false,
-                      listeners: []
+                      listeners: [],
+                      order: undefined,
                     },
                     success: true,
                     results: {}
@@ -571,7 +573,7 @@ describe("listener functions", async () => {
                       _isPagination: false,
                       _isCollectionQuery: false,
                       preserveBatchOrder: false,
-
+                      order: undefined,
                       listeners: []
                     }
                 },
@@ -599,6 +601,7 @@ describe("listener functions", async () => {
                       preserveBatchOrder: false,
                       cursor: null,
                       data: "attributes",
+                      order: undefined,
                       pages: 1,
                       listeners: []
                     },
