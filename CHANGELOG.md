@@ -213,6 +213,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [1.12.0] - 2022-08-11
 ### Added
 - Added support for attribute types "enum string set" and "enum number set". This will allow users to defined a finite list of values (strings or numbers ) supported for a set [[read more](./README#set-attributes)]
+- TypeScript support for "Custom Attributes", bring your own types to express complex attributes [[read more](https://github.com/tywalch/electrodb#custom-attributes)].
 
 ## [2.0.0] - 2022-09-19
 ### Changed

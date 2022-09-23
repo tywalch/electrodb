@@ -99,6 +99,7 @@ tasks
 
 ------------
 
+## Table of Contents
 - [ElectroDB](#electrodb)
   * [Features](#features)
 - [Project Goals](#project-goals)
@@ -1439,7 +1440,7 @@ Another approach allows you to use the `template` property, which allows you to 
     "your_access_pattern_name": {
       pk: {
         field: "accountId",
-        composite: ["accountId"], 
+        composite: ["accountId"],
         template: "${accountId}"
       },
       sk: {...}
@@ -1722,7 +1723,7 @@ let results = await TaskApp.collections
 
 {
   data: {
-    tasks: [...],    // tasks for employeeId "JExotic" 
+    tasks: [...],    // tasks for employeeId "JExotic"
     employees: [...] // employee record(s) with employeeId "JExotic"
   },
   cursor: null
@@ -1976,7 +1977,7 @@ const results = await TaskApp.collections
 // results 
 {
   data: {
-    tasks: [...], // tasks assigned to employeeId "JExotic" 
+    tasks: [...], // tasks assigned to employeeId "JExotic"
     projectMembers: [...], // projects with employeeId "JExotic"
     employees: [...] // employee record(s) with employeeId "JExotic"
   },
@@ -2003,7 +2004,7 @@ const results = await TaskApp.collections
 // results 
 {
   data: {
-    tasks: [...],          // tasks assigned to employeeId "JExotic" 
+    tasks: [...],          // tasks assigned to employeeId "JExotic"
     projectMembers: [...], // projects with employeeId "JExotic"
   },
   cursor: null,
@@ -2611,7 +2612,7 @@ Provide all Table Index composite attributes in an object to the `get` method. I
 
 > _NOTE: As part of ElectroDB's roll out of 1.0.0, a breaking change was made to the `get` method. Prior to 1.0.0, the `get` method would return an empty object if a record was not found. This has been changed to now return a value of `null` in this case._
 
-Example: 
+Example:
 ```javascript
 let results = await StoreLocations.get({
 	storeId: "LatteLarrys", 
@@ -2655,7 +2656,7 @@ If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB wil
 
 It is important to consider your Table's throughput considerations when setting this value.
 
-Example: 
+Example:
 ```javascript
 let [results, unprocessed] = await StoreLocations.get([
     {
@@ -2712,7 +2713,7 @@ Elements of the `unprocessed` array are unlike results received from a query. In
 ### Delete Method
 Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
 
-Example: 
+Example:
 ```javascript
 await StoreLocations.delete({
 	storeId: "LatteLarrys", 
@@ -2756,7 +2757,7 @@ If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB wil
 
 It is important to consider your Table's throughput considerations when setting this value.
 
-Example: 
+Example:
 ```javascript
 let unprocessed = await StoreLocations.delete([
     {
@@ -2814,7 +2815,7 @@ Provide all *required* Attributes as defined in the model to create a new record
 
 Note: This example includes an optional conditional expression
 
-Example: 
+Example:
 ```javascript
 await StoreLocations
   .put({
@@ -2887,7 +2888,7 @@ If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB wil
 
 It is important to consider your Table's throughput considerations when setting this value.
 
-Example: 
+Example:
 ```javascript
 let unprocessed = await StoreLocations.put([
     {
@@ -3058,7 +3059,7 @@ For the defined indexes:
 A user could update `attr4` alone because ElectroDB is able to leverage the value for `attr2` from values supplied to the `update()` method:
 
 
-Example: 
+Example:
 ```typescript
 entity.update({ attr1: "value1", attr2: "value2" })
   .set({ attr4: "value4" })
@@ -3103,7 +3104,7 @@ Equivalent DocClient Parameters:
 
 The `set()` method will accept all attributes defined on the model. Provide a value to apply or replace onto the item.
 
-Example: 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -3145,7 +3146,7 @@ The `remove()` method will accept all attributes defined on the model. Unlike mo
 
 > _NOTE that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed._  
 
-Example: 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -3186,7 +3187,7 @@ The `add()` method will accept attributes with type `number`, `set`, and `any` d
 
 If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a `number`. 
 
-Example: 
+Example:
 ```javascript
 const newTenant = client.createSet("larry");
 
@@ -3234,7 +3235,7 @@ Equivalent DocClient Parameters:
 
 The `subtract()` method will accept attributes with type `number`. In the case of a `number` attribute, provide a number to _subtract_ from the existing attribute's value on the item.
 
-Example: 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -3275,7 +3276,7 @@ Equivalent DocClient Parameters:
 
 The `append()` method will accept attributes with type `any`. This is a convenience method for working with DynamoDB lists, and is notably different that [`set`](#update-method-set) because it will add an element to an existing array, rather than overwrite the existing value.
 
-Example: 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -3326,7 +3327,7 @@ Equivalent DocClient Parameters:
 
 The `delete()` method will accept attributes with type `any` or `set` . This operation removes items from a the `contract` attribute, defined as a `set` attribute.
 
-Example: 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -3385,7 +3386,7 @@ operation     | example                               | result                  
 `value`       | `value(rent, amount)`                 | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
 `ifNotExists` | `ifNotExists(rent, amount)`           | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record
 
-Example: 
+Example:
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -3529,7 +3530,7 @@ When scanning for rows, you can use filters the same as you would any query. For
 
 *Note: `Scan` functionality will be scoped to your Entity. This means your results will only include records that match the Entity defined in the model.*
 
-Example: 
+Example:
 ```javascript
 await StoreLocations.scan
     .where(({category}, {eq}) => `
@@ -3639,9 +3640,9 @@ Equivalent DocClient Parameters:
     ":attr2_u0": "value2"
   },
   "TableName": "YOUR_TABLE_NAME",
-  "Key": { 
-    "pk": "$service#attr1_value1", 
-    "sk": "$entity_version#attr2_value2" 
+  "Key": {
+    "pk": "$service#attr1_value1",
+    "sk": "$entity_version#attr2_value2"
   },
   "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
 }
@@ -3657,7 +3658,7 @@ In DynamoDB, `put` operations by default will overwrite a record if record being
 
 A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.
 
-Example: 
+Example:
 ```javascript
 await StoreLocations
   .create({
@@ -5348,7 +5349,7 @@ const endDate = "2020-06-01";
 EmployeeApp.entities.employees
 	.workplaces({office: "gw zoo"})
   .where(({ birthday, dateHired }, { between }) => `
-    ${between(dateHired, startDate, endDate)} OR 
+    ${between(dateHired, startDate, endDate)} OR
     ${between(birthday, startDate, endDate)}
   `)
 	.upcomingCelebrations("2020-05-01", "2020-06-01")
@@ -5598,17 +5599,19 @@ If you have a need for a custom attribute type (beyond those supported by Electr
 ```typescript
 import { Entity, createCustomAttribute } from 'electrodb';
 
+const table = 'workplace_table';
+
 type PersonnelRole = {
     type: 'employee';
-    startDate: string;
-    endDate?: string;
+    startDate: number;
+    endDate?: number;
 } | {
     type: 'contractor';
-    contractStartDate: string;
-    contractEndDate: string;
+    contractStartDate: number;
+    contractEndDate: number;
 };
 
-const table = 'workplace_table';
+
 const person = new Entity({
     model: {
         entity: 'personnel',
@@ -5627,11 +5630,11 @@ const person = new Entity({
         record: {
             pk: {
                 field: 'pk',
-                compose: ['id']
+                composite: ['id']
             },
             sk: {
                 field: 'sk',
-                compose: [],
+                composite: [],
             }
         }
     }
@@ -5750,7 +5753,7 @@ _Use:_
 
 ```typescript
 type CollectionResults = CollectionResponse<typeof MyServiceInstance, "collectionName">
-``` 
+```
 
 ### CreateEntityItem Type
 
@@ -5886,17 +5889,17 @@ Electro is a CLI utility toolbox for extending the functionality of **ElectroDB*
 For usage and installation details you can learn more [here](https://github.com/tywalch/electrocli).
 
 # Version 2 Migration
-## New response format for all query methods. 
+## New response format for all query methods.
 Prior to 2.0.0, ElectroDB had multiple unique response signatures depending on the method used. Queries now return responses within an envelope object with results typically on a property called `data`. The section [Building Queries](#building-queries) now has response format examples for all methods, and the section [Exported Types](#exported-types) has new utility types you can use to express response types in your code.
 
 ## Unified Pagination APIs
-Version 2.0.0 removes the `.page()` terminal function and unifies pagination under the `.go()` method. The response signature for queries, scans, finds, and matches now include a cursor string that can be passed back into the go method as a query option (e.g. `go({cursor})`. This new cursor is a departure from the destructure object ElectroDB returned prior for pagination, and is a `base64url` type string making it url safe. 
+Version 2.0.0 removes the `.page()` terminal function and unifies pagination under the `.go()` method. The response signature for queries, scans, finds, and matches now include a cursor string that can be passed back into the go method as a query option (e.g. `go({cursor})`. This new cursor is a departure from the destructure object ElectroDB returned prior for pagination, and is a `base64url` type string making it url safe.
 
-Note: It is still possible to return the native DynamoDB LastEvaluatedKey using the `pager` and/or `data` [query options](#query-options). This new `cursor` 
+Note: It is still possible to return the native DynamoDB LastEvaluatedKey using the `pager` and/or `data` [query options](#query-options). This new `cursor`
 
 Another change to pagination involves the "auto-pagination" used with the `.go()` method. Prior to 2.0.0 the `.go()` method would paginate through all _query_ results automatically. This was not the behavior for `scan` which caused some confusion. All queries and and query-like methods (scan, find, match, etc) now query a single page by default. You can use the [query options](#query-options) `pages` and `limit` to instruct electrodb to automatically iterate through multiple pages, or use `pages: 'all'` to have electrodb automatically exhaust pagination.
 
-Checkout the section [#pagination-query-options] to read more on this topic and to find an example of how to perform pagination with ElectroDB 2.0.0. 
+Checkout the section [#pagination-query-options] to read more on this topic and to find an example of how to perform pagination with ElectroDB 2.0.0.
 
 # Version 1 Migration
 This section is to detail any breaking changes made on the journey to a stable 1.0 product.
@@ -5972,7 +5975,7 @@ new Service({
   table: table,
 }, {client});
 
-// new way 
+// new way
 new Service({entity1, entity2, ...})
 ```
 
