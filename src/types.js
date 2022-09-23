@@ -234,5 +234,7 @@ module.exports = {
 	ElectroInstanceTypes,
 	EventSubscriptionTypes,
 	AttributeMutationMethods,
-	AllPages
+	AllPages,
+	ResultOrderOption,
+	ResultOrderParam,
 };

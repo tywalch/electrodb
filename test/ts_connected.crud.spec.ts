@@ -3654,4 +3654,104 @@ describe('attributes query option', () => {
 
         expect(full.KeyConditionExpression).to.equal("#pk = :pk and #sk1 = :sk1")
     });
+
+    it('should apply sort parameters to queries', async () => {
+        const entity = new Entity({
+            model: {
+                service: 'service',
+                entity: 'entity',
+                version: '1',
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'string'
+                },
+                prop3: {
+                    type: 'string'
+                },
+                prop4: {
+                    type: 'string'
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1']
+                    },
+                    sk: {
+                        field: 'sk',
+                        template: '${prop2}#${prop3}#${prop4}#${prop2}#${prop3}',
+                        composite: ['prop2', 'prop3', 'prop4', 'prop2' , 'prop3'],
+                    }
+                }
+            }
+        }, {client, table});
+
+        const queries = [
+            ['query', entity.query.record({
+                prop1: 'prop1',
+                prop2: 'prop2',
+                prop3: 'prop3',
+            })],
+            ['indexed find', entity.find({prop1: 'prop1'})],
+            ['indexed match', entity.match({prop1: 'prop1'})],
+        ] as const;
+
+        const options = [
+            [undefined, undefined],
+            [{}, undefined],
+            [{order: 'asc'}, true],
+            [{order: 'desc'}, false],
+        ] as const;
+
+        await entity.put([
+            {
+                prop1: 'prop1',
+                prop2: 'prop2',
+                prop3: 'prop3',
+                prop4: 'prop4a',
+            },
+            {
+                prop1: 'prop1',
+                prop2: 'prop2',
+                prop3: 'prop3',
+                prop4: 'prop4b',
+            },
+            {
+                prop1: 'prop1',
+                prop2: 'prop2',
+                prop3: 'prop3',
+                prop4: 'prop4c',
+            }
+        ]).go();
+
+        for (const [description, operation] of queries) {
+            for (const [queryOptions, output] of options) {
+                try {
+                    // @ts-ignore
+                    const params = operation.params(queryOptions);
+                    expect(params['ScanIndexForward']).to.equal(output);
+                
+                    // @ts-ignore
+                    const results = await operation.go(queryOptions);
+                    const isDesc = output === false;
+                    if (isDesc) {
+                        expect(results.data[0]?.prop4).to.equal('prop4c');
+                        expect(results.data[1]?.prop4).to.equal('prop4b');
+                        expect(results.data[2]?.prop4).to.equal('prop4a');
+                    } else {
+                        expect(results.data[0]?.prop4).to.equal('prop4a');
+                        expect(results.data[1]?.prop4).to.equal('prop4b');
+                        expect(results.data[2]?.prop4).to.equal('prop4c');
+                    }
+                } catch(err: any) {
+                    throw new Error(`${err.message}: ${description}`);
+                }
+            }
+        }     
+    });
 });

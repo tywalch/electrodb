@@ -532,6 +532,7 @@ export interface ParamOptions {
     table?: string;
     limit?: number;
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
+    order?: 'asc' | 'desc';
 }
 
 export interface BulkOptions extends QueryOptions {
@@ -592,6 +593,7 @@ export interface ParamTerminalOptions<Attributes> {
     originalErr?: boolean;
     attributes?: ReadonlyArray<Attributes>;
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
+    order?: 'asc' | 'desc';
 }
 
 type GoBatchGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoBatchGetTerminalOptions<keyof ResponseItem>>(options?: Options) =>

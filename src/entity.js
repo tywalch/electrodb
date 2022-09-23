@@ -880,20 +880,20 @@ class Entity {
 			attributes: [],
 			terminalOperation: undefined,
 			formatCursor: u.cursorFormatter,
-			order: ResultOrderOption.asc
+			order: undefined,
 		};
 
 		config = options.reduce((config, option) => {
 			if (typeof option.order === 'string') {
 				switch (option.order.toLowerCase()) {
-					case ResultOrderOption.asc:
+					case 'asc':
 						config.params[ResultOrderParam] = ResultOrderOption.asc;
 						break;
-					case ResultOrderOption.desc:
+					case 'desc':
 						config.params[ResultOrderParam] = ResultOrderOption.desc;
 						break;
 					default:
-						throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc`);
+						throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc, received: "${option.order}"`);
 				}
 			}
 
