@@ -10,7 +10,7 @@ const leadingUnderscoreKeys = require('./definitions/leadingunderscorekeys.json'
 const localSecondaryIndexes = require('./definitions/localsecondaryindexes.json');
 
 const configuration = {
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT || "http://localhost:8000",
   region: "us-east-1"
 };
 
