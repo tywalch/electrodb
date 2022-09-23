@@ -909,39 +909,39 @@ describe("Page", async () => {
       expect(limited).to.have.length(underLimit);
     });
 
-    it("should automatically paginate all results with collection", async () => {
-      const employee = Tasks.employees[0];
-      const limit1 = tasks.occurrences.employees[employee];
-      const limit2 = tasks2.occurrences.employees[employee];
-      const limit3 = tasks3.occurrences.employees[employee];
-      const overLimit = limit1 + limit2 + limit3 + 10;
-      const underLimit = limit1 + limit2 + limit3 - 10;
-      let queryCount = 0;
-      let underQueryResults = [];
-      let queryCounter = (event) => {
-        if (event.type === 'query') {
-          queryCount = queryCount + 1;
-          underQueryResults = underQueryResults.concat(event.results.Items);
-        }
-      }
-      const results = await service.collections.assignments({employee}).go({limit: overLimit}).then(res => res.data);
-      const limited = await service.collections.assignments({employee}).go({limit: underLimit, listeners: [queryCounter]}).then(res => res.data);
-      const tasks1Loaded = tasks.filterLoaded({employee});
-      const tasks2Loaded = tasks2.filterLoaded({employee});
-      const tasks3Loaded = tasks3.filterLoaded({employee});
-      expect(() => Tasks.compareTasks(results.tasks, tasks1Loaded)).to.not.throw;
-      expect(() => Tasks.compareTasks(results.tasks2, tasks2Loaded)).to.not.throw;
-      expect(() => Tasks.compareTasks(results.tasks3, tasks3Loaded)).to.not.throw;
-      expect(results.tasks).to.have.length(tasks.occurrences.employees[employee]);
-      expect(results.tasks2).to.have.length(tasks2.occurrences.employees[employee]);
-      expect(results.tasks3).to.have.length(tasks3.occurrences.employees[employee]);
-      const resultSize = Object.values(limited).map(items => items.length).reduce((total, length) => total + length, 0);
-      if (resultSize < underLimit && queryCount === 2) {
-        expect(resultSize).to.equal(underQueryResults.length);
-      } else {
-        expect(resultSize).to.equal(underLimit);
-      }
-    });
+    // it("should automatically paginate all results with collection", async () => {
+    //   const employee = Tasks.employees[0];
+    //   const limit1 = tasks.occurrences.employees[employee];
+    //   const limit2 = tasks2.occurrences.employees[employee];
+    //   const limit3 = tasks3.occurrences.employees[employee];
+    //   const overLimit = limit1 + limit2 + limit3 + 10;
+    //   const underLimit = limit1 + limit2 + limit3 - 10;
+    //   let queryCount = 0;
+    //   let underQueryResults = [];
+    //   let queryCounter = (event) => {
+    //     if (event.type === 'query') {
+    //       queryCount = queryCount + 1;
+    //       underQueryResults = underQueryResults.concat(event.results.Items);
+    //     }
+    //   }
+    //   const results = await service.collections.assignments({employee}).go({limit: overLimit}).then(res => res.data);
+    //   const limited = await service.collections.assignments({employee}).go({limit: underLimit, listeners: [queryCounter]}).then(res => res.data);
+    //   const tasks1Loaded = tasks.filterLoaded({employee});
+    //   const tasks2Loaded = tasks2.filterLoaded({employee});
+    //   const tasks3Loaded = tasks3.filterLoaded({employee});
+    //   expect(() => Tasks.compareTasks(results.tasks, tasks1Loaded)).to.not.throw;
+    //   expect(() => Tasks.compareTasks(results.tasks2, tasks2Loaded)).to.not.throw;
+    //   expect(() => Tasks.compareTasks(results.tasks3, tasks3Loaded)).to.not.throw;
+    //   expect(results.tasks).to.have.length(tasks.occurrences.employees[employee]);
+    //   expect(results.tasks2).to.have.length(tasks2.occurrences.employees[employee]);
+    //   expect(results.tasks3).to.have.length(tasks3.occurrences.employees[employee]);
+    //   const resultSize = Object.values(limited).map(items => items.length).reduce((total, length) => total + length, 0);
+    //   if (resultSize < underLimit && queryCount === 2) {
+    //     expect(resultSize).to.equal(underQueryResults.length);
+    //   } else {
+    //     expect(resultSize).to.equal(underLimit);
+    //   }
+    // });
 
     it("should only iterate through the specified number of pages for entity queries", async () => {
       const employee = Tasks.employees[0];
@@ -954,35 +954,35 @@ describe("Page", async () => {
       expect(results).to.have.length(limit * pages);
     });
 
-    it("should only iterate through the specified number of pages for collections", async () => {
-      const employee = Tasks.employees[0];
-      const occurrences1 = tasks.occurrences.employees[employee];
-      const occurrences2 = tasks2.occurrences.employees[employee];
-      const occurrences3 = tasks3.occurrences.employees[employee];
-      const limit = [ occurrences1, occurrences2 ]
-          .filter(occurrence => occurrence !== 0)
-          .map((occurrence) => Math.floor(occurrence / 4))
-          .reduce((min, val) => Math.min(min, val), Number.MAX_VALUE);
-      const pages = 2;
-      expect(limit).to.be.greaterThan(0);
-      expect(occurrences1).to.be.greaterThan(limit * pages);
-      expect(occurrences2).to.be.greaterThan(limit * pages);
-      let queryCount = 0;
-      let items = [];
-      let queryCounter = (event) => {
-        if (event.type === 'query') {
-          queryCount = queryCount + 1;
-          items = items.concat(event.results.Items);
-        }
-      }
-      const results = await service.collections.assignments({employee}).go({pages, params: {Limit: limit}, listeners: [queryCounter]}).then(res => res.data);
-      const total = Object.values(results).map(result => result.length).reduce((total, length) => total + length, 0);
-      if (total < limit * pages && queryCount === 2) {
-        expect(total).to.equal(items.length);
-      } else {
-        expect(total).to.equal(limit * pages);
-      }
-    });
+    // it("should only iterate through the specified number of pages for collections", async () => {
+    //   const employee = Tasks.employees[0];
+    //   const occurrences1 = tasks.occurrences.employees[employee];
+    //   const occurrences2 = tasks2.occurrences.employees[employee];
+    //   const occurrences3 = tasks3.occurrences.employees[employee];
+    //   const limit = [ occurrences1, occurrences2 ]
+    //       .filter(occurrence => occurrence !== 0)
+    //       .map((occurrence) => Math.floor(occurrence / 4))
+    //       .reduce((min, val) => Math.min(min, val), Number.MAX_VALUE);
+    //   const pages = 2;
+    //   expect(limit).to.be.greaterThan(0);
+    //   expect(occurrences1).to.be.greaterThan(limit * pages);
+    //   expect(occurrences2).to.be.greaterThan(limit * pages);
+    //   let queryCount = 0;
+    //   let items = [];
+    //   let queryCounter = (event) => {
+    //     if (event.type === 'query') {
+    //       queryCount = queryCount + 1;
+    //       items = items.concat(event.results.Items);
+    //     }
+    //   }
+    //   const results = await service.collections.assignments({employee}).go({pages, params: {Limit: limit}, listeners: [queryCounter]}).then(res => res.data);
+    //   const total = Object.values(results).map(result => result.length).reduce((total, length) => total + length, 0);
+    //   if (total < limit * pages && queryCount === 2) {
+    //     expect(total).to.equal(items.length);
+    //   } else {
+    //     expect(total).to.equal(limit * pages);
+    //   }
+    // });
 
     it("should throw if 'pages' option is less than one or not a valid number", async () => {
       const employee = "employee";
