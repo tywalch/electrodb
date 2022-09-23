@@ -12,6 +12,7 @@
 ------------
 
 <h1 align="center">ElectroDB has now reached 2.0.0!</h1>
+
 For existing users, checkout the [CHANGELOG](./CHANGELOG.md) and/or the section [Version 2 Migration](#version-2-migration) to learn more about the recent move to 2.0.0 and the changes neccessary to move to the newest version.
 
 ------------
