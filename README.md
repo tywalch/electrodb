@@ -5892,7 +5892,7 @@ For usage and installation details you can learn more [here](https://github.com/
 ## New response format for all query methods.
 Prior to 2.0.0, ElectroDB had multiple unique response signatures depending on the method used. Queries now return responses within an envelope object with results typically on a property called `data`. The section [Building Queries](#building-queries) now has response format examples for all methods, and the section [Exported Types](#exported-types) has new utility types you can use to express response types in your code.
 
-## Unified Pagination APIs
+## Unified pagination APIs
 Version 2.0.0 removes the `.page()` terminal function and unifies pagination under the `.go()` method. The response signature for queries, scans, finds, and matches now include a cursor string that can be passed back into the go method as a query option (e.g. `go({cursor})`. This new cursor is a departure from the destructure object ElectroDB returned prior for pagination, and is a `base64url` type string making it url safe.
 
 Note: It is still possible to return the native DynamoDB LastEvaluatedKey using the `pager` and/or `data` [query options](#query-options). This new `cursor`
@@ -5900,6 +5900,9 @@ Note: It is still possible to return the native DynamoDB LastEvaluatedKey using 
 Another change to pagination involves the "auto-pagination" used with the `.go()` method. Prior to 2.0.0 the `.go()` method would paginate through all _query_ results automatically. This was not the behavior for `scan` which caused some confusion. All queries and and query-like methods (scan, find, match, etc) now query a single page by default. You can use the [query options](#query-options) `pages` and `limit` to instruct electrodb to automatically iterate through multiple pages, or use `pages: 'all'` to have electrodb automatically exhaust pagination.
 
 Checkout the section [#pagination-query-options] to read more on this topic and to find an example of how to perform pagination with ElectroDB 2.0.0.
+
+## Pagination with a string cursor
+All ElectroDB `query` and `scan` operations return a `cursor`, which is a stringified and copy of DynamoDB's `LastEvaluatedKey` with a `base64url` encoding. Read the section [Pagination Cursor](#pagination-cursor) to learn more about how the cursor is formed and how to use it to accomplish pagination in ElectroDB.
 
 # Version 1 Migration
 This section is to detail any breaking changes made on the journey to a stable 1.0 product.
