@@ -2644,8 +2644,7 @@ Equivalent DocClient Parameters:
 ### Batch Get
 Provide all Table Index composite attributes in an array of objects to the `get` method to perform a BatchGet query.
 
-> _NOTE: Performing a BatchGet will return a response structure unique to BatchGet: a two-dimensional array with the results of the query and any unprocessed records. See the example below._
-> Additionally, when performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet queries larger than the docClient's limit of 100 records.
+> _NOTE: When performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet allows queries larger than the docClient's limit of 100 records.
 
 If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
 
