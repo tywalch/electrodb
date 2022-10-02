@@ -226,3 +226,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 - The boolean query option `raw` and `returnKeys` have been deprecated (still accepted for the time being) and replaced with the query option `data`, which accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`.
 ### Removed
 - `.page()` terminal method. All pagination is now done through the `.go()` method. Queries and scans now return a `cursor` property (of type "string") to be passed on subsequent pagination requests. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#unified-pagination-apis)]
+
+## [2.1.0] - 2022-10-02
+### Added
+- Added a new attribute property `padding` to aid with zero padding patterns. [[read more](#attribute-definition)]

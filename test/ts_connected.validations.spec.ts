@@ -37,58 +37,6 @@ describe('padding validation', () => {
                 }
             })
         }).to.throw('instance.attributes.prop1.padding requires property "char" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model');
-        expect(() => {
-            new Entity({
-                model: {
-                    entity: 'ai',
-                    service: 'test',
-                    version: '1'
-                },
-                attributes: {
-                    prop1: {
-                        type: 'string',
-                        padding: {
-                            length: 10,
-                            char: 'ab',
-                        }
-                    }
-                },
-                indexes: {
-                    record: {
-                        pk: {
-                            field: 'pk',
-                            composite: ['prop1']
-                        }
-                    }
-                }
-            })
-        }).to.throw('instance.attributes.prop1.padding.char does not meet maximum length of 1 - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model');
-        expect(() => {
-            new Entity({
-                model: {
-                    entity: 'ai',
-                    service: 'test',
-                    version: '1'
-                },
-                attributes: {
-                    prop1: {
-                        type: 'string',
-                        padding: {
-                            length: 10,
-                            char: '',
-                        }
-                    }
-                },
-                indexes: {
-                    record: {
-                        pk: {
-                            field: 'pk',
-                            composite: ['prop1']
-                        }
-                    }
-                }
-            })
-        }).to.throw('instance.attributes.prop1.padding.char does not meet minimum length of 1 - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model');
     })
     it('should not allow padding to be defined on an indexed attribute', () => {
         expect(() => new Entity({

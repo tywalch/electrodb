@@ -73,8 +73,6 @@ const Attribute = {
 				},
 				char: {
 					type: 'string',
-					maxLength: 1,
-					minLength: 1,
 				}
 			}
 		}
