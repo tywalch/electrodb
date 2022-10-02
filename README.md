@@ -4263,6 +4263,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   listeners Array<(event) => void>;
   preserveBatchOrder?: boolean;
   attributes?: string[];
+  order?: 'asc' | 'desc';
 };
 ```
 
@@ -4280,7 +4281,7 @@ response           | `"default"`          | Used as a convenience for applying t
 ignoreOwnership    | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
 limit              | _none_               | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.
 pages              | 1                    | How many DynamoDB pages should a query iterate through before stopping. To have ElectroDB automatically paginate through all results, pass the string value `'all'`.
-sort               | 'asc'                | Convenience option for `ScanIndexForward`, to the change the order of queries based on your index's Sort Key -- valid options include 'asc' and 'desc'. [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html)]
+order              | 'asc'                | Convenience option for `ScanIndexForward`, to the change the order of queries based on your index's Sort Key -- valid options include 'asc' and 'desc'. [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html)]
 listeners          | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](#events) occur.
 logger             | _none_               | A convenience option for a single event listener that semantically can be used for logging.
 preserveBatchOrder | `false`              | When used with a [batchGet](#batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index.
