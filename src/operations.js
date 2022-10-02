@@ -388,7 +388,7 @@ class AttributeOperationProxy {
                             const attributeValues = [];
                             let hasNestedValue = false;
                             for (let value of values) {
-                                value = target.format(value);
+                                value = target.applyFixings(value);
                                 // template.length is to see if function takes value argument
                                 if (template.length > 3) {
                                     if (seen.has(value)) {

@@ -427,7 +427,7 @@ class Service {
 		return [!!collectionDifferences.length, collectionDifferences];
 	}
 
-	_compareEntityAttributes(definition = {}, providedAttributes = {}) {
+	_compareEntityAttributes(entityName, definition = {}, providedAttributes = {}, keys) {
 		let results = {
 			additions: {},
 			invalid: [],
@@ -438,17 +438,29 @@ class Service {
 				results.additions[name] = detail;
 			} else if (defined.field !== detail.field) {
 				results.invalid.push(
-					`Attribute provided "${name}" with Table Field "${detail.field}" does not match established Table Field "${defined.field}"`,
+					`The attribute "${name}" with Table Field "${detail.field}" does not match established Table Field "${defined.field}"`,
 				);
+			}
+			if (defined && detail && (defined.padding || detail.padding)) {
+				const definedPadding = defined.padding || {};
+				const detailPadding = detail.padding || {};
+				if (keys.pk.facets.includes(name) &&
+					(definedPadding.length !== detailPadding.length ||
+					definedPadding.char !== detailPadding.char)
+				) {
+					results.invalid.push(
+						`The attribute "${name}" contains inconsistent padding definitions that impact how keys are formed`,
+					);
+				}
 			}
 		}
 		return [!!results.invalid.length, results];
 	}
 
-	_processEntityAttributes(definition = {}, providedAttributes = {}) {
-		let [attributesAreIncompatible, attributeResults] = this._compareEntityAttributes(definition, providedAttributes);
+	_processEntityAttributes(entityName, definition = {}, providedAttributes = {}, keys) {
+		let [attributesAreIncompatible, attributeResults] = this._compareEntityAttributes(entityName, definition, providedAttributes, keys);
 		if (attributesAreIncompatible) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Invalid entity attributes. The following attributes have already been defined on this model but with incompatible or conflicting properties: ${attributeResults.invalid.join(", ")}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Inconsistent attribute(s) on the entity "${entityName}". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: ${attributeResults.invalid.join(", ")}. These attribute definitions must match among all members of the collection.`);
 		} else {
 			return {
 				...definition,
@@ -566,7 +578,7 @@ class Service {
 			this.collectionSchema[collection].table = entity._getTableName();
 		}
 		this.collectionSchema[collection].keys = this._processEntityKeys(name, this.collectionSchema[collection].keys, providedIndex);
-		this.collectionSchema[collection].attributes = this._processEntityAttributes(this.collectionSchema[collection].attributes, entity.model.schema.attributes);
+		this.collectionSchema[collection].attributes = this._processEntityAttributes(name, this.collectionSchema[collection].attributes, entity.model.schema.attributes, this.collectionSchema[collection].keys);
 		this.collectionSchema[collection].entities[name] = entity;
 		this.collectionSchema[collection].identifiers = this._processEntityIdentifiers(this.collectionSchema[collection].identifiers, entity.getIdentifierExpressions(name));
 		this.collectionSchema[collection].index = this._processEntityCollectionIndex(this.collectionSchema[collection].index, providedIndex.index, name, collection);

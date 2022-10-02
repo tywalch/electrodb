@@ -9,6 +9,139 @@ const client = new DynamoDB.DocumentClient({
 });
 const table = "electro_nosort";
 
+describe('padding validation', () => {
+    it ('should not allow partially defined padding', () => {
+        expect(() => {
+            new Entity({
+                model: {
+                    entity: 'ai',
+                    service: 'test',
+                    version: '1'
+                },
+                attributes: {
+                    prop1: {
+                        type: 'string',
+                        // @ts-ignore
+                        padding: {
+                            length: 2,
+                        }
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['prop1']
+                        }
+                    }
+                }
+            })
+        }).to.throw('instance.attributes.prop1.padding requires property "char" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model');
+        expect(() => {
+            new Entity({
+                model: {
+                    entity: 'ai',
+                    service: 'test',
+                    version: '1'
+                },
+                attributes: {
+                    prop1: {
+                        type: 'string',
+                        padding: {
+                            length: 10,
+                            char: 'ab',
+                        }
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['prop1']
+                        }
+                    }
+                }
+            })
+        }).to.throw('instance.attributes.prop1.padding.char does not meet maximum length of 1 - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model');
+        expect(() => {
+            new Entity({
+                model: {
+                    entity: 'ai',
+                    service: 'test',
+                    version: '1'
+                },
+                attributes: {
+                    prop1: {
+                        type: 'string',
+                        padding: {
+                            length: 10,
+                            char: '',
+                        }
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['prop1']
+                        }
+                    }
+                }
+            })
+        }).to.throw('instance.attributes.prop1.padding.char does not meet minimum length of 1 - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model');
+    })
+    it('should not allow padding to be defined on an indexed attribute', () => {
+        expect(() => new Entity({
+            model: {
+                entity: 'ai',
+                service: 'test',
+                version: '1'
+            },
+            attributes: {
+                num: {
+                    type: 'number',
+                    padding: {
+                        length: 5,
+                        char: '0',
+                    }
+                },
+                str: {
+                    type: 'string'
+                },
+                num2: {
+                    type: 'number'
+                },
+                str2: {
+                    type: 'string'
+                },
+            },
+            indexes: {
+                index1: {
+                    pk: {
+                        field: 'num',
+                        composite: ['num'],
+                    },
+                    sk: {
+                        field: 'str2',
+                        composite: ['str2'],
+                    },
+                },
+                index2: {
+                    index: '2',
+                    pk: {
+                        field: 'str',
+                        composite: ['str'],
+                    },
+                    sk: {
+                        field: 'num2',
+                        composite: ['num2'],
+                    },
+                }
+            }
+        })).to.throw('Invalid padding definition for the attribute "num". Padding is not currently supported for attributes that are also defined as table indexes. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition');
+    });
+})
+
 describe("user attribute validation", () => {
     describe("root primitives user validation", () => {
         it("should interpret a true response value as an invalid attribute value", async () => {

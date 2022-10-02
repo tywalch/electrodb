@@ -3755,3 +3755,185 @@ describe('attributes query option', () => {
         }     
     });
 });
+
+describe('attribute padding', () => {
+   it('should perform crud operations with padded number attribute', async () => {
+       const entity = new Entity({
+           model: {
+               entity: uuid(),
+               service: 'padding',
+               version: '0'
+           },
+           attributes: {
+               prop1: {
+                   type: 'number',
+                   padding: {
+                       length: 5,
+                       char: '0',
+                   }
+               },
+               prop2: {
+                   type: 'string',
+               },
+               prop3: {
+                   type: 'string',
+               },
+               prop4: {
+                   type: 'number',
+                   padding: {
+                       length: 5,
+                       char: '0',
+                   }
+               }
+           },
+           indexes: {
+               record: {
+                   pk: {
+                       field: 'pk',
+                       composite: ['prop1']
+                   },
+                   sk: {
+                       field: 'sk',
+                       composite: ['prop2']
+                   }
+               },
+               second: {
+                   index: "gsi1pk-gsi1sk-index",
+                   pk: {
+                       field: "gsi1pk",
+                       composite: ['prop3'],
+                   },
+                   sk: {
+                       field: "gsi1sk",
+                       composite: ['prop4'],
+                   },
+               }
+           }
+       }, {table, client});
+       const prop2 = uuid();
+       const prop3 = uuid();
+       const prop1 = 10;
+       const initialProp4 = 500;
+       const created = await entity.put({
+           prop1,
+           prop2,
+           prop3,
+           prop4: initialProp4,
+       }).go();
+       expect(created.data).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+       const getFromInitial = await entity.get({prop1, prop2}).go();
+       expect(getFromInitial.data).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+       const queryFromInitialProp1 = await entity.query.record({prop1, prop2}).go();
+       expect(queryFromInitialProp1.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+       const queryFromInitialProp4 = await entity.query.second({prop3, prop4: initialProp4}).go();
+       expect(queryFromInitialProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+       const nextProp4 = 25;
+       const updatedProp4 = await entity.update({prop1, prop2}).set({prop4: nextProp4}).go({response: 'all_new'});
+       expect(updatedProp4.data).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+
+       const queryFromNextProp4 = await entity.query.second({prop3, prop4: nextProp4}).go();
+       expect(queryFromNextProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+   });
+
+    it('should perform crud operations with padded string attribute', async () => {
+        const entity = new Entity({
+            model: {
+                entity: uuid(),
+                service: 'padding',
+                version: '0'
+            },
+            attributes: {
+                prop1: {
+                    type: 'string',
+                    padding: {
+                        length: 5,
+                        char: '0',
+                    }
+                },
+                prop2: {
+                    type: 'string',
+                },
+                prop3: {
+                    type: 'string',
+                },
+                prop4: {
+                    type: 'string',
+                    padding: {
+                        length: 5,
+                        char: '0',
+                    }
+                }
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['prop2']
+                    }
+                },
+                second: {
+                    index: "gsi1pk-gsi1sk-index",
+                    pk: {
+                        field: "gsi1pk",
+                        composite: ['prop3'],
+                    },
+                    sk: {
+                        field: "gsi1sk",
+                        composite: ['prop4'],
+                    },
+                }
+            }
+        }, {table, client});
+
+        const prop2 = uuid();
+        const prop3 = uuid();
+        const prop1 = 'abc';
+        const knownProp1 = '00abc';
+        const initialProp4 = 'def';
+        const knownProp4 = '00def';
+        const created = await entity.put({
+            prop1,
+            prop2,
+            prop3,
+            prop4: initialProp4,
+        }).go();
+        expect(created.data).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const getFromInitial = await entity.get({prop1, prop2}).go();
+        expect(getFromInitial.data).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const getFromKnown = await entity.get({prop2, prop1: knownProp1}).go();
+        expect(getFromKnown.data).to.be.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const queryFromInitialProp1 = await entity.query.record({prop1, prop2}).go();
+        expect(queryFromInitialProp1.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const queryFromKnownProp1 = await entity.query.record({prop1: knownProp1, prop2}).go();
+        expect(queryFromKnownProp1.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const queryFromInitialProp4 = await entity.query.second({prop3, prop4: initialProp4}).go();
+        expect(queryFromInitialProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const queryFromKnownProp4 = await entity.query.second({prop3, prop4: knownProp4}).go();
+        expect(queryFromKnownProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const nextProp4 = 'xyz';
+        const knownNextProp4 = '00xyz';
+        const updatedProp4 = await entity.update({prop1, prop2}).set({prop4: nextProp4}).go({response: 'all_new'});
+        expect(updatedProp4.data).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+
+        const queryFromNextProp4 = await entity.query.second({prop3, prop4: nextProp4}).go();
+        expect(queryFromNextProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+
+        const queryFromKnownNextProp4 = await entity.query.second({prop3, prop4: knownNextProp4}).go();
+        expect(queryFromKnownNextProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+    });
+});
