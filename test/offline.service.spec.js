@@ -1825,7 +1825,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Attribute provided "prop1" with Table Field "def" does not match established Table Field "abc"`);
+		expect(() => database.join(entityTwo)).to.throw(`Inconsistent attribute(s) on the entity "entityTwo". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "prop1" with Table Field "def" does not match established Table Field "abc". These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 	});
 	it("Should validate the PK field matches on all added schemas", () => {
 		let entityOne = {
@@ -1952,7 +1952,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Attribute provided "prop1" with Table Field "notProp1" does not match established Table Field "prop1"`);
+		expect(() => database.join(entityTwo)).to.throw(`Inconsistent attribute(s) on the entity "entityTwo". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "prop1" with Table Field "notProp1" does not match established Table Field "prop1". These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 	});
 	it("Should disallow for 'v1' construction with 'beta' entities", () => {
 		let database = new Service("electrotest", {table: "electro_test"});

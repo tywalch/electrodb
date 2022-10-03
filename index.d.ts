@@ -781,6 +781,10 @@ export interface BooleanAttribute {
     readonly field?: string;
     readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+    readonly padding?: {
+        length: number;
+        char: string;
+    }
 }
 
 export interface NestedNumberAttribute {
@@ -807,6 +811,10 @@ export interface NumberAttribute {
     readonly field?: string;
     readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+    readonly padding?: {
+        length: number;
+        char: string;
+    }
 }
 
 export interface NestedStringAttribute {
@@ -833,6 +841,10 @@ export interface StringAttribute {
     readonly field?: string;
     readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+    readonly padding?: {
+        length: number;
+        char: string;
+    }
 }
 
 export interface NestedEnumAttribute {

@@ -345,7 +345,7 @@ import { Entity } from "electrodb";
 > When using TypeScript, for strong type checking, be sure to either add your model as an object literal to the Entity constructor or create your model using const assertions with the `as const` syntax.
 
 # Services
-In ***ElectroDB*** a `Service` represents a collection of related Entities. Services allow you to build queries span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that `join` multiple Entities.
+In ***ElectroDB*** a `Service` represents a collection of related Entities. Services allow you to build queries that span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that `join` multiple Entities.
 
 Require:
 ```javascript  
@@ -629,7 +629,11 @@ attributes: {
         cast?: "number"|"string"|"boolean";
 		get?: (attribute: <type>, schema: any) => <type> | void | undefined;
 		set?: (attribute?: <type>, schema?: any) => <type> | void | undefined; 
-		watch: "*" | string[]
+		watch?: "*" | string[];
+		padding?: {
+		    length: number;
+		    char: string;
+		}
 	}
 }
 ```
@@ -638,22 +642,23 @@ attributes: {
 
 #### Attribute Definition
 
-Property      | Type                                                       | Required | Types     | Description
- ------------ | :--------------------------------------------------------: | :------: | :-------: | -----------
-`type`        | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | all       | Accepts the values: `"string"`, `"number"` `"boolean"`, `"map"`, `"list"`, `"set"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"` which disables value type checking on that attribute.
-`required`    | `boolean`                                                  | no       | all       | Flag an attribute as required to be present when creating a record. This attribute also acts as a type of `NOT NULL` flag, preventing it from being removed directly. When applied to nested properties, be mindful that default map values can cause required child attributes to fail validation.
-`hidden`      | `boolean`                                                  | no       | all       | Flag an attribute as hidden to remove the property from results before they are returned. 
-`default`     | `value`, `() => value`                                     | no       | all       | Either the default value itself or a synchronous function that returns the desired value. Applied before `set` and before `required` check. In the case of nested attributes, default values will apply defaults to children attributes until an undefined value is reached
-`validate`    | `RegExp`, `(value: any) => void`, `(value: any) => string` | no       | all       | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error.   
-`field`       | `string`                                                   | no       | all       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
-`readOnly`    | `boolean`                                                  | no       | all       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail. 
-`label`       | `string`                                                   | no       | all       | Used in index composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
-`set`         | `(attribute, schema) => value`                             | no       | all       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
-`get`         | `(attribute, schema) => value`                             | no       | all       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
-`watch`       | `Attribute[], "*"`                                         | no       | root-only | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed. Only available on root level attributes.
-`properties`  | `{[key: string]: Attribute}`                               | yes*     | map       | Define the properties available on a `"map"` attribute, required if your attribute is a map. Syntax for map properties is the same as root level attributes.
-`items`       | `Attribute`                                                | yes*     | list      | Define the attribute type your list attribute will contain, required if your attribute is a list. Syntax for list items is the same as a single attribute.
-`items`       | "string" | "number"                                        | yes*     | set       | Define the primitive type your set attribute will contain, required if your attribute is a set. Unlike lists, a set defines it's items with a string of either "string" or "number".
+Property      | Type                                                       | Required | Types          | Description
+ ------------ | :--------------------------------------------------------: | :------: | :------------: | -----------
+`type`        | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | all            | Accepts the values: `"string"`, `"number"` `"boolean"`, `"map"`, `"list"`, `"set"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"` which disables value type checking on that attribute.
+`required`    | `boolean`                                                  | no       | all            | Flag an attribute as required to be present when creating a record. This attribute also acts as a type of `NOT NULL` flag, preventing it from being removed directly. When applied to nested properties, be mindful that default map values can cause required child attributes to fail validation.
+`hidden`      | `boolean`                                                  | no       | all            | Flag an attribute as hidden to remove the property from results before they are returned.
+`default`     | `value`, `() => value`                                     | no       | all            | Either the default value itself or a synchronous function that returns the desired value. Applied before `set` and before `required` check. In the case of nested attributes, default values will apply defaults to children attributes until an undefined value is reached
+`validate`    | `RegExp`, `(value: any) => void`, `(value: any) => string` | no       | all            | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error.
+`field`       | `string`                                                   | no       | all            | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
+`readOnly`    | `boolean`                                                  | no       | all            | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail.
+`label`       | `string`                                                   | no       | all            | Used in index key composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
+`padding`     | `{ length: number; char: string; }`                        | no       | string, number | Similar to `label`, this property only impacts the attribute's value during index key composition. Padding allows you to define a string pattern to left pad your attribute when ElectroDB builds your partition or sort key. This can be helpful to implementing zero-padding patterns with numbers and strings in sort keys. Note, this will _not_ impact your attribute's stored value, if you want to transform the attribute's field value, use the `set` callback described below.
+`set`         | `(attribute, schema) => value`                             | no       | all            | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
+`get`         | `(attribute, schema) => value`                             | no       | all            | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
+`watch`       | `Attribute[], "*"`                                         | no       | root-only      | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed. Only available on root level attributes.
+`properties`  | `{[key: string]: Attribute}`                               | yes*     | map            | Define the properties available on a `"map"` attribute, required if your attribute is a map. Syntax for map properties is the same as root level attributes.
+`items`       | `Attribute`                                                | yes*     | list           | Define the attribute type your list attribute will contain, required if your attribute is a list. Syntax for list items is the same as a single attribute.
+`items`       | "string" | "number"                                        | yes*     | set            | Define the primitive type your set attribute will contain, required if your attribute is a set. Unlike lists, a set defines it's items with a string of either "string" or "number".
 
 #### Enum Attributes
 
@@ -4258,6 +4263,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   listeners Array<(event) => void>;
   preserveBatchOrder?: boolean;
   attributes?: string[];
+  order?: 'asc' | 'desc';
 };
 ```
 
@@ -4275,7 +4281,7 @@ response           | `"default"`          | Used as a convenience for applying t
 ignoreOwnership    | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
 limit              | _none_               | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.
 pages              | 1                    | How many DynamoDB pages should a query iterate through before stopping. To have ElectroDB automatically paginate through all results, pass the string value `'all'`.
-sort               | 'asc'                | Convenience option for `ScanIndexForward`, to the change the order of queries based on your index's Sort Key -- valid options include 'asc' and 'desc'. [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html)]
+order              | 'asc'                | Convenience option for `ScanIndexForward`, to the change the order of queries based on your index's Sort Key -- valid options include 'asc' and 'desc'. [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html)]
 listeners          | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](#events) occur.
 logger             | _none_               | A convenience option for a single event listener that semantically can be used for logging.
 preserveBatchOrder | `false`              | When used with a [batchGet](#batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index.

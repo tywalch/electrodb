@@ -64,6 +64,18 @@ const Attribute = {
 			type: "any",
 			format: "isFunction",
 		},
+		padding: {
+			type: "object",
+			required: ['length', 'char'],
+			properties: {
+				length: {
+					type: 'number'
+				},
+				char: {
+					type: 'string',
+				}
+			}
+		}
 	},
 };
 

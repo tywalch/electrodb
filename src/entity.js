@@ -2178,10 +2178,15 @@ class Entity {
 		}
 		let key = prefix;
 		for (let i = 0; i < labels.length; i++) {
-			let {name, label} = labels[i];
-
+			const { name, label } = labels[i];
+			const attribute = this.model.schema.getAttribute(name);
+			let value = supplied[name];
 			if (supplied[name] === undefined && excludeLabelTail) {
 				break;
+			}
+
+			if (attribute && validations.isFunction(attribute.format)) {
+				value = attribute.format(`${value}`);
 			}
 
 			if (isCustom) {
@@ -2194,7 +2199,7 @@ class Entity {
 				break;
 			}
 
-			key = `${key}${supplied[name]}`;
+			key = `${key}${value}`;
 		}
 
 		return u.formatKeyCasing(key, casing);
