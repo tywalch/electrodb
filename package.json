@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {

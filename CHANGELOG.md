@@ -230,3 +230,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.1.0] - 2022-10-02
 ### Added
 - Added a new attribute property `padding` to aid with zero padding patterns. [[read more](#attribute-definition)]
+
+## [2.1.1] - 2022-10-09
+### Fixed
+- Defect with sort key composition that would treat falsely values as absent attributes.

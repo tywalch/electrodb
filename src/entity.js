@@ -624,7 +624,7 @@ class Entity {
 
 			if (config._isPagination || response.LastEvaluatedKey) {
 				const nextPage = this._formatReturnPager(config, response.LastEvaluatedKey);
-				return { cursor: nextPage ?? null, data: results };
+				return { cursor: nextPage || null, data: results };
 			}
 
 			return { data: results };
@@ -652,19 +652,19 @@ class Entity {
 	}
 
 	_formatReturnPager(config, lastEvaluatedKey) {
-		let page = lastEvaluatedKey ?? null;
+		let page = lastEvaluatedKey || null;
 		if (config.raw || config.pager === Pager.raw) {
 			return page;
 		}
-		return config.formatCursor.serialize(page) ?? null;
+		return config.formatCursor.serialize(page) || null;
 	}
 
 	_formatExclusiveStartKey(config) {
 		let exclusiveStartKey = config.cursor;
 		if (config.raw || config.pager === Pager.raw) {
-			return exclusiveStartKey ?? null;
+			return exclusiveStartKey || null;
 		}
-		return config.formatCursor.deserialize(exclusiveStartKey) ?? null;
+		return config.formatCursor.deserialize(exclusiveStartKey) || null;
 	}
 
 	_getTableName() {
@@ -1972,7 +1972,7 @@ class Entity {
 	_buildQueryFacets(facets, skFacets) {
 		let queryFacets = this._findProperties(facets, skFacets).reduce(
 			(result, [name, value]) => {
-				if (value) {
+				if (value !== undefined) {
 					result[name] = value;
 				}
 				return result;
