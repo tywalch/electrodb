@@ -3936,4 +3936,73 @@ describe('attribute padding', () => {
         const queryFromKnownNextProp4 = await entity.query.second({prop3, prop4: knownNextProp4}).go();
         expect(queryFromKnownNextProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
     });
+
+    it('should accept the value zero for sort key number attributes', async () => {
+        const transaction = new Entity(
+            {
+                model: {
+                    entity: "transaction",
+                    version: "1",
+                    service: "bank"
+                },
+                attributes: {
+                    accountNumber: {
+                        type: "number",
+                        required: true,
+                        padding: {
+                            length: 8,
+                            char: '0',
+                        }
+                    },
+                    transactionId: {
+                        type: "number",
+                        required: true,
+                        padding: {
+                            length: 10,
+                            char: '0',
+                        }
+                    },
+                    amount: {
+                        type: 'number',
+                    },
+                    datePosted: {
+                        type: 'string',
+                    },
+                },
+                indexes: {
+                    transactions: {
+                        pk: {
+                            field: "pk",
+                            composite: ["accountNumber"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["transactionId"]
+                        }
+                    },
+                }
+            },
+            { table }
+        );
+
+        const accountNumber = 0;
+        const transactionId = 0;
+
+        const params = transaction.query
+            .transactions({accountNumber, transactionId})
+            .params();
+
+        expect(params).to.deep.equal({
+            "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
+            "TableName": table,
+            "ExpressionAttributeNames": {
+                "#pk": "pk",
+                "#sk1": "sk"
+            },
+            "ExpressionAttributeValues": {
+                ":pk": "$bank#accountnumber_00000000",
+                ":sk1": "$transaction_1#transactionid_0000000000"
+            }
+        });
+    });
 });
