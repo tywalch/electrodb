@@ -256,6 +256,7 @@ class ExpressionState {
         this.impacted = {};
         this.expression = "";
         this.prefix = prefix || "";
+        this.refs = {};
     }
 
     incrementName(name) {
@@ -316,8 +317,9 @@ class ExpressionState {
         return this.expression;
     }
 
-    setImpacted(operation, path) {
+    setImpacted(operation, path, ref) {
         this.impacted[path] = operation;
+        this.refs[path] = ref;
     }
 }
 
@@ -407,7 +409,7 @@ class AttributeOperationProxy {
                             }
 
                             const formatted = template(options, target, paths.expression, ...attributeValues);
-                            builder.setImpacted(operation, paths.json);
+                            builder.setImpacted(operation, paths.json, target);
                             if (canNest) {
                                 seen.add(paths.expression);
                                 seen.add(formatted);

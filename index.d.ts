@@ -698,7 +698,7 @@ export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
 
 export type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
 
-export interface ElectroError extends Error {
+export class ElectroError extends Error {
     readonly name: 'ElectroError';
     readonly code: number;
     readonly date: number;
@@ -733,7 +733,7 @@ export interface ElectroValidationErrorFieldReference<T extends Error = Error> {
     readonly cause: T | undefined;
 }
 
-export interface ElectroValidationError<T extends Error = Error> extends ElectroError {
+export class ElectroValidationError<T extends Error = Error> extends ElectroError {
     readonly fields: ReadonlyArray<ElectroValidationErrorFieldReference<T>>;
 }
 

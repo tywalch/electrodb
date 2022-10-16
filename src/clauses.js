@@ -277,6 +277,11 @@ let clauses = {
 			}
 			try {
 				state.query.updateProxy.invokeCallback(cb);
+				for (const path of Object.keys(state.query.update.refs)) {
+					const operation = state.query.update.impacted[path];
+					const attribute = state.query.update.refs[path];
+					entity.model.schema.checkOperation(attribute, operation);
+				}
 				return state;
 			} catch(err) {
 				state.setError(err);

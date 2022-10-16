@@ -1361,6 +1361,16 @@ class Schema {
 		return record;
 	}
 
+	checkOperation(attribute, operation) {
+		if (!attribute) {
+			throw new e.ElectroAttributeValidationError(path, `Attribute "${path}" does not exist on model.`);
+		} else if (attribute.required && operation === 'remove') {
+			throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Required and cannot be removed`);
+		} else if (attribute.readOnly) {
+			throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Read-Only and cannot be updated`);
+		}
+	}
+
 	checkRemove(paths = []) {
 		for (const path of paths) {
 			const attribute = this.traverser.getPath(path);

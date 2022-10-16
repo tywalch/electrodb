@@ -1154,7 +1154,7 @@ describe("Update Item", () => {
                     op.add(attr.tenant, newTenant);
                     op.add(attr.rent, 100);
                     op.subtract(attr.deposit, 200);
-                    op.remove(attr.leaseEndDate);
+                    op.remove(attr.discount);
                     op.append(attr.rentalAgreement, [{type: "amendment", detail: "no soup for you"}]);
                     op.delete(attr.tags, 'coffee');
                     op.del(attr.contact, '555-345-2222');
@@ -1165,26 +1165,24 @@ describe("Update Item", () => {
                 .params();
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
                     "#rent": "rent",
                     "#deposit": "deposit",
-                    "#leaseEndDate": "leaseEndDate",
+                    "#discount": "discount",
                     "#rentalAgreement": "rentalAgreement",
                     "#tags": "tags",
                     "#contact": "contact",
                     "#totalFees": "totalFees",
                     "#petFee": "petFee",
                     "#leaseHolders": "leaseHolders",
-                    "#gsi2sk": "gsi2sk",
                     "#buildingId": "buildingId",
                     "#cityId": "cityId",
                     "#mallId": "mallId",
                     "#storeId": "storeId",
                     "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
-
                 },
                 "ExpressionAttributeValues": {
                     ":buildingId_u0": "A34",
@@ -1219,7 +1217,7 @@ describe("Update Item", () => {
                     op.set(attr.category, "food/meal");
                     op.add(attr.tenant, newTenant);
                     op.subtract(attr.deposit, 200);
-                    op.remove(attr.leaseEndDate);
+                    op.remove(attr.discount);
                     op.append(attr.rentalAgreement, [{type: "amendment", detail: "absolutely no soup for you"}]);
                     op.delete(attr.tags, 'coffee');
                     op.del(attr.contact, '555-345-2222');
