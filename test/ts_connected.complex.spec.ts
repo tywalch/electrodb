@@ -1179,6 +1179,18 @@ describe("Simple Crud On Complex Entity", () => {
                 throw err;
             }
         }).to.throw(`Attribute "map.test" is Read-Only and cannot be updated`);
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+                    .data((attr, op) =>
+                        // @ts-ignore
+                        op.set(attr.map.test, 'abc')
+                    )
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "map.test" is Read-Only and cannot be updated`);
     });
 
     it("should apply readOnly constraints to nested attributes under a list", () => {
@@ -1234,6 +1246,19 @@ describe("Simple Crud On Complex Entity", () => {
                 throw err;
             }
         }).to.throw(`Attribute "list[*].test" is Read-Only and cannot be updated`);
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+
+                    .data((attr, op) =>
+                        // @ts-ignore
+                        op.set(attr.list[3].test, 'def')
+                    )
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "list[*].test" is Read-Only and cannot be updated`);
     });
 
     it("should apply not null style removal constraints to required nested attributes", () => {
@@ -1276,16 +1301,16 @@ describe("Simple Crud On Complex Entity", () => {
         }, {table, client});
         const stringVal = uuid();
         const stringVal2 = uuid();
-        expect( () => {
-            try {
-                entity.update({stringVal, stringVal2})
-                    // @ts-ignore
-                    .remove(["map.test"])
-                    .params();
-            } catch(err) {
-                throw err;
-            }
-        }).to.throw(`Attribute "map.test" is Required and cannot be removed`);
+        expect( () => entity.update({stringVal, stringVal2})
+                // @ts-ignore
+                .remove(["map.test"])
+                .params()
+        ).to.throw(`Attribute "map.test" is Required and cannot be removed`);
+        expect(() => entity.update({stringVal, stringVal2})
+                .data((attr, op) =>
+                    op.remove(attr.map.test))
+                .params()
+        ).to.throw(`Attribute "map.test" is Required and cannot be removed`);
     });
 
     it("should apply not null style removal constraints to required nested attributes under a list", () => {
@@ -1336,6 +1361,18 @@ describe("Simple Crud On Complex Entity", () => {
                 entity.update({stringVal, stringVal2})
                     // @ts-ignore
                     .remove(["list[3].test"])
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "list[*].test" is Required and cannot be removed`);
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+                    // @ts-ignore
+                    .data((attr, op) =>
+                        op.remove(attr.list[3].test)
+                    )
                     .params();
             } catch(err) {
                 throw err;

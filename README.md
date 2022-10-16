@@ -3401,7 +3401,7 @@ await StoreLocations
         o.add(a.tenant, newTenant);       // electrodb "set"    -> dynamodb "set"
         o.add(a.rent, 100);               // electrodb "number" -> dynamodb "number"
         o.subtract(a.deposit, 200);       // electrodb "number" -> dynamodb "number"
-        o.remove(a.leaseEndDate);         // electrodb "string" -> dynamodb "string"
+        o.remove(attr.discount);          // electrodb "number" -> dynamodb "number"
         o.append(a.rentalAgreement, [{    // electrodb "list"   -> dynamodb "list"
             type: "ammendment",           // electrodb "map"    -> dynamodb "map"
             detail: "no soup for you"
@@ -3425,40 +3425,49 @@ Response Format:
 Equivalent DocClient Parameters:
 ```json
 {
-  "UpdateExpression": "SET #category = :category_u0, #rent = #rent + :rent_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
-  "ExpressionAttributeNames": {
-  "#category": "category",
-    "#tenant": "tenant",
-    "#rent": "rent",
-    "#deposit": "deposit",
-    "#leaseEndDate": "leaseEndDate",
-    "#rentalAgreement": "rentalAgreement",
-    "#tags": "tags",
-    "#contact": "contact",
-    "#totalFees": "totalFees",
-    "#petFee": "petFee",
-    "#leaseHolders": "leaseHolders",
-    "#gsi2sk": "gsi2sk"
-  },
-  "ExpressionAttributeValues": {
-    ":category0": "food/coffee",
-    ":category_u0": "food/meal",
-    ":tenant_u0": ["larry"],
-    ":rent_u0": 100,
-    ":deposit_u0": 200,
-    ":rentalAgreement_u0": [{
-      "type": "amendment",
-      "detail": "no soup for you"
-    }],
-    ":tags_u0": ["coffee"], // <- DynamoDB Set
-    ":contact_u0": ["555-345-2222"], // <- DynamoDB Set 
+    "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+    "ExpressionAttributeNames": {
+        "#category": "category",
+        "#tenant": "tenant",
+        "#rent": "rent",
+        "#deposit": "deposit",
+        "#discount": "discount",
+        "#rentalAgreement": "rentalAgreement",
+        "#tags": "tags",
+        "#contact": "contact",
+        "#totalFees": "totalFees",
+        "#petFee": "petFee",
+        "#leaseHolders": "leaseHolders",
+        "#buildingId": "buildingId",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
     },
-  "TableName": "electro",
-  "Key": {
-    "pk": `$mallstoredirectory#cityid_12345#mallid_eastpointe`,
-    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
-  },
-  "ConditionExpression": "#category = :category0"
+    "ExpressionAttributeValues": {
+        ":buildingId_u0": "A34",
+        ":cityId_u0": "portland",
+        ":category0": "food/coffee",
+        ":category_u0": "food/meal",
+        ":tenant_u0": ["larry"],
+        ":rent_u0": 100,
+        ":deposit_u0": 200,
+        ":rentalAgreement_u0": [{
+            "type": "amendment",
+            "detail": "no soup for you"
+        }],
+        ":tags_u0": ["coffee"],
+        ":contact_u0": ["555-345-2222"],
+        ":mallId_u0": "EastPointe",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1",
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "#category = :category0"
 }
 ```
 
