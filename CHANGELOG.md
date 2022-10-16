@@ -234,3 +234,9 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.1.1] - 2022-10-09
 ### Fixed
 - Defect with sort key composition that would treat falsely values as absent attributes.
+
+## [2.1.2] - 2022-10-16
+### Added
+- Now exporting `ElectroValidationError` and `ElectroError` as classes so they can be more easily interrogated/triaged by user error handling
+### Fixed
+- On `update` and `patch` operations, the `data` method did not properly apply mutation constraints for `required` and `readOnly`. Data will now correctly throw in a similar manor the to individual mutation methods.
