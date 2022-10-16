@@ -3624,7 +3624,7 @@ Equivalent DocClient Parameters:
 ### Patch Record
 
 ```javascript
-await entity.update({ attr1: "value1", attr2: "value2" })
+await entity.patch({ attr1: "value1", attr2: "value2" })
   .set({ attr4: "value4" })
   .go();
 ```
@@ -3668,7 +3668,7 @@ For more detail on how to use the `patch()` method, see the section [Update Reco
 
 ### Create Record
 
-In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table.
+In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `create` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table.
 
 A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.
 
