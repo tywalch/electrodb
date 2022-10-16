@@ -10,7 +10,8 @@
     "coverage": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
     "coverage-coveralls-local": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
     "coverage-html-local": "nyc npm test && nyc report --reporter=html",
-    "build:browser": "browserify playground/browser.js -o playground/bundle.js"
+    "build:browser": "browserify playground/browser.js -o playground/bundle.js",
+    "build": "sh buildbrowser.sh"
   },
   "repository": {
     "type": "git",
