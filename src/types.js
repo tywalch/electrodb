@@ -33,7 +33,8 @@ const MethodTypes = {
 	patch: "patch",
 	create: "create",
 	batchGet: "batchGet",
-	batchWrite: "batchWrite"
+	batchWrite: "batchWrite",
+	upsert: "upsert",
 };
 
 const Comparisons = {
