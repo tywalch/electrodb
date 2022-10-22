@@ -2454,6 +2454,8 @@ expectType<{
   prop5?: string | undefined;
 }>(standAloneEntityWithDefault.getPutItem());
 
+// { prop1: string; prop2?: string | undefined; attrz3?: { val1: string; } | undefined; attrz4?: { val2: number; val3?: string[] | undefined; val4?: number[] | undefined; val5?: { val6: string; } | undefined; val6?: boolean | undefined; }[] | undefined; attrz5?: string[] | undefined; attrz6?: string[] | undefined; }
+// { prop1: string; prop2?: string | undefined; attrz3?: { val1: string; } | undefined; attrz4?: { val2?: number | undefined; val3?: string[] | undefined; val4?: number[] | undefined; val6?: boolean | undefined; val5?: { ...; } | undefined; }
 expectType<{
   prop1: string;
   prop2?: string | undefined;

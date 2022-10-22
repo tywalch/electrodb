@@ -128,6 +128,7 @@ class Attribute {
 		this.get = this._makeGet(definition.get);
 		this.set = this._makeSet(definition.set);
 		this.client = definition.client;
+		this.calculated = !!definition.calculated;
 	}
 
 	static buildChildAttributes(type, definition, parent) {
@@ -1089,6 +1090,7 @@ class Schema {
 				parentPath: attribute.parentPath,
 				parentType: attribute.parentType,
 				padding: attribute.padding,
+				calculated: !!attribute.calculated,
 			};
 
 			if (definition.type === AttributeTypes.custom) {
@@ -1281,7 +1283,14 @@ class Schema {
 			// avoid[attribute] === undefined           | Attribute shouldn't be in the avoided
 			const attribute = this.getAttribute(path);
 			if (attribute !== undefined && avoid[path] === undefined) {
-				data[path] = attribute[method](payload[path], {...payload});
+				const value = attribute[method](payload[path], {...payload});
+				if (attribute.calculated) {
+					let [isValid, validationErrors] = attribute.isValid(value);
+					if (!isValid) {
+						throw new e.ElectroValidationError(validationErrors);
+					}
+				}
+				data[path] = value;
 			}
 		}
 		return data;
@@ -1355,8 +1364,10 @@ class Schema {
 	checkCreate(payload = {}) {
 		let record = {};
 		for (let attribute of Object.values(this.attributes)) {
-			let value = payload[attribute.name];
-			record[attribute.name] = attribute.getValidate(value);
+			if (!attribute.calculated) {
+				let value = payload[attribute.name];
+				record[attribute.name] = attribute.getValidate(value);
+			}
 		}
 		return record;
 	}

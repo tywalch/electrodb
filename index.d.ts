@@ -541,11 +541,6 @@ export interface BulkOptions extends QueryOptions {
     preserveBatchOrder?: boolean;
 }
 
-export type OptionalDefaultEntityIdentifiers = {
-    __edb_e__?: string;
-    __edb_v__?: string;
-}
-
 interface GoBatchGetTerminalOptions<Attributes> {
     data?: 'raw' | 'includeKeys' | 'attributes';
     /** @depricated use 'data=raw' instead */
@@ -691,11 +686,6 @@ export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T =
 export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
     Promise<{ unprocessed: ResponseType }>
 
-// export type PageRecord<ResponseType, CompositeAttributes> = (page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: PaginationOptions) => Promise<[
-//         (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
-//     ResponseType
-// ]>;
-
 export type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
 
 export class ElectroError extends Error {
@@ -753,6 +743,10 @@ export interface DefaultedAttribute {
     readonly default: any;
 }
 
+export interface CalculatedAttribute {
+    readonly calculated: true;
+}
+
 export interface SecondaryIndex {
     readonly index: string;
 }
@@ -801,6 +795,7 @@ export interface NestedNumberAttribute {
 
 export interface NumberAttribute {
     readonly type: "number";
+    readonly calculated?: boolean;
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
@@ -831,6 +826,7 @@ export interface NestedStringAttribute {
 
 export interface StringAttribute {
     readonly type: "string";
+    readonly calculated?: boolean;
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
@@ -1158,7 +1154,7 @@ type CustomAttribute<T extends any = any> = {
 };
 
 export type Attribute =
-    BooleanAttribute
+    | BooleanAttribute
     | NumberAttribute
     | StringAttribute
     | EnumAttribute
@@ -1175,7 +1171,7 @@ export type Attribute =
     | EnumStringSetAttribute;
 
 export type NestedAttributes =
-    NestedBooleanAttribute
+    | NestedBooleanAttribute
     | NestedNumberAttribute
     | NestedStringAttribute
     | NestedAnyAttribute
@@ -1359,6 +1355,8 @@ export type ReturnedAttribute<A extends Attribute> =
 export type CreatedAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
         ? T
+        : A extends CalculatedAttribute
+        ? never
         : A["type"] extends infer R
         ? R extends "static" ? never
         : R extends "string" ? string
@@ -1380,7 +1378,7 @@ export type CreatedAttribute<A extends Attribute> =
                                     : never
                                 : never
                         } & {
-                            [P in keyof A["properties"] as A["properties"][P] extends HiddenAttribute
+                            [P in keyof A["properties"] as A["properties"][P] extends HiddenAttribute | CalculatedAttribute
                                 ? never
                                 : P
                             ]?: A["properties"][P] extends infer M
@@ -1422,7 +1420,7 @@ export type CreatedItem<A extends string, F extends string, C extends string, S 
 export type EditableItemAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
     ? T
-    : A extends ReadOnlyAttribute
+    : A extends ReadOnlyAttribute | CalculatedAttribute
         ? never
         : A["type"] extends infer R
             ? R extends "static" ? never
@@ -1434,7 +1432,7 @@ export type EditableItemAttribute<A extends Attribute> =
                             ? "properties" extends keyof A
                                 ? {
                                     [
-                                    P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute
+                                    P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute | CalculatedAttribute
                                         ? never
                                         : P
                                     ]:
@@ -1469,7 +1467,7 @@ export type EditableItemAttribute<A extends Attribute> =
 export type UpdatableItemAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
         ? T
-        : A extends ReadOnlyAttribute
+        : A extends ReadOnlyAttribute | CalculatedAttribute
         ? never
         : A["type"] extends infer R
             ? R extends "static" ? never
@@ -1494,7 +1492,7 @@ export type UpdatableItemAttribute<A extends Attribute> =
                                     : never
                             } & {
                                 [
-                                P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute
+                                P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute | CalculatedAttribute
                                     ? never
                                     : A["properties"][P] extends RequiredAttribute
                                         ? never
@@ -1531,7 +1529,7 @@ export type UpdatableItemAttribute<A extends Attribute> =
 export type RemovableItemAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
         ? T
-        : A extends ReadOnlyAttribute | RequiredAttribute
+        : A extends ReadOnlyAttribute | RequiredAttribute | CalculatedAttribute
         ? never
         : A["type"] extends infer R
             ? R extends "static" ? never
@@ -1543,7 +1541,7 @@ export type RemovableItemAttribute<A extends Attribute> =
                             ? "properties" extends keyof A
                                 ? {
                                     [
-                                    P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute | RequiredAttribute
+                                    P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute | RequiredAttribute | CalculatedAttribute
                                         ? never
                                         : P
                                     ]?:
@@ -1598,7 +1596,7 @@ export type HiddenAttributes<A extends string, F extends string, C extends strin
 }, true>
 
 export type ReadOnlyAttributes<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = ExtractKeysOfValueType<{
-    [a in keyof S["attributes"]]: S["attributes"][a] extends ReadOnlyAttribute
+    [a in keyof S["attributes"]]: S["attributes"][a] extends ReadOnlyAttribute | CalculatedAttribute
         ? true
         : false
 }, true>
@@ -1688,9 +1686,20 @@ export type RequiredPutItems<A extends string, F extends string, C extends strin
             : false
 }
 
+export type HiddenPutItems<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [Attribute in keyof S["attributes"]]:
+        "calculated" extends keyof S["attributes"][Attribute]
+            ? true extends S["attributes"][Attribute]["calculated"]
+                ? true
+                : false
+            : false
+}
+
 export type PutItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
-    Pick<CreatedItem<A,F,C,S,S["attributes"]>, ExtractKeysOfValueType<RequiredPutItems<A,F,C,S>,true>>
-    & Partial<CreatedItem<A,F,C,S,S["attributes"]>>
+    // Omit<
+        Pick<CreatedItem<A,F,C,S,S["attributes"]>, ExtractKeysOfValueType<RequiredPutItems<A,F,C,S>,true>>
+        & Partial<CreatedItem<A,F,C,S,S["attributes"]>>
+    // ExtractKeysOfValueType<HiddenPutItems<A,F,C,S>, true>>
 
 export type UpdateData<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     Omit<{

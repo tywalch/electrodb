@@ -171,7 +171,7 @@ let clauses = {
 					.applyPut(record)
 					.setPK(entity._expectFacets(record, attributes.pk))
 					.ifSK(() => {
-						entity._expectFacets(record, attributes.sk);
+						// entity._expectFacets(record, attributes.sk);
 						state.setSK(entity._buildQueryFacets(record, attributes.sk));
 					});
 			} catch(err) {
