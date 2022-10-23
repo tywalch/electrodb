@@ -2234,7 +2234,6 @@ export class Entity<A extends string, F extends string, C extends string, S exte
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
 
-
     find(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
 
     match(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
@@ -2277,9 +2276,7 @@ export type ServiceConfiguration = {
 
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
-    collections: CollectionQueries<E, CollectionAssociations<E>>
-    clustered: ClusteredCollectionQueries<E, ClusteredCollectionAssociations<E>>
-    isolated: IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
+    collections: ClusteredCollectionQueries<E, ClusteredCollectionAssociations<E>> & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
     constructor(entities: E, config?: ServiceConfiguration);
 }
 
