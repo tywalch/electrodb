@@ -360,63 +360,89 @@ export type CollectionQueries<E extends {[name: string]: Entity<any, any, any, a
     }[keyof E];
 }
 
+type ClusteredCollectionOperations<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>, Collection extends keyof Collections, EntityName extends keyof E> =
+    EntityName extends Collections[Collection] ? {
+        go: ServiceQueryRecordsGo<{
+            [EntityResultName in Collections[Collection]]:
+            EntityResultName extends keyof E
+                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                ? ResponseItem<A,F,C,S>[]
+                : never
+                : never
+        }>;
+        params: ParamRecord;
+        where: {
+            [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                    ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
+                        ? CollectionWhereClause<E,A,F,C,S,
+                            Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>>,
+                            ServiceWhereRecordsActionOptions<E,A,F,C,S,
+                                Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>>,
+                                {
+                                    [EntityResultName in Collections[Collection]]:
+                                    EntityResultName extends keyof E
+                                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                        ? ResponseItem<A,F,C,S>[]
+                                        : never
+                                        : never
+                                },
+                                Partial<
+                                    Spread<
+                                        Collection extends keyof ClusteredCollectionPageAttributes<E, Collections>
+                                            ? ClusteredCollectionPageAttributes<E, Collections>[Collection]
+                                            : {},
+                                        Collection extends keyof ClusteredCollectionIndexAttributes<E, Collections>
+                                            ? ClusteredCollectionIndexAttributes<E, Collections>[Collection]
+                                            : {}
+                                        >
+                                    >
+                                >>
+                        : never
+                    : never
+                : never
+        }[Collections[Collection]];
+    } : never
+
+type ClusteredCompositeAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>, Collection extends keyof Collections, EntityName extends keyof E> =
+    EntityName extends Collections[Collection]
+        ? Parameters<
+            E[EntityName]["query"][
+                E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+                    ? Collection extends keyof ClusteredEntityCollections<A,F,C,S>
+                    ? ClusteredEntityCollections<A,F,C,S>[Collection]
+                    : never
+                    : never
+                ]
+            >[0]
+        : never
+
+type ClusteredCollectionQueryOperations<Param, Result> = {
+    between(skCompositeAttributesStart: Param, skCompositeAttributesEnd: Param): Result;
+    gt(skCompositeAttributes: Param): Result;
+    gte(skCompositeAttributes: Param): Result;
+    lt(skCompositeAttributes: Param): Result;
+    lte(skCompositeAttributes: Param): Result;
+    begins(skCompositeAttributes: Param): Result;
+}
+
+type OptionalPropertyOf<T extends object> = Exclude<{
+    [K in keyof T]: T extends Record<K, T[K]>
+        ? never
+        : K
+}[keyof T], undefined>
+
 export type ClusteredCollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
         [EntityName in keyof E]:
-        EntityName extends Collections[Collection]
-            ? (params:
-                   Parameters<
-                       E[EntityName]["query"][
-                           E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
-                               ? Collection extends keyof ClusteredEntityCollections<A,F,C,S>
-                               ? ClusteredEntityCollections<A,F,C,S>[Collection]
-                               : never
-                               : never
-                           ]
-                       >[0]
-            ) => {
-                go: ServiceQueryRecordsGo<{
-                    [EntityResultName in Collections[Collection]]:
-                    EntityResultName extends keyof E
-                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                        ? ResponseItem<A,F,C,S>[]
-                        : never
-                        : never
-                }>;
-                params: ParamRecord;
-                where: {
-                    [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                            ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
-                                ? CollectionWhereClause<E,A,F,C,S,
-                                    Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>>,
-                                    ServiceWhereRecordsActionOptions<E,A,F,C,S,
-                                        Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>>,
-                                        {
-                                            [EntityResultName in Collections[Collection]]:
-                                            EntityResultName extends keyof E
-                                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                                ? ResponseItem<A,F,C,S>[]
-                                                : never
-                                                : never
-                                        },
-                                        Partial<
-                                            Spread<
-                                                Collection extends keyof ClusteredCollectionPageAttributes<E, Collections>
-                                                    ? ClusteredCollectionPageAttributes<E, Collections>[Collection]
-                                                    : {},
-                                                Collection extends keyof ClusteredCollectionIndexAttributes<E, Collections>
-                                                    ? ClusteredCollectionIndexAttributes<E, Collections>[Collection]
-                                                    : {}
-                                                >
-                                            >
-                                        >>
-                                : never
-                            : never
-                        : never
-                }[Collections[Collection]];
-            }
-            : never
+            EntityName extends Collections[Collection]
+                ? (params: ClusteredCompositeAttributes<E, Collections, Collection, EntityName>) =>
+                    ClusteredCollectionOperations<E, Collections, Collection, EntityName> &
+                        ClusteredCollectionQueryOperations<
+                            Pick<ClusteredCompositeAttributes<E, Collections, Collection, EntityName>, OptionalPropertyOf<ClusteredCompositeAttributes<E, Collections, Collection, EntityName>>>,
+                            ClusteredCollectionOperations<E, Collections, Collection, EntityName>
+                        >
+                : never
     }[keyof E];
 }
 
