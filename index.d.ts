@@ -24,6 +24,34 @@ export type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, 
         : never
 }[keyof E];
 
+export type ClusteredCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Name in keyof E]:
+    E[Name] extends Entity<infer A, infer F, infer C, infer S>
+        ? {
+            [Collection in keyof ClusteredEntityCollections<A,F,C,S>]: Collection
+        }[keyof ClusteredEntityCollections<A,F,C,S>]
+        : never
+}[keyof E];
+
+export type IsolatedCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Name in keyof E]:
+    E[Name] extends Entity<infer A, infer F, infer C, infer S>
+        ? {
+            [Collection in keyof IsolatedEntityCollections<A,F,C,S>]: Collection
+        }[keyof IsolatedEntityCollections<A,F,C,S>]
+        : never
+}[keyof E];
+
+export type IsolatedCollectionAssociations<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Collection in IsolatedCollectionNames<E>]: {
+        [Name in keyof E]: E[Name] extends Entity<infer A, infer F, infer C, infer S>
+            ? Collection extends keyof IsolatedEntityCollections<A,F,C,S>
+                ? Name
+                : never
+            : never
+    }[keyof E];
+}
+
 export type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Name in keyof E]: {
         [A in keyof E[Name]["schema"]["attributes"]]: A
@@ -48,7 +76,37 @@ export type CollectionAssociations<E extends {[name: string]: Entity<any, any, a
     }[keyof E];
 }
 
+export type ClusteredCollectionAssociations<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Collection in ClusteredCollectionNames<E>]: {
+        [Name in keyof E]: E[Name] extends Entity<infer A, infer F, infer C, infer S>
+            ? Collection extends keyof ClusteredEntityCollections<A,F,C,S>
+                ? Name
+                : never
+            : never
+    }[keyof E];
+}
+
 export type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
+    [Collection in keyof Collections]: {
+        [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ? EntityName extends Collections[Collection]
+                ? keyof S["attributes"]
+                : never
+            : never
+    }[keyof E]
+}
+
+export type ClusteredCollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>> = {
+    [Collection in keyof Collections]: {
+        [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ? EntityName extends Collections[Collection]
+                ? keyof S["attributes"]
+                : never
+            : never
+    }[keyof E]
+}
+
+export type IsolatedCollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
         [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
             ? EntityName extends Collections[Collection]
@@ -80,7 +138,6 @@ export type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, 
 
 export type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, T> = (where: CollectionWhereCallback<E, I>) => T;
 
-
 export interface ServiceWhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexCompositeAttributes> {
     go: ServiceQueryRecordsGo<Items>;
     params: ParamRecord;
@@ -88,6 +145,28 @@ export interface ServiceWhereRecordsActionOptions<E extends {[name: string]: Ent
 }
 
 export type CollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
+    [Collection in keyof Collections]: {
+        [EntityResultName in Collections[Collection]]:
+        EntityResultName extends keyof Entities
+            ? Entities[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+            ? keyof TableIndexCompositeAttributes<A, F, C, S>
+            : never
+            : never
+    }[Collections[Collection]]
+}
+
+export type ClusteredCollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<Entities>> = {
+    [Collection in keyof Collections]: {
+        [EntityResultName in Collections[Collection]]:
+        EntityResultName extends keyof Entities
+            ? Entities[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+            ? keyof TableIndexCompositeAttributes<A, F, C, S>
+            : never
+            : never
+    }[Collections[Collection]]
+}
+
+export type IsolatedCollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<Entities>> = {
     [Collection in keyof Collections]: {
         [EntityResultName in Collections[Collection]]:
         EntityResultName extends keyof Entities
@@ -113,6 +192,36 @@ export type CollectionPageKeys<Entities extends {[name: string]: Entity<any, any
     }[Collections[Collection]]
 }
 
+export type ClusteredCollectionPageKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<Entities>> = {
+    [Collection in keyof Collections]: {
+        [EntityResultName in Collections[Collection]]:
+        EntityResultName extends keyof Entities
+            ? Entities[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+            ? keyof Parameters<Entities[EntityResultName]["query"][
+                Collection extends keyof ClusteredEntityCollections<A,F,C,S>
+                    ? ClusteredEntityCollections<A,F,C,S>[Collection]
+                    : never
+                ]>[0]
+            : never
+            : never
+    }[Collections[Collection]]
+}
+
+export type IsolatedCollectionPageKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<Entities>> = {
+    [Collection in keyof Collections]: {
+        [EntityResultName in Collections[Collection]]:
+        EntityResultName extends keyof Entities
+            ? Entities[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+            ? keyof Parameters<Entities[EntityResultName]["query"][
+                Collection extends keyof IsolatedEntityCollections<A,F,C,S>
+                    ? IsolatedEntityCollections<A,F,C,S>[Collection]
+                    : never
+                ]>[0]
+            : never
+            : never
+    }[Collections[Collection]]
+}
+
 export type CollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
     [Collection in keyof CollectionIndexKeys<Entities, Collections>]: {
         [key in CollectionIndexKeys<Entities, Collections>[Collection]]:
@@ -122,9 +231,45 @@ export type CollectionIndexAttributes<Entities extends {[name: string]: Entity<a
     }
 }
 
+export type ClusteredCollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<Entities>> = {
+    [Collection in keyof ClusteredCollectionIndexKeys<Entities, Collections>]: {
+        [key in ClusteredCollectionIndexKeys<Entities, Collections>[Collection]]:
+        key extends keyof AllEntityAttributes<Entities>
+            ? AllEntityAttributes<Entities>[key]
+            : never
+    }
+}
+
+export type IsolatedCollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<Entities>> = {
+    [Collection in keyof IsolatedCollectionIndexKeys<Entities, Collections>]: {
+        [key in IsolatedCollectionIndexKeys<Entities, Collections>[Collection]]:
+        key extends keyof AllEntityAttributes<Entities>
+            ? AllEntityAttributes<Entities>[key]
+            : never
+    }
+}
+
 export type CollectionPageAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
     [Collection in keyof CollectionPageKeys<Entities, Collections>]: {
         [key in CollectionPageKeys<Entities, Collections>[Collection]]:
+        key extends keyof AllEntityAttributes<Entities>
+            ? AllEntityAttributes<Entities>[key]
+            : never
+    }
+}
+
+export type ClusteredCollectionPageAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<Entities>> = {
+    [Collection in keyof ClusteredCollectionPageKeys<Entities, Collections>]: {
+        [key in ClusteredCollectionPageKeys<Entities, Collections>[Collection]]:
+        key extends keyof AllEntityAttributes<Entities>
+            ? AllEntityAttributes<Entities>[key]
+            : never
+    }
+}
+
+export type IsolatedCollectionPageAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<Entities>> = {
+    [Collection in keyof IsolatedCollectionPageKeys<Entities, Collections>]: {
+        [key in IsolatedCollectionPageKeys<Entities, Collections>[Collection]]:
         key extends keyof AllEntityAttributes<Entities>
             ? AllEntityAttributes<Entities>[key]
             : never
@@ -202,6 +347,126 @@ export type CollectionQueries<E extends {[name: string]: Entity<any, any, any, a
                                                     : {},
                                                 Collection extends keyof CollectionIndexAttributes<E, Collections>
                                                     ? CollectionIndexAttributes<E, Collections>[Collection]
+                                                    : {}
+                                                >
+                                            >
+                                        >>
+                                : never
+                            : never
+                        : never
+                }[Collections[Collection]];
+            }
+            : never
+    }[keyof E];
+}
+
+export type ClusteredCollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>> = {
+    [Collection in keyof Collections]: {
+        [EntityName in keyof E]:
+        EntityName extends Collections[Collection]
+            ? (params:
+                   Parameters<
+                       E[EntityName]["query"][
+                           E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+                               ? Collection extends keyof ClusteredEntityCollections<A,F,C,S>
+                               ? ClusteredEntityCollections<A,F,C,S>[Collection]
+                               : never
+                               : never
+                           ]
+                       >[0]
+            ) => {
+                go: ServiceQueryRecordsGo<{
+                    [EntityResultName in Collections[Collection]]:
+                    EntityResultName extends keyof E
+                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                        ? ResponseItem<A,F,C,S>[]
+                        : never
+                        : never
+                }>;
+                params: ParamRecord;
+                where: {
+                    [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                            ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
+                                ? CollectionWhereClause<E,A,F,C,S,
+                                    Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>>,
+                                    ServiceWhereRecordsActionOptions<E,A,F,C,S,
+                                        Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>>,
+                                        {
+                                            [EntityResultName in Collections[Collection]]:
+                                            EntityResultName extends keyof E
+                                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                                ? ResponseItem<A,F,C,S>[]
+                                                : never
+                                                : never
+                                        },
+                                        Partial<
+                                            Spread<
+                                                Collection extends keyof ClusteredCollectionPageAttributes<E, Collections>
+                                                    ? ClusteredCollectionPageAttributes<E, Collections>[Collection]
+                                                    : {},
+                                                Collection extends keyof ClusteredCollectionIndexAttributes<E, Collections>
+                                                    ? ClusteredCollectionIndexAttributes<E, Collections>[Collection]
+                                                    : {}
+                                                >
+                                            >
+                                        >>
+                                : never
+                            : never
+                        : never
+                }[Collections[Collection]];
+            }
+            : never
+    }[keyof E];
+}
+
+export type IsolatedCollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<E>> = {
+    [Collection in keyof Collections]: {
+        [EntityName in keyof E]:
+        EntityName extends Collections[Collection]
+            ? (params:
+                   Parameters<
+                       E[EntityName]["query"][
+                           E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+                               ? Collection extends keyof IsolatedEntityCollections<A,F,C,S>
+                               ? IsolatedEntityCollections<A,F,C,S>[Collection]
+                               : never
+                               : never
+                           ]
+                       >[0]
+            ) => {
+                go: ServiceQueryRecordsGo<{
+                    [EntityResultName in Collections[Collection]]:
+                    EntityResultName extends keyof E
+                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                        ? ResponseItem<A,F,C,S>[]
+                        : never
+                        : never
+                }>;
+                params: ParamRecord;
+                where: {
+                    [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                            ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, IsolatedCollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
+                                ? CollectionWhereClause<E,A,F,C,S,
+                                    Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, IsolatedCollectionAttributes<E,Collections>[Collection]>>,
+                                    ServiceWhereRecordsActionOptions<E,A,F,C,S,
+                                        Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, IsolatedCollectionAttributes<E,Collections>[Collection]>>,
+                                        {
+                                            [EntityResultName in Collections[Collection]]:
+                                            EntityResultName extends keyof E
+                                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                                ? ResponseItem<A,F,C,S>[]
+                                                : never
+                                                : never
+                                        },
+                                        Partial<
+                                            Spread<
+                                                Collection extends keyof IsolatedCollectionPageAttributes<E, Collections>
+                                                    ? IsolatedCollectionPageAttributes<E, Collections>[Collection]
+                                                    : {},
+                                                Collection extends keyof IsolatedCollectionIndexAttributes<E, Collections>
+                                                    ? IsolatedCollectionIndexAttributes<E, Collections>[Collection]
                                                     : {}
                                                 >
                                             >
@@ -494,9 +759,9 @@ export interface QueryOptions {
     logger?: ElectroEventListener;
     data?: 'raw' | 'includeKeys' | 'attributes';
 
-    /** @depricated use 'data=raw' instead */ 
+    /** @depricated use 'data=raw' instead */
     raw?: boolean;
-    /** @depricated use 'data=includeKeys' instead */ 
+    /** @depricated use 'data=includeKeys' instead */
     includeKeys?: boolean;
     order?: 'asc' | 'desc';
 }
@@ -552,7 +817,7 @@ interface GoBatchGetTerminalOptions<Attributes> {
     raw?: boolean;
     /** @depricated use 'data=raw' instead */
     includeKeys?: boolean;
-    
+
     table?: string;
     limit?: number;
     params?: object;
@@ -649,7 +914,7 @@ type GoGetTerminal<A extends string, F extends string, C extends string, S exten
 
 export type GoQueryTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Item> = <Options extends GoQueryTerminalOptions<keyof Item>>(options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
-        ? Promise<{ 
+        ? Promise<{
             data: Array<{
                 [
                 Name in keyof Item as Name extends Attr
@@ -1148,7 +1413,9 @@ type StaticAttribute = {
 type CustomAttribute<T extends any = any> = {
     readonly type: "custom";
     readonly [CustomAttributeSymbol]: T;
+    readonly required?: boolean;
     readonly hidden?: boolean;
+    readonly readOnly?: boolean;
     readonly get?: (val: T, item: any) => T | undefined | void;
     readonly set?: (val?: T, item?: any) => T | undefined | void;
     readonly default?: T | (() => T);
@@ -1212,6 +1479,7 @@ export interface Schema<A extends string, F extends string, C extends string> {
     readonly indexes: {
         [accessPattern: string]: {
             readonly index?: string;
+            readonly type?: 'clustered' | 'isolated';
             readonly collection?: AccessPatternCollection<C>;
             readonly pk: {
                 readonly casing?: "upper" | "lower" | "none" | "default";
@@ -1238,8 +1506,55 @@ export type IndexCollections<A extends string, F extends string, C extends strin
         : never
 }[keyof S["indexes"]];
 
+export type IndexCollectionsMap<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends
+        AccessPatternCollection<infer Name>
+        ? Name
+        : never
+};
+
+type ClusteredIndexNameMap<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [I in keyof S["indexes"] as S['indexes'][I] extends { type: 'clustered' } ? I : never]: S["indexes"][I]["collection"] extends
+        AccessPatternCollection<infer Name>
+        ? Name
+        : never
+}
+
+type ThingValues<T> = {[K in keyof T]: T[K]}[keyof T];
+
+type IsolatedIndexNameMap<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [I in keyof S["indexes"] as S['indexes'][I] extends { type: 'clustered' } ? never : I]: S["indexes"][I]["collection"] extends
+        AccessPatternCollection<infer Name>
+        ? Name
+        : never
+}
+
+export type ClusteredIndexCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = ThingValues<ClusteredIndexNameMap<A,F,C,S>>;
+
+export type IsolatedIndexCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = ThingValues<IsolatedIndexNameMap<A,F,C,S>>;
+
 export type EntityCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
     [N in IndexCollections<A,F,C,S>]: {
+        [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends AccessPatternCollection<infer Name>
+            ? Name extends N
+                ? i
+                : never
+            : never
+    }[keyof S["indexes"]];
+}
+
+export type ClusteredEntityCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [N in ClusteredIndexCollections<A,F,C,S>]: {
+        [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends AccessPatternCollection<infer Name>
+            ? Name extends N
+                ? i
+                : never
+            : never
+    }[keyof S["indexes"]];
+}
+
+export type IsolatedEntityCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [N in IsolatedIndexCollections<A,F,C,S>]: {
         [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends AccessPatternCollection<infer Name>
             ? Name extends N
                 ? i
@@ -1264,96 +1579,96 @@ type PartialDefinedKeys<T> = {
 export type ItemAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
         ? T
-    : A["type"] extends infer R
+        : A["type"] extends infer R
         ? R extends "string" ? string
-        : R extends "number" ? number
-            : R extends "boolean" ? boolean
-                : R extends ReadonlyArray<infer E> ? E
-                    : R extends "map"
-                        ? "properties" extends keyof A
-                            ? {
-                                [P in keyof A["properties"]]:
-                                A["properties"][P] extends infer M
-                                    ? M extends Attribute
-                                    ? ItemAttribute<M>
-                                    : never
-                                    : never
-                            }
-                            : never
-                        : R extends "list"
-                            ? "items" extends keyof A
-                                ? A["items"] extends infer I
-                                    ? I extends Attribute
-                                        ? Array<ItemAttribute<I>>
+            : R extends "number" ? number
+                : R extends "boolean" ? boolean
+                    : R extends ReadonlyArray<infer E> ? E
+                        : R extends "map"
+                            ? "properties" extends keyof A
+                                ? {
+                                    [P in keyof A["properties"]]:
+                                    A["properties"][P] extends infer M
+                                        ? M extends Attribute
+                                        ? ItemAttribute<M>
                                         : never
-                                    : never
+                                        : never
+                                }
                                 : never
-                            : R extends "set"
+                            : R extends "list"
                                 ? "items" extends keyof A
                                     ? A["items"] extends infer I
-                                        ? I extends "string" ? string[]
-                                            : I extends "number" ? number[]
-                                                : I extends ReadonlyArray<infer ENUM> ? ENUM[]
-                                                    : never
+                                        ? I extends Attribute
+                                            ? Array<ItemAttribute<I>>
+                                            : never
                                         : never
                                     : never
-                                : R extends "any" ? any
-                                    : never
+                                : R extends "set"
+                                    ? "items" extends keyof A
+                                        ? A["items"] extends infer I
+                                            ? I extends "string" ? string[]
+                                                : I extends "number" ? number[]
+                                                    : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                        : never
+                                            : never
+                                        : never
+                                    : R extends "any" ? any
+                                        : never
         : never
 
 export type ReturnedAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
-    ? T
-    : A["type"] extends infer R
+        ? T
+        : A["type"] extends infer R
         ? R extends "static" ? never
-        : R extends "string" ? string
-        : R extends "number" ? number
-            : R extends "boolean" ? boolean
-                : R extends ReadonlyArray<infer E> ? E
-                    : R extends "map"
-                        ? "properties" extends keyof A
-                            ?
-                            {
-                                [
-                                P in keyof A["properties"] as A["properties"][P] extends RequiredAttribute
-                                    ? P
-                                    : never
-                                ]: A["properties"][P] extends infer M
-                                ? M extends Attribute
-                                    ? ReturnedAttribute<M>
-                                    : never
-                                : never
-                            } & {
-                            [
-                            P in keyof A["properties"] as A["properties"][P] extends HiddenAttribute | RequiredAttribute
-                                ? never
-                                : P
-                            ]?: A["properties"][P] extends infer M
-                                ? M extends Attribute
-                                    ? ReturnedAttribute<M> | undefined
-                                    : never
-                                : never
-                        }
-                            : never
-                        : R extends "list"
-                            ? "items" extends keyof A
-                                ? A["items"] extends infer I
-                                    ? I extends Attribute
-                                        ? ReturnedAttribute<I>[]
+            : R extends "string" ? string
+                : R extends "number" ? number
+                    : R extends "boolean" ? boolean
+                        : R extends ReadonlyArray<infer E> ? E
+                            : R extends "map"
+                                ? "properties" extends keyof A
+                                    ?
+                                    {
+                                        [
+                                        P in keyof A["properties"] as A["properties"][P] extends RequiredAttribute
+                                            ? P
+                                            : never
+                                        ]: A["properties"][P] extends infer M
+                                        ? M extends Attribute
+                                            ? ReturnedAttribute<M>
+                                            : never
                                         : never
-                                    : never
-                                : never
-                            : R extends "set"
-                                ? "items" extends keyof A
-                                    ? A["items"] extends infer I
-                                        ? I extends "string" ? string[]
-                                            : I extends "number" ? number[]
-                                                : I extends ReadonlyArray<infer ENUM> ? ENUM[]
-                                                    : never
+                                    } & {
+                                    [
+                                    P in keyof A["properties"] as A["properties"][P] extends HiddenAttribute | RequiredAttribute
+                                        ? never
+                                        : P
+                                    ]?: A["properties"][P] extends infer M
+                                        ? M extends Attribute
+                                            ? ReturnedAttribute<M> | undefined
+                                            : never
                                         : never
+                                }
                                     : never
-                                : R extends "any" ? any
-                                    : never
+                                : R extends "list"
+                                    ? "items" extends keyof A
+                                        ? A["items"] extends infer I
+                                            ? I extends Attribute
+                                                ? ReturnedAttribute<I>[]
+                                                : never
+                                            : never
+                                        : never
+                                    : R extends "set"
+                                        ? "items" extends keyof A
+                                            ? A["items"] extends infer I
+                                                ? I extends "string" ? string[]
+                                                    : I extends "number" ? number[]
+                                                        : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                            : never
+                                                : never
+                                            : never
+                                        : R extends "any" ? any
+                                            : never
         : never
 
 export type CreatedAttribute<A extends Attribute> =
@@ -1361,54 +1676,54 @@ export type CreatedAttribute<A extends Attribute> =
         ? T
         : A["type"] extends infer R
         ? R extends "static" ? never
-        : R extends "string" ? string
-        : R extends "number" ? number
-            : R extends "boolean" ? boolean
-                : R extends ReadonlyArray<infer E> ? E
-                    : R extends "map"
-                        ? "properties" extends keyof A
-                            ? {
-                            [
-                            P in keyof A["properties"] as A["properties"][P] extends RequiredAttribute
-                                ? A["properties"][P] extends DefaultedAttribute
-                                    ? never
-                                    : P
-                                : never
-                            ]: A["properties"][P] extends infer M
-                                ? M extends Attribute
-                                    ? CreatedAttribute<M>
-                                    : never
-                                : never
-                        } & {
-                            [P in keyof A["properties"] as A["properties"][P] extends HiddenAttribute
-                                ? never
-                                : P
-                            ]?: A["properties"][P] extends infer M
-                                ? M extends Attribute
-                                    ? CreatedAttribute<M> | undefined
-                                    : never
-                                : never
-                        }
-                            : never
-                        : R extends "list"
-                            ? "items" extends keyof A
-                                ? A["items"] extends infer I
-                                    ? I extends Attribute
-                                        ? CreatedAttribute<I>[]
+            : R extends "string" ? string
+                : R extends "number" ? number
+                    : R extends "boolean" ? boolean
+                        : R extends ReadonlyArray<infer E> ? E
+                            : R extends "map"
+                                ? "properties" extends keyof A
+                                    ? {
+                                    [
+                                    P in keyof A["properties"] as A["properties"][P] extends RequiredAttribute
+                                        ? A["properties"][P] extends DefaultedAttribute
+                                            ? never
+                                            : P
                                         : never
-                                    : never
-                                : never
-                            : R extends "set"
-                                ? "items" extends keyof A
-                                    ? A["items"] extends infer I
-                                        ? I extends "string" ? string[]
-                                            : I extends "number" ? number[]
-                                                : I extends ReadonlyArray<infer ENUM> ? ENUM[]
-                                                    : never
+                                    ]: A["properties"][P] extends infer M
+                                        ? M extends Attribute
+                                            ? CreatedAttribute<M>
+                                            : never
                                         : never
+                                } & {
+                                    [P in keyof A["properties"] as A["properties"][P] extends HiddenAttribute
+                                        ? never
+                                        : P
+                                    ]?: A["properties"][P] extends infer M
+                                        ? M extends Attribute
+                                            ? CreatedAttribute<M> | undefined
+                                            : never
+                                        : never
+                                }
                                     : never
-                                : R extends "any" ? any
-                                    : never
+                                : R extends "list"
+                                    ? "items" extends keyof A
+                                        ? A["items"] extends infer I
+                                            ? I extends Attribute
+                                                ? CreatedAttribute<I>[]
+                                                : never
+                                            : never
+                                        : never
+                                    : R extends "set"
+                                        ? "items" extends keyof A
+                                            ? A["items"] extends infer I
+                                                ? I extends "string" ? string[]
+                                                    : I extends "number" ? number[]
+                                                        : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                            : never
+                                                : never
+                                            : never
+                                        : R extends "any" ? any
+                                            : never
         : never
 
 export type ReturnedItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>,Attr extends S["attributes"]> = {
@@ -1421,50 +1736,50 @@ export type CreatedItem<A extends string, F extends string, C extends string, S 
 
 export type EditableItemAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
-    ? T
-    : A extends ReadOnlyAttribute
+        ? T
+        : A extends ReadOnlyAttribute
         ? never
         : A["type"] extends infer R
             ? R extends "static" ? never
                 : R extends "string" ? string
-            : R extends "number" ? number
-                : R extends "boolean" ? boolean
-                    : R extends ReadonlyArray<infer E> ? E
-                        : R extends "map"
-                            ? "properties" extends keyof A
-                                ? {
-                                    [
-                                    P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute
-                                        ? never
-                                        : P
-                                    ]:
-                                    A["properties"][P] extends infer M
-                                        ? M extends Attribute
-                                        ? EditableItemAttribute<M>
+                    : R extends "number" ? number
+                        : R extends "boolean" ? boolean
+                            : R extends ReadonlyArray<infer E> ? E
+                                : R extends "map"
+                                    ? "properties" extends keyof A
+                                        ? {
+                                            [
+                                            P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute
+                                                ? never
+                                                : P
+                                            ]:
+                                            A["properties"][P] extends infer M
+                                                ? M extends Attribute
+                                                ? EditableItemAttribute<M>
+                                                : never
+                                                : never
+                                        }
                                         : never
-                                        : never
-                                }
-                                : never
-                            : R extends "list"
-                                ? "items" extends keyof A
-                                    ? A["items"] extends infer I
-                                        ? I extends Attribute
-                                            ? Array<EditableItemAttribute<I>>
+                                    : R extends "list"
+                                        ? "items" extends keyof A
+                                            ? A["items"] extends infer I
+                                                ? I extends Attribute
+                                                    ? Array<EditableItemAttribute<I>>
+                                                    : never
+                                                : never
                                             : never
-                                        : never
-                                    : never
-                                : R extends "set"
-                                    ? "items" extends keyof A
-                                        ? A["items"] extends infer I
-                                            ? I extends "string" ? string[]
-                                                : I extends "number" ? number[]
-                                                    : I extends ReadonlyArray<infer ENUM> ? ENUM[]
-                                                        : never
-                                            : never
-                                        : never
-                                    : R extends "any" ? any
-                                        : never
-        : never
+                                        : R extends "set"
+                                            ? "items" extends keyof A
+                                                ? A["items"] extends infer I
+                                                    ? I extends "string" ? string[]
+                                                        : I extends "number" ? number[]
+                                                            : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                                : never
+                                                    : never
+                                                : never
+                                            : R extends "any" ? any
+                                                : never
+            : never
 
 export type UpdatableItemAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
@@ -1474,59 +1789,59 @@ export type UpdatableItemAttribute<A extends Attribute> =
         : A["type"] extends infer R
             ? R extends "static" ? never
                 : R extends "string" ? string
-            : R extends "number" ? number
-                : R extends "boolean" ? boolean
-                    : R extends ReadonlyArray<infer E> ? E
-                        : R extends "map"
-                            ? "properties" extends keyof A
-                                ? {
-                                [
-                                P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute
-                                    ? never
-                                    : A["properties"][P] extends RequiredAttribute
-                                        ? P
-                                        : never
-                                ]:
-                                A["properties"][P] extends infer M
-                                    ? M extends Attribute
-                                    ? UpdatableItemAttribute<M>
-                                    : never
-                                    : never
-                            } & {
-                                [
-                                P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute
-                                    ? never
-                                    : A["properties"][P] extends RequiredAttribute
-                                        ? never
-                                        : P
-                                ]?:
-                                A["properties"][P] extends infer M
-                                    ? M extends Attribute
-                                    ? UpdatableItemAttribute<M>
-                                    : never
-                                    : never
-                            }
-                                : never
-                            : R extends "list"
-                                ? "items" extends keyof A
-                                    ? A["items"] extends infer I
-                                        ? I extends Attribute
-                                            ? Array<UpdatableItemAttribute<I>>
+                    : R extends "number" ? number
+                        : R extends "boolean" ? boolean
+                            : R extends ReadonlyArray<infer E> ? E
+                                : R extends "map"
+                                    ? "properties" extends keyof A
+                                        ? {
+                                        [
+                                        P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute
+                                            ? never
+                                            : A["properties"][P] extends RequiredAttribute
+                                                ? P
+                                                : never
+                                        ]:
+                                        A["properties"][P] extends infer M
+                                            ? M extends Attribute
+                                            ? UpdatableItemAttribute<M>
                                             : never
-                                        : never
-                                    : never
-                                : R extends "set"
-                                    ? "items" extends keyof A
-                                        ? A["items"] extends infer I
-                                            ? I extends "string" ? string[]
-                                                : I extends "number" ? number[]
-                                                    : I extends ReadonlyArray<infer ENUM> ? ENUM[]
-                                                        : never
                                             : never
+                                    } & {
+                                        [
+                                        P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute
+                                            ? never
+                                            : A["properties"][P] extends RequiredAttribute
+                                                ? never
+                                                : P
+                                        ]?:
+                                        A["properties"][P] extends infer M
+                                            ? M extends Attribute
+                                            ? UpdatableItemAttribute<M>
+                                            : never
+                                            : never
+                                    }
                                         : never
-                                    : R extends "any" ? any
-                                        : never
-        : never
+                                    : R extends "list"
+                                        ? "items" extends keyof A
+                                            ? A["items"] extends infer I
+                                                ? I extends Attribute
+                                                    ? Array<UpdatableItemAttribute<I>>
+                                                    : never
+                                                : never
+                                            : never
+                                        : R extends "set"
+                                            ? "items" extends keyof A
+                                                ? A["items"] extends infer I
+                                                    ? I extends "string" ? string[]
+                                                        : I extends "number" ? number[]
+                                                            : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                                : never
+                                                    : never
+                                                : never
+                                            : R extends "any" ? any
+                                                : never
+            : never
 
 export type RemovableItemAttribute<A extends Attribute> =
     A extends CustomAttribute<infer T>
@@ -1536,44 +1851,44 @@ export type RemovableItemAttribute<A extends Attribute> =
         : A["type"] extends infer R
             ? R extends "static" ? never
                 : R extends "string" ? string
-            : R extends "number" ? number
-                : R extends "boolean" ? boolean
-                    : R extends ReadonlyArray<infer E> ? E
-                        : R extends "map"
-                            ? "properties" extends keyof A
-                                ? {
-                                    [
-                                    P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute | RequiredAttribute
-                                        ? never
-                                        : P
-                                    ]?:
-                                    A["properties"][P] extends infer M
-                                        ? M extends Attribute
-                                        ? UpdatableItemAttribute<M>
+                    : R extends "number" ? number
+                        : R extends "boolean" ? boolean
+                            : R extends ReadonlyArray<infer E> ? E
+                                : R extends "map"
+                                    ? "properties" extends keyof A
+                                        ? {
+                                            [
+                                            P in keyof A["properties"] as A["properties"][P] extends ReadOnlyAttribute | RequiredAttribute
+                                                ? never
+                                                : P
+                                            ]?:
+                                            A["properties"][P] extends infer M
+                                                ? M extends Attribute
+                                                ? UpdatableItemAttribute<M>
+                                                : never
+                                                : never
+                                        }
                                         : never
-                                        : never
-                                }
-                                : never
-                            : R extends "list"
-                                ? "items" extends keyof A
-                                    ? A["items"] extends infer I
-                                        ? I extends Attribute
-                                            ? Array<UpdatableItemAttribute<I>>
+                                    : R extends "list"
+                                        ? "items" extends keyof A
+                                            ? A["items"] extends infer I
+                                                ? I extends Attribute
+                                                    ? Array<UpdatableItemAttribute<I>>
+                                                    : never
+                                                : never
                                             : never
-                                        : never
-                                    : never
-                                : R extends "set"
-                                    ? "items" extends keyof A
-                                        ? A["items"] extends infer I
-                                            ? I extends "string" ? string[]
-                                                : I extends "number" ? number[]
-                                                    : I extends ReadonlyArray<infer ENUM> ? ENUM[]
-                                                        : never
-                                            : never
-                                        : never
-                                    : R extends "any" ? any
-                                        : never
-        : never
+                                        : R extends "set"
+                                            ? "items" extends keyof A
+                                                ? A["items"] extends infer I
+                                                    ? I extends "string" ? string[]
+                                                        : I extends "number" ? number[]
+                                                            : I extends ReadonlyArray<infer ENUM> ? ENUM[]
+                                                                : never
+                                                    : never
+                                                : never
+                                            : R extends "any" ? any
+                                                : never
+            : never
 
 export type Item<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Attr extends Attributes<A>> = {
     [a in keyof Attr]: ItemAttribute<Attr[a]>
@@ -1937,6 +2252,8 @@ export type ServiceConfiguration = {
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
     collections: CollectionQueries<E, CollectionAssociations<E>>
+    clustered: ClusteredCollectionQueries<E, ClusteredCollectionAssociations<E>>
+    isolated: IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
     constructor(entities: E, config?: ServiceConfiguration);
 }
 
@@ -1952,4 +2269,7 @@ type CustomAttributeDefinition<T> = {
     readonly watch?: ReadonlyArray<string> | "*";
 }
 
-declare function createCustomAttribute<T>(definition?: CustomAttributeDefinition<T>): CustomAttribute<T>;
+export declare function createCustomAttribute<T, D extends CustomAttributeDefinition<T>>(definition?: D): D & {
+    readonly type: "custom";
+    readonly [CustomAttributeSymbol]: T;
+};
