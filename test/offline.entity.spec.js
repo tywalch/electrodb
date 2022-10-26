@@ -2161,11 +2161,17 @@ describe("Entity", () => {
 			expect(collectionParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key',
+					"#__edb_e__": "__edb_e__",
+					"#__edb_v__": "__edb_v__",
+				},
 				ExpressionAttributeValues: {
 					':pk': "$MallStoreDirectory#id_Abcd",
-					':sk1': '$MYCOLLECTION'
-				}
+					':sk1': '$MYCOLLECTION',
+					":__edb_e___stores": "MallStores",
+					":__edb_v___stores": "1"
+				},
+				FilterExpression: "(#__edb_e__ = :__edb_e___stores AND #__edb_v__ = :__edb_v___stores)"
 			});
 		});
 

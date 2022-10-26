@@ -1,4 +1,4 @@
-const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex, TerminalOperation, KeyTypes } = require("./types");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex, TerminalOperation, KeyTypes, IndexTypes } = require("./types");
 const {AttributeOperationProxy, UpdateOperations, FilterOperationNames} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
@@ -38,19 +38,28 @@ let clauses = {
 				return state;
 			}
 			try {
-				const {pk} = state.getCompositeAttributes();
+				const {pk, sk} = state.getCompositeAttributes();
+				const type = state.query.options.indexType === IndexTypes.clustered
+					? QueryTypes.clustered_collection
+					: QueryTypes.collection;
 				return state
-					.setType(QueryTypes.collection)
+					.setType(type)
 					.setMethod(MethodTypes.query)
 					.setCollection(collection)
-					.setPK(entity._expectFacets(facets, pk));
+					.setPK(entity._expectFacets(facets, pk))
+					.ifSK(() => {
+						// todo: add this logic to other sk operators as well
+						const { applied, unused } = entity._buildQueryFacets(facets, sk);
+						state.setSK(applied);
+						// state.applySingleFilters(FilterOperationNames.eq, unused, Object.values(state.query.options.entities));
+					});
 
 			} catch(err) {
 				state.setError(err);
 				return state;
 			}
 		},
-		children: ["params", "go"],
+		children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go"],
 	},
 	scan: {
 		name: "scan",
@@ -82,7 +91,8 @@ let clauses = {
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -116,7 +126,8 @@ let clauses = {
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -146,7 +157,8 @@ let clauses = {
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -208,7 +220,8 @@ let clauses = {
 					.setPK(entity._expectFacets(record, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(record, attributes.sk);
-						state.setSK(entity._buildQueryFacets(record, attributes.sk));
+						const { applied, unused } = entity._buildQueryFacets(record, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -237,7 +250,8 @@ let clauses = {
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -260,7 +274,8 @@ let clauses = {
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -409,7 +424,8 @@ let clauses = {
 					.setType(QueryTypes.is)
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -426,11 +442,13 @@ let clauses = {
 			}
 			try {
 				const attributes = state.getCompositeAttributes();
+				const endingSk = entity._buildQueryFacets(endingFacets, attributes.sk);
+				const startingSk = entity._buildQueryFacets(startingFacets, attributes.sk);
 				return state
 					.setType(QueryTypes.and)
-					.setSK(entity._buildQueryFacets(endingFacets, attributes.sk))
+					.setSK(endingSk.applied)
 					.setType(QueryTypes.between)
-					.setSK(entity._buildQueryFacets(startingFacets, attributes.sk))
+					.setSK(startingSk.applied)
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -449,7 +467,8 @@ let clauses = {
 					.setType(QueryTypes.begins)
 					.ifSK(state => {
 						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -469,7 +488,8 @@ let clauses = {
 					.setType(QueryTypes.gt)
 					.ifSK(state => {
 						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -489,7 +509,8 @@ let clauses = {
 					.setType(QueryTypes.gte)
 					.ifSK(state => {
 						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -508,7 +529,8 @@ let clauses = {
 				return state.setType(QueryTypes.lt)
 					.ifSK(state => {
 						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -527,7 +549,8 @@ let clauses = {
 				return state.setType(QueryTypes.lte)
 					.ifSK(state => {
 						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						const { applied, unused } = entity._buildQueryFacets(facets, attributes.sk);
+						state.setSK(applied);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -752,6 +775,26 @@ class ChainState {
 	applyPut(data = {}) {
 		this.query.put.data = {...this.query.put.data, ...data};
 		return this;
+	}
+
+	applySingleFilters(operation, properties, entities) {
+		const filter = this.query.filter[ExpressionTypes.FilterExpression];
+		for (const property in properties) {
+			const value = properties[property];
+			if (value !== undefined) {
+				const orOperations = [];
+				for (const entity of entities) {
+					if (entity.schema.attributes[property] !== undefined) {
+						orOperations.push({
+							[property]: value,
+							[entity.identifiers.entity]: entity.getName(),
+							[entity.identifiers.version]: entity.getVersion(),
+						})
+					}
+				}
+				filter.unsafeOrSet(operation, orOperations);
+			}
+		}
 	}
 }
 

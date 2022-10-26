@@ -1281,12 +1281,19 @@ describe("Service Offline", async () => {
 			TableName: 'electro',
 			ExpressionAttributeNames: {
 				"#pk": "pk",
-				"#sk1": "sk"
+				"#sk1": "sk",
+				"#__edb_e__": "__edb_e__",
+				"#__edb_v__": "__edb_v__",
 			},
 			ExpressionAttributeValues: {
 				':pk': '$electrotest_1#prop1_abc#prop7_def',
-				':sk1': '$collectiona'
-			}
+				':sk1': '$collectiona',
+				":__edb_e___entityOne": "entityOne",
+				":__edb_e___entityTwo": "entityTwo",
+				":__edb_v___entityOne": "1",
+				":__edb_v___entityTwo": "1",
+			},
+			FilterExpression: "(#__edb_e__ = :__edb_e___entityOne AND #__edb_v__ = :__edb_v___entityOne) OR (#__edb_e__ = :__edb_e___entityTwo AND #__edb_v__ = :__edb_v___entityTwo)"
 		});
 	});
 
@@ -2264,8 +2271,23 @@ describe("Sub Collections", () => {
 				output: {
 					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 					TableName: 'subcollection_table',
-					ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
-					ExpressionAttributeValues: { ':pk': '$myservice#attr1_abc', ':sk1': '$outercollection' }
+					ExpressionAttributeNames: {
+						'#pk': 'pk',
+						'#sk1': 'sk',
+						"#__edb_e__": "__edb_e__",
+						"#__edb_v__": "__edb_v__",
+					},
+					ExpressionAttributeValues: {
+						':pk': '$myservice#attr1_abc',
+						':sk1': '$outercollection',
+						":__edb_e___entityWithMultipleCollections1": "abc",
+						":__edb_e___entityWithMultipleCollections2": "abc",
+						":__edb_e___entityWithMultipleCollections3": "abc",
+						":__edb_v___entityWithMultipleCollections1": "myversion",
+						":__edb_v___entityWithMultipleCollections2": "myversion",
+						":__edb_v___entityWithMultipleCollections3": "myversion",
+					},
+					FilterExpression: "(#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)",
 				}
 			},
 			{
@@ -2274,11 +2296,19 @@ describe("Sub Collections", () => {
 				output: {
 					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 					TableName: 'subcollection_table',
-					ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+					ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+						"#__edb_e__": "__edb_e__",
+						"#__edb_v__": "__edb_v__",
+					},
 					ExpressionAttributeValues: {
 						':pk': '$myservice#attr1_abc',
-						':sk1': '$outercollection#innercollection'
-					}
+						':sk1': '$outercollection#innercollection',
+						":__edb_e___entityWithMultipleCollections1": "abc",
+						":__edb_e___entityWithMultipleCollections2": "abc",
+						":__edb_v___entityWithMultipleCollections1": "myversion",
+						":__edb_v___entityWithMultipleCollections2": "myversion",
+					},
+					FilterExpression: "(#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)"
 				}
 			},
 			{
@@ -2287,9 +2317,18 @@ describe("Sub Collections", () => {
 				output: {
 					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 					TableName: 'subcollection_table',
-					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk' },
-					ExpressionAttributeValues: { ':pk': '$myservice#attr2_def', ':sk1': '$extracollection' },
-					IndexName: 'index2'
+					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk',
+						"#__edb_e__": "__edb_e__",
+						"#__edb_v__": "__edb_v__",
+					},
+					ExpressionAttributeValues: { ':pk': '$myservice#attr2_def', ':sk1': '$extracollection',
+						":__edb_e___entityWithMultipleCollections2": "abc",
+						":__edb_e___entityWithMultipleCollections3": "abc",
+						":__edb_v___entityWithMultipleCollections2": "myversion",
+						":__edb_v___entityWithMultipleCollections3": "myversion",
+					},
+					IndexName: 'index2',
+					FilterExpression: "(#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)"
 				}
 			},
 			{
@@ -2298,12 +2337,18 @@ describe("Sub Collections", () => {
 				output: {
 					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 					TableName: 'subcollection_table',
-					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk' },
+					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk',
+						"#__edb_e__": "__edb_e__",
+						"#__edb_v__": "__edb_v__"
+					},
 					ExpressionAttributeValues: {
 						':pk': '$myservice#attr2_def',
-						':sk1': '$extracollection#superextracollection'
+						':sk1': '$extracollection#superextracollection',
+						":__edb_e___entityWithMultipleCollections2": "abc",
+						":__edb_v___entityWithMultipleCollections2": "myversion"
 					},
-					IndexName: 'index2'
+					IndexName: 'index2',
+					FilterExpression: "(#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)"
 				}
 			}
 		];

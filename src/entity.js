@@ -20,7 +20,8 @@ const { AllPages,
 	MaxBatchItems, 
 	TerminalOperation, 
 	ResultOrderOption,
-	ResultOrderParam
+	ResultOrderParam,
+	IndexTypes,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -191,14 +192,9 @@ class Entity {
 		}
 	}
 
-	collection(collection = "", clauses = {}, facets = {}, {expressions = {}, parse} = {}) {
-		const options = {
-			parse,
-			expressions: {
-				names: expressions.names || {},
-				values: expressions.values || {},
-				expression: expressions.expression || ""
-			},
+	collection(collection = "", clauses = {}, facets = {}, options = {}) {
+		const chainOptions = {
+			...options,
 			_isCollectionQuery: true,
 		};
 
@@ -206,9 +202,9 @@ class Entity {
 		if (index === undefined) {
 			throw new Error(`Invalid collection: ${collection}`);
 		}
-		return this._makeChain(index, clauses, clauses.index, options).collection(
+		return this._makeChain(index, clauses, clauses.index, chainOptions).collection(
 			collection,
-			facets
+			facets,
 		);
 	}
 
@@ -702,9 +698,9 @@ class Entity {
 		let state = new ChainState({
 			index,
 			options,
-			attributes: this.model.schema.attributes,
-			hasSortKey: this.model.lookup.indexHasSortKeys[index],
-			compositeAttributes: this.model.facets.byIndex[index]
+			attributes: options.attributes || this.model.schema.attributes,
+			hasSortKey: options.hasSortKey || this.model.lookup.indexHasSortKeys[index],
+			compositeAttributes: options.compositeAttributes || this.model.facets.byIndex[index],
 		});
 		return state.init(this, clauses, rootClause);
 	}
@@ -908,8 +904,8 @@ class Entity {
 
 			if (option.formatCursor) {
 				const isValid = ['serialize', 'deserialize'].every(method => 
-					method in option.formatCursor && 
-						validate.isFunction(option.formatCursor[method])
+					method in option.formatCursor &&
+					validations.isFunction(option.formatCursor[method])
 				);
 				if (isValid) {
 					config.formatCursor = option.formatCursor;
@@ -1292,14 +1288,14 @@ class Entity {
 		let version = this.getVersion();
 		return {
 			names: {
-				[`#${this.identifiers.entity}_${alias}`]: this.identifiers.entity,
-				[`#${this.identifiers.version}_${alias}`]: this.identifiers.version,
+				[`#${this.identifiers.entity}`]: this.identifiers.entity,
+				[`#${this.identifiers.version}`]: this.identifiers.version,
 			},
 			values: {
 				[`:${this.identifiers.entity}_${alias}`]: name,
 				[`:${this.identifiers.version}_${alias}`]: version,
 			},
-			expression: `(#${this.identifiers.entity}_${alias} = :${this.identifiers.entity}_${alias} AND #${this.identifiers.version}_${alias} = :${this.identifiers.version}_${alias})`
+			expression: `(#${this.identifiers.entity} = :${this.identifiers.entity}_${alias} AND #${this.identifiers.version} = :${this.identifiers.version}_${alias})`
 		}
 	}
 
@@ -1551,17 +1547,21 @@ class Entity {
 		return expressions;
 	}
 
-	/* istanbul ignore next */
-	_queryParams(state = {}, options = {}) {
+	_makeQueryKeys(state) {
 		let consolidatedQueryFacets = this._consolidateQueryFacets(
 			state.query.keys.sk,
 		);
-		let indexKeys;
-		if (state.query.type === QueryTypes.is) {
-			indexKeys = this._makeIndexKeys(state.query.index, state.query.keys.pk, ...consolidatedQueryFacets);
-		} else {
-			indexKeys = this._makeIndexKeysWithoutTail(state.query.index, state.query.keys.pk, ...consolidatedQueryFacets);
+		switch (state.query.type) {
+			case QueryTypes.is:
+				return this._makeIndexKeys(state.query.index, state.query.keys.pk, ...consolidatedQueryFacets);
+			default:
+				return this._makeIndexKeysWithoutTail(state.query.index, state.query.keys.pk, ...consolidatedQueryFacets);
 		}
+	}
+
+	/* istanbul ignore next */
+	_queryParams(state = {}, options = {}) {
+		const indexKeys = this._makeQueryKeys(state);
 		let parameters = {};
 		switch (state.query.type) {
 			case QueryTypes.is:
@@ -1589,6 +1589,15 @@ class Entity {
 					state.query.filter[ExpressionTypes.FilterExpression],
 					indexKeys.pk,
 					this._getCollectionSk(state.query.collection),
+				);
+				break;
+			case QueryTypes.clustered_collection:
+				parameters = this._makeBeginsWithQueryParams(
+					state.query.options,
+					state.query.index,
+					state.query.filter[ExpressionTypes.FilterExpression],
+					indexKeys.pk,
+					...indexKeys.sk,
 				);
 				break;
 			case QueryTypes.between:
@@ -1969,17 +1978,23 @@ class Entity {
 		return [sk1, sk2];
 	}
 
-	_buildQueryFacets(facets, skFacets) {
-		let queryFacets = this._findProperties(facets, skFacets).reduce(
-			(result, [name, value]) => {
-				if (value !== undefined) {
-					result[name] = value;
-				}
-				return result;
-			},
-			{},
-		);
-		return { ...queryFacets };
+	_buildQueryFacets(provided, defined) {
+		const applied = {};
+		const unused = {};
+		const definedSet = new Set(defined || []);
+		for (const key of Object.keys(provided)) {
+			const value = provided[key];
+			if (definedSet.has(key)) {
+				applied[key] = value;
+			} else {
+				unused[key] = value;
+			}
+		}
+
+		return {
+			applied,
+			unused,
+		}
 	}
 
 	/* istanbul ignore next */
@@ -2009,7 +2024,14 @@ class Entity {
 		return [!!missing.length, missing, matching];
 	}
 
-	_makeKeyPrefixes(service, entity, version = "1", tableIndex, modelVersion) {
+	_makeKeyFixings({
+		service,
+		entity,
+		version = "1",
+		tableIndex,
+		modelVersion,
+		isClustered
+	}) {
 		/*
 			Collections will prefix the sort key so they can be queried with
 			a "begins_with" operator when crossing entities. It is also possible
@@ -2035,26 +2057,37 @@ class Entity {
 
 		let pk = `$${service}`;
 		let sk = "";
-
+		let entityKeys = "";
+		let postfix = "";
 		// If the index is in a collections, prepend the sk;
 		let collectionPrefix = this._makeCollectionPrefix(tableIndex.collection);
 		if (validations.isStringHasLength(collectionPrefix)) {
-			sk = `${collectionPrefix}#${entity}`;
+			sk = `${collectionPrefix}`;
+			entityKeys += `#${entity}`;
 		} else {
-			sk = `$${entity}`;
+			entityKeys += `$${entity}`;
 		}
 
 		/** start beta/v1 condition **/
 		if (modelVersion === ModelVersions.beta) {
 			pk = `${pk}_${version}`;
 		} else {
-			sk = `${sk}_${version}`;
+			entityKeys = `${entityKeys}_${version}`;
 		}
 		/** end beta/v1 condition **/
+
+		if (isClustered) {
+			postfix = entityKeys;
+		} else {
+			sk = `${sk}${entityKeys}`
+		}
 
 		// If no sk, append the sk properties to the pk
 		if (Object.keys(tableIndex.sk).length === 0) {
 			pk += sk;
+			if (isClustered) {
+				pk += postfix;
+			}
 		}
 
 		// If keys arent custom, set the prefixes
@@ -2063,6 +2096,7 @@ class Entity {
 		}
 		if (!keys.sk.isCustom) {
 			keys.sk.prefix = u.formatKeyCasing(sk, tableIndex.sk.casing);
+			keys.sk.postfix = u.formatKeyCasing(postfix, tableIndex.sk.casing);
 		}
 
 		return keys;
@@ -2172,11 +2206,12 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeKey({prefix, isCustom, casing} = {}, facets = [], supplied = {}, labels = [], {excludeLabelTail} = {}) {
+	_makeKey({prefix, isCustom, casing, postfix} = {}, facets = [], supplied = {}, labels = [], {excludeLabelTail} = {}) {
 		if (this._isNumericKey(isCustom, facets, labels)) {
 			return supplied[facets[0]];
 		}
 		let key = prefix;
+		let found = 0;
 		for (let i = 0; i < labels.length; i++) {
 			const { name, label } = labels[i];
 			const attribute = this.model.schema.getAttribute(name);
@@ -2198,8 +2233,12 @@ class Entity {
 			if (supplied[name] === undefined) {
 				break;
 			}
-
+			found++;
 			key = `${key}${value}`;
+		}
+		// todo: should not happen with collections
+		if (typeof postfix === 'string' && found === labels.length && !excludeLabelTail) {
+			key += postfix;
 		}
 
 		return u.formatKeyCasing(key, casing);
@@ -2450,6 +2489,7 @@ class Entity {
 		let indexFieldTranslation = {};
 		let indexHasSortKeys = {};
 		let indexHasSubCollections = {};
+		let clusteredIndexes = new Set();
 		let indexAccessPatternTransaction = {
 			fromAccessPatternToIndex: {},
 			fromIndexToAccessPattern: {},
@@ -2480,6 +2520,10 @@ class Entity {
 			let accessPattern = accessPatterns[i];
 			let index = indexes[accessPattern];
 			let indexName = index.index || TableIndex;
+			let indexType = typeof index.type === 'string' ? index.type : IndexTypes.isolated;
+			if (indexType === 'clustered') {
+				clusteredIndexes.add(accessPattern);
+			}
 			if (seenIndexes[indexName] !== undefined) {
 				if (indexName === TableIndex) {
 					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${u.formatIndexNameForDisplay(indexName)}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
@@ -2554,8 +2598,10 @@ class Entity {
 				pk,
 				sk,
 				collection,
+				hasSk,
 				customFacets,
 				index: indexName,
+				type: indexType,
 			};
 
 			indexHasSubCollections[indexName] = inCollection && Array.isArray(collection);
@@ -2699,6 +2745,7 @@ class Entity {
 			facets,
 			subCollections,
 			indexHasSortKeys,
+			clusteredIndexes,
 			indexHasSubCollections,
 			indexes: normalized,
 			indexField: indexFieldTranslation,
@@ -2723,11 +2770,18 @@ class Entity {
 		return normalized;
 	}
 
-	_normalizePrefixes(service, entity, version, indexes, modelVersion) {
+	_normalizeKeyFixings({service, entity, version, indexes, modelVersion, clusteredIndexes}) {
 		let prefixes = {};
 		for (let accessPattern of Object.keys(indexes)) {
-			let item = indexes[accessPattern];
-			prefixes[item.index] = this._makeKeyPrefixes(service, entity, version, item, modelVersion);
+			let tableIndex = indexes[accessPattern];
+			prefixes[tableIndex.index] = this._makeKeyFixings({
+				service,
+				entity,
+				version,
+				tableIndex,
+				modelVersion,
+				isClustered: clusteredIndexes.has(accessPattern),
+			});
 		}
 		return prefixes;
 	}
@@ -2867,13 +2921,15 @@ class Entity {
 			collections,
 			subCollections,
 			indexCollection,
+			clusteredIndexes,
 			indexHasSortKeys,
 			indexAccessPattern,
 			indexHasSubCollections,
 		} = this._normalizeIndexes(model.indexes);
 		let schema = new Schema(model.attributes, facets, {client});
 		let filters = this._normalizeFilters(model.filters);
-		let prefixes = this._normalizePrefixes(service, entity, version, indexes, modelVersion);
+		// todo: consider a rename
+		let prefixes = this._normalizeKeyFixings({service, entity, version, indexes, modelVersion, clusteredIndexes});
 
 		// apply model defined labels
 		let schemaDefinedLabels = schema.getLabels();
@@ -2898,6 +2954,7 @@ class Entity {
 			modelVersion,
 			subCollections,
 			lookup: {
+				clusteredIndexes,
 				indexHasSortKeys,
 				indexHasSubCollections
 			},

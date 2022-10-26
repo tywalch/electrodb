@@ -18,6 +18,7 @@ const QueryTypes = {
 	begins: "begins",
 	between: "between",
 	collection: "collection",
+	clustered_collection: 'clustered_collection',
 	is: "is"
 };
 
@@ -35,6 +36,11 @@ const MethodTypes = {
 	batchGet: "batchGet",
 	batchWrite: "batchWrite"
 };
+
+const IndexTypes = {
+	isolated: 'isolated',
+	clustered: 'clustered',
+}
 
 const Comparisons = {
 	gte: ">=",
@@ -210,6 +216,7 @@ module.exports = {
 	CastTypes,
 	KeyCasing,
 	PathTypes,
+	IndexTypes,
 	QueryTypes,
 	ValueTypes,
 	TableIndex,
