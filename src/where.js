@@ -50,13 +50,8 @@ class FilterExpression extends ExpressionState {
 			throw new Error(`Invalid operation: "${operation}". Please report`);
 		}
 		const names = this.setName({}, name, name);
-		if (values.length) {
-			for (const value of values) {
-				this.setValue(name, value);
-			}
-		}
-		// todo: is "name" meant to be "names" here???
-		const condition = template({}, name.expression, names.prop, ...values);
+		const valueExpressions = values.map(value => this.setValue(name, value));
+		const condition = template({}, names.expression, names.prop, ...valueExpressions);
 		this.add(condition);
 	}
 
@@ -90,19 +85,19 @@ class WhereFactory {
     this.operations = {...operations};
   }
 
-	getExpressionType(methodType) {
-		switch (methodType) {
-			case MethodTypes.put:
-			case MethodTypes.create:
-			case MethodTypes.update:
-			case MethodTypes.patch:
-			case MethodTypes.delete:
-			case MethodTypes.remove:
-				return ExpressionTypes.ConditionExpression
-			default:
-				return ExpressionTypes.FilterExpression
-		}
+  getExpressionType(methodType) {
+  	switch (methodType) {
+		case MethodTypes.put:
+		case MethodTypes.create:
+		case MethodTypes.update:
+		case MethodTypes.patch:
+		case MethodTypes.delete:
+		case MethodTypes.remove:
+			return ExpressionTypes.ConditionExpression
+		default:
+			return ExpressionTypes.FilterExpression
 	}
+  }
 
 	buildClause(cb) {
 		if (typeof cb !== "function") {

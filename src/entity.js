@@ -1978,14 +1978,17 @@ class Entity {
 		return [sk1, sk2];
 	}
 
-	_buildQueryFacets(provided, defined) {
+	_buildQueryFacets(provided, defined, skip) {
 		const applied = {};
 		const unused = {};
 		const definedSet = new Set(defined || []);
+		const skipSet = new Set(skip || []);
 		for (const key of Object.keys(provided)) {
 			const value = provided[key];
 			if (definedSet.has(key)) {
 				applied[key] = value;
+			} else if (skipSet.has(key)) {
+				continue;
 			} else {
 				unused[key] = value;
 			}
@@ -2211,7 +2214,7 @@ class Entity {
 			return supplied[facets[0]];
 		}
 		let key = prefix;
-		let found = 0;
+		let foundCount = 0;
 		for (let i = 0; i < labels.length; i++) {
 			const { name, label } = labels[i];
 			const attribute = this.model.schema.getAttribute(name);
@@ -2233,11 +2236,13 @@ class Entity {
 			if (supplied[name] === undefined) {
 				break;
 			}
-			found++;
+			foundCount++;
 			key = `${key}${value}`;
 		}
+
 		// todo: should not happen with collections
-		if (typeof postfix === 'string' && found === labels.length && !excludeLabelTail) {
+
+		if (typeof postfix === 'string' && foundCount === labels.length && !excludeLabelTail) {
 			key += postfix;
 		}
 

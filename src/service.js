@@ -93,6 +93,7 @@ class Service {
 		this.collectionSchema = {};
 		this.compositeAttributes = {};
 		this.collections = {};
+		this.identifiers = {};
 		this._instance = ElectroInstance.service;
 		this._instanceType = ElectroInstanceTypes.service;
 	}
@@ -389,7 +390,7 @@ class Service {
 			expressions: {
 				names: identifiers.names || {},
 				values: identifiers.values || {},
-				expression: identifiers.expression || ""
+				expression: identifiers.expression ? `(${identifiers.expression})` : ""
 			},
 			attributes,
 			entities,
