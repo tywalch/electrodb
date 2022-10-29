@@ -433,11 +433,22 @@ type OptionalPropertyOf<T extends object> = Exclude<{
         : K
 }[keyof T], undefined>
 
+type ClusteredCollectionQueryParams<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>> = {
+    [Collection in keyof Collections as Collections[Collection] extends keyof E ? Collection : never]: {
+        [EntityName in keyof E]:
+        EntityName extends Collections[Collection]
+            ? ClusteredCompositeAttributes<E, Collections, Collection, EntityName>
+            : never
+    }[keyof E];
+}
+
 export type ClusteredCollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>> = {
     [Collection in keyof Collections as Collections[Collection] extends keyof E ? Collection : never]: {
         [EntityName in keyof E]:
             EntityName extends Collections[Collection]
-                ? (params: ClusteredCompositeAttributes<E, Collections, Collection, EntityName>) =>
+                ? (
+                    params: ClusteredCompositeAttributes<E, Collections, Collection, EntityName>
+                ) =>
                     ClusteredCollectionOperations<E, Collections, Collection, EntityName> &
                         ClusteredCollectionQueryOperations<
                             Pick<ClusteredCompositeAttributes<E, Collections, Collection, EntityName>, OptionalPropertyOf<ClusteredCompositeAttributes<E, Collections, Collection, EntityName>>>,
@@ -2279,7 +2290,8 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
     collections:
         ClusteredCollectionQueries<E, ClusteredCollectionAssociations<E>>
-        & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
+        // & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
+        & CollectionQueries<E, CollectionAssociations<E>>
     constructor(entities: E, config?: ServiceConfiguration);
 }
 

@@ -272,7 +272,7 @@ database.join(modelOne);
 database.join(modelTwo);
 database.join(modelThree);
 
-describe("Service Connected", async () => {
+describe("Service Connected", () => {
 	before(async () => sleep(1000));
 	it("Should add three records and retrieve correct records based on collections", async () => {
 		let prop1 = uuid()
@@ -1349,7 +1349,7 @@ describe("Entities with custom identifiers and versions", () => {
 				":__edb_v___entityOne": "1",
 				":__edb_v___entityTwo": "1"
 			},
-			FilterExpression: "(#__edb_e__ = :__edb_e___entityOne AND #__edb_v__ = :__edb_v___entityOne) OR (#__edb_e__ = :__edb_e___entityTwo AND #__edb_v__ = :__edb_v___entityTwo) AND #uniqueToModelTwo = :uniqueToModelTwo0 OR #uniqueToModelOne = :uniqueToModelOne0"
+			FilterExpression: "((#__edb_e__ = :__edb_e___entityOne AND #__edb_v__ = :__edb_v___entityOne) OR (#__edb_e__ = :__edb_e___entityTwo AND #__edb_v__ = :__edb_v___entityTwo)) AND #uniqueToModelTwo = :uniqueToModelTwo0 OR #uniqueToModelOne = :uniqueToModelOne0"
 		});
 	});
 
@@ -1498,7 +1498,7 @@ describe("Entities with custom identifiers and versions", () => {
 	});
 });
 
-describe("Sub-Collections", async () => {
+describe("Sub-Collections", () => {
 	const entity1 = new Entity({
 		model: {
 			entity: "entity1",

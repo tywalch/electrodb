@@ -13,7 +13,7 @@ const SERVICE = "BugBeater";
 const ENTITY = "TEST_ENTITY";
 const table = "electro";
 
-describe("Entity", async () => {
+describe("Entity", () => {
     before(async () => sleep(1000));
     let MallStores = new Entity({
         model: {
@@ -138,7 +138,7 @@ describe("Entity", async () => {
         }
     }, { client, table });
 
-    describe("Simple crud", async () => {
+    describe("Simple crud", () => {
         let mall = "EastPointe";
         let store = "LatteLarrys";
         let sector = "A1";
@@ -376,7 +376,7 @@ describe("Entity", async () => {
         });
     });
 
-    describe("Simple crud without sort key", async () => {
+    describe("Simple crud without sort key", () => {
         const MallStores = new Entity({
             model: {
                 service: SERVICE,
@@ -767,7 +767,7 @@ describe("Entity", async () => {
         })
     });
 
-    describe("Custom index fields", async () => {
+    describe("Custom index fields", () => {
         it("Should use the index field names as theyre specified on the model", async () => {
             let schema = {
                 model: {
@@ -994,7 +994,7 @@ describe("Entity", async () => {
             await MallStores.scan.go();
         });
     });
-    describe("Delete records", async () => {
+    describe("Delete records", () => {
         it("Should create then delete a record", async () => {
             const table = "electro";
             const record = new Entity({
@@ -1038,7 +1038,7 @@ describe("Entity", async () => {
         });
     });
 
-    describe("Getters/Setters", async () => {
+    describe("Getters/Setters", () => {
         let db = new Entity(
             {
                 model: {
@@ -1215,7 +1215,7 @@ describe("Entity", async () => {
             })
         }).timeout(10000);
     });
-    describe("Filters", async () => {
+    describe("Filters", () => {
         it("Should filter results with custom user filter", async () => {
             let store = "LatteLarrys";
             let category = "food/coffee";
@@ -1399,7 +1399,7 @@ describe("Entity", async () => {
                 .and.to.have.deep.members(expectedMembers);
         });
     });
-    describe("Updating Records", async () => {
+    describe("Updating Records", () => {
         const Dummy = new Entity({
             model: {
                 entity: "dummy",

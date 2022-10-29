@@ -366,7 +366,8 @@ class Service {
 	}, facets = {}) {
 		const { entities, attributes, identifiers, indexType } = this.collectionSchema[name];
 		const compositeAttributes = this.compositeAttributes[name];
-		const entity = Object.values(entities)[0];
+		const allEntities = Object.values(entities);
+		const entity = allEntities[0];
 
 		let filterBuilder = new FilterFactory(attributes, FilterOperations);
 		let whereBuilder = new WhereFactory(attributes, FilterOperations);
@@ -374,6 +375,9 @@ class Service {
 
 		clauses = filterBuilder.injectFilterClauses(clauses);
 		clauses = whereBuilder.injectWhereClauses(clauses);
+
+		const expression = identifiers.expression || "";
+
 		let options = {
 			// expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
 			parse: (options, data) => {
@@ -390,13 +394,16 @@ class Service {
 			expressions: {
 				names: identifiers.names || {},
 				values: identifiers.values || {},
-				expression: identifiers.expression ? `(${identifiers.expression})` : ""
+				expression: allEntities.length > 1
+					? `(${expression})`
+					: expression
 			},
 			attributes,
 			entities,
 			indexType,
 			compositeAttributes,
 		};
+
 		return entity.collection(name, clauses, facets, options);
 	}
 

@@ -28,7 +28,33 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
+		children: ["get", "delete", "update", "query", "put", "scan", "collection", "clusteredCollection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
+	},
+	clusteredCollection: {
+		name: "clusteredCollection",
+		action(entity, state, collection = "", facets /* istanbul ignore next */ = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				const {pk, sk} = state.getCompositeAttributes();
+				return state
+					.setType(QueryTypes.clustered_collection)
+					.setMethod(MethodTypes.query)
+					.setCollection(collection)
+					.setPK(entity._expectFacets(facets, pk))
+					.ifSK(() => {
+						const {composites, unused} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(composites);
+						state.filterProperties(FilterOperationNames.eq, unused);
+					});
+
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go"],
 	},
 	collection: {
 		name: "collection",
@@ -39,32 +65,24 @@ let clauses = {
 			}
 			try {
 				const {pk, sk} = state.getCompositeAttributes();
-				const type = state.query.options.indexType === IndexTypes.clustered
-					? QueryTypes.clustered_collection
-					: QueryTypes.collection;
 				return state
-					.setType(type)
+					.setType(QueryTypes.collection)
 					.setMethod(MethodTypes.query)
 					.setCollection(collection)
 					.setPK(entity._expectFacets(facets, pk))
-					.ifSK(() => {
-						const {composites, unused} = state.identifyCompositeAttributes(facets, sk, pk);
-						let toFilter;
-						if (type === QueryTypes.clustered_collection) {
-							toFilter = unused;
-							state.setSK(composites);
-						} else {
-							toFilter = {...composites, ...unused};
-						}
-						state.unsafeFilterProperties(FilterOperationNames.eq, toFilter);
-					});
-
+					// .ifSK(() => {
+					// 	const {composites, unused} = state.identifyCompositeAttributes(facets, sk, pk);
+						// state.filterProperties(FilterOperationNames.eq, {
+						// 	...composites,
+						// 	...unused
+						// });
+					// });
 			} catch(err) {
 				state.setError(err);
 				return state;
 			}
 		},
-		children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go"],
+		children: ["params", "go"],
 	},
 	scan: {
 		name: "scan",
@@ -89,14 +107,15 @@ let clauses = {
 				return state;
 			}
 			try {
-				const attributes = state.getCompositeAttributes();
+				const {pk, sk} = state.getCompositeAttributes();
+				const {composites} = state.identifyCompositeAttributes(facets, sk, pk);
 				return state
 					.setMethod(MethodTypes.get)
 					.setType(QueryTypes.eq)
-					.setPK(entity._expectFacets(facets, attributes.pk))
+					.setPK(entity._expectFacets(facets, pk))
 					.ifSK(() => {
-						entity._expectFacets(facets, attributes.sk);
-						state.setSK(state.buildQueryComposites(facets, attributes.sk));
+						entity._expectFacets(facets, sk);
+						state.setSK(composites);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -439,14 +458,15 @@ let clauses = {
 				return state;
 			}
 			try {
-				const attributes = state.getCompositeAttributes();
-				const endingSk = state.buildQueryComposites(endingFacets, attributes.sk);
-				const startingSk = state.buildQueryComposites(startingFacets, attributes.sk);
+				const {pk, sk} = state.getCompositeAttributes();
+				const endingSk = state.identifyCompositeAttributes(endingFacets, sk, pk);
+				const startingSk = state.identifyCompositeAttributes(startingFacets, sk, pk);
 				return state
 					.setType(QueryTypes.and)
-					.setSK(endingSk)
+					.setSK(endingSk.composites)
 					.setType(QueryTypes.between)
-					.setSK(startingSk)
+					.setSK(startingSk.composites)
+					.filterProperties(FilterOperationNames.lte, endingSk.composites)
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -481,11 +501,16 @@ let clauses = {
 				return state;
 			}
 			try {
+
 				return state
 					.setType(QueryTypes.gt)
 					.ifSK(state => {
-						const attributes = state.getCompositeAttributes();
-						state.setSK(state.buildQueryComposites(facets, attributes.sk));
+						const {pk, sk} = state.getCompositeAttributes();
+						const {composites} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(composites);
+						state.filterProperties(FilterOperationNames.gt, {
+							...composites,
+						})
 					});
 			} catch(err) {
 				state.setError(err);
@@ -523,8 +548,9 @@ let clauses = {
 			try {
 				return state.setType(QueryTypes.lt)
 					.ifSK(state => {
-						const attributes = state.getCompositeAttributes();
-						state.setSK(state.buildQueryComposites(facets, attributes.sk));
+						const {pk, sk} = state.getCompositeAttributes();
+						const {composites} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(composites);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -542,8 +568,12 @@ let clauses = {
 			try {
 				return state.setType(QueryTypes.lte)
 					.ifSK(state => {
-						const attributes = state.getCompositeAttributes();
-						state.setSK(state.buildQueryComposites(facets, attributes.sk));
+						const {pk, sk} = state.getCompositeAttributes();
+						const {composites} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(composites);
+						state.filterProperties(FilterOperationNames.lte, {
+							...composites,
+						});
 					});
 			} catch(err) {
 				state.setError(err);
@@ -746,55 +776,26 @@ class ChainState {
 		}
 	}
 
-	unsafeFilter(operation, name, value) {
+	applyFilter(operation, name, ...values) {
 		const filter = this.query.filter[ExpressionTypes.FilterExpression];
-		if (FilterOperationNames[operation] !== undefined & name !== undefined && value !== undefined) {
-			filter.unsafeSet(operation, name, value)
-		}
-	}
-
-	unsafeFilterProperties(operation, obj = {}) {
-		for (const property in obj) {
-			const value = obj[property];
-			if (value !== undefined) {
-				this.unsafeFilter(FilterOperationNames.eq, property, value);
+		if (FilterOperationNames[operation] !== undefined & name !== undefined && values.length > 0) {
+			const attribute = this.attributes[name];
+			if (attribute !== undefined) {
+				filter.unsafeSet(operation, attribute.field, ...values);
 			}
 		}
 	}
 
-	// setSK(attributes, type = this.query.type, filterFallbackOperation = FilterOperationNames.eq) {
-	// 	if (this.hasSortKey) {
-	// 		let filterAttributes;
-	// 		let keyAttributes;
-	// 		const {pk, sk} = this.getCompositeAttributes();
-	// 		const {composites, unused} = this._identifyCompositeAttributes(attributes, sk, pk);
-	//
-	// 		if (type === QueryTypes.collection) {
-	// 			filterAttributes = {...composites, ...unused};
-	// 		} else {
-	// 			keyAttributes = composites;
-	// 			filterAttributes = unused;
-	// 		}
-	//
-	// 		for (const prop in filterAttributes) {
-	// 			const value = filterAttributes[prop];
-	// 			if (value !== undefined) {
-	// 				this.unsafeFilter(filterFallbackOperation, prop, value);
-	// 			}
-	// 		}
-	//
-	// 		if (keyAttributes) {
-	// 			this.query.keys.sk.push({
-	// 				type: type,
-	// 				facets: keyAttributes
-	// 			});
-	//
-	// 			this.query.keys.provided = this._appendProvided(KeyTypes.sk, keyAttributes);
-	// 		}
-	// 	}
-	//
-	// 	return this;
-	// }
+	filterProperties(operation, obj = {}) {
+		for (const property in obj) {
+			const value = obj[property];
+			if (value !== undefined) {
+				this.applyFilter(operation, property, value);
+			}
+		}
+		return this;
+	}
+
 	setSK(attributes, type = this.query.type) {
 		if (this.hasSortKey) {
 			this.query.keys.sk.push({
@@ -854,27 +855,6 @@ class ChainState {
 	applyPut(data = {}) {
 		this.query.put.data = {...this.query.put.data, ...data};
 		return this;
-	}
-
-	applySingleFilters(operation, properties, entities) {
-		const filter = this.query.filter[ExpressionTypes.FilterExpression];
-		for (const property in properties) {
-			const value = properties[property];
-			if (value !== undefined) {
-				const orOperations = [];
-				orOperations.push({
-					[property]: value,
-					// [entity.identifiers.entity]: entity.getName(),
-					// [entity.identifiers.version]: entity.getVersion(),
-				});
-				// for (const entity of entities) {
-				// 	if (entity.schema.attributes[property] !== undefined) {
-				//
-				// 	}
-				// }
-				filter.unsafeOrSet(operation, orOperations);
-			}
-		}
 	}
 }
 

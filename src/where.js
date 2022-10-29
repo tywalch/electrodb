@@ -55,25 +55,6 @@ class FilterExpression extends ExpressionState {
 		this.add(condition);
 	}
 
-	unsafeOrSet(operation, objects) {
-		const {template} = FilterOperations[operation] || {};
-		if (template === undefined) {
-			throw new Error(`Invalid operation: "${operation}". Please report`);
-		}
-		const orConditions = [];
-		for (const obj of objects) {
-			const andConditions = [];
-			for (const name in obj) {
-				const value = obj[name];
-				const names = this.setName({}, name, name);
-				const valueExpression = this.setValue(name, value);
-				andConditions.push(`${template({}, names.expression, names.prop, valueExpression)}`);
-			}
-			orConditions.push(`(${andConditions.join(' AND ')})`);
-		}
-		this.add(orConditions.join(' OR '));
-	}
-
 	build() {
 		return this.expression;
 	}

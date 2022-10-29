@@ -1485,7 +1485,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     type NoSharedCollectionParameter2 = Parameter<typeof serviceNoShared.collections.normalcollection>;
     const noSharedCollectionParameter2 = {} as Resolve<NoSharedCollectionParameter2>;
-    expectType<{prop1: string; prop2: string; prop4?: number | undefined}>(noSharedCollectionParameter2);
+    expectType<{ prop1: string; prop2: string; }>(noSharedCollectionParameter2);
     expectError<NoSharedCollectionParameter2>({});
     expectError<NoSharedCollectionParameter2>({prop2: "abc"});
     expectError<NoSharedCollectionParameter2>({prop1: "abc"});

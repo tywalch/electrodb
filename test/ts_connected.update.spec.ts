@@ -1175,7 +1175,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(setParameters).to.deep.equal({
-                UpdateExpression: "SET #category = :category_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                UpdateExpression: "SET #category = :category_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 ExpressionAttributeNames: {
                     '#category': 'category',
                     "#buildingId": "buildingId",
@@ -1208,7 +1208,7 @@ describe("Update Item", () => {
                 .params();
 
             expect(removeParameters).to.deep.equal({
-                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount",
+                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount",
                 "ExpressionAttributeNames": {
                     "#discount": "discount",
                     "#buildingId": "buildingId",
@@ -1243,7 +1243,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(JSON.parse(JSON.stringify(addParameters))).to.deep.equal({
-                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #rent :rent_u0, #tenant :tenant_u0",
+                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #rent :rent_u0, #tenant :tenant_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#rent": "rent",
@@ -1279,7 +1279,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(subtractParameters).to.deep.equal({
-                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#deposit": "deposit",
@@ -1318,7 +1318,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(appendParameters).to.deep.equal({
-                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#rentalAgreement": "rentalAgreement",
@@ -1356,7 +1356,7 @@ describe("Update Item", () => {
 
 
             expect(JSON.parse(JSON.stringify(deleteParameters))).to.deep.equal({
-                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 DELETE #contact :contact_u0",
+                "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 DELETE #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#contact": "contact",
@@ -1402,7 +1402,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",

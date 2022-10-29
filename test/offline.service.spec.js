@@ -263,7 +263,7 @@ database.join(modelOne);
 database.join(modelTwo);
 database.join(modelThree);
 
-describe("Service Offline", async () => {
+describe("Service Offline", () => {
 	describe("TypeScript oriented constructor", () => {
 		let modelOne = {
 			model: {
@@ -1293,7 +1293,7 @@ describe("Service Offline", async () => {
 				":__edb_v___entityOne": "1",
 				":__edb_v___entityTwo": "1",
 			},
-			FilterExpression: "(#__edb_e__ = :__edb_e___entityOne AND #__edb_v__ = :__edb_v___entityOne) OR (#__edb_e__ = :__edb_e___entityTwo AND #__edb_v__ = :__edb_v___entityTwo)"
+			FilterExpression: "((#__edb_e__ = :__edb_e___entityOne AND #__edb_v__ = :__edb_v___entityOne) OR (#__edb_e__ = :__edb_e___entityTwo AND #__edb_v__ = :__edb_v___entityTwo))"
 		});
 	});
 
@@ -2287,7 +2287,7 @@ describe("Sub Collections", () => {
 						":__edb_v___entityWithMultipleCollections2": "myversion",
 						":__edb_v___entityWithMultipleCollections3": "myversion",
 					},
-					FilterExpression: "(#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)",
+					FilterExpression: "((#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))",
 				}
 			},
 			{
@@ -2308,7 +2308,7 @@ describe("Sub Collections", () => {
 						":__edb_v___entityWithMultipleCollections1": "myversion",
 						":__edb_v___entityWithMultipleCollections2": "myversion",
 					},
-					FilterExpression: "(#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)"
+					FilterExpression: "((#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))"
 				}
 			},
 			{
@@ -2328,7 +2328,7 @@ describe("Sub Collections", () => {
 						":__edb_v___entityWithMultipleCollections3": "myversion",
 					},
 					IndexName: 'index2',
-					FilterExpression: "(#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)"
+					FilterExpression: "((#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))"
 				}
 			},
 			{
