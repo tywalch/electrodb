@@ -187,12 +187,12 @@ class Service {
 			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Service name defined on joined instance, ${entity.model.service}, does not match the name of this Service: ${this.service.name}. Verify or update the service name on the Entity/Model to match the name defined on this service.`);
 		}
 
-		if (this._getTableName()) {
-			entity._setTableName(this._getTableName());
+		if (this.getTableName()) {
+			entity.setTableName(this.getTableName());
 		}
 
 		if (options.client) {
-			entity._setClient(options.client);
+			entity.setClient(options.client);
 		}
 
 		if (options.logger) {
@@ -262,10 +262,10 @@ class Service {
 		}
 	}
 
-	_setClient(client) {
+	setClient(client) {
 		if (client !== undefined) {
 			for (let entity of Object.values(this.entities)) {
-				entity._setClient(client);
+				entity.setClient(client);
 			}
 		}
 	}
@@ -349,14 +349,14 @@ class Service {
 		return owner;
 	}
 
-	_getTableName() {
+	getTableName() {
 		return this.service.table;
 	}
 
-	_setTableName(table) {
+	setTableName(table) {
 		this.service.table = table;
 		for (let entity of Object.values(this.entities)) {
-			entity._setTableName(table);
+			entity.setTableName(table);
 		}
 	}
 
@@ -679,11 +679,11 @@ class Service {
 		}
 
 		if (this.collectionSchema[collection].table !== "") {
-			if (this.collectionSchema[collection].table !== entity._getTableName()) {
-				throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Entity with name '${name}' is defined to use a different Table than what is defined on other Service Entities and/or the Service itself. Entity '${name}' is defined with table name '${entity._getTableName()}' but the Service has been defined to use table name '${this.collectionSchema[collection].table}'. All Entities in a Service must reference the same DynamoDB table. To ensure all Entities will use the same DynamoDB table, it is possible to apply the property 'table' to the Service constructor's configuration parameter.`);
+			if (this.collectionSchema[collection].table !== entity.getTableName()) {
+				throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Entity with name '${name}' is defined to use a different Table than what is defined on other Service Entities and/or the Service itself. Entity '${name}' is defined with table name '${entity.getTableName()}' but the Service has been defined to use table name '${this.collectionSchema[collection].table}'. All Entities in a Service must reference the same DynamoDB table. To ensure all Entities will use the same DynamoDB table, it is possible to apply the property 'table' to the Service constructor's configuration parameter.`);
 			}
 		} else {
-			this.collectionSchema[collection].table = entity._getTableName();
+			this.collectionSchema[collection].table = entity.getTableName();
 		}
 
 		this.collectionSchema[collection].keys = this._processEntityKeys(name, this.collectionSchema[collection].keys, providedIndex);

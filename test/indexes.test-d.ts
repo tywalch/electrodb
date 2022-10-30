@@ -197,7 +197,6 @@ async function main() {
     const prop2 = 'def';
     const prop3 = 'hgi';
 
-    // todo: collections should never finish an index
     transactions.collections
         .isolatedSome({prop1, prop2, prop3})
         .where((attr, op) => {

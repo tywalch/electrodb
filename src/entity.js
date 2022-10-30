@@ -515,7 +515,7 @@ class Entity {
 		if (!response || !response.UnprocessedItems) {
 			return response;
 		}
-		const table = config.table || this._getTableName();
+		const table = config.table || this.getTableName();
 		const index = TableIndex;
 		let unprocessed = response.UnprocessedItems[table];
 		if (Array.isArray(unprocessed) && unprocessed.length) {
@@ -546,7 +546,7 @@ class Entity {
 		response = {},
 		config = {},
 	}) {
-		const table = config.table || this._getTableName();
+		const table = config.table || this.getTableName();
 		const index = TableIndex;
 
 		if (!response.UnprocessedKeys || !response.Responses) {
@@ -672,18 +672,22 @@ class Entity {
 		return config.formatCursor.deserialize(exclusiveStartKey) || null;
 	}
 
-	_getTableName() {
-		return this.config.table;
-	}
-
-	_setTableName(table) {
-		this.config.table = table;
-	}
-
-	_setClient(client) {
+	setClient(client) {
 		if (client) {
 			this.client = c.normalizeClient(client);
 		}
+	}
+
+	setTableName(tableName) {
+		this.config.table = tableName;
+	}
+
+	getTableName() {
+		return this.config.table;
+	}
+
+	getTableName() {
+		return this.config.table;
 	}
 
 	_chain(state, clauses, clause) {
@@ -1228,7 +1232,7 @@ class Entity {
 	}
 
 	_batchGetParams(state, config = {}) {
-		let table = config.table || this._getTableName();
+		let table = config.table || this.getTableName();
 		let userDefinedParams = config.params || {};
 		let records = [];
 		for (let itemState of state.subStates) {
@@ -1253,7 +1257,7 @@ class Entity {
 	}
 
 	_batchWriteParams(state, config = {}) {
-		let table = config.table || this._getTableName();
+		let table = config.table || this.getTableName();
 		let records = [];
 		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
@@ -1324,7 +1328,7 @@ class Entity {
 		let keys = this._makeParameterKey(indexBase, pk, ...sk);
 		let keyExpressions = this._expressionAttributeBuilder(keys);
 		let params = {
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames
@@ -1358,7 +1362,7 @@ class Entity {
 			skAttributes: [sort],
 		});
 		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
-		let TableName = this._getTableName();
+		let TableName = this.getTableName();
 		return {Key, TableName};
 	}
 
@@ -1445,7 +1449,7 @@ class Entity {
 			UpdateExpression: update.build(),
 			ExpressionAttributeNames: update.getNames(),
 			ExpressionAttributeValues: update.getValues(),
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			Key: indexKey,
 		};
 	}
@@ -1462,7 +1466,7 @@ class Entity {
 				[this.identifiers.entity]: this.getName(),
 				[this.identifiers.version]: this.getVersion(),
 			},
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 		};
 	}
 
@@ -1659,7 +1663,7 @@ class Entity {
 		);
 		delete keyExpressions.ExpressionAttributeNames["#sk2"];
 		let params = {
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames,
@@ -1702,7 +1706,7 @@ class Entity {
 
 		let params = {
 			KeyConditionExpression,
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.getNames(), keyExpressions.ExpressionAttributeNames, customExpressions.names),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.getValues(), keyExpressions.ExpressionAttributeValues, customExpressions.values),
 		};
@@ -1777,7 +1781,7 @@ class Entity {
 			sk,
 		);
 		let params = {
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames,

@@ -589,7 +589,7 @@ let clauses = {
 				throw state.error;
 			}
 			try {
-				if (!v.isStringHasLength(options.table) && !v.isStringHasLength(entity._getTableName())) {
+				if (!v.isStringHasLength(options.table) && !v.isStringHasLength(entity.getTableName())) {
 					throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
 				}
 				const method = state.getMethod();

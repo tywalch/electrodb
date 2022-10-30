@@ -2006,7 +2006,7 @@ describe("Misconfiguration exceptions", () => {
 		let entityParamsBefore = service.entities.MyEntity.query.index1({prop1: "abc"}).params();
 		expect(collectionParamsBefore.TableName).to.equal(tableBefore);
 		expect(entityParamsBefore.TableName).to.equal(tableBefore);
-		service._setTableName(tableAfter);
+		service.setTableName(tableAfter);
 		let collectionParamsAfter = service.collections.collectionA({prop1: "abc"}).params();
 		let entityParamsAfter = service.entities.MyEntity.query.index1({prop1: "abc"}).params();
 		expect(collectionParamsAfter.TableName).to.equal(tableAfter);

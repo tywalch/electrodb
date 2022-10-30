@@ -2278,6 +2278,9 @@ export class Entity<A extends string, F extends string, C extends string, S exte
         }>, cursor: string | null }
         : { data: Array<ResponseItem<A,F,C,S>>, cursor: string | null }
     setIdentifier(type: "entity" | "version", value: string): void;
+    setTableName(tableName: string): void;
+    getTableName(): string | undefined;
+    setClient(client: DocumentClient): void;
     client: any;
 }
 
@@ -2295,6 +2298,10 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
         & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
         // & CollectionQueries<E, CollectionAssociations<E>>
     constructor(entities: E, config?: ServiceConfiguration);
+
+    setTableName(tableName: string): void;
+    getTableName(): string | undefined;
+    setClient(client: DocumentClient): void;
 }
 
 type CustomAttributeDefinition<T> = {

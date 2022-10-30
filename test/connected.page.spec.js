@@ -1125,7 +1125,7 @@ describe("Page", () => {
           occurrences = tasks.occurrences.projects[occurrence];
         }
       }
-      tasks._setClient(created.client);
+      tasks.setClient(created.client);
       expect(limit).to.be.greaterThan(1);
       expect(limit).to.be.lessThan(occurrences);
       const results = await tasks.query.projects({project}).go({limit, raw: true}).then(res => res.data);
