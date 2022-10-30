@@ -602,7 +602,7 @@ class Service {
 		);
 	}
 
-	_processSubCollections({existing, provided, entityName, collectionName, providedType}) {
+	_processSubCollections(providedType, existing, provided, entityName, collectionName) {
 		let existingSubCollections;
 		let providedSubCollections;
 		if (v.isArrayHasLength(existing)) {
@@ -691,13 +691,13 @@ class Service {
 		this.collectionSchema[collection].entities[name] = entity;
 		this.collectionSchema[collection].identifiers = this._processEntityIdentifiers(this.collectionSchema[collection].identifiers, entity.getIdentifierExpressions(name));
 		this.collectionSchema[collection].index = this._processEntityCollectionIndex(this.collectionSchema[collection].index, providedIndex.index, name, collection);
-		let collectionIndex = this._processSubCollections({
+		let collectionIndex = this._processSubCollections(
 			providedType,
-			existing: this.collectionSchema[collection].collection,
-			provided: providedIndex.collection,
-			entityName: name,
-			collectionName: collection
-		});
+			this.collectionSchema[collection].collection,
+			providedIndex.collection,
+			name,
+			collection
+		);
 		this.collectionSchema[collection].collection[collectionIndex] = collection;
 		this.collectionSchema[collection].hasSubCollections = this.collectionSchema[collection].hasSubCollections || Array.isArray(providedIndex.collection);
 		return this.collectionSchema[collection];

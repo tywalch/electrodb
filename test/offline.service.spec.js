@@ -2362,6 +2362,7 @@ describe("Sub Collections", () => {
 		const tests = [
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					"collectionA",
 					"my_entity",
@@ -2372,6 +2373,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					"collectionB",
 					"my_entity",
@@ -2382,6 +2384,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					undefined,
 					"my_entity",
@@ -2392,6 +2395,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					["collectionA", "collectionB"],
 					"my_entity",
@@ -2402,6 +2406,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionB"],
 					"collectionA",
 					"my_entity",
@@ -2412,6 +2417,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					["collectionA", "collectionB"],
 					"my_entity",
@@ -2422,6 +2428,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2432,6 +2439,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionB"],
 					["collectionA", "collectionB"],
 					"my_entity",
@@ -2442,6 +2450,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionB"],
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2452,6 +2461,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionB",
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2462,6 +2472,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionB",
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2472,6 +2483,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionB",
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2482,6 +2494,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionB", "collectionD", "collectionC"],
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2492,6 +2505,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionD", "collectionC"],
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2502,6 +2516,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					[],
 					"collectionA",
 					"my_entity",
@@ -2509,6 +2524,17 @@ describe("Sub Collections", () => {
 				],
 				output: 0,
 				success: true
+			},
+			{
+				input: [
+					'clustered',
+					["collectionA"],
+					["collectionA", "collectionB"],
+					"my_entity",
+					"collectionA"
+				],
+				output: `Clustered indexes do not support sub-collections. The sub-collection "collectionA", on Entity "my_entity" must be defined as either an individual collection name or the index must be redefined as an isolated cluster`,
+				success: false
 			},
 		];
 		for (const test of tests) {
