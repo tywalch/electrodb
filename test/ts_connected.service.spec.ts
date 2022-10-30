@@ -967,24 +967,6 @@ describe('index types and operations', () => {
 
         it(`should iterate through only the specified entities regardless of type using a partial ${initializerDescription}`, async () => {
             const {loaded, keys, services} = await testInitializer();
-            // const isolatedPrimaryCollectionPartialSKData = await services.isolatedService.collections.primaryCollection({
-            //     prop1: keys.isolatedPrimaryPkKey,
-            //     prop2: 5,
-            // }).go();
-            //
-            // expect(isolatedPrimaryCollectionPartialSKData.cursor).to.be.null;
-            // compareItems(isolatedPrimaryCollectionPartialSKData.data.entity1, [loaded.isolatedEntity1Items[5]]);
-            // compareItems(isolatedPrimaryCollectionPartialSKData.data.entity2, [loaded.isolatedEntity2Items[5]]);
-            //
-            // const isolatedSecondaryCollectionPartialSKData = await services.isolatedService.collections.secondaryCollection({
-            //     prop4: keys.isolatedSecondaryPkKey,
-            //     prop5: 5,
-            // }).go();
-            //
-            // expect(isolatedSecondaryCollectionPartialSKData.cursor).to.be.null;
-            // compareItems(isolatedSecondaryCollectionPartialSKData.data.entity1, [loaded.isolatedEntity1Items[5]]);
-            // compareItems(isolatedSecondaryCollectionPartialSKData.data.entity2, [loaded.isolatedEntity2Items[5]]);
-
             const clusteredPrimaryCollectionPartialSKData = await services.clusteredService.collections.primaryCollection({
                 prop1: keys.clusteredPrimaryPkKey,
                 prop2: 5,
@@ -1472,4 +1454,117 @@ describe('index types and operations', () => {
             }
         }
     })
+});
+
+describe('service validation', () => {
+    it('should throw when a clustered entity has sub collections', () => {
+        const entity1 = new Entity({
+            model: {
+                entity: 'my_entity_1',
+                service: 'my_service',
+                version: '1'
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'string'
+                }
+            },
+            indexes: {
+                main: {
+                    collection: ['collection1', 'collection2'],
+                    type: 'clustered',
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['prop2']
+                    }
+                }
+            }
+        });
+
+        expect(() => new Service({entity1})).to.throw(`Clustered indexes do not support sub-collections. The sub-collection "collection1", on Entity "entity1" must be defined as either an individual collection name or the index must be redefined as an isolated cluster`);
+    });
+
+    const indexTypes = [undefined, 'isolated', 'clustered'] as const;
+    for (const indexType1 of indexTypes) {
+        for (const indexType2 of indexTypes) {
+            it(`should throw when all collection members do not share the same index type: "${indexType1 ?? 'undefined'}" and "${indexType2 ?? 'undefined'}"`, () => {
+                const entity1 = new Entity({
+                    model: {
+                        entity: 'my_entity_1',
+                        service: 'my_service',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'string'
+                        }
+                    },
+                    indexes: {
+                        main: {
+                            collection: 'collection1',
+                            type: indexType1,
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: ['prop2']
+                            }
+                        }
+                    }
+                });
+                const entity2 = new Entity({
+                    model: {
+                        entity: 'my_entity_2',
+                        service: 'my_service',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'string'
+                        }
+                    },
+                    indexes: {
+                        main: {
+                            collection: 'collection1',
+                            type: indexType2,
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: ['prop2']
+                            }
+                        }
+                    }
+                });
+
+                // default undefined to "isolated"
+                const leftType = indexType1 ?? 'isolated';
+                const rightType = indexType2 ?? 'isolated';
+                const assertion = expect(() => new Service({entity1, entity2}));
+
+                if (leftType !== rightType) {
+                    assertion.to.throw(`Index type mismatch on collection collection1. The entity entity2 defines the index as type ${rightType} while the established type for that index is ${leftType}. Note that when omitted, indexes default to the type "isolated" - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
+                } else {
+                    assertion.to.not.throw();
+                }
+            });
+        }
+    }
 });

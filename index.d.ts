@@ -463,15 +463,17 @@ export type IsolatedCollectionQueries<E extends {[name: string]: Entity<any, any
         [EntityName in keyof E]:
         EntityName extends Collections[Collection]
             ? (params:
-                   Parameters<
-                       E[EntityName]["query"][
-                           E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
-                               ? Collection extends keyof IsolatedEntityCollections<A,F,C,S>
-                               ? IsolatedEntityCollections<A,F,C,S>[Collection]
-                               : never
-                               : never
+                   RequiredProperties<
+                       Parameters<
+                           E[EntityName]["query"][
+                               E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+                                   ? Collection extends keyof IsolatedEntityCollections<A,F,C,S>
+                                   ? IsolatedEntityCollections<A,F,C,S>[Collection]
+                                   : never
+                                   : never
                            ]
                        >[0]
+                   >
             ) => {
                 go: ServiceQueryRecordsGo<{
                     [EntityResultName in Collections[Collection]]:
@@ -2290,8 +2292,8 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
     collections:
         ClusteredCollectionQueries<E, ClusteredCollectionAssociations<E>>
-        // & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
-        & CollectionQueries<E, CollectionAssociations<E>>
+        & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
+        // & CollectionQueries<E, CollectionAssociations<E>>
     constructor(entities: E, config?: ServiceConfiguration);
 }
 

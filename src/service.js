@@ -602,7 +602,7 @@ class Service {
 		);
 	}
 
-	_processSubCollections(existing, provided, entityName, collectionName) {
+	_processSubCollections({existing, provided, entityName, collectionName, providedType}) {
 		let existingSubCollections;
 		let providedSubCollections;
 		if (v.isArrayHasLength(existing)) {
@@ -616,15 +616,19 @@ class Service {
 			providedSubCollections = [provided];
 		}
 
+		if (providedSubCollections.length > 1 && providedType === IndexTypes.clustered) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Clustered indexes do not support sub-collections. The sub-collection "${collectionName}", on Entity "${entityName}" must be defined as either an individual collection name or the index must be redefined as an isolated cluster`);
+		}
 		const existingRequiredIndex = existingSubCollections.indexOf(collectionName);
 		const providedRequiredIndex = providedSubCollections.indexOf(collectionName);
 		if (providedRequiredIndex < 0) {
-			throw new Error(`The collection definition for Collection "${collectionName}" does not exist on Entity "${entityName}".`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `The collection definition for Collection "${collectionName}" does not exist on Entity "${entityName}".`);
 		}
 		if (existingRequiredIndex >= 0 && existingRequiredIndex !== providedRequiredIndex) {
-			throw new Error(`The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${providedRequiredIndex + 1}, ${providedSubCollections[existingRequiredIndex] === undefined ? '(not found)' : `"${providedSubCollections[existingRequiredIndex]}"`}, on Entity "${entityName}", does not match the established collection name in slot ${existingRequiredIndex + 1}, "${collectionName}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${providedRequiredIndex + 1}, ${providedSubCollections[existingRequiredIndex] === undefined ? '(not found)' : `"${providedSubCollections[existingRequiredIndex]}"`}, on Entity "${entityName}", does not match the established collection name in slot ${existingRequiredIndex + 1}, "${collectionName}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
 		}
 		let length = Math.max(existingRequiredIndex, providedRequiredIndex);
+
 		for (let i = 0; i <= length; i++) {
 			let existingCollection = existingSubCollections[i];
 			let providedCollection = providedSubCollections[i];
@@ -633,7 +637,7 @@ class Service {
 					return i;
 				}
 				if (existingCollection !== providedCollection) {
-					throw new Error(`The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${i+1}, "${providedCollection}", on Entity "${entityName}", does not match the established collection name in slot ${i + 1}, "${existingCollection}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
+					throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${i+1}, "${providedCollection}", on Entity "${entityName}", does not match the established collection name in slot ${i + 1}, "${existingCollection}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
 				}
 			} else if (v.isStringHasLength(providedCollection)) {
 				if (providedCollection === collectionName) {
@@ -687,7 +691,13 @@ class Service {
 		this.collectionSchema[collection].entities[name] = entity;
 		this.collectionSchema[collection].identifiers = this._processEntityIdentifiers(this.collectionSchema[collection].identifiers, entity.getIdentifierExpressions(name));
 		this.collectionSchema[collection].index = this._processEntityCollectionIndex(this.collectionSchema[collection].index, providedIndex.index, name, collection);
-		let collectionIndex = this._processSubCollections(this.collectionSchema[collection].collection, providedIndex.collection, name, collection);
+		let collectionIndex = this._processSubCollections({
+			providedType,
+			existing: this.collectionSchema[collection].collection,
+			provided: providedIndex.collection,
+			entityName: name,
+			collectionName: collection
+		});
 		this.collectionSchema[collection].collection[collectionIndex] = collection;
 		this.collectionSchema[collection].hasSubCollections = this.collectionSchema[collection].hasSubCollections || Array.isArray(providedIndex.collection);
 		return this.collectionSchema[collection];

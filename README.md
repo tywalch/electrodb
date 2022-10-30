@@ -1032,7 +1032,7 @@ signature               | behavior
 `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query
 
 ## Indexes
-When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
+When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will be referenced as _"Access Patterns"_.
 
 All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
 
@@ -1045,8 +1045,11 @@ Within these _AccessPatterns_, you define the PartitionKey and (optionally) Sort
 ```typescript
 indexes: {
 	[AccessPatternName]: {
+		index?: string;
+		collection?: string | string[];
+		type?: 'isolated' | 'clustered';
 		pk: {
-			field: string; 
+			field: string;
 			composite: AttributeName[];
 			template?: string;
 		},
@@ -1055,14 +1058,15 @@ indexes: {
 			composite: AttributesName[];
             template?: string;
 		},
-		index?: string
-		collection?: string | string[]
 	}
 }
 ```
 
 | Property       | Type                                   | Required | Description |
 | -------------- | :------------------------------------: | :------: | ----------- |
+| `index`        | `string`                               | no       | Required when the `Index` defined is a *Global/Local Secondary Index*; but is omitted for the table's primary index.
+| `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
+| `type`         | `isolated`, `clustered`                | no       | Allows you to optimize your index for either [entity isolation](#isolated-indexes) (high volume of records per partition) or (entity relationships)[#clustered-indexes] (high relationship density per partition). When omitted, ElectroDB defaults to `isolation`.
 | `pk`           | `object`                               | yes      | Configuration for the pk of that index or table
 | `pk.composite` | `string[]`                             | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
@@ -1073,8 +1077,26 @@ indexes: {
 | `sk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
 | `sk.field`     | `string`                               | yes      | The name of the index Sort Key field as it exists in DynamoDB, if named differently in the schema attributes.
 | `pk.casing`    | `default`, `upper`, `lower`, `none`,   | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
-| `index`        | `string`                               | no       | Required when the `Index` defined is a *Global/Local Secondary Index*; but is omitted for the table's primary index.
-| `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
+
+
+### Index Types
+ElectroDB helps manage your key structure, and works to abstract out the details of how your keys are created/formatted. Depending on your unique data set, you may need ElectroDB to optimize your index for either [entity isolation](#isolated-indexes) (i.e. high volume of records per partition) or (entity relationships)[#clustered-indexes] (i.e. high relationship density per partition).
+
+This option changes how ElectroDB formats your keys for storage, so it is an important consideration to make early in your modeling phase. As a result, this choice cannot be simply walked back without requiring a migration. The choice between `clustered` and `isolated` depends wholly on your unique dataset and access patterns.
+
+> _NOTE: You can use [Collections](#collections) with both `isolated` and `clustered` indexes. Isolated indexes are limited to only querying across the partition key while Clustered indexes can also leverage the Sort Key_
+
+#### Isolated Indexes
+By default, and when omitted, ElectroDB will create your index as an `isolated` index. Isolated indexes optimizes your index structure for faster and more efficient retrieval of items within an individual Entity.
+
+*Choose* `isolated` if you have strong access pattern requirements to retrieve only records for only your entity on that index. While an `isolated` index is more limited in its ability to be used in a [collection](#collections), it can perform better than a `clustered` index if a collection contains a highly unequal distribution of entities within a collection.
+*Don't choose* `isolated` if the primary use-cases for your index is to query across entities -- this index type does limit the extent to which indexes can be leveraged to improve query efficiency.
+
+#### Clustered Indexes
+When your index type is defined as `clustered`, ElectroDB will optimize your index for relationships within a partition. Clustered indexes optimize your index structure for more homogenous partitions, which allows for more efficient queries across multiple entities.
+
+*Choose* `clustered` if you have a high degree of grouped or similar data that needs to be frequently accessed together. This index works best in [collections](#collections) when member entities are more evenly distributed within a partition.
+*Don't choose* `clustered` if your need to query across entities is secondary to its primary purpose -- this index type limits the efficiency of querying your individual entity.
 
 ### Indexes Without Sort Keys
 When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail.
@@ -1661,7 +1683,7 @@ await TaskApp.collections
 
 ### Collection Queries vs Entity Queries
 
-To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection Queries only leverage [Composite Attributes](#composite-attributes) from an access pattern's Partition Key.  
+To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection queries for [isolated indexes](#isolated-indexes) only leverage [Composite Attributes](#composite-attributes) from an access pattern's Partition Key, while Collection queries for [clustered indexes](#clustered-indexes) allow you to query on both Partition and Sort Keys.
 
 To better explain how Collection Queries are formed, here is a juxtaposition of an Entity Query's parameters vs a Collection Query's parameters:
 
@@ -1740,7 +1762,9 @@ Because the Tasks and Employee Entities both associated their index (`gsi2`) wit
 
 ## Sub-Collections
 
-Sub-Collections are an extension of [Collection](#collections) functionality that allow you to model more advanced access patterns. Collections and Sub-Collections are defined on [Indexes](#indexes) via a property called `collection`, as either a string or string array respectively. 
+Sub-Collections are an extension of [Collection](#collections) functionality that allow you to model more advanced access patterns. Collections and Sub-Collections are defined on [Indexes](#indexes) via a property called `collection`, as either a string or string array respectively.
+
+> _NOTE: Sub-Collections are only supported on ["isolated" index](#isolated-indexes) types _
 
 The following is an example of functionally identical collections, implemented as a string (referred to as a "collection") and then as a string array (referred to as sub-collections):
 
