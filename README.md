@@ -333,7 +333,7 @@ If you're looking to get started right away with ElectroDB, checkout code exampl
 
 # Entities
 
-In ***ElectroDB*** an `Entity` is represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and or a Task that is assigned to an employee.
+In ***ElectroDB*** an `Entity` represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and or a Task that is assigned to an employee.
 
 Require or import `Entity` from `electrodb`:
 ```javascript  
