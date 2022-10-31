@@ -1568,3 +1568,135 @@ describe('service validation', () => {
         }
     }
 });
+
+type QueryParameters = {
+    ExpressionAttributeValues: {
+        ':sk1': string;
+    }
+}
+
+type SingleOperationParameters = {
+    Key: {
+        sk: string;
+    }
+}
+
+type CreateEntityParameters = {
+    Item: {
+        sk: string;
+        gsi1sk: string;
+    }
+}
+
+type KeyUpdateParameters = {
+    ExpressionAttributeValues: {
+        ':gsi1sk_u0': string;
+    }
+};
+
+type EntityIsolationTestCase = {
+    description: string;
+    buildSk: () => string;
+    expected: string;
+}
+
+describe('clustered index sort key formatting', () => {
+    const serviceName = uuid();
+    const entity1Name = uuid();
+    const entity2Name = uuid();
+    const service = createClusteredService({
+        serviceName,
+        entity1Name,
+        entity2Name,
+    });
+    const prop1 = 'val1';
+    const prop2 = 123456;
+    const prop3 = 'val3';
+    const prop4 = 'val4';
+    const prop5 = 987654;
+    const prop6 = 'val6';
+    const prop7 = 'val7';
+    const testCases: EntityIsolationTestCase[] = [
+        {
+            description: 'complete service key on main index should not add entity name to sort key',
+            buildSk: () => service.collections.primaryCollection({prop1, prop2, prop3}).params<QueryParameters>()['ExpressionAttributeValues'][':sk1'],
+            expected: '$primarycollection#prop2_123456#prop3_val3'
+        },
+        {
+            description: 'complete entity key on main index should not add entity name to sort key',
+            buildSk: () => service.entities.entity1.query.primary({prop1, prop2, prop3}).params<QueryParameters>()['ExpressionAttributeValues'][':sk1'],
+            expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`
+        },
+        {
+            description: 'complete service key on secondary index should not add entity name to sort key',
+            buildSk: () => service.collections.secondaryCollection({prop4, prop5, prop6}).params<QueryParameters>()['ExpressionAttributeValues'][':sk1'],
+            expected: '$secondarycollection#prop5_987654#prop6_val6'
+        },
+        {
+            description: 'complete entity key on secondary index should not add entity name to sort key',
+            buildSk: () => service.entities.entity1.query.secondary({prop4, prop5, prop6}).params<QueryParameters>()['ExpressionAttributeValues'][':sk1'],
+            expected: `$secondarycollection#prop5_987654#prop6_val6#${entity1Name}_1`
+        },
+        {
+            description: 'creating an entity correctly formats the sk for clustered entities',
+            buildSk: () => service.entities.entity1.create({prop1, prop2, prop3, prop4, prop5, prop6}).params<CreateEntityParameters>().Item.sk,
+            expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`,
+        },
+        {
+            description: 'creating an entity correctly formats the gsi1sk for clustered entities',
+            buildSk: () => service.entities.entity1.create({prop1, prop2, prop3, prop4, prop5, prop6}).params<CreateEntityParameters>().Item.gsi1sk,
+            expected: `$secondarycollection#prop5_987654#prop6_val6#${entity1Name}_1`,
+        },
+        {
+            description: 'putting an entity correctly formats the sk for clustered entities',
+            buildSk: () => service.entities.entity1.put({prop1, prop2, prop3, prop4, prop5, prop6}).params<CreateEntityParameters>().Item.sk,
+            expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`,
+        },
+        {
+            description: 'putting an entity correctly formats the gsi1sk for clustered entities',
+            buildSk: () => service.entities.entity1.put({prop1, prop2, prop3, prop4, prop5, prop6}).params<CreateEntityParameters>().Item.gsi1sk,
+            expected: `$secondarycollection#prop5_987654#prop6_val6#${entity1Name}_1`,
+        },
+        {
+            description: 'updating an entity correctly formats the sk for clustered entities',
+            buildSk: () => service.entities.entity1.update({prop1, prop2, prop3}).set({prop7}).params<SingleOperationParameters>().Key.sk,
+            expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`,
+        },
+        {
+            description: 'updating an entity resulting in a change to a secondary index correctly formats the sort key for clustered indexes',
+            buildSk: () => service.entities.entity1.update({prop1, prop2, prop3}).set({prop5, prop6}).params<KeyUpdateParameters>().ExpressionAttributeValues[':gsi1sk_u0'],
+            expected: `$secondarycollection#prop5_987654#prop6_val6#${entity1Name}_1`,
+        },
+        {
+            description: 'patching an entity correctly formats the sk for clustered entities',
+            buildSk: () => service.entities.entity1.patch({prop1, prop2, prop3}).set({prop7}).params<SingleOperationParameters>().Key.sk,
+            expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`,
+        },
+        {
+            description: 'patching an entity resulting in a change to a secondary index correctly formats the sort key for clustered indexes',
+            buildSk: () => service.entities.entity1.patch({prop1, prop2, prop3}).set({prop5, prop6}).params<KeyUpdateParameters>().ExpressionAttributeValues[':gsi1sk_u0'],
+            expected: `$secondarycollection#prop5_987654#prop6_val6#${entity1Name}_1`,
+        },
+        {
+            description: 'getting an entity correctly formats the sk for clustered entities',
+            buildSk: () => service.entities.entity1.get({prop1, prop2, prop3}).params<SingleOperationParameters>().Key.sk,
+            expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`,
+        },
+        {
+            description: 'deleting an entity correctly formats the sk for clustered entities',
+            buildSk: () => service.entities.entity1.delete({prop1, prop2, prop3}).params<SingleOperationParameters>().Key.sk,
+            expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`,
+        },
+        {
+            description: 'removing an entity correctly formats the sk for clustered entities',
+            buildSk: () => service.entities.entity1.remove({prop1, prop2, prop3}).params<SingleOperationParameters>().Key.sk,
+            expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`,
+        },
+    ];
+    for (const {description, expected, buildSk} of testCases) {
+        it(description, () => {
+            const sortKey = buildSk();
+            expect(sortKey).to.equal(expected);
+        });
+    }
+});

@@ -46,7 +46,10 @@ let clauses = {
 					.ifSK(() => {
 						const {composites, unused} = state.identifyCompositeAttributes(facets, sk, pk);
 						state.setSK(composites);
-						state.filterProperties(FilterOperationNames.eq, unused);
+						// we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
+						if (sk.length > 1) {
+							state.filterProperties(FilterOperationNames.eq, {...unused, ...composites});
+						}
 					});
 
 			} catch(err) {
@@ -69,14 +72,7 @@ let clauses = {
 					.setType(QueryTypes.collection)
 					.setMethod(MethodTypes.query)
 					.setCollection(collection)
-					.setPK(entity._expectFacets(facets, pk))
-					// .ifSK(() => {
-					// 	const {composites, unused} = state.identifyCompositeAttributes(facets, sk, pk);
-						// state.filterProperties(FilterOperationNames.eq, {
-						// 	...composites,
-						// 	...unused
-						// });
-					// });
+					.setPK(entity._expectFacets(facets, pk));
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -436,13 +432,18 @@ let clauses = {
 			}
 			try {
 				state.addOption('_isPagination', true);
-				const attributes = state.getCompositeAttributes();
+				const {pk, sk} = state.getCompositeAttributes();
 				return state
 					.setMethod(MethodTypes.query)
 					.setType(QueryTypes.is)
-					.setPK(entity._expectFacets(facets, attributes.pk))
+					.setPK(entity._expectFacets(facets, pk))
 					.ifSK(() => {
-						state.setSK(state.buildQueryComposites(facets, attributes.sk));
+						const {composites, unused} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(state.buildQueryComposites(facets, sk));
+						// we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
+						if (sk.length > 1) {
+							state.filterProperties(FilterOperationNames.eq, {...unused, ...composites});
+						}
 					});
 			} catch(err) {
 				state.setError(err);
@@ -466,7 +467,7 @@ let clauses = {
 					.setSK(endingSk.composites)
 					.setType(QueryTypes.between)
 					.setSK(startingSk.composites)
-					.filterProperties(FilterOperationNames.lte, endingSk.composites)
+					.filterProperties(FilterOperationNames.lte, endingSk.composites);
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -510,7 +511,7 @@ let clauses = {
 						state.setSK(composites);
 						state.filterProperties(FilterOperationNames.gt, {
 							...composites,
-						})
+						});
 					});
 			} catch(err) {
 				state.setError(err);

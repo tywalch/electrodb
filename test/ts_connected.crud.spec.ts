@@ -1515,11 +1515,19 @@ describe("Entity", () => {
             expect(beforeUpdateQueryParams).to.deep.equal({
                 KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
-                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+                    "#prop6": "prop6",
+                    "#prop7": "prop7",
+                    "#prop8": "prop8",
+                },
                 ExpressionAttributeValues: {
+                    ":prop60": record.prop6,
+                    ":prop70": record.prop7,
+                    ":prop80": record.prop8,
                     ':pk': `$test#prop5_${record.prop5}`,
                     ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
                 },
+                "FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
             let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
@@ -1532,11 +1540,20 @@ describe("Entity", () => {
             expect(afterUpdateQueryParams).to.deep.equal({
                 KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
-                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
-                ExpressionAttributeValues: {
-                    ':pk': `$test#prop5_${prop5}`,
-                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+                    "#prop6": "prop6",
+                    "#prop7": "prop7",
+                    "#prop8": "prop8",
                 },
+                ExpressionAttributeValues: {
+                    ":prop60": record.prop6,
+                    ":prop70": record.prop7,
+                    ":prop80": record.prop8,
+                    ':pk': `$test#prop5_${prop5}`,
+                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
+
+                },
+                "FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
             let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
@@ -1563,11 +1580,19 @@ describe("Entity", () => {
             expect(beforeUpdateQueryParams).to.deep.equal({
                 KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
-                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+                    "#prop6": "prop6",
+                    "#prop7": "prop7",
+                    "#prop8": "prop8",
+                },
                 ExpressionAttributeValues: {
                     ':pk': `$test#prop5_${record.prop5}`,
-                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
+                    ":prop60": record.prop6,
+                    ":prop70": record.prop7,
+                    ":prop80": record.prop8,
                 },
+                FilterExpression: "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
             let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
@@ -1580,11 +1605,19 @@ describe("Entity", () => {
             expect(afterUpdateQueryParams).to.deep.equal({
                 KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
-                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+                    "#prop6": "prop6",
+                    "#prop7": "prop7",
+                    "#prop8": "prop8",
+                },
                 ExpressionAttributeValues: {
                     ':pk': `$test#prop5_${prop5}`,
-                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
+                    ":prop60": record.prop6,
+                    ":prop70": record.prop7,
+                    ":prop80": record.prop8,
                 },
+                FilterExpression: "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
             let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
@@ -3471,7 +3504,7 @@ describe('attributes query option', () => {
             attr5: item.attr5,
             attr10: item.attr10,
         }]);
-        expect(params.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__");
+        expect(params.ProjectionExpression).to.equal("#attr5, #attr4, #pk, #sk1, #attr2, #prop9, #attr10, #__edb_e__, #__edb_v__");
     });
 
     it('should not include index composite attributes on automatically when pager is raw', async () => {
@@ -3510,7 +3543,7 @@ describe('attributes query option', () => {
             attr5: item.attr5,
             attr10: item.attr10,
         }]);
-        expect(params.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__");
+        expect(params.ProjectionExpression).to.equal("#attr5, #attr4, #pk, #sk1, #attr2, #prop9, #attr10, #__edb_e__, #__edb_v__");
     });
 
     it('should throw when unknown attribute names are provided', () => {

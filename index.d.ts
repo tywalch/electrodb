@@ -2296,7 +2296,6 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     collections:
         ClusteredCollectionQueries<E, ClusteredCollectionAssociations<E>>
         & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
-        // & CollectionQueries<E, CollectionAssociations<E>>
     constructor(entities: E, config?: ServiceConfiguration);
 
     setTableName(tableName: string): void;
