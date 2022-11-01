@@ -1025,7 +1025,7 @@ describe('index types and operations', () => {
                             case "between":
                                 return clusteredPrimaryCollectionPartialSKOperation
                                     .between({prop2: first}, {prop2: last})
-                                    .go()
+                                    .go();
                             case 'gte':
                                 return clusteredPrimaryCollectionPartialSKOperation
                                     .gte({prop2: first})
@@ -1623,7 +1623,7 @@ describe('clustered index sort key formatting', () => {
             expected: '$primarycollection#prop2_123456#prop3_val3'
         },
         {
-            description: 'complete entity key on main index should not add entity name to sort key',
+            description: 'complete entity key on main index should add entity name to sort key',
             buildSk: () => service.entities.entity1.query.primary({prop1, prop2, prop3}).params<QueryParameters>()['ExpressionAttributeValues'][':sk1'],
             expected: `$primarycollection#prop2_123456#prop3_val3#${entity1Name}_1`
         },
@@ -1633,8 +1633,11 @@ describe('clustered index sort key formatting', () => {
             expected: '$secondarycollection#prop5_987654#prop6_val6'
         },
         {
-            description: 'complete entity key on secondary index should not add entity name to sort key',
-            buildSk: () => service.entities.entity1.query.secondary({prop4, prop5, prop6}).params<QueryParameters>()['ExpressionAttributeValues'][':sk1'],
+            description: 'complete entity key on secondary index should add entity name to sort key',
+            buildSk: () => {
+                const params = service.entities.entity1.query.secondary({prop4, prop5, prop6}).params<QueryParameters>();
+                return params.ExpressionAttributeValues[':sk1'];
+            },
             expected: `$secondarycollection#prop5_987654#prop6_val6#${entity1Name}_1`
         },
         {
@@ -1699,4 +1702,36 @@ describe('clustered index sort key formatting', () => {
             expect(sortKey).to.equal(expected);
         });
     }
+});
+
+it('should add entity filter when clustered index is partially provided on entity query', () => {
+    const serviceName = uuid();
+    const entity1Name = uuid();
+    const entity2Name = uuid();
+    const service = createClusteredService({
+        serviceName,
+        entity1Name,
+        entity2Name,
+    });
+
+    const params = service.entities.entity1.query.primary({prop1: 'abc', prop2: 123}).params()
+    expect(params).to.deep.equal({
+        "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+            "#prop2": "prop2",
+            "#__edb_e__": "__edb_e__",
+            "#__edb_v__": "__edb_v__",
+            "#pk": "pk",
+            "#sk1": "sk"
+        },
+        "ExpressionAttributeValues": {
+            ":prop20": 123,
+            ":__edb_e__0": entity1Name,
+            ":__edb_v__0": "1",
+            ":pk": `${serviceName}c#prop1_abc`,
+            ":sk1": "$primarycollection#prop2_123#prop3_"
+        },
+        "FilterExpression": "(#prop2 = :prop20) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0"
+    });
 });

@@ -59,7 +59,10 @@ class Entity {
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
 			this.query[accessPattern] = (...values) => {
-				return this._makeChain(index, this._clausesWithFilters, clauses.index).query(...values);
+				const options = {
+					indexType: this.model.indexes[accessPattern].type || IndexTypes.isolated,
+				}
+				return this._makeChain(index, this._clausesWithFilters, clauses.index, options).query(...values);
 			};
 		}
 		this.config.identifiers = config.identifiers || {};
@@ -1582,6 +1585,7 @@ class Entity {
 					skAttributes: consolidatedQueryFacets,
 					indexType: state.query.options.indexType,
 					queryType: state.query.type,
+					isCollection: state.query.options._isCollectionQuery,
 				});
 			default:
 				return this._makeIndexKeysWithoutTail(state, consolidatedQueryFacets);
@@ -2202,7 +2206,7 @@ class Entity {
 		const index = state.query.index || TableIndex;
 		this._validateIndex(index);
 		const pkFacets = state.query.keys.pk || {};
-		const excludePostfix = state.query.options.indexType === IndexTypes.clustered;
+		const excludePostfix = state.query.options.indexType === IndexTypes.clustered && state.query.options._isCollectionQuery;
 		const transforms = this._makeKeyTransforms(state.query.type);
 		if (!skFacets.length) {
 			skFacets.push({});
@@ -2250,10 +2254,12 @@ class Entity {
 	   pkAttributes = {},
 	   skAttributes = [],
 	   queryType,
-	   indexType
+	   indexType,
+	   isCollection = false,
 	}) {
+
 		this._validateIndex(index);
-		const excludePostfix = indexType === IndexTypes.clustered;
+		const excludePostfix = indexType === IndexTypes.clustered && isCollection;
 		const transforms = this._makeKeyTransforms(queryType);
 		if (!skAttributes.length) {
 			skAttributes.push({});

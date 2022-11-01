@@ -444,6 +444,10 @@ let clauses = {
 						if (sk.length > 1) {
 							state.filterProperties(FilterOperationNames.eq, {...unused, ...composites});
 						}
+						if (state.query.options.indexType === IndexTypes.clustered && Object.keys(composites).length < sk.length) {
+							state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.entity, entity.getName())
+								.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.version, entity.getVersion());
+						}
 					});
 			} catch(err) {
 				state.setError(err);
@@ -778,13 +782,21 @@ class ChainState {
 	}
 
 	applyFilter(operation, name, ...values) {
-		const filter = this.query.filter[ExpressionTypes.FilterExpression];
 		if (FilterOperationNames[operation] !== undefined & name !== undefined && values.length > 0) {
 			const attribute = this.attributes[name];
 			if (attribute !== undefined) {
-				filter.unsafeSet(operation, attribute.field, ...values);
+				this.unsafeApplyFilter(operation, attribute.field, ...values);
 			}
 		}
+		return this;
+	}
+
+	unsafeApplyFilter(operation, name, ...values) {
+		if (FilterOperationNames[operation] !== undefined & name !== undefined && values.length > 0) {
+			const filter = this.query.filter[ExpressionTypes.FilterExpression];
+			filter.unsafeSet(operation, name, ...values);
+		}
+		return this;
 	}
 
 	filterProperties(operation, obj = {}) {
