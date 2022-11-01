@@ -1,15 +1,16 @@
 {
   "name": "electrodb",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test:types && npm run test:unit",
-    "test:unit": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js && LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha -r ts-node/register ./test/**.spec.*",
+    "test": "npm run test:types && npm run test:init && npm run test:unit",
+    "test:init": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js",
+    "test:unit": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha -r ts-node/register ./test/**.spec.*",
     "test:types": "tsd",
-    "coverage": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
-    "coverage-coveralls-local": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
-    "coverage-html-local": "nyc npm test && nyc report --reporter=html",
+    "coverage": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
+    "coverage:local:coveralls": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
+    "coverage:local:html": "npm run test:init && nyc npm run test:unit && nyc report --reporter=html",
     "build:browser": "browserify playground/browser.js -o playground/bundle.js",
     "build": "sh buildbrowser.sh"
   },

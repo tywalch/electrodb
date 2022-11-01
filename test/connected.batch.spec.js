@@ -193,7 +193,7 @@ async function sleep(ms) {
   });
 }
 
-describe("BatchWrite", async () => {
+describe("BatchWrite", () => {
 
   it("should perform a batchPut via array to put method", async () => {
     let unprocessed = await MallStores.put([record1, record2, record3]).go().then(res => res.unprocessed);
@@ -241,7 +241,7 @@ describe("BatchWrite", async () => {
   }).timeout(5000);
 });
 
-describe("Batch Crud Large Arrays", async () => {
+describe("Batch Crud Large Arrays", () => {
   it("Should batchPut greater than 25 records, should get greater than 100 records, and then batch delete greater than 25 records", async () => {
     // Create 101 unique records
     let records = generateRecords(101);
@@ -277,7 +277,7 @@ describe("Batch Crud Large Arrays", async () => {
   });
 })
 
-describe("BatchGet", async () => {
+describe("BatchGet", () => {
   it("Should consistently create then get a record in batch", async () => {
     let created = await MallStores.put(record1).go({params: {ConsistentRead: true}}).then(res => res.data);
     expect(created).to.deep.equal(record1);

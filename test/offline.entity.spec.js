@@ -4,6 +4,7 @@ const { expect } = require("chai");
 const moment = require("moment");
 const uuid = require("uuid/v4");
 const table = "electro";
+const {shiftSortOrder} = require('../src/util');
 let schema = {
 	service: "MallStoreDirectory",
 	entity: "MallStores",
@@ -201,9 +202,9 @@ describe("Entity", () => {
 							ExpressionAttributeNames: {'#pk': 'pk', '#sk1': 'sk'},
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone'
+								':sk1': '$collectiona#entityonf',
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
 						},
 						lt: {
 							TableName: 'test',
@@ -228,9 +229,9 @@ describe("Entity", () => {
 							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone'
+								':sk1': '$collectiona#entityonf'
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
 						},
 						main: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
@@ -256,7 +257,7 @@ describe("Entity", () => {
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
 								':sk1': '$collectiona#entityone',
-								':sk2': '$collectiona#entityone'
+								':sk2': '$collectiona#entityonf'
 							},
 							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
 						}
@@ -278,12 +279,14 @@ describe("Entity", () => {
 					output: {
 						gt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
+								':sk1': '$collectiona#entityone#prop3_val4',
+								":prop30": "val3",
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+							FilterExpression: "#prop3 > :prop30",
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
 						},
 						lt: {
 							TableName: 'test',
@@ -299,27 +302,30 @@ describe("Entity", () => {
 							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
+								':sk1': '$collectiona#entityone#prop3_val3',
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1',
 						},
 						lte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3" },
 							ExpressionAttributeValues: {
+								":prop30": "val3",
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
+								':sk1': '$collectiona#entityone#prop3_val4'
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+							FilterExpression: "#prop3 <= :prop30",
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
 						},
 						main: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								 },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_'
-							}
+								':sk1': '$collectiona#entityone#prop3_',
+							},
 						},
 						begins: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
@@ -327,17 +333,19 @@ describe("Entity", () => {
 							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
+								':sk1': '$collectiona#entityone#prop3_val3',
 							}
 						},
 						between: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3" },
 							ExpressionAttributeValues: {
+								":prop30": "val3",
 								':pk': '$test_1#prop1_val1#prop2_val2',
 								':sk1': '$collectiona#entityone#prop3_val3',
-								':sk2': '$collectiona#entityone#prop3_val3'
+								':sk2': '$collectiona#entityone#prop3_val4'
 							},
+							FilterExpression: "#prop3 <= :prop30",
 							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
 						}
 					}
@@ -358,66 +366,88 @@ describe("Entity", () => {
 					output: {
 						gt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3" },
 							ExpressionAttributeValues: {
+								":prop30": "val3",
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
+								':sk1': '$collectiona#entityone#prop3_val4',
+								":prop30": "val3a",
+								":prop31": "val3",
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+							FilterExpression: "(#prop3 = :prop30) AND #prop3 > :prop31",
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
 						},
 						lt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop3": "prop3" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
+								':sk1': '$collectiona#entityone#prop3_val3',
+								":prop30": "val3a"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1',
+							"FilterExpression": "#prop3 = :prop30"
 						},
 						gte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop3": "prop3" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
+								':sk1': '$collectiona#entityone#prop3_val3',
+								":prop30": "val3a"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1',
+							"FilterExpression": "#prop3 = :prop30"
 						},
 						lte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3" },
 							ExpressionAttributeValues: {
+								":prop30": "val3a",
+								":prop31": "val3",
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
+								':sk1': '$collectiona#entityone#prop3_val4'
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+							FilterExpression: "(#prop3 = :prop30) AND #prop3 <= :prop31",
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
 						},
 						main: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop3": "prop3" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3a#prop4_'
-							}
+								':sk1': '$collectiona#entityone#prop3_val3a#prop4_',
+								":prop30": "val3a"
+							},
+							"FilterExpression": "#prop3 = :prop30"
 						},
 						begins: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
-							ExpressionAttributeValues: {
-								':pk': '$test_1#prop1_val1#prop2_val2',
-								':sk1': '$collectiona#entityone#prop3_val3'
-							}
-						},
-						between: {
-							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop3": "prop3" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
 								':sk1': '$collectiona#entityone#prop3_val3',
-								':sk2': '$collectiona#entityone#prop3_val3'
+								":prop30": "val3a"
 							},
+							"FilterExpression": "#prop3 = :prop30"
+						},
+						between: {
+							TableName: 'test',
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3" },
+							ExpressionAttributeValues: {
+								":prop30": "val3a",
+								":prop31": "val3",
+								':pk': '$test_1#prop1_val1#prop2_val2',
+								':sk1': '$collectiona#entityone#prop3_val3',
+								':sk2': '$collectiona#entityone#prop3_val4'
+							},
+							FilterExpression: "(#prop3 = :prop30) AND #prop3 <= :prop31",
 							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
 						}
 					}
@@ -438,66 +468,90 @@ describe("Entity", () => {
 					output: {
 						gt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3",
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
+								":prop30": "val3",
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+								':sk1': '$collectiona#entityone#prop3_val3#prop4_val5',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+							FilterExpression: "(#prop4 = :prop40) AND #prop3 > :prop30",
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
 						},
 						lt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+								':sk1': '$collectiona#entityone#prop3_val3#prop4_val4',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1',
+							FilterExpression: "#prop4 = :prop40",
 						},
 						gte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1',
+							FilterExpression: "#prop4 = :prop40",
 						},
 						lte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3",
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
+								":prop30": "val3",
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
+								':sk1': '$collectiona#entityone#prop3_val3#prop4_val5',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+							FilterExpression: "(#prop4 = :prop40) AND #prop3 <= :prop30",
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
 						},
 						main: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_'
-							}
+								':sk1': '$collectiona#entityone#prop3_',
+								":prop40": "val4"
+							},
+							FilterExpression: "#prop4 = :prop40",
 						},
 						begins: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4'
-							}
+								':sk1': '$collectiona#entityone#prop3_val3#prop4_val4',
+								":prop40": "val4"
+							},
+							FilterExpression: "#prop4 = :prop40",
 						},
 						between: {
     						TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop3": "prop3",
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
+								":prop30": "val3",
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_val3#prop4_val4',
-									':sk2': '$collectiona#entityone#prop3_val3#prop4_val4'
+								':sk1': '$collectiona#entityone#prop3_val3#prop4_val4',
+								':sk2': '$collectiona#entityone#prop3_val3#prop4_val5',
+								":prop40": "val4"
 							},
+							FilterExpression: "(#prop4 = :prop40) AND #prop3 <= :prop30",
 							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
 						}
 					}
@@ -516,66 +570,89 @@ describe("Entity", () => {
 					output: {
 						gt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
+								':sk1': '$collectiona#entityonf',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1',
+							FilterExpression: "#prop4 = :prop40",
 						},
 						lt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
+								':sk1': '$collectiona#entityone',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1',
+							FilterExpression: "#prop4 = :prop40",
 						},
 						gte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
+									':sk1': '$collectiona#entityone',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1',
+							FilterExpression: "#prop4 = :prop40",
 						},
 						lte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
+									':sk1': '$collectiona#entityonf',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1',
+							FilterExpression: "#prop4 = :prop40",
 						},
 						main: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_'
-							}
+								':sk1': '$collectiona#entityone#prop3_',
+								":prop40": "val4"
+							},
+							FilterExpression: "#prop4 = :prop40",
 						},
 						begins: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4"
+							},
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
-							}
+								':sk1': '$collectiona#entityone',
+								":prop40": "val4"
+							},
+							FilterExpression: "#prop4 = :prop40",
 						},
 						between: {
     						TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4"
+							},
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone',
-									':sk2': '$collectiona#entityone'
+								':sk1': '$collectiona#entityone',
+								':sk2': '$collectiona#entityonf',
+								":prop40": "val4"
 							},
+							FilterExpression: "#prop4 = :prop40",
 							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
 						}
 					}
@@ -596,67 +673,86 @@ describe("Entity", () => {
 					output: {
 						gt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop5": "prop5", "#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
+								':sk1': '$collectiona#entityonf',
+								":prop50": "val5",
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+							FilterExpression: "(#prop4 = :prop40) AND #prop5 > :prop50",
+							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
 						},
 						lt: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
+								':sk1': '$collectiona#entityone',
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1',
+							FilterExpression: "#prop4 = :prop40"
 						},
 						gte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
+								':sk1': '$collectiona#entityone',
+								":prop40": "val4"
 							},
+							FilterExpression: "#prop4 = :prop40",
 							KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
 						},
 						lte: {
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop5": "prop5", "#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
+								':sk1': '$collectiona#entityonf',
+								":prop50": "val5",
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+							FilterExpression: "(#prop4 = :prop40) AND #prop5 <= :prop50",
+							KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
 						},
 						main: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',"#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone#prop3_'
-							}
+								':sk1': '$collectiona#entityone#prop3_',
+								":prop40": "val4"
+							},
+							FilterExpression: "#prop4 = :prop40"
 						},
 						begins: {
 							KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 							TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+								"#prop4": "prop4"
+							},
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone'
-							}
+								':sk1': '$collectiona#entityone',
+								":prop40": "val4"
+							},
+							FilterExpression: "#prop4 = :prop40"
 						},
 						between: {
     						TableName: 'test',
-							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+							ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk', "#prop5": "prop5", "#prop4": "prop4" },
 							ExpressionAttributeValues: {
 								':pk': '$test_1#prop1_val1#prop2_val2',
-									':sk1': '$collectiona#entityone',
-									':sk2': '$collectiona#entityone'
+								':sk1': '$collectiona#entityone',
+								':sk2': '$collectiona#entityonf',
+								":prop50": "val5",
+								":prop40": "val4"
 							},
-							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+							FilterExpression: "(#prop4 = :prop40) AND #prop5 <= :prop50",
+							KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2',
 						}
 					}
 				},
@@ -1710,11 +1806,13 @@ describe("Entity", () => {
 			});
 			let beingsWithOne = MallStores.query.units({ mall, building }).params();
 			expect(beingsWithOne).to.deep.equal({
-				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
+				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk", "#buildingId": "buildingId" },
 				ExpressionAttributeValues: {
+					":buildingId0": "BuildingA",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
+				"FilterExpression": "#buildingId = :buildingId0",
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
@@ -1723,24 +1821,33 @@ describe("Entity", () => {
 				.units({ mall, building, store })
 				.params();
 			expect(beingsWithTwo).to.deep.equal({
-				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
+				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk", "#buildingId": "buildingId", "#storeId": "storeId" },
 				ExpressionAttributeValues: {
+					":buildingId0": "BuildingA",
+					":storeId0": "LatteLarrys",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					":sk1": `$MallStores#building_${building}#unit_`.toLowerCase(),
 				},
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
+				"FilterExpression": "(#buildingId = :buildingId0) AND #storeId = :storeId0",
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
 			});
 			let beingsWithThree = MallStores.query
 				.units({ mall, building, unit })
 				.params();
 			expect(beingsWithThree).to.deep.equal({
-				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
+				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk",
+					"#buildingId": "buildingId",
+					"#unitId": "unitId",
+				},
 				ExpressionAttributeValues: {
+					":buildingId0": "BuildingA",
+					":unitId0": "B54",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					":sk1": `$MallStores#building_${building}#unit_${unit}#store_`.toLowerCase(),
 				},
+				"FilterExpression": "(#buildingId = :buildingId0) AND #unitId = :unitId0",
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
@@ -1749,11 +1856,19 @@ describe("Entity", () => {
 				.units({ mall, building, unit, store })
 				.params();
 			expect(beingsWithFour).to.deep.equal({
-				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
+				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk",
+					"#buildingId": "buildingId",
+					"#unitId": "unitId",
+					"#storeId": "storeId",
+				},
 				ExpressionAttributeValues: {
+					":buildingId0": "BuildingA",
+					":unitId0": "B54",
+					":storeId0": "LatteLarrys",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					":sk1": `$MallStores#building_${building}#unit_${unit}#store_${store}`.toLowerCase(),
 				},
+				"FilterExpression": "(#buildingId = :buildingId0) AND #unitId = :unitId0 AND #storeId = :storeId0",
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
 				KeyConditionExpression: "#pk = :pk and #sk1 = :sk1",
@@ -1770,12 +1885,17 @@ describe("Entity", () => {
 				ExpressionAttributeNames: {
 					"#pk": "gsi1pk",
 					"#sk1": "gsi1sk",
+					"#buildingId": "buildingId",
+					"#unitId": "unitId",
 				},
 				ExpressionAttributeValues: {
+					":unitId0": "B54",
+					":buildingId0": "BuildingF",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					":sk1": `$MallStores#building_${buildingOne}#unit_B54`.toLowerCase(),
-					":sk2": `$MallStores#building_${buildingTwo}#unit_B54`.toLowerCase(),
+					":sk2": `$MallStores#building_${buildingTwo}#unit_B55`.toLowerCase(),
 				},
+				FilterExpression: "(#buildingId <= :buildingId0) AND #unitId <= :unitId0",
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
 				KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
@@ -1787,14 +1907,19 @@ describe("Entity", () => {
 				.params();
 			expect(queryUnitsBetweenTwo).to.deep.equal({
 				ExpressionAttributeNames: {
+					"#buildingId": "buildingId",
 					"#pk": "gsi1pk",
 					"#sk1": "gsi1sk",
+					"#unitId": "unitId",
 				},
 				ExpressionAttributeValues: {
+					":unitId0": "F6",
+					":buildingId0": "BuildingA",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					":sk1": `$MallStores#building_${building}#unit_${unitOne}`.toLowerCase(),
-					":sk2": `$MallStores#building_${building}#unit_${unitTwo}`.toLowerCase(),
+					":sk2": `$MallStores#building_${building}#unit_${shiftSortOrder(unitTwo, 1)}`.toLowerCase(),
 				},
+				FilterExpression: "(#buildingId = :buildingId0) AND #unitId <= :unitId0",
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
 				KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
@@ -1808,12 +1933,17 @@ describe("Entity", () => {
 				ExpressionAttributeNames: {
 					"#pk": "gsi1pk",
 					"#sk1": "gsi1sk",
+					"#storeId": "storeId",
+					"#buildingId": "buildingId"
 				},
 				ExpressionAttributeValues: {
+					":storeId0": "LatteLarrys",
+					":buildingId0": "BuildingA",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
 					":sk1": `$MallStores#building_${building}`.toLowerCase(),
-					":sk2": `$MallStores#building_${building}`.toLowerCase(),
+					":sk2": `$MallStores#building_${shiftSortOrder(building, 1)}`.toLowerCase(),
 				},
+				FilterExpression: "(#buildingId = :buildingId0) AND #storeId <= :storeId0",
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
 				KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
@@ -1825,14 +1955,16 @@ describe("Entity", () => {
 				.params();
 
 			expect(queryUnitGt).to.deep.equal({
-				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
+				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk", "#buildingId": "buildingId" },
 				ExpressionAttributeValues: {
+					":buildingId0": "BuildingA",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}`.toLowerCase(),
+					":sk1": `$MallStores#building_${shiftSortOrder(building, 1)}`.toLowerCase(),
 				},
+				FilterExpression: "#buildingId > :buildingId0",
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
-				KeyConditionExpression: "#pk = :pk and #sk1 > :sk1",
+				KeyConditionExpression: "#pk = :pk and #sk1 >= :sk1",
 			});
 
 			let queryBegins = MallStores.query
@@ -1871,14 +2003,16 @@ describe("Entity", () => {
 				.lte({ building })
 				.params();
 			expect(queryUnitsLte).to.deep.equal({
-				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk" },
+				ExpressionAttributeNames: { "#pk": "gsi1pk", "#sk1": "gsi1sk", "#buildingId": "buildingId" },
 				ExpressionAttributeValues: {
+					":buildingId0": "BuildingA",
 					":pk": `$MallStoreDirectory_1#mall_${mall}`.toLowerCase(),
-					":sk1": `$MallStores#building_${building}`.toLowerCase(),
+					":sk1": `$MallStores#building_${shiftSortOrder(building, 1)}`.toLowerCase(),
 				},
+				FilterExpression: "#buildingId <= :buildingId0",
 				IndexName: "gsi1pk-gsi1sk-index",
 				TableName: "StoreDirectory",
-				KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
+				KeyConditionExpression: "#pk = :pk and #sk1 < :sk1",
 			});
 
 			let queryUnitsLt = MallStores.query
@@ -2126,17 +2260,29 @@ describe("Entity", () => {
 			expect(query1).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key',
+					"#mall": "mall",
+					"#stores": "stores",
+				},
 				ExpressionAttributeValues: {
+					":mall0": "Defg",
+					":stores0": 1,
 					':pk': "$MallStoreDirectory#id_Abcd",
 					':sk1': '$MYCOLLECTION#MALLSTORES_1#MALL_DEFG#STORES_1'
-				}
+				},
+				"FilterExpression": "(#mall = :mall0) AND #stores = :stores0"
 			});
 			expect(query2).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1',
+					"#stores": "stores",
+					"#id": "id",
+				},
+				"FilterExpression": "(#id = :id0) AND #stores = :stores0",
 				ExpressionAttributeValues: {
+					":id0": "Abcd",
+					":stores0": 1,
 					':pk': '$MALLSTOREDIRECTORY#MALL_DEFG',
 					':sk1': '$otherCollection#MallStores_1#id_Abcd#stores_1'
 				},
@@ -2161,11 +2307,17 @@ describe("Entity", () => {
 			expect(collectionParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key',
+					"#__edb_e__": "__edb_e__",
+					"#__edb_v__": "__edb_v__",
+				},
 				ExpressionAttributeValues: {
 					':pk': "$MallStoreDirectory#id_Abcd",
-					':sk1': '$MYCOLLECTION'
-				}
+					':sk1': '$MYCOLLECTION',
+					":__edb_e___stores": "MallStores",
+					":__edb_v___stores": "1"
+				},
+				FilterExpression: "(#__edb_e__ = :__edb_e___stores AND #__edb_v__ = :__edb_v___stores)"
 			});
 		});
 
@@ -2396,20 +2548,32 @@ describe("Entity", () => {
 			expect(query1).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key',
+					"#mall": "mall",
+					"#stores": "stores",
+				},
 				ExpressionAttributeValues: {
+					":mall0": "Defg",
+					":stores0": 1,
 					':pk': "mIxEdCaSe#Abcd",
 					':sk1': 'MALL#DEFG#STORES#1'
-				}
+				},
+				FilterExpression: "(#mall = :mall0) AND #stores = :stores0",
 			});
 			expect(query2).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1',
+					"#id": "id",
+					"#stores": "stores",
+				},
 				ExpressionAttributeValues: {
+					":id0": "Abcd",
+					":stores0": 1,
 					':pk': 'MALL#DEFG',
 					':sk1': 'iD#Abcd#sToReS#1'
 				},
+				"FilterExpression": "(#id = :id0) AND #stores = :stores0",
 				IndexName: 'idx1'
 			});
 			expect(scanParams).to.deep.equal({
@@ -2441,11 +2605,11 @@ describe("Entity", () => {
 		let leaseEnd = "2020-01-20";
 		it("Should return the approprate pk and sk for a given index", () => {
 			let index = schema.indexes.categories.index;
-			let { pk, sk } = MallStores._makeIndexKeys(
+			let { pk, sk } = MallStores._makeIndexKeys({
 				index,
-				{ mall },
-				{ category, building, unit, store },
-			);
+				pkAttributes: { mall },
+				skAttributes: [{ category, building, unit, store }],
+			});
 			expect(pk).to.equal(
 				"$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 			);
@@ -2756,20 +2920,32 @@ describe("Entity", () => {
 			expect(query1).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key' },
+				ExpressionAttributeNames: { '#pk': 'partition_key', '#sk1': 'sort_key',
+					"#mall": "mall",
+					"#stores": "stores",
+				},
 				ExpressionAttributeValues: {
+					":mall0": "defg",
+					":stores0": 1,
 					':pk': '$mallstoredirectory_1#id_abcd',
 					':sk1': '$mallstores#mall_defg#stores_1'
-				}
+				},
+				FilterExpression: "(#mall = :mall0) AND #stores = :stores0"
 			});
 			expect(query2).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1' },
+				ExpressionAttributeNames: { '#pk': 'partition_key_idx1', '#sk1': 'sort_key_idx1',
+					"#stores": "stores",
+					"#id": "id",
+				},
 				ExpressionAttributeValues: {
+					":id0": "abcd",
+					":stores0": 1,
 					':pk': '$mallstoredirectory_1#mall_defg',
 					':sk1': '$mallstores#id_abcd#stores_1'
 				},
+				FilterExpression: "(#id = :id0) AND #stores = :stores0",
 				IndexName: 'idx1'
 			});
 			expect(scanParams).to.deep.equal({
@@ -2791,11 +2967,11 @@ describe("Entity", () => {
 		});
 		it("Should stop making a key early when there is a gap in the supplied composite attributes", () => {
 			let index = schema.indexes.categories.index;
-			let { pk, sk } = MallStores._makeIndexKeys(
+			let { pk, sk } = MallStores._makeIndexKeys({
 				index,
-				{ mall },
-				{ category, building, store },
-			);
+				pkAttributes: { mall },
+				skAttributes: [{ category, building, store }],
+			});
 			expect(pk).to.equal(
 				"$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 			);
@@ -2977,12 +3153,14 @@ describe("Entity", () => {
 		});
 		it("Should return the approprate pk and multiple sks when given multiple", () => {
 			let index = schema.indexes.shops.index;
-			let { pk, sk } = MallStores._makeIndexKeys(
+			let { pk, sk } = MallStores._makeIndexKeys({
 				index,
-				{ store },
-				{ mall, building: "building1" },
-				{ mall, building: "building5" },
-			);
+				pkAttributes: { store },
+				skAttributes: [
+					{ mall, building: "building1" },
+					{ mall, building: "building5" }
+				],
+			});
 			expect(pk).to.equal(
 				"$MallStoreDirectory_1#store_LatteLarrys".toLowerCase(),
 			);
@@ -2994,13 +3172,22 @@ describe("Entity", () => {
 					"$MallStores#mall_EastPointe#building_building5#unit_".toLowerCase(),
 				]);
 		});
-		it("Should return the approprate pk and multiple sks when given multiple without a tailing label", () => {
+		it("Should return the appropriate pk and multiple sks when given multiple without a tailing label", () => {
 			let index = schema.indexes.shops.index;
 			let { pk, sk } = MallStores._makeIndexKeysWithoutTail(
-				index,
-				{ store },
-				{ mall, building: "building1" },
-				{ mall, building: "building5" },
+				{
+					query: {
+						index,
+						keys: {
+							pk: { store },
+						},
+						options: {}
+					}
+				},
+				[
+					{ mall, building: "building1" },
+					{ mall, building: "building5" }
+				],
 			);
 			expect(pk).to.equal(
 				"$MallStoreDirectory_1#store_LatteLarrys".toLowerCase(),
@@ -3014,8 +3201,10 @@ describe("Entity", () => {
 			]);
 		});
 		it("Should throw on bad index", () => {
-			expect(() => MallStores._makeIndexKeys("bad_index")).to.throw(
-				"Invalid index: bad_index",
+			expect(() => MallStores._makeIndexKeys({
+				index: "bad_index"
+			})).to.throw(
+				"Invalid index: bad_index"
 			);
 		});
 
@@ -3553,40 +3742,75 @@ describe("Entity", () => {
 			expect(recordParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+				ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+					"#dateTime": "dateTime",
+					"#prop2": "prop2",
+					"#prop3": "prop3",
+					"#prop4": "prop4",
+				},
 				ExpressionAttributeValues: {
+					":dateTime0": data.date,
+					":prop20": "PROPERTY2",
+					":prop30": "PROPERTY3",
+					":prop40": "PROPERTY4",
 					':pk': '$mallstoredirectory_1#i_identifier#prop1_property1',
 					':sk1': '$mallstores#d_2020-11-16#prop2_property2#p3_property3'
-				}
+				},
+				"FilterExpression": "(#prop4 = :prop40) AND #dateTime = :dateTime0 AND #prop2 = :prop20 AND #prop3 = :prop30"
 			});
 			expect(mixedFacetTemplatesParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
+				ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk',
+					"#dateTime": "dateTime",
+					"#prop2": "prop2",
+					"#prop1": "prop1",
+					"#prop4": "prop4",
+				},
 				ExpressionAttributeValues: {
 					':pk': '$mallstoredirectory_1#i_identifier#p3_property3',
-					":sk1": "2020-11-16#p2_property2#propzduce_property2"
+					":sk1": "2020-11-16#p2_property2#propzduce_property2",
+					":prop10": "PROPERTY1",
+					":prop20": "PROPERTY2",
+					":prop40": "PROPERTY4",
+					":dateTime0": data.date,
 				},
+				FilterExpression: "(#prop1 = :prop10) AND #prop4 = :prop40 AND #dateTime = :dateTime0 AND #prop2 = :prop20",
 				IndexName: 'gsi1'
 			});
 			expect(justTemplateParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+				ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+					"#dateTime": "dateTime",
+					"#prop2": "prop2",
+					"#prop4": "prop4",
+				},
 				ExpressionAttributeValues: {
 					':pk': 'idz_identifier#property1#third_property3',
-					':sk1': '2020-11-16|property2'
+					':sk1': '2020-11-16|property2',
+					":prop20": "PROPERTY2",
+					":prop40": "PROPERTY4",
+					":dateTime0": data.date,
 				},
+				FilterExpression: "(#prop4 = :prop40) AND #dateTime = :dateTime0 AND #prop2 = :prop20",
 				IndexName: 'gsi2'
 			});
 			expect(moreMixedParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 				TableName: 'StoreDirectory',
-				ExpressionAttributeNames: { '#pk': 'gsi3pk', '#sk1': 'gsi3sk' },
+				ExpressionAttributeNames: { '#pk': 'gsi3pk', '#sk1': 'gsi3sk', "#prop1": "prop1",
+					"#storeLocationId": "storeLocationId",
+					"#prop4": "prop4",
+				},
 				ExpressionAttributeValues: {
+					":prop10": "PROPERTY1",
+					":prop40": "PROPERTY4",
+					":storeLocationId0": "IDENTIFIER",
 					':pk': '2020-11-16#p2_property2#propz3_property3',
 					':sk1': '$mallstores#prop1_property1#four_property4'
 				},
+				FilterExpression: "(#storeLocationId = :storeLocationId0) AND #prop1 = :prop10 AND #prop4 = :prop40",
 				IndexName: 'gsi3'
 			});
 			expect(noSkFacetArrayParams).to.deep.equal({
@@ -4196,9 +4420,13 @@ describe("Entity", () => {
 					'#building': 'buildingId',
 					'#unit': 'unitId',
 					'#pk': 'gsi1pk',
-					'#sk1': 'gsi1sk'
+					'#sk1': 'gsi1sk',
+					"#buildingId": "buildingId",
+					"#unitId": "unitId"
 				},
 				ExpressionAttributeValues: {
+					":buildingId0": "123",
+					":unitId0": "123",
 					':mall0': '123',
 					':building0': '123',
 					':unit0': '123',
@@ -4206,7 +4434,7 @@ describe("Entity", () => {
 					':sk1': '$mallstores#building_123#unit_123#store_'
 				},
 				IndexName: 'gsi1pk-gsi1sk-index',
-				FilterExpression: '#mall = :mall0 AND #building = :building0 AND #unit = :unit0'
+				FilterExpression: "(#buildingId = :buildingId0) AND #unitId = :unitId0 AND #mall = :mall0 AND #building = :building0 AND #unit = :unit0",
 			});
 			expect(keys).to.be.deep.equal([
 				{ name: "mall", type: "pk" },
@@ -4227,12 +4455,17 @@ describe("Entity", () => {
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: {
 					'#pk': 'gsi1pk',
-					'#sk1': 'gsi1sk'
+					'#sk1': 'gsi1sk',
+					"#unitId": "unitId",
+					"#buildingId": "buildingId"
 				},
 				ExpressionAttributeValues: {
 					':pk': '$mallstoredirectory_1#mall_123',
-					':sk1': '$mallstores#building_123#unit_123#store_'
+					':sk1': '$mallstores#building_123#unit_123#store_',
+					":buildingId0": "123",
+					":unitId0": "123",
 				},
+				"FilterExpression": "(#buildingId = :buildingId0) AND #unitId = :unitId0",
 				IndexName: 'gsi1pk-gsi1sk-index',
 			});
 			expect(keys).to.be.deep.equal([
@@ -4556,18 +4789,19 @@ describe("Entity", () => {
 					"#leaseEnd": "leaseEnd",
 					"#pk": "gsi1pk",
 					"#sk1": "gsi1sk",
+					"#buildingId": "buildingId",
 				},
 				ExpressionAttributeValues: {
 					":rent0": "50.00",
 					":mall0": "EastPointe",
 					":leaseEnd0": "20200101",
 					":leaseEnd1": "20200401",
+					":buildingId0": "BuildingA",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
-				FilterExpression:
-					"(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
+				FilterExpression: "(#buildingId = :buildingId0) AND (#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
 			});
 		});
 
@@ -4591,18 +4825,19 @@ describe("Entity", () => {
 					"#leaseEnd": "leaseEnd",
 					"#pk": "gsi1pk",
 					"#sk1": "gsi1sk",
+					"#buildingId": "buildingId",
 				},
 				ExpressionAttributeValues: {
 					":rent0": "50.00",
 					":mall0": "EastPointe",
 					":leaseEnd0": "20200101",
 					":leaseEnd1": "20200401",
+					":buildingId0": "BuildingA",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 					":sk1": "$MallStores#building_BuildingA#unit_".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
-				FilterExpression:
-					"(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
+				"FilterExpression": "(#buildingId = :buildingId0) AND (#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
 			});
 		});
 		it("Should add filtered fields to the between params", () => {
@@ -4627,19 +4862,22 @@ describe("Entity", () => {
 					"#leaseEnd": "leaseEnd",
 					"#pk": "gsi3pk",
 					"#sk1": "gsi3sk",
+					"#buildingId": "buildingId",
+					"#category": "category",
 				},
 				ExpressionAttributeValues: {
+					":buildingId0": "BuildingF",
 					":rent0": "50.00",
 					":mall0": "EastPointe",
 					":leaseEnd0": "20200101",
 					":leaseEnd1": "20200401",
+					":category0": "food/coffee",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
 					":sk1": "$MallStores#category_food/coffee#building_BuildingA".toLowerCase(),
-					":sk2": "$MallStores#category_food/coffee#building_BuildingF".toLowerCase(),
+					":sk2": "$MallStores#category_food/coffee#building_BuildingG".toLowerCase(),
 				},
 				KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
-				FilterExpression:
-					"(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
+				FilterExpression: "(#category = :category0) AND #buildingId <= :buildingId0 AND (#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
 			});
 		});
 		it("Should add filtered fields to the comparison params", () => {
@@ -4668,14 +4906,15 @@ describe("Entity", () => {
 				ExpressionAttributeValues: {
 					":rent0": "50.00",
 					":mall0": "EastPointe",
-					":leaseEnd0": "20200101",
-					":leaseEnd1": "20200401",
+					":leaseEnd0": "20201231",
+					":leaseEnd1": "20200101",
+					":leaseEnd2": "20200401",
 					":pk": "$MallStoreDirectory_1#mall_EastPointe".toLowerCase(),
-					":sk1": "$MallStores#leaseEnd_20201231".toLowerCase(),
+					":sk1": "$MallStores#leaseEnd_20201232".toLowerCase(),
 				},
-				KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
+				KeyConditionExpression: "#pk = :pk and #sk1 < :sk1",
 				FilterExpression:
-					"(#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd0 and :leaseEnd1)",
+					"(#leaseEnd <= :leaseEnd0) AND (#rent >= :rent0 AND #mall = :mall0) OR (#leaseEnd between :leaseEnd1 and :leaseEnd2)",
 			});
 		});
 	});
@@ -6087,17 +6326,22 @@ describe("Entity", () => {
 			for (let test of tests) {
 				describe(test.description, () => {
 				let db = new Entity(test.schema);
-					for (let query of test.queries) {
+					for (let i = 0; i < test.queries.length; i++) {
+						const query = test.queries[i];
 						it(`Should create params for a ${query.type}`, () => {
-							let params;
-							if (query.type === "query") {
-								params = db.query[query.index](query.input).params();
-							} else if (query.type === "update" || query.type === "patch") {
-								params = db[query.type](query.input).set(query.set).params();
-							} else {
-								params = db[query.type](query.input).params()
+							try {
+								let params;
+								if (query.type === "query") {
+									params = db.query[query.index](query.input).params();
+								} else if (query.type === "update" || query.type === "patch") {
+									params = db[query.type](query.input).set(query.set).params();
+								} else {
+									params = db[query.type](query.input).params()
+								}
+								expect(params).to.deep.equal(query.output);
+							} catch(err) {
+								err.message = `at index ${i}: ${err.message}`;
 							}
-							expect(params).to.deep.equal(query.output);
 						})
 					}
 				});
@@ -6232,7 +6476,7 @@ describe("Entity", () => {
 				ExpressionAttributeValues: {
 					':pk': '$testing#prop1_abc',
 					':sk1': '$setters_1#prop2_def'
-				}
+				},
 			});
 			expect(tableIndexQueryPartial).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',

@@ -9,12 +9,12 @@ const client = new DynamoDB.DocumentClient({
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 
-describe("Where Clause Queries", async () => {
+describe("Where Clause Queries", () => {
     before(async () => sleep(1000));
 });
 
 
-describe("Where Clause Queries", async () => {
+describe("Where Clause Queries", () => {
     before(async () => sleep(1000));
     let WhereTests = new Entity({
         model: {

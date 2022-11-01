@@ -299,7 +299,7 @@ describe("Offline Pagination", () => {
    describe("Services", () => {
        it("Should return the lastEvaluatedKey as it came back from dynamo", async () => {
            const {client, queries} = makeClient();
-           taskr._setClient(client);
+           taskr.setClient(client);
            // todo: raw cursor is valuable
            let page = await taskr.collections.workplaces({office: "Mobile Branch"}).go({pager: "raw"})
                .then(res => res.cursor);
@@ -318,7 +318,7 @@ describe("Offline Pagination", () => {
        //         gsi1pk: '$taskapp#office_mobile branch',
        //         gsi1sk: '$workplaces#offices_1'
        //     });
-       //     taskr._setClient(client);
+       //     taskr.setClient(client);
        //     let [page, results] = await taskr.collections.workplaces({office: "Mobile Branch"}).page(null, {pager: "named"});
        //     expect(page).to.be.deep.equal({
        //         "city": "power",
@@ -333,7 +333,7 @@ describe("Offline Pagination", () => {
 
        it("Should return the lastEvaluatedKey as an item with the entity's identifiers by default", async () => {
            const {client, queries} = makeClient();
-           taskr._setClient(client);
+           taskr.setClient(client);
            let {cursor} = await taskr.collections.workplaces({office: "Mobile Branch"}).go();
            expect(cursor).to.be.deep.equal(cursorFormatter.serialize({
                sk: '$employees_1',
@@ -345,7 +345,7 @@ describe("Offline Pagination", () => {
 
        // it("Should return the lastEvaluatedKey as just an item", async () => {
        //     const {client, queries} = makeClient();
-       //     taskr._setClient(client);
+       //     taskr.setClient(client);
        //     let [page, results] = await taskr.collections.workplaces({office: "Mobile Branch"}).page(null, {pager: "item"});
        //     expect(page).to.be.deep.equal({
        //         "team": "marketing",
@@ -357,7 +357,7 @@ describe("Offline Pagination", () => {
 
        it("Should reformat a raw pager correctly back into a ExclusiveStartKey", async () => {
            const {client, queries} = makeClient();
-           taskr._setClient(client);
+           taskr.setClient(client);
            const cursor = {
                sk: '$employees_1',
                pk: '$taskapp#employee_3712bb53-7386-4431-9c5c-036d93694456',
@@ -372,7 +372,7 @@ describe("Offline Pagination", () => {
 
        it("Should reformat a named pager correctly back into a ExclusiveStartKey", async () => {
            const {client, queries} = makeClient();
-           taskr._setClient(client);
+           taskr.setClient(client);
            const cursor = cursorFormatter.serialize({
                sk: '$employees_1',
                pk: '$taskapp#employee_3712bb53-7386-4431-9c5c-036d93694456',
@@ -391,7 +391,7 @@ describe("Offline Pagination", () => {
 
        // it("Should throw when named pager does not map to any known entities -- pager option 'named'", async () => {
        //     const {client, queries} = makeClient();
-       //     taskr._setClient(client);
+       //     taskr.setClient(client);
        //     const pager = {
        //         "team": "marketing",
        //         "title": "software engineer i",
@@ -407,7 +407,7 @@ describe("Offline Pagination", () => {
 
        // it("Should throw when named pager does not map to any known entities -- pager option 'item'", async () => {
        //     const {client, queries} = makeClient();
-       //     taskr._setClient(client);
+       //     taskr.setClient(client);
        //     const cursor = cursorFormatter.serialize({
        //         sk: '$employees_1',
        //         pk: '$taskappz#employee_3712bb53-7386-4431-9c5c-036d93694456',
@@ -421,7 +421,7 @@ describe("Offline Pagination", () => {
 
        it("Should reformat a item pager correctly back into a ExclusiveStartKey", async () => {
            const {client, queries} = makeClient();
-           taskr._setClient(client);
+           taskr.setClient(client);
            const cursor = cursorFormatter.serialize({
                sk: '$employees_1',
                pk: '$taskapp#employee_3712bb53-7386-4431-9c5c-036d93694456',
@@ -441,7 +441,7 @@ describe("Offline Pagination", () => {
        it("An Entity's identifiers should be used when utilizing a ExclusiveStartKey or parsing a LastEvaluatedSortKey", async () => {
            try {
                const {client, queries} = makeClient();
-               taskr._setClient(client);
+               taskr.setClient(client);
                taskr.entities.employees.setIdentifier("entity", "__e");
                taskr.entities.employees.setIdentifier("version", "__v");
                const {cursor} = await taskr.collections.workplaces({office: "Mobile Branch"}).go();
@@ -474,7 +474,7 @@ describe("Offline Pagination", () => {
                gsi1pk: '$taskapp#office_mobile branch'
            };
            const {client, queries} = makeClient(lastEvaluatedKey);
-           taskr._setClient(client);
+           taskr.setClient(client);
            let res = await taskr.entities.employees.query.coworkers({office: "Mobile Branch"}).go();
            expect(res.cursor).to.be.deep.equal(cursorFormatter.serialize(lastEvaluatedKey));
        });
@@ -486,7 +486,7 @@ describe("Offline Pagination", () => {
        //         gsi1sk: '$workplaces#employees_1#team_cool cats and kittens#title_junior software engineer#employee_25e754f4-a4e5-496f-9c43-63de512cf460',
        //         gsi1pk: '$taskapp#office_mobile branch'
        //     });
-       //     taskr._setClient(client);
+       //     taskr.setClient(client);
        //     const res = await taskr.entities.employees.query.coworkers({office: "Mobile Branch"}).go();
        //     expect(res.cursor).to.be.deep.equal({
        //         "team": "cool cats and kittens",
@@ -506,7 +506,7 @@ describe("Offline Pagination", () => {
        //         gsi1sk: '$workplaces#employees_1#team_cool cats and kittens#title_junior software engineer#employee_25e754f4-a4e5-496f-9c43-63de512cf460',
        //         gsi1pk: '$taskapp#office_mobile branch'
        //     });
-       //     taskr._setClient(client);
+       //     taskr.setClient(client);
        //     const cursor = cursorFormatter.serialize({
        //         sk: '$employees_1',
        //         pk: '$taskapp#employee_3712bb53-7386-4431-9c5c-036d93694456',
@@ -526,7 +526,7 @@ describe("Offline Pagination", () => {
        // it("An Entity's identifiers should be used when utilizing a ExclusiveStartKey or parsing a LastEvaluatedSortKey", async () => {
        //     try {
        //         const {client, queries} = makeClient();
-       //         taskr._setClient(client);
+       //         taskr.setClient(client);
        //         taskr.entities.employees.setIdentifier("entity", "__e");
        //         taskr.entities.employees.setIdentifier("version", "__v");
        //         let [page] = await taskr.entities.employees.query.coworkers({office: "Mobile Branch"}).go();

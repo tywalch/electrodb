@@ -240,3 +240,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Now exporting `ElectroValidationError` and `ElectroError` as classes so they can be more easily interrogated/triaged by user error handling.
 ### Fixed
 - On `update` and `patch` operations, the `data` method did not properly apply mutation constraints for `required` and `readOnly`. Data will now correctly throw in a similar manor the to individual mutation methods.
+
+## [2.2.0] - 2022-10-31
+### Added
+- A BIG addition to the library: Clustered Indexes. Clustered indexes allow for Collections to be composed of more similar, homogenous data.
+- The addition of new Entity and Service methods: `setTableName`, `getTableName`, `setClient`, `getClient`.

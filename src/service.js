@@ -1,6 +1,6 @@
 const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
-const { KeyCasing, ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions } = require("./types");
+const { KeyCasing, ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions, IndexTypes } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -65,7 +65,9 @@ class Service {
 		this.entities = {};
 		this.find = {};
 		this.collectionSchema = {};
+		this.compositeAttributes = {};
 		this.collections = {};
+		this.identifiers = {};
 		this._instance = ElectroInstance.service;
 		this._instanceType = ElectroInstanceTypes.service;
 	}
@@ -89,7 +91,9 @@ class Service {
 		this.entities = {};
 		this.find = {};
 		this.collectionSchema = {};
+		this.compositeAttributes = {};
 		this.collections = {};
+		this.identifiers = {};
 		this._instance = ElectroInstance.service;
 		this._instanceType = ElectroInstanceTypes.service;
 	}
@@ -183,12 +187,12 @@ class Service {
 			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Service name defined on joined instance, ${entity.model.service}, does not match the name of this Service: ${this.service.name}. Verify or update the service name on the Entity/Model to match the name defined on this service.`);
 		}
 
-		if (this._getTableName()) {
-			entity._setTableName(this._getTableName());
+		if (this.getTableName()) {
+			entity.setTableName(this.getTableName());
 		}
 
 		if (options.client) {
-			entity._setClient(options.client);
+			entity.setClient(options.client);
 		}
 
 		if (options.logger) {
@@ -205,20 +209,63 @@ class Service {
 
 		this.entities[name] = entity;
 		for (let collection of this.entities[name].model.collections) {
+			// todo: this used to be inside the collection callback, it does not do well being ran multiple times
+			// this forlook adds the entity filters multiple times
 			this._addCollectionEntity(collection, name, this.entities[name]);
 			this.collections[collection] = (...facets) => {
-				let { entities, attributes, identifiers } = this.collectionSchema[collection];
-				return this._makeCollectionChain(collection, attributes, clauses, identifiers, entities, Object.values(entities)[0], ...facets);
+				return this._makeCollectionChain({
+					name: collection,
+					initialClauses: clauses,
+				}, ...facets);
 			};
+		}
+		for (const collection in this.collectionSchema) {
+			const collectionSchema = this.collectionSchema[collection];
+			this.compositeAttributes[collection] = this._collectionSchemaToCompositeAttributes(collectionSchema);
 		}
 		this.find = { ...this.entities, ...this.collections };
 		return this;
 	}
 
-	_setClient(client) {
+	_collectionSchemaToCompositeAttributes(schema) {
+		const keys = schema.keys;
+		return {
+			hasSortKeys: keys.hasSk,
+			customFacets: {
+				pk: keys.pk.isCustom,
+				sk: keys.sk.isCustom,
+			},
+			pk: keys.pk.facets,
+			sk: keys.sk.facets,
+			all: [
+				...keys.pk.facets.map(name => {
+					return {
+						name,
+						index: keys.index,
+						type: 'pk',
+					};
+				}),
+				...keys.sk.facets.map(name => {
+					return {
+						name,
+						index: keys.index,
+						type: 'sk',
+					};
+				})
+			],
+			collection: keys.collection,
+			hasSubCollections: schema.hasSubCollections,
+			casing: {
+				pk: keys.pk.casing,
+				sk: keys.sk.casing,
+			},
+		}
+	}
+
+	setClient(client) {
 		if (client !== undefined) {
 			for (let entity of Object.values(this.entities)) {
-				entity._setClient(client);
+				entity.setClient(client);
 			}
 		}
 	}
@@ -275,8 +322,9 @@ class Service {
 	}
 
 	findKeyOwner(lastEvaluatedKey) {
-		return Object.values(this.entities)
-			.find((entity) => entity.ownsLastEvaluatedKey(lastEvaluatedKey));
+		return Object.values(this.entities)[0];
+		// return Object.values(this.entities)
+		// 	.find((entity) => entity.ownsLastEvaluatedKey(lastEvaluatedKey));
 	}
 
 	expectKeyOwner(lastEvaluatedKey) {
@@ -288,8 +336,9 @@ class Service {
 	}
 
 	findCursorOwner(cursor) {
-		return Object.values(this.entities)
-			.find(entity => entity.ownsCursor(cursor));
+		return Object.values(this.entities)[0];
+		// return Object.values(this.entities)
+		// 	.find(entity => entity.ownsCursor(cursor));
 	}
 
 	expectCursorOwner(cursor) {
@@ -300,24 +349,34 @@ class Service {
 		return owner;
 	}
 
-	_getTableName() {
+	getTableName() {
 		return this.service.table;
 	}
 
-	_setTableName(table) {
+	setTableName(table) {
 		this.service.table = table;
 		for (let entity of Object.values(this.entities)) {
-			entity._setTableName(table);
+			entity.setTableName(table);
 		}
 	}
 
-	_makeCollectionChain(name = "", attributes = {}, initialClauses = {}, expressions = {}, entities = {}, entity = {}, facets = {}) {
+	_makeCollectionChain({
+		name = "",
+		initialClauses = {},
+	}, facets = {}) {
+		const { entities, attributes, identifiers, indexType } = this.collectionSchema[name];
+		const compositeAttributes = this.compositeAttributes[name];
+		const allEntities = Object.values(entities);
+		const entity = allEntities[0];
+
 		let filterBuilder = new FilterFactory(attributes, FilterOperations);
 		let whereBuilder = new WhereFactory(attributes, FilterOperations);
 		let clauses = {...initialClauses};
 
 		clauses = filterBuilder.injectFilterClauses(clauses);
 		clauses = whereBuilder.injectWhereClauses(clauses);
+
+		const expression = identifiers.expression || "";
 
 		let options = {
 			// expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
@@ -329,9 +388,20 @@ class Service {
 					return this.expectKeyOwner(key).serializeCursor(key);
 				},
 				deserialize: (cursor) => {
-					return this.expectCursorOwner(cursor).deserilizeCursor(cursor);
+					return this.expectCursorOwner(cursor).deserializeCursor(cursor);
 				}
-			}
+			},
+			expressions: {
+				names: identifiers.names || {},
+				values: identifiers.values || {},
+				expression: allEntities.length > 1
+					? `(${expression})`
+					: expression
+			},
+			attributes,
+			entities,
+			indexType,
+			compositeAttributes,
 		};
 
 		return entity.collection(name, clauses, facets, options);
@@ -477,7 +547,33 @@ class Service {
 		if (invalidDefinition) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Validation Error while joining entity, "${name}". ${invalidIndexMessages.join(", ")}`);
 		}
-		return definition;
+		const sharedSortKeyAttributes = [];
+		const sharedSortKeyCompositeAttributeLabels = [];
+		const sharedSortKeyLabels = [];
+		if (providedIndex.hasSk && definition.hasSk && Array.isArray(definition.sk.labels)) {
+			for (let i = 0; i < definition.sk.labels.length; i++) {
+				const providedLabels = providedIndex.sk.labels[i];
+				const definedLabels = definition.sk.labels[i];
+
+				const namesMatch = providedLabels && providedLabels.name === definedLabels.name;
+				const labelsMatch = providedLabels && providedLabels.label === definedLabels.label;
+				if (!namesMatch || !labelsMatch) {
+					break;
+				}
+				sharedSortKeyLabels.push({...definedLabels});
+				sharedSortKeyCompositeAttributeLabels.push({...definition.sk.facetLabels[i]})
+				sharedSortKeyAttributes.push(definition.sk.facets[i]);
+			}
+		}
+		return {
+			...definition,
+			sk: {
+				...definition.sk,
+				facets: sharedSortKeyAttributes,
+				facetLabels: sharedSortKeyCompositeAttributeLabels,
+				labels: sharedSortKeyLabels,
+			}
+		};
 	}
 
 	_getEntityIndexFromCollectionName(collection, entity) {
@@ -506,7 +602,7 @@ class Service {
 		);
 	}
 
-	_processSubCollections(existing, provided, entityName, collectionName) {
+	_processSubCollections(providedType, existing, provided, entityName, collectionName) {
 		let existingSubCollections;
 		let providedSubCollections;
 		if (v.isArrayHasLength(existing)) {
@@ -520,15 +616,19 @@ class Service {
 			providedSubCollections = [provided];
 		}
 
+		if (providedSubCollections.length > 1 && providedType === IndexTypes.clustered) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Clustered indexes do not support sub-collections. The sub-collection "${collectionName}", on Entity "${entityName}" must be defined as either an individual collection name or the index must be redefined as an isolated cluster`);
+		}
 		const existingRequiredIndex = existingSubCollections.indexOf(collectionName);
 		const providedRequiredIndex = providedSubCollections.indexOf(collectionName);
 		if (providedRequiredIndex < 0) {
-			throw new Error(`The collection definition for Collection "${collectionName}" does not exist on Entity "${entityName}".`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `The collection definition for Collection "${collectionName}" does not exist on Entity "${entityName}".`);
 		}
 		if (existingRequiredIndex >= 0 && existingRequiredIndex !== providedRequiredIndex) {
-			throw new Error(`The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${providedRequiredIndex + 1}, ${providedSubCollections[existingRequiredIndex] === undefined ? '(not found)' : `"${providedSubCollections[existingRequiredIndex]}"`}, on Entity "${entityName}", does not match the established collection name in slot ${existingRequiredIndex + 1}, "${collectionName}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${providedRequiredIndex + 1}, ${providedSubCollections[existingRequiredIndex] === undefined ? '(not found)' : `"${providedSubCollections[existingRequiredIndex]}"`}, on Entity "${entityName}", does not match the established collection name in slot ${existingRequiredIndex + 1}, "${collectionName}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
 		}
 		let length = Math.max(existingRequiredIndex, providedRequiredIndex);
+
 		for (let i = 0; i <= length; i++) {
 			let existingCollection = existingSubCollections[i];
 			let providedCollection = providedSubCollections[i];
@@ -537,7 +637,7 @@ class Service {
 					return i;
 				}
 				if (existingCollection !== providedCollection) {
-					throw new Error(`The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${i+1}, "${providedCollection}", on Entity "${entityName}", does not match the established collection name in slot ${i + 1}, "${existingCollection}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
+					throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `The collection definition for Collection "${collectionName}", on Entity "${entityName}", does not match the established sub-collection order for this service. The collection name provided in slot ${i+1}, "${providedCollection}", on Entity "${entityName}", does not match the established collection name in slot ${i + 1}, "${existingCollection}". When using sub-collections, all Entities within a Service must must implement the same order for all preceding sub-collections.`);
 				}
 			} else if (v.isStringHasLength(providedCollection)) {
 				if (providedCollection === collectionName) {
@@ -564,27 +664,43 @@ class Service {
 			},
 			index: undefined,
 			table: "",
-			collection: []
+			collection: [],
+			indexType: undefined,
+			hasSubCollections: undefined,
 		};
+		const providedType = providedIndex.type || IndexTypes.isolated;
+		if (this.collectionSchema[collection].indexType === undefined) {
+			this.collectionSchema[collection].indexType = providedType;
+		} else if (this.collectionSchema[collection].indexType !== providedType) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Index type mismatch on collection ${collection}. The entity ${name} defines the index as type ${providedType} while the established type for that index is ${this.collectionSchema[collection].indexType}. Note that when omitted, indexes default to the type "${IndexTypes.isolated}"`);
+		}
 		if (this.collectionSchema[collection].entities[name] !== undefined) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Entity with name '${name}' has already been joined to this service.`);
 		}
 
 		if (this.collectionSchema[collection].table !== "") {
-			if (this.collectionSchema[collection].table !== entity._getTableName()) {
-				throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Entity with name '${name}' is defined to use a different Table than what is defined on other Service Entities and/or the Service itself. Entity '${name}' is defined with table name '${entity._getTableName()}' but the Service has been defined to use table name '${this.collectionSchema[collection].table}'. All Entities in a Service must reference the same DynamoDB table. To ensure all Entities will use the same DynamoDB table, it is possible to apply the property 'table' to the Service constructor's configuration parameter.`);
+			if (this.collectionSchema[collection].table !== entity.getTableName()) {
+				throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Entity with name '${name}' is defined to use a different Table than what is defined on other Service Entities and/or the Service itself. Entity '${name}' is defined with table name '${entity.getTableName()}' but the Service has been defined to use table name '${this.collectionSchema[collection].table}'. All Entities in a Service must reference the same DynamoDB table. To ensure all Entities will use the same DynamoDB table, it is possible to apply the property 'table' to the Service constructor's configuration parameter.`);
 			}
 		} else {
-			this.collectionSchema[collection].table = entity._getTableName();
+			this.collectionSchema[collection].table = entity.getTableName();
 		}
+
 		this.collectionSchema[collection].keys = this._processEntityKeys(name, this.collectionSchema[collection].keys, providedIndex);
 		this.collectionSchema[collection].attributes = this._processEntityAttributes(name, this.collectionSchema[collection].attributes, entity.model.schema.attributes, this.collectionSchema[collection].keys);
 		this.collectionSchema[collection].entities[name] = entity;
 		this.collectionSchema[collection].identifiers = this._processEntityIdentifiers(this.collectionSchema[collection].identifiers, entity.getIdentifierExpressions(name));
 		this.collectionSchema[collection].index = this._processEntityCollectionIndex(this.collectionSchema[collection].index, providedIndex.index, name, collection);
-		let collectionIndex = this._processSubCollections(this.collectionSchema[collection].collection, providedIndex.collection, name, collection);
+		let collectionIndex = this._processSubCollections(
+			providedType,
+			this.collectionSchema[collection].collection,
+			providedIndex.collection,
+			name,
+			collection
+		);
 		this.collectionSchema[collection].collection[collectionIndex] = collection;
-
+		this.collectionSchema[collection].hasSubCollections = this.collectionSchema[collection].hasSubCollections || Array.isArray(providedIndex.collection);
+		return this.collectionSchema[collection];
 	}
 
 	_processEntityCollectionIndex(existing, provided, name, collection) {

@@ -1455,16 +1455,16 @@ let getKeys = ((val) => {}) as GetKeys;
 
 
     // Service with no Entities
-    let nullCaseService = new Service({});
-    type nullCollections = typeof nullCaseService.collections;
-    type nullEntities = typeof nullCaseService.collections;
-    expectType<nullCollections>({});
-    expectType<nullEntities>({});
+    // let nullCaseService = new Service({});
+    // type NullCollections = typeof nullCaseService.collections;
+    // type NullEntities = typeof nullCaseService.collections;
+    // expectType<NullCollections>(magnify({}));
+    // expectType<NullEntities>(magnify({}));
 
     // Service with no Collections
-    let serviceNoCollections = new Service({standAloneEntity});
-    type noEntityCollections = typeof serviceNoCollections.collections;
-    expectType<noEntityCollections>({});
+    // let serviceNoCollections = new Service({standAloneEntity});
+    // type noEntityCollections = typeof serviceNoCollections.collections;
+    // expectType<noEntityCollections>({});
 
     // Service no shared entity collections
     let serviceNoShared = new Service({
@@ -1477,13 +1477,15 @@ let getKeys = ((val) => {}) as GetKeys;
     type NoSharedCollectionsList = keyof typeof serviceNoShared.collections;
     expectType<NoSharedCollectionsList>(expectNoSharedCollections);
     type NoSharedCollectionParameter1 = Parameter<typeof serviceNoShared.collections.mycollection>;
-    expectType<NoSharedCollectionParameter1>({attr5: "string"});
+    const noSharedCollectionParameter1 = {} as Resolve<NoSharedCollectionParameter1>;
+    expectType<{attr5: string}>(noSharedCollectionParameter1);
     expectError<NoSharedCollectionParameter1>({});
     expectError<NoSharedCollectionParameter1>({attr5: 123});
     expectError<NoSharedCollectionParameter1>({attr1: "123"});
 
     type NoSharedCollectionParameter2 = Parameter<typeof serviceNoShared.collections.normalcollection>;
-    expectType<NoSharedCollectionParameter2>({prop2: "abc", prop1: "def"});
+    const noSharedCollectionParameter2 = {} as Resolve<NoSharedCollectionParameter2>;
+    expectType<{ prop1: string; prop2: string; }>(noSharedCollectionParameter2);
     expectError<NoSharedCollectionParameter2>({});
     expectError<NoSharedCollectionParameter2>({prop2: "abc"});
     expectError<NoSharedCollectionParameter2>({prop1: "abc"});
@@ -3360,6 +3362,9 @@ const complex = new Entity({
         version: "1"
     },
     attributes: {
+        username: {
+            type: 'string'
+        },
         stringVal: {
             type: "string",
             default: () => "abc",
@@ -3836,7 +3841,10 @@ const mapTests = new Entity({
     }
 });
 
-const complexAttributeService = new Service({mapTests, complex});
+const complexAttributeService = new Service({
+    mapTests,
+    complex,
+});
 
 mapTests
     .get({username: "test"})
