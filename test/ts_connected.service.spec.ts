@@ -13,6 +13,8 @@ type DocClient = typeof client;
 
 const table = "electro";
 
+const serviceName = uuid();
+
 export function getPaddingEntities(options: {
     client?: DocClient;
     serviceName: string;
@@ -380,7 +382,7 @@ export function getPaddingEntities(options: {
 }
 
 describe('padding validations', () => {
-    const serviceName = 'paddingTest';
+    // const serviceName = 'paddingTest';
     const {
         baseEntity,
         baseEntity2,
@@ -788,7 +790,7 @@ const createCompositeKey = (item: IndexTypeTestItemCompositeKey) => {
 const print = (val: any) => console.log(JSON.stringify(val, null, 4));
 
 async function initIndexTests() {
-    const serviceName = uuid();
+    // const serviceName = uuid();
     const entity1Name = 'entity1';
     const entity2Name = 'entity2';
     const clusteredService = createClusteredService({
@@ -845,7 +847,7 @@ async function initIndexTests() {
 }
 
 async function initSingleSKTests() {
-    const serviceName = uuid();
+    // const serviceName = uuid();
     const entity1Name = 'entity1';
     const entity2Name = 'entity2';
     const clusteredService = createClusteredSingleSKService({
@@ -1601,7 +1603,7 @@ type EntityIsolationTestCase = {
 }
 
 describe('clustered index sort key formatting', () => {
-    const serviceName = uuid();
+    // const serviceName = uuid();
     const entity1Name = uuid();
     const entity2Name = uuid();
     const service = createClusteredService({
@@ -1705,7 +1707,7 @@ describe('clustered index sort key formatting', () => {
 });
 
 it('should add entity filter when clustered index is partially provided on entity query', () => {
-    const serviceName = uuid();
+    // const serviceName = uuid();
     const entity1Name = uuid();
     const entity2Name = uuid();
     const service = createClusteredService({
@@ -1729,7 +1731,7 @@ it('should add entity filter when clustered index is partially provided on entit
             ":prop20": 123,
             ":__edb_e__0": entity1Name,
             ":__edb_v__0": "1",
-            ":pk": `${serviceName}c#prop1_abc`,
+            ":pk": `$${serviceName}#prop1_abc`,
             ":sk1": "$primarycollection#prop2_123#prop3_"
         },
         "FilterExpression": "(#prop2 = :prop20) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0"
