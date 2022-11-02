@@ -245,3 +245,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Added
 - A BIG addition to the library: Clustered Indexes. Clustered indexes allow for Collections to be composed of more similar, homogenous data.
 - The addition of new Entity and Service methods: `setTableName`, `getTableName`, `setClient`, `getClient`.
+
+## [2.2.1] - 2022-11-02
+### Fixed
+- Addressed github issue #144, root map attributes would set an empty object regardless if the user supplied it.

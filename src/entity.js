@@ -3037,7 +3037,7 @@ class Entity {
 			indexAccessPattern,
 			indexHasSubCollections,
 		} = this._normalizeIndexes(model.indexes);
-		let schema = new Schema(model.attributes, facets, {client});
+		let schema = new Schema(model.attributes, facets, {client, isRoot: true});
 		let filters = this._normalizeFilters(model.filters);
 		// todo: consider a rename
 		let prefixes = this._normalizeKeyFixings({service, entity, version, indexes, modelVersion, clusteredIndexes});

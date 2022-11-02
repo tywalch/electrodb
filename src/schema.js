@@ -524,15 +524,22 @@ class MapAttribute extends Attribute {
 			traverser: this.traverser
 		});
 		this.properties = properties;
+		this.isRoot = !!definition.isRoot;
 		this.get = this._makeGet(definition.get, properties);
 		this.set = this._makeSet(definition.set, properties);
 	}
 
 	_makeGet(get, properties) {
 		this._checkGetSet(get, "get");
-
-		const getter = get || ((attr) => attr);
-
+		const getter = get || ((val) => {
+			const isEmpty = !val || Object.keys(val).length === 0;
+			const isNotRequired = !this.required;
+			const isRoot = this.isRoot;
+			if (isEmpty && isRoot && !isNotRequired) {
+				return undefined;
+			}
+			return val;
+		});
 		return (values, siblings) => {
 			const data = {};
 
@@ -541,6 +548,9 @@ class MapAttribute extends Attribute {
 			}
 
 			if (values === undefined) {
+				if (!get) {
+					return undefined;
+				}
 				return getter(data, siblings);
 			}
 
@@ -561,11 +571,23 @@ class MapAttribute extends Attribute {
 
 	_makeSet(set, properties) {
 		this._checkGetSet(set, "set");
-		const setter = set || ((attr) => attr);
+		const setter = set || ((val) => {
+			const isEmpty = !val || Object.keys(val).length === 0;
+			const isNotRequired = !this.required;
+			const isRoot = this.isRoot;
+			if (isEmpty && isRoot && !isNotRequired) {
+				return undefined;
+			}
+			return val;
+		});
+
 		return (values, siblings) => {
 			const data = {};
 			if (values === undefined) {
-				return setter(data, siblings);
+				if (!set) {
+					return undefined;
+				}
+				return setter(values, siblings);
 			}
 			for (const name of Object.keys(properties.attributes)) {
 				const attribute = properties.attributes[name];
@@ -624,17 +646,17 @@ class MapAttribute extends Attribute {
 	}
 
 	val(value) {
-		const getValue = (v) => {
-			v = this.cast(v);
-			if (v === undefined) {
-				v = this.default();
+		const incomingIsEmpty = value === undefined;
+		let fromDefault = false;
+		let data;
+		if (value === undefined) {
+			data = this.default();
+			if (data !== undefined) {
+				fromDefault = true;
 			}
-			return v;
+		} else {
+			data = value;
 		}
-
-		let data = value === undefined
-			? getValue(value)
-			: value;
 
 		const valueType = getValueType(data);
 
@@ -652,6 +674,10 @@ class MapAttribute extends Attribute {
 			if (results !== undefined) {
 				response[name] = results;
 			}
+		}
+
+		if (Object.keys(response).length === 0 && !fromDefault && this.isRoot && !this.required && incomingIsEmpty) {
+			return undefined;
 		}
 
 		return response;
@@ -959,9 +985,9 @@ class SetAttribute extends Attribute {
 }
 
 class Schema {
-	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client, parent} = {}) {
+	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client, parent, isRoot} = {}) {
 		this._validateProperties(properties, parent);
-		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client, parent});
+		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client, parent, isRoot});
 		this.client = client;
 		this.attributes = schema.attributes;
 		this.enums = schema.enums;
@@ -972,9 +998,10 @@ class Schema {
 		this.requiredAttributes = schema.requiredAttributes;
 		this.translationForWatching = this._formatWatchTranslations(this.attributes);
 		this.traverser = traverser;
+		this.isRoot = !!isRoot;
 	}
 
-	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client, parent} = {}) {
+	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client, parent, isRoot} = {}) {
 		const attributeHasParent = !!parent;
 		let invalidProperties = [];
 		let normalized = {};
@@ -1073,6 +1100,7 @@ class Schema {
 				postfix,
 				traverser,
 				isKeyField,
+				isRoot: !!isRoot,
 				label: attribute.label,
 				required: !!attribute.required,
 				default: attribute.default,
