@@ -897,7 +897,60 @@ describe("Update Item", () => {
                 }
                 expect(created.data).to.deep.equal(expected);
                 expect(item.data).to.deep.equal(expected);
+
+                
             });
+
+            it('should return an empty object with a Map Attribute when one is updated on the item directly', async () => {
+                const entityWithoutDefaultOrSetter = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const expected = {
+                    prop1,
+                    prop2: {}   
+                }
+                const updated = await entityWithoutDefaultOrSetter
+                    .update({prop1})
+                    .data((attr, op) => {
+                        op.set(attr.prop2, {});
+                    })
+                    .go({response: 'all_new'});
+
+                expect(updated.data).to.deep.equal(expected);
+                const updatedItem = await entityWithoutDefaultOrSetter.get({prop1}).go();
+                expect(updatedItem.data).to.deep.equal(expected);
+            });
+            
         });
     })
     describe("conditions and updates", () => {
