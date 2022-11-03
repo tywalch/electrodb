@@ -897,8 +897,6 @@ describe("Update Item", () => {
                 }
                 expect(created.data).to.deep.equal(expected);
                 expect(item.data).to.deep.equal(expected);
-
-                
             });
 
             it('should return an empty object with a Map Attribute when one is updated on the item directly', async () => {
