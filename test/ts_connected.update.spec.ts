@@ -514,7 +514,6 @@ describe("Update Item", () => {
             const p1 = customers.create({
                 id: "test",
                 email: "user@example.com",
-
                 name: { // should save as is
                     legal: {}
                 },
@@ -555,7 +554,7 @@ describe("Update Item", () => {
                             "middle": "jorge"
                         }
                     },
-                    "name8": {},
+                    // "name8": {}, // should not exist
                     "pk": "$company#id_test",
                     "sk": "$customer_1",
                     "__edb_e__": "customer",
@@ -621,7 +620,7 @@ describe("Update Item", () => {
             const email = "user@example.com";
 
             await customers.create({ id: id1, email }).go();
-            await customers.create({ id: id2, email, name: {legal: {}} }).go();
+            await customers.create({ id: id2, email, name: { legal: {} } }).go();
 
             const retrieved1 = await customers.get({id: id1}).go().then(res => res.data);
             const retrieved2 = await customers.get({id: id2}).go().then(res => res.data);
@@ -629,7 +628,7 @@ describe("Update Item", () => {
             expect(retrieved1).to.deep.equal({
                 email,
                 id: id1,
-                name: {}
+                // name: {} should not exist (wasn't put)
             });
 
             expect(retrieved2).to.deep.equal({
@@ -669,6 +668,287 @@ describe("Update Item", () => {
                     }
                 }
             });
+        });
+
+        describe('Map Attributes and empty objects', () => {
+            it('should return an empty object with a Map Attribute when one is set via a static default', async () => {
+                const entityWithDefault = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            },
+                            default: {}
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+
+                const created = await entityWithDefault.put({prop1}).go();
+                const item = await entityWithDefault.get({prop1}).go();
+                const expected = {
+                    prop1,
+                    prop2: {}
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should return an empty object with a Map Attribute when one is set via a default function', async () => {
+                const entityWithDefault = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            },
+                            default: () => {
+                                return {}
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const created = await entityWithDefault.put({prop1}).go();
+                const item = await entityWithDefault.get({prop1}).go();
+                const expected = {
+                    prop1,
+                    prop2: {}
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should return an empty object with a Map Attribute when one is set via the setter', async () => {
+                const entityWithObjSetter = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            },
+                            set: () => {
+                                return {};
+                            }
+                        },
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const created = await entityWithObjSetter.put({prop1}).go();
+                const item = await entityWithObjSetter.get({prop1}).go();
+                const expected = {
+                    prop1,
+                    prop2: {}
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should return an empty object with a Map Attribute when one is put on the item directly', async () => {
+                const entityWithoutDefaultOrSetter = new Entity({
+                    model: {
+                        entity: 'emptyObject',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const prop2 = {};
+                const created = await entityWithoutDefaultOrSetter.put({prop1, prop2}).go();
+                const item = await entityWithoutDefaultOrSetter.get({prop1}).go();
+                const expected = {
+                    prop1,
+                    prop2,
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should not return an empty object with a Map Attribute when one is not put on the item directly', async () => {
+                const entityWithoutDefaultOrSetter = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const created = await entityWithoutDefaultOrSetter.put({prop1}).go();
+                const item = await entityWithoutDefaultOrSetter.get({prop1}).go();
+                const expected = {
+                    prop1,
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should return an empty object with a Map Attribute when one is updated on the item directly', async () => {
+                const entityWithoutDefaultOrSetter = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const expected = {
+                    prop1,
+                    prop2: {}   
+                }
+                const updated = await entityWithoutDefaultOrSetter
+                    .update({prop1})
+                    .data((attr, op) => {
+                        op.set(attr.prop2, {});
+                    })
+                    .go({response: 'all_new'});
+
+                expect(updated.data).to.deep.equal(expected);
+                const updatedItem = await entityWithoutDefaultOrSetter.get({prop1}).go();
+                expect(updatedItem.data).to.deep.equal(expected);
+            });
+            
         });
     })
     describe("conditions and updates", () => {
