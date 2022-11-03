@@ -856,7 +856,7 @@ describe("Update Item", () => {
                 expect(item.data).to.deep.equal(expected);
             });
 
-            it('should not return an empty object with a Map Attribute when one is put on the item directly', async () => {
+            it('should not return an empty object with a Map Attribute when one is not put on the item directly', async () => {
                 const entityWithoutDefaultOrSetter = new Entity({
                     model: {
                         entity: 'emptyObjects',
