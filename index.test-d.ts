@@ -959,7 +959,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     let updateGo = updateItem.go;
     let updateGoWithoutSK = updateItemWithoutSK.go;
-
+    
     let updateParams = updateItem.params;
     let updateParamsWithoutSK = updateItemWithoutSK.params;
 
@@ -968,7 +968,6 @@ let getKeys = ((val) => {}) as GetKeys;
 
     type UpdateParamsParams = Parameter<typeof updateParams>;
     type UpdateParamsParamsWithoutSK = Parameter<typeof updateParamsWithoutSK>;
-
 
     expectAssignable<UpdateGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
     expectAssignable<UpdateGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
@@ -3220,7 +3219,7 @@ entityWithComplexShapes.update({
   })
   .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
   .go({
-    response: "all_new",
+    
   }).then(res => {
     expectType<ComplexShapesUpdateItem>(res.data);
 });
@@ -3232,7 +3231,6 @@ entityWithComplexShapes.update({
   .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
   .go({
     originalErr: true,
-    response: "all_new",
   }).then(res => {
     expectType<ComplexShapesUpdateItem>(res.data);
 });
@@ -3246,7 +3244,7 @@ entityWithComplexShapes.update({
   })
   .where((attr, op) => op.eq(attr.prop2, 'def'))
   .go({
-    response: "all_new",
+    
   })
   .then(res => {
     expectType<ComplexShapesUpdateItem>(res.data);
@@ -3989,3 +3987,60 @@ expectAssignable<AvailableParsingOptions>(undefined);
 expectAssignable<AvailableParsingOptions>({});
 expectAssignable<AvailableParsingOptions>({ignoreOwnership: true});
 expectAssignable<AvailableParsingOptions>({ignoreOwnership: false});
+
+normalEntity2
+    .update({
+        prop1: 'abc', 
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go()
+    .then(results => {
+        expectType<{
+            prop1?: string | undefined;
+            prop2?: string | undefined;
+            prop3?: string | undefined;
+            prop5?: number | undefined;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });
+
+normalEntity2
+    .update({
+        prop1: 'abc', 
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go({response: 'updated_new'})
+    .then(results => {
+        expectType<{
+            prop1?: string | undefined;
+            prop2?: string | undefined;
+            prop3?: string | undefined;
+            prop5?: number | undefined;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });
+
+normalEntity2
+    .update({
+        prop1: 'abc', 
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go({response: 'all_new'})
+    .then(results => {
+        expectType<{
+            prop1: string;
+            prop2: string;
+            prop3: string;
+            prop5: number;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });

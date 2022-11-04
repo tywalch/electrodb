@@ -723,7 +723,7 @@ export interface BatchWriteOperationOptions<A extends string, F extends string, 
 }
 
 export interface SetRecordActionOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
-    go: UpdateRecordGo<Partial<TableItem>, UpdateQueryOptions>;
+    go: UpdateRecordGo<TableItem>;
     params: ParamRecord<UpdateQueryParams>;
     set: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     remove: SetRecord<A,F,C,S, Array<keyof SetItem<A,F,C,S>>,IndexCompositeAttributes,TableItem>;
@@ -987,7 +987,16 @@ export type ServiceQueryRecordsGo<ResponseType, Options = QueryOptions> = <T = R
 
 export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type UpdateRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
+export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) => 
+        Options extends infer O
+            ? 'response' extends keyof O
+                ? O['response'] extends 'all_new'
+                    ? Promise<{data: T}>
+                    : O['response'] extends 'all_old'
+                        ? Promise<{data: T}>
+                        : Promise<{data: Partial<T>}>
+                : Promise<{data: Partial<T>}>
+            : never;
 
 export type PutRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
 
@@ -995,11 +1004,6 @@ export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T =
 
 export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
     Promise<{ unprocessed: ResponseType }>
-
-// export type PageRecord<ResponseType, CompositeAttributes> = (page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: PaginationOptions) => Promise<[
-//         (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
-//     ResponseType
-// ]>;
 
 export type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
 
