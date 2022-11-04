@@ -249,3 +249,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.2.1] - 2022-11-02
 ### Fixed
 - Addressed github issue #144, root map attributes would set an empty object regardless if the user supplied it.
+
+## [2.2.2] - 2022-11-04
+### Added
+- the return type from an update/patch call now returns an Entity item when `all_new` or `all_old` response options are passed
