@@ -1,36 +1,37 @@
 import {
-  Schema, 
-  IndexCollections,
-  EntityCollections,
-  ItemTypeDescription,
-  RequiredAttributes,
-  HiddenAttributes,
-  ReadOnlyAttributes,
-  TableIndexes,
-  TableIndexName,
-  PKCompositeAttributes,
-  SKCompositeAttributes,
-  TableIndexPKCompositeAttributes,
-  TableIndexSKCompositeAttributes,
-  TableIndexPKAttributes,
-  TableIndexSKAttributes,
-  TableIndexCompositeAttributes,
-  AllTableIndexCompositeAttributes,
-  IndexPKAttributes,
-  IndexSKAttributes,
-  TableItem,
-  ResponseItem,
-  RequiredPutItems,
-  PutItem,
-  CreatedItem,
-  UpdateData,
-  RemoveItem,
-  AppendItem,
-  SetItem,
-  AddItem,
-  SubtractItem,
-  DeleteItem,
-  createCustomAttribute,
+    Schema,
+    IndexCollections,
+    EntityCollections,
+    ItemTypeDescription,
+    RequiredAttributes,
+    HiddenAttributes,
+    ReadOnlyAttributes,
+    TableIndexes,
+    TableIndexName,
+    PKCompositeAttributes,
+    SKCompositeAttributes,
+    TableIndexPKCompositeAttributes,
+    TableIndexSKCompositeAttributes,
+    TableIndexPKAttributes,
+    TableIndexSKAttributes,
+    TableIndexCompositeAttributes,
+    AllTableIndexCompositeAttributes,
+    IndexPKAttributes,
+    IndexSKAttributes,
+    TableItem,
+    ResponseItem,
+    RequiredPutItems,
+    PutItem,
+    CreatedItem,
+    UpdateData,
+    RemoveItem,
+    AppendItem,
+    SetItem,
+    AddItem,
+    SubtractItem,
+    DeleteItem,
+    createCustomAttribute,
+    CustomAttributeType,
 } from '../';
 import { expectType, expectError, expectNotType } from 'tsd';
 
@@ -179,7 +180,15 @@ class MockEntity<A extends string, F extends string, C extends string, S extends
   }
 }
 
-type CustomAttributeType = {
+type MyBasicCustomAttribute = {
+    type: 'pizza' | 'flatbread';
+    toppings: Array<'pep' | 'mush' | 'garlic'>;
+    count: number;
+}
+
+
+
+type MyCustomAttributeType = {
   strAttr: string;
   numAttr: number;
   boolAttr: boolean;
@@ -218,17 +227,17 @@ const entityWithCustomAttribute = new MockEntity({
       attr1: {
           type: "string",
       },
-      attr2: createCustomAttribute<CustomAttributeType>({
+      attr2: createCustomAttribute<MyCustomAttributeType>({
         get: (attr) => {
-          expectType<CustomAttributeType>(attr);
+          expectType<MyCustomAttributeType>(attr);
           return attr;
         },
         set: (attr) => {
-          expectType<CustomAttributeType|undefined>(attr);
+          expectType<MyCustomAttributeType|undefined>(attr);
           return attr;
         },
         validate: (attr) => {
-          expectType<CustomAttributeType>(attr);
+          expectType<MyCustomAttributeType>(attr);
         },
       })
   },
@@ -244,6 +253,59 @@ const entityWithCustomAttribute = new MockEntity({
       }
     },
   }
+});
+
+type OpaqueAttr1 = string & { cheese: 'cheddar' };
+type OpaqueAttr2 = number & { cheese: 'bacon' };
+type PizzaSize = number & {isPizzaSize: true};
+
+const entityWithCustomAttribute2 = new MockEntity({
+    model: {
+        entity: "withcustomattribute2",
+        service: "myservice",
+        version: "myversion"
+    },
+    attributes: {
+        attr1: {
+            type: CustomAttributeType<OpaqueAttr1>('string'),
+        },
+        attr2: {
+            type: CustomAttributeType<OpaqueAttr2>('number'),
+            default: () => 1234 as OpaqueAttr2
+        },
+        attr3: {
+            type: CustomAttributeType<MyBasicCustomAttribute>('any'),
+            required: true
+        },
+        attr4: {
+            type: CustomAttributeType<MyBasicCustomAttribute>('any'),
+            required: true,
+            default: {
+                type: 'pizza',
+                toppings: ['mush'],
+                count: 10
+            }
+        },
+        attr5: {
+            type: CustomAttributeType<MyBasicCustomAttribute>('any'),
+            readOnly: true,
+        },
+        attr6: {
+            type: CustomAttributeType<PizzaSize>('number')
+        }
+    },
+    indexes: {
+        myIndex: {
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ['attr2']
+            }
+        },
+    }
 });
 
 const entityWithEnumSets = new MockEntity({
@@ -1951,7 +2013,22 @@ const diverseTableKeyTypes = new MockEntity({
   }
 });
 
+expectError(() => {
+    CustomAttributeType<string>('any');
+})
 
+expectError(() => {
+    CustomAttributeType<{complex: 'shape'}>('string');
+});
+
+expectError(() => {
+    CustomAttributeType<boolean>('number');
+});
+
+CustomAttributeType<string>('string');
+CustomAttributeType<number>('number');
+CustomAttributeType<boolean>('boolean');
+CustomAttributeType<{complex: string}>('any');
 
 // getEntityCollections
 expectType<{normalcollection: 'tableIndex'}>(normalEntity1.getEntityCollections());
@@ -2042,6 +2119,10 @@ expectType<{
 }>(normalEntity1.getPKCompositeAttributes());
 
 expectType<{
+    myIndex: 'attr1';
+}>(entityWithCustomAttribute2.getPKCompositeAttributes())
+
+expectType<{
   myIndex: 'attr1';
   myIndex2: 'attr6' | 'attr9'; 
   myIndex3: 'attr5';
@@ -2106,6 +2187,10 @@ expectType<{
   prop4: 'abc',
 }>(diverseTableKeyTypes.getTableIndexPKAttributes());
 
+expectType<{
+    attr1: OpaqueAttr1
+}>(entityWithCustomAttribute2.getTableIndexPKAttributes());
+
 // getTableIndexSKAttributes
 expectType<{attr2: string}>(entityWithSK.getTableIndexSKAttributes());
 expectType<{}>(entityWithoutSK.getTableIndexSKAttributes());
@@ -2116,6 +2201,10 @@ expectType<{
   prop7: boolean,
   prop8: 'abc',
 }>(diverseTableKeyTypes.getTableIndexSKAttributes());
+
+expectType<{
+    attr2: OpaqueAttr2
+}>(entityWithCustomAttribute2.getTableIndexSKAttributes());
 
 // getTableIndexCompositeAttributes
 expectType<{
@@ -2193,8 +2282,6 @@ expectType<{
   attr2: string;
 }>(entityWithSK.getIndexSKAttributes('myIndex'));
 
-// troubleshoot(() => entityWithSK.getIndexSKAttributes('myIndex'), {attr2: 'poop'})
-
 expectType<{
   attr4: "abc" | "ghi";
   attr5: string;
@@ -2241,6 +2328,11 @@ expectType<{
 }>(normalEntity2.getAllTableIndexCompositeAttributes());
 
 expectType<{
+    attr1: OpaqueAttr1;
+    attr2: OpaqueAttr2;
+}>(entityWithCustomAttribute2.getAllTableIndexCompositeAttributes());
+
+expectType<{
   prop1: string;
   prop2: number;
   prop3: boolean;
@@ -2267,6 +2359,15 @@ expectType<{
   prop5?: string[] | undefined;
   prop6?: string[] | undefined;
 }>(entityWithComplexShapes.getTableItem());
+
+expectType<{
+    attr1: OpaqueAttr1;
+    attr2: OpaqueAttr2;
+    attr3: MyBasicCustomAttribute;
+    attr4: MyBasicCustomAttribute;
+    attr5?: MyBasicCustomAttribute;
+    attr6?: PizzaSize;
+}>(entityWithCustomAttribute2.getTableItem());
 
 expectType<{
   id: string;
@@ -2359,6 +2460,15 @@ expectType<{
   prop2: string;
 }>(entityWithHiddenAttributes1.getResponseItem());
 
+expectType<{
+    attr1: OpaqueAttr1;
+    attr2: OpaqueAttr2;
+    attr3: MyBasicCustomAttribute;
+    attr4: MyBasicCustomAttribute;
+    attr5?: MyBasicCustomAttribute;
+    attr6?: PizzaSize;
+}>(entityWithCustomAttribute2.getResponseItem());
+
 function hiddenKeysOnRoot() {
   const item = entityWithHiddenAttributes1.getResponseItem();
   if (item) {
@@ -2416,6 +2526,15 @@ expectType<{
 }>(mapTests.getRequiredPutItems());
 
 expectType<{
+    attr1: true;
+    attr2: false;
+    attr3: true;
+    attr4: false;
+    attr5: false;
+    attr6: false;
+}>(entityWithCustomAttribute2.getRequiredPutItems());
+
+expectType<{
   prop1: false // is pk, but has default
   prop2: true, // is pk
   prop3: true, // is required
@@ -2445,6 +2564,15 @@ expectType<{
     } | undefined
   } | undefined,
 }>(mapTests.getPutItem());
+
+expectType<{
+    attr1: OpaqueAttr1;
+    attr2?: OpaqueAttr2;
+    attr3: MyBasicCustomAttribute;
+    attr4?: MyBasicCustomAttribute;
+    attr5?: MyBasicCustomAttribute;
+    attr6?: PizzaSize;
+}>(entityWithCustomAttribute2.getPutItem());
 
 expectType<{
   prop1?: string | undefined;
@@ -2518,6 +2646,8 @@ expectType<{prop3: boolean}>(
 // RemoveItem
 expectType<Array<'mapObject'>>(mapTests.getRemoveItem());
 
+expectType<Array<'attr6'>>(entityWithCustomAttribute2.getRemoveItem());
+
 expectType<Array<'prop3'>>(
   readOnlyEntity.getRemoveItem()
 );
@@ -2538,6 +2668,17 @@ expectType<{
     val4?: number[] | undefined;
   }[] | undefined;
 }>(magnify(entityWithComplexShapes.getAppendItem()));
+
+expectType<{
+    attr3?: MyBasicCustomAttribute | undefined;
+    attr4?: MyBasicCustomAttribute | undefined;
+    attr5?: undefined;
+}>(magnify(entityWithCustomAttribute2.getAppendItem()));
+
+troubleshoot(entityWithCustomAttribute2.getAppendItem, {
+    attr3: {} as MyBasicCustomAttribute | undefined,
+    attr4: {} as MyBasicCustomAttribute | undefined,
+});
 
 expectType<{
   attr4?: {
@@ -2574,6 +2715,14 @@ expectType<{
 }>(entityWithComplexShapesRequired.getAddItem());
 
 expectType<{
+    attr2?: undefined;
+    attr3?: MyBasicCustomAttribute | undefined;
+    attr4?: MyBasicCustomAttribute | undefined;
+    attr5?: undefined;
+    attr6?: PizzaSize | undefined;
+}>(magnify(entityWithCustomAttribute2.getAddItem()));
+
+expectType<{
   attrz5?: string[] | undefined;
   attrz6?: string[] | undefined;
 }>(entityWithComplexShapesRequiredOnEdge.getAddItem());
@@ -2603,8 +2752,11 @@ expectType<{
 }>(entityWithSK.getSubtractItem());
 
 expectType<{
-  attr2?: CustomAttributeType;
-}>(entityWithCustomAttribute.getSubtractItem());
+    attr2?: undefined;
+    attr6?: PizzaSize | undefined;
+}>(magnify(entityWithCustomAttribute2.getSubtractItem()));
+
+expectType<{}>(entityWithCustomAttribute.getSubtractItem());
 
 expectType<{
   // todo: would be great for these not to show up at all
@@ -2618,13 +2770,19 @@ expectType<{
 }>(entityWithComplexShapesRequired.getDeleteItem());
 
 expectType<{
-  attr2?: CustomAttributeType
+  attr2?: MyCustomAttributeType
 }>(entityWithCustomAttribute.getDeleteItem());
 
 expectType<{
   attrz5?: string[] | undefined;
   attrz6?: string[] | undefined;
 }>(entityWithComplexShapesRequiredOnEdge.getDeleteItem());
+
+expectType<{
+    attr3?: MyBasicCustomAttribute | undefined;
+    attr4?: MyBasicCustomAttribute | undefined;
+    attr5?: undefined;
+}>(magnify(entityWithCustomAttribute2.getDeleteItem()));
 
 expectType<{
   // todo: would be great for these not to show up at all

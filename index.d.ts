@@ -987,16 +987,7 @@ export type ServiceQueryRecordsGo<ResponseType, Options = QueryOptions> = <T = R
 
 export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) => 
-        Options extends infer O
-            ? 'response' extends keyof O
-                ? O['response'] extends 'all_new'
-                    ? Promise<{data: T}>
-                    : O['response'] extends 'all_old'
-                        ? Promise<{data: T}>
-                        : Promise<{data: Partial<T>}>
-                : Promise<{data: Partial<T>}>
-            : never;
+export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) => Promise<{data: Partial<T>}>
 
 export type PutRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
 
@@ -1454,16 +1445,23 @@ type StaticAttribute = {
     readonly field?: string;
 }
 
-type CustomAttribute<T extends any = any> = {
-    readonly type: "custom";
-    readonly [CustomAttributeSymbol]: T;
+type CustomAttributeTypeName<T> = { readonly [CustomAttributeSymbol]: T };
+
+type OpaquePrimitiveTypeName<T extends string | number | boolean> =
+    T extends string ? 'string' & { readonly [OpaquePrimitiveSymbol]: T }
+    : T extends number ? 'number' & { readonly [OpaquePrimitiveSymbol]: T }
+    : T extends boolean ? 'boolean' & { readonly [OpaquePrimitiveSymbol]: T }
+    : never;
+
+type CustomAttribute = {
+    readonly type: CustomAttributeTypeName<any> | OpaquePrimitiveTypeName<any>;
     readonly required?: boolean;
     readonly hidden?: boolean;
     readonly readOnly?: boolean;
-    readonly get?: (val: T, item: any) => T | undefined | void;
-    readonly set?: (val?: T, item?: any) => T | undefined | void;
-    readonly default?: T | (() => T);
-    readonly validate?: ((val: T) => boolean) | ((val: T) => void) | ((val: T) => string | void);
+    readonly get?: (val: any, item: any) => any | undefined | void;
+    readonly set?: (val?: any, item?: any) => any | undefined | void;
+    readonly default?: any | (() => any);
+    readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly watch?: ReadonlyArray<string> | "*";
 };
@@ -1621,7 +1619,9 @@ type PartialDefinedKeys<T> = {
 }
 
 export type ItemAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
         ? T
     : A["type"] extends infer R
         ? R extends "string" ? string
@@ -1661,8 +1661,10 @@ export type ItemAttribute<A extends Attribute> =
         : never
 
 export type ReturnedAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
-    ? T
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
+        ? T
     : A["type"] extends infer R
         ? R extends "static" ? never
         : R extends "string" ? string
@@ -1716,7 +1718,9 @@ export type ReturnedAttribute<A extends Attribute> =
         : never
 
 export type CreatedAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
         ? T
         : A["type"] extends infer R
         ? R extends "static" ? never
@@ -1779,8 +1783,10 @@ export type CreatedItem<A extends string, F extends string, C extends string, S 
 }
 
 export type EditableItemAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
-    ? T
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
+        ? T
     : A extends ReadOnlyAttribute
         ? never
         : A["type"] extends infer R
@@ -1826,7 +1832,9 @@ export type EditableItemAttribute<A extends Attribute> =
         : never
 
 export type UpdatableItemAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
         ? T
         : A extends ReadOnlyAttribute
         ? never
@@ -1888,7 +1896,9 @@ export type UpdatableItemAttribute<A extends Attribute> =
         : never
 
 export type RemovableItemAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
         ? T
         : A extends ReadOnlyAttribute | RequiredAttribute
         ? never
@@ -2072,7 +2082,7 @@ export type RemoveItem<A extends string, F extends string, C extends string, S e
 export type AppendItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'list' | 'any' | 'custom'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'list' | 'any' | 'custom' | CustomAttributeTypeName<any>
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -2083,7 +2093,7 @@ export type AppendItem<A extends string, F extends string, C extends string, S e
 export type AddItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'set' | 'custom'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'set' | 'custom' | CustomAttributeTypeName<any> | OpaquePrimitiveTypeName<number>
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -2094,7 +2104,7 @@ export type AddItem<A extends string, F extends string, C extends string, S exte
 export type SubtractItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'custom'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'custom' | OpaquePrimitiveTypeName<number>
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -2105,7 +2115,7 @@ export type SubtractItem<A extends string, F extends string, C extends string, S
 export type DeleteItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'any' | 'set' | 'custom'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'any' | 'set' | 'custom' | CustomAttributeTypeName<any>
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -2116,6 +2126,7 @@ export type DeleteItem<A extends string, F extends string, C extends string, S e
 export declare const WhereSymbol: unique symbol;
 export declare const UpdateDataSymbol: unique symbol;
 export declare const CustomAttributeSymbol: unique symbol;
+export declare const OpaquePrimitiveSymbol: unique symbol;
 
 export type WhereAttributeSymbol<T extends any> =
         { [WhereSymbol]: void }
@@ -2317,6 +2328,16 @@ type CustomAttributeDefinition<T> = {
     readonly validate?: ((val: T) => boolean) | ((val: T) => void) | ((val: T) => string | void);
     readonly field?: string;
     readonly watch?: ReadonlyArray<string> | "*";
-}
+};
 
-declare function createCustomAttribute<T>(definition?: CustomAttributeDefinition<T>): CustomAttribute<T>;
+/** @depricated use 'CustomAttributeType' or 'OpaquePrimitiveType' instead */
+declare function createCustomAttribute<T, A extends Readonly<CustomAttributeDefinition<T>> = Readonly<CustomAttributeDefinition<T>>>(definition?: A): A & { type: CustomAttributeTypeName<T> };
+
+declare function CustomAttributeType<T>(
+    base: T extends string ? 'string'
+        : T extends number ? 'number'
+        : T extends boolean ? 'boolean'
+        : 'any'
+): T extends string | number | boolean
+    ? OpaquePrimitiveTypeName<T>
+    : CustomAttributeTypeName<T>;

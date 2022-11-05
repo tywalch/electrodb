@@ -1,5 +1,5 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import {createCustomAttribute, Entity} from "../index";
+import {CustomAttributeType, Entity} from "../index";
 import { expect } from "chai";
 import {v4 as uuid} from "uuid";
 import moment from "moment";
@@ -3095,7 +3095,9 @@ describe("Update Item", () => {
                 prop1: {
                     type: 'string'
                 },
-                prop2: createCustomAttribute<{strProp: string; numProp: number; maybeProp?: string}>(),
+                prop2: {
+                    type: CustomAttributeType<{strProp: string; numProp: number; maybeProp?: string}>('any')
+                },
             },
             indexes: {
                 record: {
@@ -3310,6 +3312,120 @@ describe("Update Item", () => {
                     nested: [NUM_VAL],
                 },
             });   
+        });
+    });
+
+    describe('custom types', () => {
+        it('should allow custom opaque ids', async () => {
+            const UniqueKeySymbol: unique symbol = Symbol();
+            type EmployeeID = string & {[UniqueKeySymbol]: any};
+
+            const UniqueAgeSymbol: unique symbol = Symbol();
+            type Month = number & {[UniqueAgeSymbol]: any};
+
+            const createNewKey = (): EmployeeID => {
+                return uuid() as EmployeeID;
+            }
+
+            const createMonth = (months: number): Month => {
+                return months as Month;
+            }
+
+            const person = new Entity({
+                model: {
+                    entity: 'personnel',
+                    service: 'workplace',
+                    version: '1'
+                },
+                attributes: {
+                    employeeId: {
+                        type: CustomAttributeType<EmployeeID>('string')
+                    },
+                    firstName: {
+                        type: 'string',
+                        required: true,
+                    },
+                    lastName: {
+                        type: 'string',
+                        required: true,
+                    },
+                    ageInMonths: {
+                        type: CustomAttributeType<Month>('number')
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['employeeId']
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            }, { table, client });
+            const employeeId = createNewKey();
+            const item = {
+                employeeId,
+                firstName: 'tyler',
+                lastName: 'walch',
+                ageInMonths: createMonth(400),
+            }
+            await person.create(item).go();
+            const record = await person.get({employeeId}).go();
+            expect(record.data).to.deep.equal(item);
+        });
+
+        it('should allow for complex unions', async () => {
+            type PersonnelRole = {
+                type: 'employee';
+                startDate: number;
+                endDate?: number;
+            } | {
+                type: 'contractor';
+                contractStartDate: number;
+                contractEndDate: number;
+            };
+
+            const person = new Entity({
+                model: {
+                    entity: 'personnel',
+                    service: 'workplace',
+                    version: '1'
+                },
+                attributes: {
+                    id: {
+                        type: 'string'
+                    },
+                    role: {
+                        type: CustomAttributeType<PersonnelRole>('any'),
+                        required: true,
+                    },
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['id']
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            }, { table, client });
+            const id = uuid();
+            const role: PersonnelRole = {
+                type: 'employee',
+                startDate: Date.now() - (1000 * 60 * 60 * 24 * 365 * 2)
+            };
+            const item = { id, role };
+            await person.create(item).go();
+            const record = await person.get({id}).go();
+            expect(record.data).to.deep.equal(item);
         });
     });
 });

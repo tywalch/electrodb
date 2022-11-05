@@ -5635,12 +5635,16 @@ let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).g
 ElectroDB using advanced dynamic typing techniques to automatically create types based on the configurations in your model. Changes to your model will automatically change the types returned by ElectroDB.
 
 ## Custom Attributes
-If you have a need for a custom attribute type (beyond those supported by ElectroDB) you can use the the export function `createCustomAttribute`. This function takes an attribute definition and allows you to specify a custom typed attribute with ElectroDB:
+If you have a need for a custom attribute type (beyond those supported by ElectroDB) you can use the the export function `CustomAttributeType` or `OpaquePrimitiveType`. These functions can be passed a generic and that allow you to specify a custom attribute with ElectroDB:
 
-> _NOTE: creating a custom type, ElectroDB will enforce attribute constraints based on the attribute definition provided, but will yield typing control to the user. This may result in some mismatches between your typing and the constraints enforced by ElectroDB._
+### CustomAttributeType
+This function allows for a narrowing of ElectroDB's `any` type, which does not enforce runtime type checks. This can be useful for expressing complex attribute types.
 
+The function `CustomAttributeType` takes one argument, which is the "base" type of the attribute. For complex objects and arrays, the base object would be "any" but you can also use a base type like "string", "number", or "boolean" to accomplish (Opaque Keys)[#opaque-keys] which can be used as Composite Attributes.
+
+In this example we accomplish a complex union type:
 ```typescript
-import { Entity, createCustomAttribute } from 'electrodb';
+import { Entity, CustomAttributeType } from 'electrodb';
 
 const table = 'workplace_table';
 
@@ -5654,7 +5658,6 @@ type PersonnelRole = {
     contractEndDate: number;
 };
 
-
 const person = new Entity({
     model: {
         entity: 'personnel',
@@ -5665,15 +5668,67 @@ const person = new Entity({
         id: {
             type: 'string'
         },
-        role: createCustomAttribute<PersonnelRole>({
+        role: {
+            type: CustomAttributeType<PersonnelRole>('any'),
             required: true,
-        }),
+        },
     },
     indexes: {
         record: {
             pk: {
                 field: 'pk',
                 composite: ['id']
+            },
+            sk: {
+                field: 'sk',
+                composite: [],
+            }
+        }
+    }
+}, { table });
+```
+
+### Opaque Keys
+If you use Opaque Keys for identifiers or other primitive types, you can use the function `CustomAttributeType` and pass it the primitive base type of your key ('string', 'number', 'boolean'). This can be useful to gain more precise control over which properties can be used as entity identifiers, create unique unit types, etc.
+
+```
+import { Entity, CustomAttributeType } from 'electrodb';
+
+const UniqueKeySymbol: unique symbol = Symbol();
+type EmployeeID = string & {[UniqueKeySymbol]: any};
+
+const UniqueAgeSymbol: unique symbol = Symbol();
+type Month = number & {[UniqueAgeSymbol]: any};
+
+const table = 'workplace_table';
+
+const person = new Entity({
+    model: {
+        entity: 'personnel',
+        service: 'workplace',
+        version: '1'
+    },
+    attributes: {
+        employeeId: {
+            type: CustomAttributeType<EmployeeID>('string')
+        },
+        firstName: {
+            type: 'string',
+            required: true,
+        },
+        lastName: {
+            type: 'string',
+            required: true,
+        },
+        ageInMonths: {
+            type: CustomAttributeType<Month>('number')
+        }
+    },
+    indexes: {
+        record: {
+            pk: {
+                field: 'pk',
+                composite: ['employeeId']
             },
             sk: {
                 field: 'sk',
