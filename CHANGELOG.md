@@ -252,7 +252,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.2.2] - 2022-11-04
 ### Added
-- The return type from an update/patch call now returns an Entity item when `all_new` or `all_old` response options are passed
+- (since rolled back) ~The return type from an update/patch call now returns an Entity item when `all_new` or `all_old` response options are passed~
 
 ## [2.2.3] - 2022-11-05
 ### Removed
