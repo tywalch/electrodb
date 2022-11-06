@@ -74,6 +74,7 @@ class WhereFactory {
 		case MethodTypes.patch:
 		case MethodTypes.delete:
 		case MethodTypes.remove:
+		case MethodTypes.get:
 			return ExpressionTypes.ConditionExpression
 		default:
 			return ExpressionTypes.FilterExpression

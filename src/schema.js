@@ -1,4 +1,4 @@
-const { CastTypes, ValueTypes, KeyCasing, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes, TableIndex } = require("./types");
+const { CastTypes, ValueTypes, KeyCasing, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes, TableIndex, ItemOperations } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
@@ -1389,16 +1389,6 @@ class Schema {
 		return record;
 	}
 
-	checkOperation(attribute, operation) {
-		if (!attribute) {
-			throw new e.ElectroAttributeValidationError(path, `Attribute "${path}" does not exist on model.`);
-		} else if (attribute.required && operation === 'remove') {
-			throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Required and cannot be removed`);
-		} else if (attribute.readOnly) {
-			throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Read-Only and cannot be updated`);
-		}
-	}
-
 	checkRemove(paths = []) {
 		for (const path of paths) {
 			const attribute = this.traverser.getPath(path);
@@ -1411,6 +1401,18 @@ class Schema {
 			}
 		}
 		return paths;
+	}
+
+	checkOperation(attribute, operation, value) {
+		if (attribute.required && operation === ItemOperations.remove) {
+			throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Required and cannot be removed`);
+		} else if (attribute.readOnly) {
+			throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Read-Only and cannot be updated`);
+		}
+
+		return value === undefined
+			? undefined
+			: attribute.getValidate(value);
 	}
 
 	checkUpdate(payload = {}) {

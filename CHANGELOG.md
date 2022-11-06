@@ -252,12 +252,17 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.2.2] - 2022-11-04
 ### Added
-- the return type from an update/patch call now returns an Entity item when `all_new` or `all_old` response options are passed
+- (since rolled back) ~The return type from an update/patch call now returns an Entity item when `all_new` or `all_old` response options are passed~
 
-## [2.2.3] = 2022-11-05
+## [2.2.3] - 2022-11-05
 ### Removed
 - Backed out the response typing change added in `2.2.2`. The type of a record coming back from an update is more complex than one might expect. Because update operations can result in a record insert, the response type is not necessarily a TableItem. I am backing out this change for now until I can be be more sure of an appropriate typing.
 ### Added
 - New function to help with Custom Types: CustomAttributeType. This replaces `createCustomAttribute` (now depreciated) because of the unfortunate widening caused by the initial implementation. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes))]
 ### Deprecated
 - The function `createCustomAttribute` is now deprecated. The function still operates as it did, though any changes related to Custom Attribute types will see development focused on `CustomAttributeType` rather than this function.
+
+## [2.2.4] - 2022-11-06
+### Fixed
+- Addressed issue#162: attribute validation functions were not invoked when updating through the `data` method.
+- Conditional filters can now be added to `get` operations. DynamoDB `get` does not allow for filtering but the TransactWrite/TransactGet methods allow for `ConditionCheck` which is essentially `get` + `conditions`.
