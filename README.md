@@ -3419,6 +3419,8 @@ operation     | example                               | result                  
 `value`       | `value(rent, amount)`                 | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
 `ifNotExists` | `ifNotExists(rent, amount)`           | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record
 
+> _NOTE: Usage of `name` and `value` operations allow for some escape hatching in the case that a custom operation needs to be expressed. When used however, ElectroDB loses the context necessary to validate the expression created by the user. In practical terms, this means the `validation` function/regex on the impacted attribute will not be called._
+
 Example:
 ```javascript
 await StoreLocations
