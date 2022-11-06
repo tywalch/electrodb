@@ -229,7 +229,7 @@ class Entity {
 		if (Array.isArray(facets)) {
 			return this._makeChain(index, this._clausesWithFilters, clauses.index).batchGet(facets);
 		} else {
-			return this._makeChain(index, clauses, clauses.index).get(facets);
+			return this._makeChain(index, this._clausesWithFilters, clauses.index).get(facets);
 		}
 	}
 

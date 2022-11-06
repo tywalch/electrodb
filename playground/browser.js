@@ -208,6 +208,8 @@ class Service extends ElectroDB.Service {}
 
 const createCustomAttribute = ElectroDB.createCustomAttribute;
 
+const CustomAttributeType = ElectroDB.CustomAttributeType;
+
 window.ElectroDB = {
     Entity,
     Service,
@@ -215,4 +217,5 @@ window.ElectroDB = {
     printMessage,
     printToScreen,
     createCustomAttribute,
+    CustomAttributeType,
 };

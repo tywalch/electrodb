@@ -2449,13 +2449,15 @@ describe("Update Item", () => {
 
             const dataRemoveError = await repositories
                 .update({repoName, repoOwner})
-                .data((attr, op) =>
+                .data((attr, op) => {
                     // @ts-ignore
-                    op.remove(attr.createdAt)
-                )
+                    op.remove(attr.isPrivate);
+                    // @ts-ignore
+                    op.remove(attr.createdAt);
+                })
                 .go()
                 .catch(err => err);
-
+            expect(dataRemoveError.message).to.not.be.undefined;
             expect(dataRemoveError.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
         });
 
@@ -2988,6 +2990,312 @@ describe("Update Item", () => {
             expect(results?.stars).to.equal(25);
         });
     });
+    describe('update data method value validation', () => {
+        it('update should trigger attribute validation functions', () => {
+            const counter = {
+                cityId: 0,
+                mallId: 0,
+                storeId: 0,
+                buildingId: 0,
+                unitId: 0,
+                category: 0,
+                leaseEndDate: 0,
+                rent: 0,
+                discount: 0,
+                tenant: 0,
+                deposit: 0,
+                rentalAgreement: 0,
+                rentalAgreementChildren: {
+                    type: 0,
+                    detail: 0,
+                },
+                tags: 0,
+                contact: 0,
+                leaseHolders: 0,
+                petFee: 0,
+                totalFees: 0,
+                listAttribute: 0,
+                listAttributeChildren: {
+                    setAttribute: 0,
+                },
+                mapAttribute: 0,
+                mapAttributeChildren: {
+                    mapProperty: 0,
+                }
+            }
+            const StoreLocations = new Entity({
+                model: {
+                    service: "MallStoreDirectory",
+                    entity: "MallStore",
+                    version: "1",
+                },
+                attributes: {
+                    cityId: {
+                        validate: () => {
+                          counter.cityId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    mallId: {
+                        validate: () => {
+                          counter.mallId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    storeId: {
+                        validate: () => {
+                          counter.storeId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    buildingId: {
+                        validate: () => {
+                          counter.buildingId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    unitId: {
+                        validate: () => {
+                          counter.unitId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    category: {
+                        validate: () => {
+                          counter.category++;
+                        },
+                        type: [
+                            "spite store",
+                            "food/coffee",
+                            "food/meal",
+                            "clothing",
+                            "electronics",
+                            "department",
+                            "misc"
+                        ],
+                        required: true
+                    },
+                    leaseEndDate: {
+                        validate: () => {
+                          counter.leaseEndDate++;
+                        },
+                        type: "string",
+                        required: true
+                    },
+                    rent: {
+                        validate: () => {
+                          counter.rent++;
+                        },
+                        type: "number",
+                        required: true,
+                    },
+                    discount: {
+                        validate: () => {
+                          counter.discount++;
+                        },
+                        type: "number",
+                        required: false,
+                        default: 0,
+                    },
+                    tenant: {
+                        validate: () => {
+                          counter.tenant++;
+                        },
+                        type: "set",
+                        items: "string"
+                    },
+                    deposit: {
+                        validate: () => {
+                          counter.deposit++;
+                        },
+                        type: "number"
+                    },
+                    rentalAgreement: {
+                        validate: () => {
+                          counter.rentalAgreement++;
+                        },
+                        type: "list",
+                        items: {
+                            type: "map",
+                            properties: {
+                                type: {
+                                    validate: () => {
+                                      counter.rentalAgreementChildren.type++;
+                                    },
+                                    type: "string",
+                                    required: true
+                                },
+                                detail: {
+                                    validate: () => {
+                                      counter.rentalAgreementChildren.detail++;
+                                    },
+                                    type: "string",
+                                    required: true
+                                }
+                            }
+                        }
+                    },
+                    tags: {
+                        validate: () => {
+                          counter.tags++;
+                        },
+                        type: "set",
+                        items: "string"
+                    },
+                    contact: {
+                        validate: () => {
+                          counter.contact++;
+                        },
+                        type: "set",
+                        items: "string"
+                    },
+                    leaseHolders: {
+                        validate: () => {
+                          counter.leaseHolders++;
+                        },
+                        type: "set",
+                        items: "string",
+                    },
+                    petFee: {
+                        validate: () => {
+                          counter.petFee++;
+                        },
+                        type: "number"
+                    },
+                    totalFees: {
+                        validate: () => {
+                          counter.totalFees++;
+                        },
+                        type: "number"
+                    },
+                    listAttribute: {
+                        validate: () => {
+                          counter.listAttribute++;
+                        },
+                        type: "list",
+                        items: {
+                            type: "map",
+                            properties: {
+                                setAttribute: {
+                                    validate: () => {
+                                        counter.listAttributeChildren.setAttribute++
+                                    },
+                                    type: "set",
+                                    items: "string"
+                                }
+                            }
+                        }
+                    },
+                    mapAttribute: {
+                        validate: () => {
+                          counter.mapAttribute++;
+                        },
+                        type: "map",
+                        properties: {
+                            mapProperty: {
+                                validate: () => {
+                                    counter.mapAttributeChildren.mapProperty++;
+                                },
+                                type: "string"
+                            }
+                        }
+                    }
+                },
+                indexes: {
+                    stores: {
+                        pk: {
+                            field: "pk",
+                            composite: ["cityId", "mallId"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["buildingId", "storeId"]
+                        }
+                    },
+                    units: {
+                        index: "gis1pk-gsi1sk-index",
+                        pk: {
+                            field: "gis1pk",
+                            composite: ["mallId"]
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["buildingId", "unitId"]
+                        }
+                    },
+                    leases: {
+                        index: "gis2pk-gsi2sk-index",
+                        pk: {
+                            field: "gis2pk",
+                            composite: ["storeId"]
+                        },
+                        sk: {
+                            field: "gsi2sk",
+                            composite: ["leaseEndDate"]
+                        }
+                    }
+                }
+            }, {table, client});
+            const cityId = uuid();
+            const mallId = "EastPointe";
+            const storeId = "LatteLarrys";
+            const buildingId= "A34";
+            StoreLocations.update({cityId, mallId, storeId, buildingId})
+                .data((attr, op) => {
+                    const newTenant = op.value(attr.tenant, ["larry"]);
+                    op.set(attr.category, "food/meal");
+                    op.add(attr.tenant, newTenant);
+                    op.add(attr.rent, 100);
+                    op.subtract(attr.deposit, 200);
+                    op.remove(attr.discount);
+                    op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
+                    op.delete(attr.tags, ['coffee']);
+                    op.del(attr.contact, ['555-345-2222']);
+                    op.add(attr.totalFees, 2);
+                    op.add(attr.leaseHolders, newTenant);
+                    op.set(attr.mapAttribute.mapProperty, 'mapPropertyValue');
+                })
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params();
+
+            expect(counter).to.deep.equal({
+                cityId: 0, // keys not validated
+                mallId: 0, // keys not validated
+                storeId: 0, // keys not validated
+                buildingId: 0, // keys not validated
+                unitId: 0,
+                category: 1,
+                leaseEndDate: 0,
+                rent: 1,
+                discount: 0, // deletes do not invoke `validate`
+                tenant: 1,
+                deposit: 1,
+                rentalAgreement: 1,
+                rentalAgreementChildren: {
+                    type: 1,
+                    detail: 1,
+                },
+                tags: 1,
+                contact: 1,
+                leaseHolders: 0, // use of `name()` op kicks electro out of validation flow
+                petFee: 0,
+                totalFees: 1,
+                listAttribute: 0,
+                listAttributeChildren: {
+                    setAttribute: 0,
+                },
+                mapAttribute: 0,
+                mapAttributeChildren: {
+                    mapProperty: 1,
+                }
+            });
+        });
+    })
     describe("string regex validation", () => {
         const entity = new Entity({
             model: {

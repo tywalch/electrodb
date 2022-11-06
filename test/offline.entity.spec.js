@@ -1590,7 +1590,7 @@ describe("Entity", () => {
 			buildingOne = "BuildingA";
 			buildingTwo = "BuildingF";
 			let get = MallStores.get({ id });
-			expect(get).to.have.keys("go", "params");
+			expect(get).to.have.keys("go", "params", "filter", "rentsLeaseEndFilter", "where");
 			let del = MallStores.delete({ id });
 			expect(del).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let update = MallStores.update({ id }).set({ rent, category });

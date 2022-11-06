@@ -309,7 +309,16 @@ let clauses = {
 				for (const path of Object.keys(state.query.update.refs)) {
 					const operation = state.query.update.impacted[path];
 					const attribute = state.query.update.refs[path];
-					entity.model.schema.checkOperation(attribute, operation);
+					// note: keyValue will be empty if the user used `name`/`value` operations
+					// because it becomes hard to know how they are used and which attribute
+					// should validate the change. This is an edge case however, this change
+					// still improves on the existing implementation.
+					const keyValue = state.query.update.paths[path] || {};
+					if (!attribute) {
+						throw new e.ElectroAttributeValidationError(path, `Attribute "${path}" does not exist on model.`);
+					}
+
+					entity.model.schema.checkOperation(attribute, operation, keyValue.value);
 				}
 				return state;
 			} catch(err) {
