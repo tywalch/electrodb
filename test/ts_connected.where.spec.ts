@@ -483,7 +483,7 @@ describe("Where Clause Queries", () => {
         );
 
         const where1 = MyEntity.scan.where(({ complete }, { eq }) => eq(complete, false))
-        expect(where1).to.deep.equal({
+        expect(where1.params()).to.deep.equal({
             TableName: 'your_table_name',
             ExpressionAttributeNames: {
                 '#complete': 'complete',
@@ -503,7 +503,7 @@ describe("Where Clause Queries", () => {
         });
 
         const where2 = MyEntity.scan.where(({ complete }, { eq }) => eq(complete, true))
-        expect(where2).to.deep.equal({
+        expect(where2.params()).to.deep.equal({
             TableName: 'your_table_name',
             ExpressionAttributeNames: {
                 '#complete': 'complete',
@@ -523,7 +523,7 @@ describe("Where Clause Queries", () => {
         });
 
         const where3 = MyEntity.scan.where(({ complete }, { eq }) => eq(complete, true))
-        expect(where3).to.deep.equal({
+        expect(where3.params()).to.deep.equal({
             TableName: 'your_table_name',
             ExpressionAttributeNames: {
                 '#complete': 'complete',
