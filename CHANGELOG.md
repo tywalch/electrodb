@@ -266,3 +266,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Addressed issue#162: attribute validation functions were not invoked when updating through the `data` method.
 - Conditional filters can now be added to `get` operations. DynamoDB `get` does not allow for filtering but the TransactWrite/TransactGet methods allow for `ConditionCheck` which is essentially `get` + `conditions`.
+
+## [2.2.5] - 2022-11-09
+### Fixed
+- Addressed [issue#172](https://github.com/tywalch/electrodb/issues/172), where clause mishandling of nested attribute references
