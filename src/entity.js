@@ -54,7 +54,7 @@ class Entity {
 		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterOperations);
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(clauses, this.model.filters);
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
-		this.scan = this._makeChain(TableIndex, this._clausesWithFilters, clauses.index, {_isPagination: true}).scan();
+
 		this.query = {};
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
@@ -73,6 +73,10 @@ class Entity {
 		this._instance = ElectroInstance.entity;
 		this._instanceType = ElectroInstanceTypes.entity;
 		this.schema = model;
+	}
+
+	get scan() {
+		return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index, {_isPagination: true}).scan();
 	}
 
 	setIdentifier(type = "", identifier = "") {

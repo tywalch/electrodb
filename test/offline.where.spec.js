@@ -205,5 +205,5 @@ describe("Offline Where", () => {
             Key: { pk: '$tests#pen_abc', sk: '$filters_1#row_def' },
             ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk) AND #animal = :animal0'
         });
-    })
+    });
 })

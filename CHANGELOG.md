@@ -270,3 +270,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.2.5] - 2022-11-09
 ### Fixed
 - Addressed [issue#172](https://github.com/tywalch/electrodb/issues/172), where clause mishandling of nested attribute references
+
+## [2.2.6] - 2022-11-10
+### Fixed
+- Addressed issue where scans would incorrectly accumulate filters across usages
