@@ -344,4 +344,86 @@ describe("Where Clause Queries", () => {
             .catch(err => err);
         expect(wontMatch.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
     });
+    it('should properly handle nested properties being used more than once', () => {
+        const table = "your_table_name";
+
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    example: {
+                        type: 'map',
+                        properties: {
+                            from: {
+                                type: 'number',
+                            },
+                            to: {
+                                type: 'number',
+                            },
+                        },
+                    }
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    }
+                }
+            },
+            { table }
+        );
+
+
+        const team = "my_team";
+        const epoch = Date.now();
+
+        const params = tasks.query
+            .projects({team})
+            .where(({ example: { from, to } }, { lte, gte, notExists }) => {
+                return `${lte(from, epoch)} AND (${gte(to, epoch)} OR ${notExists(to)})`
+            })
+            .params();
+
+        expect(params).to.be.deep.equal({
+            "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+            "TableName": "your_table_name",
+            "ExpressionAttributeNames": {
+                "#example": "example",
+                "#from": "from",
+                "#to": "to",
+                "#pk": "pk",
+                "#sk1": "sk"
+            },
+            "ExpressionAttributeValues": {
+                ":from0": epoch,
+                ":to0": epoch,
+                ":pk": "$taskapp#team_my_team",
+                ":sk1": "$tasks_1#project_"
+            },
+            "FilterExpression": "#example.#from <= :from0 AND (#example.#to >= :to0 OR attribute_not_exists(#example.#to))"
+        });
+    })
 })
