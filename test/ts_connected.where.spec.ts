@@ -425,5 +425,121 @@ describe("Where Clause Queries", () => {
             },
             "FilterExpression": "#example.#from <= :from0 AND (#example.#to >= :to0 OR attribute_not_exists(#example.#to))"
         });
-    })
+    });
+
+    it('scan should start a new chain with each use', () => {
+        const table = "your_table_name";
+
+        const MyEntity = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    complete: {
+                        type: 'boolean'
+                    },
+                    example: {
+                        type: 'map',
+                        properties: {
+                            from: {
+                                type: 'number',
+                            },
+                            to: {
+                                type: 'number',
+                            },
+                        },
+                    }
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    }
+                }
+            },
+            { table }
+        );
+
+        const where1 = MyEntity.scan.where(({ complete }, { eq }) => eq(complete, false))
+        expect(where1.params()).to.deep.equal({
+            TableName: 'your_table_name',
+            ExpressionAttributeNames: {
+                '#complete': 'complete',
+                '#pk': 'pk',
+                '#sk': 'sk',
+                '#__edb_e__': '__edb_e__',
+                '#__edb_v__': '__edb_v__'
+            },
+            ExpressionAttributeValues: {
+                ':complete0': false,
+                ':pk': '$taskapp#team_',
+                ':sk': '$tasks_1#project_',
+                ':__edb_e__': 'tasks',
+                ':__edb_v__': '1'
+            },
+            FilterExpression: 'begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND #complete = :complete0'
+        });
+
+        const where2 = MyEntity.scan.where(({ complete }, { eq }) => eq(complete, true))
+        expect(where2.params()).to.deep.equal({
+            TableName: 'your_table_name',
+            ExpressionAttributeNames: {
+                '#complete': 'complete',
+                '#pk': 'pk',
+                '#sk': 'sk',
+                '#__edb_e__': '__edb_e__',
+                '#__edb_v__': '__edb_v__'
+            },
+            ExpressionAttributeValues: {
+                ':complete0': true,
+                ':pk': '$taskapp#team_',
+                ':sk': '$tasks_1#project_',
+                ':__edb_e__': 'tasks',
+                ':__edb_v__': '1'
+            },
+            FilterExpression: 'begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND #complete = :complete0'
+        });
+
+        const where3 = MyEntity.scan.where(({ complete }, { eq }) => eq(complete, true))
+        expect(where3.params()).to.deep.equal({
+            TableName: 'your_table_name',
+            ExpressionAttributeNames: {
+                '#complete': 'complete',
+                '#pk': 'pk',
+                '#sk': 'sk',
+                '#__edb_e__': '__edb_e__',
+                '#__edb_v__': '__edb_v__'
+            },
+            ExpressionAttributeValues: {
+                ':complete0': true,
+                ':pk': '$taskapp#team_',
+                ':sk': '$tasks_1#project_',
+                ':__edb_e__': 'tasks',
+                ':__edb_v__': '1'
+            },
+            FilterExpression: 'begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND #complete = :complete0'
+        });
+    });
 })
