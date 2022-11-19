@@ -23,6 +23,7 @@ const { AllPages,
 	ResultOrderParam,
 	IndexTypes,
 	PartialComparisons,
+	MethodTypeTranslation,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -256,9 +257,9 @@ class Entity {
 		}
 	}
 
-	insert(attributes = {}) {
+	upsert(attributes = {}) {
 		let index = TableIndex;
-		return this._makeChain(index, this._clausesWithFilters, clauses.index).insert(attributes);
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).upsert(attributes);
 	}
 
 	create(attributes = {}) {
@@ -336,7 +337,7 @@ class Entity {
 				results,
 			}, config.listeners);
 		}
-		method = method === MethodTypes.insert ? MethodTypes.update : method;
+		method = MethodTypeTranslation[method];
 		return this.client[method](params).promise()
 			.then((results) => {
 				notifyQuery();
@@ -501,7 +502,7 @@ class Entity {
 			case MethodTypes.patch:
 			case MethodTypes.delete:
 			case MethodTypes.remove:
-			case MethodTypes.insert:
+			case MethodTypes.upsert:
 				return this.formatResponse(response, index, {...config, _objectOnEmpty: true});
 			default:
 				return this.formatResponse(response, index, config);
@@ -1115,7 +1116,7 @@ class Entity {
 	}
 	/* istanbul ignore next */
 	_params(state, config = {}) {
-		let { keys = {}, method = "", put = {}, update = {}, filter = {}, options = {}, updateProxy, insert } = state.query;
+		let { keys = {}, method = "", put = {}, update = {}, filter = {}, options = {}, updateProxy, upsert } = state.query;
 		let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
@@ -1124,8 +1125,8 @@ class Entity {
 			case MethodTypes.remove:
 				params = this._makeSimpleIndexParams(keys.pk, ...consolidatedQueryFacets);
 				break;
-			case MethodTypes.insert:
-				params = this._makeInsertParams({update, insert}, keys.pk, ...keys.sk)
+			case MethodTypes.upsert:
+				params = this._makeUpsertParams({update, upsert}, keys.pk, ...keys.sk)
 				break;
 			case MethodTypes.put:
 			case MethodTypes.create:
@@ -1485,21 +1486,21 @@ class Entity {
 		};
 	}
 
-	_makeInsertParams({update, insert} = {}, pk, sk) {
-		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, insert.data);
-		const insertAttributes = this.model.schema.translateToFields(setAttributes);
+	_makeUpsertParams({update, upsert} = {}, pk, sk) {
+		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
+		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
 		const keyNames = Object.keys(indexKey);
 		update.set(this.identifiers.entity, this.getName());
 		update.set(this.identifiers.version, this.getVersion());
-		for (const field of [...Object.keys(insertAttributes), ...Object.keys(updatedKeys)]) {
-			const value = insertAttributes[field] || updatedKeys[field];
+		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
+			const value = upsertAttributes[field] || updatedKeys[field];
 			if (!keyNames.includes(field)) {
 				update.set(field, value);
 			}
 		}
 
 		return {
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			UpdateExpression: update.build(),
 			ExpressionAttributeNames: update.getNames(),
 			ExpressionAttributeValues: update.getValues(),

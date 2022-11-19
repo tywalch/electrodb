@@ -28,7 +28,7 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		children: ["get", "delete", "update", "query", "put", "scan", "collection", "clusteredCollection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
+		children: ["get", "delete", "update", "query", "upsert", "put", "scan", "collection", "clusteredCollection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
 	},
 	clusteredCollection: {
 		name: "clusteredCollection",

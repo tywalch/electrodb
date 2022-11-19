@@ -4039,3 +4039,259 @@ describe('attribute padding', () => {
         });
     });
 });
+
+describe('upsert', () => {
+    const tasks = new Entity(
+        {
+            model: {
+                entity: "tasks",
+                version: "1",
+                service: "taskapp"
+            },
+            attributes: {
+                team: {
+                    type: "string",
+                    required: true
+                },
+                task: {
+                    type: "string",
+                    required: true
+                },
+                project: {
+                    type: "string",
+                    required: true
+                },
+                title: {
+                    type: 'string',
+                },
+                description: {
+                    type: "string"
+                },
+                flags: {
+                    type: 'set',
+                    items: 'string',
+                },
+                integrations: {
+                    type: 'map',
+                    properties: {
+                        twitter: {
+                            type: 'string'
+                        },
+                        asana: {
+                            type: 'string'
+                        }
+                    }
+                }
+            },
+            indexes: {
+                tasks: {
+                    pk: {
+                        field: "pk",
+                        composite: ["project"]
+                    },
+                    sk: {
+                        field: "sk",
+                        // create composite keys for partial sort key queries
+                        composite: ["task"]
+                    }
+                }
+            }
+        },
+        { table, client }
+    );
+
+    it('should create an item if one did not exist prior', async () => {
+        const project = uuid();
+        const task = 'task-001'
+        const team = 'my_team';
+        const flags = ['performance'];
+        const integrations = {
+            twitter: '@tywalch',
+        }
+        const title = 'Bugfix #921';
+        const initialUpsert = await tasks.upsert({
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        }).go({response: 'all_new'});
+        const expected = {
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        }
+        const record = await tasks.get({task, project}).go();
+        expect(initialUpsert.data).to.deep.equal(expected);
+        expect(record.data).to.deep.equal(expected);
+    });
+
+    it('should update an existing item', async () => {
+        const project = uuid();
+        const task = 'task-001'
+        const team = 'my_team';
+        const flags = ['performance'];
+        const integrations = {
+            twitter: '@tywalch',
+        }
+        const title = 'Bugfix #921';
+        const description = 'Users experience degraded performance';
+
+        const initialUpsert = await tasks.upsert({
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        }).go({response: 'all_new'});
+
+        expect(initialUpsert.data).to.deep.equal({
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        });
+
+        const record = await tasks.get({task, project}).go();
+
+        expect(record.data).to.deep.equal({
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        });
+
+        const upsertedOverExisting = await tasks.upsert({
+            task,
+            project,
+            team,
+            description,
+            flags: ['groomed', 'tech_debt'],
+        }).go({response: 'all_new'});
+
+        expect(upsertedOverExisting.data).to.deep.equal({
+            project,
+            task,
+            team,
+            flags: ['groomed', 'tech_debt'],
+            integrations,
+            title,
+            description,
+        })
+
+        const record2 = await tasks.get({task, project}).go();
+        expect(record2.data).to.deep.equal({
+            project,
+            task,
+            team,
+            flags: ['groomed', 'tech_debt'],
+            integrations,
+            title,
+            description,
+        })
+    });
+
+    it('should not allow for partial keys', async () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: 'string',
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    flags: {
+                        type: 'set',
+                        items: 'string',
+                    },
+                    createdAt: {
+                        type: 'string'
+                    },
+                    integrations: {
+                        type: 'map',
+                        properties: {
+                            twitter: {
+                                type: 'string'
+                            },
+                            asana: {
+                                type: 'string'
+                            }
+                        }
+                    }
+                },
+                indexes: {
+                    tasks: {
+                        pk: {
+                            field: "pk",
+                            composite: ["project"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["task"]
+                        }
+                    },
+                    projects: {
+                        index: 'gsi1pk-gsi1sk-index',
+                        pk: {
+                            field: 'gsi1pk',
+                            composite: ['team']
+                        },
+                        sk: {
+                            field: 'gsi1sk',
+                            composite: ['createdAt', 'project']
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        const project = uuid();
+        const task = 'task-001'
+        const team = 'my_team';
+        const flags = ['performance'];
+        const integrations = {
+            twitter: '@tywalch',
+        }
+        const title = 'Bugfix #921';
+        const description = 'Users experience degraded performance';
+        expect(() => {
+            const upsert = tasks.upsert({
+                project,
+                task,
+                team,
+                flags,
+                integrations,
+                title,
+            }).params();
+        }).to.throw('Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes')
+    });
+});
