@@ -10,7 +10,7 @@ const client = new DynamoDB.DocumentClient({
 	endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 
-describe("General", async () => {
+describe("General", () => {
 	before(async () => sleep(1000));
 	let FilterTests = new Entity({
 		service: "tests",

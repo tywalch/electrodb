@@ -959,7 +959,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     let updateGo = updateItem.go;
     let updateGoWithoutSK = updateItemWithoutSK.go;
-
+    
     let updateParams = updateItem.params;
     let updateParamsWithoutSK = updateItemWithoutSK.params;
 
@@ -968,7 +968,6 @@ let getKeys = ((val) => {}) as GetKeys;
 
     type UpdateParamsParams = Parameter<typeof updateParams>;
     type UpdateParamsParamsWithoutSK = Parameter<typeof updateParamsWithoutSK>;
-
 
     expectAssignable<UpdateGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
     expectAssignable<UpdateGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
@@ -1455,16 +1454,16 @@ let getKeys = ((val) => {}) as GetKeys;
 
 
     // Service with no Entities
-    let nullCaseService = new Service({});
-    type nullCollections = typeof nullCaseService.collections;
-    type nullEntities = typeof nullCaseService.collections;
-    expectType<nullCollections>({});
-    expectType<nullEntities>({});
+    // let nullCaseService = new Service({});
+    // type NullCollections = typeof nullCaseService.collections;
+    // type NullEntities = typeof nullCaseService.collections;
+    // expectType<NullCollections>(magnify({}));
+    // expectType<NullEntities>(magnify({}));
 
     // Service with no Collections
-    let serviceNoCollections = new Service({standAloneEntity});
-    type noEntityCollections = typeof serviceNoCollections.collections;
-    expectType<noEntityCollections>({});
+    // let serviceNoCollections = new Service({standAloneEntity});
+    // type noEntityCollections = typeof serviceNoCollections.collections;
+    // expectType<noEntityCollections>({});
 
     // Service no shared entity collections
     let serviceNoShared = new Service({
@@ -1477,13 +1476,15 @@ let getKeys = ((val) => {}) as GetKeys;
     type NoSharedCollectionsList = keyof typeof serviceNoShared.collections;
     expectType<NoSharedCollectionsList>(expectNoSharedCollections);
     type NoSharedCollectionParameter1 = Parameter<typeof serviceNoShared.collections.mycollection>;
-    expectType<NoSharedCollectionParameter1>({attr5: "string"});
+    const noSharedCollectionParameter1 = {} as Resolve<NoSharedCollectionParameter1>;
+    expectType<{attr5: string}>(noSharedCollectionParameter1);
     expectError<NoSharedCollectionParameter1>({});
     expectError<NoSharedCollectionParameter1>({attr5: 123});
     expectError<NoSharedCollectionParameter1>({attr1: "123"});
 
     type NoSharedCollectionParameter2 = Parameter<typeof serviceNoShared.collections.normalcollection>;
-    expectType<NoSharedCollectionParameter2>({prop2: "abc", prop1: "def"});
+    const noSharedCollectionParameter2 = {} as Resolve<NoSharedCollectionParameter2>;
+    expectType<{ prop1: string; prop2: string; }>(noSharedCollectionParameter2);
     expectError<NoSharedCollectionParameter2>({});
     expectError<NoSharedCollectionParameter2>({prop2: "abc"});
     expectError<NoSharedCollectionParameter2>({prop1: "abc"});
@@ -3218,7 +3219,7 @@ entityWithComplexShapes.update({
   })
   .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
   .go({
-    response: "all_new",
+    
   }).then(res => {
     expectType<ComplexShapesUpdateItem>(res.data);
 });
@@ -3230,7 +3231,6 @@ entityWithComplexShapes.update({
   .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
   .go({
     originalErr: true,
-    response: "all_new",
   }).then(res => {
     expectType<ComplexShapesUpdateItem>(res.data);
 });
@@ -3244,7 +3244,7 @@ entityWithComplexShapes.update({
   })
   .where((attr, op) => op.eq(attr.prop2, 'def'))
   .go({
-    response: "all_new",
+    
   })
   .then(res => {
     expectType<ComplexShapesUpdateItem>(res.data);
@@ -3360,6 +3360,9 @@ const complex = new Entity({
         version: "1"
     },
     attributes: {
+        username: {
+            type: 'string'
+        },
         stringVal: {
             type: "string",
             default: () => "abc",
@@ -3836,7 +3839,10 @@ const mapTests = new Entity({
     }
 });
 
-const complexAttributeService = new Service({mapTests, complex});
+const complexAttributeService = new Service({
+    mapTests,
+    complex,
+});
 
 mapTests
     .get({username: "test"})

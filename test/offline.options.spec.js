@@ -197,7 +197,7 @@ describe("Query Options", () => {
            });
        }
    });
-   describe("concurrent", async () => {
+   describe("concurrent", () => {
        function makeRecords(size) {
            return new Array(size).fill(0).map(() => {
                return {

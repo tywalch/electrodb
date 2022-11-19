@@ -240,3 +240,37 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Now exporting `ElectroValidationError` and `ElectroError` as classes so they can be more easily interrogated/triaged by user error handling.
 ### Fixed
 - On `update` and `patch` operations, the `data` method did not properly apply mutation constraints for `required` and `readOnly`. Data will now correctly throw in a similar manor the to individual mutation methods.
+
+## [2.2.0] - 2022-10-31
+### Added
+- A BIG addition to the library: Clustered Indexes. Clustered indexes allow for Collections to be composed of more similar, homogenous data.
+- The addition of new Entity and Service methods: `setTableName`, `getTableName`, `setClient`, `getClient`.
+
+## [2.2.1] - 2022-11-02
+### Fixed
+- Addressed github issue #144, root map attributes would set an empty object regardless if the user supplied it.
+
+## [2.2.2] - 2022-11-04
+### Added
+- (since rolled back) ~The return type from an update/patch call now returns an Entity item when `all_new` or `all_old` response options are passed~
+
+## [2.2.3] - 2022-11-05
+### Removed
+- Backed out the response typing change added in `2.2.2`. The type of a record coming back from an update is more complex than one might expect. Because update operations can result in a record insert, the response type is not necessarily a TableItem. I am backing out this change for now until I can be be more sure of an appropriate typing.
+### Added
+- New function to help with Custom Types: CustomAttributeType. This replaces `createCustomAttribute` (now depreciated) because of the unfortunate widening caused by the initial implementation. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes))]
+### Deprecated
+- The function `createCustomAttribute` is now deprecated. The function still operates as it did, though any changes related to Custom Attribute types will see development focused on `CustomAttributeType` rather than this function.
+
+## [2.2.4] - 2022-11-06
+### Fixed
+- Addressed issue#162: attribute validation functions were not invoked when updating through the `data` method.
+- Conditional filters can now be added to `get` operations. DynamoDB `get` does not allow for filtering but the TransactWrite/TransactGet methods allow for `ConditionCheck` which is essentially `get` + `conditions`.
+
+## [2.2.5] - 2022-11-09
+### Fixed
+- Addressed [issue#172](https://github.com/tywalch/electrodb/issues/172), where clause mishandling of nested attribute references
+
+## [2.2.6] - 2022-11-10
+### Fixed
+- Addressed issue where scans would incorrectly accumulate filters across usages

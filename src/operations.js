@@ -431,24 +431,32 @@ class AttributeOperationProxy {
         return ops;
     }
 
-    static pathProxy(paths, root, target, builder) {
-        return new Proxy(() => ({paths, root, target}), {
-            get: (_, prop) => {
+    static pathProxy(build) {
+        return new Proxy(() => build(), {
+            get: (_, prop, o) => {
                 if (prop === "__is_clause__") {
-                    return AttributeProxySymbol
+                    return AttributeProxySymbol;
                 } else {
-                    const attribute = target.getChild(prop);
-                    let field;
-                    if (attribute === undefined) {
-                        throw new Error(`Invalid attribute "${prop}" at path "${paths.json}".`);
-                    } else if (attribute === root && attribute.type === AttributeTypes.any) {
-                        // This function is only called if a nested property is called. If this attribute is ultimately the root, don't use the root's field name
-                        field = prop;
-                    } else {
-                        field = attribute.field;
-                    }
-                    paths = builder.setName(paths, prop, field);
-                    return AttributeOperationProxy.pathProxy(paths, root, attribute, builder);
+                    return AttributeOperationProxy.pathProxy(() => {
+                        const { paths, root, target, builder } = build();
+                        const attribute = target.getChild(prop);
+                        let field;
+                        if (attribute === undefined) {
+                            throw new Error(`Invalid attribute "${prop}" at path "${paths.json}".`);
+                        } else if (attribute === root && attribute.type === AttributeTypes.any) {
+                            // This function is only called if a nested property is called. If this attribute is ultimately the root, don't use the root's field name
+                            field = prop;
+                        } else {
+                            field = attribute.field;
+                        }
+
+                        return {
+                            root,
+                            builder,
+                            target: attribute,
+                            paths: builder.setName(paths, prop, field),
+                        }
+                    });
                 }
             }
         });
@@ -459,8 +467,15 @@ class AttributeOperationProxy {
         for (let [name, attribute] of Object.entries(attributes)) {
             Object.defineProperty(attr, name, {
                 get: () => {
-                    const paths = builder.setName({}, attribute.name, attribute.field);
-                    return AttributeOperationProxy.pathProxy(paths, attribute, attribute, builder);
+                    return AttributeOperationProxy.pathProxy(() => {
+                        const paths = builder.setName({}, attribute.name, attribute.field);
+                        return {
+                            paths,
+                            root: attribute,
+                            target: attribute,
+                            builder,
+                        }
+                    });
                 }
             });
         }

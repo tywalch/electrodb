@@ -201,7 +201,7 @@ async function testListeners(fn: TestListenerCallback) {
     }
 }
 
-describe("listener functions", async () => {
+describe("listener functions", () => {
     const prop2 = uuid();
     const prop3 = uuid();
     const prop4 = uuid();

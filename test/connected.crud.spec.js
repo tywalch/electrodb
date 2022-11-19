@@ -17,6 +17,7 @@ const v3Client = new v3DynamoDB.DynamoDBClient({
 	region: "us-east-1",
 	endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
+const print = (label, val) => console.log(label, JSON.stringify(val, null, 4));
 
 const table = "electro";
 const SERVICE = "BugBeater";
@@ -154,10 +155,10 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 	const entityName = uuid();
 	const model = createModel(entityName);
 	describe(`Running tests with ${clientVersion} client`, () => {
-		describe("Entity", async () => {
+		describe("Entity", () => {
 			before(async () => sleep(1000));
 			let MallStores = new Entity(model, { client });
-			describe("Simple crud", async () => {
+			describe("Simple crud", () => {
 				let mall = "EastPointe";
 				let store = "LatteLarrys";
 				let sector = "A1";
@@ -256,7 +257,8 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let buildingsAfterB = await MallStores.query
 						.categories({ category, mall: mallOne })
 						.gt({ building: "BuildingB" })
-						.go().then(res => res.data);
+						.go()
+						.then(res => res.data);
 					let buildingsAfterBStores = stores.filter((store) => {
 						return (
 							store.mall === mallOne &&
@@ -390,7 +392,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 				});
 			});
 
-			describe("Simple crud without sort key", async () => {
+			describe("Simple crud without sort key", () => {
 				const entity = uuid();
 				const MallStores = new Entity({
 					model: {
@@ -597,7 +599,8 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let buildingsAfterB = await MallStores.query
 						.categories({ category, mall: mallOne })
 						.gt({ building: "BuildingB" })
-						.go().then(res => res.data);
+						.go()
+						.then(res => res.data);
 					let buildingsAfterBStores = stores.filter((store) => {
 						return (
 							store.mall === mallOne &&
@@ -728,7 +731,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 				});
 			});
 
-			describe("Tailing labels", async () => {
+			describe("Tailing labels", () => {
 				it("Should include tailing label if chained query methods are not used", async () => {
 					let labeler = new Entity({
 						model: {
@@ -1104,7 +1107,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					await MallStores.scan.go().then(res => res.data);
 				});
 			});
-			describe("Delete records", async () => {
+			describe("Delete records", () => {
 				it("Should create then delete a record", async () => {
 					let record = new Entity(
 						{
@@ -1147,7 +1150,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 				});
 			});
 
-			describe("Getters/Setters", async () => {
+			describe("Getters/Setters", () => {
 				let db = new Entity(
 					{
 						service: SERVICE,
@@ -1231,7 +1234,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					});
 				}).timeout(20000);
 			});
-			describe("Watchers", async () => {
+			describe("Watchers", () => {
 				// PUT
 					// Watching an attribute should trigger the setter of an attribute without that attribute being supplied
 					// Watching an attribute should trigger the setter of an attribute without that attribute being supplied AFTER the other attribute's setter as been applied
@@ -1701,7 +1704,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						expect(result.message).to.equal(`Attribute "updatedAt" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
 					});
 				});
-				describe("Setter Triggers", async () => {
+				describe("Setter Triggers", () => {
 					const entityName = uuid();
 					const counter = new TriggerListener();
 					const entity = new Entity({
@@ -3135,7 +3138,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(() => new Entity(schema)).to.throw(`Attribute Validation Error. The following attributes are defined to "watch" invalid/unknown attributes: "prop3"->"unknown". - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-watch-definition`);
 				});
 			});
-			describe("Query Options", async () => {
+			describe("Query Options", () => {
 				let entity = uuid();
 				let db = new Entity(
 					{
@@ -3236,7 +3239,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					})
 				}).timeout(10000);
 			});
-			describe("Filters", async () => {
+			describe("Filters", () => {
 				it("Should filter results with custom user filter", async () => {
 					let store = "LatteLarrys";
 					let category = "food/coffee";
@@ -3561,11 +3564,19 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(beforeUpdateQueryParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#prop6": "prop6",
+							"#prop7": "prop7",
+							"#prop8": "prop8",
+						},
 						ExpressionAttributeValues: {
+							":prop60": record.prop6,
+							":prop70": record.prop7,
+							":prop80": record.prop8,
 							':pk': `$test#prop5_${record.prop5}`,
 							':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
 						},
+						"FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
 					let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
@@ -3579,11 +3590,19 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(afterUpdateQueryParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#prop6": "prop6",
+							"#prop7": "prop7",
+							"#prop8": "prop8",
+						},
 						ExpressionAttributeValues: {
+							":prop60": record.prop6,
+							":prop70": record.prop7,
+							":prop80": record.prop8,
 							':pk': `$test#prop5_${prop5}`,
 							':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
 						},
+						"FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
 					let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
@@ -3611,11 +3630,19 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(beforeUpdateQueryParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#prop6": "prop6",
+							"#prop7": "prop7",
+							"#prop8": "prop8",
+						},
 						ExpressionAttributeValues: {
+							":prop60": record.prop6,
+							":prop70": record.prop7,
+							":prop80": record.prop8,
 							':pk': `$test#prop5_${record.prop5}`,
 							':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
 						},
+						FilterExpression: "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
 					let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
@@ -3629,11 +3656,19 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(afterUpdateQueryParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#prop6": "prop6",
+							"#prop7": "prop7",
+							"#prop8": "prop8",
+						},
 						ExpressionAttributeValues: {
+							":prop60": record.prop6,
+							":prop70": record.prop7,
+							":prop80": record.prop8,
 							':pk': `$test#prop5_${prop5}`,
 							':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
 						},
+						"FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
 					let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
@@ -3742,7 +3777,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
 				});
 			})
-			describe("Pagination", async () => {
+			describe("Pagination", () => {
 				it("Should return a pk and sk that match the last record in the result set, and should be able to be passed in for more results", async () => {
 					// THIS IS A FOOLISH TEST: IT ONLY FULLY WORKS WHEN THE TABLE USED FOR TESTING IS FULL OF RECORDS. THIS WILL HAVE TO DO UNTIL I HAVE TIME TO FIGURE OUT A PROPER WAY MOCK DDB.
 					let MallStores = new Entity(model, { client });
@@ -3766,7 +3801,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					}
 				}).timeout(10000);
 			});
-			describe("Template and composite attribute arrays", async () => {
+			describe("Template and composite attribute arrays", () => {
 				it("Should resolve composite attribute labels at an index level", async () => {
 					const SERVICE = "facettest";
 					const ENTITY = uuid();
@@ -3916,25 +3951,42 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(unitParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
-						ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1#s_' },
+						ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk',
+							"#unitId": "unitId",
+							"#buildingId": "buildingId"
+						},
+						ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1#s_',
+							":buildingId0": "BuildingZ",
+							":unitId0": "G1"
+						},
+						FilterExpression: "(#buildingId = :buildingId0) AND #unitId = :unitId0",
 						IndexName: 'gsi1pk-gsi1sk-index'
 					});
 					expect(leasesParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
-						ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys#b_' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#leaseEnd": "leaseEnd",
+							"#storeId": "storeId"
+						},
+						ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys#b_',
+							":leaseEnd0": "2020-01-20",
+							":storeId0": "LatteLarrys"
+						},
+						FilterExpression: "(#leaseEnd = :leaseEnd0) AND #storeId = :storeId0",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
 					expect(shopParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi4pk', '#sk1': 'gsi4sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi4pk', '#sk1': 'gsi4sk', "#buildingId": "buildingId", "#mallId": "mallId" },
 						ExpressionAttributeValues: {
+							":buildingId0": "BuildingZ",
+							":mallId0": "EastPointe",
 							':pk': '$facettest_1#store_lattelarrys',
 							':sk1': `$${ENTITY}#mall_eastpointe#building_buildingz#unit_`
 						},
+						FilterExpression: "(#mallId = :mallId0) AND #buildingId = :buildingId0",
 						IndexName: 'gsi4pk-gsi4sk-index'
 					});
 					expect(createParams).to.deep.equal({

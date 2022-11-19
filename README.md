@@ -132,6 +132,9 @@ tasks
       - [CreatedAt and UpdatedAt Attributes](#createdat-and-updatedat-attributes)
       - [Attribute Validation](#attribute-validation)
   * [Indexes](#indexes)
+    + [Index Types](#index-types)
+      - [Isolated Indexes](#isolated-indexes)
+      - [Clustered Indexes](#clustered-indexes)
     + [Indexes Without Sort Keys](#indexes-without-sort-keys)
     + [Indexes With Sort Keys](#indexes-with-sort-keys)
     + [Numeric Keys](#numeric-keys)
@@ -287,7 +290,8 @@ tasks
 - [Electro CLI](#electro-cli)
 - [Version 2 Migration](#version-2-migration)
   * [New response format for all query methods.](#new-response-format-for-all-query-methods)
-  * [Unified Pagination APIs](#unified-pagination-apis)
+  * [Unified pagination APIs](#unified-pagination-apis)
+  * [Pagination with a string cursor](#pagination-with-a-string-cursor)
 - [Version 1 Migration](#version-1-migration)
   * [New schema format/breaking key format change](#new-schema-format-breaking-key-format-change)
   * [The renaming of index property Facets to Composite and Template](#the-renaming-of-index-property-facets-to-composite-and-template)
@@ -333,7 +337,7 @@ If you're looking to get started right away with ElectroDB, checkout code exampl
 
 # Entities
 
-In ***ElectroDB*** an `Entity` is represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and or a Task that is assigned to an employee.
+In ***ElectroDB*** an `Entity` represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and or a Task that is assigned to an employee.
 
 Require or import `Entity` from `electrodb`:
 ```javascript  
@@ -1032,7 +1036,7 @@ signature               | behavior
 `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query
 
 ## Indexes
-When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will often be referenced as _"Access Patterns"_.
+When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will be referenced as _"Access Patterns"_.
 
 All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
 
@@ -1045,8 +1049,11 @@ Within these _AccessPatterns_, you define the PartitionKey and (optionally) Sort
 ```typescript
 indexes: {
 	[AccessPatternName]: {
+		index?: string;
+		collection?: string | string[];
+		type?: 'isolated' | 'clustered';
 		pk: {
-			field: string; 
+			field: string;
 			composite: AttributeName[];
 			template?: string;
 		},
@@ -1055,14 +1062,15 @@ indexes: {
 			composite: AttributesName[];
             template?: string;
 		},
-		index?: string
-		collection?: string | string[]
 	}
 }
 ```
 
 | Property       | Type                                   | Required | Description |
 | -------------- | :------------------------------------: | :------: | ----------- |
+| `index`        | `string`                               | no       | Required when the `Index` defined is a *Global/Local Secondary Index*; but is omitted for the table's primary index.
+| `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
+| `type`         | `isolated`, `clustered`                | no       | Allows you to optimize your index for either [entity isolation](#isolated-indexes) (high volume of records per partition) or (entity relationships)[#clustered-indexes] (high relationship density per partition). When omitted, ElectroDB defaults to `isolation`.
 | `pk`           | `object`                               | yes      | Configuration for the pk of that index or table
 | `pk.composite` | `string[]`                             | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
@@ -1073,8 +1081,26 @@ indexes: {
 | `sk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
 | `sk.field`     | `string`                               | yes      | The name of the index Sort Key field as it exists in DynamoDB, if named differently in the schema attributes.
 | `pk.casing`    | `default`, `upper`, `lower`, `none`,   | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
-| `index`        | `string`                               | no       | Required when the `Index` defined is a *Global/Local Secondary Index*; but is omitted for the table's primary index.
-| `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](#collections) below for more on this functionality).
+
+
+### Index Types
+ElectroDB helps manage your key structure, and works to abstract out the details of how your keys are created/formatted. Depending on your unique data set, you may need ElectroDB to optimize your index for either [entity isolation](#isolated-indexes) (i.e. high volume of records per partition) or (entity relationships)[#clustered-indexes] (i.e. high relationship density per partition).
+
+This option changes how ElectroDB formats your keys for storage, so it is an important consideration to make early in your modeling phase. As a result, this choice cannot be simply walked back without requiring a migration. The choice between `clustered` and `isolated` depends wholly on your unique dataset and access patterns.
+
+> _NOTE: You can use [Collections](#collections) with both `isolated` and `clustered` indexes. Isolated indexes are limited to only querying across the partition key while Clustered indexes can also leverage the Sort Key_
+
+#### Isolated Indexes
+By default, and when omitted, ElectroDB will create your index as an `isolated` index. Isolated indexes optimizes your index structure for faster and more efficient retrieval of items within an individual Entity.
+
+*Choose* `isolated` if you have strong access pattern requirements to retrieve only records for only your entity on that index. While an `isolated` index is more limited in its ability to be used in a [collection](#collections), it can perform better than a `clustered` index if a collection contains a highly unequal distribution of entities within a collection.
+*Don't choose* `isolated` if the primary use-cases for your index is to query across entities -- this index type does limit the extent to which indexes can be leveraged to improve query efficiency.
+
+#### Clustered Indexes
+When your index type is defined as `clustered`, ElectroDB will optimize your index for relationships within a partition. Clustered indexes optimize your index structure for more homogenous partitions, which allows for more efficient queries across multiple entities.
+
+*Choose* `clustered` if you have a high degree of grouped or similar data that needs to be frequently accessed together. This index works best in [collections](#collections) when member entities are more evenly distributed within a partition.
+*Don't choose* `clustered` if your need to query across entities is secondary to its primary purpose -- this index type limits the efficiency of querying your individual entity.
 
 ### Indexes Without Sort Keys
 When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](#collections) for more detail.
@@ -1661,7 +1687,7 @@ await TaskApp.collections
 
 ### Collection Queries vs Entity Queries
 
-To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection Queries only leverage [Composite Attributes](#composite-attributes) from an access pattern's Partition Key.  
+To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection queries for [isolated indexes](#isolated-indexes) only leverage [Composite Attributes](#composite-attributes) from an access pattern's Partition Key, while Collection queries for [clustered indexes](#clustered-indexes) allow you to query on both Partition and Sort Keys.
 
 To better explain how Collection Queries are formed, here is a juxtaposition of an Entity Query's parameters vs a Collection Query's parameters:
 
@@ -1740,7 +1766,9 @@ Because the Tasks and Employee Entities both associated their index (`gsi2`) wit
 
 ## Sub-Collections
 
-Sub-Collections are an extension of [Collection](#collections) functionality that allow you to model more advanced access patterns. Collections and Sub-Collections are defined on [Indexes](#indexes) via a property called `collection`, as either a string or string array respectively. 
+Sub-Collections are an extension of [Collection](#collections) functionality that allow you to model more advanced access patterns. Collections and Sub-Collections are defined on [Indexes](#indexes) via a property called `collection`, as either a string or string array respectively.
+
+> _NOTE: Sub-Collections are only supported on ["isolated" index](#isolated-indexes) types _
 
 The following is an example of functionally identical collections, implemented as a string (referred to as a "collection") and then as a string array (referred to as sub-collections):
 
@@ -3391,6 +3419,8 @@ operation     | example                               | result                  
 `value`       | `value(rent, amount)`                 | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
 `ifNotExists` | `ifNotExists(rent, amount)`           | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record
 
+> _NOTE: Usage of `name` and `value` operations allow for some escape hatching in the case that a custom operation needs to be expressed. When used however, ElectroDB loses the context necessary to validate the expression created by the user. In practical terms, this means the `validation` function/regex on the impacted attribute will not be called._
+
 Example:
 ```javascript
 await StoreLocations
@@ -3624,7 +3654,7 @@ Equivalent DocClient Parameters:
 ### Patch Record
 
 ```javascript
-await entity.update({ attr1: "value1", attr2: "value2" })
+await entity.patch({ attr1: "value1", attr2: "value2" })
   .set({ attr4: "value4" })
   .go();
 ```
@@ -3668,7 +3698,7 @@ For more detail on how to use the `patch()` method, see the section [Update Reco
 
 ### Create Record
 
-In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `patch` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table.
+In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `create` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table.
 
 A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.
 
@@ -5607,12 +5637,16 @@ let stores = await StoreLocations.malls({mallId}).query({buildingId, storeId}).g
 ElectroDB using advanced dynamic typing techniques to automatically create types based on the configurations in your model. Changes to your model will automatically change the types returned by ElectroDB.
 
 ## Custom Attributes
-If you have a need for a custom attribute type (beyond those supported by ElectroDB) you can use the the export function `createCustomAttribute`. This function takes an attribute definition and allows you to specify a custom typed attribute with ElectroDB:
+If you have a need for a custom attribute type (beyond those supported by ElectroDB) you can use the the export function `CustomAttributeType` or `OpaquePrimitiveType`. These functions can be passed a generic and that allow you to specify a custom attribute with ElectroDB:
 
-> _NOTE: creating a custom type, ElectroDB will enforce attribute constraints based on the attribute definition provided, but will yield typing control to the user. This may result in some mismatches between your typing and the constraints enforced by ElectroDB._
+### CustomAttributeType
+This function allows for a narrowing of ElectroDB's `any` type, which does not enforce runtime type checks. This can be useful for expressing complex attribute types.
 
+The function `CustomAttributeType` takes one argument, which is the "base" type of the attribute. For complex objects and arrays, the base object would be "any" but you can also use a base type like "string", "number", or "boolean" to accomplish (Opaque Keys)[#opaque-keys] which can be used as Composite Attributes.
+
+In this example we accomplish a complex union type:
 ```typescript
-import { Entity, createCustomAttribute } from 'electrodb';
+import { Entity, CustomAttributeType } from 'electrodb';
 
 const table = 'workplace_table';
 
@@ -5626,7 +5660,6 @@ type PersonnelRole = {
     contractEndDate: number;
 };
 
-
 const person = new Entity({
     model: {
         entity: 'personnel',
@@ -5637,9 +5670,10 @@ const person = new Entity({
         id: {
             type: 'string'
         },
-        role: createCustomAttribute<PersonnelRole>({
+        role: {
+            type: CustomAttributeType<PersonnelRole>('any'),
             required: true,
-        }),
+        },
     },
     indexes: {
         record: {
@@ -5655,6 +5689,61 @@ const person = new Entity({
     }
 }, { table });
 ```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=3&ssc=29&pln=37&pc=2#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgYQFcBnGCEAQRhimACNCYBTAFSzCbgF84AzKcnADkTADZMAxjQgATOkIDcAKCUSIqUnACqqYAEdCTANJMsAZSwg6EUQC44hXQc7FL10XAC8cC1ZsAKAEplbA4UcFEILCYmAEkAES84UlpUAHM4ADJEAG0dfUMTczcbAF17AENULC5lVXVNfOcKNKZfd3tHApcSj292gOClUM4AWXUYAAsk1EIrJigs3KbDFrbe8rgqmrqRuAAFBeJ1VDEAJRtObwQlODu4EfsRCKiYxVv70grYeIrmexSwHSynucCYqBkv2YAH4ATQgWllDwAD6ID53R7CNToKAVKTQd6g7E0PEwMwwb4wKFMOGpRHouDE3FSNCQv405Lw4FKWoqbGaCl0cRJIQAd2gAGswKI8UwAPqC8TveoaeAcKDHVAzJiilDoTBYfw3UEgWRiezG0H3cEYbBPdWa06iIQ4Bmg4gLABuwAkHLFkulspdbvunqOwHUTwAjEIGVxXaC-vCGMxiBaQ3cmC9onEZOmrQWHuwOURSOQqMnGKxiwAeZDZmIJAB8-iEgPSQkCGe4CcLWelrwW+cLoMxba5aVjI-j3d4wA1MAAchUQBzLSOMcWnu3J72N3AoEwDPOmHmHlBDHurTORzLSMvV8P92Od8H93dD8fD2eaJfuzfCwqVonw3MdZnmKAp0LACCyAuJUHGdBJjTNF3zgUU-gkSZ7ByIQ4KEUorxHTFSzIShqFoFNqw4GtEKmFshHAugFk7IjCw9GB7CCLwm0QGCNxkJheAqQhRE4uBuM8XiEH4kdWnE-w5XsOjJjwBA4K4C04PsJiFi4QIeNQtD7kPGBCCgLVRj+SYADpeEiaB-DguAAHo4CjAAmIY0K4f82I-S4QOIrcCBIMiK0oqs2Bow4NROc5LgY7ZWP-OMryBQSAA8mBQ9crUPNQoDPPKRzACUgvfOcxDPIQyrfYy7jUcAIGITAOVw-tIhzSDSm7UFZPY8qjIaqrRBq4gJXqhqmsgVr-jgDqG1zAj-OvVL+p5NSHgqIVOH0up+XgCRD3ZWIZCSIJ7HrAccwSQy8tM8ytQAAwAEgQakbNQCBRSCLhnq2Yhwhuxt4iRFQHXUBkbOOph2SNbsXLc4gOAkYAKg8CAwAqZw4GAc6Rm7TrBzO+xYdOmQglW4nuqefYqkICQ0aB-ZgAALzZiopqtOcFwfP19kmYBRGAMBudBO8lxXP0ADEoCwcX7m0uAPIAVlWgRxAqgsxxpt5VvdCkfnZaMAE5TYAdgAWgABg8q2PNNxWC3BNl5qEKNzdNq3PKtgBmGNVt8-qu1BGy0ggIJoamcF-EPYhRPgKThqtJGDyYMyLKLDggYx448fAUlT27ePE5smQ-gqGy4NiBCJmQuNAiAA)
+
+### Opaque Keys
+If you use Opaque Keys for identifiers or other primitive types, you can use the function `CustomAttributeType` and pass it the primitive base type of your key ('string', 'number', 'boolean'). This can be useful to gain more precise control over which properties can be used as entity identifiers, create unique unit types, etc.
+
+```
+import { Entity, CustomAttributeType } from 'electrodb';
+
+const UniqueKeySymbol: unique symbol = Symbol();
+type EmployeeID = string & {[UniqueKeySymbol]: any};
+
+const UniqueAgeSymbol: unique symbol = Symbol();
+type Month = number & {[UniqueAgeSymbol]: any};
+
+const table = 'workplace_table';
+
+const person = new Entity({
+    model: {
+        entity: 'personnel',
+        service: 'workplace',
+        version: '1'
+    },
+    attributes: {
+        employeeId: {
+            type: CustomAttributeType<EmployeeID>('string')
+        },
+        firstName: {
+            type: 'string',
+            required: true,
+        },
+        lastName: {
+            type: 'string',
+            required: true,
+        },
+        ageInMonths: {
+            type: CustomAttributeType<Month>('number')
+        }
+    },
+    indexes: {
+        record: {
+            pk: {
+                field: 'pk',
+                composite: ['employeeId']
+            },
+            sk: {
+                field: 'sk',
+                composite: [],
+            }
+        }
+    }
+}, { table });
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=3&ssc=29&pln=37&pc=2#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgYQFcBnGCEAQRhimACNCYBTAFSzCbgF84AzKcnADkTADZMAxjQgATOkIDcAKCUSIqUnACqqYAEdCTANJMsAZSwg6EUQC44hXQc7FL10XAC8cC1ZsAKAEplbA4UcFEILCYmAEkAES84UlpUAHM4ADJEAG0dfUMTczcbAF17AENULC5lVXVNfOcKNKZfd3tHApcSj292gOClUM4AWXUYAAsk1EIrJigs3KbDFrbe8rgqmrqRuAAFBeJ1VDEAJRtObwQlODu4EfsRCKiYxVv70grYeIrmexSwHSynucCYqBkv2YAH4ATQgWllDwAD6ID53R7CNToKAVKTQd6g7E0PEwMwwb4wKFMOGpRHouDE3FSNCQv405Lw4FKWoqbGaCl0cRJIQAd2gAGswKI8UwAPqC8TveoaeAcKDHVAzJiilDoTBYfw3UEgWRiezG0H3cEYbBPdWa06iIQ4Bmg4gLABuwAkHLFkulspdbvunqOwHUTwAjEIGVxXaC-vCGMxiBaQ3cmC9onEZOmrQWHuwOURSOQqMnGKxiwAeZDZmIJAB8-iEgPSQkCGe4CcLWelrwW+cLoMxba5aVjI-j3d4wA1MAAchUQBzLSOMcWnu3J72N3AoEwDPOmHmHlBDHurTORzLSMvV8P92Od8H93dD8fD2eaJfuzfCwqVonw3MdZnmKAp0LACCyAuJUHGdBJjTNF3zgUU-gkSZ7ByIQ4KEUorxHTFSzIShqFoFNqw4GtEKmFshHAugFk7IjCw9GB7CCLwm0QGCNxkJheAqQhRE4uBuM8XiEH4kdWnE-w5XsOjJjwBA4K4C04PsJiFi4QIeNQtD7kPGBCCgLVRj+SYADpeEiaB-DguAAHo4CjAAmIY0K4f82I-S4QOIrcCBIMiK0oqs2Bow4NROc5LgY7ZWP-OMryBQSAA8mBQ9crUPNQoDPPKRzACUgvfOcxDPIQyrfYy7jUcAIGITAOVw-tIhzSDSm7UFZPY8qjIaqrRBq4gJXqhqmsgVr-jgDqG1zAj-OvVL+p5NSHgqIVOH0up+XgCRD3ZWIZCSIJ7HrAccwSQy8tM8ytQAAwAEgQakbNQCBRSCLhnq2Yhwhuxt4iRFQHXUBkbOOph2SNbsXLc4gOAkYAKg8CAwAqZw4GAc6Rm7TrBzO+xYdOmQglW4nuqefYqkICQ0aB-ZgAALzZiopqtOcFwfP19kmYBRGAMBudBO8lxXP0ADEoCwcX7m0uAPIAVlWgRxAqgsxxpt5VvdCkfnZaMAE5TYAdgAWgABg8q2PNNxWC3BNl5qEKNzdNq3PKtgBmGNVt8-qu1BGy0ggIJoamcF-EPYhRPgKThqtJGDyYMyLKLDggYx448fAUlT27ePE5smQ-gqGy4NiBCJmQuNAiAA)
 
 ## Exported Types
 

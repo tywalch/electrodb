@@ -1,4 +1,4 @@
-const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex, TerminalOperation, KeyTypes } = require("./types");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex, TerminalOperation, KeyTypes, IndexTypes } = require("./types");
 const {AttributeOperationProxy, UpdateOperations, FilterOperationNames} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
@@ -28,7 +28,36 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		children: ["get", "delete", "update", "query", "put", "scan", "collection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet", "upsert"],
+		children: ["get", "delete", "update", "query", "put", "scan", "collection", "clusteredCollection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
+	},
+	clusteredCollection: {
+		name: "clusteredCollection",
+		action(entity, state, collection = "", facets /* istanbul ignore next */ = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				const {pk, sk} = state.getCompositeAttributes();
+				return state
+					.setType(QueryTypes.clustered_collection)
+					.setMethod(MethodTypes.query)
+					.setCollection(collection)
+					.setPK(entity._expectFacets(facets, pk))
+					.ifSK(() => {
+						const {composites, unused} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(composites);
+						// we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
+						if (sk.length > 1) {
+							state.filterProperties(FilterOperationNames.eq, {...unused, ...composites});
+						}
+					});
+
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go"],
 	},
 	collection: {
 		name: "collection",
@@ -38,13 +67,12 @@ let clauses = {
 				return state;
 			}
 			try {
-				const {pk} = state.getCompositeAttributes();
+				const {pk, sk} = state.getCompositeAttributes();
 				return state
 					.setType(QueryTypes.collection)
 					.setMethod(MethodTypes.query)
 					.setCollection(collection)
 					.setPK(entity._expectFacets(facets, pk));
-
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -75,14 +103,15 @@ let clauses = {
 				return state;
 			}
 			try {
-				const attributes = state.getCompositeAttributes();
+				const {pk, sk} = state.getCompositeAttributes();
+				const {composites} = state.identifyCompositeAttributes(facets, sk, pk);
 				return state
 					.setMethod(MethodTypes.get)
 					.setType(QueryTypes.eq)
-					.setPK(entity._expectFacets(facets, attributes.pk))
+					.setPK(entity._expectFacets(facets, pk))
 					.ifSK(() => {
-						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						entity._expectFacets(facets, sk);
+						state.setSK(composites);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -109,14 +138,14 @@ let clauses = {
 				return state;
 			}
 			try {
-				const attributes = state.getCompositeAttributes();
+				const {pk, sk} = state.getCompositeAttributes();
 				return state
 					.setMethod(MethodTypes.delete)
 					.setType(QueryTypes.eq)
-					.setPK(entity._expectFacets(facets, attributes.pk))
+					.setPK(entity._expectFacets(facets, pk))
 					.ifSK(() => {
-						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						entity._expectFacets(facets, sk);
+						state.setSK(state.buildQueryComposites(facets, sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -146,7 +175,7 @@ let clauses = {
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						state.setSK(state.buildQueryComposites(facets, attributes.sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -167,7 +196,7 @@ let clauses = {
 				return state
 					.setMethod(MethodTypes.upsert)
 					.setType(QueryTypes.eq)
-					.applyInsert(record)
+					.applyUpsert(record)
 					.setPK(entity._expectFacets(record, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(record, attributes.sk);
@@ -197,7 +226,7 @@ let clauses = {
 					.setPK(entity._expectFacets(record, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(record, attributes.sk);
-						state.setSK(entity._buildQueryFacets(record, attributes.sk));
+						state.setSK(state.buildQueryComposites(record, attributes.sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -233,7 +262,7 @@ let clauses = {
 					.setPK(entity._expectFacets(record, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(record, attributes.sk);
-						state.setSK(entity._buildQueryFacets(record, attributes.sk));
+						state.setSK(state.buildQueryComposites(record, attributes.sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -262,7 +291,7 @@ let clauses = {
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						state.setSK(state.buildQueryComposites(facets, attributes.sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -285,7 +314,7 @@ let clauses = {
 					.setPK(entity._expectFacets(facets, attributes.pk))
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						state.setSK(state.buildQueryComposites(facets, attributes.sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -305,7 +334,16 @@ let clauses = {
 				for (const path of Object.keys(state.query.update.refs)) {
 					const operation = state.query.update.impacted[path];
 					const attribute = state.query.update.refs[path];
-					entity.model.schema.checkOperation(attribute, operation);
+					// note: keyValue will be empty if the user used `name`/`value` operations
+					// because it becomes hard to know how they are used and which attribute
+					// should validate the change. This is an edge case however, this change
+					// still improves on the existing implementation.
+					const keyValue = state.query.update.paths[path] || {};
+					if (!attribute) {
+						throw new e.ElectroAttributeValidationError(path, `Attribute "${path}" does not exist on model.`);
+					}
+
+					entity.model.schema.checkOperation(attribute, operation, keyValue.value);
 				}
 				return state;
 			} catch(err) {
@@ -428,13 +466,22 @@ let clauses = {
 			}
 			try {
 				state.addOption('_isPagination', true);
-				const attributes = state.getCompositeAttributes();
+				const {pk, sk} = state.getCompositeAttributes();
 				return state
 					.setMethod(MethodTypes.query)
 					.setType(QueryTypes.is)
-					.setPK(entity._expectFacets(facets, attributes.pk))
+					.setPK(entity._expectFacets(facets, pk))
 					.ifSK(() => {
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk));
+						const {composites, unused} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(state.buildQueryComposites(facets, sk));
+						// we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
+						if (sk.length > 1) {
+							state.filterProperties(FilterOperationNames.eq, {...unused, ...composites});
+						}
+						if (state.query.options.indexType === IndexTypes.clustered && Object.keys(composites).length < sk.length) {
+							state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.entity, entity.getName())
+								.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.version, entity.getVersion());
+						}
 					});
 			} catch(err) {
 				state.setError(err);
@@ -450,12 +497,15 @@ let clauses = {
 				return state;
 			}
 			try {
-				const attributes = state.getCompositeAttributes();
+				const {pk, sk} = state.getCompositeAttributes();
+				const endingSk = state.identifyCompositeAttributes(endingFacets, sk, pk);
+				const startingSk = state.identifyCompositeAttributes(startingFacets, sk, pk);
 				return state
 					.setType(QueryTypes.and)
-					.setSK(entity._buildQueryFacets(endingFacets, attributes.sk))
+					.setSK(endingSk.composites)
 					.setType(QueryTypes.between)
-					.setSK(entity._buildQueryFacets(startingFacets, attributes.sk))
+					.setSK(startingSk.composites)
+					.filterProperties(FilterOperationNames.lte, endingSk.composites);
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -474,7 +524,7 @@ let clauses = {
 					.setType(QueryTypes.begins)
 					.ifSK(state => {
 						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						state.setSK(state.buildQueryComposites(facets, attributes.sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -490,11 +540,16 @@ let clauses = {
 				return state;
 			}
 			try {
+
 				return state
 					.setType(QueryTypes.gt)
 					.ifSK(state => {
-						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						const {pk, sk} = state.getCompositeAttributes();
+						const {composites} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(composites);
+						state.filterProperties(FilterOperationNames.gt, {
+							...composites,
+						});
 					});
 			} catch(err) {
 				state.setError(err);
@@ -514,7 +569,7 @@ let clauses = {
 					.setType(QueryTypes.gte)
 					.ifSK(state => {
 						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						state.setSK(state.buildQueryComposites(facets, attributes.sk));
 					});
 			} catch(err) {
 				state.setError(err);
@@ -532,8 +587,9 @@ let clauses = {
 			try {
 				return state.setType(QueryTypes.lt)
 					.ifSK(state => {
-						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						const {pk, sk} = state.getCompositeAttributes();
+						const {composites} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(composites);
 					});
 			} catch(err) {
 				state.setError(err);
@@ -551,8 +607,12 @@ let clauses = {
 			try {
 				return state.setType(QueryTypes.lte)
 					.ifSK(state => {
-						const attributes = state.getCompositeAttributes();
-						state.setSK(entity._buildQueryFacets(facets, attributes.sk))
+						const {pk, sk} = state.getCompositeAttributes();
+						const {composites} = state.identifyCompositeAttributes(facets, sk, pk);
+						state.setSK(composites);
+						state.filterProperties(FilterOperationNames.lte, {
+							...composites,
+						});
 					});
 			} catch(err) {
 				state.setError(err);
@@ -568,7 +628,7 @@ let clauses = {
 				throw state.error;
 			}
 			try {
-				if (!v.isStringHasLength(options.table) && !v.isStringHasLength(entity._getTableName())) {
+				if (!v.isStringHasLength(options.table) && !v.isStringHasLength(entity.getTableName())) {
 					throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
 				}
 				const method = state.getMethod();
@@ -721,6 +781,71 @@ class ChainState {
 		return this.query.facets;
 	}
 
+	buildQueryComposites(provided, definition) {
+		return definition
+			.map(name => [name, provided[name]])
+				.reduce(
+				(result, [name, value]) => {
+					if (value !== undefined) {
+						result[name] = value;
+					}
+					return result;
+				},
+				{},
+			);
+	}
+
+	identifyCompositeAttributes(provided, defined, skip) {
+		// todo: make sure attributes are valid
+		const composites = {};
+		const unused = {};
+		const definedSet = new Set(defined || []);
+		const skipSet = new Set(skip || []);
+		for (const key of Object.keys(provided)) {
+			const value = provided[key];
+			if (definedSet.has(key)) {
+				composites[key] = value;
+			} else if (skipSet.has(key)) {
+				continue;
+			} else {
+				unused[key] = value;
+			}
+		}
+
+		return {
+			composites,
+			unused,
+		}
+	}
+
+	applyFilter(operation, name, ...values) {
+		if (FilterOperationNames[operation] !== undefined & name !== undefined && values.length > 0) {
+			const attribute = this.attributes[name];
+			if (attribute !== undefined) {
+				this.unsafeApplyFilter(operation, attribute.field, ...values);
+			}
+		}
+		return this;
+	}
+
+	unsafeApplyFilter(operation, name, ...values) {
+		if (FilterOperationNames[operation] !== undefined & name !== undefined && values.length > 0) {
+			const filter = this.query.filter[ExpressionTypes.FilterExpression];
+			filter.unsafeSet(operation, name, ...values);
+		}
+		return this;
+	}
+
+	filterProperties(operation, obj = {}) {
+		for (const property in obj) {
+			const value = obj[property];
+			if (value !== undefined) {
+				this.applyFilter(operation, property, value);
+			}
+		}
+		return this;
+	}
+
 	setSK(attributes, type = this.query.type) {
 		if (this.hasSortKey) {
 			this.query.keys.sk.push({
@@ -777,7 +902,7 @@ class ChainState {
 		}
 	}
 
-	applyInsert(data = {}) {
+	applyUpsert(data = {}) {
 		this.query.upsert.data = {...this.query.upsert.data, ...data};
 		return this;
 	}

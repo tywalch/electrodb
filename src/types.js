@@ -18,6 +18,7 @@ const QueryTypes = {
 	begins: "begins",
 	between: "between",
 	collection: "collection",
+	clustered_collection: 'clustered_collection',
 	is: "is"
 };
 
@@ -37,11 +38,62 @@ const MethodTypes = {
 	upsert: "upsert",
 };
 
+const IndexTypes = {
+	isolated: 'isolated',
+	clustered: 'clustered',
+}
+
 const Comparisons = {
-	gte: ">=",
-	gt: ">",
-	lte: "<=",
+	lte: '<=',
 	lt: "<",
+	gte: ">=",
+	gt: '>'
+}
+
+const PartialComparisons = {
+	lt: "<",
+	gte: ">=",
+
+	/**
+	 * gt becomes gte and last character of incoming value is shifted up one character code
+	 * example:
+	 * sk > '2020-09-05'
+	 *   expected
+	 *     - 2020-09-06@05:05_hero
+	 *     - 2020-10-05@05:05_hero
+	 *     - 2022-02-05@05:05_villian
+	 *     - 2022-06-05@05:05_clown
+	 *     - 2022-09-06@05:05_clown
+	 *   actual (bad - includes all 2020-09-05 records)
+	 *     - 2020-09-05@05:05_hero
+	 *     - 2020-09-06@05:05_hero
+	 *     - 2020-10-05@05:05_hero
+	 *     - 2022-02-05@05:05_villian
+	 *     - 2022-06-05@05:05_clown
+	 */
+	gt: ">=",
+
+	/**
+	 * lte becomes lt and last character of incoming value is shifted up one character code
+	 * example:
+	 * sk >= '2020-09-05'
+	 *   expected
+	 *     - 2012-02-05@05:05_clown
+	 *     - 2015-10-05@05:05_hero
+	 *     - 2017-02-05@05:05_clown
+	 *     - 2017-02-05@05:05_villian
+	 *     - 2020-02-05@05:05_clown
+	 *     - 2020-02-25@05:05_clown
+	 *     - 2020-09-05@05:05_hero
+	 *   actual (bad - missing all 2020-09-05 records)
+	 *     - 2012-02-05@05:05_clown
+	 *     - 2015-10-05@05:05_hero
+	 *     - 2017-02-05@05:05_clown
+	 *     - 2017-02-05@05:05_villian
+	 *     - 2020-02-05@05:05_clown
+	 *     - 2020-02-25@05:05_clown
+	 */
+	lte: "<",
 };
 
 const CastTypes = ["string", "number"];
@@ -211,6 +263,7 @@ module.exports = {
 	CastTypes,
 	KeyCasing,
 	PathTypes,
+	IndexTypes,
 	QueryTypes,
 	ValueTypes,
 	TableIndex,
@@ -230,6 +283,7 @@ module.exports = {
 	UnprocessedTypes,
 	AttributeWildCard,
 	TerminalOperation,
+	PartialComparisons,
 	FormatToReturnValues,
 	AttributeProxySymbol,
 	ElectroInstanceTypes,

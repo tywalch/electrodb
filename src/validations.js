@@ -154,6 +154,11 @@ const Index = {
 		},
 		collection: {
 			type: ["array", "string"]
+		},
+		type: {
+			type: 'string',
+			enum: ['clustered', 'isolated'],
+			required: false,
 		}
 	},
 };

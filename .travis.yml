@@ -12,4 +12,4 @@ node_js:
   - '16'
 
 script:
-  - npm run coverage-coveralls-local
+  - npm run coverage:local:coveralls
