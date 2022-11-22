@@ -2645,12 +2645,12 @@ ElectroDB offers a few mutation methods beyond `put`, `update`, and `delete` to 
 ElectroDB Method          | DynamoDB Method        | Purpose
 ------------------------- | ---------------------- | -------------------
 [put](#put-record)        | `put`, `batchWrite`    | Creates or overwrites an existing item with the values provided
-[create](#create-record)  | `put`                  | Creates an item if the item does not currently exist
+[create](#create-record)  | `put`                  | Creates an item if the item does not currently exist, or throws if the item exists
 [delete](#delete-record)  | `delete`, `batchWrite` | Deletes an item regardless of whether or not the specified item exists
 [remove](#remove-record)  | `delete`               | Deletes an item or throws if the item does not currently exist
 [update](#update-record)  | `update`               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html))
 [patch](#patch-record)    | `update`               | Performs an update on existing item or throws if that item does not already exist
-[upsert](#upsert-record)  | `update`               | A cross between the `update` and `put` methods. The `update` limits key impact for `update` operations, making it ill-suited for creating new entities. the `put` method has the downside of overwriting the existing item. The `upsert` method provides a similar api to `put`, will create a new item if no item exists or update the existing item with the values provided.
+[upsert](#upsert-record)  | `update`               | A cross between the `update` and `put` methods. The ElectroDB `update` method allows you to update individual fields in a single operation, however because it does not require all attributes to be present on update, it is ill-suited for creating new entities. The `put` method has the downside of overwriting the existing item. The `upsert` method provides a similar api to `put`, but it will create a new item if no item exists or update the existing item with the values provided.
 
 ### Delete Record
 Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
