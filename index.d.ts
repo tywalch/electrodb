@@ -711,6 +711,12 @@ export interface PutRecordOperationOptions<A extends string, F extends string, C
     where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, PutRecordOperationOptions<A, F, C, S, ResponseType>>;
 }
 
+export interface UpsertRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
+    go: PutRecordGo<ResponseType, UpdateQueryParams>;
+    params: ParamRecord<UpdateQueryParams>;
+    where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A, F, C, S, ResponseType>>;
+}
+
 export interface DeleteRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
     go: DeleteRecordOperationGo<ResponseType, DeleteQueryOptions>;
     params: ParamRecord<DeleteQueryOptions>;
@@ -2240,6 +2246,7 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
+    upsert(record: PutItem<A,F,C,S>): UpsertRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>

@@ -1,4 +1,8 @@
-import { Entity } from '../';
+import {Entity, Resolve} from '../';
+import { expectType } from 'tsd';
+
+const troubleshoot = <Params extends any[], Response>(fn: (...params: Params) => Response, response: Response) => {};
+const magnify = <T>(value: T): Resolve<T> => { return {} as Resolve<T> };
 
 const entityWithSK = new Entity({
   model: {
@@ -107,4 +111,25 @@ const entityWithSK = new Entity({
 entityWithSK.update({
     attr1: 'abc', 
     attr2: 'def'
-}).append({})
+}).append({});
+
+type CreateOptions = Parameters<typeof entityWithSK.create>[0];
+type UpsertOptions = Parameters<typeof entityWithSK.upsert>[0];
+
+const createOptions = {} as CreateOptions;
+const upsertOptions = {} as UpsertOptions;
+
+expectType<UpsertOptions>(createOptions);
+expectType<{
+    attr1?: string | undefined;
+    attr2: string;
+    attr3?: "123" | "def" | "ghi" | undefined;
+    attr4: 'abc' | 'ghi';
+    attr5?: string | undefined;
+    attr6?: number | undefined;
+    attr7?: any;
+    attr8: boolean;
+    attr9?: number | undefined;
+    attr10?: boolean | undefined;
+    attr11?: string[] | undefined;
+}>(magnify(upsertOptions));

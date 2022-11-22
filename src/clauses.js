@@ -28,7 +28,7 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		children: ["get", "delete", "update", "query", "put", "scan", "collection", "clusteredCollection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
+		children: ["get", "delete", "update", "query", "upsert", "put", "scan", "collection", "clusteredCollection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
 	},
 	clusteredCollection: {
 		name: "clusteredCollection",
@@ -183,6 +183,31 @@ let clauses = {
 			}
 		},
 		children: ["where", "params", "go"],
+	},
+	upsert: {
+		name: 'upsert',
+		action(entity, state, payload = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				let record = entity.model.schema.checkCreate({...payload});
+				const attributes = state.getCompositeAttributes();
+				return state
+					.setMethod(MethodTypes.upsert)
+					.setType(QueryTypes.eq)
+					.applyUpsert(record)
+					.setPK(entity._expectFacets(record, attributes.pk))
+					.ifSK(() => {
+						entity._expectFacets(record, attributes.sk);
+						state.setSK(entity._buildQueryFacets(record, attributes.sk));
+					});
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["params", "go", "where"],
 	},
 	put: {
 		name: "put",
@@ -678,6 +703,9 @@ class ChainState {
 			put: {
 				data: {},
 			},
+			upsert: {
+				data: {}
+			},
 			keys: {
 				provided: [],
 				pk: {},
@@ -872,6 +900,11 @@ class ChainState {
 		if (this.parentState) {
 			this.parentState.setError(err);
 		}
+	}
+
+	applyUpsert(data = {}) {
+		this.query.upsert.data = {...this.query.upsert.data, ...data};
+		return this;
 	}
 
 	applyPut(data = {}) {

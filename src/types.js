@@ -30,12 +30,27 @@ const MethodTypes = {
 	update: "update",
 	delete: "delete",
 	remove: "remove",
-	scan: "scan",
 	patch: "patch",
 	create: "create",
 	batchGet: "batchGet",
-	batchWrite: "batchWrite"
+	batchWrite: "batchWrite",
+	upsert: "upsert",
 };
+
+const MethodTypeTranslation = {
+	put: "put",
+	get: "get",
+	query: "query",
+	scan: "scan",
+	update: "update",
+	delete: "delete",
+	remove: "delete",
+	patch: "update",
+	create: "put",
+	batchGet: "batchGet",
+	batchWrite: "batchWrite",
+	upsert: "update",
+}
 
 const IndexTypes = {
 	isolated: 'isolated',
@@ -286,6 +301,7 @@ module.exports = {
 	FormatToReturnValues,
 	AttributeProxySymbol,
 	ElectroInstanceTypes,
+	MethodTypeTranslation,
 	EventSubscriptionTypes,
 	AttributeMutationMethods,
 	AllPages,
