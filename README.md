@@ -2646,11 +2646,11 @@ ElectroDB Method          | DynamoDB Method        | Purpose
 ------------------------- | ---------------------- | -------------------
 [put](#put-record)        | `put`, `batchWrite`    | Creates or overwrites an existing item with the values provided
 [create](#create-record)  | `put`                  | Creates an item if the item does not currently exist, or throws if the item exists
+[upsert](#upsert-record)  | `update`               | Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.
+[update](#update-record)  | `update`               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html))
+[patch](#patch-record)    | `update`               | Performs an update on existing item or throws if that item does not already exist.however
 [delete](#delete-record)  | `delete`, `batchWrite` | Deletes an item regardless of whether or not the specified item exists
 [remove](#remove-record)  | `delete`               | Deletes an item or throws if the item does not currently exist
-[update](#update-record)  | `update`               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html))
-[patch](#patch-record)    | `update`               | Performs an update on existing item or throws if that item does not already exist
-[upsert](#upsert-record)  | `update`               | A cross between the `update` and `put` methods. The ElectroDB `update` method allows you to update individual fields in a single operation, however because it does not require all attributes to be present on update, it is ill-suited for creating new entities. The `put` method has the downside of overwriting the existing item. The `upsert` method provides a similar api to `put`, but it will create a new item if no item exists or update the existing item with the values provided.
 
 ### Delete Record
 Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
@@ -3588,7 +3588,7 @@ Equivalent DocClient Parameters:
 
 ### Upsert Record
 
-The `upsert` method is another ElectroDB exclusive method. Upsert is similar to the [update method](#update-method) and the [patch method](#patch-record), but has an api more similar to the [put-method](#put-record) [create method](#create-record). This method is valuable in cases where you want to insert the item in place or overlay your provided properties onto the existing item.
+The `upsert` method is another ElectroDB exclusive method. Upsert is similar to the [put-method](#put-record) in that it will create a record if one does not exist. Unlike the `put` method, however, `upsert` perform an update if that record already exists.
 
 ### Scan Records
 When scanning for rows, you can use filters the same as you would any query. For more information on filters, see the [Where](#where) section.
