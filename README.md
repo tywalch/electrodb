@@ -103,6 +103,7 @@ tasks
 ## Table of Contents
 - [ElectroDB](#electrodb)
   * [Features](#features)
+  * [Table of Contents](#table-of-contents)
 - [Project Goals](#project-goals)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -167,14 +168,13 @@ tasks
       - [Partition Key Composite Attributes](#partition-key-composite-attributes)
     + [Sort Key Operations](#sort-key-operations)
   * [Performing Queries](#performing-queries)
-    + [Query Method](#query-method)
-    + [Get Method](#get-method)
-    + [Batch Get](#batch-get)
-    + [Delete Method](#delete-method)
+    + [Mutation Methods](#mutation-methods)
+    + [Delete Record](#delete-record)
     + [Batch Write Delete Records](#batch-write-delete-records)
     + [Put Record](#put-record)
     + [Batch Write Put Records](#batch-write-put-records)
-    + [Update Record](#update-record)
+    + [Create Record](#create-record)
+      - [Update Record](#update-record)
       - [Updates to Composite Attributes](#updates-to-composite-attributes)
       - [Update Method: Set](#update-method--set)
       - [Update Method: Remove](#update-method--remove)
@@ -183,11 +183,14 @@ tasks
       - [Update Method: Append](#update-method--append)
       - [Update Method: Delete](#update-method--delete)
       - [Update Method: Data](#update-method--data)
-    + [Update Method: Complex Data Types](#update-method--complex-data-types)
+      - [Update Method: Complex Data Types](#update-method--complex-data-types)
+    + [Patch Record](#patch-record)
+    + [Upsert Record](#upsert-record)
     + [Scan Records](#scan-records)
     + [Remove Method](#remove-method)
-    + [Patch Record](#patch-record)
-    + [Create Record](#create-record)
+  * [Query Methods](#query-methods)
+  * [Get Method](#get-method)
+    + [Batch Get](#batch-get)
     + [Find Records](#find-records)
     + [Match Records](#match-records)
     + [Access Pattern Queries](#access-pattern-queries)
@@ -242,7 +245,7 @@ tasks
   * [Employee App](#employee-app)
     + [Employee App Requirements](#employee-app-requirements)
     + [App Entities](#app-entities)
-    + [Query Records](#query-records)
+    + [Querying Your model](#querying-your-model)
       - [All tasks and employee information for a given employee](#all-tasks-and-employee-information-for-a-given-employee)
       - [Find all employees and office details for a given office](#find-all-employees-and-office-details-for-a-given-office)
       - [Tasks for a given employee](#tasks-for-a-given-employee)
@@ -254,13 +257,10 @@ tasks
   * [Shopping Mall Property Management App](#shopping-mall-property-management-app)
     + [Shopping Mall Requirements](#shopping-mall-requirements)
     + [Access Patterns are accessible on the StoreLocation](#access-patterns-are-accessible-on-the-storelocation)
-    + [PUT Record](#put-record)
+    + [Create New Record](#create-new-record)
       - [Add a new Store to the Mall](#add-a-new-store-to-the-mall)
-    + [UPDATE Record](#update-record)
       - [Change the Stores Lease Date](#change-the-stores-lease-date)
-    + [GET Record](#get-record)
       - [Retrieve a specific Store in a Mall](#retrieve-a-specific-store-in-a-mall)
-    + [DELETE Record](#delete-record)
       - [Remove a Store location from the Mall](#remove-a-store-location-from-the-mall)
     + [Query Mall Records](#query-mall-records)
       - [All Stores in a particular mall](#all-stores-in-a-particular-mall)
@@ -273,6 +273,8 @@ tasks
       - [All Latte Larrys in a particular mall building](#all-latte-larrys-in-a-particular-mall-building)
 - [TypeScript](#typescript)
   * [Custom Attributes](#custom-attributes)
+    + [CustomAttributeType](#customattributetype)
+    + [Opaque Keys](#opaque-keys)
   * [Exported Types](#exported-types)
     + [QueryResponse Type](#queryresponse-type)
     + [EntityRecord Type](#entityrecord-type)
@@ -1561,7 +1563,7 @@ name: "your_item_name"
 ## Collections
 A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities.
 
-> _NOTE: ElectroDB Collections use DynamoDB queries to retrieve results. One query is made to retrieve results for all Entities (the benefits of single table design), however like the [query method](#query-method), ElectroDB will paginate through all results for a given query._
+> _NOTE: ElectroDB Collections use a single DynamoDB query to retrieve results. One query is made to retrieve results for all Entities (the benefits of single table design), however keep in mind that DynamoDB returns all records in order of the Entity's sort key. In cases where your partition contains a large volume of items, it is possible some entities will not return items during pagination. This can be mitigated through the use of [Index Types](#index-types).
 
 Collections are defined on an Index, and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
 
@@ -2635,123 +2637,30 @@ Queries in ***ElectroDB*** are built around the **Access Patterns** defined in t
 
 The methods: Get (`get`), Create (`put`), Update (`update`), and Delete (`delete`) **require* all composite attributes described in the Entities' primary `PK` and `SK`.
 
-### Query Method
+### Mutation Methods
+DynamoDB offers three methods for updating and creating records: `put`, `update`, and `batchWrite`. For the uninitiated, all three of these methods will create an item if it doesn't exist. The difference between `put`/`batchWrite` and `update` this that a `put` will overwrite the existing item while an `update` will only modify the fields provided if the item already exists.
 
-ElectroDB queries use DynamoDB's `query` method to find records based on your table's indexes. To read more about queries checkout the section [Building Queries](#building-queries)
+ElectroDB offers a few mutation methods beyond `put`, `update`, and `delete` to more ergonomically fit your use case. Below is a table that explains each ElectroDB method, which DynamoDB operation the method maps to, and a short description of the method's purpose.
 
-> _NOTE: To limit the number of items ElectroDB will retrieve, read more about the [Query Options](#query-options) `pages` and `limit`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
+ElectroDB Method          | DynamoDB Method        | Purpose
+------------------------- | ---------------------- | -------------------
+[put](#put-record)        | `put`, `batchWrite`    | Creates or overwrites an existing item with the values provided
+[create](#create-record)  | `put`                  | Creates an item if the item does not currently exist
+[delete](#delete-record)  | `delete`, `batchWrite` | Deletes an item regardless of whether or not the specified item exists
+[remove](#remove-record)  | `delete`               | Deletes an item or throws if the item does not currently exist
+[update](#update-record)  | `update`               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html))
+[patch](#patch-record)    | `update`               | Performs an update on existing item or throws if that item does not already exist
+[upsert](#upsert-record)  | `update`               | A cross between the `update` and `put` methods. The `update` limits key impact for `update` operations, making it ill-suited for creating new entities. the `put` method has the downside of overwriting the existing item. The `upsert` method provides a similar api to `put`, will create a new item if no item exists or update the existing item with the values provided.
 
-### Get Method
-Provide all Table Index composite attributes in an object to the `get` method. In the event no record is found, a value of `null` will be returned.
-
-> _NOTE: As part of ElectroDB's roll out of 1.0.0, a breaking change was made to the `get` method. Prior to 1.0.0, the `get` method would return an empty object if a record was not found. This has been changed to now return a value of `null` in this case._
-
-Example:
-```javascript
-let results = await StoreLocations.get({
-	storeId: "LatteLarrys", 
-	mallId: "EastPointe", 
-	buildingId: "F34", 
-	cityId: "Atlanta1"
-}).go();
-```
-Response Format:
-```typescript
-{
-  data: Array<YOUR_SCHEMA>,
-  cursor: string | undefined
-}
-```
-
-Equivalent DocClient Parameters:
-```json
-{
-  "Key": {
-    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-  },
-  "TableName": "YOUR_TABLE_NAME"
-}
-```
-
-### Batch Get
-Provide all Table Index composite attributes in an array of objects to the `get` method to perform a BatchGet query.
-
-> _NOTE: When performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet allows queries larger than the docClient's limit of 100 records.
-
-If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
-
-For example, 150 records (50 records over the DynamoDB maximum):
-
-The default value of `concurrent` will be `1`. ElectroDB will execute a BatchGet request of 100, then after that request has responded, make another BatchGet request for 50 records.
-
-If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB will execute a BatchGet request of 100 records, and another BatchGet request for 50 records without waiting for the first request to finish.
-
-It is important to consider your Table's throughput considerations when setting this value.
-
-Example:
-```javascript
-let [results, unprocessed] = await StoreLocations.get([
-    {
-        storeId: "LatteLarrys", 
-        mallId: "EastPointe", 
-        buildingId: "F34", 
-        cityId: "Atlanta1"
-    },
-    {
-        storeId: "MochaJoes", 
-        mallId: "WestEnd", 
-        buildingId: "A21", 
-        cityId: "Madison2"
-    }   
-]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
-```
-
-Response Format:
-```typescript
-{
-  data: Array<YOUR_SCHEMA>,
-  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
-}
-```
-
-Equivalent DocClient Parameters:
-```json
-{
-  "RequestItems": {
-    "YOUR_TABLE_NAME": {
-      "Keys": [
-        {
-          "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-          "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-        },
-        {
-          "pk": "$mallstoredirectory#cityid_madison2#mallid_westend",
-          "sk": "$mallstore_1#buildingid_a21#storeid_mochajoes"
-        }
-      ]
-    }
-  }
-}
-```
-
-The two-dimensional array returned by batch get most easily used when deconstructed into two variables, in the above case: `results` and `unprocessed`.
-
-The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as other ElectroDB queries.
-
-> _NOTE: By default ElectroDB will return items without concern for order. If the order returned by ElectroDB must match the order provided, the [query option](#query-options) `preserveBatchOrder` can be used. When enabled, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index._
-
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
-
-### Delete Method
+### Delete Record
 Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
 
 Example:
 ```javascript
 await StoreLocations.delete({
-	storeId: "LatteLarrys", 
-	mallId: "EastPointe", 
-	buildingId: "F34", 
+	storeId: "LatteLarrys",
+	mallId: "EastPointe",
+	buildingId: "F34",
 	cityId: "Atlanta1"
 }).go();
 ```
@@ -2794,18 +2703,18 @@ Example:
 ```javascript
 let unprocessed = await StoreLocations.delete([
     {
-        storeId: "LatteLarrys", 
-        mallId: "EastPointe", 
-        buildingId: "F34", 
+        storeId: "LatteLarrys",
+        mallId: "EastPointe",
+        buildingId: "F34",
         cityId: "LosAngeles1"
     },
     {
-        storeId: "MochaJoes", 
-        mallId: "EastPointe", 
-        buildingId: "F35", 
+        storeId: "MochaJoes",
+        mallId: "EastPointe",
+        buildingId: "F35",
         cityId: "LosAngeles1"
     }
-]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1` 
+]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
 ```
 
 Response Format:
@@ -2844,7 +2753,7 @@ Equivalent DocClient Parameters:
 Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Put Record
-Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after performing a `put()` or `create()` operation, ElectroDB will format and return the record through the same process as a Get/Query. This process will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.     
+Provide all *required* Attributes as defined in the model to create a new record. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after performing a `put()` or `create()` operation, ElectroDB will format and return the record through the same process as a Get/Query. This process will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.
 
 Note: This example includes an optional conditional expression
 
@@ -3012,13 +2921,76 @@ Equivalent DocClient Parameters:
 
 Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
-### Update Record
+### Create Record
 
-Update Methods are available **_after_** the method `update()` is called, and allow you to perform alter an item stored dynamodb. The methods can be used (and reused) in a chain to form update parameters, when finished with `.params()`, or an update operation, when finished with `.go()`. If your application requires the update method to return values related to the update (e.g. via the `ReturnValues` DocumentClient parameters), you can use the [Query Option](#query-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
+In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `create` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table.
 
-> ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client.
+A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.
 
-Update Method                          | Attribute Types                                              | Parameter
+Example:
+```javascript
+await StoreLocations
+  .create({
+      cityId: "Atlanta1",
+      storeId: "LatteLarrys",
+      mallId: "EastPointe",
+      buildingId: "BuildingA1",
+      unitId: "B47",
+      category: "food/coffee",
+      leaseEndDate: "2020-03-22",
+      rent: "4500.00"
+  })
+  .where((attr, op) => op.eq(attr.rent, "4500.00"))
+  .go()
+```
+
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
+{
+  "Item": {
+    "cityId": "Atlanta1",
+    "mallId": "EastPointe",
+    "storeId": "LatteLarrys",
+    "buildingId": "BuildingA1",
+    "unitId": "B47",
+    "category": "food/coffee",
+    "leaseEndDate": "2020-03-22",
+    "rent": "4500.00",
+    "discount": "0.00",
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys",
+    "gis1pk": "$mallstoredirectory#mallid_eastpointe",
+    "gsi1sk": "$mallstore_1#buildingid_buildinga1#unitid_b47",
+    "gis2pk": "$mallstoredirectory#storeid_lattelarrys",
+    "gsi2sk": "$mallstore_1#leaseenddate_2020-03-22",
+    "__edb_e__": "MallStore",
+    "__edb_v__": "1"
+  },
+  "TableName": "StoreDirectory",
+  "ConditionExpression": "attribute_not_exists(pk) AND attribute_not_exists(sk) AND #rent = :rent_w1",
+  "ExpressionAttributeNames": {
+    "#rent": "rent"
+  },
+  "ExpressionAttributeValues": {
+    ":rent_w1": "4500.00"
+  }
+}
+```
+
+#### Update Record
+
+Update Methods are available **_after_** the method `update()` is called, and allow you to perform alter an item stored dynamodb. Each Update Method corresponds to a [DynamoDB UpdateExpression clause](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html).
+
+> _NOTE: ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. For example, If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client._
+
+Update/Patch Method                    | Attribute Types                                              | Parameter
 -------------------------------------- | ------------------------------------------------------------ | ---------
 [set](#update-method-set)              | `number` `string` `boolean` `enum` `map` `list` `set` `any`  | `object`
 [remove](#update-method-remove)        | `number` `string` `boolean` `enum` `map` `list` `set` `any`  | `array`
@@ -3028,9 +3000,13 @@ Update Method                          | Attribute Types                        
 [delete](#update-method-delete)        | `any` `set`                                                  | `object`
 [data](#update-method-data)            | `*`                                                          | `callback`
 
+The methods above can be used (and reused) in a chain to form update parameters, when finished with `.params()` or `.go()` terminal. If your application requires the update method to return values related to the update (e.g. via the `ReturnValues` DocumentClient parameters), you can use the [Query Option](#query-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
+
+> _NOTE: The DynamoDB method `update` will create an item if one does not exist. Because updates have reduced attribute validations when compared to `put`, the practical ramifications of this is that an `update` can create a record without all the attributes you'd expect from a newly created item. Depending on your project's unique needs, the methods [patch](#patch-record) or [upsert](#upsert) may be a better fit._
+
 #### Updates to Composite Attributes
 
-ElectroDB adds some constraints to update calls to prevent the accidental loss of data. If an access pattern is defined with multiple composite attributes, then ElectroDB ensure the attributes cannot be updated individually. If an attribute involved in an index composite is updated, then the index key also must be updated, and if the whole key cannot be formed by the attributes supplied to the update, then it cannot create a composite key without overwriting the old data. 
+ElectroDB adds some constraints to update calls to prevent the accidental loss of data. If an access pattern is defined with multiple composite attributes, then ElectroDB ensure the attributes cannot be updated individually. If an attribute involved in an index composite is updated, then the index key also must be updated, and if the whole key cannot be formed by the attributes supplied to the update, then it cannot create a composite key without overwriting the old data.
 
 This example shows why a partial update to a composite key is prevented by ElectroDB:
 
@@ -3057,9 +3033,9 @@ The above secondary index definition would generate the following index keys:
 }
 ```
 
-If a user attempts to update the attribute `attr2`, then ElectroDB has no way of knowing value of the attribute `attr3` or if forming the composite key without it would overwrite its value. The same problem exists if a user were to update `attr3`, ElectroDB cannot update the key without knowing each composite attribute's value. 
+If a user attempts to update the attribute `attr2`, then ElectroDB has no way of knowing value of the attribute `attr3` or if forming the composite key without it would overwrite its value. The same problem exists if a user were to update `attr3`, ElectroDB cannot update the key without knowing each composite attribute's value.
 
-In the event that a secondary index includes composite values from the table's primary index, ElectroDB will draw from the values supplied for the update key to address index gaps in the secondary index. For example:  
+In the event that a secondary index includes composite values from the table's primary index, ElectroDB will draw from the values supplied for the update key to address index gaps in the secondary index. For example:
 
 For the defined indexes:
 
@@ -3124,9 +3100,9 @@ Equivalent DocClient Parameters:
     ":attr2_u0": "value2"
   },
   "TableName": "YOUR_TABLE_NAME",
-  "Key": { 
-    "pk": "$service#attr1_value1", 
-    "sk": "$entity_version#attr2_value2" 
+  "Key": {
+    "pk": "$service#attr1_value1",
+    "sk": "$entity_version#attr2_value2"
   }
 }
 ```
@@ -3177,7 +3153,7 @@ Equivalent DocClient Parameters:
 
 The `remove()` method will accept all attributes defined on the model. Unlike most other update methods, the `remove()` method accepts an array with the names of the attributes that should be removed.
 
-> _NOTE that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed._  
+> _NOTE that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed._
 
 Example:
 ```javascript
@@ -3218,7 +3194,7 @@ Equivalent DocClient Parameters:
 
 The `add()` method will accept attributes with type `number`, `set`, and `any` defined on the model. In the case of a `number` attribute, provide a number to _add_ to the existing attribute's value on the item.
 
-If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a `number`. 
+If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a `number`.
 
 Example:
 ```javascript
@@ -3315,7 +3291,7 @@ await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .append({
       rentalAgreement: [{
-        type: "ammendment", 
+        type: "ammendment",
         detail: "no soup for you"
       }]
     })
@@ -3501,7 +3477,7 @@ Equivalent DocClient Parameters:
 }
 ```
 
-### Update Method: Complex Data Types
+#### Update Method: Complex Data Types
 
 ElectroDB supports updating DynamoDB's complex types (`list`, `map`, `set`) with all of its Update Methods.
 
@@ -3522,7 +3498,7 @@ await StoreLocations
     .set({'mapAttribute.mapProperty':  "value"})
     .go();
 
-// via Data Method 
+// via Data Method
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "value"))
@@ -3540,7 +3516,7 @@ await StoreLocations
     .remove(['listAttribute[0]'])
     .go();
 
-// via Data Method 
+// via Data Method
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .data(({listAttribute}, {remove}) => remove(listAttribute[0]))
@@ -3553,9 +3529,9 @@ All other complex structures are simply variations on the above two examples.
 
 ```javascript
 // Set values must use the DocumentClient to create a `set`
-const newSetValue = StoreLocations.client.createSet("setItemValue"); 
+const newSetValue = StoreLocations.client.createSet("setItemValue");
 
-// via Data Method 
+// via Data Method
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .add({'listAttribute[1].setAttribute': newSetValue})
@@ -3569,6 +3545,51 @@ await StoreLocations
     .go();
 ```
 
+### Patch Record
+
+```javascript
+await entity.patch({ attr1: "value1", attr2: "value2" })
+  .set({ attr4: "value4" })
+  .go();
+```
+
+Response Format:
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+Equivalent DocClient Parameters:
+```json
+{
+  "UpdateExpression": "SET #attr4 = :attr4_u0, #gsi1sk = :gsi1sk_u0, #attr1 = :attr1_u0, #attr2 = :attr2_u0",
+  "ExpressionAttributeNames": {
+    "#attr4": "attr4",
+    "#gsi1sk": "gsi1sk",
+    "#attr1": "attr1",
+    "#attr2": "attr2"
+  },
+  "ExpressionAttributeValues": {
+    ":attr4_u0": "value6",
+    // This index was successfully built
+    ":gsi1sk_u0": "$update-edgecases_1#attr2_value2#attr4_value6",
+    ":attr1_u0": "value1",
+    ":attr2_u0": "value2"
+  },
+  "TableName": "YOUR_TABLE_NAME",
+  "Key": {
+    "pk": "$service#attr1_value1",
+    "sk": "$entity_version#attr2_value2"
+  },
+  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
+}
+```
+
+### Upsert Record
+
+The `upsert` method is another ElectroDB exclusive method. Upsert is similar to the [update method](#update-method) and the [patch method](#patch-record), but has an api more similar to the [put-method](#put-record) [create method](#create-record). This method is valuable in cases where you want to insert the item in place or overlay your provided properties onto the existing item.
+
 ### Scan Records
 When scanning for rows, you can use filters the same as you would any query. For more information on filters, see the [Where](#where) section.
 
@@ -3578,7 +3599,7 @@ Example:
 ```javascript
 await StoreLocations.scan
     .where(({category}, {eq}) => `
-        ${eq(category, "food/coffee")} OR ${eq(category, "spite store")}  
+        ${eq(category, "food/coffee")} OR ${eq(category, "spite store")}
     `)
     .where(({leaseEndDate}, {between}) => `
         ${between(leaseEndDate, "2020-03", "2020-04")}
@@ -3625,9 +3646,9 @@ A convenience method for `delete` with ConditionExpression that the item being d
 
 ```javascript
 await StoreLocations.remove({
-	storeId: "LatteLarrys", 
-	mallId: "EastPointe", 
-	buildingId: "F34", 
+	storeId: "LatteLarrys",
+	mallId: "EastPointe",
+	buildingId: "F34",
 	cityId: "Atlanta1"
 }).go();
 ```
@@ -3646,48 +3667,7 @@ Equivalent DocClient Parameters:
     "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
     "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
   },
-  "TableName": "YOUR_TABLE_TABLE"
-  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
-}
-```
-
-### Patch Record
-
-```javascript
-await entity.patch({ attr1: "value1", attr2: "value2" })
-  .set({ attr4: "value4" })
-  .go();
-```
-
-Response Format:
-```typescript
-{
-  data: { YOUR_SCHEMA }
-}
-```
-
-Equivalent DocClient Parameters:
-```json
-{
-  "UpdateExpression": "SET #attr4 = :attr4_u0, #gsi1sk = :gsi1sk_u0, #attr1 = :attr1_u0, #attr2 = :attr2_u0",
-  "ExpressionAttributeNames": {
-    "#attr4": "attr4",
-    "#gsi1sk": "gsi1sk",
-    "#attr1": "attr1",
-    "#attr2": "attr2"
-  },
-  "ExpressionAttributeValues": {
-    ":attr4_u0": "value6",
-    // This index was successfully built
-    ":gsi1sk_u0": "$update-edgecases_1#attr2_value2#attr4_value6",
-    ":attr1_u0": "value1",
-    ":attr2_u0": "value2"
-  },
-  "TableName": "YOUR_TABLE_NAME",
-  "Key": {
-    "pk": "$service#attr1_value1",
-    "sk": "$entity_version#attr2_value2"
-  },
+  "TableName": "YOUR_TABLE_TABLE",
   "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
 }
 ```
@@ -3696,68 +3676,113 @@ In DynamoDB, `update` operations by default will insert a record if record being
 
 For more detail on how to use the `patch()` method, see the section [Update Record](#update-record) to see all the transferable requirements and capabilities available to `patch()`.
 
-### Create Record
+## Query Methods
 
-In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `create` method will utilize the `attribute_not_exists()` parameter dynamically to ensure records are only "created" and not overwritten when inserting new records into the table.
+ElectroDB queries use DynamoDB's `query` method to find records based on your table's indexes. To read more about queries checkout the section [Building Queries](#building-queries)
 
-A Put operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Query Option](#query-options) `response:"none"` to return a null value.
+> _NOTE: To limit the number of items ElectroDB will retrieve, read more about the [Query Options](#query-options) `pages` and `limit`, or use the ElectroDB [Pagination API](#page) for fine-grain pagination support._
+
+## Get Method
+Provide all Table Index composite attributes in an object to the `get` method. In the event no record is found, a value of `null` will be returned.
+
+> _NOTE: As part of ElectroDB's roll out of 1.0.0, a breaking change was made to the `get` method. Prior to 1.0.0, the `get` method would return an empty object if a record was not found. This has been changed to now return a value of `null` in this case._
 
 Example:
 ```javascript
-await StoreLocations
-  .create({
-      cityId: "Atlanta1",
-      storeId: "LatteLarrys",
-      mallId: "EastPointe",
-      buildingId: "BuildingA1",
-      unitId: "B47",
-      category: "food/coffee",
-      leaseEndDate: "2020-03-22",
-      rent: "4500.00"
-  })
-  .where((attr, op) => op.eq(attr.rent, "4500.00"))
-  .go()
+let results = await StoreLocations.get({
+	storeId: "LatteLarrys", 
+	mallId: "EastPointe", 
+	buildingId: "F34", 
+	cityId: "Atlanta1"
+}).go();
 ```
-
 Response Format:
 ```typescript
 {
-  data: { YOUR_SCHEMA }
+  data: Array<YOUR_SCHEMA>,
+  cursor: string | undefined
 }
 ```
 
 Equivalent DocClient Parameters:
 ```json
 {
-  "Item": {
-    "cityId": "Atlanta1",
-    "mallId": "EastPointe",
-    "storeId": "LatteLarrys",
-    "buildingId": "BuildingA1",
-    "unitId": "B47",
-    "category": "food/coffee",
-    "leaseEndDate": "2020-03-22",
-    "rent": "4500.00",
-    "discount": "0.00",
+  "Key": {
     "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-    "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys",
-    "gis1pk": "$mallstoredirectory#mallid_eastpointe",
-    "gsi1sk": "$mallstore_1#buildingid_buildinga1#unitid_b47",
-    "gis2pk": "$mallstoredirectory#storeid_lattelarrys",
-    "gsi2sk": "$mallstore_1#leaseenddate_2020-03-22",
-    "__edb_e__": "MallStore",
-    "__edb_v__": "1"
+    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
   },
-  "TableName": "StoreDirectory",
-  "ConditionExpression": "attribute_not_exists(pk) AND attribute_not_exists(sk) AND #rent = :rent_w1",
-  "ExpressionAttributeNames": {
-    "#rent": "rent"
-  },
-  "ExpressionAttributeValues": {
-    ":rent_w1": "4500.00"
+  "TableName": "YOUR_TABLE_NAME"
+}
+```
+
+### Batch Get
+Provide all Table Index composite attributes in an array of objects to the `get` method to perform a BatchGet query.
+
+> _NOTE: When performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet allows queries larger than the docClient's limit of 100 records.
+
+If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Query Option](#query-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
+
+For example, 150 records (50 records over the DynamoDB maximum):
+
+The default value of `concurrent` will be `1`. ElectroDB will execute a BatchGet request of 100, then after that request has responded, make another BatchGet request for 50 records.
+
+If you set the [Query Option](#query-options) `concurrent` to `2`, ElectroDB will execute a BatchGet request of 100 records, and another BatchGet request for 50 records without waiting for the first request to finish.
+
+It is important to consider your Table's throughput considerations when setting this value.
+
+Example:
+```javascript
+let [results, unprocessed] = await StoreLocations.get([
+    {
+        storeId: "LatteLarrys", 
+        mallId: "EastPointe", 
+        buildingId: "F34", 
+        cityId: "Atlanta1"
+    },
+    {
+        storeId: "MochaJoes", 
+        mallId: "WestEnd", 
+        buildingId: "A21", 
+        cityId: "Madison2"
+    }   
+]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
+```
+
+Response Format:
+```typescript
+{
+  data: Array<YOUR_SCHEMA>,
+  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
+}
+```
+
+Equivalent DocClient Parameters:
+```json
+{
+  "RequestItems": {
+    "YOUR_TABLE_NAME": {
+      "Keys": [
+        {
+          "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+          "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+        },
+        {
+          "pk": "$mallstoredirectory#cityid_madison2#mallid_westend",
+          "sk": "$mallstore_1#buildingid_a21#storeid_mochajoes"
+        }
+      ]
+    }
   }
 }
 ```
+
+The two-dimensional array returned by batch get most easily used when deconstructed into two variables, in the above case: `results` and `unprocessed`.
+
+The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as other ElectroDB queries.
+
+> _NOTE: By default ElectroDB will return items without concern for order. If the order returned by ElectroDB must match the order provided, the [query option](#query-options) `preserveBatchOrder` can be used. When enabled, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index._
+
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [query option](#query-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
 
 ### Find Records
 
@@ -5076,7 +5101,7 @@ const EmployeesModel = {
 			},
 		},
 		employeeLookup: {
-			collection: "assignements",
+			collection: "assignments",
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
 				field: "gsi3pk",
@@ -5147,7 +5172,7 @@ const TasksModel = {
 			},
 		},
 		assigned: {
-			collection: "assignements",
+			collection: "assignments",
 			index: "gsi3pk-gsi3sk-index",
 			pk: {
 				field: "gsi3pk",
@@ -5215,12 +5240,12 @@ const EmployeeApp = new Service({
 }, { client, table });
 
 ```
-### Query Records
+### Querying Your model
 #### All tasks and employee information for a given employee
 Fulfilling [Requirement #1](#employee-app-requirements).
 
 ```javascript
-EmployeeApp.collections.assignements({employee: "CBaskin"}).go();
+EmployeeApp.collections.assignments({employee: "CBaskin"}).go();
 ```
 Returns the following:
 ```javascript
@@ -5467,7 +5492,7 @@ const StoreLocations = new Entity(model, {client, table: "StoreLocations"});
 
 ### Access Patterns are accessible on the StoreLocation
 
-### PUT Record
+### Create New Record
 #### Add a new Store to the Mall
 ```javascript
 await StoreLocations.create({
@@ -5496,9 +5521,10 @@ Returns the following:
 }
 ```
 ---
-### UPDATE Record
 #### Change the Stores Lease Date
+
 >When updating a record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
+
 ```javascript
 let storeId = "LatteLarrys";
 let mallId = "EastPointe";
@@ -5517,7 +5543,6 @@ Returns the following:
 }
 ```
 
-### GET Record
 #### Retrieve a specific Store in a Mall
 >When retrieving a specific record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
 ```javascript
@@ -5541,7 +5566,6 @@ Returns the following:
 }
 ```
 
-### DELETE Record
 #### Remove a Store location from the Mall
 >When removing a specific record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
 ```javascript

@@ -337,8 +337,8 @@ class Entity {
 				results,
 			}, config.listeners);
 		}
-		method = MethodTypeTranslation[method];
-		return this.client[method](params).promise()
+		const dynamoDBMethod = MethodTypeTranslation[method];
+		return this.client[dynamoDBMethod](params).promise()
 			.then((results) => {
 				notifyQuery();
 				notifyResults(results, true);
