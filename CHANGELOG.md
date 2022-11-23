@@ -275,6 +275,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Addressed issue where scans would incorrectly accumulate filters across usages
 
-## [2.2.6] - 2022-11-22
+## [2.3.0] - 2022-11-22
 ### Added
 - Adding new update method: `upsert`. Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.
+
+## [2.3.1] - 2022-11-23
+### Fixed
+- Address issue#179, the query option `table` was not correctly propagated, resulting a failure for that declared the table name was "missing"

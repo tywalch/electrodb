@@ -1009,6 +1009,7 @@ class Entity {
 
 			if (validations.isStringHasLength(option.table)) {
 				config.params.TableName = option.table;
+				config.table = option.table;
 			}
 
 			if (option.concurrent !== undefined) {
