@@ -4295,3 +4295,118 @@ describe('upsert', () => {
         }).to.throw('Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes')
     });
 });
+
+describe('batch operations', () => {
+    it('should return batchGet records when "table" is provided as query option', async () => {
+        const Segment = new Entity({
+            model: {
+                entity: "Segment",
+                version: "1",
+                service: "TourContent",
+            },
+            attributes: {
+                tenantId: {
+                    type: "string",
+                    required: true,
+                },
+                siteId: {
+                    type: "string",
+                    required: true,
+                },
+                segmentId: {
+                    type: "string",
+                    required: true,
+                    // default: () => uuid(),
+                    readOnly: true,
+                    validate: /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i,
+                },
+                name: {
+                    type: "string",
+                    required: true,
+                },
+                // createdAt,
+                // updatedAt,
+                state: {
+                    type: ["active", "inactive"] as const,
+                    required: true,
+                },
+                image: {
+                    type: "map",
+                    required: false,
+                    properties: {
+                        bucket: {
+                            type: "string",
+                            required: false,
+                        },
+                        key: {
+                            type: "string",
+                            required: false,
+                        },
+                    },
+                },
+            },
+            indexes: {
+                _: {
+                    pk: {
+                        field: 'pk',
+                        composite: ["tenantId", "siteId", "segmentId"],
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: [],
+                    },
+                },
+                site: {
+                    collection: "site",
+                    index: 'gsi1pk-gsi1pk-index',
+                    pk: {
+                        field: 'gsi1pk',
+                        composite: ["tenantId", "siteId"],
+                    },
+                    sk: {
+                        field: 'gis1sk',
+                        composite: ["segmentId"],
+                    },
+                },
+            },
+        }, {client});
+
+        type CreateSegment = CreateEntityItem<typeof Segment>;
+
+        const items: CreateSegment[] = [];
+        for (let i = 0; i < 10; i++) {
+            items.push({
+                tenantId: uuid(),
+                siteId: uuid(),
+                name: uuid(),
+                image: {
+                    bucket: uuid(),
+                    key: uuid(),
+                },
+                segmentId: uuid(),
+                state: 'active'
+            });
+        }
+
+        await Segment.put(items).go({table});
+
+        const first = await Segment.get({
+            segmentId: items[0].segmentId!,
+            siteId: items[0].siteId!,
+            tenantId: items[0].tenantId!
+        }).go({table});
+
+        expect(first.data).to.deep.equal(items[0]);
+
+        const batchGet = await Segment.get(items).go({table});
+        expect(batchGet.data).to.have.length.greaterThan(0);
+        expect(batchGet.data).to.have.length(items.length);
+        expect(
+            batchGet.data
+                .sort((a, z) => a.segmentId.localeCompare(z.segmentId))
+        ).to.deep.equal(
+            items
+                .sort((a, z) => a.segmentId.localeCompare(z.segmentId))
+        );
+    });
+})
