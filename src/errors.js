@@ -133,6 +133,12 @@ const ErrorCodes = {
     name: "InvalidListenerProvided",
     sym: ErrorCode,
   },
+  InvalidLoggerProvided: {
+    code: 1020,
+    section: "invalid-listener-provided",
+    name: "InvalidListenerProvided",
+    sym: ErrorCode,
+  },
   InvalidClientProvided: {
     code: 1021,
     section: "invalid-client-provided",

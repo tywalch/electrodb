@@ -17,6 +17,7 @@ class FilterFactory {
 			case MethodTypes.patch:
 			case MethodTypes.delete:
 			case MethodTypes.get:
+			case MethodTypes.upsert:
 				return ExpressionTypes.ConditionExpression
 			default:
 				return ExpressionTypes.FilterExpression
