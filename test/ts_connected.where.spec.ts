@@ -8,11 +8,11 @@ const client = new DynamoDB.DocumentClient({
     region: "us-east-1",
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
+const table = 'electro';
 
 describe("Where Clause Queries", () => {
     before(async () => sleep(1000));
 });
-
 
 describe("Where Clause Queries", () => {
     before(async () => sleep(1000));
@@ -542,4 +542,98 @@ describe("Where Clause Queries", () => {
             FilterExpression: 'begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND #complete = :complete0'
         });
     });
-})
+
+    it('should upsert with a condition', () => {
+        const actors = new Entity(
+            {
+                model: {
+                    entity: "actors",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    studio: {
+                        type: "string",
+                        required: true
+                    },
+                    productionHouse: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true,
+                    },
+                    genre: {
+                        type: 'string'
+                    },
+                    movie: {
+                        type: 'string'
+                    },
+                    actor: {
+                        type: 'string'
+                    }
+                },
+                indexes: {
+                    byStudio: {
+                        pk: {
+                            field: "pk",
+                            composite: ["studio"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["productionHouse", "actor"]
+                        }
+                    },
+                    byActor: {
+                        index: 'gsi2pk-gsi2sk-index',
+                        pk: {
+                            field: 'gsi2pk',
+                            composite: ['actor']
+                        },
+                        sk: {
+                            field: 'gsi2sk',
+                            composite: ['genre', 'movie']
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+        const params = actors.upsert({productionHouse: 'productionHouse1', studio: 'studio1', project: 'project2', actor: 'actor1'})
+            .where((attr, op) => op.eq(attr.project, 'project1'))
+            .params();
+
+        expect(params).to.deep.equal({
+            TableName: 'electro',
+            UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #studio = :studio_u0, #productionHouse = :productionHouse_u0, #project = :project_u0, #actor = :actor_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0',
+            ExpressionAttributeNames: {
+                '#project': 'project',
+                '#__edb_e__': '__edb_e__',
+                '#__edb_v__': '__edb_v__',
+                '#studio': 'studio',
+                '#productionHouse': 'productionHouse',
+                '#actor': 'actor',
+                '#gsi2pk': 'gsi2pk',
+                '#gsi2sk': 'gsi2sk'
+            },
+            ExpressionAttributeValues: {
+                ':project0': 'project1',
+                ':__edb_e___u0': 'actors',
+                ':__edb_v___u0': '1',
+                ':studio_u0': 'studio1',
+                ':productionHouse_u0': 'productionHouse1',
+                ':project_u0': 'project2',
+                ':actor_u0': 'actor1',
+                ':gsi2pk_u0': '$taskapp#actor_actor1',
+                ':gsi2sk_u0': '$actors_1#genre_'
+            },
+            Key: {
+                pk: '$taskapp#studio_studio1',
+                sk: '$actors_1#productionhouse_productionhouse1#actor_actor1'
+            },
+            ConditionExpression: '#project = :project0'
+        });
+    });
+});

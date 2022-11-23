@@ -282,3 +282,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.3.1] - 2022-11-23
 ### Fixed
 - Address issue#179, the query option `table` was not correctly propagated, resulting a failure for that declared the table name was "missing"
+
+## [2.3.2] - 2022-11-23
+### Fixed
+- Upsert method would silently disregard `where` clause usage, and would not add condition expression to parameters.
