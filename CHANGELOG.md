@@ -286,3 +286,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.3.2] - 2022-11-23
 ### Fixed
 - Upsert method would silently disregard `where` clause usage, and would not add condition expression to parameters.
+
+## [2.3.3] - 2022-11-28
+### Fixed
+- Issue #182: Addressed inconsistency with `remove` and `delete` functionality between `update` and `patch` methods.

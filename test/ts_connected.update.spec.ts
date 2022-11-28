@@ -2461,7 +2461,7 @@ describe("Update Item", () => {
             expect(dataRemoveError.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
         });
 
-        it("should remove properties from an item", async () => {
+        it("should remove properties from an item via the update method", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
             const createdAt = "2021-07-01";
@@ -2493,6 +2493,61 @@ describe("Update Item", () => {
 
             await repositories
                 .update({repoName, repoOwner})
+                .remove([
+                    "license",
+                    "description",
+                    "recentCommits",
+                    "stars",
+                    "defaultBranch",
+                    "tags",
+                ])
+                .go();
+
+            const item = await repositories
+                .get({repoName, repoOwner})
+                .go().then(res => res.data);
+
+            expect(item).to.deep.equal({
+                createdAt,
+                repoOwner,
+                repoName,
+                username: repoOwner,
+                isPrivate: false,
+            });
+        });
+
+        it("should remove properties from an item via the patch method", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+            const createdAt = "2021-07-01";
+            await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    createdAt,
+                    isPrivate: false,
+                    license: "apache-2.0",
+                    description: "my description",
+                    recentCommits: [
+                        {
+                            sha: "8ca4d4b2",
+                            data: "1627158426",
+                            message: "fixing bug"
+                        },
+                        {
+                            sha: "25d68f54",
+                            data: "1627158100",
+                            message: "adding bug"
+                        }
+                    ],
+                    stars: 10,
+                    defaultBranch: "main",
+                    tags: ["tag1", "tag2"]
+                })
+                .go();
+
+            await repositories
+                .patch({repoName, repoOwner})
                 .remove([
                     "license",
                     "description",

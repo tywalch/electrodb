@@ -298,7 +298,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["set", "append", "remove", "add", "subtract", "data"],
+		children: ["set", "append","updateRemove", "updateDelete", "add", "subtract", "data"],
 	},
 	update: {
 		name: "update",
