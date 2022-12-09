@@ -7,13 +7,36 @@ const { path } = Astro.props as Props;
 ---
 
 <footer>
-	<AvatarList path={path} />
+    <h4><a href="http://tinkertamper.com">© tinkertamper.com</a></h4>
 </footer>
 
 <style>
 	footer {
 		margin-top: auto;
 		padding: 2rem;
-		border-top: 3px solid var(--theme-divider);
+		/* border-top: 2px solid var(--theme-divider); */
 	}
+
+	footer > h4 {
+      text-align: center;
+      color: #999999;
+      font-size: 12px;
+      margin: 12px;
+      font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-weight: 300;
+      line-height: 1.1;
+    }
+
+    footer > h4 > a {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      -o-user-select: none;
+      user-select: none;
+      cursor:default;
+      text-decoration: none;
+      color: #999999;
+    }
 </style>
