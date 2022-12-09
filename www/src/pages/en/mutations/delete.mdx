@@ -1,0 +1,52 @@
+---
+title: Delete
+description: Delete item
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - delete
+layout: ../../../layouts/MainLayout.astro
+---
+
+import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+
+<ExampleSetup />
+
+Provide all Table Index composite attributes in an object to the `delete` method to delete a record.
+
+```javascript
+await StoreLocations.delete({
+	storeId: "LatteLarrys",
+	mallId: "EastPointe",
+	buildingId: "F34",
+	cityId: "Atlanta1"
+}).go();
+```
+
+## Response Format
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+## Equivalent Parameters
+```json
+{
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+  },
+  "TableName": "YOUR_TABLE_NAME"
+}
+```
+
+## Execution Options
+
+import PartialExample from '../../../partials/mutation-query-options.mdx';
+
+<PartialExample name="Filters" />

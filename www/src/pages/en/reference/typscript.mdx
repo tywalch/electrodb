@@ -1,0 +1,239 @@
+---
+title: TypeScript
+description: TypeScript implementation
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - typing
+  - inference
+  - types
+  - typescript
+layout: ../../../layouts/MainLayout.astro
+---
+
+ElectroDB using advanced dynamic typing techniques to automatically create types based on the configurations in your model. Changes to your model will automatically change the types returned by ElectroDB.
+
+If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a GitHub issue, and it can be addressed.
+
+## Exported Types
+
+The following types are exported for easier use while using ElectroDB with TypeScript. The naming convention for the types include three different kinds:
+
+- `xResponse` -- Types with the postfix `Response` represent the returned interfaces directly from ElectroDB.
+
+- `xItem` -- Types with the postfix `Item` represent an Entity row. Queries return multiple items, a get returns a single item, etc. The type for an item is inferred based on the attributes and index definitions within your model. For example if your attribute is marked as `required` then that attribute will never be undefined, if your attribute has a default value then it won't be required to be supplied on `put`, `list` attributes must be an array, etc.
+
+- `xRecord` -- In some cases it is helpful to have a type that represents all attributes of an item without nullable properties. Types with the postfix `Record` contain all properties in a non-nullable format.
+
+The follow highlight many of the types exported utility types from ElectroDB:
+
+### QueryResponse Type
+
+The QueryResponse type is the same type returned by an ElectroDB Query.
+
+**Definition:**
+
+```typescript
+export type QueryResponse<E extends Entity<any, any, any, any>> = {
+    data: EntityItem<E>;
+    cursor: string | null;
+}
+```
+
+**Use:**
+
+```typescript
+type EntitySchema = QueryResponse<typeof MyEntity>
+```
+
+### EntityRecord Type
+
+The EntityRecord type is an object containing every attribute an Entity's model.
+
+**Definition:**
+
+```typescript
+type EntityRecord<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? Item<A,F,C,S,S["attributes"]>
+        : never;
+```
+
+**Use:**
+
+```typescript
+type Item = EntityRecord<typeof MyEntity>
+```
+
+### EntityItem Type
+
+This type represents an item as it is returned from a query. This is different from the `EntityRecord` in that this type reflects the `required`, `hidden`, `default`, etc properties defined on the attribute.
+
+**Definition:**
+
+```typescript
+export type EntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? ResponseItem<A, F, C, S>
+  : never;
+```
+
+**Use:**
+
+```typescript
+type Item = EntityItem<typeof MyEntityInstance>;
+```
+
+### CollectionItem Type
+
+This type represents an item returned from a collection query, and is similar to EntityItem.
+
+**Definition:**
+
+```typescript
+export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyof SERVICE["collections"]> =
+    SERVICE extends Service<infer E>
+        ? Pick<{
+            [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ? COLLECTION extends keyof CollectionAssociations<E>
+                ? EntityName extends CollectionAssociations<E>[COLLECTION]
+                    ? ResponseItem<A,F,C,S>[]
+                    : never
+                : never
+            : never
+        }, COLLECTION extends keyof CollectionAssociations<E>
+        ? CollectionAssociations<E>[COLLECTION]
+        : never>
+        : never
+```
+
+**Use:**
+
+```typescript
+type CollectionResults = CollectionItem<typeof MyServiceInstance, "collectionName">
+``` 
+
+### CollectionResponse
+
+This type represents the value returned the collection query itself
+
+**Definition:**
+
+```typescript
+export type CollectionResponse<SERVICE extends Service<any>, COLLECTION extends keyof SERVICE["collections"]> = {
+    data: CollectionItem<SERVICE, COLLECTION>;
+    cursor: string | null;
+}
+```
+
+**Use:**
+
+```typescript
+type CollectionResults = CollectionResponse<typeof MyServiceInstance, "collectionName">
+```
+
+### CreateEntityItem Type
+
+This type represents an item that you would pass your entity's `put` or `create` method
+
+**Definition:**
+
+```typescript
+export type CreateEntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? PutItem<A, F, C, S>
+  : never;
+```
+
+**Use:**
+
+```typescript
+type NewThing = CreateEntityItem<typeof MyEntityInstance>;
+```
+
+### UpdateEntityItem Type
+
+This type represents an item that you would pass your entity's `set` method when using `create` or `update`.
+
+**Definition:**
+
+```typescript
+export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
+  E extends Entity<infer A, infer F, infer C, infer S>
+  ? SetItem<A, F, C, S>
+  : never;
+```
+
+**Use:**
+
+```typescript
+type UpdateProperties = UpdateEntityItem<typeof MyEntityInstance>;
+```
+
+### UpdateAddEntityItem Type
+
+This type represents an item that you would pass your entity's `add` method when using `create` or `update`.
+
+**Definition:**
+
+```typescript
+export type UpdateAddEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AddItem<A, F, C, S>
+        : never;
+
+`````
+
+### UpdateSubtractEntityItem Type
+
+This type represents an item that you would pass your entity's `subtract` method when using `create` or `update`.
+
+**Definition:**
+
+```typescript
+export type UpdateSubtractEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? SubtractItem<A, F, C, S>
+        : never;
+```
+
+### UpdateAppendEntityItem Type
+
+This type represents an item that you would pass your entity's `append` method when using `create` or `update`.
+
+**Definition:**
+
+```typescript
+export type UpdateAppendEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AppendItem<A, F, C, S>
+        : never;
+```
+
+### UpdateRemoveEntityItem Type
+
+This type represents an item that you would pass your entity's `remove` method when using `create` or `update`.
+
+**Definition:**
+
+```typescript
+export type UpdateRemoveEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? RemoveItem<A, F, C, S>
+        : never;
+```
+
+### UpdateDeleteEntityItem Type
+
+This type represents an item that you would pass your entity's `delete` method when using `create` or `update`.
+
+**Definition:**
+
+```typescript
+export type UpdateDeleteEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? DeleteItem<A, F, C, S>
+        : never;
+```

@@ -1,0 +1,105 @@
+---
+title: Entities
+description: Entities overview
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - entity
+layout: ../../../layouts/MainLayout.astro
+---
+
+In ElectroDB an `Entity` represents a single business object. For example, in a simple task tracking application, one Entity could represent an Employee and or a Task that is assigned to an employee.
+
+ElectroDB was created with Single-Table Design in mind. As a result, entities created by ElectroDB will automatically be isolated from entities created by ElectroDB. In turn, this means a single dynamodb table is capable of containing an infinite number of ElectroDB entities.
+
+## Creation
+
+Entities are defined via a [Schema](/latest/modeling/schema), passed to the Entity's constructor.
+
+```typescript
+import DynamoDB from "aws-sdk/clients/dynamodb";
+import { Entity } from 'electrodb';
+
+const client = new DynamoDB.DocumentClient();
+
+const table = 'electro';
+
+const Task = new Entity({
+	model: {
+		entity: "task",
+		version: "1",
+		service: "taskapp",
+	},
+	attributes: {
+		task: {
+			type: "string",
+			default: () => uuid(),
+		},
+		project: {
+			type: "string",
+		},
+		employee: {
+			type: "string",
+		},
+		description: {
+			type: "string",
+		},
+	},
+	indexes: {
+		task: {
+			pk: {
+				field: "pk",
+				composite: ["task"],
+			},
+			sk: {
+				field: "sk",
+				composite: ["project", "employee"],
+			},
+		},
+		project: {
+			index: "gsi1pk-gsi1sk-index",
+			pk: {
+				field: "gsi1pk",
+				composite: ["project"],
+			},
+			sk: {
+				field: "gsi1sk",
+				composite: ["employee", "task"],
+			},
+		},
+		assigned: {
+			collection: "assignments",
+			index: "gsi3pk-gsi3sk-index",
+			pk: {
+				field: "gsi3pk",
+				composite: ["employee"],
+			},
+			sk: {
+				field: "gsi3sk",
+				composite: ["project", "task"],
+			},
+		},
+	},
+}, {table, client});
+```
+
+Additionally, as a second parameter to the constructor, ElectroDB accepts an "options" object that defines the electrodb `TableName` and a DynamoDB DocumentClient.
+
+## Entity Definition (Schema)
+Property       | Description
+-------------- | ----------- 
+model.service  | Name of the application using the entity, used to namespace all entities
+model.entity   | Name of the entity that the schema represents
+model.version  | The version number of the schema, used to namespace keys
+attributes     | An object containing each attribute that makes up the schema
+indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
+
+## Entity Options
+Property | Description
+-------- | ----------- 
+table    | The name of the dynamodb table in aws.
+client   | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.

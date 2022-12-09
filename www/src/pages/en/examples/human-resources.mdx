@@ -1,0 +1,589 @@
+---
+title: Human resources database
+description: Building an human resources database
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - query
+  - entity
+  - attribute
+  - schema
+  - index
+layout: ../../../layouts/MainLayout.astro
+---
+
+Lets look at the needs of an application used to manage Employees. The application Looks at employees, offices, tasks, and projects.
+
+## Table Definition
+
+import TableDefinition from '../../../partials/table-definition.mdx';
+
+<TableDefinition />
+
+## Requirements
+
+1. As a Project Manager, I need to find all tasks and details on a specific employee.
+2. As a Regional Manager, I need to see all details about an office and its employees
+3. As an Employee, I need to see all my Tasks.
+4. As a Product Manager, I need to see all the tasks for a project.
+5. As a Client, I need to find a physical office close to me.
+6. As a Hiring manager, I need to find employees with comparable salaries.
+7. As HR, I need to find upcoming employee birthdays/anniversaries
+8. As HR, I need to find all the employees that report to a specific manager
+
+## Entities
+
+For this example we will create multiple entities and relate them together through a `Service`.
+
+### Employee 
+
+The `Employee` entity represents a single Employee at the company.
+
+```typescript
+import { Entity } from 'electrodb';
+
+const Employee = new Entity({
+	model: {
+	  entity: "employee",
+      version: "1",
+      service: "taskapp",  
+	},
+	attributes: {
+		employee: {
+      type: "string",
+    },
+		firstName: {
+      type: "string",
+    },
+		lastName: {
+      type: "string",
+    },
+		office: {
+      type: "string",
+    },
+		title: {
+      type: "string",
+    },
+		team: {
+      type: ["development", "marketing", "finance", "product"] as const,
+    },
+		salary: {
+      type: "string",
+    },
+		manager: {
+      type: "string",
+    },
+		dateHired: {
+      type: "string",
+    },
+		birthday: {
+      type: "string",
+    },
+	},
+	indexes: {
+		employee: {
+			pk: {
+				field: "pk",
+				composite: ["employee"],
+			},
+			sk: {
+				field: "sk",
+				composite: [],
+			},
+		},
+		coworkers: {
+			index: "gsi1pk-gsi1sk-index",
+			collection: "workplaces",
+			pk: {
+				field: "gsi1pk",
+				composite: ["office"],
+			},
+			sk: {
+				field: "gsi1sk",
+				composite: ["team", "title", "employee"],
+			},
+		},
+		teams: {
+			index: "gsi2pk-gsi2sk-index",
+			pk: {
+				field: "gsi2pk",
+				composite: ["team"],
+			},
+			sk: {
+				field: "gsi2sk",
+				composite: ["title", "salary", "employee"],
+			},
+		},
+		employeeLookup: {
+			collection: "assignments",
+			index: "gsi3pk-gsi3sk-index",
+			pk: {
+				field: "gsi3pk",
+				composite: ["employee"],
+			},
+			sk: {
+				field: "gsi3sk",
+				composite: [],
+			},
+		},
+		roles: {
+			index: "gsi4pk-gsi4sk-index",
+			pk: {
+				field: "gsi4pk",
+				composite: ["title"],
+			},
+			sk: {
+				field: "gsi4sk",
+				composite: ["salary", "employee"],
+			},
+		},
+		directReports: {
+			index: "gsi5pk-gsi5sk-index",
+			pk: {
+				field: "gsi5pk",
+				composite: ["manager"],
+			},
+			sk: {
+				field: "gsi5sk",
+				composite: ["team", "office", "employee"],
+			},
+		},
+	}
+});
+```
+
+### Task
+
+The `Task` entity represents a single instance of a task, to be worked on by an `Employee`.
+
+```typescript
+import { Entity } from 'electrodb';
+
+const Task = new Entity({
+	model: {
+		entity: "task",
+    	version: "1",
+    	service: "taskapp",  
+	}, 
+	attributes: {
+		task: "string",
+		project: "string",
+		employee: "string",
+		description: "string",
+	},
+	indexes: {
+		task: {
+			pk: {
+				field: "pk",
+				composite: ["task"],
+			},
+			sk: {
+				field: "sk",
+				composite: ["project", "employee"],
+			},
+		},
+		project: {
+			index: "gsi1pk-gsi1sk-index",
+			pk: {
+				field: "gsi1pk",
+				composite: ["project"],
+			},
+			sk: {
+				field: "gsi1sk",
+				composite: ["employee", "task"],
+			},
+		},
+		assigned: {
+			collection: "assignments",
+			index: "gsi3pk-gsi3sk-index",
+			pk: {
+				field: "gsi3pk",
+				composite: ["employee"],
+			},
+			sk: {
+				field: "gsi3sk",
+				composite: ["project", "task"],
+			},
+		},
+	},
+});
+```
+
+### Office
+
+The `Office` entity represents a location/building in which employees can work.
+
+```typescript
+import { Entity } from 'electrodb';
+
+const Office = new Entity({
+	model: {
+    entity: "office",
+    version: "1",
+    service: "taskapp",  
+  }, 
+	attributes: {
+		office: {
+      type: "string",
+    },
+		country: {
+      type: "string",
+    },
+		state: {
+      type: "string",
+    },
+		city: {
+      type: "string",
+    },
+		zip: {
+      type: "string",
+    },
+		address: {
+      type: "string",
+    },
+	},
+	indexes: {
+		locations: {
+			pk: {
+				field: "pk",
+				composite: ["country", "state"],
+			},
+			sk: {
+				field: "sk",
+				composite: ["city", "zip", "office"],
+			},
+		},
+		office: {
+			index: "gsi1pk-gsi1sk-index",
+			collection: "workplaces",
+			pk: {
+				field: "gsi1pk",
+				composite: ["office"],
+			},
+			sk: {
+				field: "gsi1sk",
+				composite: [],
+			},
+		},
+	},
+});
+```
+
+## Service
+
+Join models together in a new `Service` called `EmployeeApp`
+
+```typescript
+const DynamoDB = require("aws-sdk/clients/dynamodb");
+const client = new DynamoDB.DocumentClient({region: "us-east-1"});
+const { Service } = require("electrodb");
+const table = "projectmanagement";
+
+const EmployeeApp = new Service({
+  employees: Employee,
+  tasks: Task,
+  offices: Office,
+}, { client, table });
+
+```
+## Access Patterns
+
+### All tasks and employee information for a given employee
+
+Fulfilling [Requirement #1](#employee-app-requirements).
+
+```typescript
+await EmployeeApp.collections.assignments({employee: "CBaskin"}).go();
+```
+
+Returns the following:
+
+```typescript
+{
+  data: {
+    employees: [{
+      employee: "cbaskin",
+      firstName: "carol",
+      lastName: "baskin",
+      office: "big cat rescue",
+      title: "owner",
+      team: "cool cats and kittens",
+      salary: "1,000,000",
+      manager: "",
+      dateHired: "1992-11-04",
+      birthday: "1961-06-06",
+    }],
+    tasks: [{
+      task: "Feed tigers",
+      description: "Prepare food for tigers to eat",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }, {
+      task: "Fill water bowls",
+      description: "Ensure the tigers have enough water",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }]
+  },
+  cursor: '...'
+}
+```
+
+### Find all employees and office details for a given office
+
+Fulfilling [Requirement #2](#employee-app-requirements).
+
+```typescript
+await EmployeeApp.collections.workplaces({office: "big cat rescue"}).go();
+```
+
+Returns the following:
+
+```typescript
+{
+  data: {
+    employees: [{
+      employee: "cbaskin",
+      firstName: "carol",
+      lastName: "baskin",
+      office: "big cat rescue",
+      title: "owner",
+      team: "cool cats and kittens",
+      salary: "1,000,000",
+      manager: "",
+      dateHired: "1992-11-04",
+      birthday: "1961-06-06",
+    }],
+    offices: [{
+      office: "big cat rescue",
+      country: "usa",
+      state: "florida",
+      city: "tampa",
+      zip: "12345",
+      address: "123 Kitty Cat Lane"
+    }]
+  },
+  cursor: '...'
+}
+```
+
+### Tasks for a given employee
+
+Fulfilling [Requirement #3](#employee-app-requirements).
+
+```typescript
+// on the service
+await EmployeeApp.entities.tasks.query.assigned({employee: "cbaskin"}).go();
+
+// on the entity
+await tasks.query.assigned({employee: "cbaskin"}).go();
+```
+
+Returns the following:
+
+```typescript
+{
+  data: [
+    {
+      task: "Feed tigers",
+      description: "Prepare food for tigers to eat",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }, {
+      task: "Fill water bowls",
+      description: "Ensure the tigers have enough water",
+      project: "Keep tigers alive",
+      employee: "cbaskin"
+    }
+  ],
+  cursor: '...',
+}
+```
+### Tasks for a given project
+
+Fulfilling [Requirement #4](#employee-app-requirements).
+
+```typescript
+// on the service
+await EmployeeApp.entities.tasks.query.project({project: "Murder Carol"}).go();
+
+// on the entity
+await tasks.query.project({project: "Murder Carol"}).go();
+```
+
+Returns the following:
+
+```typescript
+{
+  data: [
+    {
+      task: "Hire hitman",
+      description: "Find someone to murder Carol",
+      project: "Murder Carol",
+      employee: "jexotic"
+    }
+  ],
+  cursor: '...'
+}
+```
+
+### Find office locations
+
+Fulfilling [Requirement #5](#employee-app-requirements).
+
+```typescript
+// on the service
+await EmployeeApp.entities.office.locations({country: "usa", state: "florida"}).go();
+
+// on the entity
+await office.locations({country: "usa", state: "florida"}).go();
+```
+
+Returns the following:
+
+```typescript
+{
+  data: [
+    {
+      office: "big cat rescue",
+      country: "usa",
+      state: "florida",
+      city: "tampa",
+      zip: "12345",
+      address: "123 Kitty Cat Lane"
+    }
+  ],
+  cursor: '...'
+}
+```
+
+### Find employee salaries and titles
+
+Fulfilling [Requirement #6](#employee-app-requirements).
+
+```typescript
+// on the service
+await EmployeeApp.entities.employees
+	.roles({title: "animal wrangler"})
+	.lte({salary: "150.00"})
+	.go();
+
+// on the entity
+await employees
+    .roles({title: "animal wrangler"})
+    .lte({salary: "150.00"})
+    .go();
+```
+
+Returns the following:
+
+```typescript
+{
+  data: [
+    {
+      employee: "ssaffery",
+      firstName: "saff",
+      lastName: "saffery",
+      office: "gw zoo",
+      title: "animal wrangler",
+      team: "keepers",
+      salary: "105.00",
+      manager: "jexotic",
+      dateHired: "1999-02-23",
+      birthday: "1960-07-11",
+    }
+  ],
+  cursor: '...'
+}
+```
+
+### Find employee birthdays or anniversaries
+
+Fulfilling [Requirement #7](#employee-app-requirements).
+
+```typescript
+const startDate = "2020-05-01";
+const endDate = "2020-06-01";
+
+// on the service
+await EmployeeApp.entities.employees
+    .workplaces({office: "gw zoo"})
+    .where(({ birthday, dateHired }, { between }) => `
+        ${between(dateHired, startDate, endDate)} OR
+        ${between(birthday, startDate, endDate)}
+    `)
+	.upcomingCelebrations("2020-05-01", "2020-06-01")
+	.go();
+
+// on the entity
+await employees
+    .workplaces({office: "gw zoo"})
+    .where(({ birthday, dateHired }, { between }) => `
+        ${between(dateHired, startDate, endDate)} OR
+        ${between(birthday, startDate, endDate)}
+    `)
+    .upcomingCelebrations("2020-05-01", "2020-06-01")
+    .go();
+```
+
+Returns the following:
+
+```typescript
+{
+  data: [
+    {
+      employee: "jexotic",
+      firstName: "joe",
+      lastName: "maldonado-passage",
+      office: "gw zoo",
+      title: "tiger king",
+      team: "founders",
+      salary: "10000.00",
+      manager: "jlowe",
+      dateHired: "1999-02-23",
+      birthday: "1963-03-05",
+    }
+  ],
+  cursor: '...'
+}
+```
+
+### Find direct reports
+
+Fulfilling [Requirement #8](#employee-app-requirements).
+
+```typescript
+// on the service
+await EmployeeApp.entities.employees
+	.reports({manager: "jlowe"})
+	.go();
+
+// on the entity
+await employees
+    .reports({manager: "jlowe"})
+    .go();
+```
+
+Returns the following:
+
+```typescript
+{
+  data: [
+    {
+      employee: "jexotic",
+      firstName: "joe",
+      lastName: "maldonado-passage",
+      office: "gw zoo",
+      title: "tiger king",
+      team: "founders",
+      salary: "10000.00",
+      manager: "jlowe",
+      dateHired: "1999-02-23",
+      birthday: "1963-03-05",
+    }
+  ],
+  cursor: '...'
+}
+```

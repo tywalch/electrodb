@@ -1,0 +1,601 @@
+---
+title: Library system
+description: Building a library
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - query
+  - entity
+  - attribute
+  - schema
+  - index
+layout: ../../../layouts/MainLayout.astro
+---
+
+This example demonstrates how you might model a Library with Single-Table Design principals and ElectroDB.
+
+## Table Definition
+
+import TableDefinition from '../../../partials/table-definition.mdx';
+
+<TableDefinition />
+
+## Entities
+
+### Author
+
+The "author" entity holds information about each author that has a book at the library
+
+```typescript
+const author = new Entity(
+    {
+        model: {
+            entity: "author",
+            version: "1",
+            service: "library"
+        },
+        attributes: {
+            authorFirstName: {
+                type: "string",
+                required: true
+            },
+            authorLastName: {
+                type: "string",
+                required: true
+            },
+            birthday: {
+                type: "string",
+            },
+            bio: {
+                type: "string",
+                required: true,
+            }
+        },
+        indexes: {
+            writer: {
+                pk: {
+                    field: "pk",
+                    composite: ["authorLastName"]
+                },
+                sk: {
+                    field: "sk",
+                    composite: ["authorFirstName", "birthday"]
+                }
+            },
+            info: {
+                collection: ['works'],
+                index: "gsi2pk-gsi2sk-index",
+                pk: {
+                    field: "gsi2pk",
+                    composite: ["authorLastName", "authorFirstName"]
+                },
+                sk: {
+                    field: "gsi2sk",
+                    composite: []
+                }
+            },
+        }
+    },
+    { table }
+);
+```
+
+### Book
+The "book" entity holds represents a physical book at the library because book details (like the the author or release date) do not change over time, we can use denormalization to remove the need for a single book entity. This allows us to treat this entity as both an authority on book information and an individual book.
+
+```typescript
+const book = new Entity(
+    {
+        model: {
+            entity: "book",
+            version: "1",
+            service: "library"
+        },
+        attributes: {
+            bookId: {
+                type: "string",
+            },
+            bookTitle: {
+                type: "string",
+                required: true,
+            },
+            description: {
+                type: "string",
+                required: true,
+            },
+            publisher: {
+                type: "string",
+                required: true,
+            },
+            releaseDate: {
+                type: "string",
+                required: true,
+            },
+            authorFirstName: {
+                type: "string",
+                required: true
+            },
+            authorLastName: {
+                type: "string",
+                required: true
+            },
+            isbn: {
+                type: "string",
+                required: true,
+            },
+            loanStartDate: {
+                type: "string"
+            },
+            loanEndDate: {
+                type: "string",
+            },
+            memberId: {
+                type: "string"
+            },
+        },
+        indexes: {
+            copies: {
+                collection: ['detail'],
+                pk: {
+                    field: "pk",
+                    composite: ["isbn"]
+                },
+                sk: {
+                    field: "sk",
+                    composite: ["bookId"]
+                }
+            },
+            loans: {
+                collection: ['account'],
+                index: "gsi1pk-gsi1sk-index",
+                pk: {
+                    field: "gsi1pk",
+                    composite: ["memberId"]
+                },
+                sk: {
+                    field: "gsi1sk",
+                    composite: ["loanEndDate"]
+                }
+            },
+            author: {
+                collection: ['works'],
+                index: "gsi2pk-gsi2sk-index",
+                pk: {
+                    field: "gsi2pk",
+                    composite: ["authorLastName", "authorFirstName"]
+                },
+                sk: {
+                    field: "gsi2sk",
+                    composite: ["loanEndDate"]
+                }
+            },
+            releases: {
+                collection: ['titles'],
+                index: "gsi3pk-gsi3sk-index",
+                pk: {
+                    field: "gsi3pk",
+                    composite: ["bookTitle"]
+                },
+                sk: {
+                    field: "gsi3sk",
+                    composite: ["releaseDate"]
+                }
+            },
+        }
+    },
+    { table }
+);
+```
+
+### Genre
+The "genre" entity is an instance of a genre, subgenre, and book (via isbn). We can freely associate these with books, adding and removing as needed. Note: we have denormalized the bookTitle onto this record to give context to queries without requiring a lookup to.
+
+```typescript
+const genre = new Entity(
+    {
+        model: {
+            entity: "genre",
+            version: "1",
+            service: "library"
+        },
+        attributes: {
+            genre: {
+                type: "string",
+                required: true
+            },
+            isbn: {
+                type: "string"
+            },
+            bookTitle: {
+                type: "string"
+            },
+            authorFirstName: {
+                type: "string",
+                required: true
+            },
+            authorLastName: {
+                type: "string",
+                required: true
+            },
+            subgenre: {
+                type: "string"
+            }
+        },
+        indexes: {
+            book: {
+                collection: ['detail'],
+                pk: {
+                    field: "pk",
+                    composite: ["isbn"]
+                },
+                sk: {
+                    field: "sk",
+                    composite: ["genre", "subgenre"]
+                }
+            },
+            categories: {
+                index: "gsi1pk-gsi1sk-index",
+                pk: {
+                    field: "gsi1pk",
+                    composite: ["genre"]
+                },
+                sk: {
+                    field: "gsi1sk",
+                    composite: ["subgenre"]
+                }
+            },
+            author: {
+                collection: ['works'],
+                index: "gsi2pk-gsi2sk-index",
+                pk: {
+                    field: "gsi2pk",
+                    composite: ["authorLastName", "authorFirstName"]
+                },
+                sk: {
+                    field: "gsi2sk",
+                    composite: ["genre"]
+                }
+            },
+            title: {
+                collection: ['titles'],
+                index: "gsi3pk-gsi3sk-index",
+                pk: {
+                    field: "gsi3pk",
+                    composite: ["bookTitle"]
+                },
+                sk: {
+                    field: "gsi13sk",
+                    composite: ["genre", "subgenre"]
+                }
+            },
+
+        }
+    },
+    { table }
+);
+```
+
+### Member
+
+The "member" entity represents a single individual library card holding member.
+
+```typescript
+const member = new Entity(
+    {
+        model: {
+            entity: "member",
+            version: "1",
+            service: "library"
+        },
+        attributes: {
+            memberId: {
+                type: "string",
+            },
+            membershipStartDate: {
+                type: "string"
+            },
+            membershipEndDate: {
+                type: "string"
+            },
+            address: {
+                type: "map",
+                properties: {
+                    streetAddress: {
+                        type: "string"
+                    },
+                    city: {
+                        type: "string"
+                    },
+                    state: {
+                        type: "string"
+                    },
+                    zip: {
+                        type: "string"
+                    }
+                }
+            }
+        },
+        indexes: {
+            member: {
+                pk: {
+                    field: "pk",
+                    composite: ["memberId"]
+                },
+                sk: {
+                    field: "sk",
+                    composite: []
+                }
+            },
+            _: {
+                // this is a duplicate access pattern for the entity
+                // but exists to open the door to additional access
+                // patterns on the gsi. The 'account' lets you get
+                // loans and member information by memberId, but in
+                // the future could have other associations by memberId
+                // such as "notes", "fees", etc.
+                collection: ['account'],
+                index: "gsi1pk-gsi1sk-index",
+                pk: {
+                    field: "gsi1pk",
+                    composite: ["memberId"]
+                },
+                sk: {
+                    field: "gsi1sk",
+                    composite: []
+                }
+            }
+        }
+    },
+    { table }
+);
+```
+
+## Service
+
+Bring all entities into a service
+
+```typescript
+import { Service } from 'electrodb';
+
+const library = new Service({
+    author,
+    book,
+    genre,
+    member,
+});
+```
+
+## Access Patterns
+
+### Get all copies of books by the authors last name
+
+this same query can be used to get unique books (instead of individual copies) because this entity is denormalized.
+
+```typescript
+const { data, cursor } = await author.query
+    .writer({authorLastName: 'king'})
+    .go();
+```
+
+### Get all books by last name and a partial first name.
+
+```typescript
+await author.query
+    .writer({ authorLastName: 'king' })
+    .begins({ authorFirstName: 's' })
+    .go();
+```
+
+### Get all books by the full name of the writer
+
+```typescript
+await author.query
+    .writer({ authorLastName: 'king', authorFirstName: 'stephen' })
+    .go();
+```
+
+### Get author details, books, and genres
+
+Retrieves author details, books (or available copies), and genres by author full name.
+
+You can then create your own structure using all the returned records
+
+```typescript
+await library.collections
+    .works({ authorLastName: 'king', authorFirstName: 'stephen' })
+    .go()
+    .then(works => {
+        const [writer] = works.data.author;
+        const books = works.data.book;
+        const genres = works.data.genre;
+        return {
+            writer,
+            books,
+            genres,
+        };
+    })
+```
+
+### Get all copies of a book by isbn
+
+```typescript
+const { data, cursor } = await book.query.copies({ isbn: '9783453435773' }).go();
+```
+
+### Get all of the books on loan to a specific member
+
+```typescript
+const { data, cursor } = await book.query.loans({ memberId: '0000001' }).go();
+```
+
+### Get all overdue books by memberId
+
+```typescript
+const today = '2022-07-30';
+
+const { data, cursor } = await book.query
+    .loans({ memberId: '0000001' })
+    .gt({ loanEndDate: today })
+    .go();
+```
+
+### Get number of books checked out by user
+
+```typescript
+const count = await book.query
+    .loans({ memberId: '0000001' })
+    .go()
+    .then(loans => loans.data.length)
+```
+
+### Get member information and their checked out books
+
+```typescript
+const results = await library.collections
+    .account({ memberId: '0000001' })
+    .go()
+    .then(result => {
+        const [member] = result.data.member;
+        const books = result.data.book;
+        return {
+            member,
+            books,
+        };
+    })
+```
+
+### Get all books/copies by an author's full name.
+
+This is a duplicate access pattern for this entity but it allows for additional access patterns, including a cross-entity collection
+```typescript
+const {data, cursor} = await book.query
+    .author({ authorLastName: 'king', authorFirstName: 'stephen' })
+    .go();
+```
+
+### Get all copies available to be checked out.
+
+Our loanEndDate property either holds the date the book is due or the text 'AVAILABLE'
+
+```typescript
+const BOOK_IS_AVAILABLE = 'AVAILABLE';
+
+const { data, cursor } = await book.query
+    .author({
+        authorLastName: 'king',
+        authorFirstName: 'stephen',
+        loanEndDate: BOOK_IS_AVAILABLE
+    })
+    .go();
+```
+
+### Get all copies NOT available to be checked out.
+If a copy is checked out the loanEndDate value will be a date value. Date values have a format: YYYY-MM-DD which will sort _before_ 'AVAILABLE', so any copy with a loanEndDate < 'AVAILABLE' will be checked out
+
+```typescript
+const BOOK_IS_AVAILABLE = 'AVAILABLE';
+
+const { data, cursor } = await book.query
+    .author({
+        authorLastName: 'king',
+        authorFirstName: 'stephen',
+    })
+    .lt({loanEndDate: BOOK_IS_AVAILABLE})
+    .go();
+```
+
+### Get books/copies by title
+
+```typescript
+const { data, cursor } = await book.query
+    .releases({bookTitle: 'it'})
+    .go();
+```
+
+### Get books/copies by title and partial release date
+
+Queries can be provided partially like just the year, the year and month, etc.
+
+```typescript
+book.query
+    .releases({ bookTitle: 'it' })
+    .gte({ releaseDate: '1990' })
+    .go();
+
+book.query
+    .releases({ bookTitle: 'it' })
+    .between(
+        { releaseDate: '1990' },
+        { releaseDate: '2019' })
+    .go();
+```
+### Get the genres and subgenres associated with a book
+
+```typescript
+await genre.query.book({ isbn: '9783453435773' }).go();
+await genre.query.title({bookTitle: 'it'}).go();
+```
+
+### Get the sub genres associated with a book and one of its main genres
+```typescript
+await genre.query.book({ isbn: '9783453435773', genre: 'horror' }).go();
+await genre.query.title({ bookTitle: 'it', genre: 'horror' }).go();
+```
+
+### Get a book and its genres by isbn or book title
+```typescript
+await library.collections.detail({ isbn: '9783453435773' }).go();
+await library.collections.titles({ bookTitle: 'it' }).go();
+```
+
+### Get books within a genre
+
+```typescript
+const { data, cursor } = await genre.query
+    .categories({ genre: 'horror' })
+    .go();
+```
+
+### Get books within a genre and subgenre
+
+```typescript
+const { data, cursor } = await genre.query
+    .categories({ genre: 'horror', subgenre: 'killer clowns' })
+    .go();
+```
+
+### Get genres by a given author full name
+
+```typescript
+await genre.query
+    .author({ authorFirstName: 'stephen', authorLastName: 'king' })
+    .go()
+    .then(results => {
+        const uniqueGenres = new Set<string>();
+        for (const {genre} of results.data) {
+            uniqueGenres.add(genre);
+        }
+        return Array.from(uniqueGenres);
+    });
+```
+
+### Get subgenres within a given author and genre
+```typescript
+const { data, cursor } = await genre.query
+    .author({
+        authorFirstName: 'stephen',
+        authorLastName: 'king',
+        genre: 'horror',
+    })
+    .go();
+```
+
+### Get member information by memberId
+
+```typescript
+const { data, cursor } = await member.query
+    .member({ memberId: '0000001' })
+    .go();
+```

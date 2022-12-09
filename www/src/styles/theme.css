@@ -68,7 +68,9 @@
 	--theme-text-lighter: hsla(var(--color-gray-80), 1);
 	--theme-bg: hsla(var(--color-base-white), 100%, 1);
 	--theme-bg-hover: hsla(var(--color-gray-95), 1);
-	--theme-bg-offset: hsla(var(--color-gray-90), 1);
+	/* --theme-bg-offset: hsla(var(--color-gray-90), 1); */
+	/* #override */
+	--theme-bg-offset: hsl(215deg 14% 5% / 37%);
 	--theme-bg-accent: hsla(var(--color-blue), var(--theme-accent-opacity));
 	--theme-code-inline-bg: hsla(var(--color-gray-95), 1);
 	--theme-code-inline-text: var(--theme-text);
@@ -98,7 +100,9 @@ body {
 	--theme-text-lighter: hsla(var(--color-gray-40), 1);
 	--theme-bg: hsla(215, 28%, 17%, 1);
 	--theme-bg-hover: hsla(var(--color-gray-40), 1);
-	--theme-bg-offset: hsla(var(--color-gray-5), 1);
+	/*--theme-bg-offset: hsla(var(--color-gray-5), 1);*/
+	/* #override */
+	--theme-bg-offset: hsl(215deg 14% 5% / 37%);
 	--theme-code-inline-bg: hsla(var(--color-gray-10), 1);
 	--theme-code-inline-text: hsla(var(--color-base-white), 100%, 1);
 	--theme-code-bg: hsla(var(--color-gray-5), 1);

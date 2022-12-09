@@ -1,0 +1,64 @@
+---
+title: Patch
+description: Patch item
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - patch
+layout: ../../../layouts/MainLayout.astro
+---
+
+import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+
+<ExampleSetup />
+
+In DynamoDB, `update` operations by default will create an item if record being updated does not exist. Alternatively, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not created when updating items in your table.
+
+```javascript
+await entity.patch({ attr1: "value1", attr2: "value2" })
+  .set({ attr4: "value4" })
+  .go();
+```
+
+## Response Format
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+## Equivalent Parameters
+```json
+{
+  "UpdateExpression": "SET #attr4 = :attr4_u0, #gsi1sk = :gsi1sk_u0, #attr1 = :attr1_u0, #attr2 = :attr2_u0",
+  "ExpressionAttributeNames": {
+    "#attr4": "attr4",
+    "#gsi1sk": "gsi1sk",
+    "#attr1": "attr1",
+    "#attr2": "attr2"
+  },
+  "ExpressionAttributeValues": {
+    ":attr4_u0": "value6",
+    // This index was successfully built
+    ":gsi1sk_u0": "$update-edgecases_1#attr2_value2#attr4_value6",
+    ":attr1_u0": "value1",
+    ":attr2_u0": "value2"
+  },
+  "TableName": "YOUR_TABLE_NAME",
+  "Key": {
+    "pk": "$service#attr1_value1",
+    "sk": "$entity_version#attr2_value2"
+  },
+  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
+}
+```
+
+## Execution Options
+
+import PartialExample from '../../../partials/mutation-query-options.mdx';
+
+<PartialExample name="Filters" />

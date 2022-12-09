@@ -1,0 +1,52 @@
+---
+title: Joins and Relationships
+description: Querying across relationships
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - join
+  - service
+layout: ../../../layouts/MainLayout.astro
+---
+
+## Understanding entity isolation
+
+In a single-table design, entity isolation refers to the practice of keeping different types of entities (such as users, products, and orders) in separate partitions within the same table, to prevent them from interfering with each other. This can be useful for ensuring that the data for different entities remains separate and distinct, and that queries for one entity do not affect the performance of queries for other entities.
+
+By default, and assuming you use ElectroDB's [default indexing mechanisms](/latest/modeling/indexes#composite-attribute-arrays), ElectroDB will ensure proper isolation occurs between entities located within the same table. ElectroDB accomplishes this by including your `service`, `entity`, and `version` properties from your [schema model](/latest/modeling/schema#model) on your entity's index keys.
+
+This page is intended to give you a simple overview of modeling relationships in ElectroDB, and to provide references to the various components/resources at your disposal.
+
+## Services - Grouping related entities
+
+ElectroDB [Services](/latest/modeling/services) allow you to group similar entities under a common namespace. They are also the way to query across Entities (i.e. join entities) in ElectroDB. To accomplish this, ElectroDB introduces the concept of [Collections](/latest/modeling/collections). Collections allow you to model relationships in ElectroDB.
+
+## Collections - Defining relationships between entities
+
+ElectroDB [Collections](/latest/modeling/collections) is an implementation to accomplish "joins" in a way that is idiomatic to single-table design. The term "join" should be used loosely here, but is an important label to draw the attention of those coming to the library from a RDBMS background. If storing multiple entities in a single table is still a foreign concept I recommend checking out some of the [additional resources](#additional-resources) links below to get an overview of these concepts. In a nutshell, and in the language of a traditional RDMS, Collections allow you to use your partition keys as "foreign keys". Relationships are accomplished by overloading partition key values and allowing results for more than one entity type to be returned.
+
+> Relationships is possible in NoSQL but is done through various de-normalization techniques that can feel weird or frankly even hacky at times. In many ways this is because implementation is requires a lower level of thinking/optimization than you'd receive from most RDBMS out there. Don't worry though, this is why I made ElectroDB: implementation is not always easy and is often messy, but it can still be encapsulated.
+
+## Index Types
+ElectroDB [Index Types](/latest/modeling/indexes#index-types) is an important knob to consider when modeling ElectroDB relationships. As mentioned above, the concept of entity isolation is a critical consideration to make when modeling single-table design; co-locating all of your data in a single table moves the concern for entity isolation to your application code, which naturally shifts the risk of data exposure. With this increased "risk" (again, mitigated by ElectroDB), does come some added flexibility. In this case, a modeling feature ElectroDB offers is the "index type".
+
+In ElectroDB, indexes can be of type `isolated` or `clustered`. You can think of these choices as two ends of a spectrum, and ask yourself: For this particular index, do to be able to efficiently query multiple entities at once (`clustered`), or do I need to more performantly target a specific entity (`isolated`). In more real terms, if you are trying to achieve a diverse clustering of entities around a common partition key, then a `clustered` index is likely ideal. If you are hoping to isolate/target an individual entity for a given partition key, then an `isolated` indexes is likely ideal. Both Indexes are capable of supporting collections or querying an individual entity, but the tradeoff between both types is the degree of isolation you can achieve when querying DynamoDB.
+
+## Achieving relationships in NoSQL
+
+It can't be stressed enough, many RDBMS techniques and artifacts (e.g. junction tables, normalization, constraint tables, etc) simply do not map to the techniques you will use for NoSQL. In fact, in many cases, the patterns you'll find to work with NoSQL effectively and efficiently are actual anti-patterns for a SQL database. For this reason, don't go into DynamoDB as a replacement for your SQL Database; instead consider that maybe we've been overusing SQL Databases for too long as a one-size fits all tool, and maybe there's a lot it's capable of but not actually the best at.
+
+### One-To-Many Queries
+
+To perform a one-to-many query in DynamoDB, you can use a composite primary key that includes both a partition key and a sort key. The partition key can be used to identify the "one" side of the relationship, like a foreign key, and the sort key can be used to identify the "many" side of the relationship. For example, if you have a table that stores information about users and their addresses, you could use a composite partition key of "user" and a sort key of "address". This would allow you to query the table for a specific user (using the partition key), and then use the sort key to retrieve all of the addresses associated with that user (the "many" side of the relationship).
+
+### Many-To-Many Queries
+
+To perform a many-to-many query in DynamoDB, you can use a global secondary index. A global secondary index allows you to query data based on an entirely different primary key than the one used for the table, which can be useful for querying many-to-many relationships. For example, if you have a table that stores information about users and the groups they belong to, you could use a global secondary index with a partition key of "group" and a sort key of "user". This would allow you to query the index for a specific group (using the partition key), and then use the sort key to retrieve all of the users who belong to that group (the "many" side of the relationship).
+
+## Additional resources
+
+- [Rick Houlihan's 2018 re:Invent Talk](https://www.youtube.com/watch?v=HaEPXoXVf2k) is the quintessential Single-Table Design gospel. This video is a must watch, and does a great job at detailing the principals and approach of single-table design. Note: the beginning can feel like a sales pitch, but it does transition back into a practical technical implementation.
+- [Alex Debrie's Book](https://www.dynamodbbook.com/) is obviously the one-stop-shop guide to single-table design, honestly a steal at any price.

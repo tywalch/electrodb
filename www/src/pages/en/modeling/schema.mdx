@@ -1,0 +1,280 @@
+---
+title: Schema
+description: Mapping entity schemas
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - query
+  - entity
+  - attribute
+  - schema
+layout: ../../../layouts/MainLayout.astro
+---
+
+In ElectroDB, your Schema is the format in which you define your data model and is the the definition used by your Entity to perform validations, apply constraints, and manage items.
+
+Schemas define entity's name and version, the attributes your entity's items will have, and important mappings to your DynamoDB table. Because DynamoDB is a schemaless database, the onus of enforcing constraints, building indexes, and validation falls onto the user to implement. This can be challenging to implement, even more so when prototyping and quick iteration is required. ElectroDB seeks to provide an interface for fast, intuitive modeling, readable query code, and sane defaults.
+
+> ElectroDB is a strongly typed library, and makes use of TypeScript's more advanced type inference functionality. For this reason, Schema's are typically defined directly in the Entity's constructor. If you do need to define a schema outside of a constructor, it is recommended to define your schema variable with an `as const` assertion ([read more here](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions)) to ensure TypeScript is able to infer the your schema correctly.
+
+## Entity Definition (Schema)
+Property       | Description
+-------------- | -----------
+model.service  | Name of the application using the entity, used to namespace all entities
+model.entity   | Name of the entity that the schema represents
+model.version  | The version number of the schema, used to namespace keys
+attributes     | An object containing each attribute that makes up the schema
+indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
+
+### Overview
+
+Below is an example schema for a "Book" entity
+
+```typescript
+{
+  model: {
+    entity: 'book',
+    version: '1',
+    service: 'bookstore'
+  },
+  attributes: {
+    storeId: {
+      type: 'string',
+    },
+    bookId: {
+      type: 'string',
+    },
+    price: {
+      type: 'number',
+      required: true,
+    },
+    title: {
+      type: 'string',
+    },
+    author: {
+      type: 'string',
+    },
+    condition: {
+      type: ['EXCELLENT', 'GOOD', 'FAIR', 'POOR'] as const,
+      required: true,
+    },
+    genre: {
+      type: 'set',
+      items: 'string',
+    },
+    published: {
+      type: 'number',
+    }
+  },
+  indexes: {
+    byLocation: {
+      pk: {
+        // highlight-next-line
+        field: 'pk',
+        composite: ['storeId']
+      },
+      sk: {
+        // highlight-next-line
+        field: 'sk',
+        composite: ['bookId']
+      }
+    },
+    byAuthor: {
+      // highlight-next-line
+      index: 'gsi1pk-gsi1sk-index',
+      pk: {
+        // highlight-next-line
+        field: 'gsi1pk',
+        composite: ['author']
+      },
+      sk: {
+        // highlight-next-line
+        field: 'gsi1sk',
+        composite: ['title']
+      }
+    }
+  }
+}
+```
+
+### Model
+
+The `model` property on your schema defines meta information about your entity. These values are used to isolate your entity amongst other entities that may be located in the same table. Assuming you use ElectroDB's [default indexing mechanisms](/latest/modeling/indexes#composite-attribute-arrays), ElectroDB will ensure proper isolation occurs between entities located within the same table.
+
+In the below `model` example, ElectroDB will define isolation with the following hierarchy: `service > entity > version`.
+
+```json
+"model": {
+    "entity": "book",
+    "version": "1",
+    "service": "bookstore"
+}
+```
+
+### Attributes
+
+The [Attributes page](/latest/modeling/attributes) contains everything you need to know about attributes in ElectroDB. In the context of an overall schema, the `attributes` object defines all attributes that can be defined on an entity item. Additionally, the [indexes object](#indexes) will reference attributes defined here.
+
+:::caution
+The `attributes` object should not contain fields that represent your partition or sort keys. ElectroDB creates mappings to your partition and sort keys in the [indexes object](#indexes).
+:::
+
+```typescript
+{
+    attributes: {
+        storeId: {
+          type: 'string',
+        },
+        bookId: {
+          type: 'string',
+        },
+        price: {
+          type: 'number',
+          required: true,
+        },
+        title: {
+          type: 'string',
+        },
+        author: {
+          type: 'string',
+        },
+        condition: {
+          type: ['EXCELLENT', 'GOOD', 'FAIR', 'POOR'] as const,
+          required: true,
+        },
+        genre: {
+          type: 'set',
+          items: 'string',
+        },
+        published: {
+          type: 'number',
+        }
+    }
+}
+```
+
+### Indexes
+
+ElectroDB aims to make Single-Table Design simple and accessible for both simple and complex use cases. With Single-Table Design, generic key and indexes names are preferred. The examples noted here will use generic names, though more information and examples (including examples without generic names) can be found on the [Indexes](/latest/modeling/indexes) page.
+
+The following DynamoDB table definition creates a generic Pay-Per-Request table that contains a single Global Secondary Index.
+
+> The table definition below will define `TableName`, `IndexName`, and `AttributeName` values that will then map to your Model Definition. These values are highlighted for increased visibility and are highlighted on both the Table Definition and the Entity Schema
+
+```json
+{
+  // highlight-next-line
+  "TableName": "electro",
+  "KeySchema":[
+      {
+        // highlight-next-line
+          "AttributeName":"pk",
+          "KeyType":"HASH"
+      },
+      {
+        // highlight-next-line
+          "AttributeName":"sk",
+          "KeyType":"RANGE"
+      }
+  ],
+  "AttributeDefinitions":[
+      {
+        // highlight-next-line
+          "AttributeName":"pk",
+          "AttributeType":"S"
+      },
+      {
+        // highlight-next-line
+          "AttributeName":"sk",
+          "AttributeType":"S"
+      },
+      {
+        // highlight-next-line
+          "AttributeName":"gsi1pk",
+          "AttributeType":"S"
+      },
+      {
+        // highlight-next-line
+          "AttributeName":"gsi1sk",
+          "AttributeType":"S"
+      }
+  ],
+  "GlobalSecondaryIndexes":[
+      {
+        // highlight-next-line
+          "IndexName":"gsi1pk-gsi1sk-index",
+          "KeySchema":[
+              {
+                // highlight-next-line
+                  "AttributeName":"gsi1pk",
+                  "KeyType":"HASH"
+              },
+              {
+                // highlight-next-line
+                  "AttributeName":"gsi1sk",
+                  "KeyType":"RANGE"
+              }
+          ],
+          "Projection":{
+              "ProjectionType":"ALL"
+          }
+      }
+  ],
+  "BillingMode":"PAY_PER_REQUEST"
+}
+```
+
+Below is the index definition for our Book item. Note the highlighted lines and how they correspond to the table definition above.
+
+```typescript
+indexes: {
+    byLocation: {
+        pk: {
+            /**
+             * 'pk' is a defined "AttributeName" in the above definition and the defined "HASH" attribute (partition key)
+             * for in the table's "KeySchema"
+             */
+            // highlight-next-line
+            field: 'pk',
+            composite: ['storeId']
+        },
+        sk: {
+            /**
+             * 'sk' is a defined "AttributeName" in the above definition and the defined "RANGE" attribute (sort key)
+             * for in the table's "KeySchema"
+             */
+            // highlight-next-line
+            field: 'sk',
+            composite: ['bookId']
+        }
+    },
+    byAuthor: {
+        /**
+         * 'gsi1pk-gsi1sk-index' is the "IndexName" for the table's "GlobalSecondaryIndexes" defined above
+         */
+        // highlight-next-line
+        index: 'gsi1pk-gsi1sk-index',
+        pk: {
+            /**
+             * 'gsi1pk' is a defined "AttributeName" in the above definition and the defined "HASH" attribute (partition key)
+             * for in the table's first "GlobalSecondaryIndexes"
+             */
+            // highlight-next-line
+            field: 'gsi1pk',
+            composite: ['author']
+        },
+        sk: {
+            /**
+             * 'gsi1sk' is a defined "AttributeName" in the above definition and the defined "RANGE" attribute (sort key)
+             * for in the table's first "GlobalSecondaryIndexes"
+             */
+            // highlight-next-line
+            field: 'gsi1sk',
+            composite: ['title']
+        }
+    }
+}
+```
+

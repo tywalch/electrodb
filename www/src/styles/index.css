@@ -15,7 +15,9 @@
 
 @media (min-width: 50em) {
 	:root {
-		--max-width: 46em;
+		/*--max-width: 46em;*/
+		/* #override */
+		--max-width: 60em;
 	}
 }
 
@@ -69,20 +71,28 @@ h2 {
 }
 
 h1 {
-	font-size: 3.25rem;
+	/*font-size: 3.25rem;*/
+	/* #override */
+	font-size: 1.75rem;
 	font-weight: 800;
 }
 
 h2 {
-	font-size: 2.5rem;
+	/*font-size: 2.5rem;*/
+	/* #override */
+	font-size: 1.5rem;
 }
 
 h3 {
-	font-size: 1.75rem;
+	/*font-size: 1.75rem;*/
+	/* #override */
+	font-size: 1.25rem;
 }
 
 h4 {
-	font-size: 1.3rem;
+	/*font-size: 1.3rem;*/
+	/* #override */
+	font-size: 1.125rem;
 }
 
 h5 {
@@ -236,9 +246,18 @@ table {
 }
 
 /* Zebra striping */
-tr:nth-of-type(odd) {
+/*tr:nth-of-type(odd) {*/
+/*	background: var(--theme-bg-hover);*/
+/*}*/
+
+/* #override */
+tr {
 	background: var(--theme-bg-hover);
+	border-bottom-color: var(--theme-code-inline-bg);
+	border-bottom-width: 2px;
+	border-bottom-style: ridge;
 }
+
 th {
 	background: var(--color-black);
 	color: var(--theme-color);

@@ -1,0 +1,111 @@
+---
+title: Creating calculated attributes
+description: Creating calculated attributes
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - query
+  - entity
+  - attribute
+  - schema
+  - index
+layout: ../../../layouts/MainLayout.astro
+---
+
+Calculated attributes are attributes that might react to the creation/modification of other attributes. The values for these attributes are transformed prior to persistence in DynamoDB.
+
+## Example 1
+
+In this example, we have an attribute `"fee"` that needs to be updated any time an item's `"price"` attribute is updated. The attribute `"fee"` uses `watch` to have its setter callback called any time `"price"` is updated via a `put`, `create`, `update`, or `patch` operation.
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=3&ssc=29&pln=37&pc=2#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3hgmAV3p84AXjioKAdxTpMWABQIOcOCAiNqALkTqNcCouz6yQ7aJh8yAGkMa+FKADdgtCuYoDQAQxhoe0c4Vxc+YF5zAEYyQ1wHDQCGYGZhGB99NSM4S0ZrLJCNbDAvcgEoYFQAczichJChDzLsnLgSsrJUYRBmF2C2uCgKAEdhYGHGfQZhChCGnIIKFqL2rFLzbt7+xLbZANoAC30AbQtKzzIAXV2c5xh9ZQB9O0Qmz1wASkkAPgNBjTDGDCKCoXIXChwABUcAAdAAmTiDXDzeK7Ko6AAemX+RneVWqhUGYAA1kSAQRgNQpuRSQMATxwBAIhlTucrPRrqsFm0+GTcYNKdTzHz6YNGZAWWUTlduaiNCiEoh2n5mDRzFgICCnjBVTQnqg-CAKGQ8J9OBw8tY+IZYWB0qpwRyHrTKugduDmvoACwAVjNtuqEGUny4VrEtuEYEYAQojvDLrIVD8YECYFNX1t93jEP00XhAAYCwGNLCgyGgA)
+
+```typescript
+{
+  model: {
+    entity: "products",
+    service: "estimator",
+    version: "1"
+  },
+  attributes: {
+    product: {
+      type: "string"
+    },
+    price: {
+      type: "number",
+              required: true
+    },
+    fee: {
+      type: "number",
+              watch: ["price"],
+              set: (_, {price}) => {
+        return price * .2;
+      }
+    }
+  },
+  indexes: {
+    pricing: {
+      pk: {
+        field: "pk",
+                composite: ["product"]
+      },
+      sk: {
+        field: "sk",
+                composite: []
+      }
+    }
+  }
+}
+```
+
+## Example 2
+
+In this example we have an attribute `"descriptionSearch"` which will help our users easily filter for transactions by `"description"`. To ensure our filters will not take into account a description's character casing, `descriptionSearch` duplicates the value of `"description"` so it can be used in filters without impacting the original `"description"` value. Without ElectroDB's `watch` functionality, to accomplish this you would either have to duplicate this logic or cause permanent modification to the property itself. Additionally, the `"descriptionSearch"` attribute has used `hidden:true` to ensure this value will not be presented to the user.
+
+```typescript
+{
+  model: {
+    entity: "transaction",
+    service: "bank",
+    version: "1"
+  },
+  attributes: {
+    accountNumber: {
+      type: "string"
+    },
+    transactionId: {
+      type: "string"
+    },
+    amount: {
+      type: "number",
+    },
+    description: {
+      type: "string",
+    },
+    descriptionSearch: {
+      type: "string",
+      hidden: true,
+      watch: ["description"],
+      set: (_, {description}) => {
+        if (typeof description === "string") {
+            return description.toLowerCase();
+        }
+      }
+    }
+  },
+  indexes: {
+    transactions: {
+      pk: {
+        field: "pk",
+        composite: ["accountNumber"]
+      },
+      sk: {
+        field: "sk",
+        composite: ["transactionId"]
+      }
+    }
+  }
+}
+```

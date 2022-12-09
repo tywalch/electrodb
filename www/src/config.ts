@@ -48,27 +48,61 @@ export type Sidebar = Record<
 >;
 export const SIDEBAR: Sidebar = {
   en: {
-    About: [
-      { text: "Introduction", link: "en/introduction" }, //
-      { text: "Entities and Services", link: "en/entities" }, //
-      { text: "Joins", link: "en/joins" }, //
-      { text: "Models", link: "en/models" }, //
-      { text: "Indexes", link: "en/indexes" }, //
-      { text: "Composite Attributes", link: "en/composite-attributes" }, //
-      { text: "Collections", link: "en/collections" }, //
-      { text: "Where", link: "en/where" },
-      { text: "Executing Queries", link: "en/executing-queries" },
-      { text: "Errata", link: "en/errata" }, //
+    'Core Concepts': [
+      { text: 'Quick Start', link: 'en/core-concepts/quick-start' },
+      { text: 'Executing Queries', link: 'en/core-concepts/executing-queries' },
+      { text: 'Joins and Relationships', link: 'en/core-concepts/joins-and-relationships' },
+      { text: 'Use with Existing Tables', link: 'en/core-concepts/use-electrodb-with-existing-table' },
     ],
-    Operations: [
-      { text: "Queries", link: "en/queries" },
-      { text: "Delete", link: "en/delete" },
-      { text: "Put", link: "en/put" },
-      { text: "Update", link: "en/update" },
-      { text: "Scan", link: "en/scan" },
-      { text: "Find", link: "en/find" },
-    ], //
-    Examples: [{ text: "Examples", link: "en/examples" }], //
-    Tutorial: [{ text: "Tutorial", link: "en/tutorial" }],
+    'Data Modeling': [
+      { text: 'Entities', link: 'en/modeling/entities' },
+      { text: 'Services', link: 'en/modeling/services' },
+      { text: 'Schema', link: 'en/modeling/schema' },
+      { text: 'Attributes', link: 'en/modeling/attributes' },
+      { text: 'Indexes', link: 'en/modeling/indexes' },
+      { text: 'Collections', link: 'en/modeling/collections' },
+    ],
+    Queries: [
+      { text: 'Get', link: 'en/queries/get' },
+      { text: 'Batch Get', link: 'en/queries/batch-get' },
+      { text: 'Query', link: 'en/queries/query' },
+      { text: 'Collections', link: 'en/queries/collection' },
+      { text: 'Find', link: 'en/queries/find' },
+      { text: 'Match', link: 'en/queries/match' },
+      { text: 'Scan', link: 'en/queries/scan' },
+      { text: 'Pagination', link: 'en/queries/pagination' },
+      { text: 'Filter Expressions', link: 'en/queries/filters' },
+    ],
+    Mutations: [
+      { text: 'Put', link: 'en/mutations/put' },
+      { text: 'Batch Put', link: 'en/mutations/batch-put' },
+      { text: 'Create', link: 'en/mutations/create' },
+      { text: 'Upsert', link: 'en/mutations/upsert' },
+      { text: 'Update', link: 'en/mutations/update' },
+      { text: 'Patch', link: 'en/mutations/patch' },
+      { text: 'Delete', link: 'en/mutations/delete' },
+      { text: 'Batch Delete', link: 'en/mutations/batch-delete' },
+      { text: 'Remove', link: 'en/mutations/remove' },
+      { text: 'Conditions Expressions', link: 'en/mutations/conditions' },
+    ],
+    Reference: [
+      { text: 'Errors', link: 'en/reference/errors' },
+      { text: 'TypeScript', link: 'en/reference/typscript' },
+      { text: 'DynamoDB Client', link: 'en/reference/dynamodb-client' },
+      { text: 'Events & Logging', link: 'en/reference/events-logging' },
+    ],
+    Examples: [
+      { text: 'Human resources database', link: 'en/examples/human-resources' },
+      { text: 'Shopping Mall directory', link: 'en/examples/shopping-mall-directory' },
+      { text: 'Library system', link: 'en/examples/library-system' },
+      { text: 'Version control', link: 'en/examples/version-control' },
+      { text: 'Task manager', link: 'en/examples/task-manager' },
+    ],
+    Recipes: [
+      { text: 'Creating calculated attributes', link: 'en/recipes/calculated-attribute' },
+      { text: 'Creating virtual attributes', link: 'en/recipes/virtual-attribute' },
+      { text: 'Adding meta timestamps', link: 'en/recipes/created-at-updated-at' },
+      { text: 'Using opaque types', link: 'en/recipes/opaque-types' },
+    ],
   },
 };

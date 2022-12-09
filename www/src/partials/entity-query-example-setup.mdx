@@ -1,0 +1,165 @@
+<blockQuote>
+<h4>Example Setup</h4>
+<details>
+<summary>Table Definition</summary>
+
+```json
+{
+  "TableName": "electro",
+  "KeySchema":[
+      {
+          "AttributeName":"pk",
+          "KeyType":"HASH"
+      },
+      {
+          "AttributeName":"sk",
+          "KeyType":"RANGE"
+      }
+  ],
+  "AttributeDefinitions":[
+      {
+          "AttributeName":"pk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"sk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi1pk",
+          "AttributeType":"S"
+      },
+      {
+          "AttributeName":"gsi1sk",
+          "AttributeType":"S"
+      }
+  ],
+  "GlobalSecondaryIndexes":[
+      {
+          "IndexName":"gsi1pk-gsi1sk-index",
+          "KeySchema":[
+              {
+                  "AttributeName":"gsi1pk",
+                  "KeyType":"HASH"
+              },
+              {
+                  "AttributeName":"gsi1sk",
+                  "KeyType":"RANGE"
+              }
+          ],
+          "Projection":{
+              "ProjectionType":"ALL"
+          }
+      }
+  ],
+  "BillingMode":"PAY_PER_REQUEST"
+}
+```
+</details>
+
+<details>
+<summary>Example Entity</summary>
+
+```typescript
+import DynamoDB from "aws-sdk/clients/dynamodb";
+import { Entity } from 'electrodb';
+
+const client = new DynamoDB.DocumentClient();
+
+const table = 'electro';
+
+const StoreLocations = new Entity({
+    model: {
+      service: "MallStoreDirectory",
+      entity: "MallStore",
+      version: "1",
+    },
+    attributes: {
+        cityId: {
+            type: "string",
+            required: true,
+        },
+        mallId: {
+            type: "string",
+            required: true,
+        },
+        storeId: {
+            type: "string",
+            required: true,
+        },
+        buildingId: {
+            type: "string",
+            required: true,
+        },
+        unitId: {
+            type: "string",
+            required: true,
+        },
+        category: {
+            type: [
+                "spite store",
+                "food/coffee",
+                "food/meal",
+                "clothing",
+                "electronics",
+                "department",
+                "misc"
+            ],
+            required: true
+        },
+        leaseEndDate: {
+            type: "string",
+            required: true
+        },
+        rent: {
+            type: "string",
+            required: true,
+            validate: /^(\d+\.\d{2})$/
+        },
+        discount: {
+            type: "string",
+            required: false,
+            default: "0.00",
+            validate: /^(\d+\.\d{2})$/
+        }
+    },
+    indexes: {
+        stores: {
+            pk: {
+                field: "pk",
+                composite: ["cityId", "mallId"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["buildingId", "storeId"]
+            }
+        },
+        units: {
+            index: "gis1pk-gsi1sk-index",
+            pk: {
+                field: "gis1pk",
+                composite: ["mallId"]
+            },
+            sk: {
+                field: "gsi1sk",
+                composite: ["buildingId", "unitId"]
+            }
+        },
+        leases: {
+            index: "gis2pk-gsi2sk-index",
+            pk: {
+                field: "gis2pk",
+                composite: ["storeId"]
+            },
+            sk: {
+                field: "gsi2sk",
+                composite: ["leaseEndDate"]
+            }
+        }
+    }
+}, {table, client});
+```
+
+</details>
+<small><i>(Example code in this page that references the entity `StoreLocations` uses the following Entity and Table Definition found below)</i></small>
+</blockQuote>
