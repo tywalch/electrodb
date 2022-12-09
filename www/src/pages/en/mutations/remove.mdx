@@ -1,0 +1,55 @@
+---
+title: Remove
+description: Remove item
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - remove
+layout: ../../../layouts/MainLayout.astro
+---
+
+import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+
+<ExampleSetup />
+
+A convenience method for `delete` with ConditionExpression that the item being deleted exists. If the item does not exist, ElectroDB will throw a failed condition error. Provide all Table Index composite attributes in an object to the `remove` method to remove the record.
+
+```typescript
+await StoreLocations.remove({
+	storeId: "LatteLarrys",
+	mallId: "EastPointe",
+	buildingId: "F34",
+	cityId: "Atlanta1"
+}).go();
+```
+
+## Response Format
+
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+## Equivalent Parameters
+
+```json
+{
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+  },
+  "TableName": "YOUR_TABLE_TABLE",
+  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
+}
+```
+
+## Execution Options
+
+import PartialExample from '../../../partials/mutation-query-options.mdx';
+
+<PartialExample name="Filters" />

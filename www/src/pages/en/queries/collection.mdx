@@ -1,0 +1,178 @@
+---
+title: Collections
+description: Querying across entities
+keywords:
+  - electrodb
+  - docs$
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - query
+  - collections
+  - service
+  - join
+  - relationships
+layout: ../../../layouts/MainLayout.astro
+---
+
+Collections allow you to query across Entities. They can be used on `Service` instance.
+
+```javascript
+const DynamoDB = require("aws-sdk/clients/dynamodb");
+const table = "projectmanagement";
+const client = new DynamoDB.DocumentClient();
+
+const employees = new Entity({
+  model: {
+    entity: "employees",
+    version: "1",
+    service: "taskapp",
+  },
+  attributes: {
+    employeeId: {
+      type: "string"
+    },
+    organizationId: {
+      type: "string"
+    },
+    name: {
+      type: "string"
+    },
+    team: {
+      type: ["jupiter", "mercury", "saturn"]
+    }
+  },
+  indexes: {
+    staff: {
+      pk: {
+        field: "pk",
+        composite: ["organizationId"]
+      },
+      sk: {
+        field: "sk",
+        composite: ["employeeId"]
+      }
+    },
+    employee: {
+      collection: "assignments",
+      index: "gsi2",
+      pk: {
+        field: "gsi2pk",
+        composite: ["employeeId"],
+      },
+      sk: {
+        field: "gsi2sk",
+        composite: [],
+      },
+    }
+  }
+}, { client, table })
+
+const tasks = new Entity({
+  model: {
+    entity: "tasks",
+    version: "1",
+    service: "taskapp",
+  },
+  attributes: {
+    taskId: {
+      type: "string"
+    },
+    employeeId: {
+      type: "string"
+    },
+    projectId: {
+      type: "string"
+    },
+    title: {
+      type: "string"
+    },
+    body: {
+      type: "string"
+    }
+  },
+  indexes: {
+    project: {
+      pk: {
+        field: "pk",
+        composite: ["projectId"]
+      },
+      sk: {
+        field: "sk",
+        composite: ["taskId"]
+      }
+    },
+    assigned: {
+      collection: "assignments",
+      index: "gsi2",
+      pk: {
+        field: "gsi2pk",
+        composite: ["employeeId"],
+      },
+      sk: {
+        field: "gsi2sk",
+        composite: [],
+      },
+    }
+  }
+}, { client, table });
+
+const TaskApp = new Service({employees, tasks});
+```
+Available on your Service are two objects: `entites` and `collections`.  Entities available on `entities` have the same capabilities as they would if created individually. When a Model added to a Service with `join` however, its Collections are automatically added and validated with the other Models joined to that Service. These Collections are available on `collections`.
+
+### Example
+
+```javascript
+const results = await TaskApp.collections
+  .assignments({employeeId: "JExotic"})
+  .go();
+```
+
+### Equivalent Parameters
+```
+{
+  TableName: 'projectmanagement',
+  ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+  ExpressionAttributeValues: { ':pk': '$taskapp_1#employeeid_joeexotic', ':sk1': '$assignments' },
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  IndexName: 'gsi3'
+}
+```
+
+### Example
+
+Collections do not have the same `query` functionality and as an Entity, though it does allow for inline filters like an Entity. The `attributes` available on the filter object include **all** attributes across entities.
+
+```typescript
+const results - await TaskApp.collections
+  .assignments({employee: "CBaskin"})
+  .where(({ project }, { notExists, contains }) => `
+    ${notExists(project)} OR ${contains(project, "murder")}
+  `)
+  .go();
+```
+
+### Equivalent Parameters
+
+```javascript
+{
+  TableName: 'projectmanagement',
+  ExpressionAttributeNames: { '#project': 'project', '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+  ExpressionAttributeValues: {
+    ':project1': 'murder',
+    ':pk': '$taskapp_1#employeeid_carolbaskin',
+    ':sk1': '$assignments'
+  },
+  KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+  IndexName: 'gsi2',
+  FilterExpression: 'attribute_not_exists(#project) OR contains(#project, :project1)'
+}
+```
+
+## Execution Options
+
+import PartialExample from '../../../partials/query-options.mdx';
+
+<PartialExample />

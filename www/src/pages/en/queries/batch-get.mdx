@@ -1,0 +1,126 @@
+---
+title: Batch Get
+description: Batch get items
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - get
+  - batch get
+  - batchGet
+layout: ../../../layouts/MainLayout.astro
+---
+
+Provide all Table Index composite attributes in an array of objects to the `get` method to perform a BatchGet query.
+
+> When performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet allows queries larger than the docClient's limit of 100 records
+
+If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Execution Option](#execution-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
+
+For example, 150 records (50 records over the DynamoDB maximum):
+
+The default value of `concurrent` will be `1`. ElectroDB will execute a BatchGet request of 100, then after that request has responded, make another BatchGet request for 50 records.
+
+If you set the [Execution Option](#execution-options) `concurrent` to `2`, ElectroDB will execute a BatchGet request of 100 records, and another BatchGet request for 50 records without waiting for the first request to finish.
+
+It is important to consider your Table's throughput considerations when setting this value.
+
+## Example
+
+import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+
+<ExampleSetup />
+
+```javascript
+const { data, unprocessed } = await StoreLocations.get([
+  {
+      storeId: "LatteLarrys",
+      mallId: "EastPointe",
+      buildingId: "F34",
+      cityId: "Atlanta1"
+  },
+  {
+      storeId: "MochaJoes",
+      mallId: "WestEnd",
+      buildingId: "A21",
+      cityId: "Madison2"
+  }
+]).go({ concurrent: 1 }); // `concurrent` value is optional and default's to `1`
+```
+
+## Response Format
+
+```typescript
+{
+  data: Array<YOUR_SCHEMA>,
+  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
+}
+```
+
+## Equivalent Parameters
+
+```json
+{
+  "RequestItems": {
+    ["YOUR_TABLE_NAME"]: {
+      "Keys": [
+        {
+          "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+          "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+        },
+        {
+          "pk": "$mallstoredirectory#cityid_madison2#mallid_westend",
+          "sk": "$mallstore_1#buildingid_a21#storeid_mochajoes"
+        }
+      ]
+    }
+  }
+}
+```
+
+The `results` array are records that were returned DynamoDB as `Responses` on the BatchGet query. They will appear in the same format as other ElectroDB queries.
+
+> By default ElectroDB will return items without concern for order. If the order returned by ElectroDB must match the order provided, the [execution option](#execution-options) `preserveBatchOrder` can be used. When enabled, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index.
+
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [execution option](#execution-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
+
+## Execution Options
+
+Execution options can be added the `.params()` and `.go()` to change query behavior or add customer parameters to a query.
+
+By default, **ElectroDB** enables you to work with records as the names and properties defined in the model. Additionally, it removes the need to deal directly with the docClient parameters which can be complex for a team without as much experience with DynamoDB. The Query Options object can be passed to both the `.params()` and `.go()` methods when building you query. Below are the options available:
+
+```typescript
+{
+  params?: object;
+  table?: string;
+  data?: 'raw' | 'includeKeys' | 'attributes';
+  originalErr?: boolean;
+  concurrent?: number;
+  unprocessed?: "raw" | "item";
+  response?: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new";
+  ignoreOwnership?: boolean;
+  logger?: (event) => void;
+  listeners Array<(event) => void>;
+  preserveBatchOrder?: boolean;
+  attributes?: string[];
+};
+```
+
+Option             | Default              | Description
+------------------ | :------------------: | -----------
+params             | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
+table              | _(from constructor)_ | Use a different table than the one defined in the [Service Options](/latest/modeling/service#options)
+attributes         | _(all attributes)_   | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.
+data               | `"attributes"`       | Accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`. Use `'raw'` to return query results as they were returned by the docClient. Use `'includeKeys'` to include item partition and sort key values in your return object. By default, **ElectroDB** does not return partition, sort, or global keys in its response.
+originalErr        | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
+concurrent         | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations.
+unprocessed        | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](/latest/queries/batch-get), [BatchDelete](/latest/mutations/batch-delete), and [BatchPut](/latest/mutations/batch-put).
+response           | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
+ignoreOwnership    | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
+listeners          | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](/latest/reference/events-logging) occur.
+logger             | _none_               | A convenience option for a single event listener that semantically can be used for logging.
+preserveBatchOrder | `false`              | When used with a [batchGet](/latest/queries/batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index.

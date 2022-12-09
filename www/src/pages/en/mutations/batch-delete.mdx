@@ -1,0 +1,92 @@
+---
+title: Batch Delete
+description: Batch delete items
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - delete
+  - batch delete
+  - batchWrite
+layout: ../../../layouts/MainLayout.astro
+---
+
+import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+
+<ExampleSetup />
+
+Provide all table index composite attributes in an array of objects to the `delete` method to batch delete records.
+
+> Performing a Batch Delete will return an array of "unprocessed" records. An empty array signifies all records were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Execution Options](#execution-options).
+> Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
+
+If the number of records you are requesting is above the BatchWrite threshold of 25 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Execution Option](#execution-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
+
+For example, 75 records (50 records over the DynamoDB maximum):
+
+The default value of `concurrent` will be `1`. ElectroDB will execute a BatchWrite request of 25, then after that request has responded, make another BatchWrite request for 25 records, and then another.
+
+If you set the [Execution Option](#execution-options) `concurrent` to `2`, ElectroDB will execute a BatchWrite request of 25 records, and another BatchGet request for 25 records without waiting for the first request to finish. After those two have finished it will execute another BatchWrite request for 25 records.
+
+It is important to consider your Table's throughput considerations when setting this value.
+
+```typescript
+let unprocessed = await StoreLocations.delete([
+    {
+        storeId: "LatteLarrys",
+        mallId: "EastPointe",
+        buildingId: "F34",
+        cityId: "LosAngeles1"
+    },
+    {
+        storeId: "MochaJoes",
+        mallId: "EastPointe",
+        buildingId: "F35",
+        cityId: "LosAngeles1"
+    }
+]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
+```
+
+## Response Format
+```typescript
+{
+  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
+}
+```
+
+## Equivalent Parameters
+```json
+{
+  "RequestItems": {
+    "StoreDirectory": [
+      {
+        "DeleteRequest": {
+          "Key": {
+            "pk": "$mallstoredirectory#cityid_losangeles1#mallid_eastpointe",
+            "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
+          }
+        }
+      },
+      {
+        "DeleteRequest": {
+          "Key": {
+            "pk": "$mallstoredirectory#cityid_losangeles1#mallid_eastpointe",
+            "sk": "$mallstore_1#buildingid_f35#storeid_mochajoes"
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [execution option](#execution-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
+
+## Execution Options
+
+import PartialExample from '../../../partials/batch-mutation-execution-options.mdx';
+
+<PartialExample name="Filters" />

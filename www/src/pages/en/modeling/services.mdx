@@ -1,0 +1,47 @@
+---
+title: Services
+description: Services overview
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - service
+layout: ../../../layouts/MainLayout.astro
+---
+
+In ***ElectroDB*** a `Service` represents a collection of related Entities. Services allow you to build queries that span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that "join" multiple Entities.
+
+## Creation
+
+The property name you assign the entity will then be "alias", or name, you can reference that entity by through the Service. Aliases can be useful if you are building a service with multiple versions of the same entity or wish to change the reference name of an entity without impacting the schema/key names of that entity.
+
+```typescript
+import { Service } from "electrodb";
+
+const TaskApp = new Service({
+	employee: Employee, // available at TaskApp.entities.personnel
+	task: Task,         // available at TaskApp.entities.directives
+}, {table, client});
+```
+
+Services take an _optional_ second parameter, similar to Entities, with a `client` and `table`. Using this constructor interface, the Service will utilize the values from those entities, if they were provided, or be passed values to override the `client` or `table` name on the individual entities.
+
+## Options
+Property | Description
+-------- | -----------
+table    | The name of the dynamodb table in aws.
+client   | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.
+
+## Validation
+
+When joining a Entity to a Service, ElectroDB will perform numerous validations to ensure the provided Entities are consistently defined. The following is a list of the validations performed on Service creation:
+
+- [Entity](/latest/modeling/entities) names must be unique across a Service.
+- [Collection](/latest/modeling/collections) names must be unique across a Service.
+- All [Collections](/latest/modeling/collections) map to on the same DynamoDB indexes with the same index field names. See [Indexes](/latest/modeling/indexes).
+- Partition Key [Composite Attributes](#composite attribute-arrays) on a [Collection](/latest/modeling/collections) must have the same attribute names and labels (if applicable). See [Attribute Definitions](/latest/modeling/attributes#attribute-definition).
+- The [name of the Service in the Model](/latest/modeling/entity#entity-definition-schema) must match the Name defined on the [Service](/latest/modeling/services) instance.
+- If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching [attribute definitions](/latest/modeling/attributes#attribute-definition).

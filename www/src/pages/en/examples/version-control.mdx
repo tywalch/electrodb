@@ -1,0 +1,1133 @@
+---
+title: Version control 
+description: Building a version control database
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - query
+  - entity
+  - attribute
+  - schema
+  - index
+layout: ../../../layouts/MainLayout.astro
+---
+
+In this example we will be modeling a version control system similar to Github
+
+## Table Definition
+
+import TableDefinition from '../../../partials/table-definition.mdx';
+
+## Setup
+
+This file is referenced by multiple entities below
+
+<details>
+<summary><b>./types.ts</b></summary>
+<p>
+
+```typescript
+/* istanbul ignore file */
+import {IssueCommentIds, PullRequestCommentIds} from "./index";
+
+export const StatusTypes = ["Open", "Closed"] as const;
+
+export type Status = typeof StatusTypes[number];
+
+export function toStatusCode(status: unknown) {
+    for (let index in StatusTypes) {
+        if (StatusTypes[index] === status) {
+            return `${index}`;
+        }
+    }
+}
+
+export function toStatusString(code: unknown) {
+    for (let index in StatusTypes) {
+        if (`${index}` === code) {
+            return StatusTypes[index];
+        }
+    }
+}
+
+export const PullRequestTicket = "PullRequest";
+export const IssueTicket = "Issue";
+export const IsNotTicket = "";
+export const TicketTypes = [IssueTicket, PullRequestTicket, IsNotTicket] as const;
+
+export const NotYetViewed = "#";
+
+export type SubscriptionTypes = typeof TicketTypes[number];
+
+export function isIssueCommentIds(comment: any): comment is IssueCommentIds {
+    return comment.issueNumber !== undefined && comment.username !== undefined;
+}
+
+export function isPullRequestCommentIds(comment: any): comment is PullRequestCommentIds {
+    return comment.pullRequestNumber !== undefined && comment.username !== undefined;
+}
+
+```
+
+</p>
+</details>
+
+## Entities
+
+<details>
+<summary><b>Issues</b></summary>
+<p>
+
+```typescript
+import { Entity } from 'electrodb';
+import moment from "moment";
+import { TicketTypes, IssueTicket, StatusTypes, toStatusString, toStatusCode } from "./types";
+
+export const issues = new Entity({
+  model: {
+    entity: "issues",
+    service: "versioncontrol",
+    version: "1"
+  },
+  attributes: {
+    issueNumber: {
+      type: "string",
+    },
+    repoName: {
+      type: "string"
+    },
+    repoOwner: {
+      type: "string"
+    },
+    username: {
+      type: "string",
+    },
+    ticketType: {
+      type: TicketTypes,
+      set: () => IssueTicket,
+      readOnly: true
+    },
+    ticketNumber: {
+      type: "string",
+      readOnly: true,
+      watch: ["issueNumber"],
+      set: (_, {issueNumber}) => issueNumber
+    },
+    status: {
+      type: StatusTypes,
+      default: "Open",
+      set: (val) => toStatusCode(val),
+      get: (val) => toStatusString(val),
+    },
+    subject: {
+      type: "string"
+    },
+    body: {
+      type: "string"
+    },
+    createdAt: {
+      type: "string",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: "*",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+  },
+  indexes: {
+    issue: {
+      collection: "issueReview",
+      pk: {
+        composite: ["repoOwner", "repoName", "issueNumber"],
+        field: "pk"
+      },
+      sk: {
+        composite: [],
+        field: "sk"
+      }
+    },
+    created: {
+      collection: ["owned", "managed"],
+      index: "gsi1pk-gsi1sk-index",
+      pk: {
+        field: "gsi1pk",
+        composite: ["username"]
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["status", "createdAt"]
+      }
+    },
+    todos: {
+      collection: "activity",
+      index: "gsi2pk-gsi2sk-index",
+      pk: {
+        composite: ["repoOwner", "repoName"],
+        field: "gsi2pk"
+      },
+      sk: {
+        composite: ["status", "createdAt"],
+        field: "gsi2sk"
+      }
+    },
+    _: {
+      collection: "subscribers",
+      index: "gsi4pk-gsi4sk-index",
+      pk: {
+        composite: ["repoOwner", "repoName", "ticketNumber"],
+        field: "gsi4pk"
+      },
+      sk: {
+        composite: [],
+        field: "gsi4sk"
+      }
+    }
+  }
+});
+```
+
+</p>
+</details>
+
+<details>
+<summary><b>IssueComments</b></summary>
+<p>
+
+```typescript
+import { Entity } from 'electrodb';
+import moment from "moment";
+import { TicketTypes, IssueTicket, StatusTypes, toStatusString, toStatusCode } from "./types";
+
+export const issueComments = new Entity({
+  model: {
+    entity: "issueComment",
+    service: "versioncontrol",
+    version: "1"
+  },
+  attributes: {
+    issueNumber: {
+      type: "string",
+    },
+    commentId: {
+      type: "string"
+    },
+    username: {
+      type: "string"
+    },
+    replyTo: {
+      type: "string"
+    },
+    replyViewed: {
+      type: "string",
+      default: NotYetViewed,
+      get: (replyViewed) => {
+        if (replyViewed !== NotYetViewed) {
+          return replyViewed
+        }
+      },
+      set: (replyViewed) => {
+        if (replyViewed === undefined) {
+          return NotYetViewed;
+        }
+        return replyViewed;
+      }
+    },
+    repoName: {
+      type: "string"
+    },
+    repoOwner: {
+      type: "string"
+    },
+    body: {
+      type: "string"
+    },
+    createdAt: {
+      type: "string",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: "*",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+  },
+  indexes: {
+    comments: {
+      collection: "issueReview",
+      pk: {
+        composite: ["repoOwner", "repoName", "issueNumber"],
+        field: "pk"
+      },
+      sk: {
+        composite: ["commentId"],
+        field: "sk"
+      }
+    },
+    created: {
+      collection: "conversations",
+      index: "gsi1pk-gsi1sk-index",
+      pk: {
+        field: "gsi1pk",
+        composite: ["username"]
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["repoOwner", "repoName", "issueNumber"]
+      }
+    },
+    replies: {
+      collection: "inbox",
+      index: "gsi2pk-gsi2sk-index",
+      pk: {
+        composite: ["replyTo"],
+        field: "gsi2pk"
+      },
+      sk: {
+        composite: ["createdAt", "replyViewed"],
+        field: "gsi2sk"
+      }
+    }
+  }
+});
+```
+
+</p>
+</details>
+
+<details>
+<summary><b>PullRequests</b></summary>
+<p>
+
+```typescript
+import { Entity } from 'electrodb';
+import moment from "moment";
+import {NotYetViewed, TicketTypes, PullRequestTicket, StatusTypes, toStatusString, toStatusCode} from "./types";
+
+export const pullRequests = new Entity({
+  model: {
+    entity: "pullRequest",
+    service: "versioncontrol",
+    version: "1"
+  },
+  attributes: {
+    pullRequestNumber: {
+      type: "string",
+      required: true,
+    },
+    repoName: {
+      type: "string",
+      required: true,
+    },
+    repoOwner: {
+      type: "string",
+      required: true,
+    },
+    username: {
+      type: "string",
+      required: true,
+    },
+    ticketType: {
+      type: TicketTypes,
+      default: () => PullRequestTicket,
+      set: () => PullRequestTicket,
+      readOnly: true
+    },
+    ticketNumber: {
+      type: "string",
+      readOnly: true,
+      watch: ["pullRequestNumber"],
+      set: (_, {issueNumber}) => issueNumber
+    },
+    status: {
+      type: StatusTypes,
+      default: "Open",
+      set: (val) => toStatusCode(val),
+      get: (val) => toStatusString(val)
+    },
+    reviewers: {
+      type: "list",
+      items: {
+        type: "map",
+        properties: {
+          username: {
+            type: "string",
+            required: true,
+          },
+          approved: {
+            type: "boolean",
+            required: true,
+          },
+          createdAt: {
+            type: "string",
+            default: () => moment.utc().format(),
+            readOnly: true,
+          },
+        }
+      }
+    },
+    createdAt: {
+      type: "string",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: "*",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+  },
+  indexes: {
+    pullRequest: {
+      collection: "PRReview",
+      pk: {
+        composite: ["repoOwner", "repoName", "pullRequestNumber"],
+        field: "pk"
+      },
+      sk: {
+        composite: [],
+        field: "sk"
+      }
+    },
+    created: {
+      collection: ["owned", "managed"],
+      index: "gsi1pk-gsi1sk-index",
+      pk: {
+        field: "gsi1pk",
+        composite: ["username"]
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["status", "createdAt"]
+      }
+    },
+    enhancements: {
+      collection: "activity",
+      index: "gsi2pk-gsi2sk-index",
+      pk: {
+        field: "gsi2pk",
+        composite: ["repoOwner", "repoName"],
+      },
+      sk: {
+        field: "gsi2sk",
+        composite: ["status", "createdAt"],
+
+      }
+    },
+    _: {
+      collection: "subscribers",
+      index: "gsi4pk-gsi4sk-index",
+      pk: {
+        composite: ["repoOwner", "repoName", "ticketNumber"],
+        field: "gsi4pk"
+      },
+      sk: {
+        composite: [],
+        field: "gsi4sk"
+      }
+    }
+  }
+});
+```
+
+</p>
+</details>
+
+<details>
+<summary><b>PullRequestComments</b></summary>
+<p>
+
+```typescript
+import { Entity } from 'electrodb';
+import moment from "moment";
+import {NotYetViewed, TicketTypes, PullRequestTicket, StatusTypes, toStatusString, toStatusCode} from "./types";
+
+export const pullRequestComments = new Entity({
+  model: {
+    entity: "pullRequestComment",
+    service: "versioncontrol",
+    version: "1"
+  },
+  attributes: {
+    repoName: {
+      type: "string"
+    },
+    username: {
+      type: "string"
+    },
+    repoOwner: {
+      type: "string"
+    },
+    pullRequestNumber: {
+      type: "string"
+    },
+    commentId: {
+      type: "string"
+    },
+    replyTo: {
+      type: "string"
+    },
+    replyViewed: {
+      type: "string",
+      default: NotYetViewed,
+      get: (replyViewed) => {
+        if (replyViewed !== NotYetViewed) {
+          return replyViewed
+        }
+      },
+      set: (replyViewed) => {
+        if (replyViewed === undefined) {
+          return NotYetViewed;
+        }
+        return replyViewed;
+      }
+    },
+    createdAt: {
+      type: "string",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: "*",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+  },
+  indexes: {
+    comments: {
+      collection: "PRReview",
+      pk: {
+        composite: ["repoOwner", "repoName", "pullRequestNumber"],
+        field: "pk"
+      },
+      sk: {
+        composite: ["commentId"],
+        field: "sk"
+      }
+    },
+    created: {
+      collection: "conversations",
+      index: "gsi1pk-gsi1sk-index",
+      pk: {
+        field: "gsi1pk",
+        composite: ["username"]
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["repoOwner", "repoName"]
+      }
+    },
+    replies: {
+      collection: "inbox",
+      index: "gsi2pk-gsi2sk-index",
+      pk: {
+        composite: ["replyTo"],
+        field: "gsi2pk"
+      },
+      sk: {
+        composite: ["createdAt", "replyViewed"],
+        field: "gsi2sk"
+      }
+    },
+  }
+});
+```
+
+</p>
+</details>
+
+<details>
+<summary><b>Repositories</b></summary>
+<p>
+
+```typescript
+import { Entity } from 'electrodb';
+import moment from "moment";
+
+export const licenses = [
+  "afl-3.0",
+  "apache-2.0",
+  "artistic-2.0",
+  "bsl-1.0",
+  "bsd-2-clause",
+  "bsd-3-clause",
+  "bsd-3-clause-clear",
+  "cc",
+  "cc0-1.0",
+  "cc-by-4.0",
+  "cc-by-sa-4.0",
+  "wtfpl",
+  "ecl-2.0",
+  "epl-1.0",
+  "epl-2.0",
+  "eupl-1.1",
+  "agpl-3.0",
+  "gpl",
+  "gpl-2.0",
+  "gpl-3.0",
+  "lgpl",
+  "lgpl-2.1",
+  "lgpl-3.0",
+  "isc",
+  "lppl-1.3c",
+  "ms-pl",
+  "mit",
+  "mpl-2.0",
+  "osl-3.0",
+  "postgresql",
+  "ofl-1.1",
+  "ncsa",
+  "unlicense",
+  "zlib"
+] as const;
+
+export const repositories = new Entity({
+  model: {
+    entity: "repositories",
+    service: "versioncontrol",
+    version: "1"
+  },
+  attributes: {
+    repoName: {
+      type: "string"
+    },
+    repoOwner: {
+      type: "string"
+    },
+    about: {
+      type: "string"
+    },
+    username: {
+      type: "string",
+      readOnly: true,
+      watch: ["repoOwner"],
+      set: (_, {repoOwner}) => repoOwner
+    },
+    description: {
+      type: "string"
+    },
+    isPrivate: {
+      type: "boolean"
+    },
+    license: {
+      type: licenses
+    },
+    defaultBranch: {
+      type: "string",
+      default: "main"
+    },
+    topics: {
+      type: "set",
+      items: "string"
+    },
+    followers: {
+      type: "set",
+      items: "string"
+    },
+    stars: {
+      type: "set",
+      items: "string"
+    },
+    createdAt: {
+      type: "string",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+      type: "string",
+      watch: "*",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+  },
+  indexes: {
+    repositories: {
+      collection: "alerts",
+      pk: {
+        composite: ["repoOwner"],
+        field: "pk"
+      },
+      sk: {
+        composite: ["repoName"],
+        field: "sk"
+      }
+    },
+    created: {
+      collection: "owned",
+      index: "gsi1pk-gsi1sk-index",
+      pk: {
+        composite: ["username"],
+        field: "gsi1pk"
+      },
+      sk: {
+        composite: ["isPrivate", "createdAt"],
+        field: "gsi1sk"
+      }
+    },
+  }
+});
+```
+
+</p>
+</details>
+
+<details>
+<summary><b>Subscriptions</b></summary>
+<p>
+
+```typescript
+import { Entity } from 'electrodb';
+import moment from "moment";
+import {TicketTypes, IsNotTicket} from "./types";
+
+const RepositorySubscription = "#";
+
+export const subscriptions = new Entity({
+    model: {
+        entity: "subscription",
+        service: "versioncontrol",
+        version: "1"
+    },
+    attributes: {
+        repoName: {
+            type: "string",
+            required: true,
+        },
+        repoOwner: {
+            type: "string",
+            required: true,
+        },
+        username: {
+            type: "string",
+            required: true,
+        },
+        ticketNumber: {
+            type: "string",
+            default: () => IsNotTicket,
+            set: (ticketNumber) => {
+                if (ticketNumber === IsNotTicket) {
+                    return RepositorySubscription;
+                } else {
+                    return ticketNumber;
+                }
+            },
+            get: (ticketNumber) => {
+                if (ticketNumber === RepositorySubscription) {
+                    return IsNotTicket;
+                } else {
+                    return ticketNumber;
+                }
+            }
+        },
+        ticketType: {
+            type: TicketTypes,
+            default: () => IsNotTicket,
+            set: (ticketType) => {
+                if (ticketType === IsNotTicket) {
+                    return RepositorySubscription;
+                } else {
+                    return ticketType;
+                }
+            },
+            get: (ticketType) => {
+                if (ticketType === RepositorySubscription) {
+                    return IsNotTicket;
+                } else {
+                    return ticketType;
+                }
+            }
+        },
+        createdAt: {
+            type: "string",
+            set: () => moment.utc().format(),
+            readOnly: true,
+        },
+        updatedAt: {
+            type: "string",
+            watch: "*",
+            set: () => moment.utc().format(),
+            readOnly: true,
+        },
+    },
+    indexes: {
+        repository: {
+            pk: {
+                composite: ["repoOwner", "repoName"],
+                field: "pk"
+            },
+            sk: {
+                composite: ["username", "ticketType", "ticketNumber"],
+                field: "sk"
+            }
+        },
+        user: {
+            collection: "watching",
+            index: "gsi3pk-gsi3sk-index",
+            pk: {
+                composite: ["username"],
+                field: "gsi3pk"
+            },
+            sk: {
+                composite: ["ticketType", "ticketNumber"],
+                field: "gsi3sk"
+            }
+        },
+        tickets: {
+            collection: "subscribers",
+            index: "gsi4pk-gsi4sk-index",
+            pk: {
+                composite: ["repoOwner", "repoName", "ticketNumber"],
+                field: "gsi4pk"
+            },
+            sk: {
+                composite: ["ticketType", "username"],
+                field: "gsi4sk"
+            }
+        }
+    }
+});
+```
+
+</p>
+</details>
+
+<details>
+<summary><b>Users</b></summary>
+<p>
+
+```typescript
+import { Entity } from 'electrodb';
+import moment from "moment";
+
+export const users = new Entity({
+  model: {
+    entity: "user",
+    service: "versioncontrol",
+    version: "1"
+  },
+  attributes: {
+    username: {
+      type: "string"
+    },
+    fullName: {
+      type: "string"
+    },
+    photo: {
+      type: "string"
+    },
+    bio: {
+      type: "string"
+    },
+    location: {
+      type: "string"
+    },
+    pinned: {
+      type: "any"
+    },
+    following: {
+      type: "set",
+      items: "string"
+    },
+    followers: {
+      type: "set",
+      items: "string"
+    },
+    createdAt: {
+      type: "string",
+      set: () => moment.utc().format(),
+      readOnly: true,
+    },
+    updatedAt: {
+        type: "string",
+        watch: "*",
+        set: () => moment.utc().format(),
+        readOnly: true,
+    },
+  },
+  indexes: {
+    user: {
+      collection: "overview",
+      pk: {
+        composite: ["username"],
+        field: "pk"
+      },
+      sk: {
+        composite: [],
+        field: "sk"
+      }
+    },
+    _: {
+      collection: "owned",
+      index: "gsi1pk-gsi1sk-index",
+      pk: {
+        composite: ["username"],
+        field: "gsi1pk"
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: []
+      }
+    },
+    subscriptions: {
+      collection: "watching",
+      index: "gsi3pk-gsi3sk-index",
+      pk: {
+        composite: ["username"],
+        field: "gsi3pk"
+      },
+      sk: {
+        composite: [],
+        field: "gsi3sk"
+      }
+    }
+  }
+});
+```
+
+</p>
+</details>
+
+## Service
+
+```typescript
+import { Service } from 'electrodb'
+export const table = "electro";
+
+export const store = new Service({
+  users,
+  issues,
+  repositories,
+  pullRequests,
+  subscriptions,
+  issueComments,
+  pullRequestComments,
+}, { table });
+```
+
+## Access Patterns
+
+### Get public repositories by username
+
+```typescript
+export async function getPublicRepository(username: string) {
+    return store.entities.repositories
+        .query.created({username, isPrivate: false});
+}
+```
+
+### Get pull request and associated comments
+
+Note that newest comments will be returned first
+
+```typescript
+export async function reviewPullRequest(options: { pr: PullRequestIds, cursor?: string }) {
+    const { pr, cursor } = options;
+    return store.collections.PRReview(pr)
+        .go({ cursor, order: 'desc' });
+}
+```
+
+### Get issue and associated comments
+
+Note that newest comments will be returned first
+
+```typescript
+export async function reviewIssue(options: {issue: IssueIds, cursor?: string}) {
+    const { issue, cursor } = options;
+    return store.collections.issueReview(issue)
+        .go({cursor, order: 'desc'});
+}
+```
+
+### Get pull requests created by user
+
+```typescript
+export async function getUserPullRequests(options: {
+    username: string;
+    status?: Status;
+    cursor?: string;
+}) {
+    const { username, status, cursor } = options;
+    return store.entities.pullRequests
+        .query.created({username, status})
+        .go({cursor, order: 'desc'});
+}
+```
+
+### Close pull request
+
+Note that this can only be performed by user who opened PR or the repo owner
+
+```typescript
+export async function closePullRequest(user: string, pr: PullRequestIds) {
+    return store.entities.pullRequests
+        .update(pr)
+        .set({status: "Closed"})
+        .where(({username, repoOwner}, {eq}) => `
+            ${eq(username, user)} OR ${eq(repoOwner, user)}
+        `)
+        .go()
+}
+```
+
+### Get all user info, repos, pull requests, and issues in one query
+
+```typescript
+export async function getFirstPageLoad(username: string) {
+    const results: OwnedItems = {
+        issues: [],
+        pullRequests: [],
+        repositories: [],
+        users: [],
+    };
+
+    let next = null;
+
+    do {
+        const {cursor, data} = await store.collections.owned({username}).go();
+        results.issues = results.issues.concat(data.issues);
+        results.pullRequests = results.pullRequests.concat(data.pullRequests);
+        results.repositories = results.repositories.concat(data.repositories);
+        results.users = results.users.concat(data.users);
+        next = cursor;
+    } while (next !== null);
+
+    return results;
+}
+```
+
+### Get subscriptions for a given repository, pull request, or issue.
+
+```typescript
+export async function getSubscribed(repoOwner: string, repoName: string, ticketNumber: string = IsNotTicket) {
+    return store.collections
+        .subscribers({repoOwner, repoName, ticketNumber})
+        .go();
+}
+```
+
+
+### Get unread comment replies
+
+```typescript
+const MinDate = "0000-00-00";
+const MaxDate = "9999-99-99";
+
+export async function getUnreadComments(user: string) {
+    const start = {
+        createdAt: MinDate,
+        replyViewed: NotYetViewed
+    };
+    const end = {
+        createdAt: MaxDate,
+        replyViewed: NotYetViewed
+    };
+    let [issues, pullRequests] = await Promise.all([
+        store.entities
+            .issueComments.query
+            .replies({replyTo: user})
+            .between(start, end)
+            .go(),
+
+        store.entities
+            .pullRequestComments.query
+            .replies({replyTo: user})
+            .between(start, end)
+            .go()
+    ]);
+
+    return {
+        issues,
+        pullRequests
+    };
+}
+```
+
+### Mark comment reply as read
+
+Note that this can only be done by the user who was being replied to
+
+```typescript
+export async function readReply(user: string, comment: IssueCommentIds): Promise<boolean>;
+export async function readReply(user: string, comment: PullRequestCommentIds): Promise<boolean>;
+export async function readReply(user: string, comment: any): Promise<boolean> {
+    const replyViewed = moment.utc().format();
+    if (isIssueCommentIds(comment)) {
+        return await store.entities.issueComments
+            .patch(comment)
+            .set({replyViewed})
+            .where(({replyTo}, {eq}) => eq(replyTo, user))
+            .go()
+            .then(() => true)
+            .catch(() => false);
+    } else if (isPullRequestCommentIds(comment)) {
+        return await store.entities.pullRequestComments
+            .patch(comment)
+            .set({replyViewed})
+            .where(({replyTo}, {eq}) => eq(replyTo, user))
+            .go()
+            .then(() => true)
+            .catch(() => false);
+    } else {
+        return false;
+    }
+}
+```
+
+### Approve pull request
+
+```typescript
+export async function approvePullRequest(repoOwner: string, repoName: string, pullRequestNumber: string, username: string) {
+    const pullRequest = await store.entities.pullRequests
+        .get({repoOwner, repoName, pullRequestNumber})
+        .go();
+
+    if (!pullRequest.data || !pullRequest.data.reviewers) {
+        return false;
+    }
+
+    let index: number = -1;
+
+    for (let i = 0; i < pullRequest.data.reviewers.length; i++) {
+        const reviewer = pullRequest.data.reviewers[i];
+        if (reviewer.username === username) {
+            index = i;
+        }
+    }
+
+    if (index === -1) {
+        return false;
+    }
+
+    return store.entities.pullRequests
+        .update({repoOwner, repoName, pullRequestNumber})
+        .data(({reviewers}, {set}) => {
+            set(reviewers[index].approved, true);
+        })
+        .where(({reviewers}, {eq}) => `
+            ${eq(reviewers[index].username, username)};
+        `)
+        .go()
+        .then(() => true)
+        .catch(() => false);
+}
+```
+
+### Follow repository
+
+```typescript
+export async function followRepository(repoOwner: string, repoName: string, follower: string) {
+    await store.entities
+        .repositories.update({repoOwner, repoName})
+        .add({followers: [follower]})
+        .go();
+}
+```

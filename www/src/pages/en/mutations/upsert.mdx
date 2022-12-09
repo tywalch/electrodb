@@ -1,0 +1,93 @@
+---
+title: Upsert
+description: Upsert item
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - get
+layout: ../../../layouts/MainLayout.astro
+---
+
+import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+
+<ExampleSetup />
+
+The `upsert` method is another ElectroDB exclusive method. Upsert is similar to the [put-method](/latest/mutations/put) in that it will create a record if one does not exist. Unlike the `put` method, however, `upsert` perform an update if that record already exists.
+
+```typescript
+await StoreLocations
+  .upsert({
+      cityId: "Atlanta1",
+      storeId: "LatteLarrys",
+      mallId: "EastPointe",
+      buildingId: "BuildingA1",
+      unitId: "B47",
+      category: "food/coffee",
+      leaseEndDate: "2020-03-22",
+      rent: "4500.00"
+  })
+  .go()
+```
+
+## Response Format
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+## Equivalent Parameters
+```json
+{
+    "TableName": "StoreDirectory",
+    "UpdateExpression": "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #unitId = :unitId_u0, #category = :category_u0, #leaseEndDate = :leaseEndDate_u0, #rent = :rent_u0, #discount = :discount_u0, #gis1pk = :gis1pk_u0, #gsi1sk = :gsi1sk_u0, #gis2pk = :gis2pk_u0, #gsi2sk = :gsi2sk_u0",
+    "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#storeId": "storeId",
+        "#buildingId": "buildingId",
+        "#unitId": "unitId",
+        "#category": "category",
+        "#leaseEndDate": "leaseEndDate",
+        "#rent": "rent",
+        "#discount": "discount",
+        "#gis1pk": "gis1pk",
+        "#gsi1sk": "gsi1sk",
+        "#gis2pk": "gis2pk",
+        "#gsi2sk": "gsi2sk"
+    },
+    "ExpressionAttributeValues": {
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1",
+        ":cityId_u0": "Atlanta1",
+        ":mallId_u0": "EastPointe",
+        ":storeId_u0": "LatteLarrys",
+        ":buildingId_u0": "BuildingA1",
+        ":unitId_u0": "B47",
+        ":category_u0": "food/coffee",
+        ":leaseEndDate_u0": "2020-03-22",
+        ":rent_u0": "4500.00",
+        ":discount_u0": "0.00",
+        ":gis1pk_u0": "$mallstoredirectory#mallid_eastpointe",
+        ":gsi1sk_u0": "$mallstore_1#buildingid_buildinga1#unitid_b47",
+        ":gis2pk_u0": "$mallstoredirectory#storeid_lattelarrys",
+        ":gsi2sk_u0": "$mallstore_1#leaseenddate_2020-03-22"
+    },
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys"
+    }
+}
+```
+
+## Execution Options
+
+import PartialExample from '../../../partials/mutation-query-options.mdx';
+
+<PartialExample name="Filters" />

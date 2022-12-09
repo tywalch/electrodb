@@ -1,0 +1,85 @@
+---
+title: Create
+description: Create item
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - FilterExpression
+  - ConditionExpression
+  - create
+layout: ../../../layouts/MainLayout.astro
+---
+
+import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+
+<ExampleSetup />
+
+In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `create` method will utilize the `attribute_not_exists()` parameter to ensure records are only "created" and not overwritten when inserting new records into the table.
+
+The `create()` operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Execution Option](#execution-options) `response:"none"` to return a null value.
+
+```typescript
+await StoreLocations
+  .create({
+      cityId: "Atlanta1",
+      storeId: "LatteLarrys",
+      mallId: "EastPointe",
+      buildingId: "BuildingA1",
+      unitId: "B47",
+      category: "food/coffee",
+      leaseEndDate: "2020-03-22",
+      rent: "4500.00"
+  })
+  .where((attr, op) => op.eq(attr.rent, "4500.00"))
+  .go()
+```
+
+## Response Format
+
+```typescript
+{
+  data: { YOUR_SCHEMA }
+}
+```
+
+## Equivalent Parameters
+
+```json
+{
+  "Item": {
+    "cityId": "Atlanta1",
+    "mallId": "EastPointe",
+    "storeId": "LatteLarrys",
+    "buildingId": "BuildingA1",
+    "unitId": "B47",
+    "category": "food/coffee",
+    "leaseEndDate": "2020-03-22",
+    "rent": "4500.00",
+    "discount": "0.00",
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys",
+    "gis1pk": "$mallstoredirectory#mallid_eastpointe",
+    "gsi1sk": "$mallstore_1#buildingid_buildinga1#unitid_b47",
+    "gis2pk": "$mallstoredirectory#storeid_lattelarrys",
+    "gsi2sk": "$mallstore_1#leaseenddate_2020-03-22",
+    "__edb_e__": "MallStore",
+    "__edb_v__": "1"
+  },
+  "TableName": "StoreDirectory",
+  "ConditionExpression": "attribute_not_exists(pk) AND attribute_not_exists(sk) AND #rent = :rent_w1",
+  "ExpressionAttributeNames": {
+    "#rent": "rent"
+  },
+  "ExpressionAttributeValues": {
+    ":rent_w1": "4500.00"
+  }
+}
+```
+
+## Execution Options
+
+import PartialExample from '../../../partials/mutation-query-options.mdx';
+
+<PartialExample name="Filters" />
