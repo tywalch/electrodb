@@ -7,7 +7,7 @@ export const SITE = {
 
 export const OPEN_GRAPH = {
   image: {
-    src: "https://github.com/tywalch/electrodb/blob/master/assets/electrodb-drk-compressed.png?raw=true",
+    src: "/social.jpg",
     alt:
       "ElectroDB logo" +
       "The word electro, with a lightning bolt, and the word DB",

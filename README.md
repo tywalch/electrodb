@@ -1,8 +1,12 @@
 # ElectroDB
+[![Download Count](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
-[![Coverage Status](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
-![npm bundle size](https://img.shields.io/bundlephobia/min/electrodb) [![Build Status](https://travis-ci.org/tywalch/electrodb.svg?branch=master)](https://travis-ci.org/tywalch/electrodb)
+![NPM Bundle Size](https://img.shields.io/bundlephobia/min/electrodb)
 [![Runkit Demo](https://img.shields.io/badge/runkit-electrodb-db4792)](https://runkit.com/tywalch/electrodb-building-queries)
+[![Last Commit](https://img.shields.io/github/last-commit/tywalch/electrodb)](https://github.com/tywalch/electrodb/commits/master)
+[![Issues](https://img.shields.io/github/issues/tywalch/electrodb)](https://github.com/tywalch/electrodb/issues)
+[![Sponsors](https://img.shields.io/github/sponsors/tywalch)](https://github.com/tywalch)
+[![Github Stars](https://img.shields.io/github/stars/tywalch/electrodb?style=social)](https://github.com/tywalch/electrodb/stargazers)
 
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb-drk.png?raw=true)
 ***ElectroDB*** is a DynamoDB library to ease the use of having multiple entities and complex hierarchical relationships in a single DynamoDB table.
