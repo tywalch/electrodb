@@ -17,6 +17,7 @@ const v3Client = new v3DynamoDB.DynamoDBClient({
 	region: "us-east-1",
 	endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
+const print = (label, val) => console.log(label, JSON.stringify(val, null, 4));
 
 const table = "electro";
 const SERVICE = "BugBeater";
@@ -154,10 +155,10 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 	const entityName = uuid();
 	const model = createModel(entityName);
 	describe(`Running tests with ${clientVersion} client`, () => {
-		describe("Entity", async () => {
+		describe("Entity", () => {
 			before(async () => sleep(1000));
 			let MallStores = new Entity(model, { client });
-			describe("Simple crud", async () => {
+			describe("Simple crud", () => {
 				let mall = "EastPointe";
 				let store = "LatteLarrys";
 				let sector = "A1";
@@ -168,7 +169,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 				let building = "BuildingZ";
 				let unit = "G1";
 				it("Should return null when item retrieved does not exist", async () => {
-					let data = await MallStores.get({sector: "does_not_exist", id: "also_does_not_exist"}).go();
+					let data = await MallStores.get({sector: "does_not_exist", id: "also_does_not_exist"}).go().then(res => res.data);
 					expect(data).to.be.null;
 				})
 				it("Should return the created item", async () => {
@@ -181,7 +182,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						leaseEnd,
 						unit,
 						building,
-					}).go();
+					}).go().then(res => res.data);
 					expect(putOne).to.deep.equal({
 						id: putOne.id,
 						sector,
@@ -222,7 +223,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 								store: storeNames[i],
 								unit: `B${i + 1}`,
 								building: `Building${letters[i]}`,
-							}).go(),
+							}).go().then(res => res.data),
 						);
 					}
 					stores = await Promise.all(stores);
@@ -237,7 +238,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						.units({
 							mall: mallOne,
 						})
-						.go();
+						.go().then(res => res.data);
 
 					let mallOneMatches = mallOneStores.every((store) =>
 						mallOneIds.includes(store.id),
@@ -250,13 +251,14 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let firstStore = await MallStores.get({
 						sector,
 						id: first.id,
-					}).go();
+					}).go().then(res => res.data);
 					expect(firstStore).to.be.deep.equal(first);
 
 					let buildingsAfterB = await MallStores.query
 						.categories({ category, mall: mallOne })
 						.gt({ building: "BuildingB" })
-						.go();
+						.go()
+						.then(res => res.data);
 					let buildingsAfterBStores = stores.filter((store) => {
 						return (
 							store.mall === mallOne &&
@@ -269,7 +271,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let buildingsBetweenBH = await MallStores.query
 						.categories({ category, mall: mallOne })
 						.between({ building: "BuildingB" }, { building: "BuildingH" })
-						.go();
+						.go().then(res => res.data);
 
 					let buildingsBetweenBHStores = stores.filter((store) => {
 						return (
@@ -284,16 +286,16 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						.and.to.be.deep.equal(buildingsBetweenBHStores);
 
 					let secondStore = { sector, id: stores[1].id };
-					let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
+					let secondStoreBeforeUpdate = await MallStores.get(secondStore).go().then(res => res.data);
 					let newRent = "5000.00";
 					expect(secondStoreBeforeUpdate.rent)
 						.to.equal(rent)
 						.and.to.not.equal(newRent);
 					let updatedStore = await MallStores.update(secondStore)
 						.set({ rent: newRent })
-						.go();
+						.go().then(res => res.data);
 					expect(updatedStore).to.be.empty;
-					let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
+					let secondStoreAfterUpdate = await MallStores.get(secondStore).go().then(res => res.data);
 					expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 				}).timeout(20000);
 
@@ -318,12 +320,12 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						building,
 						unit
 					};
-					let recordOne = await MallStores.create(record).go();
+					let recordOne = await MallStores.create(record).go().then(res => res.data);
 					// mall would be changed by the setter;
 					expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
 					let recordTwo = null;
 					try {
-						recordTwo = await MallStores.create(record).go();
+						recordTwo = await MallStores.create(record).go().then(res => res.data);
 					} catch(err) {
 						expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
 					}
@@ -351,13 +353,13 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						building,
 						unit
 					};
-					let recordOne = await MallStores.create(record).go();
+					let recordOne = await MallStores.create(record).go().then(res => res.data);
 					// mall would be changed by the setter
 					expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
-					let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go();
+					let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go().then(res => res.data);
 					let patchResultsTwo = null;
 					try {
-						patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
+						patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go().then(res => res.data);
 					} catch(err) {
 						expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
 					}
@@ -370,6 +372,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 
 					let [electroSuccess, electroErr] = await MallStores.get({sector, id})
 						.go({params: {TableName: "blahblah"}})
+						.then(res => res.data)
 						.then(() => [true, null])
 						.catch(err => [false, err]);
 
@@ -389,7 +392,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 				});
 			});
 
-			describe("Simple crud without sort key", async () => {
+			describe("Simple crud without sort key", () => {
 				const entity = uuid();
 				const MallStores = new Entity({
 					model: {
@@ -521,7 +524,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						leaseEnd,
 						unit,
 						building,
-					}).go();
+					}).go().then(res => res.data);
 					expect(putOne).to.deep.equal({
 						id: putOne.id,
 						sector,
@@ -562,7 +565,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 								store: storeNames[i],
 								unit: `B${i + 1}`,
 								building: `Building${letters[i]}`,
-							}).go(),
+							}).go().then(res => res.data),
 						);
 					}
 					stores = await Promise.all(stores);
@@ -577,7 +580,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						.units({
 							mall: mallOne,
 						})
-						.go();
+						.go().then(res => res.data);
 
 					let mallOneMatches = mallOneStores.every((store) =>
 						mallOneIds.includes(store.id),
@@ -590,13 +593,14 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let firstStore = await MallStores.get({
 						sector,
 						id: first.id,
-					}).go();
+					}).go().then(res => res.data);
 					expect(firstStore).to.be.deep.equal(first);
 
 					let buildingsAfterB = await MallStores.query
 						.categories({ category, mall: mallOne })
 						.gt({ building: "BuildingB" })
-						.go();
+						.go()
+						.then(res => res.data);
 					let buildingsAfterBStores = stores.filter((store) => {
 						return (
 							store.mall === mallOne &&
@@ -609,7 +613,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let buildingsBetweenBH = await MallStores.query
 						.categories({ category, mall: mallOne })
 						.between({ building: "BuildingB" }, { building: "BuildingH" })
-						.go();
+						.go().then(res => res.data);
 
 					let buildingsBetweenBHStores = stores.filter((store) => {
 						return (
@@ -624,16 +628,16 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						.and.to.be.deep.equal(buildingsBetweenBHStores);
 
 					let secondStore = { sector, id: stores[1].id };
-					let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
+					let secondStoreBeforeUpdate = await MallStores.get(secondStore).go().then(res => res.data);
 					let newRent = "5000.00";
 					expect(secondStoreBeforeUpdate.rent)
 						.to.equal(rent)
 						.and.to.not.equal(newRent);
 					let updatedStore = await MallStores.update(secondStore)
 						.set({ rent: newRent })
-						.go();
+						.go().then(res => res.data);
 					expect(updatedStore).to.be.empty;
-					let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
+					let secondStoreAfterUpdate = await MallStores.get(secondStore).go().then(res => res.data);
 					expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 				}).timeout(20000);
 
@@ -658,7 +662,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						building,
 						unit
 					};
-					let recordOne = await MallStores.create(record).go();
+					let recordOne = await MallStores.create(record).go().then(res => res.data);
 					expect(recordOne).to.deep.equal(record);
 					let recordTwo = null;
 					try {
@@ -690,12 +694,12 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						building,
 						unit
 					};
-					let recordOne = await MallStores.create(record).go();
+					let recordOne = await MallStores.create(record).go().then(res => res.data);
 					expect(recordOne).to.deep.equal(record);
-					let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go();
+					let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go().then(res => res.data);
 					let patchResultsTwo = null;
 					try {
-						patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
+						patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go().then(res => res.data);
 					} catch(err) {
 						expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
 					}
@@ -707,12 +711,12 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let sector = "A1";
 
 					let [electroSuccess, electroErr] = await MallStores.get({sector, id})
-						.go({params: {TableName: "blahblah"}})
+						.go({params: {TableName: "blahblah"}}).then(res => res.data)
 						.then(() => [true, null])
 						.catch(err => [false, err]);
 
 					let [originalSuccess, originalErr] = await MallStores.get({sector, id})
-						.go({originalErr: true, params: {TableName: "blahblah"}})
+						.go({originalErr: true, params: {TableName: "blahblah"}}).then(res => res.data)
 						.then(() => [true, null])
 						.catch(err => [false, err]);
 
@@ -727,7 +731,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 				});
 			});
 
-			describe("Tailing labels", async () => {
+			describe("Tailing labels", () => {
 				it("Should include tailing label if chained query methods are not used", async () => {
 					let labeler = new Entity({
 						model: {
@@ -764,10 +768,10 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						isle: "A23",
 						name: "eggs"
 					};
-					await labeler.put([item1, item2]).go();
+					await labeler.put([item1, item2]).go().then(res => res.data);
 					await sleep(500);
-					let beginsWithIsle = await labeler.query.locations({section}).begins({isle: "A2"}).go();
-					let specificIsle = await labeler.query.locations({section, isle: "A2"}).go();
+					let beginsWithIsle = await labeler.query.locations({section}).begins({isle: "A2"}).go().then(res => res.data);
+					let specificIsle = await labeler.query.locations({section, isle: "A2"}).go().then(res => res.data);
 					expect(beginsWithIsle).to.be.an("array").with.lengthOf(2);
 					expect(beginsWithIsle).to.be.deep.equal([item1, item2]);
 					expect(specificIsle).to.be.an("array").with.lengthOf(1);
@@ -870,11 +874,11 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						"IndexName": "gsi1pk-gsi1sk-index"
 					});
 
-					await entity.put({section, isle}).go();
-					const queryRecordWithSparseSK = await entity.query.location({name}).go();
+					await entity.put({section, isle}).go().then(res => res.data);
+					const queryRecordWithSparseSK = await entity.query.location({name}).go().then(res => res.data);
 					expect(queryRecordWithSparseSK).to.deep.equal([]);
-					await entity.update({section, isle}).set({name}).go();
-					const queryRecordWithSK = await entity.query.location({name}).go();
+					await entity.update({section, isle}).set({name}).go().then(res => res.data);
+					const queryRecordWithSK = await entity.query.location({name}).go().then(res => res.data);
 					expect(queryRecordWithSK).to.deep.equal([{section, isle, name}]);
 				});
 
@@ -961,11 +965,11 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						"IndexName": "idx2"
 					});
 
-					await entity.put({section, isle}).go();
-					const queryRecordWithSparseSK = await entity.query.location({name}).go();
+					await entity.put({section, isle}).go().then(res => res.data);
+					const queryRecordWithSparseSK = await entity.query.location({name}).go().then(res => res.data)
 					expect(queryRecordWithSparseSK).to.deep.equal([]);
-					await entity.update({section, isle}).set({name}).go();
-					const queryRecordWithSK = await entity.query.location({name}).go();
+					await entity.update({section, isle}).set({name}).go().then(res => res.data);
+					const queryRecordWithSK = await entity.query.location({name}).go().then(res => res.data);
 					expect(queryRecordWithSK).to.deep.equal([{section, isle, name}]);
 				})
 			});
@@ -1025,15 +1029,15 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let mall = "defg";
 					let stores = 1;
 					let value = "ahssfh";
-					await MallStores.get({id, mall, stores}).go();
-					await MallStores.delete({id, mall, stores}).go();
-					await MallStores.update({id, mall, stores}).set({value}).go();
-					await MallStores.patch({id, mall, stores}).set({value}).go();
-					await MallStores.create({id: id + 1, mall, stores, value}).go();
-					await MallStores.put({id, mall, stores, value}).go();
-					await MallStores.query.store({id, mall, stores}).go();
-					await MallStores.query.other({id, mall, stores}).go();
-					await MallStores.scan.go();
+					await MallStores.get({id, mall, stores}).go().then(res => res.data);
+					await MallStores.delete({id, mall, stores}).go().then(res => res.data);
+					await MallStores.update({id, mall, stores}).set({value}).go().then(res => res.data);
+					await MallStores.patch({id, mall, stores}).set({value}).go().then(res => res.data);
+					await MallStores.create({id: id + 1, mall, stores, value}).go().then(res => res.data);
+					await MallStores.put({id, mall, stores, value}).go().then(res => res.data);
+					await MallStores.query.store({id, mall, stores}).go().then(res => res.data);
+					await MallStores.query.other({id, mall, stores}).go().then(res => res.data);
+					await MallStores.scan.go().then(res => res.data);
 				});
 				it("Should use the index field names as theyre specified on the model when sort keys do not exist", async () => {
 					let schema = {
@@ -1091,19 +1095,19 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let mall = "defg";
 					let stores = 1;
 					let value = "ahssfh";
-					await MallStores.get({id, mall, stores}).go();
-					await MallStores.delete({id, mall, stores}).go();
-					await MallStores.update({id, mall, stores}).set({value}).go();
-					await MallStores.patch({id, mall, stores}).set({value}).go();
-					await MallStores.create({id: id + 1, mall, stores, value}).go();
-					await MallStores.put({id, mall, stores, value}).go();
-					await MallStores.query.store({id, mall, stores}).go();
-					await MallStores.query.other({id, mall, stores}).go();
-					await MallStores.query.noSortOther({mall}).go();
-					await MallStores.scan.go();
+					await MallStores.get({id, mall, stores}).go().then(res => res.data);
+					await MallStores.delete({id, mall, stores}).go().then(res => res.data);
+					await MallStores.update({id, mall, stores}).set({value}).go().then(res => res.data);
+					await MallStores.patch({id, mall, stores}).set({value}).go().then(res => res.data);
+					await MallStores.create({id: id + 1, mall, stores, value}).go().then(res => res.data);
+					await MallStores.put({id, mall, stores, value}).go().then(res => res.data);
+					await MallStores.query.store({id, mall, stores}).go().then(res => res.data);
+					await MallStores.query.other({id, mall, stores}).go().then(res => res.data);
+					await MallStores.query.noSortOther({mall}).go().then(res => res.data);
+					await MallStores.scan.go().then(res => res.data);
 				});
 			});
-			describe("Delete records", async () => {
+			describe("Delete records", () => {
 				it("Should create then delete a record", async () => {
 					let record = new Entity(
 						{
@@ -1137,16 +1141,16 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let prop1 = uuid();
 					let prop2 = uuid();
 					await record.put({ prop1, prop2 }).go();
-					let recordExists = await record.get({ prop1, prop2 }).go();
+					let recordExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
 					await record.delete({ prop1, prop2 }).go();
 					await sleep(150);
-					let recordNoLongerExists = await record.get({ prop1, prop2 }).go();
+					let recordNoLongerExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
 					expect(!!Object.keys(recordExists).length).to.be.true;
 					expect(recordNoLongerExists).to.be.null;
 				});
 			});
 
-			describe("Getters/Setters", async () => {
+			describe("Getters/Setters", () => {
 				let db = new Entity(
 					{
 						service: SERVICE,
@@ -1201,14 +1205,14 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let id = uuid();
 					let prop1 = "aaa";
 					let prop2 = "bbb";
-					let record = await db.put({ date, id, prop1, prop2 }).go();
+					let record = await db.put({ date, id, prop1, prop2 }).go().then(res => res.data);
 					expect(record).to.deep.equal({
 						id,
 						date,
 						prop1: `${prop1} SET ${id} GET`,
 						prop2: `${prop2} GET ${id}`,
 					});
-					let fetchedRecord = await db.get({ date, id }).go();
+					let fetchedRecord = await db.get({ date, id }).go().then(res => res.data);
 					expect(fetchedRecord).to.deep.equal({
 						id,
 						date,
@@ -1219,9 +1223,9 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let updatedRecord = await db
 						.update({ date, id })
 						.set({ prop1: updatedProp1 })
-						.go();
+						.go().then(res => res.data);
 					expect(updatedRecord).to.be.empty;
-					let getUpdatedRecord = await db.get({ date, id }).go();
+					let getUpdatedRecord = await db.get({ date, id }).go().then(res => res.data);
 					expect(getUpdatedRecord).to.deep.equal({
 						id,
 						date,
@@ -1230,7 +1234,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					});
 				}).timeout(20000);
 			});
-			describe("Watchers", async () => {
+			describe("Watchers", () => {
 				// PUT
 					// Watching an attribute should trigger the setter of an attribute without that attribute being supplied
 					// Watching an attribute should trigger the setter of an attribute without that attribute being supplied AFTER the other attribute's setter as been applied
@@ -1376,10 +1380,10 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							fee: input2.price * .2
 						};
 
-						let putRecord = await entity.put(input1).go();
-						let getRecord1 = await entity.get({service}).go();
-						await entity.update({service}).set(input2).go();
-						let getRecord2 = await entity.get({service}).go();
+						let putRecord = await entity.put(input1).go().then(res => res.data);
+						let getRecord1 = await entity.get({service}).go().then(res => res.data);
+						await entity.update({service}).set(input2).go().then(res => res.data);
+						let getRecord2 = await entity.get({service}).go().then(res => res.data);
 						expect(putRecord).to.deep.equal(putRecord);
 						expect(getRecord1).to.deep.equal(output1);
 						expect(getRecord2).to.deep.equal(output2);
@@ -1447,10 +1451,10 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							displayPrice: "$" + input2.price
 						};
 
-						let putRecord = await entity.put(input1).go();
-						let getRecord1 = await entity.get({service}).go();
-						await entity.update({service}).set(input2).go();
-						let getRecord2 = await entity.get({service}).go();
+						let putRecord = await entity.put(input1).go().then(res => res.data);
+						let getRecord1 = await entity.get({service}).go().then(res => res.data);
+						await entity.update({service}).set(input2).go().then(res => res.data);
+						let getRecord2 = await entity.get({service}).go().then(res => res.data);
 						expect(putRecord).to.deep.equal(putRecord);
 						expect(getRecord1).to.deep.equal(output1);
 						expect(getRecord2).to.deep.equal(output2);
@@ -1510,12 +1514,12 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							description: "MiXeD CaSe DeScRiPtIoN"
 						};
 
-						let putRecord = await entity.put(transaction).go();
+						let putRecord = await entity.put(transaction).go().then(res => res.data);
 
 						let queryRecord1 = await entity.query
 							.transactions({accountNumber})
 							.where(({descriptionSearch}, {contains}) => contains(descriptionSearch, "mixed case"))
-							.go();
+							.go().then(res => res.data);
 
 						expect(putRecord).to.deep.equal(transaction);
 						expect(queryRecord1).to.deep.equal([transaction]);
@@ -1586,12 +1590,12 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							transactionId,
 							description: initialDescription
 						}
-						let putRecord = await entity.put(initialTransaction).go();
+						let putRecord = await entity.put(initialTransaction).go().then(res => res.data);
 						expect(createdAtCount).to.equal(1, "createdAt not updated");
 						expect(updatedAtCount).to.equal(1, "updatedAt not updated");
 						let queryRecord1 = await entity.query
 							.transactions({accountNumber, transactionId})
-							.go();
+							.go().then(res => res.data);
 
 						// createdAt and updatedAt should have changed
 						let afterPutTransaction = {
@@ -1602,7 +1606,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 
 						expect(putRecord).to.deep.equal(afterPutTransaction);
 						expect(queryRecord1).to.deep.equal([afterPutTransaction]);
-						await entity.update({accountNumber, transactionId}).set({description: updatedDescription}).go();
+						await entity.update({accountNumber, transactionId}).set({description: updatedDescription}).go().then(res => res.data);
 						expect(createdAtCount).to.equal(1, "createdAt shouldnt update");
 						expect(updatedAtCount).to.equal(2, "updatedAt not updated");
 						// createdAt should have remained the same
@@ -1612,7 +1616,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							description: updatedDescription
 						};
 
-						let queryRecord2 = await entity.query.transactions({accountNumber, transactionId}).go();
+						let queryRecord2 = await entity.query.transactions({accountNumber, transactionId}).go().then(res => res.data);
 						expect(queryRecord2).to.deep.equal([afterUpdateTransaction]);
 					});
 
@@ -1693,14 +1697,14 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 
 						const readOnlyUpdate = () => entity.update({accountNumber, transactionId}).set({updatedAt: Date.now()}).params();
 						expect(readOnlyUpdate).to.throw(`Attribute "updatedAt" is Read-Only and cannot be updated`);
-						const [success, result] = await entity.update({accountNumber, transactionId}).set({updatedAt: Date.now()}).go()
+						const [success, result] = await entity.update({accountNumber, transactionId}).set({updatedAt: Date.now()}).go().then(res => res.data)
 							.then((res) => [true, res])
 							.catch(err => [false, err])
 						expect(success).to.be.false;
 						expect(result.message).to.equal(`Attribute "updatedAt" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
 					});
 				});
-				describe("Setter Triggers", async () => {
+				describe("Setter Triggers", () => {
 					const entityName = uuid();
 					const counter = new TriggerListener();
 					const entity = new Entity({
@@ -2798,18 +2802,18 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						prop1 = prop1;
 						prop2 = prop2;
 						counter.start(keys.puts);
-						let e1 = await service.entities.entity1.put({prop1, prop2, prop3}).go();
-						let e2 = await service.entities.entity2.put({prop1, prop2, prop3}).go();
+						let e1 = await service.entities.entity1.put({prop1, prop2, prop3}).go().then(res => res.data);
+						let e2 = await service.entities.entity2.put({prop1, prop2, prop3}).go().then(res => res.data);
 						counter.start("get1");
-						let get1 = await service.entities.entity1.get({prop1, prop2}).go();
+						let get1 = await service.entities.entity1.get({prop1, prop2}).go().then(res => res.data);
 						counter.start("get2");
-						let get2 = await service.entities.entity2.get({prop1, prop2}).go();
+						let get2 = await service.entities.entity2.get({prop1, prop2}).go().then(res => res.data);
 						counter.start("query1");
-						let query1 = await entity1.query.record({prop1}).go();
+						let query1 = await entity1.query.record({prop1}).go().then(res => res.data);
 						counter.start("query2");
-						let query2 = await entity2.query.record({prop1}).go();
+						let query2 = await entity2.query.record({prop1}).go().then(res => res.data);
 						counter.start("collection");
-						let collection = await service.collections.collection2({prop3}).go();
+						let collection = await service.collections.collection2({prop3}).go().then(res => res.data);
 						counter.stop();
 						expect(e1).to.deep.equal({
 							prop3: `${prop3}_fromgetter`,
@@ -3134,7 +3138,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(() => new Entity(schema)).to.throw(`Attribute Validation Error. The following attributes are defined to "watch" invalid/unknown attributes: "prop3"->"unknown". - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-watch-definition`);
 				});
 			});
-			describe("Query Options", async () => {
+			describe("Query Options", () => {
 				let entity = uuid();
 				let db = new Entity(
 					{
@@ -3175,9 +3179,9 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let id = uuid();
 					let date = moment.utc().format();
 					let someValue = "ABDEF";
-					let putRecord = await db.put({ id, date, someValue }).go({ raw: true });
+					let putRecord = await db.put({ id, date, someValue }).go({ raw: true }).then(res => res.data);
 					expect(putRecord).to.deep.equal({});
-					let getRecord = await db.get({ id, date }).go({ raw: true });
+					let getRecord = await db.get({ id, date }).go({ raw: true }).then(res => res.data);
 					if (clientVersion === c.DocumentClientVersions.v2) {
 						expect(getRecord).to.deep.equal({
 							Item: {
@@ -3196,14 +3200,14 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let updateRecord = await db
 						.update({ id, date })
 						.set({ someValue })
-						.go({ raw: true });
+						.go({ raw: true }).then(res => res.data);
 					if (clientVersion === c.DocumentClientVersions.v2) {
 						expect(updateRecord).to.deep.equal({});
 					} else {
 						expect(updateRecord).to.have.keys(['$metadata', 'Attributes', 'ConsumedCapacity', 'ItemCollectionMetrics']);
 					}
 
-					let queryRecord = await db.query.record({ id, date }).go({ raw: true });
+					let queryRecord = await db.query.record({ id, date }).go({ raw: true }).then(res => res.data);
 					if (clientVersion === c.DocumentClientVersions.v2) {
 						expect(queryRecord).to.deep.equal({
 							Items: [
@@ -3223,7 +3227,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					} else {
 						expect(queryRecord).to.have.keys(['Items', 'Count', 'ScannedCount', 'LastEvaluatedKey', 'ConsumedCapacity', '$metadata']);
 					}
-					let recordWithKeys = await db.get({id, date}).go({includeKeys: true});
+					let recordWithKeys = await db.get({id, date}).go({includeKeys: true}).then(res => res.data);
 					expect(recordWithKeys).to.deep.equal({
 						id,
 						date,
@@ -3235,7 +3239,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					})
 				}).timeout(10000);
 			});
-			describe("Filters", async () => {
+			describe("Filters", () => {
 				it("Should filter results with custom user filter", async () => {
 					let store = "LatteLarrys";
 					let category = "food/coffee";
@@ -3271,7 +3275,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 								rent: i + rent,
 								store: storeNames[i],
 								unit: `B${i + 1}`,
-							}).go(),
+							}).go().then(res => res.data),
 						);
 					}
 
@@ -3284,7 +3288,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let belowMarketUnits = await MallStores.query
 						.units({ mall: mall + "abc", building })
 						.maxRent(max)
-						.go();
+						.go().then(res => res.data);
 
 					expect(belowMarketUnits)
 						.to.be.an("array")
@@ -3331,11 +3335,11 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let property = "ABDEF";
 					let recordParams = db.put({ date, property }).params();
 					expect(recordParams.Item.propertyVal).to.equal(property);
-					let record = await db.put({ date, property }).go();
+					let record = await db.put({ date, property }).go().then(res => res.data);
 					let found = await db.query
 						.record({ date })
 						.filter((attr) => attr.property.eq(property))
-						.go();
+						.go().then(res => res.data);
 					let foundParams = db.query
 						.record({ date })
 						.filter((attr) => attr.property.eq(property))
@@ -3390,7 +3394,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let records = await Promise.all(
 						properties.map((property, i) => {
 							let color = colors[i % 2];
-							return db.put({ id, property, color }).go();
+							return db.put({ id, property, color }).go().then(res => res.data);
 						}),
 					);
 					let expectedMembers = records.filter(
@@ -3406,7 +3410,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						`,
 						)
 						.filter(({ property }) => property.notContains("Z"))
-						.go();
+						.go().then(res => res.data);
 
 					expect(found)
 						.to.be.an("array")
@@ -3494,6 +3498,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						await Dummy.update({prop1: "abc", prop2: "def"})
 							.set({prop9: "propz9", prop2: "propz6"})
 							.go()
+							.then(res => res.data)
 						throw null;
 					} catch(err) {
 						expect(err).to.not.be.null;
@@ -3506,6 +3511,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						await Dummy.patch({prop1: "abc", prop2: "def"})
 							.set({prop9: "propz9", prop2: "propz6"})
 							.go()
+							.then(res => res.data)
 						throw null;
 					} catch(err) {
 						expect(err).to.not.be.null;
@@ -3558,31 +3564,48 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(beforeUpdateQueryParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#prop6": "prop6",
+							"#prop7": "prop7",
+							"#prop8": "prop8",
+						},
 						ExpressionAttributeValues: {
+							":prop60": record.prop6,
+							":prop70": record.prop7,
+							":prop80": record.prop8,
 							':pk': `$test#prop5_${record.prop5}`,
 							':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
 						},
+						"FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
-					let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+					let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
 					expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
 					await Dummy.update({prop1: record.prop1, prop2: record.prop2})
 						.set({prop9, prop5})
-						.go();
+						.go()
+						.then(res => res.data);
 					await sleep(100);
 					let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
 					expect(afterUpdateQueryParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#prop6": "prop6",
+							"#prop7": "prop7",
+							"#prop8": "prop8",
+						},
 						ExpressionAttributeValues: {
+							":prop60": record.prop6,
+							":prop70": record.prop7,
+							":prop80": record.prop8,
 							':pk': `$test#prop5_${prop5}`,
 							':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
 						},
+						"FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
-					let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+					let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
 					expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop5}]);
 				});
 
@@ -3601,37 +3624,54 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						prop8: uuid(),
 						prop9: uuid(),
 					}
-					await Dummy.put(record).go();
+					await Dummy.put(record).go().then(res => res.data);
 					await sleep(100);
 					let beforeUpdateQueryParams = Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
 					expect(beforeUpdateQueryParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#prop6": "prop6",
+							"#prop7": "prop7",
+							"#prop8": "prop8",
+						},
 						ExpressionAttributeValues: {
+							":prop60": record.prop6,
+							":prop70": record.prop7,
+							":prop80": record.prop8,
 							':pk': `$test#prop5_${record.prop5}`,
 							':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
 						},
+						FilterExpression: "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
-					let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+					let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
 					expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
 					await Dummy.patch({prop1: record.prop1, prop2: record.prop2})
 						.set({prop9, prop5})
-						.go();
+						.go()
+						.then(res => res.data);
 					await sleep(100);
 					let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
 					expect(afterUpdateQueryParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#prop6": "prop6",
+							"#prop7": "prop7",
+							"#prop8": "prop8",
+						},
 						ExpressionAttributeValues: {
+							":prop60": record.prop6,
+							":prop70": record.prop7,
+							":prop80": record.prop8,
 							':pk': `$test#prop5_${prop5}`,
 							':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
 						},
+						"FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
-					let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+					let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
 					expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop5}]);
 				});
 
@@ -3650,7 +3690,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						prop8: uuid(),
 						prop9: uuid(),
 					}
-					await Dummy.put(record).go();
+					await Dummy.put(record).go().then(res => res.data);
 					await sleep(100);
 					let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
 					expect(beforeUpdateQueryParams).to.deep.equal({
@@ -3663,11 +3703,12 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						},
 						IndexName: 'gsi1pk-gsi1sk-index'
 					});
-					let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go();
+					let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go().then(res => res.data);
 					expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
 					await Dummy.update({prop1: record.prop1, prop2: record.prop2})
 						.set({prop9, prop4})
-						.go();
+						.go()
+						.then(res => res.data);
 					await sleep(100);
 					let afterUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4}).params();
 					expect(afterUpdateQueryParams).to.deep.equal({
@@ -3680,7 +3721,8 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						},
 						IndexName: 'gsi1pk-gsi1sk-index'
 					});
-					let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go();
+					let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go()
+						.then(res => res.data);
 					expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
 				});
 
@@ -3712,11 +3754,12 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						},
 						IndexName: 'gsi1pk-gsi1sk-index'
 					});
-					let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go();
+					let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go().then(res => res.data);
 					expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
 					await Dummy.patch({prop1: record.prop1, prop2: record.prop2})
 						.set({prop9, prop4})
-						.go();
+						.go()
+						.then(res => res.data)
 					await sleep(100);
 					let afterUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4}).params();
 					expect(afterUpdateQueryParams).to.deep.equal({
@@ -3729,15 +3772,16 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						},
 						IndexName: 'gsi1pk-gsi1sk-index'
 					});
-					let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go();
+					let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go()
+						.then(res => res.data);
 					expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
 				});
 			})
-			describe("Pagination", async () => {
+			describe("Pagination", () => {
 				it("Should return a pk and sk that match the last record in the result set, and should be able to be passed in for more results", async () => {
 					// THIS IS A FOOLISH TEST: IT ONLY FULLY WORKS WHEN THE TABLE USED FOR TESTING IS FULL OF RECORDS. THIS WILL HAVE TO DO UNTIL I HAVE TIME TO FIGURE OUT A PROPER WAY MOCK DDB.
 					let MallStores = new Entity(model, { client });
-					let results = await MallStores.scan.page(null, {raw: true});
+					let results = await MallStores.scan.go({raw: true}).then(res => [res.cursor, res.data]);
 					expect(results).to.be.an("array").and.have.length(2);
 					// Scan may not return records, dont force a bad test then
 					let [index, stores] = results;
@@ -3747,7 +3791,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						expect(stores.Items).to.be.an("array");
 						expect(stores.Items[0]).to.have.a.property('pk');
 						expect(stores.Items[0]).to.have.a.property('sk');
-						let [nextIndex, nextStores] = await MallStores.scan.page(index, {raw: true});
+						let [nextIndex, nextStores] = await MallStores.scan.go({cursor: index, raw: true}).then(res => [res.cursor, res.data]);
 						expect(nextIndex).to.not.deep.equal(index);
 						expect(nextStores.Items).to.be.an("array");
 						if (nextStores.Items.length) {
@@ -3757,7 +3801,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					}
 				}).timeout(10000);
 			});
-			describe("Template and composite attribute arrays", async () => {
+			describe("Template and composite attribute arrays", () => {
 				it("Should resolve composite attribute labels at an index level", async () => {
 					const SERVICE = "facettest";
 					const ENTITY = uuid();
@@ -3907,25 +3951,42 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(unitParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk' },
-						ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1#s_' },
+						ExpressionAttributeNames: { '#pk': 'gsi1pk', '#sk1': 'gsi1sk',
+							"#unitId": "unitId",
+							"#buildingId": "buildingId"
+						},
+						ExpressionAttributeValues: { ':pk': 'mallz_eastpointe', ':sk1': 'b_buildingz#u_g1#s_',
+							":buildingId0": "BuildingZ",
+							":unitId0": "G1"
+						},
+						FilterExpression: "(#buildingId = :buildingId0) AND #unitId = :unitId0",
 						IndexName: 'gsi1pk-gsi1sk-index'
 					});
 					expect(leasesParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
-						ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys#b_' },
+						ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+							"#leaseEnd": "leaseEnd",
+							"#storeId": "storeId"
+						},
+						ExpressionAttributeValues: { ':pk': 'm_eastpointe', ':sk1': 'l_2020-01-20#s_lattelarrys#b_',
+							":leaseEnd0": "2020-01-20",
+							":storeId0": "LatteLarrys"
+						},
+						FilterExpression: "(#leaseEnd = :leaseEnd0) AND #storeId = :storeId0",
 						IndexName: 'gsi2pk-gsi2sk-index'
 					});
 					expect(shopParams).to.deep.equal({
 						KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 						TableName: 'electro',
-						ExpressionAttributeNames: { '#pk': 'gsi4pk', '#sk1': 'gsi4sk' },
+						ExpressionAttributeNames: { '#pk': 'gsi4pk', '#sk1': 'gsi4sk', "#buildingId": "buildingId", "#mallId": "mallId" },
 						ExpressionAttributeValues: {
+							":buildingId0": "BuildingZ",
+							":mallId0": "EastPointe",
 							':pk': '$facettest_1#store_lattelarrys',
 							':sk1': `$${ENTITY}#mall_eastpointe#building_buildingz#unit_`
 						},
+						FilterExpression: "(#mallId = :mallId0) AND #buildingId = :buildingId0",
 						IndexName: 'gsi4pk-gsi4sk-index'
 					});
 					expect(createParams).to.deep.equal({
@@ -3956,7 +4017,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
 						ExpressionAttributeNames: {"#pk": "pk", "#sk": "sk"}
 					});
-					let createRecord = await MallStores.create({sector, store, mall, rent, category, leaseEnd, unit, building, id}).go();
+					let createRecord = await MallStores.create({sector, store, mall, rent, category, leaseEnd, unit, building, id}).go().then(res => res.data);
 					expect(createRecord).to.deep.equal({
 						id,
 						sector: 'A1',
@@ -3970,9 +4031,9 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					});
 					await sleep(1500);
 
-					let unitRecord = await MallStores.query.units({mall, building, unit}).go();
-					let leasesRecord = await MallStores.query.leases({mall, leaseEnd, store}).go();
-					let shopRecord = await MallStores.query.shops({mall, building, store}).go();
+					let unitRecord = await MallStores.query.units({mall, building, unit}).go().then(res => res.data);
+					let leasesRecord = await MallStores.query.leases({mall, leaseEnd, store}).go().then(res => res.data);
+					let shopRecord = await MallStores.query.shops({mall, building, store}).go().then(res => res.data);
 					expect(unitRecord.find(record => record.id === id)).to.not.be.undefined;
 					expect(leasesRecord.find(record => record.id === id)).to.not.be.undefined;
 					expect(shopRecord.find(record => record.id === id)).to.not.be.undefined;
@@ -4029,16 +4090,16 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						prop4: item.prop4
 					};
 
-					let putResult = await entity.put(item).go();
+					let putResult = await entity.put(item).go().then(res => res.data);
 
 					let getResponse = await entity
 						.get(item)
-						.go();
+						.go().then(res => res.data);
 
 					let queryResponse = await entity.query
 						.record(item)
 						.where(({prop3}, {eq}) => `${eq(prop3, item.prop3)}`)
-						.go();
+						.go().then(res => res.data);
 
 					expect(putResult).to.deep.equal(data);
 					expect(getResponse).to.deep.equal(data);
@@ -4094,16 +4155,16 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 
 					let data = null;
 
-					let putResult = await entity.put(item).go();
+					let putResult = await entity.put(item).go().then(res => res.data);
 
 					let getResponse = await entity
 						.get(item)
-						.go();
+						.go().then(res => res.data);
 
 					let queryResponse = await entity.query
 						.record(item)
 						.where(({prop3}, {eq}) => `${eq(prop3, item.prop3)}`)
-						.go();
+						.go().then(res => res.data);
 
 					expect(putResult).to.deep.equal(data);
 					expect(getResponse).to.deep.equal(data);
@@ -4167,11 +4228,11 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							}
 						}
 					}, {table: "electro_nostringkeys", client});
-					let putRecord = await entity.put({number1: 55, number2: 66}).go();
-					let getRecord = await entity.get({number1: 55, number2: 66}).go();
-					let updateRecord = await entity.update({number1: 55, number2: 66}).set({number3: 77}).go();
-					let queryRecord = await entity.query.record({number1: 55}).go();
-					let deleteRecord = await entity.delete({number1: 55, number2: 66}).go();
+					let putRecord = await entity.put({number1: 55, number2: 66}).go().then(res => res.data);
+					let getRecord = await entity.get({number1: 55, number2: 66}).go().then(res => res.data);
+					let updateRecord = await entity.update({number1: 55, number2: 66}).set({number3: 77}).go().then(res => res.data);
+					let queryRecord = await entity.query.record({number1: 55}).go().then(res => res.data);
+					let deleteRecord = await entity.delete({number1: 55, number2: 66}).go().then(res => res.data);
 					expect(putRecord).to.deep.equal({ number1: 55, number2: 66 });
 					expect(getRecord).to.deep.equal({ number1: 55, number2: 66 });
 					expect(queryRecord).to.deep.equal([{ number1: 55, number2: 66, number3: 77 }]);
@@ -4216,11 +4277,11 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					const prop2 = "value2";
 					const prop3 = "value3";
 					const prop3Patched = "value4";
-					const item = await entity.create({prop1, prop2, prop3}).go({response: ""});
+					const item = await entity.create({prop1, prop2, prop3}).go({response: ""}).then(res => res.data);
 					expect(item).to.deep.equal({prop1, prop2, prop3});
-					const patched = await entity.patch({prop1, prop2}).set({prop3: prop3Patched}).go({response: "all_new"});
+					const patched = await entity.patch({prop1, prop2}).set({prop3: prop3Patched}).go({response: "all_new"}).then(res => res.data);
 					expect(patched).to.deep.equal({prop1, prop2, prop3: prop3Patched});
-					const removed = await entity.remove({prop1, prop2}).go({response: "all_old"});
+					const removed = await entity.remove({prop1, prop2}).go({response: "all_old"}).then(res => res.data);
 					expect(removed).to.deep.equal({prop1, prop2, prop3: prop3Patched});
 				});
 			})

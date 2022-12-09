@@ -611,7 +611,7 @@ describe("Simple Crud On Complex Entity", () => {
     it("should apply all defaults", async () => {
         const helper = new EntityHelper();
         const entity = getEntity(helper);
-        const created = await entity.put({}).go();
+        const created = await entity.put({}).go().then(res => res.data);
         expect(created).to.deep.equal({
             "emptyNestedMap": {
                 "nestedMap": {
@@ -761,7 +761,7 @@ describe("Simple Crud On Complex Entity", () => {
                 },
             }
         }, {table, client});
-        const created = await entity.put({}).go();
+        const created = await entity.put({}).go().then(res => res.data);
         expect(created).to.deep.equal({stringVal, stringVal2});
     });
 
@@ -815,8 +815,8 @@ describe("Simple Crud On Complex Entity", () => {
             },
             TableName: 'electro'
         });
-        const putItem = await entity.put({stringVal, stringVal2, list: []}).go();
-        const getItem = await entity.get({stringVal, stringVal2}).go();
+        const putItem = await entity.put({stringVal, stringVal2, list: []}).go().then(res => res.data);
+        const getItem = await entity.get({stringVal, stringVal2}).go().then(res => res.data);
         expect(putItem).to.deep.equal(getItem);
         expect(putItem).to.deep.equal({ stringVal, stringVal2, list: [] });
     });
@@ -872,8 +872,8 @@ describe("Simple Crud On Complex Entity", () => {
             },
             TableName: 'electro'
         });
-        const putItem = await entity.put({stringVal, stringVal2}).go();
-        const getItem = await entity.get({stringVal, stringVal2}).go();
+        const putItem = await entity.put({stringVal, stringVal2}).go().then(res => res.data);
+        const getItem = await entity.get({stringVal, stringVal2}).go().then(res => res.data);
         expect(putItem).to.deep.equal(getItem);
         expect(putItem).to.deep.equal({ stringVal, stringVal2, list: [] });
     });
@@ -941,8 +941,8 @@ describe("Simple Crud On Complex Entity", () => {
             },
             TableName: 'electro'
         });
-        const putItem = await entity.put({stringVal, stringVal2}).go();
-        const getItem = await entity.get({stringVal, stringVal2}).go();
+        const putItem = await entity.put({stringVal, stringVal2}).go().then(res => res.data);
+        const getItem = await entity.get({stringVal, stringVal2}).go().then(res => res.data);
         expect(putItem).to.deep.equal(getItem);
         expect(putItem).to.deep.equal({ stringVal, stringVal2, list: [] });
     });
@@ -999,8 +999,8 @@ describe("Simple Crud On Complex Entity", () => {
             },
             TableName: 'electro'
         });
-        const putItem = await entity.put({stringVal, stringVal2, map: {}}).go();
-        const getItem = await entity.get({stringVal, stringVal2}).go();
+        const putItem = await entity.put({stringVal, stringVal2, map: {}}).go().then(res => res.data);
+        const getItem = await entity.get({stringVal, stringVal2}).go().then(res => res.data);
         expect(putItem).to.deep.equal(getItem);
         expect(putItem).to.deep.equal({ stringVal, stringVal2, map: {} });
     });
@@ -1058,8 +1058,8 @@ describe("Simple Crud On Complex Entity", () => {
             },
             TableName: 'electro'
         });
-        const putItem = await entity.put({stringVal, stringVal2}).go();
-        const getItem = await entity.get({stringVal, stringVal2}).go();
+        const putItem = await entity.put({stringVal, stringVal2}).go().then(res => res.data);
+        const getItem = await entity.get({stringVal, stringVal2}).go().then(res => res.data);
         expect(putItem).to.deep.equal(getItem);
         expect(putItem).to.deep.equal({ stringVal, stringVal2, map: {} });
     });
@@ -1123,8 +1123,8 @@ describe("Simple Crud On Complex Entity", () => {
             },
             TableName: 'electro'
         });
-        const putItem = await entity.put({stringVal, stringVal2}).go();
-        const getItem = await entity.get({stringVal, stringVal2}).go();
+        const putItem = await entity.put({stringVal, stringVal2}).go().then(res => res.data);
+        const getItem = await entity.get({stringVal, stringVal2}).go().then(res => res.data);
         expect(putItem).to.deep.equal(getItem);
         expect(putItem).to.deep.equal({ stringVal, stringVal2, map: {} });
     });
@@ -1174,6 +1174,18 @@ describe("Simple Crud On Complex Entity", () => {
                 entity.update({stringVal, stringVal2})
                     // @ts-ignore
                     .set({"map.test": "abc"})
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "map.test" is Read-Only and cannot be updated`);
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+                    .data((attr, op) =>
+                        // @ts-ignore
+                        op.set(attr.map.test, 'abc')
+                    )
                     .params();
             } catch(err) {
                 throw err;
@@ -1234,6 +1246,19 @@ describe("Simple Crud On Complex Entity", () => {
                 throw err;
             }
         }).to.throw(`Attribute "list[*].test" is Read-Only and cannot be updated`);
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+
+                    .data((attr, op) =>
+                        // @ts-ignore
+                        op.set(attr.list[3].test, 'def')
+                    )
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "list[*].test" is Read-Only and cannot be updated`);
     });
 
     it("should apply not null style removal constraints to required nested attributes", () => {
@@ -1276,16 +1301,16 @@ describe("Simple Crud On Complex Entity", () => {
         }, {table, client});
         const stringVal = uuid();
         const stringVal2 = uuid();
-        expect( () => {
-            try {
-                entity.update({stringVal, stringVal2})
-                    // @ts-ignore
-                    .remove(["map.test"])
-                    .params();
-            } catch(err) {
-                throw err;
-            }
-        }).to.throw(`Attribute "map.test" is Required and cannot be removed`);
+        expect( () => entity.update({stringVal, stringVal2})
+                // @ts-ignore
+                .remove(["map.test"])
+                .params()
+        ).to.throw(`Attribute "map.test" is Required and cannot be removed`);
+        expect(() => entity.update({stringVal, stringVal2})
+                .data((attr, op) =>
+                    op.remove(attr.map.test))
+                .params()
+        ).to.throw(`Attribute "map.test" is Required and cannot be removed`);
     });
 
     it("should apply not null style removal constraints to required nested attributes under a list", () => {
@@ -1336,6 +1361,18 @@ describe("Simple Crud On Complex Entity", () => {
                 entity.update({stringVal, stringVal2})
                     // @ts-ignore
                     .remove(["list[3].test"])
+                    .params();
+            } catch(err) {
+                throw err;
+            }
+        }).to.throw(`Attribute "list[*].test" is Required and cannot be removed`);
+        expect( () => {
+            try {
+                entity.update({stringVal, stringVal2})
+                    // @ts-ignore
+                    .data((attr, op) =>
+                        op.remove(attr.list[3].test)
+                    )
                     .params();
             } catch(err) {
                 throw err;
@@ -1596,8 +1633,8 @@ describe("Simple Crud On Complex Entity", () => {
             "TableName": "electro"
         });
 
-        const putRecord = await entity.put(item).go();
-        const getRecord = await entity.get(item).go();
+        const putRecord = await entity.put(item).go().then(res => res.data);
+        const getRecord = await entity.get(item).go().then(res => res.data);
         expect(JSON.parse(JSON.stringify(putRecord))).to.deep.equal(item);
         expect(JSON.parse(JSON.stringify(getRecord))).to.deep.equal(item);
     });

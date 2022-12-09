@@ -263,7 +263,7 @@ database.join(modelOne);
 database.join(modelTwo);
 database.join(modelThree);
 
-describe("Service Offline", async () => {
+describe("Service Offline", () => {
 	describe("TypeScript oriented constructor", () => {
 		let modelOne = {
 			model: {
@@ -1281,12 +1281,19 @@ describe("Service Offline", async () => {
 			TableName: 'electro',
 			ExpressionAttributeNames: {
 				"#pk": "pk",
-				"#sk1": "sk"
+				"#sk1": "sk",
+				"#__edb_e__": "__edb_e__",
+				"#__edb_v__": "__edb_v__",
 			},
 			ExpressionAttributeValues: {
 				':pk': '$electrotest_1#prop1_abc#prop7_def',
-				':sk1': '$collectiona'
-			}
+				':sk1': '$collectiona',
+				":__edb_e___entityOne": "entityOne",
+				":__edb_e___entityTwo": "entityTwo",
+				":__edb_v___entityOne": "1",
+				":__edb_v___entityTwo": "1",
+			},
+			FilterExpression: "((#__edb_e__ = :__edb_e___entityOne AND #__edb_v__ = :__edb_v___entityOne) OR (#__edb_e__ = :__edb_e___entityTwo AND #__edb_v__ = :__edb_v___entityTwo))"
 		});
 	});
 
@@ -1825,7 +1832,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Attribute provided "prop1" with Table Field "def" does not match established Table Field "abc"`);
+		expect(() => database.join(entityTwo)).to.throw(`Inconsistent attribute(s) on the entity "entityTwo". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "prop1" with Table Field "def" does not match established Table Field "abc". These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 	});
 	it("Should validate the PK field matches on all added schemas", () => {
 		let entityOne = {
@@ -1952,7 +1959,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Attribute provided "prop1" with Table Field "notProp1" does not match established Table Field "prop1"`);
+		expect(() => database.join(entityTwo)).to.throw(`Inconsistent attribute(s) on the entity "entityTwo". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "prop1" with Table Field "notProp1" does not match established Table Field "prop1". These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
 	});
 	it("Should disallow for 'v1' construction with 'beta' entities", () => {
 		let database = new Service("electrotest", {table: "electro_test"});
@@ -1999,7 +2006,7 @@ describe("Misconfiguration exceptions", () => {
 		let entityParamsBefore = service.entities.MyEntity.query.index1({prop1: "abc"}).params();
 		expect(collectionParamsBefore.TableName).to.equal(tableBefore);
 		expect(entityParamsBefore.TableName).to.equal(tableBefore);
-		service._setTableName(tableAfter);
+		service.setTableName(tableAfter);
 		let collectionParamsAfter = service.collections.collectionA({prop1: "abc"}).params();
 		let entityParamsAfter = service.entities.MyEntity.query.index1({prop1: "abc"}).params();
 		expect(collectionParamsAfter.TableName).to.equal(tableAfter);
@@ -2264,8 +2271,23 @@ describe("Sub Collections", () => {
 				output: {
 					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 					TableName: 'subcollection_table',
-					ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
-					ExpressionAttributeValues: { ':pk': '$myservice#attr1_abc', ':sk1': '$outercollection' }
+					ExpressionAttributeNames: {
+						'#pk': 'pk',
+						'#sk1': 'sk',
+						"#__edb_e__": "__edb_e__",
+						"#__edb_v__": "__edb_v__",
+					},
+					ExpressionAttributeValues: {
+						':pk': '$myservice#attr1_abc',
+						':sk1': '$outercollection',
+						":__edb_e___entityWithMultipleCollections1": "abc",
+						":__edb_e___entityWithMultipleCollections2": "abc",
+						":__edb_e___entityWithMultipleCollections3": "abc",
+						":__edb_v___entityWithMultipleCollections1": "myversion",
+						":__edb_v___entityWithMultipleCollections2": "myversion",
+						":__edb_v___entityWithMultipleCollections3": "myversion",
+					},
+					FilterExpression: "((#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))",
 				}
 			},
 			{
@@ -2274,11 +2296,19 @@ describe("Sub Collections", () => {
 				output: {
 					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 					TableName: 'subcollection_table',
-					ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+					ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk',
+						"#__edb_e__": "__edb_e__",
+						"#__edb_v__": "__edb_v__",
+					},
 					ExpressionAttributeValues: {
 						':pk': '$myservice#attr1_abc',
-						':sk1': '$outercollection#innercollection'
-					}
+						':sk1': '$outercollection#innercollection',
+						":__edb_e___entityWithMultipleCollections1": "abc",
+						":__edb_e___entityWithMultipleCollections2": "abc",
+						":__edb_v___entityWithMultipleCollections1": "myversion",
+						":__edb_v___entityWithMultipleCollections2": "myversion",
+					},
+					FilterExpression: "((#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))"
 				}
 			},
 			{
@@ -2287,9 +2317,18 @@ describe("Sub Collections", () => {
 				output: {
 					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 					TableName: 'subcollection_table',
-					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk' },
-					ExpressionAttributeValues: { ':pk': '$myservice#attr2_def', ':sk1': '$extracollection' },
-					IndexName: 'index2'
+					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk',
+						"#__edb_e__": "__edb_e__",
+						"#__edb_v__": "__edb_v__",
+					},
+					ExpressionAttributeValues: { ':pk': '$myservice#attr2_def', ':sk1': '$extracollection',
+						":__edb_e___entityWithMultipleCollections2": "abc",
+						":__edb_e___entityWithMultipleCollections3": "abc",
+						":__edb_v___entityWithMultipleCollections2": "myversion",
+						":__edb_v___entityWithMultipleCollections3": "myversion",
+					},
+					IndexName: 'index2',
+					FilterExpression: "((#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))"
 				}
 			},
 			{
@@ -2298,12 +2337,18 @@ describe("Sub Collections", () => {
 				output: {
 					KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
 					TableName: 'subcollection_table',
-					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk' },
+					ExpressionAttributeNames: { '#pk': 'index2pk', '#sk1': 'index2sk',
+						"#__edb_e__": "__edb_e__",
+						"#__edb_v__": "__edb_v__"
+					},
 					ExpressionAttributeValues: {
 						':pk': '$myservice#attr2_def',
-						':sk1': '$extracollection#superextracollection'
+						':sk1': '$extracollection#superextracollection',
+						":__edb_e___entityWithMultipleCollections2": "abc",
+						":__edb_v___entityWithMultipleCollections2": "myversion"
 					},
-					IndexName: 'index2'
+					IndexName: 'index2',
+					FilterExpression: "(#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)"
 				}
 			}
 		];
@@ -2317,6 +2362,7 @@ describe("Sub Collections", () => {
 		const tests = [
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					"collectionA",
 					"my_entity",
@@ -2327,6 +2373,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					"collectionB",
 					"my_entity",
@@ -2337,6 +2384,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					undefined,
 					"my_entity",
@@ -2347,6 +2395,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					["collectionA", "collectionB"],
 					"my_entity",
@@ -2357,6 +2406,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionB"],
 					"collectionA",
 					"my_entity",
@@ -2367,6 +2417,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					["collectionA", "collectionB"],
 					"my_entity",
@@ -2377,6 +2428,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionA",
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2387,6 +2439,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionB"],
 					["collectionA", "collectionB"],
 					"my_entity",
@@ -2397,6 +2450,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionB"],
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2407,6 +2461,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionB",
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2417,6 +2472,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionB",
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2427,6 +2483,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					"collectionB",
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2437,6 +2494,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionB", "collectionD", "collectionC"],
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2447,6 +2505,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					["collectionA", "collectionD", "collectionC"],
 					["collectionA", "collectionB", "collectionC"],
 					"my_entity",
@@ -2457,6 +2516,7 @@ describe("Sub Collections", () => {
 			},
 			{
 				input: [
+					'isolated',
 					[],
 					"collectionA",
 					"my_entity",
@@ -2464,6 +2524,17 @@ describe("Sub Collections", () => {
 				],
 				output: 0,
 				success: true
+			},
+			{
+				input: [
+					'clustered',
+					["collectionA"],
+					["collectionA", "collectionB"],
+					"my_entity",
+					"collectionA"
+				],
+				output: `Clustered indexes do not support sub-collections. The sub-collection "collectionA", on Entity "my_entity" must be defined as either an individual collection name or the index must be redefined as an isolated cluster`,
+				success: false
 			},
 		];
 		for (const test of tests) {

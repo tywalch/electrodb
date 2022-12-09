@@ -488,13 +488,13 @@ let getKeys = ((val) => {}) as GetKeys;
     expectNotAssignable<GetBatchParamsParamsWithSK>({attributes: ['attrz1']});
     expectNotAssignable<GetBatchParamsParamsWithoutSK>({attributes: ['attrz1']});
 
-    expectAssignable<Promise<Item | null>>(entityWithSK.get({attr1: "abc", attr2: "def"}).go());
-    expectAssignable<Promise<ItemWithoutSK | null>>(entityWithoutSK.get({attr1: "abc"}).go());
+    expectAssignable<Promise<Item | null>>(entityWithSK.get({attr1: "abc", attr2: "def"}).go().then(res => res.data));
+    expectAssignable<Promise<ItemWithoutSK | null>>(entityWithoutSK.get({attr1: "abc"}).go().then(res => res.data));
     expectAssignable<"paramtest">(entityWithSK.get({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.get({attr1: "abc"}).params<"paramtest">());
-    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go().then(results => {
-        const [item] = results[0];
-        const [unprocessed] = results[1];
+    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go().then(res => {
+        const [item] = res.data;
+        const [unprocessed] = res.unprocessed;
         expectType<{
             attr1: string;
             attr2: string;
@@ -510,10 +510,10 @@ let getKeys = ((val) => {}) as GetKeys;
         
         expectType<WithSKMyIndexCompositeAttributes>(magnify(unprocessed));
     });
-    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go({preserveBatchOrder: true}).then(results => {
-        const item = magnify(results[0]?.[0]);
+    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go({preserveBatchOrder: true}).then(res => {
+        const item = magnify(res.data[0]);
         
-        const [unprocessed] = results[1];
+        const unprocessed = res.unprocessed[0];
         expectType<{
             attr1: string;
             attr2: string;
@@ -528,21 +528,20 @@ let getKeys = ((val) => {}) as GetKeys;
         } | null>(item);
         expectType<WithSKMyIndexCompositeAttributes>(magnify(unprocessed));
     });
-    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go().then(value => {
-        const [results, unprocessed] = value;
-        expectType<EntityItem<typeof entityWithSK>[]>(magnify(results));
-        expectType<WithSKMyIndexCompositeAttributes[]>(magnify(unprocessed));
+    entityWithSK.get([{attr1: "abc", attr2: "def"}]).go().then(res => {
+        expectType<EntityItem<typeof entityWithSK>[]>(magnify(res.data));
+        expectType<WithSKMyIndexCompositeAttributes[]>(magnify(res.unprocessed));
     });
     entityWithSK.get([{attr1: "abc", attr2: "def"}]).go()
-        .then(([items, unprocessed]) => {
-            expectAssignable<Item[]>(items);
+        .then(({data, unprocessed}) => {
+            expectAssignable<Item[]>(data);
             expectAssignable<WithSKMyIndexCompositeAttributes[]>(unprocessed);
         })
 
     entityWithoutSK.get([{attr1: "abc"}]).go()
-            .then(results => {
-                const [item] = results[0];
-                const [unprocessed] = results[1];
+            .then((res) => {
+                const [item] = res.data;
+                const [unprocessed] = res.unprocessed;
                 expectType<{
                     attr1: string;
                     attr2?: string | undefined;
@@ -557,9 +556,9 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<WithoutSKMyIndexCompositeAttributes>(magnify(unprocessed));
             });
     entityWithoutSK.get([{attr1: "abc"}]).go({preserveBatchOrder: true})
-        .then(results => {
-            const item = results[0]?.[0];
-            const [unprocessed] = results[1];
+        .then(res => {
+            const item = res.data[0];
+            const unprocessed = res.unprocessed[0];
             expectType<{
                 attr1: string;
                 attr2?: string | undefined;
@@ -574,9 +573,9 @@ let getKeys = ((val) => {}) as GetKeys;
             expectType<WithoutSKMyIndexCompositeAttributes>(magnify(unprocessed));
         });
     entityWithoutSK.get([{attr1: "abc"}]).go()
-        .then(([items, unprocessed]) => {
-            expectAssignable<ItemWithoutSK[]>(items);
-            expectAssignable<WithoutSKMyIndexCompositeAttributes[]>(unprocessed);
+        .then((res) => {
+            expectAssignable<ItemWithoutSK[]>(res.data);
+            expectAssignable<WithoutSKMyIndexCompositeAttributes[]>(res.unprocessed);
         })
 
 // Delete
@@ -694,13 +693,13 @@ let getKeys = ((val) => {}) as GetKeys;
     });
 
     // Results
-    expectAssignable<Promise<Item>>(entityWithSK.delete({attr1: "abc", attr2: "def"}).go({response: "all_old"}));
-    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.delete({attr1: "abc"}).go({response: "all_old"}));
+    expectAssignable<Promise<Item>>(entityWithSK.delete({attr1: "abc", attr2: "def"}).go({response: "all_old"}).then(res => res.data));
+    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.delete({attr1: "abc"}).go({response: "all_old"}).then(res => res.data));
 
     expectAssignable<"paramtest">(entityWithSK.delete({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.delete({attr1: "abc"}).params<"paramtest">());
 
-    expectAssignable<Promise<WithoutSKMyIndexCompositeAttributes[]>>(entityWithoutSK.delete([{attr1: "abc"}]).go());
+    expectAssignable<Promise<WithoutSKMyIndexCompositeAttributes[]>>(entityWithoutSK.delete([{attr1: "abc"}]).go().then(res => res.unprocessed));
 
 // Put
     let putItemFull = {attr1: "abnc", attr2: "dsg", attr3: "def", attr4: "abc", attr5: "dbs", attr6: 13, attr7: {abc: "2345"}, attr8: true, attr9: 24, attr10: true} as const;
@@ -823,14 +822,14 @@ let getKeys = ((val) => {}) as GetKeys;
     });
 
     // Results
-    expectAssignable<Promise<Item>>(entityWithSK.put(putItemFull).go());
-    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.put(putItemFull).go());
+    expectAssignable<Promise<Item>>(entityWithSK.put(putItemFull).go().then(res => res.data));
+    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.put(putItemFull).go().then(res => res.data));
 
     expectAssignable<"paramtest">(entityWithSK.put(putItemFull).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.put(putItemFull).params<"paramtest">());
 
-    expectAssignable<Promise<WithSKMyIndexCompositeAttributes[]>>(entityWithSK.put([putItemFull]).go());
-    expectAssignable<Promise<WithoutSKMyIndexCompositeAttributes[]>>(entityWithoutSK.put([putItemFull]).go());
+    expectAssignable<Promise<WithSKMyIndexCompositeAttributes[]>>(entityWithSK.put([putItemFull]).go().then(res => res.unprocessed));
+    expectAssignable<Promise<WithoutSKMyIndexCompositeAttributes[]>>(entityWithoutSK.put([putItemFull]).go().then(res => res.unprocessed));
 
 // Create
     let createItemFull = {attr1: "abnc", attr2: "dsg", attr4: "abc", attr8: true, attr3: "def", attr5: "dbs", attr6: 13, attr9: 24, attr7: {abc: "2345"}} as const;
@@ -918,8 +917,8 @@ let getKeys = ((val) => {}) as GetKeys;
     });
 
     // Results
-    expectAssignable<Promise<Item>>(entityWithSK.create(putItemFull).go());
-    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.create(putItemFull).go());
+    expectAssignable<Promise<Item>>(entityWithSK.create(putItemFull).go().then(res => res.data));
+    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.create(putItemFull).go().then(res => res.data));
 
     expectAssignable<"paramtest">(entityWithSK.create(putItemFull).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.create(putItemFull).params<"paramtest">());
@@ -960,7 +959,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     let updateGo = updateItem.go;
     let updateGoWithoutSK = updateItemWithoutSK.go;
-
+    
     let updateParams = updateItem.params;
     let updateParamsWithoutSK = updateItemWithoutSK.params;
 
@@ -969,7 +968,6 @@ let getKeys = ((val) => {}) as GetKeys;
 
     type UpdateParamsParams = Parameter<typeof updateParams>;
     type UpdateParamsParamsWithoutSK = Parameter<typeof updateParamsWithoutSK>;
-
 
     expectAssignable<UpdateGoParams>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
     expectAssignable<UpdateGoParamsWithoutSK>({includeKeys: true, originalErr: true, params: {}, raw: true, table: "abc", response: "updated_new"});
@@ -1142,57 +1140,6 @@ let getKeys = ((val) => {}) as GetKeys;
     expectAssignable<MatchParamsParams>({params: {}, table: "abc"});
     expectAssignable<MatchParamsParamsWithoutSK>({params: {}, table: "abc"});
 
-
-    // Page
-    let findPageFn = findFinishers.page;
-    let findPageFnWithoutSK = findFinishersWithoutSK.page;
-    let matchPageFn = matchFinishers.page;
-    let matchPageFnWithoutSK = matchFinishersWithoutSK.page;
-    let queryPageFn = entityWithSK.query.myIndex2({attr6: 123, attr9: 456}).page;
-    let queryPageFnWithoutSk = entityWithoutSK.query.myIndex2(({attr6: 123, attr9: 456})).page;
-
-    type FindPageParams = Parameters<typeof findPageFn>;
-    type FindPageParamsWithoutSK = Parameters<typeof findPageFnWithoutSK>;
-    type MatchPageParams = Parameters<typeof matchPageFn>;
-    type MatchPageParamsWithoutSK = Parameters<typeof matchPageFnWithoutSK>;
-    type QueryPageParams = Parameters<typeof queryPageFn>;
-    type QueryPageParamsWithoutSK = Parameters<typeof queryPageFnWithoutSk>;
-
-    type FindPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
-    type FindPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
-    type MatchPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
-    type MatchPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
-    type QueryPageReturn = Promise<[WithSKMyIndexCompositeAttributes | null, Item[]]>;
-    type QueryPageReturnWithoutSK = Promise<[WithoutSKMyIndexCompositeAttributes | null, ItemWithoutSK[]]>;
-
-    expectAssignable<FindPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc", pages: 123}]);
-    expectAssignable<FindPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc", pages: 123}]);
-    expectAssignable<MatchPageParams>([{attr1: "abc", attr2: "def"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc", pages: 123}]);
-    expectAssignable<MatchPageParamsWithoutSK>([{attr1: "abc"}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc", pages: 123}]);
-    expectAssignable<QueryPageParams>([{attr1: "abc", attr2: "def", attr6: 123, attr9: 456, attr5: "xyz", attr4: "abc"}, {includeKeys: true, pager: "item", originalErr: true, params: {}, raw: true, table: "abc"}]);
-    expectAssignable<QueryPageParamsWithoutSK>([{attr1: "abc", attr6: 123, attr9: 456}, {includeKeys: true, pager: "raw", originalErr: true, params: {}, raw: true, table: "abc"}]);
-
-    expectAssignable<FindPageParams>([null]);
-    expectAssignable<FindPageParamsWithoutSK>([null]);
-    expectAssignable<MatchPageParams>([null]);
-    expectAssignable<MatchPageParamsWithoutSK>([null]);
-    expectAssignable<QueryPageParams>([null]);
-    expectAssignable<QueryPageParamsWithoutSK>([null]);
-
-    expectAssignable<FindPageParams>([]);
-    expectAssignable<FindPageParamsWithoutSK>([]);
-    expectAssignable<MatchPageParams>([]);
-    expectAssignable<MatchPageParamsWithoutSK>([]);
-    expectAssignable<QueryPageParams>([]);
-    expectAssignable<QueryPageParamsWithoutSK>([]);
-
-    expectAssignable<FindPageReturn>(findPageFn());
-    expectAssignable<FindPageReturnWithoutSK>(findPageFnWithoutSK());
-    expectAssignable<MatchPageReturn>(matchPageFn());
-    expectAssignable<MatchPageReturnWithoutSK>(matchPageFnWithoutSK());
-    expectAssignable<QueryPageReturn>(queryPageFn());
-    expectAssignable<QueryPageReturnWithoutSK>(queryPageFnWithoutSk());
-
 // Queries
     type AccessPatternNames = "myIndex" | "myIndex2" | "myIndex3";
 
@@ -1249,85 +1196,85 @@ let getKeys = ((val) => {}) as GetKeys;
     entityWithSK.query
         .myIndex({attr1: "abc", attr2: "def"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex({attr1: "abc"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex2({attr6: 45, attr9: 454, attr4: "abc", attr5: "def"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex2({attr6: 45, attr9: 24})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithoutSK.query
         .myIndex({attr1: "abc"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithoutSK.query
         .myIndex2({attr6: 53, attr9: 35})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithoutSK.query
         .myIndex3({attr5: "dgdagad"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     // Query Operations
     entityWithSK.query
         .myIndex({attr1: "abc"})
         .begins({attr2: "asf"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex2({attr6: 45, attr9: 34, attr4: "abc"})
         .begins({attr5: "db"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
         .between({attr4: "abc", attr9: 3, attr3: "def"}, {attr4: "abc", attr9: 4, attr3: "def"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex({attr1: "abc"})
         .gte({attr2: "asf"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex2({attr6: 45, attr9: 33, attr4: "abc"})
         .gt({attr5: "abd"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
         .lte({attr4: "abc", attr9: 3})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
         .lt({attr4: "abc", attr9: 3})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4))
+        .then(a => a.data.map(val => val.attr4))
 
     entityWithSK.query
         .myIndex({attr1: "abc", attr2: "db"})
@@ -1352,75 +1299,75 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError(entityWithSK.query
         .myIndex({attr1: "452", attr2: 245})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex2({attr6: "45"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex3({attr5: 426})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithoutSK.query
         .myIndex({attr1: 246})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithoutSK.query
         .myIndex2({attr6: 24, attr9: "1"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithoutSK.query
         .myIndex3({attr5: 346})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     // Query Operations
     expectError(entityWithSK.query
         .myIndex({attr1: "abc"})
         .begins({attr2: 42})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex2({attr6: 45, attr4: "abc"})
         .begins({attr5: 462})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
         .between({attr4: "abc", attr9: "3", attr3: "def"}, {attr4: "abc", attr9: "4", attr3: "def"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex({attr1: "abc"})
         .gte({attr2: 462})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex2({attr6: 45, attr4: "abc"})
         .gt({attr5: 246})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
         .lte({attr4: "abc", attr9: "3"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex3({attr5: "dgdagad"})
         .lt({attr4: "abc", attr9: "3"})
         .go({params: {}})
-        .then(a => a.map(val => val.attr4)))
+        .then(a => a.data.map(val => val.attr4)))
 
     expectError(entityWithSK.query
         .myIndex({attr1: "abc", attr2: "db"})
@@ -1507,16 +1454,16 @@ let getKeys = ((val) => {}) as GetKeys;
 
 
     // Service with no Entities
-    let nullCaseService = new Service({});
-    type nullCollections = typeof nullCaseService.collections;
-    type nullEntities = typeof nullCaseService.collections;
-    expectType<nullCollections>({});
-    expectType<nullEntities>({});
+    // let nullCaseService = new Service({});
+    // type NullCollections = typeof nullCaseService.collections;
+    // type NullEntities = typeof nullCaseService.collections;
+    // expectType<NullCollections>(magnify({}));
+    // expectType<NullEntities>(magnify({}));
 
     // Service with no Collections
-    let serviceNoCollections = new Service({standAloneEntity});
-    type noEntityCollections = typeof serviceNoCollections.collections;
-    expectType<noEntityCollections>({});
+    // let serviceNoCollections = new Service({standAloneEntity});
+    // type noEntityCollections = typeof serviceNoCollections.collections;
+    // expectType<noEntityCollections>({});
 
     // Service no shared entity collections
     let serviceNoShared = new Service({
@@ -1529,13 +1476,15 @@ let getKeys = ((val) => {}) as GetKeys;
     type NoSharedCollectionsList = keyof typeof serviceNoShared.collections;
     expectType<NoSharedCollectionsList>(expectNoSharedCollections);
     type NoSharedCollectionParameter1 = Parameter<typeof serviceNoShared.collections.mycollection>;
-    expectType<NoSharedCollectionParameter1>({attr5: "string"});
+    const noSharedCollectionParameter1 = {} as Resolve<NoSharedCollectionParameter1>;
+    expectType<{attr5: string}>(noSharedCollectionParameter1);
     expectError<NoSharedCollectionParameter1>({});
     expectError<NoSharedCollectionParameter1>({attr5: 123});
     expectError<NoSharedCollectionParameter1>({attr1: "123"});
 
     type NoSharedCollectionParameter2 = Parameter<typeof serviceNoShared.collections.normalcollection>;
-    expectType<NoSharedCollectionParameter2>({prop2: "abc", prop1: "def"});
+    const noSharedCollectionParameter2 = {} as Resolve<NoSharedCollectionParameter2>;
+    expectType<{ prop1: string; prop2: string; }>(noSharedCollectionParameter2);
     expectError<NoSharedCollectionParameter2>({});
     expectError<NoSharedCollectionParameter2>({prop2: "abc"});
     expectError<NoSharedCollectionParameter2>({prop1: "abc"});
@@ -1583,7 +1532,7 @@ let getKeys = ((val) => {}) as GetKeys;
 
     let chainMethods = complexService.collections.normalcollection({prop2: "abc", prop1: "def"});
     type AfterQueryChainMethods = keyof typeof chainMethods;
-    let expectedAfterQueryChainMethods = "" as "where" | "go" | "params" | "page"
+    let expectedAfterQueryChainMethods = "" as "where" | "go" | "params"
     expectType<AfterQueryChainMethods>(expectedAfterQueryChainMethods);
 
     // .go params
@@ -1592,12 +1541,12 @@ let getKeys = ((val) => {}) as GetKeys;
     complexService.collections
         .normalcollection({prop2: "abc", prop1: "def"})
         .go()
-        .then(values => {
+        .then(res => {
             // .go response includes only related entities
-            type NormalCollectionRelatedEntities = keyof typeof values;
+            type NormalCollectionRelatedEntities = keyof typeof res.data;
             let expectedEntities = "" as "normalEntity1" | "normalEntity2";
             expectType<NormalCollectionRelatedEntities>(expectedEntities);
-            values.normalEntity1.map(item => {
+            res.data.normalEntity1.map(item => {
                 expectError(item.attr1);
                 expectError(item.attr2);
                 expectError(item.attr3);
@@ -1616,7 +1565,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 let itemKeys = "" as "prop1" | "prop2" | "prop3" | "prop4" | "prop10";
                 expectType<keyof typeof item>(itemKeys);
             });
-            values.normalEntity2.map(item => {
+            res.data.normalEntity2.map(item => {
                 expectType<string>(item.prop1);
                 expectType<string>(item.prop2);
                 expectType<string>(item.prop3);
@@ -1641,12 +1590,12 @@ let getKeys = ((val) => {}) as GetKeys;
     complexService.collections
         .mycollection({attr5: "sgad"})
         .go()
-        .then(values => {
+        .then(res => {
             // .go response includes only related entities
-            type NormalCollectionRelatedEntities = keyof typeof values;
+            type NormalCollectionRelatedEntities = keyof typeof res.data;
             let expectedEntities = "" as "entityWithSK" | "entityWithoutSK";
             expectType<NormalCollectionRelatedEntities>(expectedEntities);
-            values.entityWithSK.map(item => {
+            res.data.entityWithSK.map(item => {
                 expectType<string>(item.attr1);
                 expectType<string>(item.attr2);
                 expectType<"123" | "def" | "ghi"|undefined>(item.attr3);
@@ -1661,7 +1610,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 let itemKeys = "" as  "attr1" |"attr2" |"attr3" |"attr4" |"attr5" |"attr6" |"attr7" |"attr8" |"attr9" | "attr10";
                 expectType<keyof typeof item>(itemKeys);
             });
-            values.entityWithoutSK.map(item => {
+            res.data.entityWithoutSK.map(item => {
                 item.attr2
                 expectType<string>(item.attr1);
                 expectType<string | undefined>(item.attr2);
@@ -1704,8 +1653,8 @@ let getKeys = ((val) => {}) as GetKeys;
             return "";
         })
         .go()
-        .then((items) => {
-            items.normalEntity2.map(item => {
+        .then((res) => {
+            res.data.normalEntity2.map(item => {
                 let keys = "" as keyof typeof item;
                 expectType<"prop1" | "prop2" | "prop3" | "prop5" | "attr6" | "attr9">(keys);
                 expectType<string>(item.prop1);
@@ -1715,7 +1664,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<number|undefined>(item.attr6);
                 expectType<number|undefined>(item.attr9);
             });
-            items.entityWithSK.map((item) => {
+            res.data.entityWithSK.map((item) => {
                 let keys = "" as keyof typeof item;
                 expectType<"attr1" | "attr2" | "attr3" | "attr4" | "attr5" | "attr6" | "attr7" | "attr8" | "attr9" | "attr10">(keys);
                 expectType<string>(item.attr1);
@@ -1729,7 +1678,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<number | undefined>(item.attr9);
                 expectType<boolean | undefined>(item.attr10);
             });
-            items.entityWithoutSK.map((item) => {
+            res.data.entityWithoutSK.map((item) => {
                 let keys = "" as keyof typeof item;
                 expectType<"attr1" | "attr2" | "attr3" | "attr4" | "attr5" | "attr6" | "attr7" | "attr8" | "attr9">(keys);
                 expectType<string>(item.attr1);
@@ -1767,8 +1716,8 @@ let getKeys = ((val) => {}) as GetKeys;
             return op.eq(attr.prop1, "db");
         })
         .go()
-        .then((items) => {
-            items.normalEntity1.map(item => {
+        .then((res) => {
+            res.data.normalEntity1.map(item => {
                 let keys = "" as keyof typeof item;
                 expectType<"prop1" | "prop2" | "prop3" | "prop4" | "prop10">(keys);
                 expectType<string>(item.prop1);
@@ -1777,7 +1726,7 @@ let getKeys = ((val) => {}) as GetKeys;
                 expectType<number>(item.prop4);
                 expectType<boolean | undefined>(item.prop10);
             });
-            items.normalEntity2.map(item => {
+            res.data.normalEntity2.map(item => {
                 let keys = "" as keyof typeof item;
                 expectType<"prop1" | "prop2" | "prop3" | "prop5" | "attr6" | "attr9">(keys);
                 expectType<string>(item.prop1);
@@ -1812,8 +1761,8 @@ let getKeys = ((val) => {}) as GetKeys;
             return op.eq(attr.attr9, 768);
         })
         .go()
-        .then(results => {
-            results.entityWithSK.map((item) => {
+        .then(res => {
+            res.data.entityWithSK.map((item) => {
                 let keys = "" as keyof typeof item;
                 expectType<"attr1" | "attr2" | "attr3" | "attr4" | "attr5" | "attr6" | "attr7" | "attr8" | "attr9" | "attr10">(keys);
                 expectType<string>(item.attr1);
@@ -1925,10 +1874,10 @@ let getKeys = ((val) => {}) as GetKeys;
             return op.eq(attr.prop3, "abc");
         })
         .go()
-        .then(value => {
-            if (value !== null) {
-                expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
-                expectType<Entity1WithHiddenAttribute>(value);
+        .then(res => {
+            if (res.data !== null) {
+                expectType<keyof typeof res.data>(entity1WithHiddenAttributeKey);
+                expectType<Entity1WithHiddenAttribute>(res.data);
             }
         });
 
@@ -1939,8 +1888,8 @@ let getKeys = ((val) => {}) as GetKeys;
             return op.eq(attr.prop3, "abc");
         })
         .go()
-        .then(values => {
-            return values.map(value => {
+        .then(res => {
+            return res.data.map(value => {
                 expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
                 expectType<Entity1WithHiddenAttribute>(value);
             });
@@ -1954,12 +1903,12 @@ let getKeys = ((val) => {}) as GetKeys;
             return `${op.eq(attr.prop3, "abc")} AND ${op.eq(attr.prop4, "def")}`
         })
         .go()
-        .then(results => {
-            results.e1.map(value => {
+        .then(res => {
+            res.data.e1.map(value => {
                 expectType<keyof typeof value>(entity1WithHiddenAttributeKey);
                 expectType<Entity1WithHiddenAttribute>(value);
             });
-            results.e2.map(value => {
+            res.data.e2.map(value => {
                 expectType<keyof typeof value>(entity2WithHiddenAttributeKey);
                 expectType<string>(value.prop1);
                 expectType<string>(value.prop2);
@@ -2599,75 +2548,74 @@ let getKeys = ((val) => {}) as GetKeys;
         .params();
 
 
-    type MyCollection1Pager = {
-        attr5?: string | undefined;
-        attr9?: number | undefined;
-        attr6?: number | undefined;
-        attr1?: string | undefined;
-        attr2?: string | undefined;
-        prop1?: string | undefined;
-        prop2?: string | undefined;
-        prop5?: number | undefined;
-        __edb_e__?: string | undefined;
-        __edb_v__?: string | undefined;
-        attr4?: "abc" | "def" |  "ghi" | undefined;
-    }
+    // type MyCollection1Pager = {
+    //     attr5?: string | undefined;
+    //     attr9?: number | undefined;
+    //     attr6?: number | undefined;
+    //     attr1?: string | undefined;
+    //     attr2?: string | undefined;
+    //     prop1?: string | undefined;
+    //     prop2?: string | undefined;
+    //     prop5?: number | undefined;
+    //     __edb_e__?: string | undefined;
+    //     __edb_v__?: string | undefined;
+    //     attr4?: "abc" | "def" |  "ghi" | undefined;
+    // }
 
     type Collection1EntityNames = "entityWithSK" | "normalEntity2" | "entityWithoutSK";
     const names = "" as Collection1EntityNames;
-    complexService.collections
-        .mycollection1({attr9: 123, attr6: 245})
-        .page()
-        .then(([next, results]) => {
-            expectType<string | undefined>(next?.attr1);
-            expectType<string | undefined>(next?.attr2);
-            expectType<number | undefined>(next?.attr6);
-            expectType<number | undefined>(next?.attr9);
-            expectType<"abc" | "def" |  "ghi" | undefined>(next?.attr4);
-            expectType<string | undefined>(next?.attr5);
-            expectType<number | undefined>(next?.prop5);
-            expectType<string | undefined>(next?.prop1);
-            expectType<string | undefined>(next?.prop2);
-            expectType<string | undefined>(next?.__edb_e__);
-            expectType<string | undefined>(next?.__edb_v__);
-            expectAssignable<typeof next>({
-                attr1: "abc",
-                attr2: "abc",
-                attr6: 27,
-                attr9: 89,
-                attr4: "abc",
-                attr5: "abc",
-                __edb_e__: "entityWithSK",
-                __edb_v__: "1"
-            });
-            expectAssignable<typeof next>({
-                prop1: "abc",
-                prop2: "abc",
-                attr6: 27,
-                attr9: 89,
-                prop5: 12,
-                __edb_e__: "normalEntity2",
-                __edb_v__: "1"
-            });
-            expectAssignable<typeof next>({
-                attr1: "abc",
-                attr6: 27,
-                attr9: 89,
-                __edb_e__: "entityWithoutSK",
-                __edb_v__: "1"
-            });
-            expectType<keyof typeof results>(names);
-            expectNotType<any>(next);
-        })
+    // complexService.collections
+    //     .mycollection1({attr9: 123, attr6: 245})
+    //     .page()
+    //     .then(([next, results]) => {
+    //         expectType<string | undefined>(next?.attr1);
+    //         expectType<string | undefined>(next?.attr2);
+    //         expectType<number | undefined>(next?.attr6);
+    //         expectType<number | undefined>(next?.attr9);
+    //         expectType<"abc" | "def" |  "ghi" | undefined>(next?.attr4);
+    //         expectType<string | undefined>(next?.attr5);
+    //         expectType<number | undefined>(next?.prop5);
+    //         expectType<string | undefined>(next?.prop1);
+    //         expectType<string | undefined>(next?.prop2);
+    //         expectType<string | undefined>(next?.__edb_e__);
+    //         expectType<string | undefined>(next?.__edb_v__);
+    //         expectAssignable<typeof next>({
+    //             attr1: "abc",
+    //             attr2: "abc",
+    //             attr6: 27,
+    //             attr9: 89,
+    //             attr4: "abc",
+    //             attr5: "abc",
+    //             __edb_e__: "entityWithSK",
+    //             __edb_v__: "1"
+    //         });
+    //         expectAssignable<typeof next>({
+    //             prop1: "abc",
+    //             prop2: "abc",
+    //             attr6: 27,
+    //             attr9: 89,
+    //             prop5: 12,
+    //             __edb_e__: "normalEntity2",
+    //             __edb_v__: "1"
+    //         });
+    //         expectAssignable<typeof next>({
+    //             attr1: "abc",
+    //             attr6: 27,
+    //             attr9: 89,
+    //             __edb_e__: "entityWithoutSK",
+    //             __edb_v__: "1"
+    //         });
+    //         expectType<keyof typeof results>(names);
+    //         expectNotType<any>(next);
+    //     })
 
     complexService.collections
         .mycollection1({attr9: 123, attr6: 245})
-        .page(null)
+        .go({cursor: null})
 
-    const nextPage = {} as MyCollection1Pager;
     complexService.collections
         .mycollection1({attr9: 123, attr6: 245})
-        .page(nextPage, {})
+        .go({cursor: 'abc'})
 
     complexService.entities
         .entityWithSK.remove({attr1: "abc", attr2: "def"})
@@ -2795,24 +2743,24 @@ type ExtraCollectionEntities = "entityWithMultipleCollections2" | "entityWithMul
 serviceWithMultipleCollections.collections
     .outercollection({attr1: "abc"})
     .go()
-    .then(values => {
-        const keys = "" as keyof typeof values;
+    .then(res => {
+        const keys = "" as keyof typeof res.data;
         expectType<OuterCollectionEntities>(keys);
     })
 
 serviceWithMultipleCollections.collections
     .innercollection({attr1: "abc"})
     .go()
-    .then(values => {
-        const keys = "" as keyof typeof values;
+    .then(res => {
+        const keys = "" as keyof typeof res.data;
         expectType<InnerCollectionEntities>(keys);
     })
 
 serviceWithMultipleCollections.collections
     .extracollection({attr1: "abc"})
     .go()
-    .then(values => {
-        const keys = "" as keyof typeof values;
+    .then(res => {
+        const keys = "" as keyof typeof res.data;
         expectType<ExtraCollectionEntities>(keys);
     })
 
@@ -3084,8 +3032,8 @@ const parsed = entityWithComplexShapes.parse({});
 entityWithComplexShapes.query
     .record({prop1: "abc"})
     .go()
-    .then((data) => {
-        expectType<typeof data>(
+    .then((res) => {
+        expectType<typeof res>(
             entityWithComplexShapes.parse({
                 Items: []
             })
@@ -3109,24 +3057,24 @@ expectType<{
     attr1: string;
     attr2: string;
     attr3?: '123' | 'def' | 'ghi' | undefined;
-}[]>(magnify(parsedWithAttributes));
+}[]>(magnify(parsedWithAttributes.data));
 
 expectType<{
     attr1: string;
     attr2: string;
     attr3?: '123' | 'def' | 'ghi' | undefined;
-} | null>(magnify(parsedWithAttributesSingle));
+} | null>(magnify(parsedWithAttributesSingle.data));
 
 
-entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
-    expectType<typeof parsed>(data);
-    if (data === null) {
+entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(res => {
+    expectType<typeof parsed>(res);
+    if (res.data === null) {
         return null;
     }
-    data.prop3?.val1;
+    res.data.prop3?.val1;
     let int = 0;
-    if (Array.isArray(data.prop4)) {
-        for (let value of data.prop4) {
+    if (Array.isArray(res.data.prop4)) {
+        for (let value of res.data.prop4) {
             if (typeof value === "string") {
                 if (isNaN(parseInt(value))) {
                     int += 0;
@@ -3145,16 +3093,16 @@ entityWithComplexShapes.get({prop1: "abc", prop2: "def"}).go().then(data => {
             }
         }
     }
-    return data.prop3?.val1
+    return res.data.prop3?.val1
 });
 
 entityWithComplexShapes
     .get({prop1: "abc", prop2: "def"})
     .go()
-    .then(data => {
-        if (data !== null) {
-            data.prop5?.map(values => values);
-            data.prop6?.map(values => values);
+    .then(res => {
+        if (res.data !== null) {
+            res.data.prop5?.map(values => values);
+            res.data.prop6?.map(values => values);
         }
     })
 
@@ -3271,9 +3219,9 @@ entityWithComplexShapes.update({
   })
   .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
   .go({
-    response: "all_new",
-  }).then(data => {
-    expectType<ComplexShapesUpdateItem>(data);
+    
+  }).then(res => {
+    expectType<ComplexShapesUpdateItem>(res.data);
 });
 
 entityWithComplexShapes.update({
@@ -3283,9 +3231,8 @@ entityWithComplexShapes.update({
   .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
   .go({
     originalErr: true,
-    response: "all_new",
-  }).then(data => {
-    expectType<ComplexShapesUpdateItem>(data);
+  }).then(res => {
+    expectType<ComplexShapesUpdateItem>(res.data);
 });
 
 entityWithComplexShapes.update({
@@ -3297,10 +3244,10 @@ entityWithComplexShapes.update({
   })
   .where((attr, op) => op.eq(attr.prop2, 'def'))
   .go({
-    response: "all_new",
+    
   })
-  .then(data => {
-    expectType<ComplexShapesUpdateItem>(data);
+  .then(res => {
+    expectType<ComplexShapesUpdateItem>(res.data);
 });
 
 entityWithComplexShapes.remove({
@@ -3413,6 +3360,9 @@ const complex = new Entity({
         version: "1"
     },
     attributes: {
+        username: {
+            type: 'string'
+        },
         stringVal: {
             type: "string",
             default: () => "abc",
@@ -3889,12 +3839,16 @@ const mapTests = new Entity({
     }
 });
 
-const complexAttributeService = new Service({mapTests, complex});
+const complexAttributeService = new Service({
+    mapTests,
+    complex,
+});
 
 mapTests
     .get({username: "test"})
     .go()
-    .then(data => {
+    .then(res => {
+        const data = res.data;
         if (data && data.mapObject !== undefined) {
             expectError(() => {
                 data.mapObject?.hidden

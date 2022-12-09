@@ -197,7 +197,7 @@ describe("Query Options", () => {
            });
        }
    });
-   describe("concurrent", async () => {
+   describe("concurrent", () => {
        function makeRecords(size) {
            return new Array(size).fill(0).map(() => {
                return {
@@ -252,7 +252,7 @@ describe("Query Options", () => {
                 },
                 batchWrite(params) {
                     let delay = this.opDelay;
-                    this.addOp({params, type: "batchWrite", });
+                    this.addOp({ params, type: "batchWrite" });
                     return {
                         async promise() {
                             await sleep(delay);
@@ -501,7 +501,7 @@ describe("Query Options", () => {
               let client = makeMockClient(delay);
               let MallStores = new Entity(schema, {client});
               let result = await MallStores.put(records).go({concurrent});
-              expect(result).to.be.an("array").and.to.have.length(totalBatches);
+              expect(result.unprocessed).to.be.an("array").and.to.have.length(totalBatches);
               let concurrencyPattern = client.getOpConcurrency();
 
               expect(concurrencyPattern).to.be.an("array").with.length(expectedConcurrencyPattern.length);
@@ -523,7 +523,7 @@ describe("Query Options", () => {
                let client = makeMockClient(delay);
                let MallStores = new Entity(schema, {client});
                let result = await MallStores.delete(records).go({concurrent});
-               expect(result).to.be.an("array").and.to.have.length(totalBatches);
+               expect(result.unprocessed).to.be.an("array").and.to.have.length(totalBatches);
                let concurrencyPattern = client.getOpConcurrency();
                expect(concurrencyPattern).to.be.an("array").with.length(expectedConcurrencyPattern.length);
                expect(concurrencyPattern).to.be.an("array").with.length(Math.ceil(totalBatches / concurrent));
@@ -543,10 +543,9 @@ describe("Query Options", () => {
                let records = makeRecords(size);
                let client = makeMockClient(delay);
                let MallStores = new Entity(schema, {client});
-               let result = await MallStores.get(records).go({concurrent});
-               expect(result).to.be.an("array").and.to.have.length(2);
-               expect(result[0]).to.be.an("array").and.to.have.length(totalBatches);
-               expect(result[1]).to.be.an("array").and.to.have.length(0);
+               let result = await MallStores.get(records).go({concurrent})
+               expect(result.data).to.be.an("array").and.to.have.length(totalBatches);
+               expect(result.unprocessed).to.be.an("array").and.to.have.length(0);
                let concurrencyPattern = client.getOpConcurrency();
                expect(concurrencyPattern).to.be.an("array").with.length(expectedConcurrencyPattern.length);
                expect(concurrencyPattern).to.be.an("array").with.length(Math.ceil(totalBatches / concurrent));
@@ -584,7 +583,7 @@ describe("Query Options", () => {
                .map((result, i) => {
                    // if it was an error, return the corresponding description from the tests array
                    if (result !== undefined) {
-                       return tests[i].description;
+                       return `${tests[i].description}: ${result.message}`;
                    }
                })
                .filter(err => {
@@ -594,9 +593,10 @@ describe("Query Options", () => {
                    }
                });
            if (errors.length) {
-               throw new Error(`Failed the following tests: ${errors.join(", ")}`);
+
+               throw new Error(`Failed the following tests: ${errors.join("\n")}`);
            }
-       }).timeout(10000);
+       }).timeout(20000);
        //
        // it("Should execute n number of batch put concurrently", async () => {
        //     let delay = 1000;

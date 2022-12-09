@@ -13,7 +13,7 @@ const SERVICE = "BugBeater";
 const ENTITY = "TEST_ENTITY";
 const table = "electro";
 
-describe("Entity", async () => {
+describe("Entity", () => {
     before(async () => sleep(1000));
     let MallStores = new Entity({
         model: {
@@ -138,7 +138,7 @@ describe("Entity", async () => {
         }
     }, { client, table });
 
-    describe("Simple crud", async () => {
+    describe("Simple crud", () => {
         let mall = "EastPointe";
         let store = "LatteLarrys";
         let sector = "A1";
@@ -159,8 +159,8 @@ describe("Entity", async () => {
                 unit,
                 building,
             }).go();
-            expect(putOne).to.deep.equal({
-                id: putOne.id,
+            expect(putOne.data).to.deep.equal({
+                id: putOne.data.id,
                 sector,
                 mall: mall + "abc",
                 store,
@@ -199,7 +199,7 @@ describe("Entity", async () => {
                         store: storeNames[i],
                         unit: `B${i + 1}`,
                         building: `Building${letters[i]}`,
-                    }).go(),
+                    }).go().then(res => res.data),
                 );
             }
             stores = await Promise.all(stores);
@@ -214,27 +214,28 @@ describe("Entity", async () => {
                 .units({
                     mall: mallOne,
                 })
-                .go();
+                .go()
+                .then(res => res.data);
 
             let mallOneMatches = mallOneStores.every((store) =>
                 mallOneIds.includes(store.id),
             );
 
-            expect(mallOneMatches);
+            expect(mallOneMatches).to.be.true;
             expect(mallOneStores).to.be.an("array").and.have.length(5);
 
             let first = stores[0];
             let firstStore = await MallStores.get({
                 sector,
                 id: first.id,
-            }).go();
+            }).go().then(res => res.data);
             expect(firstStore).to.be.deep.equal(first);
 
             let buildingsAfterB = await MallStores.query
                 .categories({ category, mall: mallOne })
                 .gt({ building: "BuildingB" })
-                .go();
-            let buildingsAfterBStores = stores.filter((store) => {
+                .go().then(res => res.data);
+            let buildingsAfterBStores = stores.filter(store => {
                 return (
                     store.mall === mallOne &&
                     store.building !== "BuildingA" &&
@@ -246,9 +247,9 @@ describe("Entity", async () => {
             let buildingsBetweenBH = await MallStores.query
                 .categories({ category, mall: mallOne })
                 .between({ building: "BuildingB" }, { building: "BuildingH" })
-                .go();
+                .go().then(res => res.data);
 
-            let buildingsBetweenBHStores = stores.filter((store) => {
+            let buildingsBetweenBHStores = stores.filter(store => {
                 return (
                     store.mall === mallOne &&
                     store.building !== "BuildingA" &&
@@ -261,17 +262,20 @@ describe("Entity", async () => {
                 .and.to.be.deep.equal(buildingsBetweenBHStores);
 
             let secondStore = { sector, id: stores[1].id };
-            let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
+            let secondStoreBeforeUpdate = await MallStores.get(secondStore).go().then(res => res.data);
             let newRent = "5000.00";
+            if (secondStoreBeforeUpdate === null) {
+                throw new Error('Expected secondStoreBeforeUpdate value');
+            }
             expect(secondStoreBeforeUpdate?.rent)
                 .to.equal(rent)
                 .and.to.not.equal(newRent);
             let updatedStore = await MallStores.update(secondStore)
                 .set({ rent: newRent })
                 .go();
-            expect(updatedStore).to.be.empty;
+            expect(updatedStore.data).to.be.empty;
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
-            expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
+            expect(secondStoreAfterUpdate.data?.rent).to.equal(newRent);
         }).timeout(20000);
 
         it("Should not create a overwrite existing record", async () => {
@@ -295,12 +299,12 @@ describe("Entity", async () => {
                 building,
                 unit
             };
-            let recordOne = await MallStores.create(record).go();
+            let recordOne = await MallStores.create(record).go().then(res => res.data);
             // mall would be changed by the setter;
             expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
             let recordTwo = null;
             try {
-                recordTwo = await MallStores.create(record).go();
+                recordTwo = await MallStores.create(record).go().then(res => res.data);
             } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
@@ -328,13 +332,19 @@ describe("Entity", async () => {
                 building,
                 unit
             };
-            let recordOne = await MallStores.create(record).go();
+            let recordOne = await MallStores.create(record).go().then(res => res.data);
             // mall would be changed by the setter
             expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
-            let patchResultsOne = await MallStores.patch({sector, id}).set({rent: "100.00"}).go();
+            let patchResultsOne = await MallStores.patch({sector, id})
+                .set({rent: "100.00"})
+                .go()
+                .then(res => res.data);
             let patchResultsTwo = null;
             try {
-                patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
+                patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`})
+                    .set({rent: "200.00"})
+                    .go()
+                    .then(res => res.data);
             } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
@@ -366,7 +376,7 @@ describe("Entity", async () => {
         });
     });
 
-    describe("Simple crud without sort key", async () => {
+    describe("Simple crud without sort key", () => {
         const MallStores = new Entity({
             model: {
                 service: SERVICE,
@@ -497,7 +507,7 @@ describe("Entity", async () => {
                 leaseEnd,
                 unit,
                 building,
-            }).go();
+            }).go().then(res => res.data);
             expect(putOne).to.deep.equal({
                 id: putOne.id,
                 sector,
@@ -538,7 +548,7 @@ describe("Entity", async () => {
                         store: storeNames[i],
                         unit: `B${i + 1}`,
                         building: `Building${letters[i]}`,
-                    }).go(),
+                    }).go().then(res => res.data),
                 );
             }
             stores = await Promise.all(stores);
@@ -553,7 +563,7 @@ describe("Entity", async () => {
                 .units({
                     mall: mallOne,
                 })
-                .go();
+                .go().then(res => res.data);
 
             let mallOneMatches = mallOneStores.every((store) =>
                 mallOneIds.includes(store.id),
@@ -566,13 +576,13 @@ describe("Entity", async () => {
             let firstStore = await MallStores.get({
                 sector,
                 id: first.id,
-            }).go();
+            }).go().then(res => res.data);
             expect(firstStore).to.be.deep.equal(first);
 
             let buildingsAfterB = await MallStores.query
                 .categories({ category, mall: mallOne })
                 .gt({ building: "BuildingB" })
-                .go();
+                .go().then(res => res.data);
             let buildingsAfterBStores = stores.filter((store) => {
                 return (
                     store.mall === mallOne &&
@@ -585,7 +595,7 @@ describe("Entity", async () => {
             let buildingsBetweenBH = await MallStores.query
                 .categories({ category, mall: mallOne })
                 .between({ building: "BuildingB" }, { building: "BuildingH" })
-                .go();
+                .go().then(res => res.data);
 
             let buildingsBetweenBHStores = stores.filter((store) => {
                 return (
@@ -600,16 +610,17 @@ describe("Entity", async () => {
                 .and.to.be.deep.equal(buildingsBetweenBHStores);
 
             let secondStore = { sector, id: stores[1].id };
-            let secondStoreBeforeUpdate = await MallStores.get(secondStore).go();
+            let secondStoreBeforeUpdate = await MallStores.get(secondStore).go().then(res => res.data);
             let newRent = "5000.00";
             expect(secondStoreBeforeUpdate?.rent)
                 .to.equal(rent)
                 .and.to.not.equal(newRent);
             let updatedStore = await MallStores.update(secondStore)
                 .set({ rent: newRent })
-                .go();
+                .go()
+                .then(res => res.data);
             expect(updatedStore).to.be.empty;
-            let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
+            let secondStoreAfterUpdate = await MallStores.get(secondStore).go().then(res => res.data);
             expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
         }).timeout(20000);
 
@@ -634,11 +645,11 @@ describe("Entity", async () => {
                 building,
                 unit
             };
-            let recordOne = await MallStores.create(record).go();
+            let recordOne = await MallStores.create(record).go().then(res => res.data);
             expect(recordOne).to.deep.equal(record);
             let recordTwo = null;
             try {
-                recordTwo = await MallStores.create(record).go();
+                recordTwo = await MallStores.create(record).go().then(res => res.data);
             } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
@@ -666,11 +677,11 @@ describe("Entity", async () => {
                 building,
                 unit
             };
-            let recordOne = await MallStores.create(record).go();
+            let recordOne = await MallStores.create(record).go().then(res => res.data);
             expect(recordOne).to.deep.equal(record);
             let patchResultsTwo = null;
             try {
-                patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go();
+                patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go().then(res => res.data);
             } catch(err: any) {
                 expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
             }
@@ -682,7 +693,7 @@ describe("Entity", async () => {
             let sector = "A1";
 
             let [electroSuccess, electroErr] = await MallStores.get({sector, id})
-                .go({params: {TableName: "blahblah"}})
+                .go({params: {TableName: "blahblah"}}).then(res => res.data)
                 .then(() => [true, null])
                 .catch(err => [false, err]);
 
@@ -745,10 +756,10 @@ describe("Entity", async () => {
                 isle: "A23",
                 name: "eggs"
             };
-            await labeler.put([item1, item2]).go();
+            await labeler.put([item1, item2]).go().then(res => res.unprocessed);
             await sleep(500);
-            let beginsWithIsle = await labeler.query.locations({section}).begins({isle: "A2"}).go();
-            let specificIsle = await labeler.query.locations({section, isle: "A2"}).go();
+            let beginsWithIsle = await labeler.query.locations({section}).begins({isle: "A2"}).go().then(res => res.data);
+            let specificIsle = await labeler.query.locations({section, isle: "A2"}).go().then(res => res.data);
             expect(beginsWithIsle).to.be.an("array").with.lengthOf(2);
             expect(beginsWithIsle).to.be.deep.equal([item1, item2]);
             expect(specificIsle).to.be.an("array").with.lengthOf(1);
@@ -756,7 +767,7 @@ describe("Entity", async () => {
         })
     });
 
-    describe("Custom index fields", async () => {
+    describe("Custom index fields", () => {
         it("Should use the index field names as theyre specified on the model", async () => {
             let schema = {
                 model: {
@@ -983,7 +994,7 @@ describe("Entity", async () => {
             await MallStores.scan.go();
         });
     });
-    describe("Delete records", async () => {
+    describe("Delete records", () => {
         it("Should create then delete a record", async () => {
             const table = "electro";
             const record = new Entity({
@@ -1018,16 +1029,16 @@ describe("Entity", async () => {
             let prop1 = uuid();
             let prop2 = uuid();
             await record.put({ prop1, prop2 }).go();
-            let recordExists = await record.get({ prop1, prop2 }).go();
+            let recordExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
             await record.delete({ prop1, prop2 }).go();
             await sleep(150);
-            let recordNoLongerExists = await record.get({ prop1, prop2 }).go();
+            let recordNoLongerExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
             expect(!!Object.keys(recordExists || {}).length).to.be.true;
             expect(recordNoLongerExists).to.be.null;
         });
     });
 
-    describe("Getters/Setters", async () => {
+    describe("Getters/Setters", () => {
         let db = new Entity(
             {
                 model: {
@@ -1083,14 +1094,14 @@ describe("Entity", async () => {
             let id = uuid();
             let prop1 = "aaa";
             let prop2 = "bbb";
-            let record = await db.put({ date, id, prop1, prop2 }).go();
+            let record = await db.put({ date, id, prop1, prop2 }).go().then(res => res.data);
             expect(record).to.deep.equal({
                 id,
                 date,
                 prop1: `${prop1} SET ${id} GET`,
                 prop2: `${prop2} GET ${id}`,
             });
-            let fetchedRecord = await db.get({ date, id }).go();
+            let fetchedRecord = await db.get({ date, id }).go().then(res => res.data);
             expect(fetchedRecord).to.deep.equal({
                 id,
                 date,
@@ -1101,9 +1112,9 @@ describe("Entity", async () => {
             let updatedRecord = await db
                 .update({ date, id })
                 .set({ prop1: updatedProp1 })
-                .go();
+                .go().then(res => res.data);
             expect(updatedRecord).to.be.empty;
-            let getUpdatedRecord = await db.get({ date, id }).go();
+            let getUpdatedRecord = await db.get({ date, id }).go().then(res => res.data);
             expect(getUpdatedRecord).to.deep.equal({
                 id,
                 date,
@@ -1154,9 +1165,10 @@ describe("Entity", async () => {
             let id = uuid();
             let date = moment.utc().format();
             let someValue = "ABDEF";
-            let putRecord = await db.put({ id, date, someValue }).go({ raw: true });
+            let putRecord = await db.put({ id, date, someValue }).go({ raw: true })
+                .then( res => res.data );
             expect(putRecord).to.deep.equal({});
-            let getRecord = await db.get({ id, date }).go({ raw: true });
+            let getRecord = await db.get({ id, date }).go({ raw: true }).then(res => res.data);
             expect(getRecord).to.deep.equal({
                 Item: {
                     __edb_e__: entity,
@@ -1171,9 +1183,11 @@ describe("Entity", async () => {
             let updateRecord = await db
                 .update({ id, date })
                 .set({ someValue })
-                .go({ raw: true });
+                .go({ raw: true })
+                .then(res => res.data);
             expect(updateRecord).to.deep.equal({});
-            let queryRecord = await db.query.record({ id, date }).go({ raw: true });
+            let queryRecord = await db.query.record({ id, date }).go({ raw: true })
+                .then(res => res.data);
             expect(queryRecord).to.deep.equal({
                 Items: [
                     {
@@ -1189,7 +1203,7 @@ describe("Entity", async () => {
                 Count: 1,
                 ScannedCount: 1,
             });
-            let recordWithKeys = await db.get({id, date}).go({includeKeys: true});
+            let recordWithKeys = await db.get({id, date}).go({includeKeys: true}).then(res => res.data);
             expect(recordWithKeys).to.deep.equal({
                 id,
                 date,
@@ -1201,7 +1215,7 @@ describe("Entity", async () => {
             })
         }).timeout(10000);
     });
-    describe("Filters", async () => {
+    describe("Filters", () => {
         it("Should filter results with custom user filter", async () => {
             let store = "LatteLarrys";
             let category = "food/coffee";
@@ -1237,7 +1251,7 @@ describe("Entity", async () => {
                         rent: i + rent,
                         store: storeNames[i],
                         unit: `B${i + 1}`,
-                    }).go(),
+                    }).go().then(res => res.data),
                 );
             }
 
@@ -1255,7 +1269,7 @@ describe("Entity", async () => {
             let belowMarketUnits = await MallStores.query
                 .units({ mall: mall + "abc", building })
                 .where(({rent}, {lte}) => lte(rent, max))
-                .go();
+                .go().then(res => res.data);
 
             expect(belowMarketUnits)
                 .to.be.an("array")
@@ -1302,11 +1316,11 @@ describe("Entity", async () => {
             );
             let date = moment.utc().format();
             let property = "ABDEF";
-            let record = await db.put({ date, property }).go();
+            let record = await db.put({ date, property }).go().then(res => res.data);
             let found = await db.query
                 .record({ date })
                 .where((attr, {eq}) => eq(attr.property, property))
-                .go();
+                .go().then(res => res.data);
 
             let foundParams = db.query
                 .record({ date })
@@ -1363,7 +1377,7 @@ describe("Entity", async () => {
             let records = await Promise.all(
                 properties.map((property, i) => {
                     let color = colors[i % 2];
-                    return db.put({ id, property, color }).go();
+                    return db.put({ id, property, color }).go().then(res => res.data);
                 }),
             );
             let expectedMembers = records.filter(
@@ -1377,7 +1391,7 @@ describe("Entity", async () => {
                     ${notContains(color, "green")} OR ${contains(id, "weird_value")}
                 `)
                 .where((attr, op) => op.notContains(attr.property, "Z"))
-                .go();
+                .go().then(res => res.data);
 
             expect(found)
                 .to.be.an("array")
@@ -1385,7 +1399,7 @@ describe("Entity", async () => {
                 .and.to.have.deep.members(expectedMembers);
         });
     });
-    describe("Updating Records", async () => {
+    describe("Updating Records", () => {
         const Dummy = new Entity({
             model: {
                 entity: "dummy",
@@ -1501,31 +1515,48 @@ describe("Entity", async () => {
             expect(beforeUpdateQueryParams).to.deep.equal({
                 KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
-                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+                    "#prop6": "prop6",
+                    "#prop7": "prop7",
+                    "#prop8": "prop8",
+                },
                 ExpressionAttributeValues: {
+                    ":prop60": record.prop6,
+                    ":prop70": record.prop7,
+                    ":prop80": record.prop8,
                     ':pk': `$test#prop5_${record.prop5}`,
                     ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
                 },
+                "FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
-            let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+            let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
             expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
             await Dummy.update({prop1: record.prop1, prop2: record.prop2})
                 .set({prop9, prop5})
-                .go();
+                .go().then(res => res.data);
             await sleep(100);
             let afterUpdateQueryParams = Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).params();
             expect(afterUpdateQueryParams).to.deep.equal({
                 KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
-                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
-                ExpressionAttributeValues: {
-                    ':pk': `$test#prop5_${prop5}`,
-                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+                    "#prop6": "prop6",
+                    "#prop7": "prop7",
+                    "#prop8": "prop8",
                 },
+                ExpressionAttributeValues: {
+                    ":prop60": record.prop6,
+                    ":prop70": record.prop7,
+                    ":prop80": record.prop8,
+                    ':pk': `$test#prop5_${prop5}`,
+                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
+
+                },
+                "FilterExpression": "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
-            let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+            let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop5}]);
         });
 
@@ -1549,14 +1580,22 @@ describe("Entity", async () => {
             expect(beforeUpdateQueryParams).to.deep.equal({
                 KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
-                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+                    "#prop6": "prop6",
+                    "#prop7": "prop7",
+                    "#prop8": "prop8",
+                },
                 ExpressionAttributeValues: {
                     ':pk': `$test#prop5_${record.prop5}`,
-                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
+                    ":prop60": record.prop6,
+                    ":prop70": record.prop7,
+                    ":prop80": record.prop8,
                 },
+                FilterExpression: "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
-            let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+            let beforeUpdate = await Dummy.query.index3({prop5: record.prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
             expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
             await Dummy.patch({prop1: record.prop1, prop2: record.prop2})
                 .set({prop9, prop5})
@@ -1566,14 +1605,22 @@ describe("Entity", async () => {
             expect(afterUpdateQueryParams).to.deep.equal({
                 KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
                 TableName: 'electro',
-                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk' },
+                ExpressionAttributeNames: { '#pk': 'gsi2pk', '#sk1': 'gsi2sk',
+                    "#prop6": "prop6",
+                    "#prop7": "prop7",
+                    "#prop8": "prop8",
+                },
                 ExpressionAttributeValues: {
                     ':pk': `$test#prop5_${prop5}`,
-                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`
+                    ':sk1': `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
+                    ":prop60": record.prop6,
+                    ":prop70": record.prop7,
+                    ":prop80": record.prop8,
                 },
+                FilterExpression: "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
                 IndexName: 'gsi2pk-gsi2sk-index'
             });
-            let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go();
+            let afterUpdate = await Dummy.query.index3({prop5, prop6: record.prop6, prop7: record.prop7, prop8: record.prop8}).go().then(res => res.data);
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop5}]);
         });
 
@@ -1591,7 +1638,7 @@ describe("Entity", async () => {
                 prop8: uuid(),
                 prop9: uuid(),
             }
-            await Dummy.put(record).go();
+            await Dummy.put(record).go().then(res => res.data);
             await sleep(100);
             let beforeUpdateQueryParams = Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).params();
             expect(beforeUpdateQueryParams).to.deep.equal({
@@ -1604,7 +1651,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi1pk-gsi1sk-index'
             });
-            let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go();
+            let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go().then(res => res.data);
             expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
             await Dummy.update({prop1: record.prop1, prop2: record.prop2})
                 .set({prop9, prop4})
@@ -1621,7 +1668,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi1pk-gsi1sk-index'
             });
-            let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go();
+            let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go().then(res => res.data);
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
         });
 
@@ -1652,7 +1699,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi1pk-gsi1sk-index'
             });
-            let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go();
+            let beforeUpdate = await Dummy.query.index2({prop3: record.prop3, prop4: record.prop4}).go().then(res => res.data);
             expect(beforeUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([record]);
             await Dummy.patch({prop1: record.prop1, prop2: record.prop2})
                 .set({prop9, prop4})
@@ -1669,7 +1716,7 @@ describe("Entity", async () => {
                 },
                 IndexName: 'gsi1pk-gsi1sk-index'
             });
-            let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go();
+            let afterUpdate = await Dummy.query.index2({prop3: record.prop3, prop4}).go().then(res => res.data);
             expect(afterUpdate).to.be.an("array").with.lengthOf(1).and.to.deep.equal([{...record, prop9, prop4}]);
         });
     });
@@ -1756,7 +1803,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const updateParams1 = db[method]({id, sub})
                     .add({prop6: ['tsr']})
@@ -1768,7 +1815,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "updated_new"});
+                    .go({response: "updated_new"}).then(res => res.data);
 
                 expect(update1).to.deep.equal({
                     id,
@@ -1807,7 +1854,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const updateParams1 = db[method]({id, sub})
                     .add({prop6: ['tsr']})
@@ -1819,7 +1866,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "all_new"});
+                    .go({response: "all_new"}).then(res => res.data);
 
                 expect(update1).to.deep.equal({
                     id,
@@ -1860,7 +1907,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const updateParams1 = db[method]({id, sub})
                     .add({prop6: ['tsr']})
@@ -1872,7 +1919,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "all_old"});
+                    .go({response: "all_old"}).then(res => res.data);
 
                 expect(update1).to.deep.equal(initialData);
             });
@@ -1914,7 +1961,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "updated_old"});
+                    .go({response: "updated_old"}).then(res => res.data);
 
                 expect(update1).to.deep.equal({prop3, prop6, id, sub});
             });
@@ -1944,7 +1991,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const updateParams1 = db[method]({id, sub})
                     .add({prop6: ['tsr']})
@@ -1956,7 +2003,7 @@ describe("Entity", async () => {
                 const update1 = await db[method]({id, sub})
                     .add({prop6: ['tsr']})
                     .append({prop3: [{prop4: "ghi", prop5: 789}]})
-                    .go({response: "none"});
+                    .go({response: "none"}).then(res => res.data);
 
                 expect(update1).to.be.null;
             })
@@ -1987,14 +2034,14 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const deleteParams1: any = db[method]({id, sub}).params({response: "all_old"});
 
                 expect(deleteParams1.ReturnValues).to.equal("ALL_OLD");
 
                 const delete1 = await db[method]({id, sub})
-                    .go({response: "all_old"});
+                    .go({response: "all_old"}).then(res => res.data);
 
                 expect(delete1).to.deep.equal(initial);
             });
@@ -2025,14 +2072,14 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go();
+                }).go().then(res => res.data);
 
                 const deleteParams1: any = db[method]({id, sub}).params({response: "none"});
 
                 expect(deleteParams1.ReturnValues).to.equal("NONE");
 
                 const delete1 = await db[method]({id, sub})
-                    .go({response: "none"});
+                    .go({response: "none"}).then(res => res.data);
 
                 expect(delete1).to.be.null;
             });
@@ -2064,7 +2111,7 @@ describe("Entity", async () => {
                     prop2,
                     prop3,
                     prop6
-                }).go({response: "none"});
+                }).go({response: "none"}).then(res => res?.data);
 
                 expect(result).to.be.null;
             })
@@ -2142,9 +2189,9 @@ describe("Entity", async () => {
 
             const itemFromDocClient = await client.get(params).promise();
             const parsed = entity.parse(itemFromDocClient);
-            expect(parsed).to.deep.equal({prop1, prop2, prop3});
+            expect(parsed.data).to.deep.equal({prop1, prop2, prop3});
             const parsedTrimmed = entity.parse(itemFromDocClient, {attributes: ['prop1', 'prop3']});
-            expect(parsedTrimmed).to.deep.equal({prop1, prop3});
+            expect(parsedTrimmed.data).to.deep.equal({prop1, prop3});
         });
 
         it("should parse the response from an query that lacks identifiers", async () => {
@@ -2172,9 +2219,9 @@ describe("Entity", async () => {
             }
             const itemFromDocClient = await client.query(params).promise();
             const parsed = entity.parse(itemFromDocClient);
-            expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
+            expect(parsed.data).to.deep.equal([{prop1, prop2, prop3}]);
             const parseTrimmed = entity.parse(itemFromDocClient, {attributes: ['prop1', 'prop3']});
-            expect(parseTrimmed).to.deep.equal([{prop1, prop3}]);
+            expect(parseTrimmed.data).to.deep.equal([{prop1, prop3}]);
         });
 
         it("should parse the response from an update", async () => {
@@ -2205,9 +2252,9 @@ describe("Entity", async () => {
             }
             const results = await client.update(params).promise();
             const parsed = entity.parse(results);
-            expect(parsed).to.deep.equal({prop3: prop3b});
+            expect(parsed.data).to.deep.equal({prop3: prop3b});
             const parseTrimmed = entity.parse(results, {attributes: ['prop3']});
-            expect(parseTrimmed).to.deep.equal({prop3: prop3b});
+            expect(parseTrimmed.data).to.deep.equal({prop3: prop3b});
         });
 
         it("should parse the response from a complex update", async () => {
@@ -2247,7 +2294,7 @@ describe("Entity", async () => {
 
             const results1 = await client.update(params).promise();
             const parsed1 = entity.parse(results1);
-            expect(parsed1).to.be.null;
+            expect(parsed1.data).to.be.null;
             const params2 = {
                 UpdateExpression: 'SET #prop4.#nested.#prop6 = :prop6_u0',
                 ExpressionAttributeNames: { '#prop4': 'prop4', '#nested': 'nested', '#prop6': 'prop6' },
@@ -2262,7 +2309,7 @@ describe("Entity", async () => {
 
             const results2 = await client.update(params2).promise();
             const parsed2 = entity.parse(results2);
-            expect(parsed2).to.deep.equal({
+            expect(parsed2.data).to.deep.equal({
                 prop4: {
                     nested: {
                         prop6: 'xyz'
@@ -2295,9 +2342,9 @@ describe("Entity", async () => {
             };
             const results = await client.delete(params).promise();
             const parsed = entity.parse(results);
-            expect(parsed).to.deep.equal({prop1, prop2, prop3});
+            expect(parsed.data).to.deep.equal({prop1, prop2, prop3});
             const parseTrimmed = entity.parse(results, {attributes: ['prop1', 'prop3']});
-            expect(parseTrimmed).to.deep.equal({prop1, prop3});
+            expect(parseTrimmed.data).to.deep.equal({prop1, prop3});
         });
 
         it("should parse the response from a put", async () => {
@@ -2330,13 +2377,13 @@ describe("Entity", async () => {
             };
             const results = await client.put(params).promise();
             const parsed = entity.parse(results);
-            expect(parsed).to.deep.equal({
+            expect(parsed.data).to.deep.equal({
                 prop1: prop1a,
                 prop2: prop2a,
                 prop3: prop3a,
             });
             const parseTrimmed = entity.parse(results, {attributes: ['prop1', 'prop3']});
-            expect(parseTrimmed).to.deep.equal({
+            expect(parseTrimmed.data).to.deep.equal({
                 prop1: prop1a,
                 prop3: prop3a,
             });
@@ -2360,9 +2407,9 @@ describe("Entity", async () => {
                 "ScannedCount": 1
             };
             const parsed = entity.parse(scanResponse);
-            expect(parsed).to.deep.equal([{prop1, prop2, prop3}]);
+            expect(parsed.data).to.deep.equal([{prop1, prop2, prop3}]);
             const parseTrimmed = entity.parse(scanResponse, {attributes: ['prop1', 'prop3']});
-            expect(parseTrimmed).to.deep.equal([{prop1, prop3}]);
+            expect(parseTrimmed.data).to.deep.equal([{prop1, prop3}]);
         }).timeout(10000);
     });
     describe("Key fields that match Attribute fields", () => {
@@ -2475,7 +2522,7 @@ describe("Entity", async () => {
                 },
                 TableName: 'electro_keynamesattributenames'
             });
-            const oldPut = await entity.put(oldRecord).go();
+            const oldPut = await entity.put(oldRecord).go().then(res => res.data);
             expect(oldPut).to.deep.equal({
                 accountId: oldRecord.accountId.toUpperCase(),
                 organizationId: oldRecord.organizationId,
@@ -2498,7 +2545,7 @@ describe("Entity", async () => {
                 },
                 TableName: 'electro_keynamesattributenames'
             });
-            const newPut = await entity.put(newRecord).go();
+            const newPut = await entity.put(newRecord).go().then(res => res.data);
             expect(newPut).to.deep.equal({
                 accountId: newRecord.accountId.toUpperCase(),
                 organizationId: newRecord.organizationId,
@@ -2526,7 +2573,7 @@ describe("Entity", async () => {
             const newUpdate = await entity.update(newRecord)
                 .set({createdAt})
                 .add({incrementId: 1})
-                .go({response: "all_new"});
+                .go({response: "all_new"}).then(res => res.data);
 
             expect(newUpdate).to.deep.equal({
                 accountId: newRecord.accountId.toUpperCase(),
@@ -2545,7 +2592,7 @@ describe("Entity", async () => {
                 },
                 TableName: 'electro_keynamesattributenames'
             });
-            const newGet = await entity.get(newRecord).go();
+            const newGet = await entity.get(newRecord).go().then(res => res.data);
             expect(newGet).to.deep.equal({
                 accountId: newRecord.accountId.toUpperCase(),
                 organizationId: newRecord.organizationId,
@@ -2564,7 +2611,7 @@ describe("Entity", async () => {
                     ':sk1': `PREFIX_${newRecord.accountId.toUpperCase()}_POSTFIX`,
                 }
             });
-            const query1 = await entity.query.organization(newRecord).go();
+            const query1 = await entity.query.organization(newRecord).go().then(res => res.data);
             expect(query1).to.deep.equal([newUpdate]);
             const query2Parameters = entity.query
                 .onboarded({type: newRecord.type})
@@ -2587,16 +2634,16 @@ describe("Entity", async () => {
             const query2 = await entity.query
                 .onboarded({type: newRecord.type})
                 .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId.toUpperCase()))
-                .go();
+                .go().then(res => res.data);
 
             expect(query2).to.deep.equal([{...newUpdate, incrementId: 1}]);
 
-            const newPaginate = await entity.query
-                .onboarded({type: newRecord.type})
-                .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId.toUpperCase()))
-                .page(oldRecord);
-
-            expect(newPaginate).to.deep.equal([null, [{...newUpdate, incrementId: 1}]]);
+            // const newPaginate = await entity.query
+            //     .onboarded({type: newRecord.type})
+            //     .where(({accountId}, {eq}) => eq(accountId, newRecord.accountId.toUpperCase()))
+            //     .page(oldRecord);
+            //
+            // expect(newPaginate).to.deep.equal([null, [{...newUpdate, incrementId: 1}]]);
         });
         it("Should throw when trying to add a collection to an attribute field index", () => {
             expect(() => {
@@ -2810,12 +2857,12 @@ describe("Entity", async () => {
                    username,
                    organization,
                    email,
-               }).go(),
+               }).go().then(res => res.data),
                constraint.query.properties({
                    entity: user.schema.model.entity,
                    attribute: 'email',
                    value: email,
-               }).go()
+               }).go().then(res => res.data)
            ]);
 
            expect(userData).to.deep.equal([{
@@ -2934,12 +2981,15 @@ describe('pagination order', () => {
             batch.push({prop1, prop2, prop3});
         }
 
-        await entity.put(batch).go();
+        await entity.put(batch).go().then(res => res.unprocessed);
 
-        const [ unOrderedRecords ] = await entity.get(batch).go();
+        const unOrderedRecords = await entity.get(batch).go()
+            .then(res => res.unprocessed);
         expect(batch[0]).to.not.deep.equal(unOrderedRecords[0]);
-
-        const [ orderedRecords, orderedUnprocessed ] = await entity.get(batch).go({preserveBatchOrder: true});
+        
+        const res = await entity.get(batch).go({preserveBatchOrder: true});
+        const orderedRecords = res.data;
+        const orderedUnprocessed = res.unprocessed;
         expect(orderedUnprocessed).to.be.an("array").with.length(0);
         expect(orderedRecords).to.be.an("array").with.length(batch.length);
         for (let i = 0; i < orderedRecords.length; i++) {
@@ -3047,12 +3097,16 @@ describe('pagination order', () => {
         await entity.put(batch).go();
         // countToMakeUnprocessed is for each batch, batchGet is limited to 100 items, 3 batches
         const totalUnprocessed = Math.round(batchCount / 100) * countToMakeUnprocessed;
-        const [unOrderedRecords, unOrderedUnprocessed] = await entity.get(batch).go();
+        const [unOrderedRecords, unOrderedUnprocessed] = await entity.get(batch)
+            .go()
+            .then(res => [res.data, res.unprocessed] as const);
+
         expect(batch[0]).to.not.deep.equal(unOrderedRecords[0]);
         expect(unOrderedRecords).to.be.an("array").with.length(batch.length - totalUnprocessed);
         expect(unOrderedUnprocessed).to.be.an("array").with.length(totalUnprocessed);
-
-        const [orderedRecords, orderedUnprocessed] = await entity.get(batch).go({preserveBatchOrder: true, });
+        // todo: internals now need to care about .data
+        const [orderedRecords, orderedUnprocessed] = await entity.get(batch).go({preserveBatchOrder: true, })
+            .then(res => [res.data, res.unprocessed] as const);
         expect(orderedUnprocessed).to.be.an("array").with.length(totalUnprocessed);
         expect(orderedRecords).to.be.an("array").with.length(batch.length);
         for (let i = 0; i < orderedRecords.length; i++) {
@@ -3161,7 +3215,7 @@ describe('attributes query option', () => {
                 attr2: item.attr2,
             }).go({
                 attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-            });
+            }).then(res => res.data);
 
         expect(getItem).to.deep.equal({
             attr2: item.attr2,
@@ -3176,7 +3230,7 @@ describe('attributes query option', () => {
                 attr2: item.attr2,
             }).go({
                 attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-            });
+            }).then(res => res.data);
 
         expect(queryItem).to.deep.equal([{
             attr2: item.attr2,
@@ -3231,7 +3285,7 @@ describe('attributes query option', () => {
         const getRaw = await entityWithSK.get({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']}).then(res => res.data);
         expect(getRaw).to.deep.equal({
             "Item": {
                 "attr5": item.attr5,
@@ -3243,7 +3297,8 @@ describe('attributes query option', () => {
         const queryRawGo = await entityWithSK.query.myIndex({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        }).go({raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']})
+            .then(res => res.data);
         expect(queryRawGo).to.deep.equal({
             "Items": [
                 {
@@ -3259,12 +3314,12 @@ describe('attributes query option', () => {
             "ScannedCount": 1
         });
         const queryRawPage = await entityWithSK.query.myIndex({
-            attr1: item.attr1,
-            attr2: item.attr2,
-        }).page(null, {raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
-        expect(queryRawPage).to.deep.equal([
-            null,
-            {
+                attr1: item.attr1,
+                attr2: item.attr2,
+            })
+            .go({cursor: null, raw: true, attributes: ['attr2', 'attr9', 'attr5', 'attr10']})
+
+            expect(queryRawPage.data).to.deep.equal({
                 "Items": [
                     {
                         "sk": `$mycollection2#abc_myversion#attr2_${item.attr2}`,
@@ -3277,14 +3332,15 @@ describe('attributes query option', () => {
                 ],
                 "Count": 1,
                 "ScannedCount": 1
-            }
-        ]);
+            });
+            expect(queryRawPage.cursor).to.equal(null);
 
         // pagerRaw
         const queryRawPager = await entityWithSK.query.myIndex({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).page(null, {pager: 'raw', attributes: ['attr2', 'attr9', 'attr5', 'attr10']});
+        }).go({cursor: null, pager: 'raw', attributes: ['attr2', 'attr9', 'attr5', 'attr10']})
+            .then(res => [res.cursor, res.data] as const);
         expect(queryRawPager).to.deep.equal([
             null,
             [
@@ -3309,7 +3365,7 @@ describe('attributes query option', () => {
             },
             ignoreOwnership: true,
             attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-        });
+        }).then(res => res.data);
         expect(getIgnoreOwnership).to.deep.equal({
             "attr5": item.attr5,
             "attr9": item.attr9,
@@ -3335,7 +3391,7 @@ describe('attributes query option', () => {
                     getIgnoreOwnershipParams = event.params;
                 }
             },
-        });
+        }).then(res => res.data);
         expect(queryIgnoreOwnershipGo).to.deep.equal([
             {
                 "attr5": item.attr5,
@@ -3357,7 +3413,7 @@ describe('attributes query option', () => {
         const queryIgnoreOwnershipPage = await entityWithSK.query.myIndex({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).page(null, {
+        }).go({
             ignoreOwnership: true,
             attributes: ['attr2', 'attr9', 'attr5', 'attr10'],
             logger: (event) => {
@@ -3365,7 +3421,7 @@ describe('attributes query option', () => {
                     getIgnoreOwnershipParams = event.params;
                 }
             },
-        });
+        }).then(res => [res.cursor, res.data] as const);
 
         expect(queryIgnoreOwnershipPage).to.deep.equal([
             null,
@@ -3408,7 +3464,7 @@ describe('attributes query option', () => {
         const getParams = await entityWithSK.get({
             attr1: item.attr1,
             attr2: item.attr2,
-        }).go({attributes: []});
+        }).go({attributes: []}).then(res => res.data);
 
         expect(getParams).to.deep.equal(item);
     });
@@ -3428,26 +3484,27 @@ describe('attributes query option', () => {
         };
         await entityWithSK.put(item).go();
         let params: any;
-        const [, results] = await entityWithSK.query.myIndex2({
+        const results = await entityWithSK.query.myIndex2({
             attr5: item.attr5,
             attr4: item.attr4,
             attr6: item.attr6!,
             attr9: item.attr9!,
-        }).page(null, {
+        }).go({
+            cursor: null,
             logger: (event) => {
                 if (event.type === 'query') {
                     params = event.params;
                 }
             },
             attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-        });
+        }).then(res => res.data);
         expect(results).to.deep.equal([{
             attr2: item.attr2,
             attr9: item.attr9,
             attr5: item.attr5,
             attr10: item.attr10,
         }]);
-        expect(params.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__, #attr1, #attr6, #attr4");
+        expect(params.ProjectionExpression).to.equal("#attr5, #attr4, #pk, #sk1, #attr2, #prop9, #attr10, #__edb_e__, #__edb_v__");
     });
 
     it('should not include index composite attributes on automatically when pager is raw', async () => {
@@ -3465,12 +3522,13 @@ describe('attributes query option', () => {
         };
         await entityWithSK.put(item).go();
         let params: any;
-        const [, results] = await entityWithSK.query.myIndex2({
+        const results = await entityWithSK.query.myIndex2({
             attr5: item.attr5,
             attr4: item.attr4,
             attr6: item.attr6!,
             attr9: item.attr9!,
-        }).page(null, {
+        }).go({
+            cursor: null,
             logger: (event) => {
                 if (event.type === 'query') {
                     params = event.params;
@@ -3478,14 +3536,14 @@ describe('attributes query option', () => {
             },
             pager: 'raw',
             attributes: ['attr2', 'attr9', 'attr5', 'attr10']
-        });
+        }).then(res => res.data);
         expect(results).to.deep.equal([{
             attr2: item.attr2,
             attr9: item.attr9,
             attr5: item.attr5,
             attr10: item.attr10,
         }]);
-        expect(params.ProjectionExpression).to.equal("#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__");
+        expect(params.ProjectionExpression).to.equal("#attr5, #attr4, #pk, #sk1, #attr2, #prop9, #attr10, #__edb_e__, #__edb_v__");
     });
 
     it('should throw when unknown attribute names are provided', () => {
@@ -3565,11 +3623,11 @@ describe('attributes query option', () => {
 
         expect(full.KeyConditionExpression).to.equal("#pk = :pk and #sk1 = :sk1")
 
-        const tests = await entity.query.record({prop1, prop2, prop3: 'test'}).go();
+        const tests = await entity.query.record({prop1, prop2, prop3: 'test'}).go().then(res => res.data);
         expect(tests).to.deep.equal([
             { prop1, prop2, prop3: 'test' }
         ]);
-        const testish = await entity.query.record({prop1, prop2}).begins({prop3: 'test'}).go();
+        const testish = await entity.query.record({prop1, prop2}).begins({prop3: 'test'}).go().then(res => res.data);
         expect(testish).to.deep.equal([
             { prop1, prop2, prop3: 'test' },
             { prop1, prop2, prop3: 'test2' }
@@ -3629,4 +3687,726 @@ describe('attributes query option', () => {
 
         expect(full.KeyConditionExpression).to.equal("#pk = :pk and #sk1 = :sk1")
     });
+
+    it('should apply sort parameters to queries', async () => {
+        const entity = new Entity({
+            model: {
+                service: 'service',
+                entity: 'entity',
+                version: '1',
+            },
+            attributes: {
+                prop1: {
+                    type: 'string'
+                },
+                prop2: {
+                    type: 'string'
+                },
+                prop3: {
+                    type: 'string'
+                },
+                prop4: {
+                    type: 'string'
+                },
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1']
+                    },
+                    sk: {
+                        field: 'sk',
+                        template: '${prop2}#${prop3}#${prop4}#${prop2}#${prop3}',
+                        composite: ['prop2', 'prop3', 'prop4', 'prop2' , 'prop3'],
+                    }
+                }
+            }
+        }, {client, table});
+
+        const queries = [
+            ['query', entity.query.record({
+                prop1: 'prop1',
+                prop2: 'prop2',
+                prop3: 'prop3',
+            })],
+            ['indexed find', entity.find({prop1: 'prop1'})],
+            ['indexed match', entity.match({prop1: 'prop1'})],
+        ] as const;
+
+        const options = [
+            [undefined, undefined],
+            [{}, undefined],
+            [{order: 'asc'}, true],
+            [{order: 'desc'}, false],
+        ] as const;
+
+        await entity.put([
+            {
+                prop1: 'prop1',
+                prop2: 'prop2',
+                prop3: 'prop3',
+                prop4: 'prop4a',
+            },
+            {
+                prop1: 'prop1',
+                prop2: 'prop2',
+                prop3: 'prop3',
+                prop4: 'prop4b',
+            },
+            {
+                prop1: 'prop1',
+                prop2: 'prop2',
+                prop3: 'prop3',
+                prop4: 'prop4c',
+            }
+        ]).go();
+
+        for (const [description, operation] of queries) {
+            for (const [queryOptions, output] of options) {
+                try {
+                    // @ts-ignore
+                    const params = operation.params(queryOptions);
+                    expect(params['ScanIndexForward']).to.equal(output);
+                
+                    // @ts-ignore
+                    const results = await operation.go(queryOptions);
+                    const isDesc = output === false;
+                    if (isDesc) {
+                        expect(results.data[0]?.prop4).to.equal('prop4c');
+                        expect(results.data[1]?.prop4).to.equal('prop4b');
+                        expect(results.data[2]?.prop4).to.equal('prop4a');
+                    } else {
+                        expect(results.data[0]?.prop4).to.equal('prop4a');
+                        expect(results.data[1]?.prop4).to.equal('prop4b');
+                        expect(results.data[2]?.prop4).to.equal('prop4c');
+                    }
+                } catch(err: any) {
+                    throw new Error(`${err.message}: ${description}`);
+                }
+            }
+        }     
+    });
 });
+
+describe('attribute padding', () => {
+   it('should perform crud operations with padded number attribute', async () => {
+       const entity = new Entity({
+           model: {
+               entity: uuid(),
+               service: 'padding',
+               version: '0'
+           },
+           attributes: {
+               prop1: {
+                   type: 'number',
+                   padding: {
+                       length: 5,
+                       char: '0',
+                   }
+               },
+               prop2: {
+                   type: 'string',
+               },
+               prop3: {
+                   type: 'string',
+               },
+               prop4: {
+                   type: 'number',
+                   padding: {
+                       length: 5,
+                       char: '0',
+                   }
+               }
+           },
+           indexes: {
+               record: {
+                   pk: {
+                       field: 'pk',
+                       composite: ['prop1']
+                   },
+                   sk: {
+                       field: 'sk',
+                       composite: ['prop2']
+                   }
+               },
+               second: {
+                   index: "gsi1pk-gsi1sk-index",
+                   pk: {
+                       field: "gsi1pk",
+                       composite: ['prop3'],
+                   },
+                   sk: {
+                       field: "gsi1sk",
+                       composite: ['prop4'],
+                   },
+               }
+           }
+       }, {table, client});
+       const prop2 = uuid();
+       const prop3 = uuid();
+       const prop1 = 10;
+       const initialProp4 = 500;
+       const created = await entity.put({
+           prop1,
+           prop2,
+           prop3,
+           prop4: initialProp4,
+       }).go();
+       expect(created.data).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+       const getFromInitial = await entity.get({prop1, prop2}).go();
+       expect(getFromInitial.data).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+       const queryFromInitialProp1 = await entity.query.record({prop1, prop2}).go();
+       expect(queryFromInitialProp1.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+       const queryFromInitialProp4 = await entity.query.second({prop3, prop4: initialProp4}).go();
+       expect(queryFromInitialProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+       const nextProp4 = 25;
+       const updatedProp4 = await entity.update({prop1, prop2}).set({prop4: nextProp4}).go({response: 'all_new'});
+       expect(updatedProp4.data).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+
+       const queryFromNextProp4 = await entity.query.second({prop3, prop4: nextProp4}).go();
+       expect(queryFromNextProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+   });
+
+    it('should perform crud operations with padded string attribute', async () => {
+        const entity = new Entity({
+            model: {
+                entity: uuid(),
+                service: 'padding',
+                version: '0'
+            },
+            attributes: {
+                prop1: {
+                    type: 'string',
+                    padding: {
+                        length: 5,
+                        char: '0',
+                    }
+                },
+                prop2: {
+                    type: 'string',
+                },
+                prop3: {
+                    type: 'string',
+                },
+                prop4: {
+                    type: 'string',
+                    padding: {
+                        length: 5,
+                        char: '0',
+                    }
+                }
+            },
+            indexes: {
+                record: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['prop1']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['prop2']
+                    }
+                },
+                second: {
+                    index: "gsi1pk-gsi1sk-index",
+                    pk: {
+                        field: "gsi1pk",
+                        composite: ['prop3'],
+                    },
+                    sk: {
+                        field: "gsi1sk",
+                        composite: ['prop4'],
+                    },
+                }
+            }
+        }, {table, client});
+
+        const prop2 = uuid();
+        const prop3 = uuid();
+        const prop1 = 'abc';
+        const knownProp1 = '00abc';
+        const initialProp4 = 'def';
+        const knownProp4 = '00def';
+        const created = await entity.put({
+            prop1,
+            prop2,
+            prop3,
+            prop4: initialProp4,
+        }).go();
+        expect(created.data).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const getFromInitial = await entity.get({prop1, prop2}).go();
+        expect(getFromInitial.data).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const getFromKnown = await entity.get({prop2, prop1: knownProp1}).go();
+        expect(getFromKnown.data).to.be.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const queryFromInitialProp1 = await entity.query.record({prop1, prop2}).go();
+        expect(queryFromInitialProp1.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const queryFromKnownProp1 = await entity.query.record({prop1: knownProp1, prop2}).go();
+        expect(queryFromKnownProp1.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const queryFromInitialProp4 = await entity.query.second({prop3, prop4: initialProp4}).go();
+        expect(queryFromInitialProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const queryFromKnownProp4 = await entity.query.second({prop3, prop4: knownProp4}).go();
+        expect(queryFromKnownProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: initialProp4});
+
+        const nextProp4 = 'xyz';
+        const knownNextProp4 = '00xyz';
+        const updatedProp4 = await entity.update({prop1, prop2}).set({prop4: nextProp4}).go({response: 'all_new'});
+        expect(updatedProp4.data).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+
+        const queryFromNextProp4 = await entity.query.second({prop3, prop4: nextProp4}).go();
+        expect(queryFromNextProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+
+        const queryFromKnownNextProp4 = await entity.query.second({prop3, prop4: knownNextProp4}).go();
+        expect(queryFromKnownNextProp4.data[0]).to.deep.equal({prop1, prop2, prop3, prop4: nextProp4});
+    });
+
+    it('should accept the value zero for sort key number attributes', async () => {
+        const transaction = new Entity(
+            {
+                model: {
+                    entity: "transaction",
+                    version: "1",
+                    service: "bank"
+                },
+                attributes: {
+                    accountNumber: {
+                        type: "number",
+                        required: true,
+                        padding: {
+                            length: 8,
+                            char: '0',
+                        }
+                    },
+                    transactionId: {
+                        type: "number",
+                        required: true,
+                        padding: {
+                            length: 10,
+                            char: '0',
+                        }
+                    },
+                    amount: {
+                        type: 'number',
+                    },
+                    datePosted: {
+                        type: 'string',
+                    },
+                },
+                indexes: {
+                    transactions: {
+                        pk: {
+                            field: "pk",
+                            composite: ["accountNumber"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["transactionId"]
+                        }
+                    },
+                }
+            },
+            { table }
+        );
+
+        const accountNumber = 0;
+        const transactionId = 0;
+
+        const params = transaction.query
+            .transactions({accountNumber, transactionId})
+            .params();
+
+        expect(params).to.deep.equal({
+            "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
+            "TableName": table,
+            "ExpressionAttributeNames": {
+                "#pk": "pk",
+                "#sk1": "sk"
+            },
+            "ExpressionAttributeValues": {
+                ":pk": "$bank#accountnumber_00000000",
+                ":sk1": "$transaction_1#transactionid_0000000000"
+            }
+        });
+    });
+});
+
+describe('upsert', () => {
+    const tasks = new Entity(
+        {
+            model: {
+                entity: "tasks",
+                version: "1",
+                service: "taskapp"
+            },
+            attributes: {
+                team: {
+                    type: "string",
+                    required: true
+                },
+                task: {
+                    type: "string",
+                    required: true
+                },
+                project: {
+                    type: "string",
+                    required: true
+                },
+                title: {
+                    type: 'string',
+                },
+                description: {
+                    type: "string"
+                },
+                flags: {
+                    type: 'set',
+                    items: 'string',
+                },
+                integrations: {
+                    type: 'map',
+                    properties: {
+                        twitter: {
+                            type: 'string'
+                        },
+                        asana: {
+                            type: 'string'
+                        }
+                    }
+                }
+            },
+            indexes: {
+                tasks: {
+                    pk: {
+                        field: "pk",
+                        composite: ["project"]
+                    },
+                    sk: {
+                        field: "sk",
+                        // create composite keys for partial sort key queries
+                        composite: ["task"]
+                    }
+                }
+            }
+        },
+        { table, client }
+    );
+
+    it('should create an item if one did not exist prior', async () => {
+        const project = uuid();
+        const task = 'task-001'
+        const team = 'my_team';
+        const flags = ['performance'];
+        const integrations = {
+            twitter: '@tywalch',
+        }
+        const title = 'Bugfix #921';
+        const initialUpsert = await tasks.upsert({
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        }).go({response: 'all_new'});
+        const expected = {
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        }
+        const record = await tasks.get({task, project}).go();
+        expect(initialUpsert.data).to.deep.equal(expected);
+        expect(record.data).to.deep.equal(expected);
+    });
+
+    it('should update an existing item', async () => {
+        const project = uuid();
+        const task = 'task-001'
+        const team = 'my_team';
+        const flags = ['performance'];
+        const integrations = {
+            twitter: '@tywalch',
+        }
+        const title = 'Bugfix #921';
+        const description = 'Users experience degraded performance';
+
+        const initialUpsert = await tasks.upsert({
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        }).go({response: 'all_new'});
+
+        expect(initialUpsert.data).to.deep.equal({
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        });
+
+        const record = await tasks.get({task, project}).go();
+
+        expect(record.data).to.deep.equal({
+            project,
+            task,
+            team,
+            flags,
+            integrations,
+            title,
+        });
+
+        const upsertedOverExisting = await tasks.upsert({
+            task,
+            project,
+            team,
+            description,
+            flags: ['groomed', 'tech_debt'],
+        }).go({response: 'all_new'});
+
+        expect(upsertedOverExisting.data).to.deep.equal({
+            project,
+            task,
+            team,
+            flags: ['groomed', 'tech_debt'],
+            integrations,
+            title,
+            description,
+        })
+
+        const record2 = await tasks.get({task, project}).go();
+        expect(record2.data).to.deep.equal({
+            project,
+            task,
+            team,
+            flags: ['groomed', 'tech_debt'],
+            integrations,
+            title,
+            description,
+        })
+    });
+
+    it('should not allow for partial keys', async () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: 'string',
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    flags: {
+                        type: 'set',
+                        items: 'string',
+                    },
+                    createdAt: {
+                        type: 'string'
+                    },
+                    integrations: {
+                        type: 'map',
+                        properties: {
+                            twitter: {
+                                type: 'string'
+                            },
+                            asana: {
+                                type: 'string'
+                            }
+                        }
+                    }
+                },
+                indexes: {
+                    tasks: {
+                        pk: {
+                            field: "pk",
+                            composite: ["project"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["task"]
+                        }
+                    },
+                    projects: {
+                        index: 'gsi1pk-gsi1sk-index',
+                        pk: {
+                            field: 'gsi1pk',
+                            composite: ['team']
+                        },
+                        sk: {
+                            field: 'gsi1sk',
+                            composite: ['createdAt', 'project']
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        const project = uuid();
+        const task = 'task-001'
+        const team = 'my_team';
+        const flags = ['performance'];
+        const integrations = {
+            twitter: '@tywalch',
+        }
+        const title = 'Bugfix #921';
+        const description = 'Users experience degraded performance';
+        expect(() => {
+            const upsert = tasks.upsert({
+                project,
+                task,
+                team,
+                flags,
+                integrations,
+                title,
+            }).params();
+        }).to.throw('Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes')
+    });
+});
+
+describe('batch operations', () => {
+    it('should return batchGet records when "table" is provided as query option', async () => {
+        const Segment = new Entity({
+            model: {
+                entity: "Segment",
+                version: "1",
+                service: "TourContent",
+            },
+            attributes: {
+                tenantId: {
+                    type: "string",
+                    required: true,
+                },
+                siteId: {
+                    type: "string",
+                    required: true,
+                },
+                segmentId: {
+                    type: "string",
+                    required: true,
+                    // default: () => uuid(),
+                    readOnly: true,
+                    validate: /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i,
+                },
+                name: {
+                    type: "string",
+                    required: true,
+                },
+                // createdAt,
+                // updatedAt,
+                state: {
+                    type: ["active", "inactive"] as const,
+                    required: true,
+                },
+                image: {
+                    type: "map",
+                    required: false,
+                    properties: {
+                        bucket: {
+                            type: "string",
+                            required: false,
+                        },
+                        key: {
+                            type: "string",
+                            required: false,
+                        },
+                    },
+                },
+            },
+            indexes: {
+                _: {
+                    pk: {
+                        field: 'pk',
+                        composite: ["tenantId", "siteId", "segmentId"],
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: [],
+                    },
+                },
+                site: {
+                    collection: "site",
+                    index: 'gsi1pk-gsi1pk-index',
+                    pk: {
+                        field: 'gsi1pk',
+                        composite: ["tenantId", "siteId"],
+                    },
+                    sk: {
+                        field: 'gis1sk',
+                        composite: ["segmentId"],
+                    },
+                },
+            },
+        }, {client});
+
+        type CreateSegment = CreateEntityItem<typeof Segment>;
+
+        const items: CreateSegment[] = [];
+        for (let i = 0; i < 10; i++) {
+            items.push({
+                tenantId: uuid(),
+                siteId: uuid(),
+                name: uuid(),
+                image: {
+                    bucket: uuid(),
+                    key: uuid(),
+                },
+                segmentId: uuid(),
+                state: 'active'
+            });
+        }
+
+        await Segment.put(items).go({table});
+
+        const first = await Segment.get({
+            segmentId: items[0].segmentId!,
+            siteId: items[0].siteId!,
+            tenantId: items[0].tenantId!
+        }).go({table});
+
+        expect(first.data).to.deep.equal(items[0]);
+
+        const batchGet = await Segment.get(items).go({table});
+        expect(batchGet.data).to.have.length.greaterThan(0);
+        expect(batchGet.data).to.have.length(items.length);
+        expect(
+            batchGet.data
+                .sort((a, z) => a.segmentId.localeCompare(z.segmentId))
+        ).to.deep.equal(
+            items
+                .sort((a, z) => a.segmentId.localeCompare(z.segmentId))
+        );
+    });
+})

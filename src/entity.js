@@ -1,6 +1,30 @@
 "use strict";
 const { Schema } = require("./schema");
-const { KeyCasing, TableIndex, FormatToReturnValues, ReturnValues, EntityVersions, ItemOperations, UnprocessedTypes, Pager, ElectroInstance, KeyTypes, QueryTypes, MethodTypes, Comparisons, ExpressionTypes, ModelVersions, ElectroInstanceTypes, MaxBatchItems, TerminalOperation } = require("./types");
+const { AllPages, 
+	KeyCasing, 
+	TableIndex, 
+	FormatToReturnValues, 
+	ReturnValues, 
+	EntityVersions, 
+	ItemOperations, 
+	UnprocessedTypes, 
+	Pager, 
+	ElectroInstance, 
+	KeyTypes, 
+	QueryTypes, 
+	MethodTypes, 
+	Comparisons, 
+	ExpressionTypes, 
+	ModelVersions, 
+	ElectroInstanceTypes, 
+	MaxBatchItems, 
+	TerminalOperation, 
+	ResultOrderOption,
+	ResultOrderParam,
+	IndexTypes,
+	PartialComparisons,
+	MethodTypeTranslation,
+} = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -10,6 +34,7 @@ const validations = require("./validations");
 const c = require('./client');
 const u = require("./util");
 const e = require("./errors");
+const { validate } = require("jsonschema");
 
 class Entity {
 	constructor(model, config = {}) {
@@ -30,12 +55,15 @@ class Entity {
 		this._whereBuilder = new WhereFactory(this.model.schema.attributes, FilterOperations);
 		this._clausesWithFilters = this._filterBuilder.injectFilterClauses(clauses, this.model.filters);
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
-		this.scan = this._makeChain(TableIndex, this._clausesWithFilters, clauses.index).scan();
+
 		this.query = {};
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
 			this.query[accessPattern] = (...values) => {
-				return this._makeChain(index, this._clausesWithFilters, clauses.index).query(...values);
+				const options = {
+					indexType: this.model.indexes[accessPattern].type || IndexTypes.isolated,
+				}
+				return this._makeChain(index, this._clausesWithFilters, clauses.index, options).query(...values);
 			};
 		}
 		this.config.identifiers = config.identifiers || {};
@@ -46,6 +74,10 @@ class Entity {
 		this._instance = ElectroInstance.entity;
 		this._instanceType = ElectroInstanceTypes.entity;
 		this.schema = model;
+	}
+
+	get scan() {
+		return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index, {_isPagination: true}).scan();
 	}
 
 	setIdentifier(type = "", identifier = "") {
@@ -84,14 +116,30 @@ class Entity {
 		return pkMatch;
 	}
 
+	ownsCursor(cursor) {
+		if (typeof cursor === 'string') {
+			cursor = u.cursorFormatter.deserialize(cursor);
+		}
+		return this.ownsLastEvaluatedKey(cursor);
+	}
+
+	serializeCursor(key) {
+		return u.cursorFormatter.serialize(key);
+	}
+
+	deserializeCursor(cursor) {
+		return u.cursorFormatter.deserialize(cursor);
+	}
+
+	/** @depricated pagers no longer exist, use the new cursor api */
 	ownsPager(pager, index = TableIndex) {
 		if (pager === null) {
 			return false;
 		}
-		let tableIndexFacets = this.model.facets.byIndex[TableIndex];
+		let tableIndexFacets = this.model.facets.byIndex[index];
 		// todo: is the fact it doesn't use the provided index a bug?
 		// feels like collections may have played a roll into why this is this way
-		let indexFacets = this.model.facets.byIndex[TableIndex];
+		let indexFacets = this.model.facets.byIndex[index];
 
 		// Unknown index
 		if (tableIndexFacets === undefined || indexFacets === undefined) {
@@ -114,9 +162,10 @@ class Entity {
 	}
 
 	match(facets = {}) {
-		let match = this._findBestIndexKeyMatch(facets);
+		const options = { _isPagination: true };
+		const match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
-			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index)
+			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index, options)
 				.scan()
 				.filter(attr => {
 					let eqFilters = [];
@@ -128,7 +177,7 @@ class Entity {
 				return eqFilters.join(" AND ");
 			});
 		} else {
-			return this._makeChain(match.index, this._clausesWithFilters, clauses.index)
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index, options)
 				.query(facets)
 				.filter(attr => {
 					let eqFilters = [];
@@ -143,22 +192,18 @@ class Entity {
 	}
 
 	find(facets = {}) {
-		let match = this._findBestIndexKeyMatch(facets);
+		const options = { _isPagination: true };
+		const match = this._findBestIndexKeyMatch(facets);
 		if (match.shouldScan) {
-			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index).scan();
+			return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index, options).scan();
 		} else {
-			return this._makeChain(match.index, this._clausesWithFilters, clauses.index).query(facets);
+			return this._makeChain(match.index, this._clausesWithFilters, clauses.index, options).query(facets);
 		}
 	}
 
-	collection(collection = "", clauses = {}, facets = {}, {expressions = {}, parse} = {}) {
-		let options = {
-			parse,
-			expressions: {
-				names: expressions.names || {},
-				values: expressions.values || {},
-				expression: expressions.expression || ""
-			},
+	collection(collection = "", clauses = {}, facets = {}, options = {}) {
+		const chainOptions = {
+			...options,
 			_isCollectionQuery: true,
 		};
 
@@ -166,10 +211,18 @@ class Entity {
 		if (index === undefined) {
 			throw new Error(`Invalid collection: ${collection}`);
 		}
-		return this._makeChain(index, clauses, clauses.index, options).collection(
-			collection,
-			facets
-		);
+		const chain = this._makeChain(index, clauses, clauses.index, chainOptions);
+		if (options.indexType === IndexTypes.clustered) {
+			return chain.clusteredCollection(
+				collection,
+				facets,
+			);
+		} else {
+			return chain.collection(
+				collection,
+				facets,
+			);
+		}
 	}
 
 	_validateModel(model) {
@@ -181,7 +234,7 @@ class Entity {
 		if (Array.isArray(facets)) {
 			return this._makeChain(index, this._clausesWithFilters, clauses.index).batchGet(facets);
 		} else {
-			return this._makeChain(index, clauses, clauses.index).get(facets);
+			return this._makeChain(index, this._clausesWithFilters, clauses.index).get(facets);
 		}
 	}
 
@@ -202,6 +255,11 @@ class Entity {
 		} else {
 			return this._makeChain(index, this._clausesWithFilters, clauses.index).put(attributes);
 		}
+	}
+
+	upsert(attributes = {}) {
+		let index = TableIndex;
+		return this._makeChain(index, this._clausesWithFilters, clauses.index).upsert(attributes);
 	}
 
 	create(attributes = {}) {
@@ -239,7 +297,8 @@ class Entity {
 				case MethodTypes.batchGet:
 					return await this.executeBulkGet(parameters, config);
 				case MethodTypes.query:
-					return await this.executeQuery(parameters, config)
+				case MethodTypes.scan:
+					return await this.executeQuery(method, parameters, config);
 				default:
 					return await this.executeOperation(method, parameters, config);
 			}
@@ -261,7 +320,6 @@ class Entity {
 	}
 
 	async _exec(method, params, config = {}) {
-		const entity = this;
 		const notifyQuery = () => {
 			this.eventManager.trigger({
 				type: "query",
@@ -279,8 +337,8 @@ class Entity {
 				results,
 			}, config.listeners);
 		}
-
-		return this.client[method](params).promise()
+		const dynamoDBMethod = MethodTypeTranslation[method];
+		return this.client[dynamoDBMethod](params).promise()
 			.then((results) => {
 				notifyQuery();
 				notifyResults(results, true);
@@ -305,20 +363,20 @@ class Entity {
 			await Promise.all(operation.map(async params => {
 				let response = await this._exec(MethodTypes.batchWrite, params, config);
 				if (validations.isFunction(config.parse)) {
-					let parsed = await config.parse(config, response);
+					let parsed = config.parse(config, response);
 					if (parsed) {
 						results.push(parsed);
 					}
-					return;
-				}
-				let unprocessed = this.formatBulkWriteResponse(response, config);
-				for (let u of unprocessed) {
-					results.push(u);
+				} else {
+					let {unprocessed} = this.formatBulkWriteResponse(response, config);
+					for (let u of unprocessed) {
+						results.push(u);
+					}
 				}
 			}));
 		}
 
-		return results;
+		return { unprocessed: results };
 	}
 
 	_createNewBatchGetOrderMaintainer(config = {}) {
@@ -356,26 +414,29 @@ class Entity {
 			await Promise.all(operation.map(async params => {
 				let response = await this._exec(MethodTypes.batchGet, params, config);
 				if (validations.isFunction(config.parse)) {
-					resultsAll.push(await config.parse(config, response));
-					return;
+					resultsAll.push(config.parse(config, response));
+				} else {
+					this.applyBulkGetResponseFormatting({
+						orderMaintainer,
+						resultsAll,
+						unprocessedAll,
+						response,
+						config
+					});
 				}
-				this.applyBulkGetResponseFormatting({
-					orderMaintainer,
-					resultsAll,
-					unprocessedAll,
-					response,
-					config
-				});
 			}));
 		}
-		return [resultsAll, unprocessedAll];
+		return { data: resultsAll, unprocessed: unprocessedAll };
 	}
 
-	async executeQuery(parameters, config = {}) {
+	async executeQuery(method, parameters, config = {}) {
 		let results = config._isCollectionQuery
 			? {}
 			: [];
-		let ExclusiveStartKey;
+		let ExclusiveStartKey = this._formatExclusiveStartKey(config);
+		if (ExclusiveStartKey === null) {
+			ExclusiveStartKey = undefined;
+		}
 		let pages = this._normalizePagesValue(config.pages);
 		let max = this._normalizeLimitValue(config.limit);
 		let iterations = 0;
@@ -384,53 +445,48 @@ class Entity {
 			let limit = max === undefined
 				? parameters.Limit
 				: max - count;
-			let response = await this._exec("query", {ExclusiveStartKey, ...parameters, Limit: limit}, config);
-
+			let response = await this._exec(method, {ExclusiveStartKey, ...parameters, Limit: limit}, config);
 			ExclusiveStartKey = response.LastEvaluatedKey;
-
-			if (validations.isFunction(config.parse)) {
-				response = config.parse(config, response);
-			} else {
-				response = this.formatResponse(response, parameters.IndexName, config);
-			}
-
-			if (config.raw || config._isPagination) {
+			response = this.formatResponse(response, parameters.IndexName, config);
+			if (config.raw) {
 				return response;
 			} else if (config._isCollectionQuery) {
-				for (const entity in response) {
+				for (const entity in response.data) {
 					if (max) {
-						count += response[entity].length;
+						count += response.data[entity].length;
 					}
 					results[entity] = results[entity] || [];
-					results[entity] = [...results[entity], ...response[entity]];
+					results[entity] = [...results[entity], ...response.data[entity]];
 				}
-			} else if (Array.isArray(response)) {
+			} else if (Array.isArray(response.data)) {
 				if (max) {
-					count += response.length;
+					count += response.data.length;
 				}
-				results = [...results, ...response];
+				results = [...results, ...response.data];
 			} else {
 				return response;
 			}
-
 			iterations++;
-		} while(ExclusiveStartKey && iterations < pages && (max === undefined || count < max));
-		return results;
+		} while(
+			ExclusiveStartKey &&
+			(pages === AllPages || iterations < pages) &&
+			(max === undefined || count < max)
+		);
+
+		const cursor = this._formatReturnPager(config, ExclusiveStartKey);
+		return { data: results, cursor };
 	}
 
 	async executeOperation(method, parameters, config) {
 		let response = await this._exec(method, parameters, config);
-		if (validations.isFunction(config.parse)) {
-			return config.parse(config, response);
-		}
 		switch (parameters.ReturnValues) {
 			case FormatToReturnValues.none:
-				return null;
+				return { data: null };
 			case FormatToReturnValues.all_new:
 			case FormatToReturnValues.all_old:
 			case FormatToReturnValues.updated_new:
 			case FormatToReturnValues.updated_old:
-				return this.formatResponse(response, parameters.IndexName, config);
+				return this.formatResponse(response, config);
 			case FormatToReturnValues.default:
 			default:
 				return this._formatDefaultResponse(method, parameters.IndexName, parameters, config, response);
@@ -446,6 +502,7 @@ class Entity {
 			case MethodTypes.patch:
 			case MethodTypes.delete:
 			case MethodTypes.remove:
+			case MethodTypes.upsert:
 				return this.formatResponse(response, index, {...config, _objectOnEmpty: true});
 			default:
 				return this.formatResponse(response, index, config);
@@ -471,13 +528,13 @@ class Entity {
 		if (!response || !response.UnprocessedItems) {
 			return response;
 		}
-		const table = config.table || this._getTableName();
+		const table = config.table || this.getTableName();
 		const index = TableIndex;
 		let unprocessed = response.UnprocessedItems[table];
 		if (Array.isArray(unprocessed) && unprocessed.length) {
-			return unprocessed.map(request => {
+			unprocessed = unprocessed.map(request => {
 				if (request.PutRequest) {
-					return this.formatResponse(request.PutRequest, index, config);
+					return this.formatResponse(request.PutRequest, index, config).data;
 				} else if (request.DeleteRequest) {
 					if (config.unprocessed === UnprocessedTypes.raw) {
 						return request.DeleteRequest.Key;
@@ -487,10 +544,12 @@ class Entity {
 				} else {
 					throw new Error("Unknown response format");
 				}
-			})
+			});
 		} else {
-			return []
+			unprocessed = [];
 		}
+		
+		return { unprocessed };
 	}
 
 	applyBulkGetResponseFormatting({
@@ -500,7 +559,7 @@ class Entity {
 		response = {},
 		config = {},
 	}) {
-		const table = config.table || this._getTableName();
+		const table = config.table || this.getTableName();
 		const index = TableIndex;
 
 		if (!response.UnprocessedKeys || !response.Responses) {
@@ -526,9 +585,9 @@ class Entity {
 				const slot = orderMaintainer.getOrder(item);
 				const formatted = this.formatResponse({Item: item}, index, config);
 				if (slot !== -1) {
-					resultsAll[slot] = formatted;
+					resultsAll[slot] = formatted.data;
 				} else {
-					resultsAll.push(formatted);
+					resultsAll.push(formatted.data);
 				}
 			}
 		}
@@ -541,14 +600,16 @@ class Entity {
 		}
 		try {
 			let results = {};
-			if (config.raw && !config._isPagination) {
+			if (validations.isFunction(config.parse)) {
+				results = config.parse(config, response);
+			} else if (config.raw && !config._isPagination) {
 				if (response.TableName) {
 					results = {};
 				} else {
 					results = response;
 				}
 			} else if (config.raw && (config._isPagination || config.lastEvaluatedKeyRaw)) {
-				return [response.LastEvaluatedKey || null, response];
+				results = response;
 			} else {
 				if (response.Item) {
 					if (config.ignoreOwnership || this.ownsItem(response.Item)) {
@@ -573,18 +634,18 @@ class Entity {
 						results = null;
 					}
 				} else if (config._objectOnEmpty) {
-					return {};
+					return { data: {} };
 				} else {
 					results = null;
 				}
 			}
 
-			if (config._isPagination) {
-				let nextPage = this._formatReturnPager(config, index, response.LastEvaluatedKey, results[results.length - 1]);
-				results = [nextPage, results];
+			if (config._isPagination || response.LastEvaluatedKey) {
+				const nextPage = this._formatReturnPager(config, response.LastEvaluatedKey);
+				return { cursor: nextPage || null, data: results };
 			}
 
-			return results;
+			return { data: results };
 
 		} catch (err) {
 			if (config.originalErr || stackTrace === undefined) {
@@ -608,30 +669,38 @@ class Entity {
 		return this.formatResponse(item, TableIndex, config);
 	}
 
-	_formatReturnPager(config, index, lastEvaluatedKey, lastReturned) {
+	_formatReturnPager(config, lastEvaluatedKey) {
 		let page = lastEvaluatedKey || null;
-		if (config.pager !== Pager.raw) {
-			page = this._formatKeysToItem(index, page, lastReturned);
-			if (page && config.pager === Pager.named) {
-				page[this.identifiers.entity] = this.getName();
-				page[this.identifiers.version] = this.getVersion();
-			}
+		if (config.raw || config.pager === Pager.raw) {
+			return page;
 		}
-		return page;
+		return config.formatCursor.serialize(page) || null;
 	}
 
-	_getTableName() {
-		return this.config.table;
+	_formatExclusiveStartKey(config) {
+		let exclusiveStartKey = config.cursor;
+		if (config.raw || config.pager === Pager.raw) {
+			return exclusiveStartKey || null;
+		}
+		return config.formatCursor.deserialize(exclusiveStartKey) || null;
 	}
 
-	_setTableName(table) {
-		this.config.table = table;
-	}
-
-	_setClient(client) {
+	setClient(client) {
 		if (client) {
 			this.client = c.normalizeClient(client);
 		}
+	}
+
+	setTableName(tableName) {
+		this.config.table = tableName;
+	}
+
+	getTableName() {
+		return this.config.table;
+	}
+
+	getTableName() {
+		return this.config.table;
 	}
 
 	_chain(state, clauses, clause) {
@@ -655,9 +724,9 @@ class Entity {
 		let state = new ChainState({
 			index,
 			options,
-			attributes: this.model.schema.attributes,
-			hasSortKey: this.model.lookup.indexHasSortKeys[index],
-			compositeAttributes: this.model.facets.byIndex[index]
+			attributes: options.attributes || this.model.schema.attributes,
+			hasSortKey: options.hasSortKey || this.model.lookup.indexHasSortKeys[index],
+			compositeAttributes: options.compositeAttributes || this.model.facets.byIndex[index],
 		});
 		return state.init(this, clauses, rootClause);
 	}
@@ -674,10 +743,13 @@ class Entity {
 		return value;
 	}
 
-	_normalizePagesValue(value = Number.MAX_SAFE_INTEGER) {
+	_normalizePagesValue(value) {
+		if (value === AllPages) {
+			return value;
+		}
 		value = parseInt(value);
 		if (isNaN(value) || value < 1) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidPagesOption, "Query option 'pages' must be of type 'number' and greater than zero.");
+			throw new e.ElectroError(e.ErrorCodes.InvalidPagesOption, `Query option 'pages' must be of type 'number' and greater than zero or the string value '${AllPages}'`);
 		}
 		return value;
 	}
@@ -787,9 +859,13 @@ class Entity {
 	}
 
 	_constructPagerIndex(index = TableIndex, item) {
-		let pk = this._expectFacets(item, this.model.facets.byIndex[index].pk);
-		let sk = this._expectFacets(item, this.model.facets.byIndex[index].sk);
-		let keys = this._makeIndexKeys(index, pk, sk);
+		let pkAttributes = this._expectFacets(item, this.model.facets.byIndex[index].pk);
+		let skAttributes = this._expectFacets(item, this.model.facets.byIndex[index].sk);
+		let keys = this._makeIndexKeys({
+			index,
+			pkAttributes,
+			skAttributes: [skAttributes],
+		});
 		return this._makeParameterKey(index, keys.pk, ...keys.sk);
 	}
 
@@ -819,17 +895,34 @@ class Entity {
 			pager: Pager.named,
 			unprocessed: UnprocessedTypes.item,
 			response: 'default',
+			cursor: null,
+			data: 'attributes',
 			ignoreOwnership: false,
 			_isPagination: false,
 			_isCollectionQuery: false,
-			pages: undefined,
+			pages: 1,
 			listeners: [],
 			preserveBatchOrder: false,
 			attributes: [],
 			terminalOperation: undefined,
+			formatCursor: u.cursorFormatter,
+			order: undefined,
 		};
 
 		config = options.reduce((config, option) => {
+			if (typeof option.order === 'string') {
+				switch (option.order.toLowerCase()) {
+					case 'asc':
+						config.params[ResultOrderParam] = ResultOrderOption.asc;
+						break;
+					case 'desc':
+						config.params[ResultOrderParam] = ResultOrderOption.desc;
+						break;
+					default:
+						throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc, received: "${option.order}"`);
+				}
+			}
+
 			if (typeof option.response === 'string' && option.response.length) {
 				const format = 	ReturnValues[option.response];
 				if (format === undefined) {
@@ -837,6 +930,18 @@ class Entity {
 				}
 				config.response = format;
 				config.params.ReturnValues = FormatToReturnValues[format];
+			}
+
+			if (option.formatCursor) {
+				const isValid = ['serialize', 'deserialize'].every(method => 
+					method in option.formatCursor &&
+					validations.isFunction(option.formatCursor[method])
+				);
+				if (isValid) {
+					config.formatCursor = option.formatCursor;
+				} else {
+					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "formatCursor" provided. Formatter interface must have serialize and deserialize functions`);
+				}
 			}
 
 			if (option.terminalOperation in TerminalOperation) {
@@ -881,6 +986,22 @@ class Entity {
 				config.unprocessed = UnprocessedTypes.raw;
 			}
 
+			if (option.cursor) {
+				config.cursor = option.cursor;
+			}
+
+			if (option.data) {
+				config.data = option.data;
+				switch(option.data) {
+					case 'raw':
+						config.raw = true;
+						break;
+					case 'includeKeys':
+						config.includeKeys = true;
+						break;
+				}
+			}
+
 			if (option.limit !== undefined) {
 				config.limit = option.limit;
 				config.params.Limit = option.limit;
@@ -888,6 +1009,7 @@ class Entity {
 
 			if (validations.isStringHasLength(option.table)) {
 				config.params.TableName = option.table;
+				config.table = option.table;
 			}
 
 			if (option.concurrent !== undefined) {
@@ -945,15 +1067,7 @@ class Entity {
 			}
 		}
 
-		if (Object.keys(config.page || {}).length) {
-			if (config.raw || config.pager === Pager.raw) {
-				parameters.ExclusiveStartKey = config.page;
-			} else {
-				parameters.ExclusiveStartKey = this._formatSuppliedPager(params.IndexName, config.page);
-			}
-		}
-
-		return {parameters, config};
+		return { parameters, config };
 	}
 
 	addListeners(logger) {
@@ -1003,7 +1117,7 @@ class Entity {
 	}
 	/* istanbul ignore next */
 	_params(state, config = {}) {
-		let { keys = {}, method = "", put = {}, update = {}, filter = {}, options = {} } = state.query;
+		let { keys = {}, method = "", put = {}, update = {}, filter = {}, options = {}, updateProxy, upsert } = state.query;
 		let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
@@ -1011,6 +1125,9 @@ class Entity {
 			case MethodTypes.delete:
 			case MethodTypes.remove:
 				params = this._makeSimpleIndexParams(keys.pk, ...consolidatedQueryFacets);
+				break;
+			case MethodTypes.upsert:
+				params = this._makeUpsertParams({update, upsert}, keys.pk, ...keys.sk)
 				break;
 			case MethodTypes.put:
 			case MethodTypes.create:
@@ -1132,7 +1249,7 @@ class Entity {
 	}
 
 	_batchGetParams(state, config = {}) {
-		let table = config.table || this._getTableName();
+		let table = config.table || this.getTableName();
 		let userDefinedParams = config.params || {};
 		let records = [];
 		for (let itemState of state.subStates) {
@@ -1157,7 +1274,7 @@ class Entity {
 	}
 
 	_batchWriteParams(state, config = {}) {
-		let table = config.table || this._getTableName();
+		let table = config.table || this.getTableName();
 		let records = [];
 		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
@@ -1205,14 +1322,14 @@ class Entity {
 		let version = this.getVersion();
 		return {
 			names: {
-				[`#${this.identifiers.entity}_${alias}`]: this.identifiers.entity,
-				[`#${this.identifiers.version}_${alias}`]: this.identifiers.version,
+				[`#${this.identifiers.entity}`]: this.identifiers.entity,
+				[`#${this.identifiers.version}`]: this.identifiers.version,
 			},
 			values: {
 				[`:${this.identifiers.entity}_${alias}`]: name,
 				[`:${this.identifiers.version}_${alias}`]: version,
 			},
-			expression: `(#${this.identifiers.entity}_${alias} = :${this.identifiers.entity}_${alias} AND #${this.identifiers.version}_${alias} = :${this.identifiers.version}_${alias})`
+			expression: `(#${this.identifiers.entity} = :${this.identifiers.entity}_${alias} AND #${this.identifiers.version} = :${this.identifiers.version}_${alias})`
 		}
 	}
 
@@ -1222,11 +1339,13 @@ class Entity {
 		let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
 		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
 		let pkField = this.model.indexes[accessPattern].pk.field;
-		let {pk, sk} = this._makeIndexKeys(indexBase);
+		let {pk, sk} = this._makeIndexKeys({
+			index: indexBase,
+		});
 		let keys = this._makeParameterKey(indexBase, pk, ...sk);
 		let keyExpressions = this._expressionAttributeBuilder(keys);
 		let params = {
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames
@@ -1254,9 +1373,13 @@ class Entity {
 
 	_makeSimpleIndexParams(partition, sort) {
 		let index = TableIndex;
-		let keys = this._makeIndexKeys(index, partition, sort);
+		let keys = this._makeIndexKeys({
+			index,
+			pkAttributes: partition,
+			skAttributes: [sort],
+		});
 		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
-		let TableName = this._getTableName();
+		let TableName = this.getTableName();
 		return {Key, TableName};
 	}
 
@@ -1343,7 +1466,7 @@ class Entity {
 			UpdateExpression: update.build(),
 			ExpressionAttributeNames: update.getNames(),
 			ExpressionAttributeValues: update.getValues(),
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			Key: indexKey,
 		};
 	}
@@ -1360,7 +1483,29 @@ class Entity {
 				[this.identifiers.entity]: this.getName(),
 				[this.identifiers.version]: this.getVersion(),
 			},
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
+		};
+	}
+
+	_makeUpsertParams({update, upsert} = {}, pk, sk) {
+		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
+		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
+		const keyNames = Object.keys(indexKey);
+		update.set(this.identifiers.entity, this.getName());
+		update.set(this.identifiers.version, this.getVersion());
+		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
+			const value = upsertAttributes[field] || updatedKeys[field];
+			if (!keyNames.includes(field)) {
+				update.set(field, value);
+			}
+		}
+
+		return {
+			TableName: this.getTableName(),
+			UpdateExpression: update.build(),
+			ExpressionAttributeNames: update.getNames(),
+			ExpressionAttributeValues: update.getValues(),
+			Key: indexKey,
 		};
 	}
 
@@ -1464,17 +1609,28 @@ class Entity {
 		return expressions;
 	}
 
-	/* istanbul ignore next */
-	_queryParams(state = {}, options = {}) {
+	_makeQueryKeys(state) {
 		let consolidatedQueryFacets = this._consolidateQueryFacets(
 			state.query.keys.sk,
 		);
-		let indexKeys;
-		if (state.query.type === QueryTypes.is) {
-			indexKeys = this._makeIndexKeys(state.query.index, state.query.keys.pk, ...consolidatedQueryFacets);
-		} else {
-			indexKeys = this._makeIndexKeysWithoutTail(state.query.index, state.query.keys.pk, ...consolidatedQueryFacets);
+		switch (state.query.type) {
+			case QueryTypes.is:
+				return this._makeIndexKeys({
+					index: state.query.index,
+					pkAttributes: state.query.keys.pk,
+					skAttributes: consolidatedQueryFacets,
+					indexType: state.query.options.indexType,
+					queryType: state.query.type,
+					isCollection: state.query.options._isCollectionQuery,
+				});
+			default:
+				return this._makeIndexKeysWithoutTail(state, consolidatedQueryFacets);
 		}
+	}
+
+	/* istanbul ignore next */
+	_queryParams(state = {}, options = {}) {
+		const indexKeys = this._makeQueryKeys(state);
 		let parameters = {};
 		switch (state.query.type) {
 			case QueryTypes.is:
@@ -1504,6 +1660,15 @@ class Entity {
 					this._getCollectionSk(state.query.collection),
 				);
 				break;
+			case QueryTypes.clustered_collection:
+				parameters = this._makeBeginsWithQueryParams(
+					state.query.options,
+					state.query.index,
+					state.query.filter[ExpressionTypes.FilterExpression],
+					indexKeys.pk,
+					...indexKeys.sk,
+				);
+				break;
 			case QueryTypes.between:
 				parameters = this._makeBetweenQueryParams(
 					state.query.index,
@@ -1520,8 +1685,7 @@ class Entity {
 					state.query.index,
 					state.query.type,
 					state.query.filter[ExpressionTypes.FilterExpression],
-					indexKeys.pk,
-					...indexKeys.sk,
+					indexKeys,
 				);
 				break;
 			default:
@@ -1539,7 +1703,7 @@ class Entity {
 		);
 		delete keyExpressions.ExpressionAttributeNames["#sk2"];
 		let params = {
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames,
@@ -1582,7 +1746,7 @@ class Entity {
 
 		let params = {
 			KeyConditionExpression,
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(filter.getNames(), keyExpressions.ExpressionAttributeNames, customExpressions.names),
 			ExpressionAttributeValues: this._mergeExpressionsAttributes(filter.getValues(), keyExpressions.ExpressionAttributeValues, customExpressions.values),
 		};
@@ -1640,8 +1804,14 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeComparisonQueryParams(index = TableIndex, comparison = "", filter = {}, pk = {}, sk = {}) {
-		let operator = Comparisons[comparison];
+	_makeComparisonQueryParams(index = TableIndex, comparison = "", filter = {}, indexKeys = {}) {
+		const {pk, fulfilled} = indexKeys;
+		const sk = indexKeys.sk[0];
+		let operator = PartialComparisons[comparison];
+			// fulfilled
+			// ? Comparisons[comparison]
+			// : PartialComparisons[comparison];
+
 		if (!operator) {
 			throw new Error(`Unexpected comparison operator "${comparison}", expected ${u.commaSeparatedString(Object.values(Comparisons))}`);
 		}
@@ -1651,7 +1821,7 @@ class Entity {
 			sk,
 		);
 		let params = {
-			TableName: this._getTableName(),
+			TableName: this.getTableName(),
 			ExpressionAttributeNames: this._mergeExpressionsAttributes(
 				filter.getNames(),
 				keyExpressions.ExpressionAttributeNames,
@@ -1689,7 +1859,11 @@ class Entity {
 	_makeKeysFromAttributes(indexes, attributes) {
 		let indexKeys = {};
 		for (let [index, keyTypes] of Object.entries(indexes)) {
-			let keys = this._makeIndexKeys(index, attributes, attributes);
+			let keys = this._makeIndexKeys({
+				index,
+				pkAttributes: attributes,
+				skAttributes: [attributes],
+			});
 			if (keyTypes.pk || keyTypes.sk) {
 				indexKeys[index] = {};
 			}
@@ -1711,7 +1885,11 @@ class Entity {
 	_makePutKeysFromAttributes(indexes, attributes) {
 		let indexKeys = {};
 		for (let index of indexes) {
-			indexKeys[index] = this._makeIndexKeys(index, attributes, attributes);
+			indexKeys[index] = this._makeIndexKeys({
+				index,
+				pkAttributes: attributes,
+				skAttributes: [attributes],
+			});
 		}
 		return indexKeys;
 	}
@@ -1885,7 +2063,7 @@ class Entity {
 	_buildQueryFacets(facets, skFacets) {
 		let queryFacets = this._findProperties(facets, skFacets).reduce(
 			(result, [name, value]) => {
-				if (value) {
+				if (value !== undefined) {
 					result[name] = value;
 				}
 				return result;
@@ -1922,7 +2100,14 @@ class Entity {
 		return [!!missing.length, missing, matching];
 	}
 
-	_makeKeyPrefixes(service, entity, version = "1", tableIndex, modelVersion) {
+	_makeKeyFixings({
+		service,
+		entity,
+		version = "1",
+		tableIndex,
+		modelVersion,
+		isClustered
+	}) {
 		/*
 			Collections will prefix the sort key so they can be queried with
 			a "begins_with" operator when crossing entities. It is also possible
@@ -1948,34 +2133,47 @@ class Entity {
 
 		let pk = `$${service}`;
 		let sk = "";
-
+		let entityKeys = "";
+		let postfix = "";
 		// If the index is in a collections, prepend the sk;
 		let collectionPrefix = this._makeCollectionPrefix(tableIndex.collection);
 		if (validations.isStringHasLength(collectionPrefix)) {
-			sk = `${collectionPrefix}#${entity}`;
+			sk = `${collectionPrefix}`;
+			entityKeys += `#${entity}`;
 		} else {
-			sk = `$${entity}`;
+			entityKeys += `$${entity}`;
 		}
 
 		/** start beta/v1 condition **/
 		if (modelVersion === ModelVersions.beta) {
 			pk = `${pk}_${version}`;
 		} else {
-			sk = `${sk}_${version}`;
+			entityKeys = `${entityKeys}_${version}`;
 		}
 		/** end beta/v1 condition **/
+
+		if (isClustered) {
+			postfix = entityKeys;
+		} else {
+			sk = `${sk}${entityKeys}`
+		}
 
 		// If no sk, append the sk properties to the pk
 		if (Object.keys(tableIndex.sk).length === 0) {
 			pk += sk;
+			if (isClustered) {
+				pk += postfix;
+			}
 		}
 
 		// If keys arent custom, set the prefixes
 		if (!keys.pk.isCustom) {
 			keys.pk.prefix = u.formatKeyCasing(pk, tableIndex.pk.casing);
 		}
+
 		if (!keys.sk.isCustom) {
 			keys.sk.prefix = u.formatKeyCasing(sk, tableIndex.sk.casing);
+			keys.sk.postfix = u.formatKeyCasing(postfix, tableIndex.sk.casing);
 		}
 
 		return keys;
@@ -2020,37 +2218,32 @@ class Entity {
 		return prefix;
 	}
 
-	/* istanbul ignore next */
-	_makeIndexKeysWithoutTail(index = TableIndex, pkFacets = {}, ...skFacets) {
-		this._validateIndex(index);
-		if (!skFacets.length) {
-			skFacets.push({});
+	_makeKeyTransforms(queryType) {
+		const transforms = [];
+		const shiftUp = (val) => u.shiftSortOrder(val, 1);
+		const noop = (val) => val;
+		switch (queryType) {
+			case QueryTypes.between:
+				transforms.push(noop, shiftUp);
+				break;
+			case QueryTypes.lte:
+			case QueryTypes.gt:
+				transforms.push(shiftUp);
+				break;
+			default:
+				transforms.push(noop);
+				break;
 		}
-		let facets = this.model.facets.byIndex[index];
-		let prefixes = this.model.prefixes[index];
-		if (!prefixes) {
-			throw new Error(`Invalid index: ${index}`);
-		}
-		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk, {excludeLabelTail: true});
-		let sk = [];
-		if (this.model.lookup.indexHasSortKeys[index]) {
-			for (let skFacet of skFacets) {
-				let hasLabels = this.model.facets.labels[index] && Array.isArray(this.model.facets.labels[index].sk);
-				let labels = hasLabels
-					? this.model.facets.labels[index].sk
-					: []
-				let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, labels, {excludeLabelTail: true});
-				if (sortKey !== undefined) {
-					sk.push(sortKey);
-				}
-			}
-		}
-		return { pk, sk };
+		return transforms;
 	}
 
 	/* istanbul ignore next */
-	_makeIndexKeys(index = TableIndex, pkFacets = {}, ...skFacets) {
+	_makeIndexKeysWithoutTail(state = {}, skFacets = []) {
+		const index = state.query.index || TableIndex;
 		this._validateIndex(index);
+		const pkFacets = state.query.keys.pk || {};
+		const excludePostfix = state.query.options.indexType === IndexTypes.clustered && state.query.options._isCollectionQuery;
+		const transforms = this._makeKeyTransforms(state.query.type);
 		if (!skFacets.length) {
 			skFacets.push({});
 		}
@@ -2059,21 +2252,84 @@ class Entity {
 		if (!prefixes) {
 			throw new Error(`Invalid index: ${index}`);
 		}
-		let pk = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk);
+		let partitionKey = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk, {excludeLabelTail: true});
+		let pk = partitionKey.key;
 		let sk = [];
+		let fulfilled = false;
 		if (this.model.lookup.indexHasSortKeys[index]) {
-			for (let skFacet of skFacets) {
+			for (let i = 0; i < skFacets.length; i++) {
+				const skFacet = skFacets[i];
+				const transform = transforms[i];
+				let hasLabels = this.model.facets.labels[index] && Array.isArray(this.model.facets.labels[index].sk);
+				let labels = hasLabels
+					? this.model.facets.labels[index].sk
+					: [];
+				let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, labels, {
+					excludeLabelTail: true,
+					excludePostfix,
+					transform,
+				});
+				if (sortKey.key !== undefined) {
+					sk.push(sortKey.key);
+				}
+				if (sortKey.fulfilled) {
+					fulfilled = true;
+				}
+			}
+		}
+		return {
+			pk,
+			sk,
+			fulfilled,
+		};
+	}
+
+	/* istanbul ignore next */
+	_makeIndexKeys({
+	   index = TableIndex,
+	   pkAttributes = {},
+	   skAttributes = [],
+	   queryType,
+	   indexType,
+	   isCollection = false,
+	}) {
+
+		this._validateIndex(index);
+		const excludePostfix = indexType === IndexTypes.clustered && isCollection;
+		const transforms = this._makeKeyTransforms(queryType);
+		if (!skAttributes.length) {
+			skAttributes.push({});
+		}
+		let facets = this.model.facets.byIndex[index];
+		let prefixes = this.model.prefixes[index];
+		if (!prefixes) {
+			throw new Error(`Invalid index: ${index}`);
+		}
+		let pk = this._makeKey(prefixes.pk, facets.pk, pkAttributes, this.model.facets.labels[index].pk);
+		let sk = [];
+		let fulfilled = false;
+		if (this.model.lookup.indexHasSortKeys[index]) {
+			for (let i = 0; i < skAttributes.length; i++) {
+				const skFacet = skAttributes[i];
+				const transform = transforms[i];
 				let hasLabels = this.model.facets.labels[index] && Array.isArray(this.model.facets.labels[index].sk);
 				let labels = hasLabels
 					? this.model.facets.labels[index].sk
 					: []
-				let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, labels);
-				if (sortKey !== undefined) {
-					sk.push(sortKey);
+				let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, labels, {excludePostfix, transform});
+				if (sortKey.key !== undefined) {
+					sk.push(sortKey.key);
+				}
+				if (sortKey.fulfilled) {
+					fulfilled = true;
 				}
 			}
 		}
-		return { pk, sk };
+		return {
+			pk: pk.key,
+			sk,
+			fulfilled
+		};
 	}
 
 	_isNumericKey(isCustom, facets = [], labels = []) {
@@ -2085,16 +2341,25 @@ class Entity {
 	}
 
 	/* istanbul ignore next */
-	_makeKey({prefix, isCustom, casing} = {}, facets = [], supplied = {}, labels = [], {excludeLabelTail} = {}) {
+	_makeKey({prefix, isCustom, casing, postfix} = {}, facets = [], supplied = {}, labels = [], {excludeLabelTail, excludePostfix, transform = (val) => val} = {}) {
 		if (this._isNumericKey(isCustom, facets, labels)) {
-			return supplied[facets[0]];
+			return {
+				fulfilled: supplied[facets[0]] !== undefined,
+				key: supplied[facets[0]],
+			};
 		}
 		let key = prefix;
+		let foundCount = 0;
 		for (let i = 0; i < labels.length; i++) {
-			let {name, label} = labels[i];
-
+			const { name, label } = labels[i];
+			const attribute = this.model.schema.getAttribute(name);
+			let value = supplied[name];
 			if (supplied[name] === undefined && excludeLabelTail) {
 				break;
+			}
+
+			if (attribute && validations.isFunction(attribute.format)) {
+				value = attribute.format(`${value}`);
 			}
 
 			if (isCustom) {
@@ -2106,11 +2371,24 @@ class Entity {
 			if (supplied[name] === undefined) {
 				break;
 			}
-
-			key = `${key}${supplied[name]}`;
+			foundCount++;
+			key = `${key}${value}`;
 		}
 
-		return u.formatKeyCasing(key, casing);
+
+
+		// when sort keys are fulfilled we need to add the entity postfix
+		// this is used for cluster indexes
+		const fulfilled = foundCount === labels.length;
+		const shouldApplyPostfix = typeof postfix === 'string' && !excludePostfix;
+		if (fulfilled && shouldApplyPostfix) {
+			key += postfix;
+		}
+
+		return {
+			fulfilled,
+			key: transform(u.formatKeyCasing(key, casing))
+		};
 	}
 
 	_findBestIndexKeyMatch(attributes = {}) {
@@ -2358,6 +2636,7 @@ class Entity {
 		let indexFieldTranslation = {};
 		let indexHasSortKeys = {};
 		let indexHasSubCollections = {};
+		let clusteredIndexes = new Set();
 		let indexAccessPatternTransaction = {
 			fromAccessPatternToIndex: {},
 			fromIndexToAccessPattern: {},
@@ -2388,6 +2667,10 @@ class Entity {
 			let accessPattern = accessPatterns[i];
 			let index = indexes[accessPattern];
 			let indexName = index.index || TableIndex;
+			let indexType = typeof index.type === 'string' ? index.type : IndexTypes.isolated;
+			if (indexType === 'clustered') {
+				clusteredIndexes.add(accessPattern);
+			}
 			if (seenIndexes[indexName] !== undefined) {
 				if (indexName === TableIndex) {
 					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexes, `Duplicate index defined in model found in Access Pattern '${accessPattern}': '${u.formatIndexNameForDisplay(indexName)}'. This could be because you forgot to specify the index name of a secondary index defined in your model.`);
@@ -2462,8 +2745,10 @@ class Entity {
 				pk,
 				sk,
 				collection,
+				hasSk,
 				customFacets,
 				index: indexName,
+				type: indexType,
 			};
 
 			indexHasSubCollections[indexName] = inCollection && Array.isArray(collection);
@@ -2607,6 +2892,7 @@ class Entity {
 			facets,
 			subCollections,
 			indexHasSortKeys,
+			clusteredIndexes,
 			indexHasSubCollections,
 			indexes: normalized,
 			indexField: indexFieldTranslation,
@@ -2631,11 +2917,18 @@ class Entity {
 		return normalized;
 	}
 
-	_normalizePrefixes(service, entity, version, indexes, modelVersion) {
+	_normalizeKeyFixings({service, entity, version, indexes, modelVersion, clusteredIndexes}) {
 		let prefixes = {};
 		for (let accessPattern of Object.keys(indexes)) {
-			let item = indexes[accessPattern];
-			prefixes[item.index] = this._makeKeyPrefixes(service, entity, version, item, modelVersion);
+			let tableIndex = indexes[accessPattern];
+			prefixes[tableIndex.index] = this._makeKeyFixings({
+				service,
+				entity,
+				version,
+				tableIndex,
+				modelVersion,
+				isClustered: clusteredIndexes.has(accessPattern),
+			});
 		}
 		return prefixes;
 	}
@@ -2775,13 +3068,15 @@ class Entity {
 			collections,
 			subCollections,
 			indexCollection,
+			clusteredIndexes,
 			indexHasSortKeys,
 			indexAccessPattern,
 			indexHasSubCollections,
 		} = this._normalizeIndexes(model.indexes);
-		let schema = new Schema(model.attributes, facets, {client});
+		let schema = new Schema(model.attributes, facets, {client, isRoot: true});
 		let filters = this._normalizeFilters(model.filters);
-		let prefixes = this._normalizePrefixes(service, entity, version, indexes, modelVersion);
+		// todo: consider a rename
+		let prefixes = this._normalizeKeyFixings({service, entity, version, indexes, modelVersion, clusteredIndexes});
 
 		// apply model defined labels
 		let schemaDefinedLabels = schema.getLabels();
@@ -2806,6 +3101,7 @@ class Entity {
 			modelVersion,
 			subCollections,
 			lookup: {
+				clusteredIndexes,
 				indexHasSortKeys,
 				indexHasSubCollections
 			},

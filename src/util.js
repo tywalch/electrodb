@@ -161,13 +161,90 @@ function getUnique(arr1, arr2) {
   ]));
 }
 
+const cursorFormatter = {
+  serialize: (key) => {
+    if (!key) {
+      return null;
+    } else if (typeof val !== 'string') {
+      key = JSON.stringify(key);
+    }
+    return Buffer.from(key).toString('base64url');
+  },
+  deserialize: (cursor) => {
+    if (!cursor) {
+      return undefined;
+    } else if (typeof cursor !== 'string') {
+      throw new Error(`Invalid cursor provided, expected type 'string' recieved: ${JSON.stringify(cursor)}`);
+    }
+    try {
+      return JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+    } catch(err) {
+      throw new Error('Unable to parse cursor');
+    }
+  }
+}
+
+function removeFixings({prefix = '', postfix = '', value = ''} = {}) {
+  const start = value.toLowerCase().startsWith(prefix.toLowerCase()) ? prefix.length : 0;
+  const end = value.length - (value.toLowerCase().endsWith(postfix.toLowerCase()) ? postfix.length : 0);
+
+  let formatted = '';
+  for (let i = start; i < end; i++) {
+    formatted += value[i];
+  }
+
+  return formatted;
+}
+
+function addPadding({padding = {}, value = ''} = {}) {
+  return value.padStart(padding.length, padding.char);
+}
+
+function removePadding({padding = {}, value = ''} = {}) {
+  if (!padding.length || value.length >= padding.length) {
+    return value;
+  }
+
+  let formatted = '';
+  let useRemaining = false;
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    if (useRemaining || i >= padding.length) {
+      formatted += char;
+    } else if (char !== padding.char) {
+      formatted += char;
+      useRemaining = true;
+    }
+  }
+
+  return formatted;
+}
+
+function shiftSortOrder(str = '', codePoint) {
+  let newString = '';
+  for (let i = 0; i < str.length; i++) {
+    const isLast = i === str.length - 1;
+    let char = str[i];
+    if (isLast) {
+      char = String.fromCodePoint(char.codePointAt(0) + codePoint);
+    }
+    newString += char;
+  }
+  return newString;
+}
+
 module.exports = {
   getUnique,
   batchItems,
+  addPadding,
+  removePadding,
+  removeFixings,
   parseJSONPath,
+  shiftSortOrder,
   getInstanceType,
   getModelVersion,
   formatKeyCasing,
+  cursorFormatter,
   genericizeJSONPath,
   commaSeparatedString,
   formatAttributeCasing,

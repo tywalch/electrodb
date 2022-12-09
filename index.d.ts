@@ -24,6 +24,34 @@ export type AllCollectionNames<E extends {[name: string]: Entity<any, any, any, 
         : never
 }[keyof E];
 
+export type ClusteredCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Name in keyof E]:
+        E[Name] extends Entity<infer A, infer F, infer C, infer S>
+            ? {
+                [Collection in keyof ClusteredEntityCollections<A,F,C,S>]: Collection
+            }[keyof ClusteredEntityCollections<A,F,C,S>]
+            : never
+}[keyof E];
+
+export type IsolatedCollectionNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Name in keyof E]:
+        E[Name] extends Entity<infer A, infer F, infer C, infer S>
+            ? {
+                [Collection in keyof IsolatedEntityCollections<A,F,C,S>]: Collection
+            }[keyof IsolatedEntityCollections<A,F,C,S>]
+            : never
+}[keyof E];
+
+export type IsolatedCollectionAssociations<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Collection in IsolatedCollectionNames<E>]: {
+        [Name in keyof E]: E[Name] extends Entity<infer A, infer F, infer C, infer S>
+            ? Collection extends keyof IsolatedEntityCollections<A,F,C,S>
+                ? Name
+                : never
+            : never
+    }[keyof E];
+}
+
 export type AllEntityAttributeNames<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [Name in keyof E]: {
         [A in keyof E[Name]["schema"]["attributes"]]: A
@@ -48,7 +76,37 @@ export type CollectionAssociations<E extends {[name: string]: Entity<any, any, a
     }[keyof E];
 }
 
+export type ClusteredCollectionAssociations<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [Collection in ClusteredCollectionNames<E>]: {
+        [Name in keyof E]: E[Name] extends Entity<infer A, infer F, infer C, infer S>
+            ? Collection extends keyof ClusteredEntityCollections<A,F,C,S>
+                ? Name
+                : never
+            : never
+    }[keyof E];
+}
+
 export type CollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<E>> = {
+    [Collection in keyof Collections]: {
+        [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ? EntityName extends Collections[Collection]
+                ? keyof S["attributes"]
+                : never
+            : never
+    }[keyof E]
+}
+
+export type ClusteredCollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>> = {
+    [Collection in keyof Collections]: {
+        [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+            ? EntityName extends Collections[Collection]
+                ? keyof S["attributes"]
+                : never
+            : never
+    }[keyof E]
+}
+
+export type IsolatedCollectionAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<E>> = {
     [Collection in keyof Collections]: {
         [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
             ? EntityName extends Collections[Collection]
@@ -81,11 +139,10 @@ export type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, 
 export type CollectionWhereClause<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, T> = (where: CollectionWhereCallback<E, I>) => T;
 
 
-export interface WhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexCompositeAttributes> {
-    go: GoRecord<Items>;
+export interface ServiceWhereRecordsActionOptions<E extends {[name: string]: Entity<any, any, any, any>}, A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Partial<AllEntityAttributes<E>>, Items, IndexCompositeAttributes> {
+    go: ServiceQueryRecordsGo<Items>;
     params: ParamRecord;
-    page: PageRecord<Items,IndexCompositeAttributes>;
-    where: CollectionWhereClause<E,A,F,C,S,I, WhereRecordsActionOptions<E,A,F,C,S,I,Items,IndexCompositeAttributes>>;
+    where: CollectionWhereClause<E,A,F,C,S,I, ServiceWhereRecordsActionOptions<E,A,F,C,S,I,Items,IndexCompositeAttributes>>;
 }
 
 export type CollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
@@ -96,6 +153,28 @@ export type CollectionIndexKeys<Entities extends {[name: string]: Entity<any, an
             ? keyof TableIndexCompositeAttributes<A, F, C, S>
             : never
             : never
+    }[Collections[Collection]]
+}
+
+export type ClusteredCollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<Entities>> = {
+    [Collection in keyof Collections]: {
+        [EntityResultName in Collections[Collection]]:
+            EntityResultName extends keyof Entities
+                ? Entities[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                ? keyof TableIndexCompositeAttributes<A, F, C, S>
+                : never
+                : never
+    }[Collections[Collection]]
+}
+
+export type IsolatedCollectionIndexKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<Entities>> = {
+    [Collection in keyof Collections]: {
+        [EntityResultName in Collections[Collection]]:
+            EntityResultName extends keyof Entities
+                ? Entities[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                ? keyof TableIndexCompositeAttributes<A, F, C, S>
+                : never
+                : never
     }[Collections[Collection]]
 }
 
@@ -114,6 +193,36 @@ export type CollectionPageKeys<Entities extends {[name: string]: Entity<any, any
     }[Collections[Collection]]
 }
 
+export type ClusteredCollectionPageKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<Entities>> = {
+    [Collection in keyof Collections]: {
+        [EntityResultName in Collections[Collection]]:
+        EntityResultName extends keyof Entities
+            ? Entities[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+            ? keyof Parameters<Entities[EntityResultName]["query"][
+                Collection extends keyof ClusteredEntityCollections<A,F,C,S>
+                    ? ClusteredEntityCollections<A,F,C,S>[Collection]
+                    : never
+                ]>[0]
+            : never
+            : never
+    }[Collections[Collection]]
+}
+
+export type IsolatedCollectionPageKeys<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<Entities>> = {
+    [Collection in keyof Collections]: {
+        [EntityResultName in Collections[Collection]]:
+        EntityResultName extends keyof Entities
+            ? Entities[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+            ? keyof Parameters<Entities[EntityResultName]["query"][
+                Collection extends keyof IsolatedEntityCollections<A,F,C,S>
+                    ? IsolatedEntityCollections<A,F,C,S>[Collection]
+                    : never
+                ]>[0]
+            : never
+            : never
+    }[Collections[Collection]]
+}
+
 export type CollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
     [Collection in keyof CollectionIndexKeys<Entities, Collections>]: {
         [key in CollectionIndexKeys<Entities, Collections>[Collection]]:
@@ -123,9 +232,45 @@ export type CollectionIndexAttributes<Entities extends {[name: string]: Entity<a
     }
 }
 
+export type ClusteredCollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<Entities>> = {
+    [Collection in keyof ClusteredCollectionIndexKeys<Entities, Collections>]: {
+        [Key in ClusteredCollectionIndexKeys<Entities, Collections>[Collection]]:
+        Key extends keyof AllEntityAttributes<Entities>
+            ? AllEntityAttributes<Entities>[Key]
+            : never
+    }
+}
+
+export type IsolatedCollectionIndexAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<Entities>> = {
+    [Collection in keyof IsolatedCollectionIndexKeys<Entities, Collections>]: {
+        [Key in IsolatedCollectionIndexKeys<Entities, Collections>[Collection]]:
+        Key extends keyof AllEntityAttributes<Entities>
+            ? AllEntityAttributes<Entities>[Key]
+            : never
+    }
+}
+
 export type CollectionPageAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends CollectionAssociations<Entities>> = {
     [Collection in keyof CollectionPageKeys<Entities, Collections>]: {
         [key in CollectionPageKeys<Entities, Collections>[Collection]]:
+        key extends keyof AllEntityAttributes<Entities>
+            ? AllEntityAttributes<Entities>[key]
+            : never
+    }
+}
+
+export type ClusteredCollectionPageAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<Entities>> = {
+    [Collection in keyof ClusteredCollectionPageKeys<Entities, Collections>]: {
+        [key in ClusteredCollectionPageKeys<Entities, Collections>[Collection]]:
+        key extends keyof AllEntityAttributes<Entities>
+            ? AllEntityAttributes<Entities>[key]
+            : never
+    }
+}
+
+export type IsolatedCollectionPageAttributes<Entities extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<Entities>> = {
+    [Collection in keyof IsolatedCollectionPageKeys<Entities, Collections>]: {
+        [key in IsolatedCollectionPageKeys<Entities, Collections>[Collection]]:
         key extends keyof AllEntityAttributes<Entities>
             ? AllEntityAttributes<Entities>[key]
             : never
@@ -171,7 +316,7 @@ export type CollectionQueries<E extends {[name: string]: Entity<any, any, any, a
                                ]
                            >[0]
                        >) => {
-                go: GoRecord<{
+                go: ServiceQueryRecordsGo<{
                     [EntityResultName in Collections[Collection]]:
                     EntityResultName extends keyof E
                         ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
@@ -180,40 +325,13 @@ export type CollectionQueries<E extends {[name: string]: Entity<any, any, any, a
                         : never
                 }>;
                 params: ParamRecord;
-                page: {
-                    [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-                        ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
-                            ?
-                            PageRecord<
-                                {
-                                    [EntityResultName in Collections[Collection]]:
-                                    EntityResultName extends keyof E
-                                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
-                                        ? ResponseItem<A,F,C,S>[]
-                                        : never
-                                        : never
-                                },
-                                Partial<
-                                    Spread<
-                                        Collection extends keyof CollectionPageAttributes<E, Collections>
-                                            ? CollectionPageAttributes<E, Collections>[Collection]
-                                            : {},
-                                        Collection extends keyof CollectionIndexAttributes<E, Collections>
-                                            ? CollectionIndexAttributes<E, Collections>[Collection]
-                                            : {}
-                                        >
-                                    >
-                                >
-                            : never
-                        : never
-                }[Collections[Collection]];
                 where: {
                     [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
                         ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
                             ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
                                 ? CollectionWhereClause<E,A,F,C,S,
                                     Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>>,
-                                    WhereRecordsActionOptions<E,A,F,C,S,
+                                    ServiceWhereRecordsActionOptions<E,A,F,C,S,
                                         Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, CollectionAttributes<E,Collections>[Collection]>>,
                                         {
                                             [EntityResultName in Collections[Collection]]:
@@ -230,6 +348,165 @@ export type CollectionQueries<E extends {[name: string]: Entity<any, any, any, a
                                                     : {},
                                                 Collection extends keyof CollectionIndexAttributes<E, Collections>
                                                     ? CollectionIndexAttributes<E, Collections>[Collection]
+                                                    : {}
+                                                >
+                                            >
+                                        >>
+                                : never
+                            : never
+                        : never
+                }[Collections[Collection]];
+            }
+            : never
+    }[keyof E];
+}
+
+type ClusteredCollectionOperations<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>, Collection extends keyof Collections, EntityName extends keyof E> =
+    EntityName extends Collections[Collection] ? {
+        go: ServiceQueryRecordsGo<{
+            [EntityResultName in Collections[Collection]]:
+            EntityResultName extends keyof E
+                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                ? ResponseItem<A,F,C,S>[]
+                : never
+                : never
+        }>;
+        params: ParamRecord;
+        where: {
+            [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                    ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
+                        ? CollectionWhereClause<E,A,F,C,S,
+                            Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>>,
+                            ServiceWhereRecordsActionOptions<E,A,F,C,S,
+                                Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, ClusteredCollectionAttributes<E,Collections>[Collection]>>,
+                                {
+                                    [EntityResultName in Collections[Collection]]:
+                                    EntityResultName extends keyof E
+                                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                        ? ResponseItem<A,F,C,S>[]
+                                        : never
+                                        : never
+                                },
+                                Partial<
+                                    Spread<
+                                        Collection extends keyof ClusteredCollectionPageAttributes<E, Collections>
+                                            ? ClusteredCollectionPageAttributes<E, Collections>[Collection]
+                                            : {},
+                                        Collection extends keyof ClusteredCollectionIndexAttributes<E, Collections>
+                                            ? ClusteredCollectionIndexAttributes<E, Collections>[Collection]
+                                            : {}
+                                        >
+                                    >
+                                >>
+                        : never
+                    : never
+                : never
+        }[Collections[Collection]];
+    } : never
+
+type ClusteredCompositeAttributes<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>, Collection extends keyof Collections, EntityName extends keyof E> =
+    EntityName extends Collections[Collection]
+        ? Parameters<
+            E[EntityName]["query"][
+                E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+                    ? Collection extends keyof ClusteredEntityCollections<A,F,C,S>
+                    ? ClusteredEntityCollections<A,F,C,S>[Collection]
+                    : never
+                    : never
+                ]
+            >[0]
+        : never
+
+type ClusteredCollectionQueryOperations<Param, Result> = {
+    between(skCompositeAttributesStart: Param, skCompositeAttributesEnd: Param): Result;
+    gt(skCompositeAttributes: Param): Result;
+    gte(skCompositeAttributes: Param): Result;
+    lt(skCompositeAttributes: Param): Result;
+    lte(skCompositeAttributes: Param): Result;
+    begins(skCompositeAttributes: Param): Result;
+}
+
+type OptionalPropertyOf<T extends object> = Exclude<{
+    [K in keyof T]: T extends Record<K, T[K]>
+        ? never
+        : K
+}[keyof T], undefined>
+
+type ClusteredCollectionQueryParams<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>> = {
+    [Collection in keyof Collections as Collections[Collection] extends keyof E ? Collection : never]: {
+        [EntityName in keyof E]:
+        EntityName extends Collections[Collection]
+            ? ClusteredCompositeAttributes<E, Collections, Collection, EntityName>
+            : never
+    }[keyof E];
+}
+
+export type ClusteredCollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends ClusteredCollectionAssociations<E>> = {
+    [Collection in keyof Collections as Collections[Collection] extends keyof E ? Collection : never]: {
+        [EntityName in keyof E]:
+            EntityName extends Collections[Collection]
+                ? (
+                    params: ClusteredCompositeAttributes<E, Collections, Collection, EntityName>
+                ) =>
+                    ClusteredCollectionOperations<E, Collections, Collection, EntityName> &
+                        ClusteredCollectionQueryOperations<
+                            Pick<ClusteredCompositeAttributes<E, Collections, Collection, EntityName>, OptionalPropertyOf<ClusteredCompositeAttributes<E, Collections, Collection, EntityName>>>,
+                            ClusteredCollectionOperations<E, Collections, Collection, EntityName>
+                        >
+                : never
+    }[keyof E];
+}
+
+export type IsolatedCollectionQueries<E extends {[name: string]: Entity<any, any, any, any>}, Collections extends IsolatedCollectionAssociations<E>> = {
+    [Collection in keyof Collections]: {
+        [EntityName in keyof E]:
+        EntityName extends Collections[Collection]
+            ? (params:
+                   RequiredProperties<
+                       Parameters<
+                           E[EntityName]["query"][
+                               E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+                                   ? Collection extends keyof IsolatedEntityCollections<A,F,C,S>
+                                   ? IsolatedEntityCollections<A,F,C,S>[Collection]
+                                   : never
+                                   : never
+                           ]
+                       >[0]
+                   >
+            ) => {
+                go: ServiceQueryRecordsGo<{
+                    [EntityResultName in Collections[Collection]]:
+                    EntityResultName extends keyof E
+                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                        ? ResponseItem<A,F,C,S>[]
+                        : never
+                        : never
+                }>;
+                params: ParamRecord;
+                where: {
+                    [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+                        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                            ? Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, IsolatedCollectionAttributes<E,Collections>[Collection]>> extends Partial<AllEntityAttributes<E>>
+                                ? CollectionWhereClause<E,A,F,C,S,
+                                    Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, IsolatedCollectionAttributes<E,Collections>[Collection]>>,
+                                    ServiceWhereRecordsActionOptions<E,A,F,C,S,
+                                        Pick<AllEntityAttributes<E>, Extract<AllEntityAttributeNames<E>, IsolatedCollectionAttributes<E,Collections>[Collection]>>,
+                                        {
+                                            [EntityResultName in Collections[Collection]]:
+                                            EntityResultName extends keyof E
+                                                ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+                                                ? ResponseItem<A,F,C,S>[]
+                                                : never
+                                                : never
+                                        },
+                                        Partial<
+                                            Spread<
+                                                Collection extends keyof IsolatedCollectionPageAttributes<E, Collections>
+                                                    ? IsolatedCollectionPageAttributes<E, Collections>[Collection]
+                                                    : {},
+                                                Collection extends keyof IsolatedCollectionIndexAttributes<E, Collections>
+                                                    ? IsolatedCollectionIndexAttributes<E, Collections>[Collection]
                                                     : {}
                                                 >
                                             >
@@ -260,9 +537,7 @@ export interface ElectroResultsEvent<R extends any = any> {
     success: boolean;
 }
 
-export type ElectroEvent =
-    ElectroQueryEvent
-    | ElectroResultsEvent;
+export type ElectroEvent = ElectroQueryEvent | ElectroResultsEvent;
 
 export type ElectroEventType = Pick<ElectroEvent, 'type'>;
 
@@ -299,6 +574,16 @@ export type EntityItem<E extends Entity<any, any, any, any>> =
 export type CreateEntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
         ? PutItem<A, F, C, S>
+        : never;
+
+export type BatchWriteEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? PutItem<A, F, C, S>[]
+        : never;
+
+export type BatchGetEntityItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? ResponseItem<A, F, C, S>[]
         : never;
 
 export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
@@ -351,19 +636,61 @@ export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyo
         : never>
         : never
 
+export type QueryResponse<E extends Entity<any, any, any, any>> = {
+    data: EntityItem<E>[];
+    cursor: string | null;
+}
+
+export type CreateEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: CreateEntityItem<E>;
+}
+
+export type BatchWriteResponse<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S> ? {
+        unprocessed: AllTableIndexCompositeAttributes<A,F,C,S>[];
+    } : never
+
+export type BatchGetResponse<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S> ? {
+        data: EntityItem<E>[];
+        unprocessed: AllTableIndexCompositeAttributes<A,F,C,S>[];
+    } : never;
+
+export type UpdateEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateEntityItem<E>;
+}
+export type UpdateAddEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateAddEntityItem<E>;
+}
+export type UpdateSubtractEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateSubtractEntityItem<E>;
+}
+export type UpdateAppendEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateAppendEntityItem<E>;
+}
+export type UpdateRemoveEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateRemoveEntityItem<E>;
+}
+export type UpdateDeleteEntityResponse<E extends Entity<any, any, any, any>> = {
+    data: UpdateDeleteEntityItem<E>;
+}
+
+export type CollectionResponse<SERVICE extends Service<any>, COLLECTION extends keyof SERVICE["collections"]> = {
+    data: CollectionItem<SERVICE, COLLECTION>;
+    cursor: string | null;
+}
+
 export interface QueryBranches<A extends string,
     F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, IndexCompositeAttributes> {
     go: GoQueryTerminal<A,F,C,S,ResponseItem>;
     params: ParamTerminal<A,F,C,S,ResponseItem>;
-    page: PageQueryTerminal<A,F,C,S,ResponseItem,IndexCompositeAttributes>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,QueryBranches<A,F,C,S,ResponseItem,IndexCompositeAttributes>>
 }
 
 export interface RecordsActionOptions<A extends string,
     F extends string, C extends string, S extends Schema<A,F,C>, Items, IndexCompositeAttributes> {
-    go: GoRecord<Items>;
+    go: QueryRecordsGo<Items>;
     params: ParamRecord;
-    page: PageRecord<Items,IndexCompositeAttributes>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,RecordsActionOptions<A,F,C,S,Items,IndexCompositeAttributes>>;
 }
 
@@ -379,30 +706,30 @@ export interface BatchGetRecordOperationOptions<A extends string, F extends stri
 }
 
 export interface PutRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: GoRecord<ResponseType, PutQueryOptions>;
+    go: PutRecordGo<ResponseType, PutQueryOptions>;
     params: ParamRecord<PutQueryOptions>;
-    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,PutRecordOperationOptions<A,F,C,S,ResponseType>>;
+    where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, PutRecordOperationOptions<A, F, C, S, ResponseType>>;
 }
 
-export interface UpdateRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: GoRecord<ResponseType, UpdateQueryOptions>;
+export interface UpsertRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
+    go: PutRecordGo<ResponseType, UpdateQueryParams>;
     params: ParamRecord<UpdateQueryParams>;
-    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,PutRecordOperationOptions<A,F,C,S,ResponseType>>;
+    where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A, F, C, S, ResponseType>>;
 }
 
 export interface DeleteRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: GoRecord<ResponseType, DeleteQueryOptions>;
+    go: DeleteRecordOperationGo<ResponseType, DeleteQueryOptions>;
     params: ParamRecord<DeleteQueryOptions>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,DeleteRecordOperationOptions<A,F,C,S,ResponseType>>;
 }
 
-export interface BulkRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType, AlternateResponseType> {
-    go: BatchGoRecord<ResponseType, AlternateResponseType>;
+export interface BatchWriteOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
+    go: BatchWriteGo<ResponseType>;
     params: ParamRecord<BulkOptions>;
 }
 
 export interface SetRecordActionOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
-    go: GoRecord<Partial<TableItem>, UpdateQueryOptions>;
+    go: UpdateRecordGo<TableItem>;
     params: ParamRecord<UpdateQueryParams>;
     set: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     remove: SetRecord<A,F,C,S, Array<keyof SetItem<A,F,C,S>>,IndexCompositeAttributes,TableItem>;
@@ -414,8 +741,11 @@ export interface SetRecordActionOptions<A extends string, F extends string, C ex
     where: WhereClause<A,F,C,S, Item<A,F,C,S,S["attributes"]>,SetRecordActionOptions<A,F,C,S,SetAttr,IndexCompositeAttributes,TableItem>>;
 }
 
-export type SetRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) => SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
-export type RemoveRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: RemoveAttr) => SetRecordActionOptions<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
+export type SetRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) =>
+    SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
+
+export type RemoveRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: RemoveAttr) =>
+    SetRecordActionOptions<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
 
 export type DataUpdateMethodRecord<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> =
     DataUpdateMethod<A,F,C,S, UpdateData<A,F,C,S>, SetRecordActionOptions<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>>
@@ -429,7 +759,6 @@ interface QueryOperations<A extends string, F extends string, C extends string, 
     begins: (skCompositeAttributes: CompositeAttributes) => QueryBranches<A,F,C,S, ResponseItem,IndexCompositeAttributes>;
     go: GoQueryTerminal<A,F,C,S,ResponseItem>;
     params: ParamTerminal<A,F,C,S,ResponseItem>;
-    page: PageQueryTerminal<A,F,C,S,ResponseItem,IndexCompositeAttributes>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,QueryBranches<A,F,C,S,ResponseItem,IndexCompositeAttributes>>
 }
 
@@ -465,16 +794,22 @@ export type ParseMultiInput = {
 export type ReturnValues = "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
 
 export interface QueryOptions {
-    raw?: boolean;
+    cursor?: string | null;
+    params?: object;
     table?: string;
     limit?: number;
-    params?: object;
-    includeKeys?: boolean;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
-    pages?: number;
+    pages?: number | 'all';
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
+    data?: 'raw' | 'includeKeys' | 'attributes';
+
+    /** @depricated use 'data=raw' instead */
+    raw?: boolean;
+    /** @depricated use 'data=includeKeys' instead */
+    includeKeys?: boolean;
+    order?: 'asc' | 'desc';
 }
 
 // subset of QueryOptions
@@ -503,15 +838,12 @@ export interface PutQueryOptions extends QueryOptions {
 }
 
 export interface ParamOptions {
+    cursor?: string | null;
     params?: object;
     table?: string;
     limit?: number;
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
-}
-
-export interface PaginationOptions extends QueryOptions {
-    pager?: "raw" | "item" | "named";
-    limit?: number;
+    order?: 'asc' | 'desc';
 }
 
 export interface BulkOptions extends QueryOptions {
@@ -526,11 +858,15 @@ export type OptionalDefaultEntityIdentifiers = {
 }
 
 interface GoBatchGetTerminalOptions<Attributes> {
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    /** @depricated use 'data=raw' instead */
     raw?: boolean;
+    /** @depricated use 'data=raw' instead */
+    includeKeys?: boolean;
+
     table?: string;
     limit?: number;
     params?: object;
-    includeKeys?: boolean;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
     pages?: number;
@@ -543,30 +879,22 @@ interface GoBatchGetTerminalOptions<Attributes> {
 }
 
 interface GoQueryTerminalOptions<Attributes> {
+    cursor?: string | null,
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    /** @depricated use 'data=raw' instead */
     raw?: boolean;
+    /** @depricated use 'data=raw' instead */
+    includeKeys?: boolean;
     table?: string;
     limit?: number;
     params?: object;
-    includeKeys?: boolean;
     originalErr?: boolean;
     ignoreOwnership?: boolean;
-    pages?: number;
+    pages?: number | 'all';
     attributes?: ReadonlyArray<Attributes>;
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
-}
-
-interface PageQueryTerminalOptions<Attributes> extends GoQueryTerminalOptions<Attributes> {
-    pager?: "raw" | "item" | "named";
-    raw?: boolean;
-    table?: string;
-    limit?: number;
-    includeKeys?: boolean;
-    originalErr?: boolean;
-    ignoreOwnership?: boolean;
-    attributes?: ReadonlyArray<Attributes>;
-    listeners?: Array<ElectroEventListener>;
-    logger?: ElectroEventListener;
+    order?: 'asc' | 'desc';
 }
 
 export interface ParamTerminalOptions<Attributes> {
@@ -576,130 +904,107 @@ export interface ParamTerminalOptions<Attributes> {
     originalErr?: boolean;
     attributes?: ReadonlyArray<Attributes>;
     response?: "default" | "none" | 'all_old' | 'updated_old' | 'all_new' | 'updated_new';
+    order?: 'asc' | 'desc';
 }
 
 type GoBatchGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoBatchGetTerminalOptions<keyof ResponseItem>>(options?: Options) =>
     Options extends GoBatchGetTerminalOptions<infer Attr>
         ? 'preserveBatchOrder' extends keyof Options
-            ? Options['preserveBatchOrder'] extends true
-                ? Promise<[
-                    Array<Resolve<{
-                        [
-                        Name in keyof ResponseItem as Name extends Attr
-                            ? Name
-                            : never
-                        ]: ResponseItem[Name]
-                    } | null>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
-                ]>
-                : Promise<[
-                    Array<Resolve<{
-                        [
-                        Name in keyof ResponseItem as Name extends Attr
-                            ? Name
-                            : never
-                        ]: ResponseItem[Name]
-                    }>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
-                ]>
-            : Promise<[
-                Array<Resolve<{
+        ? Options['preserveBatchOrder'] extends true
+            ? Promise<{
+                data: Array<Resolve<{
                     [
                     Name in keyof ResponseItem as Name extends Attr
                         ? Name
                         : never
                     ]: ResponseItem[Name]
-                }>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
-            ]>
+                } | null>>,
+                unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+            }>
+            : Promise<{
+                data: Array<Resolve<{
+                    [
+                    Name in keyof ResponseItem as Name extends Attr
+                        ? Name
+                        : never
+                    ]: ResponseItem[Name]
+                }>>,
+                unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+            }>
+        : Promise<{
+            data: Array<Resolve<{
+                [
+                Name in keyof ResponseItem as Name extends Attr
+                    ? Name
+                    : never
+                ]: ResponseItem[Name]
+            }>>,
+            unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>
+        }>
         : 'preserveBatchOrder' extends keyof Options
-            ? Options['preserveBatchOrder'] extends true
-                ? [Array<Resolve<ResponseItem | null>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
-                : [Array<Resolve<ResponseItem>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
-            : [Array<Resolve<ResponseItem>>, Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>>]
+        ? Options['preserveBatchOrder'] extends true
+            ? { data: Array<Resolve<ResponseItem | null>>, unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>> }
+            : { data: Array<Resolve<ResponseItem>>, unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>> }
+        : { data: Array<Resolve<ResponseItem>>, unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A,F,C,S>>> }
 
 type GoGetTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <Options extends GoQueryTerminalOptions<keyof ResponseItem>>(options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
         ? Promise<{
-            [
-            Name in keyof ResponseItem as Name extends Attr
-                ? Name
-                : never
-            ]: ResponseItem[Name]
-        } | null>
-        : Promise<ResponseItem | null>
+            data: {
+                [Name in keyof ResponseItem as Name extends Attr
+                    ? Name
+                    : never]: ResponseItem[Name]
+            } | null
+        }>
+        : Promise<{ data: ResponseItem | null }>
 
 export type GoQueryTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Item> = <Options extends GoQueryTerminalOptions<keyof Item>>(options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
-        ? Promise<Array<{
-            [
-            Name in keyof Item as Name extends Attr
-                ? Name
-                : never
-            ]: Item[Name]
-        }>>
-        : Promise<Array<Item>>
-
-export type EntityParseSingleItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> =
-    <Options extends ParseOptions<keyof ResponseItem>>(item: ParseSingleInput, options?: Options) =>
-        Options extends ParseOptions<infer Attr>
-            ? {
-                [
-                Name in keyof ResponseItem as Name extends Attr
-                    ? Name
-                    : never
-                ]: ResponseItem[Name]
-            } | null
-            : ResponseItem | null
-
-export type EntityParseMultipleItems<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> =
-    <Options extends ParseOptions<keyof ResponseItem>>(item: ParseMultiInput, options?: Options) =>
-        Options extends ParseOptions<infer Attr>
-            ? Array<{
-                [
-                Name in keyof ResponseItem as Name extends Attr
-                    ? Name
-                    : never
-                ]: ResponseItem[Name]
-            }>
-            : Array<ResponseItem>
-
-
-export type PageQueryTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Item, CompositeAttributes> = <Options extends PageQueryTerminalOptions<keyof Item>>(page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: Options) =>
-    Options extends GoQueryTerminalOptions<infer Attr>
-        ? Promise<[
-            (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
-            Array<{
+        ? Promise<{
+            data: Array<{
                 [
                 Name in keyof Item as Name extends Attr
                     ? Name
                     : never
                 ]: Item[Name]
-            }>
-        ]>
-        : Promise<[
-            (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
-            Array<ResponseType>
-        ]>;
+            }>,
+            cursor: string | null
+        }>
+        : Promise<{ data: Array<Item>, cursor: string | null }>
+
+export type EntityParseMultipleItems<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> =
+    <Options extends ParseOptions<keyof ResponseItem>>(item: ParseMultiInput, options?: Options) =>
+        Options extends ParseOptions<infer Attr>
+            ? {
+                data: Array<{
+                    [
+                    Name in keyof ResponseItem as Name extends Attr
+                        ? Name
+                        : never
+                    ]: ResponseItem[Name]
+                }>,
+                cursor?: string | null
+            }
+            : { data: Array<ResponseItem>, cursor?: string | null }
 
 export type ParamTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <P extends any = any, Options extends ParamTerminalOptions<keyof ResponseItem> = ParamTerminalOptions<keyof ResponseItem>>(options?: Options) => P;
 
-export type GoRecord<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<T>;
+export type ServiceQueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type BatchGoRecord<ResponseType, AlternateResponseType> = <O extends BulkOptions>(options?: O) =>
-    O extends infer Options
-        ? 'preserveBatchOrder' extends keyof Options
-        ? Options['preserveBatchOrder'] extends true
-            ? Promise<AlternateResponseType>
-            : Promise<ResponseType>
-        : Promise<ResponseType>
-        : never
+export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type PageRecord<ResponseType, CompositeAttributes> = (page?: (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null, options?: PaginationOptions) => Promise<[
-        (CompositeAttributes & OptionalDefaultEntityIdentifiers) | null,
-    ResponseType
-]>;
+export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) => Promise<{data: Partial<T>}>
+
+export type PutRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
+
+export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
+
+export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
+    Promise<{ unprocessed: ResponseType }>
 
 export type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
 
-export interface ElectroError extends Error {
+export class ElectroError extends Error {
     readonly name: 'ElectroError';
     readonly code: number;
     readonly date: number;
@@ -734,7 +1039,7 @@ export interface ElectroValidationErrorFieldReference<T extends Error = Error> {
     readonly cause: T | undefined;
 }
 
-export interface ElectroValidationError<T extends Error = Error> extends ElectroError {
+export class ElectroValidationError<T extends Error = Error> extends ElectroError {
     readonly fields: ReadonlyArray<ElectroValidationErrorFieldReference<T>>;
 }
 
@@ -782,6 +1087,10 @@ export interface BooleanAttribute {
     readonly field?: string;
     readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+    readonly padding?: {
+        length: number;
+        char: string;
+    }
 }
 
 export interface NestedNumberAttribute {
@@ -808,6 +1117,10 @@ export interface NumberAttribute {
     readonly field?: string;
     readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+    readonly padding?: {
+        length: number;
+        char: string;
+    }
 }
 
 export interface NestedStringAttribute {
@@ -834,6 +1147,10 @@ export interface StringAttribute {
     readonly field?: string;
     readonly label?: string;
     readonly watch?: ReadonlyArray<string> | "*";
+    readonly padding?: {
+        length: number;
+        char: string;
+    }
 }
 
 export interface NestedEnumAttribute {
@@ -1134,14 +1451,23 @@ type StaticAttribute = {
     readonly field?: string;
 }
 
-type CustomAttribute<T extends any = any> = {
-    readonly type: "custom";
-    readonly [CustomAttributeSymbol]: T;
+type CustomAttributeTypeName<T> = { readonly [CustomAttributeSymbol]: T };
+
+type OpaquePrimitiveTypeName<T extends string | number | boolean> =
+    T extends string ? 'string' & { readonly [OpaquePrimitiveSymbol]: T }
+    : T extends number ? 'number' & { readonly [OpaquePrimitiveSymbol]: T }
+    : T extends boolean ? 'boolean' & { readonly [OpaquePrimitiveSymbol]: T }
+    : never;
+
+type CustomAttribute = {
+    readonly type: CustomAttributeTypeName<any> | OpaquePrimitiveTypeName<any>;
+    readonly required?: boolean;
     readonly hidden?: boolean;
-    readonly get?: (val: T, item: any) => T | undefined | void;
-    readonly set?: (val?: T, item?: any) => T | undefined | void;
-    readonly default?: T | (() => T);
-    readonly validate?: ((val: T) => boolean) | ((val: T) => void) | ((val: T) => string | void);
+    readonly readOnly?: boolean;
+    readonly get?: (val: any, item: any) => any | undefined | void;
+    readonly set?: (val?: any, item?: any) => any | undefined | void;
+    readonly default?: any | (() => any);
+    readonly validate?: ((val: any) => boolean) | ((val: any) => void) | ((val: any) => string | void);
     readonly field?: string;
     readonly watch?: ReadonlyArray<string> | "*";
 };
@@ -1201,6 +1527,7 @@ export interface Schema<A extends string, F extends string, C extends string> {
     readonly indexes: {
         [accessPattern: string]: {
             readonly index?: string;
+            readonly type?: 'clustered' | 'isolated';
             readonly collection?: AccessPatternCollection<C>;
             readonly pk: {
                 readonly casing?: "upper" | "lower" | "none" | "default";
@@ -1227,11 +1554,58 @@ export type IndexCollections<A extends string, F extends string, C extends strin
         : never
 }[keyof S["indexes"]];
 
+export type IndexCollectionsMap<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends
+        AccessPatternCollection<infer Name>
+        ? Name
+        : never
+};
+
+type ClusteredIndexNameMap<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [I in keyof S["indexes"] as S['indexes'][I] extends { type: 'clustered' } ? I : never]: S["indexes"][I]["collection"] extends
+        AccessPatternCollection<infer Name>
+        ? Name
+        : never
+}
+
+type ThingValues<T> = T[keyof T];
+
+type IsolatedIndexNameMap<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [I in keyof S["indexes"] as S['indexes'][I] extends { type: 'clustered' } ? never : I]: S["indexes"][I]["collection"] extends
+        AccessPatternCollection<infer Name>
+        ? Name
+        : never
+}
+
+export type ClusteredIndexCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = ThingValues<ClusteredIndexNameMap<A,F,C,S>>;
+
+export type IsolatedIndexCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = ThingValues<IsolatedIndexNameMap<A,F,C,S>>;
+
 export type EntityCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
     [N in IndexCollections<A,F,C,S>]: {
         [i in keyof S["indexes"]]: S["indexes"][i]["collection"] extends AccessPatternCollection<infer Name>
             ? Name extends N
                 ? i
+                : never
+            : never
+    }[keyof S["indexes"]];
+}
+
+export type ClusteredEntityCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [N in ClusteredIndexCollections<A,F,C,S>]: {
+        [I in keyof S["indexes"]]: S["indexes"][I]["collection"] extends AccessPatternCollection<infer Name>
+            ? Name extends N
+                ? I
+                : never
+            : never
+    }[keyof S["indexes"]];
+}
+
+export type IsolatedEntityCollections<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    [N in IsolatedIndexCollections<A,F,C,S>]: {
+        [I in keyof S["indexes"]]: S["indexes"][I]["collection"] extends AccessPatternCollection<infer Name>
+            ? Name extends N
+                ? I
                 : never
             : never
     }[keyof S["indexes"]];
@@ -1251,7 +1625,9 @@ type PartialDefinedKeys<T> = {
 }
 
 export type ItemAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
         ? T
     : A["type"] extends infer R
         ? R extends "string" ? string
@@ -1291,8 +1667,10 @@ export type ItemAttribute<A extends Attribute> =
         : never
 
 export type ReturnedAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
-    ? T
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
+        ? T
     : A["type"] extends infer R
         ? R extends "static" ? never
         : R extends "string" ? string
@@ -1346,7 +1724,9 @@ export type ReturnedAttribute<A extends Attribute> =
         : never
 
 export type CreatedAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
         ? T
         : A["type"] extends infer R
         ? R extends "static" ? never
@@ -1409,8 +1789,10 @@ export type CreatedItem<A extends string, F extends string, C extends string, S 
 }
 
 export type EditableItemAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
-    ? T
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
+        ? T
     : A extends ReadOnlyAttribute
         ? never
         : A["type"] extends infer R
@@ -1456,7 +1838,9 @@ export type EditableItemAttribute<A extends Attribute> =
         : never
 
 export type UpdatableItemAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
         ? T
         : A extends ReadOnlyAttribute
         ? never
@@ -1518,7 +1902,9 @@ export type UpdatableItemAttribute<A extends Attribute> =
         : never
 
 export type RemovableItemAttribute<A extends Attribute> =
-    A extends CustomAttribute<infer T>
+    A['type'] extends OpaquePrimitiveTypeName<infer T>
+        ? T
+        : A['type'] extends CustomAttributeTypeName<infer T>
         ? T
         : A extends ReadOnlyAttribute | RequiredAttribute
         ? never
@@ -1702,7 +2088,7 @@ export type RemoveItem<A extends string, F extends string, C extends string, S e
 export type AppendItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'list' | 'any' | 'custom'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'list' | 'any' | 'custom' | CustomAttributeTypeName<any>
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -1713,7 +2099,7 @@ export type AppendItem<A extends string, F extends string, C extends string, S e
 export type AddItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'set' | 'custom'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'set' | 'custom' | CustomAttributeTypeName<any> | OpaquePrimitiveTypeName<number>
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -1724,7 +2110,7 @@ export type AddItem<A extends string, F extends string, C extends string, S exte
 export type SubtractItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'custom'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'number' | 'any' | 'custom' | OpaquePrimitiveTypeName<number>
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -1735,7 +2121,7 @@ export type SubtractItem<A extends string, F extends string, C extends string, S
 export type DeleteItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     {
         [
-        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'any' | 'set' | 'custom'
+        P in keyof ItemTypeDescription<A,F,C,S> as ItemTypeDescription<A,F,C,S>[P] extends 'any' | 'set' | 'custom' | CustomAttributeTypeName<any>
             ? P
             : never
         ]?: P extends keyof SetItem<A,F,C,S>
@@ -1746,6 +2132,7 @@ export type DeleteItem<A extends string, F extends string, C extends string, S e
 export declare const WhereSymbol: unique symbol;
 export declare const UpdateDataSymbol: unique symbol;
 export declare const CustomAttributeSymbol: unique symbol;
+export declare const OpaquePrimitiveSymbol: unique symbol;
 
 export type WhereAttributeSymbol<T extends any> =
         { [WhereSymbol]: void }
@@ -1854,13 +2241,16 @@ export class Entity<A extends string, F extends string, C extends string, S exte
 
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     get(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchGetRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
-    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>[]>;
-
-    put(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
-    put(record: PutItem<A,F,C,S>[]): BulkRecordOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>[]>;
-
+    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
+
+    upsert(record: PutItem<A,F,C,S>): UpsertRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+    put(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
+    put(record: PutItem<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
+    create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
+
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -1870,7 +2260,6 @@ export class Entity<A extends string, F extends string, C extends string, S exte
         delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
-
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -1880,8 +2269,6 @@ export class Entity<A extends string, F extends string, C extends string, S exte
         delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
     };
-
-    create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
     find(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;
 
@@ -1893,24 +2280,29 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseSingleInput, options?: Options):
         Options extends ParseOptions<infer Attr>
         ? {
+            data: {
                 [
                 Name in keyof ResponseItem<A,F,C,S> as Name extends Attr
                     ? Name
                     : never
-            ]: ResponseItem<A,F,C,S>[Name]
-        } | null
-        : ResponseItem<A,F,C,S> | null
+                ]: ResponseItem<A,F,C,S>[Name]
+            } | null
+        }
+        : { data: ResponseItem<A,F,C,S> | null }
     parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseMultiInput, options?: Options):
             Options extends ParseOptions<infer Attr>
-        ? Array<{
+        ? { data: Array<{
             [
                 Name in keyof ResponseItem<A,F,C,S> as Name extends Attr
                     ? Name
                     : never
             ]: ResponseItem<A,F,C,S>[Name]
-        }>
-        : Array<ResponseItem<A,F,C,S>>
+        }>, cursor: string | null }
+        : { data: Array<ResponseItem<A,F,C,S>>, cursor: string | null }
     setIdentifier(type: "entity" | "version", value: string): void;
+    setTableName(tableName: string): void;
+    getTableName(): string | undefined;
+    setClient(client: DocumentClient): void;
     client: any;
 }
 
@@ -1923,8 +2315,14 @@ export type ServiceConfiguration = {
 
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
-    collections: CollectionQueries<E, CollectionAssociations<E>>
+    collections:
+        ClusteredCollectionQueries<E, ClusteredCollectionAssociations<E>>
+        & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
     constructor(entities: E, config?: ServiceConfiguration);
+
+    setTableName(tableName: string): void;
+    getTableName(): string | undefined;
+    setClient(client: DocumentClient): void;
 }
 
 type CustomAttributeDefinition<T> = {
@@ -1937,6 +2335,16 @@ type CustomAttributeDefinition<T> = {
     readonly validate?: ((val: T) => boolean) | ((val: T) => void) | ((val: T) => string | void);
     readonly field?: string;
     readonly watch?: ReadonlyArray<string> | "*";
-}
+};
 
-declare function createCustomAttribute<T>(definition?: CustomAttributeDefinition<T>): CustomAttribute<T>;
+/** @depricated use 'CustomAttributeType' or 'OpaquePrimitiveType' instead */
+declare function createCustomAttribute<T, A extends Readonly<CustomAttributeDefinition<T>> = Readonly<CustomAttributeDefinition<T>>>(definition?: A): A & { type: CustomAttributeTypeName<T> };
+
+declare function CustomAttributeType<T>(
+    base: T extends string ? 'string'
+        : T extends number ? 'number'
+        : T extends boolean ? 'boolean'
+        : 'any'
+): T extends string | number | boolean
+    ? OpaquePrimitiveTypeName<T>
+    : CustomAttributeTypeName<T>;

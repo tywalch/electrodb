@@ -9,7 +9,7 @@ before_install:
   - docker ps -a
 
 node_js:
-  - '11'
+  - '16'
 
 script:
-  - npm run coverage-coveralls-local
+  - npm run coverage:local:coveralls

@@ -293,8 +293,8 @@ describe("BatchWrite", () => {
           }
         ]
       }
-      let unprocessed = MallStores.formatBulkWriteResponse(UnprocessedPut, {});
-      expect(unprocessed).to.deep.equal([records[0]])
+      let res = MallStores.formatBulkWriteResponse(UnprocessedPut, {});
+      expect(res.unprocessed).to.deep.equal([records[0]])
     });
   });
 
@@ -354,8 +354,8 @@ describe("BatchWrite", () => {
           }
         ]
       }
-      let unprocessed = MallStores.formatBulkWriteResponse(UnprocessedDelete, {});
-      expect(unprocessed).to.deep.equal([{
+      let res = MallStores.formatBulkWriteResponse(UnprocessedDelete, {});
+      expect(res.unprocessed).to.deep.equal([{
         id: "abc",
         sector: "a1"
       }]);

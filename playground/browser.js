@@ -206,11 +206,16 @@ class Entity extends ElectroDB.Entity {
 
 class Service extends ElectroDB.Service {}
 
+const createCustomAttribute = ElectroDB.createCustomAttribute;
+
+const CustomAttributeType = ElectroDB.CustomAttributeType;
 
 window.ElectroDB = {
     Entity,
     Service,
     clearScreen,
     printMessage,
-    printToScreen
+    printToScreen,
+    createCustomAttribute,
+    CustomAttributeType,
 };

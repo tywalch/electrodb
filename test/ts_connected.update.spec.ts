@@ -1,5 +1,5 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import {createCustomAttribute, Entity} from "../index";
+import {CustomAttributeType, Entity} from "../index";
 import { expect } from "chai";
 import {v4 as uuid} from "uuid";
 import moment from "moment";
@@ -514,7 +514,6 @@ describe("Update Item", () => {
             const p1 = customers.create({
                 id: "test",
                 email: "user@example.com",
-
                 name: { // should save as is
                     legal: {}
                 },
@@ -555,7 +554,7 @@ describe("Update Item", () => {
                             "middle": "jorge"
                         }
                     },
-                    "name8": {},
+                    // "name8": {}, // should not exist
                     "pk": "$company#id_test",
                     "sk": "$customer_1",
                     "__edb_e__": "customer",
@@ -621,15 +620,15 @@ describe("Update Item", () => {
             const email = "user@example.com";
 
             await customers.create({ id: id1, email }).go();
-            await customers.create({ id: id2, email, name: {legal: {}} }).go();
+            await customers.create({ id: id2, email, name: { legal: {} } }).go();
 
-            const retrieved1 = await customers.get({id: id1}).go();
-            const retrieved2 = await customers.get({id: id2}).go();
+            const retrieved1 = await customers.get({id: id1}).go().then(res => res.data);
+            const retrieved2 = await customers.get({id: id2}).go().then(res => res.data);
 
             expect(retrieved1).to.deep.equal({
                 email,
                 id: id1,
-                name: {}
+                // name: {} should not exist (wasn't put)
             });
 
             expect(retrieved2).to.deep.equal({
@@ -646,6 +645,7 @@ describe("Update Item", () => {
                     op.set(attr.name.legal.last, 'exotic');
                 })
                 .go({response: 'all_new'})
+                .then(res => res.data)
                 .then((data) => ({success: true, result: data}))
                 .catch(err => ({success: false, result: err}));
 
@@ -656,7 +656,7 @@ describe("Update Item", () => {
                 .data((attr, op) => {
                     op.set(attr.name.legal.first, 'joe');
                     op.set(attr.name.legal.last, 'exotic');
-                }).go({response: 'all_new'});
+                }).go({response: 'all_new'}).then(res => res.data);
 
             expect(updated2).to.deep.equal({
                 id: id2,
@@ -668,6 +668,287 @@ describe("Update Item", () => {
                     }
                 }
             });
+        });
+
+        describe('Map Attributes and empty objects', () => {
+            it('should return an empty object with a Map Attribute when one is set via a static default', async () => {
+                const entityWithDefault = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            },
+                            default: {}
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+
+                const created = await entityWithDefault.put({prop1}).go();
+                const item = await entityWithDefault.get({prop1}).go();
+                const expected = {
+                    prop1,
+                    prop2: {}
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should return an empty object with a Map Attribute when one is set via a default function', async () => {
+                const entityWithDefault = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            },
+                            default: () => {
+                                return {}
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const created = await entityWithDefault.put({prop1}).go();
+                const item = await entityWithDefault.get({prop1}).go();
+                const expected = {
+                    prop1,
+                    prop2: {}
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should return an empty object with a Map Attribute when one is set via the setter', async () => {
+                const entityWithObjSetter = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            },
+                            set: () => {
+                                return {};
+                            }
+                        },
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const created = await entityWithObjSetter.put({prop1}).go();
+                const item = await entityWithObjSetter.get({prop1}).go();
+                const expected = {
+                    prop1,
+                    prop2: {}
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should return an empty object with a Map Attribute when one is put on the item directly', async () => {
+                const entityWithoutDefaultOrSetter = new Entity({
+                    model: {
+                        entity: 'emptyObject',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const prop2 = {};
+                const created = await entityWithoutDefaultOrSetter.put({prop1, prop2}).go();
+                const item = await entityWithoutDefaultOrSetter.get({prop1}).go();
+                const expected = {
+                    prop1,
+                    prop2,
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should not return an empty object with a Map Attribute when one is not put on the item directly', async () => {
+                const entityWithoutDefaultOrSetter = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const created = await entityWithoutDefaultOrSetter.put({prop1}).go();
+                const item = await entityWithoutDefaultOrSetter.get({prop1}).go();
+                const expected = {
+                    prop1,
+                }
+                expect(created.data).to.deep.equal(expected);
+                expect(item.data).to.deep.equal(expected);
+            });
+
+            it('should return an empty object with a Map Attribute when one is updated on the item directly', async () => {
+                const entityWithoutDefaultOrSetter = new Entity({
+                    model: {
+                        entity: 'emptyObjects',
+                        service: 'mapAttributeTests',
+                        version: '1'
+                    },
+                    attributes: {
+                        prop1: {
+                            type: 'string'
+                        },
+                        prop2: {
+                            type: 'map',
+                            properties: {
+                                prop3: {
+                                    type: 'string'
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        record: {
+                            pk: {
+                                field: 'pk',
+                                composite: ['prop1']
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: []
+                            }
+                        }
+                    }
+                }, {table, client});
+                const prop1 = uuid();
+                const expected = {
+                    prop1,
+                    prop2: {}   
+                }
+                const updated = await entityWithoutDefaultOrSetter
+                    .update({prop1})
+                    .data((attr, op) => {
+                        op.set(attr.prop2, {});
+                    })
+                    .go({response: 'all_new'});
+
+                expect(updated.data).to.deep.equal(expected);
+                const updatedItem = await entityWithoutDefaultOrSetter.get({prop1}).go();
+                expect(updatedItem.data).to.deep.equal(expected);
+            });
+            
         });
     })
     describe("conditions and updates", () => {
@@ -714,7 +995,7 @@ describe("Update Item", () => {
 
         it("should conditionally update a map attribute", async () => {
             const composite = {cityId, mallId, storeId, buildingId};
-            const results1 = await StoreLocations.get(composite).go();
+            const results1 = await StoreLocations.get(composite).go().then(res => res.data);
 
             await StoreLocations.update(composite)
                 .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "after1"))
@@ -723,9 +1004,9 @@ describe("Update Item", () => {
                         ? eq(mapAttribute.mapProperty, results1.mapAttribute.mapProperty)
                         : ""
                 })
-                .go();
+                .go().then(res => res.data);
 
-            const results2 = await StoreLocations.get(composite).go();
+            const results2 = await StoreLocations.get(composite).go().then(res => res.data);
 
             expect(results2).to.deep.equal({
                 cityId,
@@ -776,7 +1057,7 @@ describe("Update Item", () => {
 
         it("should conditionally update a list attribute", async () => {
             const composite = {cityId, mallId, storeId, buildingId};
-            const results1 = await StoreLocations.get(composite).go();
+            const results1 = await StoreLocations.get(composite).go().then(res => res.data);
 
             await StoreLocations.update(composite)
                 .data(({rentalAgreement}, {set}) => set(rentalAgreement[0].detail, "no soup for you"))
@@ -785,9 +1066,9 @@ describe("Update Item", () => {
                         ? eq(rentalAgreement[0].detail, results1.rentalAgreement[0].detail)
                         : ""
                 })
-                .go();
+                .go().then(res => res.data);
 
-            const results2 = await StoreLocations.get(composite).go();
+            const results2 = await StoreLocations.get(composite).go().then(res => res.data);
 
             expect(results2).to.deep.equal({
                 cityId,
@@ -888,7 +1169,7 @@ describe("Update Item", () => {
 
             let item1 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item1).to.deep.equal({
                 cityId,
@@ -930,7 +1211,7 @@ describe("Update Item", () => {
 
             let item2 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item2).to.deep.equal({
                 cityId,
@@ -976,11 +1257,11 @@ describe("Update Item", () => {
                 .update({cityId, mallId, storeId, buildingId})
                 // @ts-ignore
                 .remove(['listAttribute[0]'])
-                .go();
+                .go().then(res => res.data);
 
             let item1 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item1).to.deep.equal({
                 cityId,
@@ -1025,7 +1306,7 @@ describe("Update Item", () => {
 
             let item2 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item2).to.deep.equal({
                 cityId,
@@ -1068,11 +1349,11 @@ describe("Update Item", () => {
                 .update({cityId, mallId, storeId, buildingId})
                 // @ts-ignore
                 .add({'listAttribute[1].setAttribute': newSetValue1})
-                .go();
+                .go().then(res => res.data);
 
             let item1 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item1).to.deep.equal({
                 cityId,
@@ -1118,11 +1399,11 @@ describe("Update Item", () => {
                 .data(({listAttribute}, {add}) => {
                     add(listAttribute[1].setAttribute, newSetValue2)
                 })
-                .go();
+                .go().then(res => res.data);
 
             let item2 = await StoreLocations
                 .get({cityId, mallId, storeId, buildingId})
-                .go();
+                .go().then(res => res.data);
 
             expect(item2).to.deep.equal({
                 cityId,
@@ -1390,7 +1671,7 @@ describe("Update Item", () => {
                     op.add(attr.tenant, newTenant);
                     op.add(attr.rent, 100);
                     op.subtract(attr.deposit, 200);
-                    op.remove(attr.leaseEndDate);
+                    op.remove(attr.discount);
                     op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
                     op.delete(attr.tags, ['coffee']);
                     op.del(attr.contact, ['555-345-2222']);
@@ -1401,20 +1682,19 @@ describe("Update Item", () => {
                 .params()
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #leaseEndDate, #gsi2sk ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
                     "#rent": "rent",
                     "#deposit": "deposit",
-                    "#leaseEndDate": "leaseEndDate",
+                    "#discount": "discount",
                     "#rentalAgreement": "rentalAgreement",
                     "#tags": "tags",
                     "#contact": "contact",
                     "#totalFees": "totalFees",
                     "#petFee": "petFee",
                     "#leaseHolders": "leaseHolders",
-                    "#gsi2sk": "gsi2sk",
                     "#buildingId": "buildingId",
                     "#cityId": "cityId",
                     "#mallId": "mallId",
@@ -1492,7 +1772,7 @@ describe("Update Item", () => {
                 views: 99,
                 files: ["index.ts", "package.json"]
             })
-            .go();
+            .go().then(res => res.data);
 
         const updates = {
             prop2: 15,
@@ -1575,9 +1855,9 @@ describe("Update Item", () => {
                 op.add(attr.recentCommits[0].views, updates.recentCommitsViews);
                 op.remove(attr.recentCommits[1].message)
             })
-            .go()
+            .go().then(res => res.data)
 
-        const item = await repositories.get({repoName, repoOwner}).go();
+        const item = await repositories.get({repoName, repoOwner}).go().then(res => res.data);
 
         const expected = {
             "repoOwner": repoOwner,
@@ -1668,7 +1948,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })
-                .go();
+                .go().then(res => res.data);
 
             await repositories
                 .update({repoName, repoOwner})
@@ -1679,7 +1959,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 ...created,
@@ -1727,7 +2007,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })
-                .go();
+                .go().then(res => res.data);
 
             await repositories
                 .update({repoName, repoOwner})
@@ -1741,7 +2021,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 ...created,
@@ -1780,7 +2060,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })
-                .go();
+                .go().then(res => res.data);
 
             await repositories
                 .update({repoName, repoOwner})
@@ -1789,7 +2069,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 ...created,
@@ -1809,7 +2089,8 @@ describe("Update Item", () => {
                 fullName: "tyler walch"
             }).go();
 
-            const itemBefore = await users.get({username}).go({raw: true});
+            const itemBefore = await users.get({username}).go({raw: true})
+                .then(res => res.data);
 
             expect(itemBefore).to.deep.equal({
                 "Item": {
@@ -1868,7 +2149,8 @@ describe("Update Item", () => {
 
             const itemAfter = await users
                 .get({username})
-                .go({raw: true});
+                .go({raw: true})
+                .then(res => res.data);
 
             expect(itemAfter).to.deep.equal({
                 "Item": {
@@ -1954,7 +2236,7 @@ describe("Update Item", () => {
                 fullName: "tyler walch"
             }).go();
 
-            const itemBefore = await users.get({username}).go({raw: true});
+            const itemBefore = await users.get({username}).go({raw: true}).then(res => res.data);
 
             expect(itemBefore).to.deep.equal({
                 "Item": {
@@ -2012,7 +2294,8 @@ describe("Update Item", () => {
 
             const itemAfter = await users
                 .get({username})
-                .go({raw: true});
+                .go({raw: true})
+                .then(res => res.data);
 
             expect(itemAfter).to.deep.equal({
                 "Item": {
@@ -2099,7 +2382,8 @@ describe("Update Item", () => {
                 fullName: "tyler walch"
             }).go();
 
-            const itemBefore = await users.get({username}).go({raw: true});
+            const itemBefore = await users.get({username}).go({raw: true})
+                .then(res => res.data);
 
             expect(itemBefore).to.deep.equal({
                 "Item": {
@@ -2155,16 +2439,29 @@ describe("Update Item", () => {
 
             const removal = ["createdAt"] as any;
 
-            const error = await repositories
+            const removeError = await repositories
                 .update({repoName, repoOwner})
                 .remove(removal)
                 .go()
                 .catch(err => err);
 
-            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(removeError.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+
+            const dataRemoveError = await repositories
+                .update({repoName, repoOwner})
+                .data((attr, op) => {
+                    // @ts-ignore
+                    op.remove(attr.isPrivate);
+                    // @ts-ignore
+                    op.remove(attr.createdAt);
+                })
+                .go()
+                .catch(err => err);
+            expect(dataRemoveError.message).to.not.be.undefined;
+            expect(dataRemoveError.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
         });
 
-        it("should remove properties from an item", async () => {
+        it("should remove properties from an item via the update method", async () => {
             const repoName = uuid();
             const repoOwner = uuid();
             const createdAt = "2021-07-01";
@@ -2208,7 +2505,62 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
+                .go().then(res => res.data);
+
+            expect(item).to.deep.equal({
+                createdAt,
+                repoOwner,
+                repoName,
+                username: repoOwner,
+                isPrivate: false,
+            });
+        });
+
+        it("should remove properties from an item via the patch method", async () => {
+            const repoName = uuid();
+            const repoOwner = uuid();
+            const createdAt = "2021-07-01";
+            await repositories
+                .put({
+                    repoName,
+                    repoOwner,
+                    createdAt,
+                    isPrivate: false,
+                    license: "apache-2.0",
+                    description: "my description",
+                    recentCommits: [
+                        {
+                            sha: "8ca4d4b2",
+                            data: "1627158426",
+                            message: "fixing bug"
+                        },
+                        {
+                            sha: "25d68f54",
+                            data: "1627158100",
+                            message: "adding bug"
+                        }
+                    ],
+                    stars: 10,
+                    defaultBranch: "main",
+                    tags: ["tag1", "tag2"]
+                })
                 .go();
+
+            await repositories
+                .patch({repoName, repoOwner})
+                .remove([
+                    "license",
+                    "description",
+                    "recentCommits",
+                    "stars",
+                    "defaultBranch",
+                    "tags",
+                ])
+                .go();
+
+            const item = await repositories
+                .get({repoName, repoOwner})
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 createdAt,
@@ -2264,7 +2616,7 @@ describe("Update Item", () => {
 
             const item = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(item).to.deep.equal({
                 createdAt,
@@ -2298,7 +2650,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.tags).to.deep.equal(["tag2"]);
         });
@@ -2315,7 +2667,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     tags: ["tag1", "tag2"]
                 })
-                .go();
+                .go().then(res => res.data);
 
             await repositories
                 .update({repoName, repoOwner})
@@ -2324,7 +2676,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.tags).to.deep.equal(["tag2"]);
         });
@@ -2356,7 +2708,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
             expect(repo.stars).to.equal(0);
 
             await repositories
@@ -2366,7 +2718,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(1);
         });
@@ -2392,7 +2744,7 @@ describe("Update Item", () => {
                 })
                 .go();
 
-            const value1 = await repositories.get({repoName, repoOwner}).go();
+            const value1 = await repositories.get({repoName, repoOwner}).go().then(res => res.data);
             if (!value1) {
                 throw new Error("expected value1");
             }
@@ -2402,7 +2754,7 @@ describe("Update Item", () => {
                 })
                 .go();
 
-            const value2 = await repositories.get({repoName, repoOwner}).go();
+            const value2 = await repositories.get({repoName, repoOwner}).go().then(res => res.data);
             if (!value2) {
                 throw new Error("expected value1");
             }
@@ -2423,7 +2775,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(10);
 
@@ -2434,7 +2786,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(15);
         });
@@ -2450,18 +2802,18 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(10);
 
             await repositories
                 .update({repoName, repoOwner})
                 .data(({stars}, {add}) => add(stars, 5))
-                .go();
+                .go().then(res => res.data);
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(15);
         });
@@ -2488,7 +2840,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.tags).to.deep.equal(["tag1", "tag2", "tag3"]);
         });
@@ -2521,7 +2873,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
 
@@ -2532,7 +2884,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(4);
         });
@@ -2549,7 +2901,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
 
@@ -2560,7 +2912,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(2);
         });
@@ -2577,7 +2929,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     defaultBranch: "main",
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
 
@@ -2588,7 +2940,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.stars).to.equal(2);
         });
@@ -2607,7 +2959,7 @@ describe("Update Item", () => {
                     defaultBranch: "main",
                     views: 10
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
 
@@ -2618,7 +2970,7 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.views).to.equal(15);
         });
@@ -2640,7 +2992,7 @@ describe("Update Item", () => {
                     isPrivate: false,
                     views: 10,
                 })
-                .go();
+                .go().then(res => res.data);
 
             expect(repo.stars).to.equal(5);
             expect(repo.views).to.equal(10);
@@ -2687,12 +3039,318 @@ describe("Update Item", () => {
 
             const results = await repositories
                 .get({repoName, repoOwner})
-                .go();
+                .go().then(res => res.data);
 
             expect(results?.views).to.equal(30);
             expect(results?.stars).to.equal(25);
         });
     });
+    describe('update data method value validation', () => {
+        it('update should trigger attribute validation functions', () => {
+            const counter = {
+                cityId: 0,
+                mallId: 0,
+                storeId: 0,
+                buildingId: 0,
+                unitId: 0,
+                category: 0,
+                leaseEndDate: 0,
+                rent: 0,
+                discount: 0,
+                tenant: 0,
+                deposit: 0,
+                rentalAgreement: 0,
+                rentalAgreementChildren: {
+                    type: 0,
+                    detail: 0,
+                },
+                tags: 0,
+                contact: 0,
+                leaseHolders: 0,
+                petFee: 0,
+                totalFees: 0,
+                listAttribute: 0,
+                listAttributeChildren: {
+                    setAttribute: 0,
+                },
+                mapAttribute: 0,
+                mapAttributeChildren: {
+                    mapProperty: 0,
+                }
+            }
+            const StoreLocations = new Entity({
+                model: {
+                    service: "MallStoreDirectory",
+                    entity: "MallStore",
+                    version: "1",
+                },
+                attributes: {
+                    cityId: {
+                        validate: () => {
+                          counter.cityId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    mallId: {
+                        validate: () => {
+                          counter.mallId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    storeId: {
+                        validate: () => {
+                          counter.storeId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    buildingId: {
+                        validate: () => {
+                          counter.buildingId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    unitId: {
+                        validate: () => {
+                          counter.unitId++;
+                        },
+                        type: "string",
+                        required: true,
+                    },
+                    category: {
+                        validate: () => {
+                          counter.category++;
+                        },
+                        type: [
+                            "spite store",
+                            "food/coffee",
+                            "food/meal",
+                            "clothing",
+                            "electronics",
+                            "department",
+                            "misc"
+                        ],
+                        required: true
+                    },
+                    leaseEndDate: {
+                        validate: () => {
+                          counter.leaseEndDate++;
+                        },
+                        type: "string",
+                        required: true
+                    },
+                    rent: {
+                        validate: () => {
+                          counter.rent++;
+                        },
+                        type: "number",
+                        required: true,
+                    },
+                    discount: {
+                        validate: () => {
+                          counter.discount++;
+                        },
+                        type: "number",
+                        required: false,
+                        default: 0,
+                    },
+                    tenant: {
+                        validate: () => {
+                          counter.tenant++;
+                        },
+                        type: "set",
+                        items: "string"
+                    },
+                    deposit: {
+                        validate: () => {
+                          counter.deposit++;
+                        },
+                        type: "number"
+                    },
+                    rentalAgreement: {
+                        validate: () => {
+                          counter.rentalAgreement++;
+                        },
+                        type: "list",
+                        items: {
+                            type: "map",
+                            properties: {
+                                type: {
+                                    validate: () => {
+                                      counter.rentalAgreementChildren.type++;
+                                    },
+                                    type: "string",
+                                    required: true
+                                },
+                                detail: {
+                                    validate: () => {
+                                      counter.rentalAgreementChildren.detail++;
+                                    },
+                                    type: "string",
+                                    required: true
+                                }
+                            }
+                        }
+                    },
+                    tags: {
+                        validate: () => {
+                          counter.tags++;
+                        },
+                        type: "set",
+                        items: "string"
+                    },
+                    contact: {
+                        validate: () => {
+                          counter.contact++;
+                        },
+                        type: "set",
+                        items: "string"
+                    },
+                    leaseHolders: {
+                        validate: () => {
+                          counter.leaseHolders++;
+                        },
+                        type: "set",
+                        items: "string",
+                    },
+                    petFee: {
+                        validate: () => {
+                          counter.petFee++;
+                        },
+                        type: "number"
+                    },
+                    totalFees: {
+                        validate: () => {
+                          counter.totalFees++;
+                        },
+                        type: "number"
+                    },
+                    listAttribute: {
+                        validate: () => {
+                          counter.listAttribute++;
+                        },
+                        type: "list",
+                        items: {
+                            type: "map",
+                            properties: {
+                                setAttribute: {
+                                    validate: () => {
+                                        counter.listAttributeChildren.setAttribute++
+                                    },
+                                    type: "set",
+                                    items: "string"
+                                }
+                            }
+                        }
+                    },
+                    mapAttribute: {
+                        validate: () => {
+                          counter.mapAttribute++;
+                        },
+                        type: "map",
+                        properties: {
+                            mapProperty: {
+                                validate: () => {
+                                    counter.mapAttributeChildren.mapProperty++;
+                                },
+                                type: "string"
+                            }
+                        }
+                    }
+                },
+                indexes: {
+                    stores: {
+                        pk: {
+                            field: "pk",
+                            composite: ["cityId", "mallId"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["buildingId", "storeId"]
+                        }
+                    },
+                    units: {
+                        index: "gis1pk-gsi1sk-index",
+                        pk: {
+                            field: "gis1pk",
+                            composite: ["mallId"]
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["buildingId", "unitId"]
+                        }
+                    },
+                    leases: {
+                        index: "gis2pk-gsi2sk-index",
+                        pk: {
+                            field: "gis2pk",
+                            composite: ["storeId"]
+                        },
+                        sk: {
+                            field: "gsi2sk",
+                            composite: ["leaseEndDate"]
+                        }
+                    }
+                }
+            }, {table, client});
+            const cityId = uuid();
+            const mallId = "EastPointe";
+            const storeId = "LatteLarrys";
+            const buildingId= "A34";
+            StoreLocations.update({cityId, mallId, storeId, buildingId})
+                .data((attr, op) => {
+                    const newTenant = op.value(attr.tenant, ["larry"]);
+                    op.set(attr.category, "food/meal");
+                    op.add(attr.tenant, newTenant);
+                    op.add(attr.rent, 100);
+                    op.subtract(attr.deposit, 200);
+                    op.remove(attr.discount);
+                    op.append(attr.rentalAgreement, [{type: "ammendment", detail: "no soup for you"}]);
+                    op.delete(attr.tags, ['coffee']);
+                    op.del(attr.contact, ['555-345-2222']);
+                    op.add(attr.totalFees, 2);
+                    op.add(attr.leaseHolders, newTenant);
+                    op.set(attr.mapAttribute.mapProperty, 'mapPropertyValue');
+                })
+                .where((attr, op) => op.eq(attr.category, "food/coffee"))
+                .params();
+
+            expect(counter).to.deep.equal({
+                cityId: 0, // keys not validated
+                mallId: 0, // keys not validated
+                storeId: 0, // keys not validated
+                buildingId: 0, // keys not validated
+                unitId: 0,
+                category: 1,
+                leaseEndDate: 0,
+                rent: 1,
+                discount: 0, // deletes do not invoke `validate`
+                tenant: 1,
+                deposit: 1,
+                rentalAgreement: 1,
+                rentalAgreementChildren: {
+                    type: 1,
+                    detail: 1,
+                },
+                tags: 1,
+                contact: 1,
+                leaseHolders: 0, // use of `name()` op kicks electro out of validation flow
+                petFee: 0,
+                totalFees: 1,
+                listAttribute: 0,
+                listAttributeChildren: {
+                    setAttribute: 0,
+                },
+                mapAttribute: 0,
+                mapAttributeChildren: {
+                    mapProperty: 1,
+                }
+            });
+        });
+    })
     describe("string regex validation", () => {
         const entity = new Entity({
             model: {
@@ -2785,7 +3443,6 @@ describe("Update Item", () => {
             const stringVal = `abc${uuid()}`;
             const nestedList = ["def"];
             const error = await entity.update({stringVal}).set({map: {nestedList}}).go({originalErr: true}).then(() => false).catch(err => err.message);
-            console.log(error)
             expect(error).to.be.string('Invalid value for attribute "map.nestedList[*]"');
         });
     });
@@ -2801,7 +3458,9 @@ describe("Update Item", () => {
                 prop1: {
                     type: 'string'
                 },
-                prop2: createCustomAttribute<{strProp: string; numProp: number; maybeProp?: string}>(),
+                prop2: {
+                    type: CustomAttributeType<{strProp: string; numProp: number; maybeProp?: string}>('any')
+                },
             },
             indexes: {
                 record: {
@@ -2822,12 +3481,12 @@ describe("Update Item", () => {
         const strProp = 'value1';
         await entity.put({prop1, prop2: {numProp, strProp}}).go();
         const getVal = await entity.get({prop1}).go();
-        expect(getVal).to.deep.equal({prop1, prop2: {numProp, strProp}});
+        expect(getVal.data).to.deep.equal({prop1, prop2: {numProp, strProp}});
         const updated = await entity.update({prop1}).data((attr, op) => {
             op.add(attr.prop2.numProp, numProp);
             op.set(attr.prop2.strProp, 'value2');
         }).go({response: 'all_new'});
-        expect(updated.prop2).to.deep.equal({
+        expect(updated.data.prop2).to.deep.equal({
             numProp: 20,
             strProp: 'value2',
         });
@@ -2874,7 +3533,7 @@ describe("Update Item", () => {
                 prop2: [STRING_VAL],
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: [STRING_VAL],
             });
@@ -2914,7 +3573,7 @@ describe("Update Item", () => {
                 prop2: [NUM_VAL],
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: [NUM_VAL],
             });
@@ -2961,7 +3620,7 @@ describe("Update Item", () => {
                 },
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: {
                     nested: [STRING_VAL],
@@ -3010,12 +3669,126 @@ describe("Update Item", () => {
                 },
             }).go();
             const result = await entity.get({prop1}).go();
-            expect(result).to.deep.equal({
+            expect(result.data).to.deep.equal({
                 prop1,
                 prop2: {
                     nested: [NUM_VAL],
                 },
             });   
+        });
+    });
+
+    describe('custom types', () => {
+        it('should allow custom opaque ids', async () => {
+            const UniqueKeySymbol: unique symbol = Symbol();
+            type EmployeeID = string & {[UniqueKeySymbol]: any};
+
+            const UniqueAgeSymbol: unique symbol = Symbol();
+            type Month = number & {[UniqueAgeSymbol]: any};
+
+            const createNewKey = (): EmployeeID => {
+                return uuid() as EmployeeID;
+            }
+
+            const createMonth = (months: number): Month => {
+                return months as Month;
+            }
+
+            const person = new Entity({
+                model: {
+                    entity: 'personnel',
+                    service: 'workplace',
+                    version: '1'
+                },
+                attributes: {
+                    employeeId: {
+                        type: CustomAttributeType<EmployeeID>('string')
+                    },
+                    firstName: {
+                        type: 'string',
+                        required: true,
+                    },
+                    lastName: {
+                        type: 'string',
+                        required: true,
+                    },
+                    ageInMonths: {
+                        type: CustomAttributeType<Month>('number')
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['employeeId']
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            }, { table, client });
+            const employeeId = createNewKey();
+            const item = {
+                employeeId,
+                firstName: 'tyler',
+                lastName: 'walch',
+                ageInMonths: createMonth(400),
+            }
+            await person.create(item).go();
+            const record = await person.get({employeeId}).go();
+            expect(record.data).to.deep.equal(item);
+        });
+
+        it('should allow for complex unions', async () => {
+            type PersonnelRole = {
+                type: 'employee';
+                startDate: number;
+                endDate?: number;
+            } | {
+                type: 'contractor';
+                contractStartDate: number;
+                contractEndDate: number;
+            };
+
+            const person = new Entity({
+                model: {
+                    entity: 'personnel',
+                    service: 'workplace',
+                    version: '1'
+                },
+                attributes: {
+                    id: {
+                        type: 'string'
+                    },
+                    role: {
+                        type: CustomAttributeType<PersonnelRole>('any'),
+                        required: true,
+                    },
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['id']
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            }, { table, client });
+            const id = uuid();
+            const role: PersonnelRole = {
+                type: 'employee',
+                startDate: Date.now() - (1000 * 60 * 60 * 24 * 365 * 2)
+            };
+            const item = { id, role };
+            await person.create(item).go();
+            const record = await person.get({id}).go();
+            expect(record.data).to.deep.equal(item);
         });
     });
 });

@@ -1,5 +1,6 @@
 /* istanbul ignore file */
-const DynamoDB = require("aws-sdk/clients/dynamodb");
+import DynamoDB from "aws-sdk/clients/dynamodb";
+process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 
 /**
  * It is recomended that you use the dynamodb-local docker image for this example. For more
@@ -9,11 +10,11 @@ const DynamoDB = require("aws-sdk/clients/dynamodb");
  * to match your account. This includes *removing* the `endpoint` property, which is used
  * when connecting to the local docker dynamo instance described above.
  **/
-const configuration = {
-  endpoint: "http://localhost:8000", 
-  region: "us-east-1"
+
+export const configuration = {
+    endpoint: "http://localhost:8000",
+    region: "us-east-1"
 };
 
-const client = new DynamoDB.DocumentClient(configuration);
-
-module.exports = client;
+export const client = new DynamoDB.DocumentClient(configuration);
+export const dynamodb = new DynamoDB(configuration);

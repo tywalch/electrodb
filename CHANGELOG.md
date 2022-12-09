@@ -210,7 +210,83 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Sort keys for queries will now match on equality when all sort key composite attributes are provided in full. Prior to this release, ElectroDB would use `begins_with(...)` which could potentially result in data leakages if a sort key's value was the starting prefix to another sort key value. [[read more](./README.md#begins-with-queries)]
 
-## [1.12.0] = 2022-08-11
+## [1.12.0] - 2022-08-11
 ### Added
 - Added support for attribute types "enum string set" and "enum number set". This will allow users to defined a finite list of values (strings or numbers ) supported for a set [[read more](./README#set-attributes)]
-- TypeScript support for "Custom Attributes", bring your own types to express complex attributes [[read more](https://github.com/tywalch/electrodb#custom-attributes)].
+- TypeScript support for "Custom Attributes", bring your own types to express complex attributes. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
+
+## [2.0.0] - 2022-09-19 [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#version-2-migration)]
+### Added
+- Additional exported exported types to match new response structures. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
+### Changed
+- Changing response structure on all methods to be an object with query results on a `data` property. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#version-2-migration)]
+- Pagination is now performed via the `.go()` terminal method, and the LastEvaluatedKey is now returned a string `cursor`.  [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#cursor-pagination)]
+- The `go()` terminal method now only queries one page by default. To auto-page (to match functionality prior to this change), pass the query option `pages` with a value of `'all'`. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#unified-pagination-apis)]
+### Deprecated
+- The boolean query option `raw` and `returnKeys` have been deprecated (still accepted for the time being) and replaced with the query option `data`, which accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`.
+### Removed
+- `.page()` terminal method. All pagination is now done through the `.go()` method. Queries and scans now return a `cursor` property (of type "string") to be passed on subsequent pagination requests. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#unified-pagination-apis)]
+
+## [2.1.0] - 2022-10-02
+### Added
+- Added a new attribute property `padding` to aid with zero padding patterns. [[read more](#attribute-definition)]
+
+## [2.1.1] - 2022-10-09
+### Fixed
+- Defect with sort key composition that would treat falsely values as absent attributes.
+
+## [2.1.2] - 2022-10-16
+### Added
+- Now exporting `ElectroValidationError` and `ElectroError` as classes so they can be more easily interrogated/triaged by user error handling.
+### Fixed
+- On `update` and `patch` operations, the `data` method did not properly apply mutation constraints for `required` and `readOnly`. Data will now correctly throw in a similar manor the to individual mutation methods.
+
+## [2.2.0] - 2022-10-31
+### Added
+- A BIG addition to the library: Clustered Indexes. Clustered indexes allow for Collections to be composed of more similar, homogenous data.
+- The addition of new Entity and Service methods: `setTableName`, `getTableName`, `setClient`, `getClient`.
+
+## [2.2.1] - 2022-11-02
+### Fixed
+- Addressed github issue #144, root map attributes would set an empty object regardless if the user supplied it.
+
+## [2.2.2] - 2022-11-04
+### Added
+- (since rolled back) ~The return type from an update/patch call now returns an Entity item when `all_new` or `all_old` response options are passed~
+
+## [2.2.3] - 2022-11-05
+### Removed
+- Backed out the response typing change added in `2.2.2`. The type of a record coming back from an update is more complex than one might expect. Because update operations can result in a record insert, the response type is not necessarily a TableItem. I am backing out this change for now until I can be be more sure of an appropriate typing.
+### Added
+- New function to help with Custom Types: CustomAttributeType. This replaces `createCustomAttribute` (now depreciated) because of the unfortunate widening caused by the initial implementation. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes))]
+### Deprecated
+- The function `createCustomAttribute` is now deprecated. The function still operates as it did, though any changes related to Custom Attribute types will see development focused on `CustomAttributeType` rather than this function.
+
+## [2.2.4] - 2022-11-06
+### Fixed
+- Addressed issue#162: attribute validation functions were not invoked when updating through the `data` method.
+- Conditional filters can now be added to `get` operations. DynamoDB `get` does not allow for filtering but the TransactWrite/TransactGet methods allow for `ConditionCheck` which is essentially `get` + `conditions`.
+
+## [2.2.5] - 2022-11-09
+### Fixed
+- Addressed [issue#172](https://github.com/tywalch/electrodb/issues/172), where clause mishandling of nested attribute references
+
+## [2.2.6] - 2022-11-10
+### Fixed
+- Addressed issue where scans would incorrectly accumulate filters across usages
+
+## [2.3.0] - 2022-11-22
+### Added
+- Adding new update method: `upsert`. Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.
+
+## [2.3.1] - 2022-11-23
+### Fixed
+- Address issue#179, the query option `table` was not correctly propagated, resulting a failure for that declared the table name was "missing"
+
+## [2.3.2] - 2022-11-23
+### Fixed
+- Upsert method would silently disregard `where` clause usage, and would not add condition expression to parameters.
+
+## [2.3.3] - 2022-11-28
+### Fixed
+- Issue #182: Addressed inconsistency with `remove` and `delete` functionality between `update` and `patch` methods.

@@ -64,6 +64,18 @@ const Attribute = {
 			type: "any",
 			format: "isFunction",
 		},
+		padding: {
+			type: "object",
+			required: ['length', 'char'],
+			properties: {
+				length: {
+					type: 'number'
+				},
+				char: {
+					type: 'string',
+				}
+			}
+		}
 	},
 };
 
@@ -142,6 +154,11 @@ const Index = {
 		},
 		collection: {
 			type: ["array", "string"]
+		},
+		type: {
+			type: 'string',
+			enum: ['clustered', 'isolated'],
+			required: false,
 		}
 	},
 };

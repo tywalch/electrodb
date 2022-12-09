@@ -18,6 +18,7 @@ const QueryTypes = {
 	begins: "begins",
 	between: "between",
 	collection: "collection",
+	clustered_collection: 'clustered_collection',
 	is: "is"
 };
 
@@ -29,18 +30,84 @@ const MethodTypes = {
 	update: "update",
 	delete: "delete",
 	remove: "remove",
-	scan: "scan",
 	patch: "patch",
 	create: "create",
 	batchGet: "batchGet",
-	batchWrite: "batchWrite"
+	batchWrite: "batchWrite",
+	upsert: "upsert",
 };
 
+const MethodTypeTranslation = {
+	put: "put",
+	get: "get",
+	query: "query",
+	scan: "scan",
+	update: "update",
+	delete: "delete",
+	remove: "delete",
+	patch: "update",
+	create: "put",
+	batchGet: "batchGet",
+	batchWrite: "batchWrite",
+	upsert: "update",
+}
+
+const IndexTypes = {
+	isolated: 'isolated',
+	clustered: 'clustered',
+}
+
 const Comparisons = {
-	gte: ">=",
-	gt: ">",
-	lte: "<=",
+	lte: '<=',
 	lt: "<",
+	gte: ">=",
+	gt: '>'
+}
+
+const PartialComparisons = {
+	lt: "<",
+	gte: ">=",
+
+	/**
+	 * gt becomes gte and last character of incoming value is shifted up one character code
+	 * example:
+	 * sk > '2020-09-05'
+	 *   expected
+	 *     - 2020-09-06@05:05_hero
+	 *     - 2020-10-05@05:05_hero
+	 *     - 2022-02-05@05:05_villian
+	 *     - 2022-06-05@05:05_clown
+	 *     - 2022-09-06@05:05_clown
+	 *   actual (bad - includes all 2020-09-05 records)
+	 *     - 2020-09-05@05:05_hero
+	 *     - 2020-09-06@05:05_hero
+	 *     - 2020-10-05@05:05_hero
+	 *     - 2022-02-05@05:05_villian
+	 *     - 2022-06-05@05:05_clown
+	 */
+	gt: ">=",
+
+	/**
+	 * lte becomes lt and last character of incoming value is shifted up one character code
+	 * example:
+	 * sk >= '2020-09-05'
+	 *   expected
+	 *     - 2012-02-05@05:05_clown
+	 *     - 2015-10-05@05:05_hero
+	 *     - 2017-02-05@05:05_clown
+	 *     - 2017-02-05@05:05_villian
+	 *     - 2020-02-05@05:05_clown
+	 *     - 2020-02-25@05:05_clown
+	 *     - 2020-09-05@05:05_hero
+	 *   actual (bad - missing all 2020-09-05 records)
+	 *     - 2012-02-05@05:05_clown
+	 *     - 2015-10-05@05:05_hero
+	 *     - 2017-02-05@05:05_clown
+	 *     - 2017-02-05@05:05_villian
+	 *     - 2020-02-05@05:05_clown
+	 *     - 2020-02-25@05:05_clown
+	 */
+	lte: "<",
 };
 
 const CastTypes = ["string", "number"];
@@ -110,7 +177,8 @@ const AttributeMutationMethods = {
 const Pager = {
 	raw: "raw",
 	named: "named",
-	item: "item"
+	item: "item",
+	cursor: "cursor"
 }
 
 const UnprocessedTypes = {
@@ -194,12 +262,22 @@ const TerminalOperation = {
 	page: 'page',
 }
 
+const AllPages = 'all';
+
+const ResultOrderOption = {
+	'asc': true,
+	'desc': false
+};
+
+const ResultOrderParam = 'ScanIndexForward';
+
 module.exports = {
 	Pager,
 	KeyTypes,
 	CastTypes,
 	KeyCasing,
 	PathTypes,
+	IndexTypes,
 	QueryTypes,
 	ValueTypes,
 	TableIndex,
@@ -219,9 +297,14 @@ module.exports = {
 	UnprocessedTypes,
 	AttributeWildCard,
 	TerminalOperation,
+	PartialComparisons,
 	FormatToReturnValues,
 	AttributeProxySymbol,
 	ElectroInstanceTypes,
+	MethodTypeTranslation,
 	EventSubscriptionTypes,
-	AttributeMutationMethods
+	AttributeMutationMethods,
+	AllPages,
+	ResultOrderOption,
+	ResultOrderParam,
 };

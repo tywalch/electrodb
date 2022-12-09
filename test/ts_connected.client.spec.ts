@@ -72,7 +72,7 @@ describe('dynamodb sdk client compatibility', () => {
                 const results = await entity.get({
                     prop1,
                     prop2,
-                }).go();
+                }).go().then(res => res.data);
 
                 expect(results).to.be.null;
             });
@@ -85,7 +85,8 @@ describe('dynamodb sdk client compatibility', () => {
                     prop1,
                     prop2,
                     prop3,
-                }).go({response: 'all_old'});
+                }).go({response: 'all_old'})
+                    .then(res => res.data);
 
                 expect(results).to.be.null;
             });
@@ -98,7 +99,7 @@ describe('dynamodb sdk client compatibility', () => {
                     .set({
                         prop3,
                     })
-                    .go({response: 'all_new'});
+                    .go({response: 'all_new'}).then(res => res.data);
 
                 expect(results).to.deep.equal({
                     prop1,
@@ -113,7 +114,7 @@ describe('dynamodb sdk client compatibility', () => {
                 const results = await entity.delete({
                     prop1,
                     prop2,
-                }).go({response: 'all_old'});
+                }).go({response: 'all_old'}).then(res => res.data);
 
                 expect(results).to.be.null;
             });
@@ -148,14 +149,14 @@ describe('dynamodb sdk client compatibility', () => {
             });
 
             it('should create valid params for the scan method', async () => {
-                const results = await entity.scan.go();
+                const results = await entity.scan.go().then(res => res.data);
                 expect(results).to.be.an('array');
             });
 
             it('should create valid params for the query method', async () => {
                 const prop1 = uuid();
                 const prop2 = uuid();
-                const results = await entity.query.record({prop1, prop2}).go();
+                const results = await entity.query.record({prop1, prop2}).go().then(res => res.data);
                 expect(results).to.be.an('array');
             });
         });
@@ -169,8 +170,8 @@ describe('dynamodb sdk client compatibility', () => {
                 const putRecord = await entity.put({prop1, prop2, prop3}).go();
                 const getRecord = await entity.get({prop1, prop2}).go();
                 if (getRecord) {
-                    expect(getRecord.prop3).to.be.an('array').with.length(1);
-                    expect(putRecord.prop3).to.deep.equal(prop3);
+                    expect(getRecord.data?.prop3).to.be.an('array').with.length(1);
+                    expect(putRecord.data.prop3).to.deep.equal(prop3);
                 }
             });
 
@@ -248,8 +249,8 @@ describe('dynamodb sdk client compatibility', () => {
                 const updateRecord = await entity.update({prop1, prop2}).add({
                     prop3: prop3Addition
                 }).go({response: 'all_new'});
-                expect(updateRecord.prop3).to.be.an('array').with.length(2);
-                expect(updateRecord.prop3).to.include.members([...prop3Addition, ...prop3]);
+                expect(updateRecord.data.prop3).to.be.an('array').with.length(2);
+                expect(updateRecord.data.prop3).to.include.members([...prop3Addition, ...prop3]);
             });
 
             it('should remove an element from an existing set', async () => {
@@ -261,8 +262,8 @@ describe('dynamodb sdk client compatibility', () => {
                 const updateRecord = await entity.update({prop1, prop2}).delete({
                     prop3: [prop3[0]]
                 }).go({response: 'all_new'});
-                expect(updateRecord.prop3).to.be.an('array').with.length(1);
-                expect(updateRecord.prop3).to.deep.equal([prop3[1]]);
+                expect(updateRecord.data.prop3).to.be.an('array').with.length(1);
+                expect(updateRecord.data.prop3).to.deep.equal([prop3[1]]);
             });
         });
     }

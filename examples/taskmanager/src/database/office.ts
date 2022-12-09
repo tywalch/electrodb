@@ -1,9 +1,12 @@
 /* istanbul ignore file */
-const schema = {
+import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../../";
+import { table, client } from '../config';
+
+export const office = new Entity({
 	"model": {
-		"entity": "offices",
+		"entity": "office",
 		"version": "1",
-		"service": "taskapp"
+		"service": "taskmanager"
 	},
 	"attributes": {
 		"office": {
@@ -49,6 +52,8 @@ const schema = {
 			}
 		}
 	}
-} as const;
+}, { table, client });
 
-export default schema;
+export type OfficeItem = EntityItem<typeof office>;
+export type CreateOfficeItem = CreateEntityItem<typeof office>;
+export type OfficeQueryResponse = QueryResponse<typeof office>;

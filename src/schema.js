@@ -1,4 +1,4 @@
-const { CastTypes, ValueTypes, KeyCasing, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes } = require("./types");
+const { CastTypes, ValueTypes, KeyCasing, AttributeTypes, AttributeMutationMethods, AttributeWildCard, PathTypes, TableIndex, ItemOperations } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [AttributeTypes.string, AttributeTypes.number, AttributeTypes.boolean, AttributeTypes.enum];
 const e = require("./errors");
@@ -100,6 +100,9 @@ class Attribute {
 		this.isKeyField = !!definition.isKeyField;
 		this.unformat = this._makeDestructureKey(definition);
 		this.format = this._makeStructureKey(definition);
+		this.padding = definition.padding;
+		this.applyFixings = this._makeApplyFixings(definition);
+		this.applyPadding = this._makePadding(definition);
 		this.indexes = [...(definition.indexes || [])];
 		let {isWatched, isWatcher, watchedBy, watching, watchAll} = Attribute._destructureWatcher(definition);
 		this._isWatched = isWatched
@@ -233,29 +236,72 @@ class Attribute {
 		return set || ((attr) => attr);
 	}
 
-	_makeStructureKey({prefix = "", postfix = "", casing= KeyCasing.none} = {}) {
-		return (key) => {
-			let value = key;
-			if (this.type === AttributeTypes.string && v.isStringHasLength(key)) {
-				value = `${prefix}${key}${postfix}`;
+	_makeApplyFixings({ prefix = "", postfix = "", casing= KeyCasing.none } = {}) {
+		return (value) => {
+			if ([AttributeTypes.string, AttributeTypes.enum].includes(this.type)) {
+				value = `${prefix}${value}${postfix}`;
 			}
+
 			return u.formatAttributeCasing(value, casing);
 		}
 	}
 
-	_makeDestructureKey({prefix = "", postfix = "", casing= KeyCasing.none} = {}) {
+	_makeStructureKey() {
+		return (key) => {
+			return this.applyPadding(key);
+		}
+	}
+
+	_isPaddingEligible(padding = {} ) {
+		return !!padding && padding.length && v.isStringHasLength(padding.char);
+	}
+
+	_makePadding({ padding = {} }) {
+		return (value) => {
+			if (typeof value !== 'string') {
+				return value;
+			} else if (this._isPaddingEligible(padding)) {
+				return u.addPadding({padding, value});
+			} else {
+				return value;
+			}
+		}
+	}
+
+	_makeRemoveFixings({prefix = "", postfix = "", casing= KeyCasing.none} = {}) {
 		return (key) => {
 			let value = "";
 			if (![AttributeTypes.string, AttributeTypes.enum].includes(this.type) || typeof key !== "string") {
-				return key;
-			} else if (key.length > prefix.length) {
+				value = key;
+			} else if (prefix.length > 0 && key.length > prefix.length) {
 				for (let i = prefix.length; i < key.length - postfix.length; i++) {
 					value += key[i];
 				}
 			} else {
 				value = key;
 			}
-			return u.formatAttributeCasing(value, casing);
+
+			return value;
+		}
+	}
+
+	_makeDestructureKey({prefix = "", postfix = "", casing= KeyCasing.none, padding = {}} = {}) {
+		return (key) => {
+			let value = "";
+			if (![AttributeTypes.string, AttributeTypes.enum].includes(this.type) || typeof key !== "string") {
+				return key;
+			} else if (key.length > prefix.length) {
+				value = u.removeFixings({prefix, postfix, value: key});
+			} else {
+				value = key;
+			}
+
+			// todo: if an attribute is also used as a pk or sk directly in one index, but a composite in another, then padding is going to be broken
+			// if (padding && padding.length) {
+			// 	value = u.removePadding({padding, value});
+			// }
+
+			return value;
 		};
 	}
 
@@ -478,15 +524,22 @@ class MapAttribute extends Attribute {
 			traverser: this.traverser
 		});
 		this.properties = properties;
+		this.isRoot = !!definition.isRoot;
 		this.get = this._makeGet(definition.get, properties);
 		this.set = this._makeSet(definition.set, properties);
 	}
 
 	_makeGet(get, properties) {
 		this._checkGetSet(get, "get");
-
-		const getter = get || ((attr) => attr);
-
+		const getter = get || ((val) => {
+			const isEmpty = !val || Object.keys(val).length === 0;
+			const isNotRequired = !this.required;
+			const isRoot = this.isRoot;
+			if (isEmpty && isRoot && !isNotRequired) {
+				return undefined;
+			}
+			return val;
+		});
 		return (values, siblings) => {
 			const data = {};
 
@@ -495,6 +548,9 @@ class MapAttribute extends Attribute {
 			}
 
 			if (values === undefined) {
+				if (!get) {
+					return undefined;
+				}
 				return getter(data, siblings);
 			}
 
@@ -515,11 +571,23 @@ class MapAttribute extends Attribute {
 
 	_makeSet(set, properties) {
 		this._checkGetSet(set, "set");
-		const setter = set || ((attr) => attr);
+		const setter = set || ((val) => {
+			const isEmpty = !val || Object.keys(val).length === 0;
+			const isNotRequired = !this.required;
+			const isRoot = this.isRoot;
+			if (isEmpty && isRoot && !isNotRequired) {
+				return undefined;
+			}
+			return val;
+		});
+
 		return (values, siblings) => {
 			const data = {};
 			if (values === undefined) {
-				return setter(data, siblings);
+				if (!set) {
+					return undefined;
+				}
+				return setter(values, siblings);
 			}
 			for (const name of Object.keys(properties.attributes)) {
 				const attribute = properties.attributes[name];
@@ -578,17 +646,17 @@ class MapAttribute extends Attribute {
 	}
 
 	val(value) {
-		const getValue = (v) => {
-			v = this.cast(v);
-			if (v === undefined) {
-				v = this.default();
+		const incomingIsEmpty = value === undefined;
+		let fromDefault = false;
+		let data;
+		if (value === undefined) {
+			data = this.default();
+			if (data !== undefined) {
+				fromDefault = true;
 			}
-			return v;
+		} else {
+			data = value;
 		}
-
-		let data = value === undefined
-			? getValue(value)
-			: value;
 
 		const valueType = getValueType(data);
 
@@ -606,6 +674,10 @@ class MapAttribute extends Attribute {
 			if (results !== undefined) {
 				response[name] = results;
 			}
+		}
+
+		if (Object.keys(response).length === 0 && !fromDefault && this.isRoot && !this.required && incomingIsEmpty) {
+			return undefined;
 		}
 
 		return response;
@@ -913,9 +985,9 @@ class SetAttribute extends Attribute {
 }
 
 class Schema {
-	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client, parent} = {}) {
+	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client, parent, isRoot} = {}) {
 		this._validateProperties(properties, parent);
-		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client, parent});
+		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client, parent, isRoot});
 		this.client = client;
 		this.attributes = schema.attributes;
 		this.enums = schema.enums;
@@ -926,9 +998,10 @@ class Schema {
 		this.requiredAttributes = schema.requiredAttributes;
 		this.translationForWatching = this._formatWatchTranslations(this.attributes);
 		this.traverser = traverser;
+		this.isRoot = !!isRoot;
 	}
 
-	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client, parent} = {}) {
+	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client, parent, isRoot} = {}) {
 		const attributeHasParent = !!parent;
 		let invalidProperties = [];
 		let normalized = {};
@@ -958,7 +1031,7 @@ class Schema {
 					let definition = facets.byField[field][indexName];
 					if (definition.facets.length > 1) {
 						throw new e.ElectroError(
-							e.ErrorCodes.InvalidIndexCompositeWithAttributeName,
+							e.ErrorCodes.InvalidIndexWithAttributeName,
 							`Invalid definition for "${definition.type}" field on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore is not allowed to contain composite references to other attributes. Please either change the field name of the attribute, or redefine the index to use only the single attribute "${definition.field}".`
 						)
 					}
@@ -1005,10 +1078,19 @@ class Schema {
 							`Invalid use of a collection on index "${u.formatIndexNameForDisplay(indexName)}". The ${definition.type} field "${definition.field}" shares a field name with an attribute defined on the Entity, and therefore the index is not allowed to participate in a Collection. Please either change the field name of the attribute, or remove all collection(s) from the index.`
 						)
 					}
+
+					if (definition.field === field) {
+						if (attribute.padding !== undefined) {
+							throw new e.ElectroError(
+								e.ErrorCodes.InvalidAttributeDefinition,
+								`Invalid padding definition for the attribute "${name}". Padding is not currently supported for attributes that are also defined as table indexes.`
+							);
+						}
+					}
 				}
 			}
 
-			let isKey = !!facets.byIndex && facets.byIndex[""].all.find((facet) => facet.name === name);
+			let isKey = !!facets.byIndex && facets.byIndex[TableIndex].all.find((facet) => facet.name === name);
 			let definition = {
 				name,
 				field,
@@ -1018,6 +1100,7 @@ class Schema {
 				postfix,
 				traverser,
 				isKeyField,
+				isRoot: !!isRoot,
 				label: attribute.label,
 				required: !!attribute.required,
 				default: attribute.default,
@@ -1033,6 +1116,7 @@ class Schema {
 				properties: attribute.properties,
 				parentPath: attribute.parentPath,
 				parentType: attribute.parentType,
+				padding: attribute.padding,
 			};
 
 			if (definition.type === AttributeTypes.custom) {
@@ -1319,6 +1403,18 @@ class Schema {
 		return paths;
 	}
 
+	checkOperation(attribute, operation, value) {
+		if (attribute.required && operation === ItemOperations.remove) {
+			throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Required and cannot be removed`);
+		} else if (attribute.readOnly) {
+			throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Read-Only and cannot be updated`);
+		}
+
+		return value === undefined
+			? undefined
+			: attribute.getValidate(value);
+	}
+
 	checkUpdate(payload = {}) {
 		let record = {};
 		for (let [path, attribute] of this.traverser.getAll()) {
@@ -1370,10 +1466,19 @@ function createCustomAttribute(definition = {}) {
 	};
 }
 
+function CustomAttributeType(base) {
+	const supported = ['string', 'number', 'boolean', 'any'];
+	if (!supported.includes(base)) {
+		throw new Error(`OpaquePrimitiveType only supports base types: ${u.commaSeparatedString(supported)}`);
+	}
+	return base;
+}
+
 module.exports = {
 	Schema,
 	Attribute,
 	SetAttribute,
 	CastTypes,
+	CustomAttributeType,
 	createCustomAttribute,
 };
