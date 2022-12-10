@@ -8,8 +8,6 @@
 [![Sponsors](https://img.shields.io/github/sponsors/tywalch)](https://github.com/tywalch)
 [![Github Stars](https://img.shields.io/github/stars/tywalch/electrodb?style=social)](https://github.com/tywalch/electrodb/stargazers)
 
-![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb-drk.png?raw=true)
-
 ![Logo](./assets/electrodb-drk-compressed.png#gh-dark-mode-only)
 ![Logo](./assets/electrodb.png#gh-light-mode-only)
 
