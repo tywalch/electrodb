@@ -1,0 +1,8 @@
+- add hydrate option to query
+- add hydrate option to collection
+- implement hydrate on entity query
+- implement hydrate on collection query
+- add index property to signify only keys are present
+    - skip for match/find
+    - do not apply automatic filters on queries
+- validate

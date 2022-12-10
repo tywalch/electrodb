@@ -1,3 +1,9 @@
+/* custom elements start */
+#logo {
+	content: var(--theme-logo);
+}
+/* custom elements end */
+
 * {
 	box-sizing: border-box;
 	margin: 0;
@@ -291,7 +297,7 @@ blockquote {
 	margin: 2rem 0;
 	padding: 1.25em 1.5rem;
 	border-left: 3px solid var(--theme-text-light);
-	background-color: var(--theme-bg-offset);
+	background-color: var(--theme-bg-accent);
 	border-radius: 0 0.25rem 0.25rem 0;
 	line-height: 1.7;
 }

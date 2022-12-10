@@ -9,6 +9,10 @@
 [![Github Stars](https://img.shields.io/github/stars/tywalch/electrodb?style=social)](https://github.com/tywalch/electrodb/stargazers)
 
 ![ElectroDB](https://github.com/tywalch/electrodb/blob/master/assets/electrodb-drk.png?raw=true)
+
+![Logo](./assets/electrodb-drk-compressed.png#gh-dark-mode-only)
+![Logo](./assets/electrodb.png#gh-light-mode-only)
+
 ***ElectroDB*** is a DynamoDB library to ease the use of having multiple entities and complex hierarchical relationships in a single DynamoDB table.
 
 *Please submit issues/feedback or reach out on Twitter [@tinkertamper](https://twitter.com/tinkertamper).*

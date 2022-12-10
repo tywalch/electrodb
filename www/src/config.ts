@@ -49,6 +49,7 @@ export type Sidebar = Record<
 export const SIDEBAR: Sidebar = {
   en: {
     'Core Concepts': [
+      { text: 'Introduction', link: 'en/core-concepts/introduction' },
       { text: 'Quick Start', link: 'en/core-concepts/quick-start' },
       { text: 'Executing Queries', link: 'en/core-concepts/executing-queries' },
       { text: 'Joins and Relationships', link: 'en/core-concepts/joins-and-relationships' },
