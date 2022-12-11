@@ -28,7 +28,39 @@ Overall, indexes in DynamoDB can be used to improve the performance of queries b
 
 ElectroDB, queries are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Composite Attributes** to create performant lookups. To accomplish this, ElectroDB defines partition and sort keys as a composite of one or more attributes. This is described at length in the [Modeling Indexes](/latest/modeling/indexes) section.
 
-## Terminal Methods
+## Query Methods
+
+Retrieving data from DynamoDB is accomplished by using one of the four query methods: `query`, `scan`, `get`, and `batchGet`. The `query` method is used to retrieve data from a table or index by performing a key lookup. The `scan` method is used to retrieve data from a table by scanning the entire table. The `get` method is used to retrieve a single item from a table by performing a key lookup. The `batchGet` method is used to retrieve multiple items from a table by performing multiple key lookups.
+
+Additionally, ElectroDB offers a few additional methods built on top of DynamoDB's offerings: `find` and `match`. These methods will perform a `query` or `scan` depending on the provided arguments. Below is a table that explains each ElectroDB method, which DynamoDB operation the method maps to, and a short description of the method's purpose.
+
+ElectroDB Method                    | DynamoDB Method        | Purpose
+----------------------------------- | ---------------------- | -------------------
+[get](/en/queries/get)              | `get`                  | Returns a single item, specified by its primary key. 
+[batchGet](/en/queries/batch-get)   | `batchGet`             | Returns a set of attributes for multiple items from one or more tables. 
+[query](/en/queries/query)          | `query`                | Queries a table or index for items that match the specified primary key value. 
+[scan](/en/queries/scan)            | `scan`                 | Scans the table and returns all matching items. 
+[match](/en/queries/match)          | `query` or `scan`      | The `match` method will attempt to build the most performant index keys with the attributes provided. ElectroDB identifies which index it can be "most" fulfilled with the index provided, and will fallback to a `scan` if no index can be built.
+[find](/en/queries/find)            | `query` or `scan`      | the `find` method performs the same index seeking behavior but will also apply all provided values as filters instead of only using provided attributes to build index keys.
+
+## Mutation Methods
+
+DynamoDB offers three methods for updating and creating records: `put`, `update`, and `batchWrite`. For the uninitiated, all three of these methods will create an item if it doesn't exist. The difference between `put`/`batchWrite` and `update` this that a `put` will overwrite the existing item while an `update` will only modify the fields provided if the item already exists.
+
+Addtionally, ElectroDB offers a few mutation methods beyond `put`, `update`, and `delete` to more ergonomically fit your use case. Below is a table that explains each ElectroDB method, which DynamoDB operation the method maps to, and a short description of the method's purpose.
+
+ElectroDB Method                    | DynamoDB Method        | Purpose
+----------------------------------- | ---------------------- | -------------------
+[put](/en/mutations/put)            | `put`, `batchWrite`    | Creates or overwrites an existing item with the values provided
+[batchPut](/en/mutations/batch-put) | `batchWrite`       | Creates or overwrites multiple items with the values provided
+[create](/en/mutations/create)      | `put`                  | Creates an item if the item does not currently exist, or throws if the item exists
+[upsert](/en/mutations/upsert)      | `update`               | Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.
+[update](/en/mutations/update)      | `update`               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html))
+[patch](/en/mutations/patch)        | `update`               | Performs an update on existing item or throws if that item does not already exist.
+[delete](/en/mutations/delete)      | `delete`, `batchWrite` | Deletes an item regardless of whether or not the specified item exists
+[remove](/en/mutations/remove)      | `delete`               | Deletes an item or throws if the item does not currently exist
+
+## Execution Methods
 
 All query chains end with either a `.go()`, `.params()` method invocation. These terminal methods will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
@@ -93,7 +125,7 @@ const results = await MallStores.query
 }
 ```
 
-## Execution Options
+### Execution Options
 
 Execution options can be added the `.params()` and `.go()` to change query behavior or add customer parameters to a query.
 
