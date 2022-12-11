@@ -13,84 +13,6 @@ layout: ../../../layouts/MainLayout.astro
 
 Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/upsert/put/create/delete/remove action.
 
-## Where Clause
-
-The `where()` method allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations`, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions.
-
-> Provided `where` callbacks must return a string. All method on the  `operation` object all return strings, so you can return the results of the `operation` method or use template strings compose an expression.
-
-### Examples
-
-#### A single filter operation
-
-```typescript
-animals.update({habitat: "Africa", enclosure: "5b"})
-  .set({keeper: "Joe Exotic"})
-  .where((attr, op) => op.eq(attr.dangerous, true))
-  .go();
-```
-
-#### A single filter operation with destructuring
-
-```typescript
-animals.update({animal: "tiger", name: "janet"})
-  .set({keeper: "Joe Exotic"})
-  .where(({dangerous}, {eq}) => eq(dangerous, true))
-  .go();
-```
-
-#### Multiple conditions
-```typescript
-animals.update({animal: "tiger", name: "janet"})
-  .set({keeper: "Joe Exotic"})
-  .where((attr, op) => `
-    ${op.eq(attr.dangerous, true)} AND ${op.notExists(attr.lastFed)}
-  `)
-  .go();
-```
-
-#### Chained usage (implicit AND)
-
-```typescript
-animals.update({animal: "tiger", name: "janet"})
-  .set({keeper: "Joe Exotic"})
-  .where((attr, op) => `
-    ${op.eq(attr.dangerous, true)} OR ${op.notExists(attr.lastFed)}
-  `)
-  .where(({birthday}, {between}) => {
-    const today = Date.now();
-    const lastMonth = today - 1000 * 60 * 60 * 24 * 30;
-    return between(birthday, lastMonth, today);
-  })
-  .go();
-```
-
-#### "dynamic" filtering
-
-```typescript
-type GetAnimalOptions = {
-  habitat: string;
-  keepers: string[];
-}
-function getAnimals(options: GetAnimalOptions) {
-  const { habitat, keepers } = options;
-  const query = animals.query.exhibit({habitat});
-
-  for (const name of keepers) {
-    query.where(({keeper}, {eq}) => eq(keeper, name));
-  }
-
-  return query.go();
-}
-
-const { data, cursor } = await getAnimals({
-  habitat: "RainForest",
-  keepers: [
-    "Joe Exotic",
-    "Carol Baskin"
-  ]
-});
-```
 
 ## FilterExpressions
 
@@ -132,74 +54,80 @@ animals.query
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=91&ssc=8&pln=86&pc=1#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MDVCc5G1MAEqSwCgAYtA5MEwAuklecFAEAI4ZwHPcFlwZBNMJW94oZKwQYhlz5TNwVTXMElCDAObx1omhgSBypzMXjtd3D15zi8sCKtzlANjsnl4UJIQJd8h9MNUvmkUPdQhDrKxJBIhkD3l5PldkaivOjDJjsUCAEL+SxnAlMb4owQknbcaS3IgQDK5WnwxHMXiudjSX5wUlwYBiAAKc1uULQeOs9MFEGFKGZjx2JVgBTZNLh+IRlwZRI121C3GABBgisqRq+1tFhgwBBAPJNNyZaJ2EBoNDEYE9t1t53tzFYkvGO2d2TdIbt-KYrzATusgYg1VgVp5BrOKmhsIqefpjOJefN5cM2pgusk+qLdLDHp+Dc1rcMKAg2XjfONpbNecoraHZxHbYrEpQpgAHjlFQGOKAfCGwABrHuGGhW1jAphr1NeETgQ4uupMF5ySbRsXXsTr3nlrdsXd3g-WI+QSLduD1KEwyZFmOE6GAQ04FOkGAhoMM6OLckQxGuAC0cHADEd6IdBoGpmuG60Nuu4oQhq5voYH4nt+9RFCUMApFegG3veuZnE+O6wfBr7XoeDCfqeP4sHsBxHHMPTkjAOLcABo7elYTyJIgNG8OwjguBAAD6rwyDQYxMJQACUADcQgXvIAB0ixEJgVgmaB4HUXoVGlDa7TNGQrR6VZagFEQBA6HokoygQcrSDAuC+v6gZ3HJCCgZGYi4AselKAAfHAAAGoQACTRfMOj+bK8ohSCGy6dQADyvRwFlMUSGIOhhQGQYlVYqW6VZtwQDoBkCEAA)
 
-## ConditionExpressions
+## Where Clause
 
-Below is the traditional way you would add a `ConditionExpression` to Dynamo's DocumentClient directly alongside how you would accomplish the same using the `where` method.
+The `where()` method allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations`, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions.
 
-### Example
+> Provided `where` callbacks must return a string. All method on the  `operation` object all return strings, so you can return the results of the `operation` method or use template strings compose an expression.
+
+### Examples
+
+#### A single filter expression
 
 ```typescript
-animals.update({
-    animal: "blackbear",
-    name: "Isabelle"
-  })
-  // no longer pregnant because Ernesto was born!
-  .set({
-    isPregnant: false,
-    lastEvaluation: "2021-09-12",
-    lastEvaluationBy: "stephanie.adler"
-  })
-  // welcome to the world Ernesto!
-  .append({
-    offspring: [{
-      name: "Ernesto",
-      birthday: "2021-09-12",
-      note: "healthy birth, mild pollen allergy"
-    }]
-  })
-  // using the where clause can guard against making
-  // updates against stale data
-  .where(({isPregnant, lastEvaluation}, {lt, eq}) => `
-    ${eq(isPregnant, true)} AND ${lt(lastEvaluation, "2021-09-12")}
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where((attr, op) => op.eq(attr.dangerous, true))
+  .go();
+```
+
+#### A single filter expression with destructuring
+
+```typescript
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where(({dangerous}, {eq}) => eq(dangerous, true))
+  .go();
+```
+
+#### Multiple filter expressions
+```typescript
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where((attr, op) => `
+    ${op.eq(attr.dangerous, true)} AND ${op.notExists(attr.lastFed)}
   `)
-  .go()
+  .go();
 ```
 
-### Equivalent Parameters
+#### Chained usage (implicit AND)
 
-```json
-{
-  "UpdateExpression": "SET #isPregnant = :isPregnant_u0, #lastEvaluation = :lastEvaluation_u0, #lastEvaluationBy = :lastEvaluationBy_u0, #offspring = list_append(#offspring, :offspring_u0)",
-  "ExpressionAttributeNames": {
-    "#isPregnant": "isPregnant",
-    "#lastEvaluation": "lastEvaluation",
-    "#lastEvaluationBy": "lastEvaluationBy",
-    "#offspring": "offspring"
-  },
-  "ExpressionAttributeValues": {
-    ":isPregnant0": true,
-    ":lastEvaluation0": "2021-09-12",
-    ":isPregnant_u0": false,
-    ":lastEvaluation_u0": "2021-09-12",
-    ":lastEvaluationBy_u0": "stephanie.adler",
-    ":offspring_u0": [
-      {
-        "name": "Ernesto",
-        "birthday": "2021-09-12",
-        "note": "healthy birth, mild pollen allergy"
-      }
-    ]
-  },
-  "TableName": "zoo_manifest",
-  "Key": {
-    "pk": "$zoo#animal_blackbear",
-    "sk": "$animals_1#name_isabelle"
-  },
-  "ConditionExpression": "#isPregnant = :isPregnant0 AND #lastEvaluation < :lastEvaluation0"
+```typescript
+animals.query.habitats({habitat: "Africa", enclosure: "5b"})
+  .where((attr, op) => `
+    ${op.eq(attr.dangerous, true)} OR ${op.notExists(attr.lastFed)}
+  `)
+  .where(({birthday}, {between}) => {
+    const today = Date.now();
+    const lastMonth = today - 1000 * 60 * 60 * 24 * 30;
+    return between(birthday, lastMonth, today);
+  })
+  .go();
+```
+
+#### "dynamic" filtering
+
+```typescript
+type GetAnimalOptions = {
+  habitat: string;
+  keepers: string[];
 }
-```
+function getAnimals(options: GetAnimalOptions) {
+  const { habitat, keepers } = options;
+  const query = animals.query.exhibit({habitat});
 
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=96&ssc=50&pln=96&pc=3#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MDVCc5G1MAEqSwCgAYtA5MEwAuklecFAEAI4ZwHPcFlwZBNMJW94oZKwQYhlz5TNwVTXMElCDAObx1omhgSBypzMXjtd3D15zi8sCKtzlANjsnl4UJIQJd8h9MNUvmkUPdQhDrNxpLciBAMrlLGdPsxeK52NJfnB0YZgGIAApzW5QtDvLxEpgkiBklCCLxUuAlWAFTH+AnwxFXZGo3k7bjAAgwFnWNm2cY7anZED4pjfFE8x47CA0GhiMA3FGKyoIy5MVg01UVOAYAiai1Kq2OV5gCleU0QaqwOX4uFnQxQmGuwnuiVmqUh7YOrwCmBCyQi4Nx85R7WSvVxvlnFAQbIRsXWnWxvMJykOyhonasSQSIZA13KnN10INptAgBCaYdbZjucp9cbMCQxDkGRSURQraz5eHfK748nrGn6FEffn4uzQ7RVnRg1MAA8coqTRxQD5XWAANYlww0OWsYFMe-emYicCHJ11JgvHIkxqiODpiA+opxs+bBvuBn5eN+kCRMWcD1GGBCTDWHZeAQJ4FOkGCuseuGOLckQxPeAC0ZHADE4GUcRJ6fvej60C+b40RRd7wdYiG-ih9RFCUMApMBNYgeBrHQa+pHkXBIEIQwSF-qhLB7AcRxzD0K7NtwmFnLW0qHh4iSICJvDsI4LgQAA+q8Mg0GMTCUAAlAA3EIgHyAAdBkYCYtkejPDIrysI4FmSGQd68AQkhQBS6GOAAkmIxRsOwequVYAD02UqBAcAHCiRBwKaBCMtI8AxWQkh4gQmhQKoEgFWojb8tAKAAIRWN5Kp6HAoQ0vS5VMgqtByLYo4SBOU4ztEzAAEwAAwLTElFLQAnJRMQLRSK4zeuc0oNuEoEGARQyAQ3mSNw7DxYeLk5XlahsN+9UwAVyb1Wo0Cvg1TUfd1hjXWA1QoNw-WhIaxqmncdTpqG0LWkgjVjG4IFJimIpMMtq3rVtO2foWKFMAUsWsMmmD8ssya4CAwB-ZArDsCgcByHdtyYEuEwPU9cB4nc5xk3Aahk3McD7LVtgS9IcC3NOUDcGztwDOI8CvHedx835AU5MrqsSHAEhyPVAWSD1otEAQOh6ENDKjbg+1rhus6mQgFO4AsrlKAAfHAAAGoQACQIAsOh2yNlW4OsBAudQDQAHIACJwCHFM6E7s2biguA4yta2bdtu1x1Y-uPcDtwQDo7kCEAA)
+  for (const name of keepers) {
+    query.where(({keeper}, {eq}) => eq(keeper, name));
+  }
+
+  return query.go();
+}
+
+const { data, cursor } = await getAnimals({
+  habitat: "RainForest",
+  keepers: [
+    "Joe Exotic",
+    "Carol Baskin"
+  ]
+});
+```
 
 ## Operations
 
