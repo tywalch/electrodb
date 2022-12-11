@@ -17,9 +17,9 @@
 
 ------------
 
-<a href="https://electrodb.dev"><h1 align="center">ElectroDB.dev is now live!</h1></a>
+<a href="https://electrodb.dev"><h1 align="center">Documentation now found at ElectroDB.dev</h1></a>
 
-ElectroDB documentation can now be found at [ElectroDB.dev](https://electrodb.dev)
+<p align="center">ElectroDB's new website for Documentation is now live at [www.ElectroDB.dev](https://electrodb.dev).</p>
 
 ------------
 
