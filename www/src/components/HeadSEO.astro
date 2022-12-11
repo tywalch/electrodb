@@ -27,27 +27,24 @@ const imageAlt = frontmatter.image?.alt ?? OPEN_GRAPH.image.alt;
 <meta name="twitter:image:alt" content="Data modeling, single-table design, cost savings">
 <meta name="twitter:creator" content="@tinkertamper">
 
-<!-- OpenGraph Tags -->
-<!-- <meta property="og:title" content={formattedContentTitle} />
-<meta property="og:type" content="article" />
-<meta property="og:url" content={canonicalUrl} />
-<meta property="og:locale" content={frontmatter.ogLocale ?? SITE.defaultLanguage} />
-<meta property="og:image" content={canonicalImageSrc} />
-<meta property="og:image:alt" content={imageAlt} />
-<meta
-	name="description"
-	property="og:description"
-	content={frontmatter.description ?? SITE.description}
-/>
-<meta property="og:site_name" content={SITE.title} /> -->
+<!-- HTML Meta Tags -->
+<meta name="title" content="ElectroDB">
+<meta name="description" content="Model, query, and share typesafe DynamoDB single-table design with ElectroDB">
 
-<!-- Twitter Tags -->
-<!-- <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:site" content={OPEN_GRAPH.twitter} />
-<meta name="twitter:title" content={formattedContentTitle} />
-<meta name="twitter:description" content={frontmatter.description ?? SITE.description} />
-<meta name="twitter:image" content={canonicalImageSrc} />
-<meta name="twitter:image:alt" content={imageAlt} /> -->
+<!-- Facebook Meta Tags -->
+<meta property="og:url" content="https://electrodb.dev">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ElectroDB">
+<meta property="og:description" content="Model, query, and share typesafe DynamoDB single-table design with ElectroDB">
+<meta property="og:image" content="https://electrodb.dev/social.jpg">
+
+<!-- Twitter Meta Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta property="twitter:domain" content="electrodb.dev">
+<meta property="twitter:url" content="https://electrodb.dev">
+<meta name="twitter:title" content="ElectroDB">
+<meta name="twitter:description" content="Model, query, and share typesafe DynamoDB single-table design with ElectroDB">
+<meta name="twitter:image" content="https://electrodb.dev/social.jpg">
 
 <!--
   TODO: Add json+ld data, maybe https://schema.org/APIReference makes sense?
