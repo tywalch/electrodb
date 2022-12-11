@@ -10,9 +10,10 @@ import Logo from './Logo';
 
 type Props = {
 	currentPage: string;
+	hideLogo?: boolean;
 };
 
-const { currentPage } = Astro.props as Props;
+const { currentPage, hideLogo = false } = Astro.props as Props;
 const lang = getLanguageFromURL(currentPage);
 
 ---
@@ -24,13 +25,13 @@ const lang = getLanguageFromURL(currentPage);
 			<SidebarToggle client:idle />
 		</div>
 		<div class="logo flex">
+			
+		</div>
+		<div style="flex-grow: 1;">
 			<a href="/">
-				<!-- <AstroLogo size={40} /> -->
-				<!-- <h1>{CONFIG.SITE.title ?? 'Documentation'}</h1> -->
-				<Logo/>
+				{ hideLogo ? null : <Logo className="logo-img" /> }
 			</a>
 		</div>
-		<div style="flex-grow: 1;"></div>
 		{KNOWN_LANGUAGE_CODES.length > 1 && <LanguageSelect lang={lang} client:idle />}
 		<!-- <div class="search-item"> -->
 			<!-- <Search client:idle /> -->
@@ -50,6 +51,16 @@ const lang = getLanguageFromURL(currentPage);
 		overflow: hidden;
 		position: sticky;
 		top: 0;
+	}
+
+	.header-link {
+		color: var(--theme-text);
+		margin: 0;
+		/* text-decoration: none; */
+	}
+
+	.logo-img {
+		width: 40vh;
 	}
 
 	.logo {
@@ -99,11 +110,17 @@ const lang = getLanguageFromURL(currentPage);
 		width: 100%;
 		/* max-width: 82em; */
 		/* override */
+		margin-top: 1.5em;
 		max-width: 99em;
 		padding: 0 1rem;
 	}
 
 	@media (min-width: 50em) {
+		.logo-img {
+			height: 85px;
+			width: inherit;
+		}
+
 		header {
 			position: static;
 			padding: 2rem 0rem;

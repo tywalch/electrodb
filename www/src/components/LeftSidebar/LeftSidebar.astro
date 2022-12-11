@@ -14,6 +14,9 @@ const sidebar = SIDEBAR[langCode];
 
 <nav aria-labelledby="grid-left">
   <ul class="nav-groups">
+    <a href="https://electrodb.fun" class="top-level-link" target="_blank" rel="noopener noreferrer">
+      <h4>ElectroDB Playground ›</h4>
+    </a>
     {
       Object.entries(sidebar).map(([header, children]) => (
         <li>
@@ -60,7 +63,7 @@ const sidebar = SIDEBAR[langCode];
 
   .nav-groups {
     height: 100%;
-    padding: 2rem 0;
+    padding: 2rem 1rem;
     overflow-x: visible;
     overflow-y: auto;
     max-height: 100vh;
@@ -106,6 +109,15 @@ const sidebar = SIDEBAR[langCode];
     color: var(--theme-text-accent);
     background-color: var(--theme-bg-accent);
     font-weight: 600;
+  }
+
+  .top-level-link {
+    text-decoration-line: none;
+  }
+
+  .top-level-link:hover,
+  .top-level-link:focus {
+    text-decoration-line: underline;
   }
 
   @media (min-width: 50em) {

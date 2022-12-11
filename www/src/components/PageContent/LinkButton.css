@@ -1,0 +1,43 @@
+.link-button {
+  position: relative;
+  /* pill shaped link button */
+  border-radius: 9999px;
+  /* 1rem = 16px */
+  padding: 0.5rem 1rem;
+  /* no underline */
+  text-decoration: none;
+  text-decoration-line: none;
+  /* text size */
+  font-size: 1rem;
+  /* text weight */
+  font-weight: 700;
+  /* text alignment */
+  text-align: center;
+  /* text transform */
+  text-transform: uppercase;
+  /* text spacing */
+  letter-spacing: 0.1em;
+  /* transition */
+  transition: all 0.2s ease-in-out;
+  /* background color */
+  background-color: var(--theme-button-bg);
+  /* text color */
+  color: var(--theme-button-text);
+  /* cursor */
+  cursor: pointer;
+}
+
+.link-button:hover, .link-button:focus {
+  /* cursor */
+  cursor: pointer;
+  /* no underline */
+  text-decoration: none;
+  text-decoration-line: none;
+  /* background color */
+  /* background-color: var(--theme-button-bg-hover) !important; */
+  filter: brightness(105%);
+
+  /* shadow */
+      box-shadow: 0em 0em 13px 0px var(--theme-button-text);
+;
+}

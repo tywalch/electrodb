@@ -1,5 +1,4 @@
 ---
-title: Introduction
 description: Introducing ElectroDB
 keywords:
   - electrodb
@@ -7,9 +6,13 @@ keywords:
   - start
   - core
   - getting started
-layout: ../../../layouts/MainLayout.astro
+layout: ../../../layouts/IntroductionLayout.astro
 ---
 
+import { CenteredRow } from '../../../components/Display/Row';
+import { Spacer } from '../../../components/Display/Space';
+
+<CenteredRow>
 [![Download Count](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
 [![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
 ![NPM Bundle Size](https://img.shields.io/bundlephobia/min/electrodb)
@@ -18,25 +21,27 @@ layout: ../../../layouts/MainLayout.astro
 [![Issues](https://img.shields.io/github/issues/tywalch/electrodb)](https://github.com/tywalch/electrodb/issues)
 [![Sponsors](https://img.shields.io/github/sponsors/tywalch)](https://github.com/tywalch)
 [![Github Stars](https://img.shields.io/github/stars/tywalch/electrodb?style=social)](https://github.com/tywalch/electrodb/stargazers)
+</CenteredRow>
 
 ElectroDB is a DynamoDB library to ease the use of having multiple entities and complex hierarchical relationships in a single DynamoDB table. ElectroDB is the only truely Single-Table Design oriented TypeScript library for DynamoDB.
 
-## ElectroDB Playground
+import QuickLook from '../../../components/PageContent/QuickLook';
+import LinkButton from '../../../components/PageContent/LinkButton';
 
-ElectroDB Playground allows you to try ElectroDB in the browser -- experiment with new concepts, experience ElectroDB's game-changing type inference, and share your modeling with team members.
+<CenteredRow>
+  <LinkButton href="/en/core-concepts/quick-start" text="Quick Start Guide"/>
+  <Spacer width={2} />
+  <LinkButton href="https://electrodb.fun" text="ElectroDB Playground" alt/>
+</CenteredRow>
 
-<p align="center">
-  <a href="https://electrodb.fun"><img width="400" src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true"/></a>
-</p>
+<div style="margin: 2em;">
+  <h3 align="center">Create complex DynamoDB parameters with a simple and easy to read syntax!</h3>
+</div>
 
-<p align="center">Try out and share ElectroDB Models, Services, and Single Table Design at <a href="https://electrodb.fun">www.electrodb.fun</a></p>
-
-## Quick Look
-
-**Turn this:**
+<QuickLook>
 
 ```typescript
-tasks
+const { data } = await tasks
   .patch({
     team: "core",
     task: "45-662",
@@ -53,7 +58,6 @@ tasks
   .where(({ status }, { eq }) => eq(status, "in-progress"))
   .go();
 ```
-**Into This:**
 
 ```json
 {
@@ -86,5 +90,7 @@ tasks
     "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk) AND #status = :status0"
 }
 ```
+
+</QuickLook>
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/PQKgBAsg9gJgpgGzARwK5wE4Es4GcA0YuccYGeqCALgUQBYCG5YA7llXWAGbZwB2MXGBDAAUKKwBbAA5QMVMAG8wAUT5V2AT0IBlTADcsAY1IBfbhiiSwAIkRwjVSzABGNgNzijUPrgVUGFwRSAF5bTShUDAB9AKC4aL4GSTgPcVAwABUGXABrITUNKk1hMW9ffxz8sDC+OBZVdS0AClEwJTb2sElYRAAuDq6u-iLNAZsAvNwbfE6h-UxcLB9xgEYZua7iDEMTccnchmlpG03TWaGGKicsF1QqPAHFTfaH5KeXruLpOHG-bD4AHMNkMhuQ0FhyDABk50J9zp8Dh9QV9ND8-jcgSCUWQ4BCoTCMHCUQiUdJLAArBxUZE476-Wz-LBYi448GoSFwaFgWFweGsoaoba0lH0jEA4EC0Hsznc3n8xHsYIi0FixmYyWfdoygk8olwKXtUmg+C4IzYaQaFaDOlohk2JlYhUovxXIUqoZqgDaNigPz4M1szIAtOSoIDyLhpoRfXxg3QoAgYIGbEYEFBiMmALpgHJgcp+Q1deBcBiUGm2P38U4kouyZk0D2o9G2PioSQuTDYobGz0MQG4JuvO1-OBUbug9hwSSD9USmug3tdbySFLqWfPHE8ke2BBYPwToZTmdD5v2yRHQ+gsM-eQ4Dda0FCzCn0U7h0ahdbo1FlEuWBjDa35nuKzLAo+PYQWApiPjBtafOacBXFyACCFabraLY2G2HZdr+YAlmW1ADM0ACUNQAHxgAAIshAB0fBQCwZH4eQDAwAA8nwCCAfK8Eoqg0gwMhMBoaearYe2nYYFe7QsFcRh0OMICyUQY4keRIRUbRDwMUxLGPmxnHcbx+rwmcUrMvAAAejxAV0YZUo4D5btIuSvtwOBJuMbmqe0K6yEsDwDD6bySDYWawfheQeVwXncg6uR+WAwDAPmbEPPmViBVOYC5HAmhCFwchgNITAaAwSC4HICj5SUaCYPeUEBRmU4hTYjnUimBwRbBzqgjkSyAnU3IYSiqVZQgwSOMsvi5lNTHcCVDW8EIDDmhmQiSOWWDSMEYAjOwTVbt4U3UrN4yDVgw1rjQqlWXA1njAOWCrG5wYvaseTBg91mqW5HkTRe0g8lAYARFEYAAOI6AAkmAAASOR0MAAAK5VHT4eUFVBcWIAln2+fh-nZa1wVgD6z4yZFW5LkMMX2eNaXA6D4ORBg0Nw2AABKDBAnAwA6DV2OaLj8XPUsX1JcTWUyGTDI+q6VBCr1tPmZBP6dMocT7TBpGeKIE0AAZlVQilG2A+5gHu+VgEbgnCQ8FuPSYlqWwoz5CDYVw3HcDyJFAVDRI9+53aIBy4J0dGm4pzTKJsYXjN45ATkitgACwAKzBgAbDnABMgabJ1jjjC4635QIC6mKRUfEFQcdEAEyuzr6-o2NBtftHR7EwI39brgMmed1HRz+n38dDCut2zl6Y1dFT4wUnzY5Xv+MCATYmR0FbxDTkIjAIFwwbl-lMB0V+0E5p0NdRywdCYHAzTNEoStCucSh4uYmlUXizRv7QGwIYwwRjwNMUiXcwB0UBFAMi7ggA)

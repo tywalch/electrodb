@@ -1,0 +1,21 @@
+.parent {
+  display: grid;
+  grid-template-columns: .8fr 1fr;
+  grid-template-rows: 1fr;
+  grid-column-gap: 24px;
+  grid-row-gap: 0px;
+}
+
+@media (max-width: 38em) {
+  .parent {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(2, 1fr);
+    grid-column-gap: 24px;
+    grid-row-gap: 0px;
+  }
+
+  pre {
+    padding-left: 3em;
+  }
+}

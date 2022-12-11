@@ -1,5 +1,9 @@
 /** @jsxImportSource react */
 
-export default function Logo() {  
-  return <img id="logo" src={'/electrodb-drk-compressed.png'} alt="logo" style={{ height: '3rem' }} />;
+type Props = {
+  className: string;
+}
+
+export default function Logo({ className }: Props) {  
+  return <img id="logo" className={className} src={'/electrodb-drk-compressed.png'} alt="logo" />;
 }
