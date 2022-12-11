@@ -10,5 +10,5 @@ export default defineConfig({
   integrations: [// Enable Preact to support Preact JSX components.
   preact(), // Enable React for the Algolia search component.
   react(), mdx(), image()],
-  site: `http://astro.build`
+  site: `https://electrodb.dev`
 });
