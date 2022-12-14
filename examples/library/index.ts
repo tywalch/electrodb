@@ -343,14 +343,14 @@ author.query
     .writer({authorLastName: 'king'})
     .go()
 
-// get all books by last name and a
+// get all authors by last name and a
 // partial first name.
 author.query
     .writer({authorLastName: 'king'})
     .begins({authorFirstName: 's'})
     .go();
 
-// get all books by the full name of the writer
+// get all authors by the full name of the writer
 author.query
     .writer({authorLastName: 'king', authorFirstName: 'stephen'})
     .go();
