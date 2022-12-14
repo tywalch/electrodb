@@ -379,7 +379,7 @@ const { data, cursor } = await author.query
     .go();
 ```
 
-### Get all books by last name and a partial first name.
+### Get all authors by last name and a partial first name.
 
 ```typescript
 await author.query
@@ -388,11 +388,11 @@ await author.query
     .go();
 ```
 
-### Get all books by the full name of the writer
+### Get all authors by the full name of the writer
 
 ```typescript
 await author.query
-    .writer({ authorLastName: 'king', authorFirstName: 'stephen' })
+    .writer({ authorLastName: 'smith', authorFirstName: 'john' })
     .go();
 ```
 
