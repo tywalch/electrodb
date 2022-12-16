@@ -4061,6 +4061,10 @@ describe('upsert', () => {
                     type: "string",
                     required: true
                 },
+                complete: {
+                    type: 'boolean',
+                    required: true
+                },
                 title: {
                     type: 'string',
                 },
@@ -4109,8 +4113,10 @@ describe('upsert', () => {
             twitter: '@tywalch',
         }
         const title = 'Bugfix #921';
+        const complete = false;
         const initialUpsert = await tasks.upsert({
             project,
+            complete,
             task,
             team,
             flags,
@@ -4119,6 +4125,7 @@ describe('upsert', () => {
         }).go({response: 'all_new'});
         const expected = {
             project,
+            complete,
             task,
             team,
             flags,
@@ -4140,9 +4147,11 @@ describe('upsert', () => {
         }
         const title = 'Bugfix #921';
         const description = 'Users experience degraded performance';
+        const complete = true;
 
         const initialUpsert = await tasks.upsert({
             project,
+            complete,
             task,
             team,
             flags,
@@ -4176,6 +4185,7 @@ describe('upsert', () => {
             team,
             description,
             flags: ['groomed', 'tech_debt'],
+            complete: false,
         }).go({response: 'all_new'});
 
         expect(upsertedOverExisting.data).to.deep.equal({
@@ -4183,6 +4193,7 @@ describe('upsert', () => {
             task,
             team,
             flags: ['groomed', 'tech_debt'],
+            complete: false,
             integrations,
             title,
             description,
@@ -4194,6 +4205,7 @@ describe('upsert', () => {
             task,
             team,
             flags: ['groomed', 'tech_debt'],
+            complete: false,
             integrations,
             title,
             description,
@@ -4283,9 +4295,11 @@ describe('upsert', () => {
         }
         const title = 'Bugfix #921';
         const description = 'Users experience degraded performance';
+        const complete = true;
         expect(() => {
             const upsert = tasks.upsert({
                 project,
+                complete,
                 task,
                 team,
                 flags,

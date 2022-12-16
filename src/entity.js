@@ -1494,7 +1494,12 @@ class Entity {
 		update.set(this.identifiers.entity, this.getName());
 		update.set(this.identifiers.version, this.getVersion());
 		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
-			const value = upsertAttributes[field] || updatedKeys[field];
+			// Need to check for undefined/null since short circuiting would get rid of valid 'falsey' values i.e. a false boolean
+			const isNullOrUndefined = (val) => val === undefined || val === null
+			const valueFromUpsertAttributes = upsertAttributes[field]
+			const valueFromKeyAttribues = updatedKeys[field]
+			
+			const value = !isNullOrUndefined(valueFromUpsertAttributes) ? valueFromUpsertAttributes : valueFromKeyAttribues;
 			if (!keyNames.includes(field)) {
 				update.set(field, value);
 			}
