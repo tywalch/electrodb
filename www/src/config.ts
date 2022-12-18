@@ -53,7 +53,6 @@ export const SIDEBAR: Sidebar = {
       { text: 'Quick Start', link: 'en/core-concepts/quick-start' },
       { text: 'Executing Queries', link: 'en/core-concepts/executing-queries' },
       { text: 'Single-Table Relationships', link: 'en/core-concepts/single-table-relationships' },
-      { text: 'Use with Existing Tables', link: 'en/core-concepts/use-electrodb-with-existing-table' },
     ],
     'Data Modeling': [
       { text: 'Entities', link: 'en/modeling/entities' },
