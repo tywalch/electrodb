@@ -1494,12 +1494,7 @@ class Entity {
 		update.set(this.identifiers.entity, this.getName());
 		update.set(this.identifiers.version, this.getVersion());
 		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
-			// Need to check for undefined/null since short circuiting would get rid of valid 'falsey' values i.e. a false boolean
-			const isNullOrUndefined = (val) => val === undefined || val === null
-			const valueFromUpsertAttributes = upsertAttributes[field]
-			const valueFromKeyAttribues = updatedKeys[field]
-			
-			const value = !isNullOrUndefined(valueFromUpsertAttributes) ? valueFromUpsertAttributes : valueFromKeyAttribues;
+			const value = u.getFirstDefined(upsertAttributes[field], updatedKeys[field]);
 			if (!keyNames.includes(field)) {
 				update.set(field, value);
 			}
@@ -3028,7 +3023,7 @@ class Entity {
 				if (sk.isCustom) {
 					definitions[indexName].sk.push({name, label});
 				} else {
-					definitions[indexName].sk.push({name, label: fromModel[name] || name});
+					definitions[indexName].sk.push({name, label: u.getFirstDefined(fromModel[name], name) });
 				}
 			}
 		}

@@ -233,6 +233,10 @@ function shiftSortOrder(str = '', codePoint) {
   return newString;
 }
 
+function getFirstDefined(...params) {
+  return params.find(val => val !== undefined);
+}
+
 module.exports = {
   getUnique,
   batchItems,
@@ -241,6 +245,7 @@ module.exports = {
   removeFixings,
   parseJSONPath,
   shiftSortOrder,
+  getFirstDefined,
   getInstanceType,
   getModelVersion,
   formatKeyCasing,

@@ -4160,6 +4160,7 @@ describe('upsert', () => {
         }).go({response: 'all_new'});
 
         expect(initialUpsert.data).to.deep.equal({
+            complete,
             project,
             task,
             team,
@@ -4171,6 +4172,7 @@ describe('upsert', () => {
         const record = await tasks.get({task, project}).go();
 
         expect(record.data).to.deep.equal({
+            complete,
             project,
             task,
             team,
@@ -4256,6 +4258,9 @@ describe('upsert', () => {
                                 type: 'string'
                             }
                         }
+                    },
+                    complete: {
+                        type: 'boolean'
                     }
                 },
                 indexes: {
