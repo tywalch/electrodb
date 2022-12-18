@@ -290,5 +290,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.3.3] - 2022-11-28
 ### Fixed
 - Issue #182: Addressed inconsistency with `remove` and `delete` functionality between `update` and `patch` methods.
+
+## [2.3.4] - 2022-11-28
 ### Milestone
-- First code contribution by user @NoahDavey
+- First code contribution by user @NoahDavey (via [PR-197](https://github.com/tywalch/electrodb/pull/197)). Fixes boolean evaluation during upsert
