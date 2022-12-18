@@ -155,7 +155,7 @@ class Service {
 			default:
 				/** start beta/v1 condition **/
 				if (modelVersion !== this._modelVersion) {
-					throw new e.ElectroError(e.ErrorCodes.InvalidJoin, "Invalid instance: Valid instances to join include Models and Entity instances. Additionally, all models must be in the same format (v1 vs beta). Review https://github.com/tywalch/electrodb#version-v1-migration for more detail.");
+					throw new e.ElectroError(e.ErrorCodes.InvalidJoin, "Invalid instance: Valid instances to join include Models and Entity instances.");
 				} else if (modelVersion === ModelVersions.beta) {
 					instance = applyBetaModelOverrides(instance, this._modelOverrides);
 				} else {

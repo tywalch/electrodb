@@ -36,7 +36,7 @@ describe('padding validation', () => {
                     }
                 }
             })
-        }).to.throw('instance.attributes.prop1.padding requires property "char" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model');
+        }).to.throw('instance.attributes.prop1.padding requires property "char" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model');
     })
     it('should not allow padding to be defined on an indexed attribute', () => {
         expect(() => new Entity({
@@ -86,7 +86,7 @@ describe('padding validation', () => {
                     },
                 }
             }
-        })).to.throw('Invalid padding definition for the attribute "num". Padding is not currently supported for attributes that are also defined as table indexes. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition');
+        })).to.throw('Invalid padding definition for the attribute "num". Padding is not currently supported for attributes that are also defined as table indexes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition');
     });
 })
 
@@ -136,10 +136,10 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(1);
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateResult.fields).to.have.length(1);
         });
 
@@ -192,9 +192,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(1);
             expect(updateResult.fields).to.have.length(1);
         });
@@ -249,9 +249,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(1);
             expect(putResult.fields[0].cause).to.equal(error);
             expect(updateResult.fields).to.have.length(1);
@@ -322,9 +322,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(1);
             expect(updateResult.fields).to.have.length(1);
         });
@@ -400,9 +400,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal(`${message} - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(putResult.message).to.equal(`${message} - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal(`${message} - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(updateResult.message).to.equal(`${message} - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
             expect(putResult.fields).to.have.length(1);
             expect(putResult.fields[0].cause.name).to.equal('MyCustomError');
             expect(putResult.fields[0].cause.message).to.equal(message);
@@ -479,9 +479,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal("Oh no! invalid value! - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal("Oh no! invalid value! - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal("Oh no! invalid value! - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal("Oh no! invalid value! - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(1);
             expect(updateResult.fields).to.have.length(1);
         });
@@ -640,9 +640,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal("Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal("Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal("Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal("Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(3);
             expect(updateResult.fields).to.have.length(3);
         });
@@ -725,9 +725,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal([invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal([invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal([invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal([invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(3);
             expect(updateResult.fields).to.have.length(3);
         });
@@ -811,9 +811,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal([invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal([invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal([invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal([invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(3);
             expect(putResult.fields[0].cause).to.equal(error);
             expect(putResult.fields[1].cause).to.equal(error);
@@ -874,9 +874,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(1);
             expect(updateResult.fields).to.have.length(1);
         });
@@ -933,9 +933,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.have.length(1);
             expect(updateResult.fields).to.have.length(1);
         });
@@ -1048,9 +1048,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal("Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal("Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal("Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal("Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.deep.equal([
                 {
                     cause: undefined,
@@ -1083,7 +1083,7 @@ describe("user attribute validation", () => {
             const prop2 = ["value1", "value2"];
             const invalidProp2 = ["value3", "value4", "value5"];
             const invalidValueMessage = "Oh no! invalid value!";
-            const invalidValueError = [invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute";
+            const invalidValueError = [invalidValueMessage, invalidValueMessage, invalidValueMessage].join(", ") + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute";
             const entity = new Entity({
                 model: {
                     service: "MallStoreDirectory",
@@ -1327,9 +1327,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal(`${message} - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(putResult.message).to.equal(`${message} - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal(`${message} - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(updateResult.message).to.equal(`${message} - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
             expect(putResult.fields).to.have.length(1);
             expect(putResult.fields[0].cause).to.equal(error);
             expect(updateResult.fields).to.have.length(1);
@@ -1386,9 +1386,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal("Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
         });
 
         it("should interpret a string return value as a validation error message", async () => {
@@ -1441,9 +1441,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
         });
 
         it("should wrap a thrown error in the user validation callback with an ElectroError and make it available on a 'causes' array", async () => {
@@ -1497,11 +1497,11 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(putResult.fields).to.be.an("array").with.length(1);
             expect(putResult.fields[0].cause).to.equal(error);
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateResult.fields).to.be.an("array").with.length(1);
             expect(updateResult.fields[0].cause).to.equal(error);
         });
@@ -1556,9 +1556,9 @@ describe("user attribute validation", () => {
                 .then(data => [true, data])
                 .catch(err => [false, err]);
             expect(putSuccess).to.be.false;
-            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(putResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
             expect(updateSuccess).to.be.false;
-            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute");
+            expect(updateResult.message).to.equal(invalidValueMessage + " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute");
         });
     });
 });
@@ -1791,7 +1791,7 @@ describe('Index definition validations', function () {
             }
         }, {table, client});
 
-        expect(createEntity).to.throw("The Sort Key (sk) on Access Pattern 'global2' references the field 'gsi2pk' which is already referenced by the Access Pattern(s) 'global1' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys. - For more detail on this error reference: https://github.com/tywalch/electrodb#inconsistent-index-definition");
+        expect(createEntity).to.throw("The Sort Key (sk) on Access Pattern 'global2' references the field 'gsi2pk' which is already referenced by the Access Pattern(s) 'global1' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition");
     });
 
     it('enforce pk field definitions in cases where a field is used in multiple indexes', async () => {
@@ -1872,7 +1872,7 @@ describe('Index definition validations', function () {
             }
         }, {table, client});
 
-        expect(createEntity).to.throw(`Partition Key (pk) on Access Pattern 'local2' is defined with the composite attribute(s) "prop1", "prop7", but the accessPattern '(Primary Index)' defines this field with the composite attributes "prop1"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://github.com/tywalch/electrodb#inconsistent-index-definition`);
+        expect(createEntity).to.throw(`Partition Key (pk) on Access Pattern 'local2' is defined with the composite attribute(s) "prop1", "prop7", but the accessPattern '(Primary Index)' defines this field with the composite attributes "prop1"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition`);
     });
 
     it('enforce sk field definitions in cases where a field is used in multiple indexes', async () => {
@@ -1953,6 +1953,6 @@ describe('Index definition validations', function () {
             }
         }, {table, client});
 
-        expect(createEntity).to.throw("Sort Key (sk) on Access Pattern 'global1' is defined with the composite attribute(s) \"prop6\", \"prop7\", but the accessPattern 'lsi1pk-lsi1sk-index' defines this field with the composite attributes \"prop5\", \"prop2\"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-index-fields");
+        expect(createEntity).to.throw("Sort Key (sk) on Access Pattern 'global1' is defined with the composite attribute(s) \"prop6\", \"prop7\", but the accessPattern 'lsi1pk-lsi1sk-index' defines this field with the composite attributes \"prop5\", \"prop2\"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-fields");
     });
 });

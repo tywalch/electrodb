@@ -306,7 +306,7 @@ describe("Entity", () => {
             try {
                 recordTwo = await MallStores.create(record).go().then(res => res.data);
             } catch(err: any) {
-                expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+                expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
             }
             expect(recordTwo).to.be.null
         });
@@ -346,7 +346,7 @@ describe("Entity", () => {
                     .go()
                     .then(res => res.data);
             } catch(err: any) {
-                expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+                expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
             }
             expect(patchResultsTwo).to.be.null
         });
@@ -368,8 +368,8 @@ describe("Entity", () => {
             expect(electroSuccess).to.be.false;
             expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
             expect([
-                "Requested resource not found - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error",
-                "Cannot do operations on a non-existent table - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error"
+                'Error thrown by DynamoDB client: "Requested resource not found" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error',
+                'Error thrown by DynamoDB client: "Cannot do operations on a non-existent table" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error'
             ].includes(electroErr.message)).to.be.true;
             expect(originalSuccess).to.be.false;
             expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
@@ -651,7 +651,7 @@ describe("Entity", () => {
             try {
                 recordTwo = await MallStores.create(record).go().then(res => res.data);
             } catch(err: any) {
-                expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+                expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
             }
             expect(recordTwo).to.be.null
         });
@@ -683,7 +683,7 @@ describe("Entity", () => {
             try {
                 patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go().then(res => res.data);
             } catch(err: any) {
-                expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+                expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
             }
             expect(patchResultsTwo).to.be.null
         });
@@ -705,8 +705,8 @@ describe("Entity", () => {
             expect(electroSuccess).to.be.false;
             expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
             expect([
-                "Requested resource not found - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error",
-                "Cannot do operations on a non-existent table - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error"
+                'Error thrown by DynamoDB client: "Requested resource not found" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error',
+                'Error thrown by DynamoDB client: "Cannot do operations on a non-existent table" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error'
             ].includes(electroErr.message)).to.be.true;
             expect(originalSuccess).to.be.false;
             expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
@@ -1479,7 +1479,7 @@ describe("Entity", () => {
                 throw null;
             } catch(err: any) {
                 expect(err).to.not.be.null;
-                expect(err.message).to.equal('Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes');
+                expect(err.message).to.equal('Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes');
             }
         });
 
@@ -1491,7 +1491,7 @@ describe("Entity", () => {
                 throw null;
             } catch(err: any) {
                 expect(err).to.not.be.null;
-                expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
+                expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
             }
         });
 
@@ -2695,7 +2695,7 @@ describe("Entity", () => {
                         },
                     }
                 })
-            }).to.throw('Invalid use of a collection on index "(Primary Index)". The sk field "accountId" shares a field name with an attribute defined on the Entity, and therefore the index is not allowed to participate in a Collection. Please either change the field name of the attribute, or remove all collection(s) from the index. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-collection-on-index-with-attribute-field-names');
+            }).to.throw('Invalid use of a collection on index "(Primary Index)". The sk field "accountId" shares a field name with an attribute defined on the Entity, and therefore the index is not allowed to participate in a Collection. Please either change the field name of the attribute, or remove all collection(s) from the index. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-collection-on-index-with-attribute-field-names');
         });
         it("Should throw when trying to add a prefix or postfix to a number attribute being used as an index field", () => {
             expect(() => {
@@ -2747,7 +2747,7 @@ describe("Entity", () => {
                         },
                     }
                 })
-            }).to.throw('definition for "sk" field on index "(Primary Index)". Index templates may only have prefix or postfix values on "string" or "enum" type attributes. The sk field "incrementId" is type "number", and therefore cannot be used with prefixes or postfixes. Please either remove the prefixed or postfixed values from the template or change the field name of the attribute. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-index-with-attribute-name');
+            }).to.throw('definition for "sk" field on index "(Primary Index)". Index templates may only have prefix or postfix values on "string" or "enum" type attributes. The sk field "incrementId" is type "number", and therefore cannot be used with prefixes or postfixes. Please either remove the prefixed or postfixed values from the template or change the field name of the attribute. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-with-attribute-name');
         });
     });
 
@@ -4311,7 +4311,7 @@ describe('upsert', () => {
                 integrations,
                 title,
             }).params();
-        }).to.throw('Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes')
+        }).to.throw('Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes')
     });
 });
 
@@ -4427,5 +4427,67 @@ describe('batch operations', () => {
             items
                 .sort((a, z) => a.segmentId.localeCompare(z.segmentId))
         );
+    });
+});
+
+describe('enum set', () => {
+    const entity = new Entity({
+        model: {
+            version: '1',
+            service: 'test_service',
+            entity: 'includes_enum_set',
+        },
+        attributes: {
+            id: {
+                type: 'string'
+            },
+            tags: {
+                type: 'set',
+                items: ['ART', 'SCIENCE', 'MUSIC', 'HISTORY'] as const,
+            },
+            optional: {
+                type: 'string'
+            }
+        },
+        indexes: {
+            record: {
+                pk: {
+                    field: 'pk',
+                    composite: ['id']
+                },
+                sk: {
+                    field: 'sk',
+                    composite: []
+                }
+            }
+        }
+    }, { table, client });
+
+    it('should perform full crud on enum set', async () => {
+        const id = uuid();
+
+        await entity.create({id, tags: ['ART']}).go();
+        const first = await entity.get({id}).go();
+        expect(first.data).to.deep.equal({ id, tags: ['ART']});
+
+        await entity.patch({id}).add({tags: ['SCIENCE']}).go();
+        const second = await entity.get({id}).go();
+        expect(second.data).to.deep.equal({ id, tags: ['ART', 'SCIENCE']});
+
+        await entity.update({id}).data(({tags}, {del}) => del(tags, ['ART'])).go();
+        const third = await entity.get({id}).go();
+        expect(third.data).to.deep.equal({ id, tags: ['SCIENCE']});
+
+        await entity.upsert({id, optional: 'hi'}).go();
+        const fourth = await entity.get({id}).go();
+        expect(fourth.data).to.deep.equal({ id, tags: ['SCIENCE'], optional: 'hi'});
+
+        await entity.patch({id}).remove(['tags']).go();
+        const fifth = await entity.get({id}).go();
+        expect(fifth.data).to.deep.equal({ id, optional: 'hi'});
+
+        await entity.patch({id}).set({tags: ['HISTORY']}).go();
+        const sixth = await entity.get({id}).go();
+        expect(sixth.data).to.deep.equal({ id, optional: 'hi', tags: ['HISTORY']});
     });
 })

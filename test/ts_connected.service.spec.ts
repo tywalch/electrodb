@@ -410,7 +410,7 @@ describe('padding validations', () => {
                 baseEntity,
                 incorrectPk,
             });
-        }).to.throw('Inconsistent attribute(s) on the entity "incorrectPk". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "padded" contains inconsistent padding definitions that impact how keys are formed. These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://github.com/tywalch/electrodb#join');
+        }).to.throw('Inconsistent attribute(s) on the entity "incorrectPk". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "padded" contains inconsistent padding definitions that impact how keys are formed. These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
     });
 
     it('should throw when attributes used in a shared collection pk are defined with missing padding configurations', () => {
@@ -419,7 +419,7 @@ describe('padding validations', () => {
                 baseEntity,
                 actuallyHasPadding,
             });
-        }).to.throw('Inconsistent attribute(s) on the entity "actuallyHasPadding". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "notPadded" contains inconsistent padding definitions that impact how keys are formed. These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://github.com/tywalch/electrodb#join');
+        }).to.throw('Inconsistent attribute(s) on the entity "actuallyHasPadding". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "notPadded" contains inconsistent padding definitions that impact how keys are formed. These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
     });
 
     it('should not throw when attributes used in a shared collection sk are defined with differing padding configurations', () => {
@@ -1562,7 +1562,7 @@ describe('service validation', () => {
                 const assertion = expect(() => new Service({entity1, entity2}));
 
                 if (leftType !== rightType) {
-                    assertion.to.throw(`Index type mismatch on collection collection1. The entity entity2 defines the index as type ${rightType} while the established type for that index is ${leftType}. Note that when omitted, indexes default to the type "isolated" - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
+                    assertion.to.throw(`Index type mismatch on collection collection1. The entity entity2 defines the index as type ${rightType} while the established type for that index is ${leftType}. Note that when omitted, indexes default to the type "isolated" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`)
                 } else {
                     assertion.to.not.throw();
                 }

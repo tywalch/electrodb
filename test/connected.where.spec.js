@@ -267,7 +267,7 @@ describe("Where Clause Queries", () => {
 				.go().then(res => res.data);
 			throw new Error("Should have thrown")
 		} catch(err) {
-			expect(err.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+			expect(err.message).to.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
 		}
 	});
 	it("Should update an animal which does exist", async () => {
@@ -323,7 +323,7 @@ describe("Where Clause Queries", () => {
 			.then(res => res.data)
 			.then(data => data)
 			.catch(err => err);
-		expect(wontMatch.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+		expect(wontMatch.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
 	});
 	it("Should not allow unknown values from being used in a where clause", () => {
 		let penRow = penRows[2];

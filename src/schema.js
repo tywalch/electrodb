@@ -458,7 +458,7 @@ class Attribute {
 		let reason = [];
 		switch (this.type) {
 			case AttributeTypes.enum:
-			case AttributeTypes.enumSet:
+			// case AttributeTypes.enumSet:
 				// isTyped = this.enumArray.every(enumValue => {
 				// 	const val = Array.isArray(value) ? value : [value];
 				// 	return val.includes(enumValue);

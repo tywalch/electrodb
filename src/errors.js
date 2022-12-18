@@ -7,7 +7,7 @@
 
 function getHelpLink(section) {
   section = section || "unknown-error-5001";
-  return `https://github.com/tywalch/electrodb#${section}`;
+  return `https://electrodb.dev/en/reference/errors/#${section}`;
 }
 
 const ErrorCode = Symbol("error-code");

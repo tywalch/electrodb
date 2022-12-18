@@ -485,7 +485,7 @@ describe("Update Item", () => {
                 .then(() => {})
                 .catch(err => err);
 
-            expect(update.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error")
+            expect(update.message).to.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error')
         });
 
         it("should conditionally update a list attribute", async () => {
@@ -542,7 +542,7 @@ describe("Update Item", () => {
                 .then(() => {})
                 .catch(err => err);
 
-            expect(update.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error")
+            expect(update.message).to.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error')
         });
     });
 
@@ -1912,7 +1912,7 @@ describe("Update Item", () => {
                 ])
                 .params();
 
-            expect(error).to.throw(`Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`)
+            expect(error).to.throw(`Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`)
 
             const error2 = await users
                 .update({username})
@@ -1921,7 +1921,7 @@ describe("Update Item", () => {
                 ])
                 .go()
                 .catch(err => err);
-            expect(error2.message).to.equal(`Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
+            expect(error2.message).to.equal(`Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
         });
 
         it("should respect readOnly", async () => {
@@ -1942,7 +1942,7 @@ describe("Update Item", () => {
                 .go()
                 .catch(err => err);
 
-            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(error.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
         });
 
         it("should only update attribute when it doesnt yet exist", async () => {

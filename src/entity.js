@@ -307,7 +307,7 @@ class Entity {
 				return Promise.reject(err);
 			} else {
 				if (err.__isAWSError) {
-					stackTrace.message = new e.ElectroError(e.ErrorCodes.AWSError, err.message).message;
+					stackTrace.message = new e.ElectroError(e.ErrorCodes.AWSError, `Error thrown by DynamoDB client: "${err.message}"`).message;
 					return Promise.reject(stackTrace);
 				} else if (err.isElectroError) {
 					return Promise.reject(err);

@@ -515,7 +515,7 @@ describe("BatchGet", () => {
     });
   });
   it("Should throw on invalid get composite attributes", () => {
-    expect(() => MallStores.get([record1, record2, record3, {}]).params()).to.throw('Incomplete or invalid key composite attributes supplied. Missing properties: "sector" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes');
+    expect(() => MallStores.get([record1, record2, record3, {}]).params()).to.throw('Incomplete or invalid key composite attributes supplied. Missing properties: "sector" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes');
   });
   it("Should create params", () => {
     let params = MallStores.get([record1, record2, record3]).params();
