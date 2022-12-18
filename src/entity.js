@@ -1494,7 +1494,7 @@ class Entity {
 		update.set(this.identifiers.entity, this.getName());
 		update.set(this.identifiers.version, this.getVersion());
 		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
-			const value = upsertAttributes[field] || updatedKeys[field];
+			const value = u.getFirstDefined(upsertAttributes[field], updatedKeys[field]);
 			if (!keyNames.includes(field)) {
 				update.set(field, value);
 			}
@@ -3023,7 +3023,7 @@ class Entity {
 				if (sk.isCustom) {
 					definitions[indexName].sk.push({name, label});
 				} else {
-					definitions[indexName].sk.push({name, label: fromModel[name] || name});
+					definitions[indexName].sk.push({name, label: u.getFirstDefined(fromModel[name], name) });
 				}
 			}
 		}
