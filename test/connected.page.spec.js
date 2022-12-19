@@ -408,7 +408,7 @@ describe("Page", () => {
   //         page: {task: "1234", project: undefined}
   //       },
   //       output: {
-  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
   //       },
   //     }, {
   //       type: "query",
@@ -418,7 +418,7 @@ describe("Page", () => {
   //         page: {task: "1234", project: "anc"}
   //       },
   //       output: {
-  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "employee" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
   //       },
   //     }, {
   //       type: "scan",
@@ -426,7 +426,7 @@ describe("Page", () => {
   //         page: {task: "1234", project: undefined}
   //       },
   //       output: {
-  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
   //       },
   //     }
   //   ];
@@ -475,7 +475,7 @@ describe("Page", () => {
         .then(results => ({success: true, results}))
         .catch(results => ({success: false, results}));
     expect(success).to.be.false;
-    expect(results.message).to.be.equal("No client defined on model - For more detail on this error reference: https://github.com/tywalch/electrodb#no-client-defined-on-model")
+    expect(results.message).to.be.equal("No client defined on model - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#no-client-defined-on-model")
   });
 
   describe("query pagination", () => {
@@ -987,7 +987,7 @@ describe("Page", () => {
     it("should throw if 'pages' option is less than one or not a valid number", async () => {
       const employee = "employee";
       const project = "project";
-      const message = "Query option 'pages' must be of type 'number' and greater than zero or the string value 'all' - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-pages-option";
+      const message = "Query option 'pages' must be of type 'number' and greater than zero or the string value 'all' - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-pages-option";
       const result1 = await service.collections.assignments({employee}).go({pages: -1})
           .then(() => ({success: true}))
           .catch(err => ({success: false, message: err.message}));
@@ -1028,7 +1028,7 @@ describe("Page", () => {
     it("should throw if 'limit' option is less than one or not a valid number", async () => {
       const employee = "employee";
       const project = "project";
-      const message = "Query option 'limit' must be of type 'number' and greater than zero. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-limit-option";
+      const message = "Query option 'limit' must be of type 'number' and greater than zero. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-limit-option";
       const result1 = await service.collections.assignments({employee}).go({limit: -1})
           .then(() => ({success: true}))
           .catch(err => ({success: false, message: err.message}));

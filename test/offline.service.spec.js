@@ -750,13 +750,13 @@ describe("Service Offline", () => {
 					.morerecords({attr1: "blah"})
 					.params({table});
 				expect(query.TableName).to.equal(table);
-				expect(() => service.collections.morerecords({attr1: "blah"}).params()).to.throw("Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option. - For more detail on this error reference: https://github.com/tywalch/electrodb#missing-table");
+				expect(() => service.collections.morerecords({attr1: "blah"}).params()).to.throw("Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-table");
 			});
 			it("Should throw if entities are defined with different table names", () => {
 				let table = "table_name";
 				let entity1 = new Entity(model1, {table: "different_table_name1"});
 				let entity2 = new Entity(model2, {table: "different_table_name2"});
-				expect(() => new Service({entity1, entity2})).to.throw("Entity with name 'entity2' is defined to use a different Table than what is defined on other Service Entities and/or the Service itself. Entity 'entity2' is defined with table name 'different_table_name2' but the Service has been defined to use table name 'different_table_name1'. All Entities in a Service must reference the same DynamoDB table. To ensure all Entities will use the same DynamoDB table, it is possible to apply the property 'table' to the Service constructor's configuration parameter. - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
+				expect(() => new Service({entity1, entity2})).to.throw("Entity with name 'entity2' is defined to use a different Table than what is defined on other Service Entities and/or the Service itself. Entity 'entity2' is defined with table name 'different_table_name2' but the Service has been defined to use table name 'different_table_name1'. All Entities in a Service must reference the same DynamoDB table. To ensure all Entities will use the same DynamoDB table, it is possible to apply the property 'table' to the Service constructor's configuration parameter. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join");
 				let service = new Service({entity1, entity2}, {table});
 				let query = service.collections
 					.morerecords({attr1: "blah"})
@@ -775,15 +775,15 @@ describe("Service Offline", () => {
 		});
 	})
 	it("Should not allow a service to be created without a name", () => {
-		expect(() => new Service()).to.throw(`Invalid service name: "". Service name must have length greater than zero - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
+		expect(() => new Service()).to.throw(`Invalid service name: "". Service name must have length greater than zero - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`)
 	});
 	it("Should not allow a join to be performed on an object other than an Entity or Model", () => {
 		let service = new Service("MyService");
-		expect(() => service.join({model: {entity: "beep-boop"}})).to.throw(`Invalid instance: Valid instances to join include Models and Entity instances. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
+		expect(() => service.join({model: {entity: "beep-boop"}})).to.throw(`Invalid instance: Valid instances to join include Models and Entity instances. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`)
 	});
 	it("Should not allow a join to be performed on an empty object", () => {
 		let service = new Service("MyService");
-		expect(() => service.join({})).to.throw(`Invalid instance: Valid instances to join include Models and Entity instances. Additionally, all models must be in the same format (v1 vs beta). Review https://github.com/tywalch/electrodb#version-v1-migration for more detail. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`)
+		expect(() => service.join({})).to.throw(`Invalid instance: Valid instances to join include Models and Entity instances. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`)
 	});
 	it("Should allow joining already initiated entities", () => {
 		let schema = {
@@ -973,7 +973,7 @@ describe("Service Offline", () => {
 
 		database
 			.join(entityOne)
-		expect(() => database.join(entityTwo)).to.throw(`Validation Error while joining entity, "entityTwo". The pk property "casing" provided "lower" does not match established casing "upper" on index "(Primary Index)". Index casing options must match across all entities participating in a collection - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Validation Error while joining entity, "entityTwo". The pk property "casing" provided "lower" does not match established casing "upper" on index "(Primary Index)". Index casing options must match across all entities participating in a collection - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 	});
 	it("Should require that all sort keys should be defined with the same casing", () => {
 		let entityOne = {
@@ -1049,7 +1049,7 @@ describe("Service Offline", () => {
 
 		database
 			.join(entityOne)
-		expect(() => database.join(entityTwo)).to.throw(`Validation Error while joining entity, "entityTwo". The sk property "casing" provided "upper" does not match established casing "lower" on index "(Primary Index)". Index casing options must match across all entities participating in a collection - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Validation Error while joining entity, "entityTwo". The sk property "casing" provided "upper" does not match established casing "lower" on index "(Primary Index)". Index casing options must match across all entities participating in a collection - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 	});
 	it("Should allow partial casing definitions if defaults align with chosen casing", () => {
 		let entityOne = {
@@ -1199,7 +1199,7 @@ describe("Service Offline", () => {
 
 		database
 			.join(entityOne)
-		expect(() => database.join(entityTwo)).to.throw("Partition Key composite attributes provided [\"prop1\"] for index \"(Primary Index)\" do not match established composite attributes [\"prop1\", \"prop7\"] on established index \"(Primary Index)\" - For more detail on this error reference: https://github.com/tywalch/electrodb#join");
+		expect(() => database.join(entityTwo)).to.throw("Partition Key composite attributes provided [\"prop1\"] for index \"(Primary Index)\" do not match established composite attributes [\"prop1\", \"prop7\"] on established index \"(Primary Index)\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join");
 	});
 	it("Should require all PK values", () => {
 		let entityOne = {
@@ -1498,7 +1498,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Collection defined on provided index "gis1" does not match collection established index "gis2". Collections must be defined on the same index across all entities within a service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Collection defined on provided index "gis1" does not match collection established index "gis2". Collections must be defined on the same index across all entities within a service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 		// expect(() => database.join(entityTwo)).to.throw("You cant do that");
 	});
 	it("Should require collections to be set on the same index", () => {
@@ -1574,7 +1574,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Collection defined on provided index "different-index-than-entity-one" does not match collection established index "(Primary Index)". Collections must be defined on the same index across all entities within a service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Collection defined on provided index "different-index-than-entity-one" does not match collection established index "(Primary Index)". Collections must be defined on the same index across all entities within a service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 		// expect(() => database.join(entityTwo)).to.throw("You cant do that");
 	});
 	it("Should validate the PK composite attributes match on all added schemas", () => {
@@ -1638,7 +1638,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided for index "(Primary Index)" do not match established composite attribute "prop1" on established index "(Primary Index)": "prop1" != "prop4"; Composite attribute definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these composite attribute definitions are identical for all entities associated with this service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided for index "(Primary Index)" do not match established composite attribute "prop1" on established index "(Primary Index)": "prop1" != "prop4"; Composite attribute definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these composite attribute definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 	});
 	it("Should validate the PK composite attribute labels match on all added schemas and throw when incorrect", () => {
 		let entityOne = {
@@ -1702,7 +1702,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided for index "(Primary Index)" contain conflicting composite attribute labels for established composite attribute "prop1" on established index "(Primary Index)". Established composite attribute "prop1" on established index "(Primary Index)" was defined with label "rop" while provided composite attribute "prop1" on provided index "(Primary Index)" is defined with label "prop1". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided for index "(Primary Index)" contain conflicting composite attribute labels for established composite attribute "prop1" on established index "(Primary Index)". Established composite attribute "prop1" on established index "(Primary Index)" was defined with label "rop" while provided composite attribute "prop1" on provided index "(Primary Index)" is defined with label "prop1". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 	});
 	it("Should validate the PK composite attribute labels match on all added schemas and not throw when they do match", () => {
 		let entityOne = {
@@ -1832,7 +1832,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Inconsistent attribute(s) on the entity "entityTwo". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "prop1" with Table Field "def" does not match established Table Field "abc". These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Inconsistent attribute(s) on the entity "entityTwo". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "prop1" with Table Field "def" does not match established Table Field "abc". These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 	});
 	it("Should validate the PK field matches on all added schemas", () => {
 		let entityOne = {
@@ -1895,7 +1895,7 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);		
-		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided "pkz" for index "(Primary Index)" do not match established field "pk" on established index "(Primary Index)" - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Partition Key composite attributes provided "pkz" for index "(Primary Index)" do not match established field "pk" on established index "(Primary Index)" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 	});
 	it("Should validate the attributes with matching names have matching fields on all added schemas", () => {
 		let entityOne = {
@@ -1959,11 +1959,11 @@ describe("Misconfiguration exceptions", () => {
 			service: "electrotest",
 		});
 		database.join(entityOne);
-		expect(() => database.join(entityTwo)).to.throw(`Inconsistent attribute(s) on the entity "entityTwo". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "prop1" with Table Field "notProp1" does not match established Table Field "prop1". These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://github.com/tywalch/electrodb#join`);
+		expect(() => database.join(entityTwo)).to.throw(`Inconsistent attribute(s) on the entity "entityTwo". The following attribute(s) are defined with incompatible or conflicting definitions across participating entities: The attribute "prop1" with Table Field "notProp1" does not match established Table Field "prop1". These attribute definitions must match among all members of the collection. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`);
 	});
 	it("Should disallow for 'v1' construction with 'beta' entities", () => {
 		let database = new Service("electrotest", {table: "electro_test"});
-		expect(() => database.join(modelOne)).to.throw("Invalid instance: Valid instances to join include Models and Entity instances. Additionally, all models must be in the same format (v1 vs beta). Review https://github.com/tywalch/electrodb#version-v1-migration for more detail.");
+		expect(() => database.join(modelOne)).to.throw("Invalid instance: Valid instances to join include Models and Entity instances.");
 	});
 	it("Change the table name for the service and it's entities", () => {
 		let schema = {

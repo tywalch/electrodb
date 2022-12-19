@@ -339,6 +339,9 @@ class AttributeOperationProxy {
 
     fromObject(operation, record) {
         for (let path of Object.keys(record)) {
+            if (record[path] === undefined) {
+                continue;
+            }
             const value = record[path];
             const parts = u.parseJSONPath(path);
             let attribute = this.attributes;

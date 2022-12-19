@@ -286,7 +286,7 @@ describe("Where Clause Queries", () => {
                 .go().then(res => res.data);
             throw new Error("Should have thrown")
         } catch(err: any) {
-            expect(err.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+            expect(err.message).to.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
         }
     });
     it("Should update an animal which does exist", async () => {
@@ -342,7 +342,7 @@ describe("Where Clause Queries", () => {
             .then(res => res.data)
             .then(data => data)
             .catch(err => err);
-        expect(wontMatch.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+        expect(wontMatch.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
     });
     it('should properly handle nested properties being used more than once', () => {
         const table = "your_table_name";

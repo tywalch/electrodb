@@ -143,7 +143,7 @@ describe("Entity", () => {
 			.then(results => ({success: true, results}))
 			.catch(results => ({success: false, results}));
 		expect(success).to.be.false;
-		expect(results.message).to.equal("No client defined on model - For more detail on this error reference: https://github.com/tywalch/electrodb#no-client-defined-on-model");
+		expect(results.message).to.equal("No client defined on model - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#no-client-defined-on-model");
 	});
 	describe("Schema validation", () => {
 		let MallStores = new Entity(schema);
@@ -770,13 +770,13 @@ describe("Entity", () => {
 						}
 					},
 					output: {
-						gt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
-						lt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
-						gte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
-						lte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
-						main: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
-						begins: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
-						between: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes',
+						gt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+						lt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+						gte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+						lte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+						main: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+						begins: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+						between: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
 					}
 				},
 			];
@@ -803,7 +803,7 @@ describe("Entity", () => {
 			expect(!isValid);
 			expect(reason).to.be.an("array").with.length(1);
 			expect(reason[0].message).to.eq(
-				`Invalid value type at entity path: "category". Value not found in set of acceptable values: "food/coffee", "food/meal", "clothing", "electronics", "department", "misc" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`,
+				`Invalid value type at entity path: "category". Value not found in set of acceptable values: "food/coffee", "food/meal", "clothing", "electronics", "department", "misc" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`,
 			);
 		});
 		it("Should identify a missing definiton for the table's main index", () => {
@@ -1134,7 +1134,7 @@ describe("Entity", () => {
 						value: new Map(Object.entries({"prop1": "val1", "prop2": "val2"}))
 					},
 					fail: true,
-					message: `Invalid value type at entity path: "data". Expected value to be an object to fulfill attribute type "map" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`
+					message: `Invalid value type at entity path: "data". Expected value to be an object to fulfill attribute type "map" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`
 				},{
 					input: {
 						data: {
@@ -1190,7 +1190,7 @@ describe("Entity", () => {
 						value: new Set(["yes", "no", "maybe"])
 					},
 					fail: true,
-					message: `Invalid value type at entity path: "data". Expected value to be an object to fulfill attribute type "map" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`
+					message: `Invalid value type at entity path: "data". Expected value to be an object to fulfill attribute type "map" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`
 				},{
 					input: {
 						data: {
@@ -1305,7 +1305,7 @@ describe("Entity", () => {
 				},
 			};
 			expect(() => new Entity(schema)).to.throw(
-				`Schema Validation Error. Attribute "duplicateFieldName" property "field". Received: "id", Expected: "Unique field property, already used by attribute id" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition`,
+				`Schema Validation Error. Attribute "duplicateFieldName" property "field". Received: "id", Expected: "Unique field property, already used by attribute id" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition`,
 			);
 		});
 		it("Should validate regex", () => {
@@ -2723,7 +2723,7 @@ describe("Entity", () => {
 						mall: "Washington Square",
 						stores: undefined
 					},
-					output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+					output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 				},
 				{
 					happy: false,
@@ -2740,7 +2740,7 @@ describe("Entity", () => {
 						id: "12345",
 						mall
 					},
-					output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+					output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 				},
 			]
 			for (let test of tests) {
@@ -3589,7 +3589,7 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(schema)).to.throw(`Incompatible PK 'template' and 'composite' properties for defined on index "(Primary Index)". PK "template" string is defined as having composite attributes "attr2", "attr1" while PK "composite" array is defined with composite attributes "attr1", "attr2" - For more detail on this error reference: https://github.com/tywalch/electrodb#incompatible-key-composite-attribute-template`);
+			expect(() => new Entity(schema)).to.throw(`Incompatible PK 'template' and 'composite' properties for defined on index "(Primary Index)". PK "template" string is defined as having composite attributes "attr2", "attr1" while PK "composite" array is defined with composite attributes "attr1", "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template`);
 		});
 		it("Should throw when a supplied composite attribute array does not match a composite attribute template's parsed attributes - On SK Definition", () => {
 			const schema ={
@@ -3627,7 +3627,7 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(schema)).to.throw(`Incompatible SK 'template' and 'composite' properties for defined on index "(Primary Index)". SK "template" string is defined as having composite attributes "attr4", "attr3" while SK "composite" array is defined with composite attributes "attr3", "attr4" - For more detail on this error reference: https://github.com/tywalch/electrodb#incompatible-key-composite-attribute-template`);
+			expect(() => new Entity(schema)).to.throw(`Incompatible SK 'template' and 'composite' properties for defined on index "(Primary Index)". SK "template" string is defined as having composite attributes "attr4", "attr3" while SK "composite" array is defined with composite attributes "attr3", "attr4" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template`);
 		});
 		it("Should allow for custom labels for composite attributes", () => {
 			const schema = {
@@ -5084,7 +5084,7 @@ describe("Entity", () => {
 				it("throw when a collection is added to an index without an SK", () => {
 					let model = JSON.parse(base);
 					delete model.indexes.thing.sk;
-					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(Primary Index)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://github.com/tywalch/electrodb#collection-without-an-sk");
+					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(Primary Index)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#collection-without-an-sk");
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
@@ -5152,7 +5152,7 @@ describe("Entity", () => {
 				it("throw when a collection is added to an index without an SK", () => {
 					let model = JSON.parse(base);
 					delete model.indexes.thing.sk;
-					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(Primary Index)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://github.com/tywalch/electrodb#collection-without-an-sk");
+					expect(() => new Entity(model)).to.throw("Invalid Access pattern definition for 'thing': '(Primary Index)', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#collection-without-an-sk");
 				});
 				it("should ignore collection when sk is custom", () => {
 					let model = JSON.parse(base);
@@ -5318,14 +5318,14 @@ describe("Entity", () => {
 				input: {value: "custom_version"},
 				custom: true,
 				success: false,
-				error: `Invalid identifier type: "". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
+				error: `Invalid identifier type: "". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-identifier`
 			},
 			{
 				description: "invalid custom identifier: bad value",
 				input: {type: "bad_value", value: "custom_version"},
 				custom: true,
 				success: false,
-				error: `Invalid identifier type: "bad_value". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`
+				error: `Invalid identifier type: "bad_value". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-identifier`
 			}
 		];
 		for (let test of tests) {
@@ -5346,7 +5346,7 @@ describe("Entity", () => {
 		}
 		it("Should not allow setIdentifier to be used on identifiers that dont exist", () => {
 			let entity = new Entity(schema, {table: "test"});
-			expect(() => entity.setIdentifier("doesnt_exist")).to.throw(`Invalid identifier type: "doesnt_exist". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-identifier`);
+			expect(() => entity.setIdentifier("doesnt_exist")).to.throw(`Invalid identifier type: "doesnt_exist". Valid identifiers include: "entity", "version" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-identifier`);
 		});
 	});
 	describe("Misconfiguration", () => {
@@ -5392,7 +5392,7 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index2': '(Primary Index)'. This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
+			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index2': '(Primary Index)'. This could be because you forgot to specify the index name of a secondary index defined in your model. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-indexes")
 		});
 		it("Should check for duplicate indexes on secondary index", () => {
 			let schema = {
@@ -5448,7 +5448,7 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index3': 'gsi1' - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-indexes")
+			expect(() => new Entity(schema)).to.throw("Duplicate index defined in model found in Access Pattern 'index3': 'gsi1' - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-indexes")
 		});
 		it("Should check for index and collection name overlap", () => {
 			let schema = {
@@ -5495,10 +5495,10 @@ describe("Entity", () => {
 					}
 				}
 			};
-			expect(() => new Entity(schema)).to.throw(`Duplicate collection, "collectionA" is defined across multiple indexes "index1" and "index2". Collections must be unique names across indexes for an Entity. - For more detail on this error reference: https://github.com/tywalch/electrodb#duplicate-collections`)
+			expect(() => new Entity(schema)).to.throw(`Duplicate collection, "collectionA" is defined across multiple indexes "index1" and "index2". Collections must be unique names across indexes for an Entity. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-collections`)
 		});
 		it("should require a valid schema", () => {
-			expect(() => new Entity()).to.throw(`instance requires property "model", instance requires property "attributes", instance requires property "indexes", instance.model is required - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-model`);
+			expect(() => new Entity()).to.throw(`instance requires property "model", instance requires property "attributes", instance requires property "indexes", instance.model is required - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model`);
 		})
 	});
 	describe("v1 and beta models", () => {
@@ -7769,13 +7769,13 @@ describe("Entity", () => {
 				}
 			}, {table: "table"});
 			let getParams = entity.get({attr1: "abc", attr2: "def"}).params();
-			expect(() => entity.get({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
-			expect(() => entity.delete({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
-			expect(() => entity.remove({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
-			expect(() => entity.update({attr1: "abc"}).set({attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
-			expect(() => entity.patch({attr1: "abc"}).set({attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
-			expect(() => entity.put({attr1: "abc", attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
-			expect(() => entity.create({attr1: "abc", attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes");
+			expect(() => entity.get({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes");
+			expect(() => entity.delete({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes");
+			expect(() => entity.remove({attr1: "abc"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes");
+			expect(() => entity.update({attr1: "abc"}).set({attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes");
+			expect(() => entity.patch({attr1: "abc"}).set({attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes");
+			expect(() => entity.put({attr1: "abc", attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes");
+			expect(() => entity.create({attr1: "abc", attr3: "def"}).params()).to.throw("Incomplete or invalid key composite attributes supplied. Missing properties: \"attr2\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes");
 
 			// empty strings don't count
 			expect(() => entity.get({attr1: "abc", attr2: ""}).params()).to.not.throw;
@@ -8071,13 +8071,13 @@ describe("Entity", () => {
 				description: "should throw because result would create incomplete key without prop7",
 				success: false,
 				input: { prop0, prop6 },
-				output: 'Incomplete composite attributes: Without the composite attributes "prop7" the following access patterns cannot be updated: "accessPattern3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+				output: 'Incomplete composite attributes: Without the composite attributes "prop7" the following access patterns cannot be updated: "accessPattern3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
 			},
 			{
 				description: "should throw because result would create incomplete key without prop6",
 				success: false,
 				input: { prop0, prop7 },
-				output: 'Incomplete composite attributes: Without the composite attributes "prop6" the following access patterns cannot be updated: "accessPattern3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes'
+				output: 'Incomplete composite attributes: Without the composite attributes "prop6" the following access patterns cannot be updated: "accessPattern3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
 			},
 			{
 				description: "should update prop9 and build gsi3sk",
@@ -8113,19 +8113,19 @@ describe("Entity", () => {
 				description: "should throw because result would create incomplete key without prop12",
 				success: false,
 				input: { prop0, prop11 },
-				output: `Incomplete composite attributes: Without the composite attributes "prop12" the following access patterns cannot be updated: "accessPattern5"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+				output: `Incomplete composite attributes: Without the composite attributes "prop12" the following access patterns cannot be updated: "accessPattern5"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 			},
 			{
 				description: "should throw because result would create incomplete key without prop15",
 				success: false,
 				input: { prop0, prop14 },
-				output: `Incomplete composite attributes: Without the composite attributes "prop15" the following access patterns cannot be updated: "accessPattern6"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+				output: `Incomplete composite attributes: Without the composite attributes "prop15" the following access patterns cannot be updated: "accessPattern6"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 			},
 			{
 				description: "should throw because result would create incomplete key without prop14",
 				success: false,
 				input: { prop0, prop15 },
-				output: `Incomplete composite attributes: Without the composite attributes "prop14" the following access patterns cannot be updated: "accessPattern6"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`
+				output: `Incomplete composite attributes: Without the composite attributes "prop14" the following access patterns cannot be updated: "accessPattern6"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 			},
 			{
 				description: "should update prop14, prop15, and set gsi5sk",

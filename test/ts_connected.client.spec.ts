@@ -60,7 +60,7 @@ function createEntity(client: (typeof v2Client | typeof v3Client)) {
 
 describe('dynamodb sdk client compatibility', () => {
     it('should validate the provide method has the require methods', () => {
-        expect(() => createEntity({} as any)).to.throw('Invalid DynamoDB Document Client provided. ElectroDB supports the v2 and v3 DynamoDB Document Clients from the aws-sdk - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-client-provided');
+        expect(() => createEntity({} as any)).to.throw('Invalid DynamoDB Document Client provided. ElectroDB supports the v2 and v3 DynamoDB Document Clients from the aws-sdk - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-client-provided');
     });
     for (const [version, client] of clients) {
         describe(`${version} client`, () => {

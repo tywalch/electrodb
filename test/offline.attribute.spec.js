@@ -9,7 +9,7 @@ describe("constructor", () => {
 			get: "INCORRECT_TYPE",
 		};
 		expect(() => new Attribute(attribute)).to.throw(
-			`Invalid "get" property for attribute ${attribute.name}. Please ensure value is a function or undefined. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition`,
+			`Invalid "get" property for attribute ${attribute.name}. Please ensure value is a function or undefined. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition`,
 		);
 	});
 	it("Should validate 'set' property type", () => {
@@ -19,7 +19,7 @@ describe("constructor", () => {
 			set: "INCORRECT_TYPE",
 		};
 		expect(() => new Attribute(attribute)).to.throw(
-			`Invalid "set" property for attribute ${attribute.name}. Please ensure value is a function or undefined. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-definition`,
+			`Invalid "set" property for attribute ${attribute.name}. Please ensure value is a function or undefined. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition`,
 		);
 	});
 });
@@ -91,7 +91,7 @@ describe("Attribute types", () => {
 		let [isValid, errs] = attribute.isValid(123);
 		expect(isValid).to.be.false;
 		expect(errs).to.be.an("array").with.length(1);
-		expect(errs[0].message).to.be.equal(`Invalid value type at entity path: "property_name". Received value of type "number", expected value of type "string" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`,);
+		expect(errs[0].message).to.be.equal(`Invalid value type at entity path: "property_name". Received value of type "number", expected value of type "string" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`,);
 	});
 });
 
@@ -114,7 +114,7 @@ describe("Enum Set", () => {
 		const [purpleIsValid, purpleErrors] = setEnum.isValid(['PURPLE']);
 		expect(purpleIsValid).to.equal(false);
 		expect(purpleErrors).to.be.an('array').with.length(1);
-		expect(purpleErrors[0].message).to.equal('Invalid value type at entity path: "prop". Value not found in set of acceptable values: "GREEN", "BLUE", "RED" - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute');
+		expect(purpleErrors[0].message).to.equal('Invalid value type at entity path: "prop". Value not found in set of acceptable values: "GREEN", "BLUE", "RED" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute');
 
 
 	});

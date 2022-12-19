@@ -238,7 +238,7 @@ class Attribute {
 
 	_makeApplyFixings({ prefix = "", postfix = "", casing= KeyCasing.none } = {}) {
 		return (value) => {
-			if ([AttributeTypes.string, AttributeTypes.enum].includes(this.type)) {
+			if ([AttributeTypes.string, AttributeTypes.enum].includes(this.type) && value !== undefined) {
 				value = `${prefix}${value}${postfix}`;
 			}
 
@@ -458,7 +458,7 @@ class Attribute {
 		let reason = [];
 		switch (this.type) {
 			case AttributeTypes.enum:
-			case AttributeTypes.enumSet:
+			// case AttributeTypes.enumSet:
 				// isTyped = this.enumArray.every(enumValue => {
 				// 	const val = Array.isArray(value) ? value : [value];
 				// 	return val.includes(enumValue);

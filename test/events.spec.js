@@ -34,10 +34,10 @@ describe('safe listeners', () => {
          undefined,
          123,
       ];
-      expect(() => EventManager.normalizeListeners(fns)).to.throw(`Provided listener is not of type 'function' - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-listener-provided`);
+      expect(() => EventManager.normalizeListeners(fns)).to.throw(`Provided listener is not of type 'function' - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-listener-provided`);
    });
 
    it('should throw if provided parameter is not array', () => {
-      expect(() => EventManager.normalizeListeners(1234)).to.throw(`Listeners must be provided as an array of functions - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-listener-provided`);
+      expect(() => EventManager.normalizeListeners(1234)).to.throw(`Listeners must be provided as an array of functions - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-listener-provided`);
    });
 });

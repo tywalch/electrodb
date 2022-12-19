@@ -234,15 +234,15 @@ describe("Filter", () => {
 			};
 			schema.filters = { go: () => "" };
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid filter name: go. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://github.com/tywalch/electrodb#filters`,
+				`Invalid filter name: go. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#filters`,
 			);
 			schema.filters = { params: () => "" };
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid filter name: params. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://github.com/tywalch/electrodb#filters`,
+				`Invalid filter name: params. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#filters`,
 			);
 			schema.filters = { filter: () => "" };
 			expect(() => new Entity(schema)).to.throw(
-				`Invalid filter name: filter. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://github.com/tywalch/electrodb#filters`,
+				`Invalid filter name: filter. Filter cannot be named "go", "params", "filter", "where", "set" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#filters`,
 			);
 		});
 	});

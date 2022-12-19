@@ -374,12 +374,12 @@ describe("listener functions", () => {
     describe('listener validation', () => {
         it('should validate that the provided logger is a function', () => {
             const test = () => createTestEntity('entity1', {} as any);
-            expect(test).to.throw("Provided listener is not of type 'function' - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-listener-provided");
+            expect(test).to.throw("Provided listener is not of type 'function' - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-listener-provided");
         });
 
         it('should validate that the provided listeners are functions', () => {
             const test = () => createTestEntity('entity', () => {}, [{} as any]);
-            expect(test).to.throw("Provided listener is not of type 'function' - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-listener-provided");
+            expect(test).to.throw("Provided listener is not of type 'function' - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-listener-provided");
         });
     });
 

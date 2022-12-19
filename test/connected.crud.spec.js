@@ -327,7 +327,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					try {
 						recordTwo = await MallStores.create(record).go().then(res => res.data);
 					} catch(err) {
-						expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+						expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
 					}
 					expect(recordTwo).to.be.null;
 				});
@@ -361,7 +361,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					try {
 						patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go().then(res => res.data);
 					} catch(err) {
-						expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+						expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
 					}
 					expect(patchResultsTwo).to.be.null
 				});
@@ -384,8 +384,8 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(electroSuccess).to.be.false;
 					expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
 					expect([
-						"Requested resource not found - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error",
-						"Cannot do operations on a non-existent table - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error"
+						'Error thrown by DynamoDB client: "Requested resource not found" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error',
+						'Error thrown by DynamoDB client: "Cannot do operations on a non-existent table" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error'
 					].includes(electroErr.message)).to.be.true;
 					expect(originalSuccess).to.be.false;
 					expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
@@ -668,7 +668,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					try {
 						recordTwo = await MallStores.create(record).go();
 					} catch(err) {
-						expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+						expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
 					}
 					expect(recordTwo).to.be.null
 				});
@@ -701,7 +701,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					try {
 						patchResultsTwo = await MallStores.patch({sector, id: `${id}-2`}).set({rent: "200.00"}).go().then(res => res.data);
 					} catch(err) {
-						expect(err.message).to.be.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error");
+						expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
 					}
 					expect(patchResultsTwo).to.be.null
 				});
@@ -723,8 +723,8 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(electroSuccess).to.be.false;
 					expect(electroErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.false;
 					expect([
-						"Requested resource not found - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error",
-						"Cannot do operations on a non-existent table - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error"
+						'Error thrown by DynamoDB client: "Requested resource not found" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error',
+						'Error thrown by DynamoDB client: "Cannot do operations on a non-existent table" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error'
 					].includes(electroErr.message)).to.be.true;
 					expect(originalSuccess).to.be.false;
 					expect(originalErr.stack.split(/\r?\n/)[1].includes("aws-sdk")).to.be.true;
@@ -1701,7 +1701,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							.then((res) => [true, res])
 							.catch(err => [false, err])
 						expect(success).to.be.false;
-						expect(result.message).to.equal(`Attribute "updatedAt" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+						expect(result.message).to.equal(`Attribute "updatedAt" is Read-Only and cannot be updated - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
 					});
 				});
 				describe("Setter Triggers", () => {
@@ -3103,7 +3103,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						}
 					}
 
-					expect(() => new Entity(schema)).to.throw(`Attribute Validation Error. Attributes may only "watch" other attributes also watch attributes. The following attributes are defined with ineligible attributes to watch: "prop3"->"prop2", "prop5"->"prop2", "prop4"->"prop3", "prop5"->"prop3", "prop5"->"prop4". - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-watch-definition`);
+					expect(() => new Entity(schema)).to.throw(`Attribute Validation Error. Attributes may only "watch" other attributes also watch attributes. The following attributes are defined with ineligible attributes to watch: "prop3"->"prop2", "prop5"->"prop2", "prop4"->"prop3", "prop5"->"prop3", "prop5"->"prop4". - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-watch-definition`);
 				});
 				it("Should not allow a watcher to watch an unknown property", () => {
 					let schema = {
@@ -3135,7 +3135,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						}
 					}
 
-					expect(() => new Entity(schema)).to.throw(`Attribute Validation Error. The following attributes are defined to "watch" invalid/unknown attributes: "prop3"->"unknown". - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute-watch-definition`);
+					expect(() => new Entity(schema)).to.throw(`Attribute Validation Error. The following attributes are defined to "watch" invalid/unknown attributes: "prop3"->"unknown". - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-watch-definition`);
 				});
 			});
 			describe("Query Options", () => {
@@ -3502,7 +3502,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						throw null;
 					} catch(err) {
 						expect(err).to.not.be.null;
-						expect(err.message).to.equal(`Attribute "prop2" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+						expect(err.message).to.equal(`Attribute "prop2" is Read-Only and cannot be updated - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
 					}
 				});
 
@@ -3515,7 +3515,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						throw null;
 					} catch(err) {
 						expect(err).to.not.be.null;
-						expect(err.message).to.equal(`Attribute "prop2" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+						expect(err.message).to.equal(`Attribute "prop2" is Read-Only and cannot be updated - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
 					}
 				});
 
@@ -3527,7 +3527,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						throw null;
 					} catch(err) {
 						expect(err).to.not.be.null;
-						expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
+						expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
 					}
 				});
 
@@ -3539,7 +3539,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						throw null;
 					} catch(err) {
 						expect(err).to.not.be.null;
-						expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
+						expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
 					}
 				});
 

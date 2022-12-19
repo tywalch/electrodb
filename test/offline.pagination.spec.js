@@ -402,7 +402,7 @@ describe("Offline Pagination", () => {
        //     };
        //     let result = await taskr.collections.workplaces({office: "Mobile Branch"}).page(pager, {pager: "named"}).then(() => ({success: true})).catch((err) => ({success: false, err}));
        //     expect(result.success).to.be.false;
-       //     expect(result.err.message).to.equal("Supplied Pager does not resolve to Entity within Service - For more detail on this error reference: https://github.com/tywalch/electrodb#no-owner-for-pager");
+       //     expect(result.err.message).to.equal("Supplied Pager does not resolve to Entity within Service - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#no-owner-for-pager");
        // });
 
        // it("Should throw when named pager does not map to any known entities -- pager option 'item'", async () => {
@@ -416,7 +416,7 @@ describe("Offline Pagination", () => {
        //     });
        //     let result = await taskr.collections.workplaces({office: "Mobile Branch"}).go({cursor}).then(() => ({success: true})).catch((err) => ({success: false, err}));
        //     expect(result.success).to.be.false;
-       //     expect(result.err.message).to.equal("Supplied Pager did not resolve to single Entity - For more detail on this error reference: https://github.com/tywalch/electrodb#pager-not-unique");
+       //     expect(result.err.message).to.equal("Supplied Pager did not resolve to single Entity - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#pager-not-unique");
        // });
 
        it("Should reformat a item pager correctly back into a ExclusiveStartKey", async () => {
@@ -683,7 +683,7 @@ describe("Offline Pagination", () => {
        //        .then(() => ({success: true}))
        //        .catch(err => ({success: false, err}))
        //     expect(results.success).to.be.false;
-       //     expect(results.err.message).to.equal("Supplied Pager did not resolve to single Entity - For more detail on this error reference: https://github.com/tywalch/electrodb#pager-not-unique");
+       //     expect(results.err.message).to.equal("Supplied Pager did not resolve to single Entity - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#pager-not-unique");
        // });
    })
 });

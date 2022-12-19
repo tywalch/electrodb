@@ -572,7 +572,7 @@ describe("Update Item", () => {
                 id: "test",
                 email: "user@example.com",
                 name8: {}, // unfortunate combination, user defined illogical defaults that resulted in non-typed validation error
-            }).params()).to.throw('Invalid value type at entity path: "name8.legal.middle". Value is required. - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute');
+            }).params()).to.throw('Invalid value type at entity path: "name8.legal.middle". Value is required. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute');
         });
         it('should not clobber a deeply nested attribute when updating', async () => {
             const customers = new Entity(
@@ -650,7 +650,7 @@ describe("Update Item", () => {
                 .catch(err => ({success: false, result: err}));
 
             expect(updated1.success).to.be.false;
-            expect(updated1.result.message).to.equal('The document path provided in the update expression is invalid for update - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error');
+            expect(updated1.result.message).to.equal('Error thrown by DynamoDB client: "The document path provided in the update expression is invalid for update" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
 
             const updated2 = await customers.patch({id: id2})
                 .data((attr, op) => {
@@ -1052,7 +1052,7 @@ describe("Update Item", () => {
                 .then(() => {})
                 .catch(err => err);
 
-            expect(update.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error")
+            expect(update.message).to.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error')
         });
 
         it("should conditionally update a list attribute", async () => {
@@ -1114,7 +1114,7 @@ describe("Update Item", () => {
                 .then(() => {})
                 .catch(err => err);
 
-            expect(update.message).to.equal("The conditional request failed - For more detail on this error reference: https://github.com/tywalch/electrodb#aws-error")
+            expect(update.message).to.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error')
         });
     });
 
@@ -2413,7 +2413,7 @@ describe("Update Item", () => {
                 ])
                 .params();
 
-            expect(error).to.throw(`Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`)
+            expect(error).to.throw(`Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`)
 
             const error2 = await users
                 .update({username})
@@ -2422,7 +2422,7 @@ describe("Update Item", () => {
                 ])
                 .go()
                 .catch(err => err);
-            expect(error2.message).to.equal(`Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://github.com/tywalch/electrodb#incomplete-composite-attributes`);
+            expect(error2.message).to.equal(`Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
         });
 
         it("should respect readOnly", async () => {
@@ -2445,7 +2445,7 @@ describe("Update Item", () => {
                 .go()
                 .catch(err => err);
 
-            expect(removeError.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(removeError.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be removed - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
 
             const dataRemoveError = await repositories
                 .update({repoName, repoOwner})
@@ -2458,7 +2458,7 @@ describe("Update Item", () => {
                 .go()
                 .catch(err => err);
             expect(dataRemoveError.message).to.not.be.undefined;
-            expect(dataRemoveError.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated - For more detail on this error reference: https://github.com/tywalch/electrodb#invalid-attribute`);
+            expect(dataRemoveError.message).to.equal(`Attribute "createdAt" is Read-Only and cannot be updated - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute`);
         });
 
         it("should remove properties from an item via the update method", async () => {
