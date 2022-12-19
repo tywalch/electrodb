@@ -298,3 +298,4 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.3.5] - 2022-12-18
 ### Fixed
 - Fixes issue that resulted in provided undefined values from becoming involuntarily set via updates
+- Updated documentation links in error message to direct traffic to https://electrodb.dev
