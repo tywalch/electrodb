@@ -109,3 +109,4 @@ dist
 .tern-port
 
 playground/bundle.js
+test/debug.ts

@@ -238,7 +238,7 @@ class Attribute {
 
 	_makeApplyFixings({ prefix = "", postfix = "", casing= KeyCasing.none } = {}) {
 		return (value) => {
-			if ([AttributeTypes.string, AttributeTypes.enum].includes(this.type)) {
+			if ([AttributeTypes.string, AttributeTypes.enum].includes(this.type) && value !== undefined) {
 				value = `${prefix}${value}${postfix}`;
 			}
 
