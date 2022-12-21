@@ -17,7 +17,7 @@ ElectroDB's `parse()` method accepts results from `get`, `delete`, `put`, `updat
 
 ```typescript
 const myEntity = new Entity({...});
-const getResults = docClient.get({...}).promise();
+const getResults = await docClient.get({...}).promise();
 const queryResults = docClient.query({...}).promise();
 const updateResults = docClient.update({...}).promise(); 
 const formattedGetResults = myEntity.parse(getResults);
