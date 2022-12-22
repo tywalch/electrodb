@@ -1,0 +1,51 @@
+---
+title: Parse
+description: Parse DocumentClient objects into business entities
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - parse
+layout: ../../../layouts/MainLayout.astro
+---
+
+## Parse
+The parse method can be given a DocClient response and return a typed and formatted ElectroDB item.
+
+ElectroDB's `parse()` method accepts results from `get`, `delete`, `put`, `update`, `query`, and `scan` operations, applies all the same operations as though the item was retrieved by ElectroDB itself, and will return `null` (or empty array for `query` results) if the item could not be parsed.
+
+```typescript
+const myEntity = new Entity({...});
+const getResults = await docClient.get({...}).promise();
+const queryResults = await docClient.query({...}).promise();
+const updateResults = await docClient.update({...}).promise(); 
+const formattedGetResults = myEntity.parse(getResults);
+const formattedQueryResults = myEntity.parse(formattedQueryResults);
+```
+
+### Dynamo Streams
+The parse method can also help handle events that come through dynamo events (`DynamoDBStreamEvent`). In order to do this, you must first unmarshal the response from dynamo using the DynamoDB `Converter` and then call `parse()`
+
+```typescript
+import DynamoDB from "aws-sdk/clients/dynamodb";
+import { DynamoDBStreamEvent } from 'aws-lambda';
+import { MyEntity } from "./my-entity";
+
+function main(event: DynamoDBStreamEvent) {
+  const parsed = event.Records
+    .map(record => DynamoDB.Converter.unmarshall(record.dynamodb.NewImage))
+    .map(item => MyEntity.parse({ Item: item }))
+
+  console.log(parsed)
+}
+```
+
+### Options
+
+Parse also accepts an optional `options` object as a second argument (see the section [Query Options](#query-options) to learn more). Currently, the following query options are relevant to the `parse()` method:
+
+Option            | Type     | Default            | Notes
+----------------- | -------- | ------------------ | -----
+ignoreOwnership   | boolean  | `true`             | This property defaults to `true` here, unlike elsewhere in the application when it defaults to `false`. You can overwrite the default here with your own preference.
+attributes        | string[] | _(all attributes)_ | The `attributes` option allows you to specify a subset of attributes to return
