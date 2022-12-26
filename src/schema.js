@@ -238,7 +238,11 @@ class Attribute {
 
 	_makeApplyFixings({ prefix = "", postfix = "", casing= KeyCasing.none } = {}) {
 		return (value) => {
-			if ([AttributeTypes.string, AttributeTypes.enum].includes(this.type) && value !== undefined) {
+			if (value === undefined) {
+				return;
+			}
+
+			if ([AttributeTypes.string, AttributeTypes.enum].includes(this.type)) {
 				value = `${prefix}${value}${postfix}`;
 			}
 
@@ -303,6 +307,10 @@ class Attribute {
 
 			return value;
 		};
+	}
+
+	acceptable(val) {
+		return val !== undefined;
 	}
 
 	getPathType(type, parentType) {
@@ -876,10 +884,16 @@ class SetAttribute extends Attribute {
 			value = Array.isArray(value)
 				? Array.from(new Set(value))
 				: value;
-			return this.client.createSet(value, {validate: true});
+			return this.client.createSet(value, { validate: true });
 		} else {
 			return new DynamoDBSet(value, this.items.type);
 		}
+	}
+
+	acceptable(val) {
+		return Array.isArray(val)
+			? val.length > 0
+			: this.items.acceptable(val);
 	}
 
 	toDDBSet(value) {

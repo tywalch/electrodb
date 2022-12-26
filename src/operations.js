@@ -379,7 +379,7 @@ class AttributeOperationProxy {
 
     static buildOperations(builder, operations) {
         let ops = {};
-        let seen = new Set();
+        let seen = new Map();
         for (let operation of Object.keys(operations)) {
             let {template, canNest} = operations[operation];
             Object.defineProperty(ops, operation, {
@@ -388,22 +388,40 @@ class AttributeOperationProxy {
                         if (property === undefined) {
                             throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid/Unknown property passed in where clause passed to operation: '${operation}'`);
                         }
-                        if (property.__is_clause__ === AttributeProxySymbol) {
-                            const {paths, root, target} = property();
+                        if (property[AttributeProxySymbol]) {
+                            const { commit, target } = property();
+                            const fixedValues = values.map((value) => target.applyFixings(value))
+                                .filter(value => value !== undefined);
+                            const isFilterBuilder = builder.type === BuilderTypes.filter;
+                            const takesValueArgument = template.length > 3;
+                            const isAcceptableValue = fixedValues.every(value => {
+                                const seenAttributes = seen.get(value);
+                                if (seenAttributes) {
+                                    return seenAttributes.every(v => target.acceptable(v))
+                                }
+                                return target.acceptable(value);
+                            });
+
+                            const shouldCommit = isFilterBuilder || !takesValueArgument || isAcceptableValue;
+
+                            if (!shouldCommit) {
+                                return '';
+                            }
+
+                            const paths = commit();
                             const attributeValues = [];
                             let hasNestedValue = false;
-                            for (let value of values) {
-                                value = target.applyFixings(value);
-                                // template.length is to see if function takes value argument
-                                if (template.length > 3) {
-                                    if (seen.has(value)) {
-                                        attributeValues.push(value);
-                                        hasNestedValue = true;
-                                    } else {
-                                        let attributeValueName = builder.setValue(target.name, value);
-                                        builder.setPath(paths.json, {value, name: attributeValueName});
-                                        attributeValues.push(attributeValueName);
-                                    }
+                            for (let fixedValue of fixedValues) {
+                                if (seen.has(fixedValue)) {
+                                    attributeValues.push(fixedValue);
+                                    hasNestedValue = true;
+                                } else {
+                                    let attributeValueName = builder.setValue(target.name, fixedValue);
+                                    builder.setPath(paths.json, {
+                                        value: fixedValue,
+                                        name: attributeValueName
+                                    });
+                                    attributeValues.push(attributeValueName);
                                 }
                             }
 
@@ -414,8 +432,8 @@ class AttributeOperationProxy {
                             const formatted = template(options, target, paths.expression, ...attributeValues);
                             builder.setImpacted(operation, paths.json, target);
                             if (canNest) {
-                                seen.add(paths.expression);
-                                seen.add(formatted);
+                                seen.set(paths.expression, attributeValues);
+                                seen.set(formatted, attributeValues);
                             }
 
                             if (builder.type === BuilderTypes.update && formatted && typeof formatted.operation === "string" && typeof formatted.expression === "string") {
@@ -437,15 +455,15 @@ class AttributeOperationProxy {
     static pathProxy(build) {
         return new Proxy(() => build(), {
             get: (_, prop, o) => {
-                if (prop === "__is_clause__") {
-                    return AttributeProxySymbol;
+                if (prop === AttributeProxySymbol) {
+                    return true;
                 } else {
                     return AttributeOperationProxy.pathProxy(() => {
-                        const { paths, root, target, builder } = build();
+                        const { commit, root, target, builder } = build();
                         const attribute = target.getChild(prop);
                         let field;
                         if (attribute === undefined) {
-                            throw new Error(`Invalid attribute "${prop}" at path "${paths.json}".`);
+                            throw new Error(`Invalid attribute "${prop}" at path "${target.path}.${prop}"`);
                         } else if (attribute === root && attribute.type === AttributeTypes.any) {
                             // This function is only called if a nested property is called. If this attribute is ultimately the root, don't use the root's field name
                             field = prop;
@@ -457,7 +475,10 @@ class AttributeOperationProxy {
                             root,
                             builder,
                             target: attribute,
-                            paths: builder.setName(paths, prop, field),
+                            commit: () => {
+                                const paths = commit();
+                                return builder.setName(paths, prop, field);
+                            },
                         }
                     });
                 }
@@ -471,12 +492,13 @@ class AttributeOperationProxy {
             Object.defineProperty(attr, name, {
                 get: () => {
                     return AttributeOperationProxy.pathProxy(() => {
-                        const paths = builder.setName({}, attribute.name, attribute.field);
+                        // const paths = builder.setName({}, attribute.name, attribute.field);
                         return {
-                            paths,
+                            // paths,
                             root: attribute,
                             target: attribute,
                             builder,
+                            commit: () => builder.setName({}, attribute.name, attribute.field)
                         }
                     });
                 }
