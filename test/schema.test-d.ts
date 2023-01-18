@@ -1,4 +1,5 @@
 import {
+    createSchema,
     Schema,
     IndexCollections,
     EntityCollections,
@@ -186,8 +187,6 @@ type MyBasicCustomAttribute = {
     count: number;
 }
 
-
-
 type MyCustomAttributeType = {
   strAttr: string;
   numAttr: number;
@@ -217,49 +216,51 @@ type MyCustomAttributeType = {
   maybeBoolAttr?: boolean;
 }
 
-const entityWithCustomAttribute = new MockEntity({
-  model: {
-    entity: "withcustomattribute",
-    service: "myservice",
-    version: "myversion"
-  },
-  attributes: {
-      attr1: {
-          type: "string",
-      },
-      attr2: createCustomAttribute<MyCustomAttributeType>({
-        get: (attr) => {
-          expectType<MyCustomAttributeType>(attr);
-          return attr;
-        },
-        set: (attr) => {
-          expectType<MyCustomAttributeType|undefined>(attr);
-          return attr;
-        },
-        validate: (attr) => {
-          expectType<MyCustomAttributeType>(attr);
-        },
-      })
-  },
-  indexes: {
-    myIndex: {
-      pk: {
-        field: "pk",
-        composite: ["attr1"]
-      },
-      sk: {
-        field: "sk",
-        composite: []
-      }
+const schemaWithCustomAttribute = createSchema({
+    model: {
+        entity: "withcustomattribute",
+        service: "myservice",
+        version: "myversion"
     },
-  }
+    attributes: {
+        attr1: {
+            type: "string",
+        },
+        attr2: createCustomAttribute<MyCustomAttributeType>({
+            get: (attr) => {
+                expectType<MyCustomAttributeType>(attr);
+                return attr;
+            },
+            set: (attr) => {
+                expectType<MyCustomAttributeType|undefined>(attr);
+                return attr;
+            },
+            validate: (attr) => {
+                expectType<MyCustomAttributeType>(attr);
+            },
+        })
+    },
+    indexes: {
+        myIndex: {
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: []
+            }
+        },
+    }
 });
+
+const entityWithCustomAttribute = new MockEntity(schemaWithCustomAttribute);
 
 type OpaqueAttr1 = string & { cheese: 'cheddar' };
 type OpaqueAttr2 = number & { cheese: 'bacon' };
 type PizzaSize = number & {isPizzaSize: true};
 
-const entityWithCustomAttribute2 = new MockEntity({
+const schemaWithCustomAttribute2 = createSchema({
     model: {
         entity: "withcustomattribute2",
         service: "myservice",
@@ -306,354 +307,363 @@ const entityWithCustomAttribute2 = new MockEntity({
             }
         },
     }
-});
+})
+const entityWithCustomAttribute2 = new MockEntity(schemaWithCustomAttribute2);
 
-const entityWithEnumSets = new MockEntity({
-  model: {
-    entity: "withcustomattribute",
-    service: "myservice",
-    version: "myversion"
-  },
-  attributes: {
-    attr1: {
-      type: "string",
+const schemaWithEnumSets = createSchema({
+    model: {
+        entity: "withcustomattribute",
+        service: "myservice",
+        version: "myversion"
     },
-    strEnumSet: {
-      type: 'set',
-      items: ['ONE', 'TWO', 'THREE'] as const,
-    },
-    numEnumSet: {
-      type: 'set',
-      items: [1, 2, 3] as const,
-    },
-    mapAttr: {
-      type: 'map',
-      properties: {
-        nestedStrEnumSet: {
-          type: 'set',
-          items: ['ONE', 'TWO', 'THREE'] as const,
+    attributes: {
+        attr1: {
+            type: "string",
         },
-        nestedNumEnumSet: {
-          type: 'set',
-          items: [1, 2, 3] as const,
+        strEnumSet: {
+            type: 'set',
+            items: ['ONE', 'TWO', 'THREE'] as const,
         },
-      }
+        numEnumSet: {
+            type: 'set',
+            items: [1, 2, 3] as const,
+        },
+        mapAttr: {
+            type: 'map',
+            properties: {
+                nestedStrEnumSet: {
+                    type: 'set',
+                    items: ['ONE', 'TWO', 'THREE'] as const,
+                },
+                nestedNumEnumSet: {
+                    type: 'set',
+                    items: [1, 2, 3] as const,
+                },
+            }
+        }
+    },
+    indexes: {
+        myIndex: {
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: []
+            }
+        },
     }
-  },
-  indexes: {
-    myIndex: {
-      pk: {
-        field: "pk",
-        composite: ["attr1"]
-      },
-      sk: {
-        field: "sk",
-        composite: []
-      }
+})
+const entityWithEnumSets = new MockEntity(schemaWithEnumSets);
+
+const schemaWithoutCollection = createSchema({
+    model: {
+        entity: "entity2",
+        service: "myservice",
+        version: "myversion"
     },
-  }
-});
-
-const entityWithoutCollection = new MockEntity({
-  model: {
-    entity: "entity2",
-    service: "myservice",
-    version: "myversion"
-  },
-  attributes: {
-      attr1: {
-          type: "string",
-      },
-      attr2: {
-          type: "string",
-      }
-  },
-  indexes: {
-    myIndex: {
-      pk: {
-        field: "pk",
-        composite: ["attr1"]
-      },
-      sk: {
-        field: "sk",
-        composite: ["attr2"]
-      }
+    attributes: {
+        attr1: {
+            type: "string",
+        },
+        attr2: {
+            type: "string",
+        }
     },
-    myIndex2: {
-      index: "index2",
-      pk: {
-          field: "index2pk",
-          composite: ["attr1"]
-      },
-      sk: {
-          field: "index2sk",
-          composite: ["attr2"]
-      }
+    indexes: {
+        myIndex: {
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["attr2"]
+            }
+        },
+        myIndex2: {
+            index: "index2",
+            pk: {
+                field: "index2pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "index2sk",
+                composite: ["attr2"]
+            }
+        },
+    }
+});
+
+const entityWithoutCollection = new MockEntity(schemaWithoutCollection);
+
+const schemaWithSK = createSchema({
+    model: {
+        entity: "abc",
+        service: "myservice",
+        version: "myversion"
     },
-  }
+    attributes: {
+        attr1: {
+            type: "string",
+            default: "abc",
+            get: (val) => val + 123,
+            set: (val) => (val ?? "") + 456,
+            validate: (val) => !!val,
+        },
+        attr2: {
+            type: "string",
+            // default: () => "sfg",
+            // required: false,
+            validate: (val) => val.length > 0
+        },
+        attr3: {
+            type: ["123", "def", "ghi"] as const,
+            default: "def"
+        },
+        attr4: {
+            type: ["abc", "ghi"] as const,
+            required: true
+        },
+        attr5: {
+            type: "string"
+        },
+        attr6: {
+            type: "number",
+            default: () => 100,
+            get: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
+            validate: (val) => true,
+        },
+        attr7: {
+            type: "any",
+            default: () => false,
+            get: (val) => ({key: "value"}),
+            set: (val) => (val ?? 0) + 5,
+            validate: (val) => true,
+        },
+        attr8: {
+            type: "boolean",
+            required: true,
+            get: (val) => !!val,
+            set: (val) => !!val,
+            validate: (val) => !!val,
+        },
+        attr9: {
+            type: "number"
+        },
+        attr10: {
+            type: "boolean"
+        }
+    },
+    indexes: {
+        myIndex: {
+            collection: "mycollection2",
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["attr2"]
+            }
+        },
+        myIndex2: {
+            collection: "mycollection1",
+            index: "gsi1",
+            pk: {
+                field: "gsipk1",
+                composite: ["attr6", "attr9"]
+            },
+            sk: {
+                field: "gsisk1",
+                composite: ["attr4", "attr5"]
+            }
+        },
+        myIndex3: {
+            collection: "mycollection",
+            index: "gsi2",
+            pk: {
+                field: "gsipk2",
+                composite: ["attr5"]
+            },
+            sk: {
+                field: "gsisk2",
+                composite: ["attr4", "attr3", "attr9"]
+            }
+        }
+    }
+});
+const entityWithSK = new MockEntity(schemaWithSK);
+
+const schemaWithoutSK = createSchema({
+    model: {
+        entity: "abc",
+        service: "myservice",
+        version: "myversion"
+    },
+    attributes: {
+        attr1: {
+            type: "string",
+            // default: "abc",
+            get: (val) => val + 123,
+            set: (val) => (val ?? "0") + 456,
+            validate: (val) => !!val,
+        },
+        attr2: {
+            type: "string",
+            // default: () => "sfg",
+            // required: false,
+            validate: (val) => val.length > 0
+        },
+        attr3: {
+            type: ["123", "def", "ghi"] as const,
+            default: "def"
+        },
+        attr4: {
+            type: ["abc", "def"] as const,
+            required: true
+        },
+        attr5: {
+            type: "string"
+        },
+        attr6: {
+            type: "number",
+            default: () => 100,
+            get: (val) => val + 5,
+            set: (val) => (val ?? 0) + 5,
+            validate: (val) => true,
+        },
+        attr7: {
+            type: "any",
+            default: () => false,
+            get: (val) => ({key: "value"}),
+            set: (val) => (val ?? 0) + 5,
+            validate: (val) => true,
+        },
+        attr8: {
+            type: "boolean",
+            required: true,
+            default: () => false,
+            get: (val) => !!val,
+            set: (val) => !!val,
+            validate: (val) => !!val,
+        },
+        attr9: {
+            type: "number"
+        }
+    },
+    indexes: {
+        myIndex: {
+            pk: {
+                field: "pk",
+                composite: ["attr1"]
+            }
+        },
+        myIndex2: {
+            index: "gsi1",
+            collection: "mycollection1",
+            pk: {
+                field: "gsipk1",
+                composite: ["attr6", "attr9"]
+            },
+            sk: {
+                field: "gsisk1",
+                composite: []
+            }
+        },
+        myIndex3: {
+            collection: "mycollection",
+            index: "gsi2",
+            pk: {
+                field: "gsipk2",
+                composite: ["attr5"]
+            },
+            sk: {
+                field: "gsisk2",
+                composite: []
+            }
+        }
+    }
 });
 
-const entityWithSK = new MockEntity({
-  model: {
-      entity: "abc",
-      service: "myservice",
-      version: "myversion"
-  },
-  attributes: {
-      attr1: {
-          type: "string",
-          default: "abc",
-          get: (val) => val + 123,
-          set: (val) => (val ?? "") + 456,
-          validate: (val) => !!val,
-      },
-      attr2: {
-          type: "string",
-          // default: () => "sfg",
-          // required: false,
-          validate: (val) => val.length > 0
-      },
-      attr3: {
-          type: ["123", "def", "ghi"] as const,
-          default: "def"
-      },
-      attr4: {
-          type: ["abc", "ghi"] as const,
-          required: true
-      },
-      attr5: {
-          type: "string"
-      },
-      attr6: {
-          type: "number",
-          default: () => 100,
-          get: (val) => val + 5,
-          set: (val) => (val ?? 0) + 5,
-          validate: (val) => true,
-      },
-      attr7: {
-          type: "any",
-          default: () => false,
-          get: (val) => ({key: "value"}),
-          set: (val) => (val ?? 0) + 5,
-          validate: (val) => true,
-      },
-      attr8: {
-          type: "boolean",
-          required: true,
-          get: (val) => !!val,
-          set: (val) => !!val,
-          validate: (val) => !!val,
-      },
-      attr9: {
-          type: "number"
-      },
-      attr10: {
-          type: "boolean"
-      }
-  },
-  indexes: {
-      myIndex: {
-          collection: "mycollection2",
-          pk: {
-              field: "pk",
-              composite: ["attr1"]
-          },
-          sk: {
-              field: "sk",
-              composite: ["attr2"]
-          }
-      },
-      myIndex2: {
-          collection: "mycollection1",
-          index: "gsi1",
-          pk: {
-              field: "gsipk1",
-              composite: ["attr6", "attr9"]
-          },
-          sk: {
-              field: "gsisk1",
-              composite: ["attr4", "attr5"]
-          }
-      },
-      myIndex3: {
-          collection: "mycollection",
-          index: "gsi2",
-          pk: {
-              field: "gsipk2",
-              composite: ["attr5"]
-          },
-          sk: {
-              field: "gsisk2",
-              composite: ["attr4", "attr3", "attr9"]
-          }
-      }
-  }
-});
+const entityWithoutSK = new MockEntity(schemaWithoutSK);
 
-const entityWithoutSK = new MockEntity({
-  model: {
-      entity: "abc",
-      service: "myservice",
-      version: "myversion"
-  },
-  attributes: {
-      attr1: {
-          type: "string",
-          // default: "abc",
-          get: (val) => val + 123,
-          set: (val) => (val ?? "0") + 456,
-          validate: (val) => !!val,
-      },
-      attr2: {
-          type: "string",
-          // default: () => "sfg",
-          // required: false,
-          validate: (val) => val.length > 0
-      },
-      attr3: {
-          type: ["123", "def", "ghi"] as const,
-          default: "def"
-      },
-      attr4: {
-          type: ["abc", "def"] as const,
-          required: true
-      },
-      attr5: {
-          type: "string"
-      },
-      attr6: {
-          type: "number",
-          default: () => 100,
-          get: (val) => val + 5,
-          set: (val) => (val ?? 0) + 5,
-          validate: (val) => true,
-      },
-      attr7: {
-          type: "any",
-          default: () => false,
-          get: (val) => ({key: "value"}),
-          set: (val) => (val ?? 0) + 5,
-          validate: (val) => true,
-      },
-      attr8: {
-          type: "boolean",
-          required: true,
-          default: () => false,
-          get: (val) => !!val,
-          set: (val) => !!val,
-          validate: (val) => !!val,
-      },
-      attr9: {
-          type: "number"
-      }
-  },
-  indexes: {
-      myIndex: {
-          pk: {
-              field: "pk",
-              composite: ["attr1"]
-          }
-      },
-      myIndex2: {
-          index: "gsi1",
-          collection: "mycollection1",
-          pk: {
-              field: "gsipk1",
-              composite: ["attr6", "attr9"]
-          },
-          sk: {
-              field: "gsisk1",
-              composite: []
-          }
-      },
-      myIndex3: {
-          collection: "mycollection",
-          index: "gsi2",
-          pk: {
-              field: "gsipk2",
-              composite: ["attr5"]
-          },
-          sk: {
-              field: "gsisk2",
-              composite: []
-          }
-      }
-  }
-});
+const standAloneSchema = createSchema({
+    model: {
+        entity: "standalone",
+        service: "myservice",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string",
+            default: "abc"
+        },
+        prop2: {
+            type: "string"
+        },
+        prop3: {
+            type: "string"
+        }
+    },
+    indexes: {
+        index1: {
+            pk: {
+                field: "pk",
+                composite: ["prop1", "prop2"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop3"]
+            }
+        }
+    }
+})
+const standAloneEntity = new MockEntity(standAloneSchema);
 
-const standAloneEntity = new MockEntity({
-  model: {
-      entity: "standalone",
-      service: "myservice",
-      version: "1"
-  },
-  attributes: {
-      prop1: {
-          type: "string",
-          default: "abc"
-      },
-      prop2: {
-          type: "string"
-      },
-      prop3: {
-          type: "string"
-      }
-  },
-  indexes: {
-      index1: {
-          pk: {
-              field: "pk",
-              composite: ["prop1", "prop2"]
-          },
-          sk: {
-              field: "sk",
-              composite: ["prop3"]
-          }
-      }
-  }
-});
-
-const standAloneEntityWithDefault = new MockEntity({
-  model: {
-      entity: "standalone",
-      service: "myservice",
-      version: "1"
-  },
-  attributes: {
-      prop1: {
-        type: "string",
-        default: "abc"
-      },
-      prop2: {
-          type: "string"
-      },
-      prop3: {
-          type: "string"
-      },
-      prop4: {
-        type: "string",
-        default: "abc"
-      },
-      prop5: {
-        type: 'string',
-        default: 'abc',
-        required: true,
-      }
-  },
-  indexes: {
-      index1: {
-          pk: {
-              field: "pk",
-              composite: ["prop1", "prop2"]
-          },
-          sk: {
-              field: "sk",
-              composite: ["prop3"]
-          }
-      }
-  }
-});
+const standAloneSchemaWithDefault = createSchema({
+    model: {
+        entity: "standalone",
+        service: "myservice",
+        version: "1"
+    },
+    attributes: {
+        prop1: {
+            type: "string",
+            default: "abc"
+        },
+        prop2: {
+            type: "string"
+        },
+        prop3: {
+            type: "string"
+        },
+        prop4: {
+            type: "string",
+            default: "abc"
+        },
+        prop5: {
+            type: 'string',
+            default: 'abc',
+            required: true,
+        }
+    },
+    indexes: {
+        index1: {
+            pk: {
+                field: "pk",
+                composite: ["prop1", "prop2"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["prop3"]
+            }
+        }
+    }
+})
+const standAloneEntityWithDefault = new MockEntity(standAloneSchemaWithDefault);
 
 const standAloneEntity2 = new MockEntity({
   model: {

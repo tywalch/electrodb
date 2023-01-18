@@ -1,4 +1,4 @@
-const {AttributeTypes, ItemOperations, AttributeProxySymbol, BuilderTypes} = require("./types");
+const {AttributeTypes, ItemOperations, AttributeProxySymbol, BuilderTypes, DynamoDBAttributeTypes} = require("./types");
 const e = require("./errors");
 const u = require("./util");
 
@@ -59,7 +59,7 @@ const UpdateOperations = {
     },
     add: {
         canNest: false,
-        template: function add(options, attr, path, value) {
+        template: function add(options, attr, path, value, ifNotExists) {
             let operation = "";
             let expression = "";
             let type = attr.type;
@@ -91,7 +91,7 @@ const UpdateOperations = {
     },
     subtract: {
         canNest: false,
-        template: function subtract(options, attr, path, value) {
+        template: function subtract(options, attr, path, value, ifNotExists) {
             let operation = "";
             let expression = "";
             switch(attr.type) {
@@ -159,8 +159,26 @@ const UpdateOperations = {
 }
 
 const FilterOperations = {
+    escape: {
+        template: function escape(options, attr) {
+            return `${attr}`;
+        },
+        noAttribute: true,
+    },
+    size: {
+      template: function size(options, attr, name) {
+        return `size(${name})`
+      },
+      strict: false,
+    },
+    type: {
+        template: function attributeType(options, attr, name, value) {
+            return `attribute_type(${name}, ${value})`;
+        },
+        strict: false
+    },
     ne: {
-        template: function eq(options, attr, name, value) {
+        template: function ne(options, attr, name, value) {
             return `${name} <> ${value}`;
         },
         strict: false,
@@ -381,7 +399,7 @@ class AttributeOperationProxy {
         let ops = {};
         let seen = new Map();
         for (let operation of Object.keys(operations)) {
-            let {template, canNest} = operations[operation];
+            let {template, canNest, noAttribute} = operations[operation];
             Object.defineProperty(ops, operation, {
                 get: () => {
                     return (property, ...values) => {
@@ -389,7 +407,7 @@ class AttributeOperationProxy {
                             throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid/Unknown property passed in where clause passed to operation: '${operation}'`);
                         }
                         if (property[AttributeProxySymbol]) {
-                            const { commit, target } = property();
+                            const {commit, target} = property();
                             const fixedValues = values.map((value) => target.applyFixings(value))
                                 .filter(value => value !== undefined);
                             const isFilterBuilder = builder.type === BuilderTypes.filter;
@@ -402,7 +420,19 @@ class AttributeOperationProxy {
                                 return target.acceptable(value);
                             });
 
-                            const shouldCommit = isFilterBuilder || !takesValueArgument || isAcceptableValue;
+                            const shouldCommit =
+                                // if it is a filterBuilder than we don't care what they pass because the user needs more freedom here
+                                isFilterBuilder ||
+                                // if the operation does not take a value argument then not committing here could cause problems.
+                                // this should be revisited to make more robust, we could hypothetically store the commit in the
+                                // "seen" map for when the value is used, but that's a lot of new complexity
+                                !takesValueArgument ||
+                                // if the operation takes a value, we should determine if that value is acceptable. For
+                                // example, in the cases of a "set" we check to see if it is empty, or if the value is
+                                // undefined, we should not commit. The "fixedValues" length check is because the
+                                // "fixedValues" array has been filtered for undefined, so no length there indicates an
+                                // undefined value was passed.
+                                (takesValueArgument && isAcceptableValue && fixedValues.length > 0);
 
                             if (!shouldCommit) {
                                 return '';
@@ -441,6 +471,17 @@ class AttributeOperationProxy {
                                 return formatted.expression;
                             }
 
+                            return formatted;
+                        } else if (noAttribute) {
+                            // const {json, expression} = builder.setName({}, property, property);
+                            let attributeValueName = builder.setValue(property, property);
+                            builder.setPath(property, {
+                                value: property,
+                                name: attributeValueName,
+                            });
+                            const formatted = template({}, attributeValueName);
+                            seen.set(attributeValueName, [property]);
+                            seen.set(formatted, [property]);
                             return formatted;
                         } else {
                             throw new e.ElectroError(e.ErrorCodes.InvalidWhere, `Invalid Attribute in where clause passed to operation '${operation}'. Use injected attributes only.`);
@@ -492,9 +533,7 @@ class AttributeOperationProxy {
             Object.defineProperty(attr, name, {
                 get: () => {
                     return AttributeOperationProxy.pathProxy(() => {
-                        // const paths = builder.setName({}, attribute.name, attribute.field);
                         return {
-                            // paths,
                             root: attribute,
                             target: attribute,
                             builder,

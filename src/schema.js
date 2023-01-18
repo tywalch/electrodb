@@ -1488,11 +1488,16 @@ function CustomAttributeType(base) {
 	return base;
 }
 
+function createSchema(schema) {
+	return v.model(schema);
+}
+
 module.exports = {
 	Schema,
 	Attribute,
-	SetAttribute,
 	CastTypes,
+	SetAttribute,
+	createSchema,
 	CustomAttributeType,
 	createCustomAttribute,
 };
