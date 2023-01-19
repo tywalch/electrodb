@@ -221,7 +221,7 @@ attributes: {
 
 The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports String and Number Sets using the `items` property set as either `"string"`, `"number"`, or an array of strings or numbers. When a ReadonlyArray is provided, ElectroDB will enforce those values as a finite list of acceptable values, similar to an [Enum Attribute](#enum-attributes)
 
-In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by removing the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval.
+In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by removing the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval. If an empty set is provided, ElectroDB will skip setting this value to prevent errors while interacting with the DynamoDB Document Client.
 
 > If you are using TypeScript, Sets are currently typed as Arrays to simplify the type system. Again, ElectroDB will handle the conversion of these Arrays without the need to use `client.createSet()`.
  

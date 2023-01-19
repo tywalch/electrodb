@@ -299,3 +299,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Fixes issue that resulted in provided undefined values from becoming involuntarily set via updates
 - Updated documentation links in error message to direct traffic to https://electrodb.dev
+
+## [2.4.0] - 2022-01-19
+### Added
+- Added the new filter expression methods: `size()`, `type()` and `escape` [[read more]](https://electrodb.dev/en/queries/filters/#operations)
+- Add the `createSchema()` function for helping create and type ElectroDB schemas without instantiating an Entity [[read more]](https://electrodb.dev/en/reference/typscript/#createSchema)
+### Changed
+- ElectroDB will now filter out empty `Set` type attributes from being passed to the DocumentClient. This was a frequently requested feature for convenience.

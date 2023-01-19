@@ -59,7 +59,7 @@ const UpdateOperations = {
     },
     add: {
         canNest: false,
-        template: function add(options, attr, path, value, ifNotExists) {
+        template: function add(options, attr, path, value) {
             let operation = "";
             let expression = "";
             let type = attr.type;
@@ -91,7 +91,7 @@ const UpdateOperations = {
     },
     subtract: {
         canNest: false,
-        template: function subtract(options, attr, path, value, ifNotExists) {
+        template: function subtract(options, attr, path, value) {
             let operation = "";
             let expression = "";
             switch(attr.type) {

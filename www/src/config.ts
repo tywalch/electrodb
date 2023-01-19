@@ -87,7 +87,7 @@ export const SIDEBAR: Sidebar = {
     ],
     Reference: [
       { text: 'Errors', link: 'en/reference/errors' },
-      { text: 'TypeScript', link: 'en/reference/typscript' },
+      { text: 'TypeScript', link: 'en/reference/typescript' },
       { text: 'DynamoDB Client', link: 'en/reference/dynamodb-client' },
       { text: 'Events & Logging', link: 'en/reference/events-logging' },
     ],

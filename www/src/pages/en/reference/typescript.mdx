@@ -17,6 +17,16 @@ ElectroDB using advanced dynamic typing techniques to automatically create types
 
 If you experience any issues using TypeScript with ElectroDB, your feedback is very important, please create a GitHub issue, and it can be addressed.
 
+## Type Utilities
+ElectroDB exports some functions to assist with the creation of custom types and/or to improve type portability.
+
+### CustomAttributeType
+The function `CustomAttributeType` assists in the creation of custom attributes. This can be helpful to extend the primitive types and/or build complex union types. Check out the recipe [Opaque Types](/latest/recipes/opaque-types) to learn more by example.
+
+### createSchema
+
+The `createSchema` function allows you to define a schema independent of instantiating a new entity. This can be useful if the model definition needs to be portable or dynamic. This function will also validate your schema, and will throw if it is not a valid format.
+
 ## Exported Types
 
 The following types are exported for easier use while using ElectroDB with TypeScript. The naming convention for the types include three different kinds:

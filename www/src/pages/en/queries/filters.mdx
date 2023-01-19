@@ -18,7 +18,6 @@ Building thoughtful indexes can make queries simple and performant. Sometimes yo
 
 Below is the traditional way you would add a `FilterExpression` to Dynamo's DocumentClient directly alongside how you would accomplish the same using the `where` method.
 
-
 ### Example
 
 ```typescript
@@ -58,7 +57,7 @@ animals.query
 
 The `where()` method allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations`, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions.
 
-> Provided `where` callbacks must return a string. All method on the  `operation` object all return strings, so you can return the results of the `operation` method or use template strings compose an expression.
+> Provided `where` callbacks must return a string. All method on the `operation` object all return strings, so you can return the results of the `operation` method or use template strings compose an expression.
 
 ### Examples
 
@@ -136,9 +135,9 @@ const { data, cursor } = await getAnimals({
 The `attributes` object contains every Attribute defined in the Entity's Model. The `operations` object contains the following methods:
 
 operator      | example                           | result
-------------- | --------------------------------- | -------------------------------
+------------- | --------------------------------- | -----------------------------------
 `eq`          | `eq(rent, maxRent)`               | `#rent = :rent1`
-`ne`          | `eq(rent, maxRent)`               | `#rent <> :rent1`
+`ne`          | `ne(rent, maxRent)`               | `#rent <> :rent1`
 `gte`         | `gte(rent, value)`                | `#rent >= :rent1`
 `gt`          | `gt(rent, maxRent)`               | `#rent > :rent1`
 `lte`         | `lte(rent, maxRent)`              | `#rent <= :rent1`
@@ -149,8 +148,53 @@ operator      | example                           | result
 `contains`    | `contains(rent, maxRent)`         | `contains(#rent = :rent1)`
 `notContains` | `notContains(rent, maxRent)`      | `not contains(#rent = :rent1)`
 `between`     | `between(rent, minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
+`size`        | `size(rent)`                      | `size(#rent)`
+`type`        | `type(rent, 'N')`                 | `attribute_type(#rent, 'N')`
 `name`        | `name(rent)`                      | `#rent`
 `value`       | `value(rent, maxRent)`            | `:rent1`
+`escape`      | `escape(123)`, `escape('abc')`    | `#123`, `#abc`
+
+### ElectroDB Functions
+The filter functions available above all come from the list of functions supported by DynamoDB directly. ElectroDB offers a few functions that offer some additional convenience when creating Filter Expressions.
+
+> Note: If ElectroDB ever lags behind in implementing FilterExpression functions, you can use `value()` and `name()` to simply template out the implementation!
+
+#### Name
+The `name()` function allows you create a reference to an attribute's name, which can be useful to create filters referencing an attribute as it is currently stored. The function will add a `ExpressionAttributeNames` property for this record and return the partial expression for use in your filter.
+
+This example demonstrates how you might find animals that were last fed by someone other than their "keeper".
+```
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where(({ lastFedBy, keeper }, { name }) => `
+    ${name(lastFedBy)} != ${name(keeper)}
+  `)
+  .go();
+```
+
+#### Value
+The `value()` function can be paired with `name()` as convenience when building unique filters. The `value()` method is passed an attribute (used to enforce type), and a value for that attribute. ElectroDB will add a `ExpressionAttributeValues` property for this value, and return a reference to that value that can be used in your `FilterExpression`.ExpressionAttributeValues
+
+This example shows how you can implement the `eq` operation without using the ElectroDB `eq` function
+
+```
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where(({ keeper }, { name, value, eq }) => `
+    ${name(keeper)} = ${value(keeper, 'Tiger King')}
+  `)
+  .go();
+```
+
+#### Escape
+The `escape()` method allows you to provide any primitive to an expression without the need for a specific attribute. In many ways, this function is like a less restrictive version of `value()`. This can be useful when using static values and/or when creating custom FilterExpressions
+
+This example shows how you might use escape to apply a filter against the `size()` of an attribute.
+```
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where(({ diet }, { size, escape }) => `
+    ${size(diet)} > ${escape(2)}
+  `)
+  .go();
+```
 
 ## Advanced Usage
 
