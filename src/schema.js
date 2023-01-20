@@ -1489,7 +1489,8 @@ function CustomAttributeType(base) {
 }
 
 function createSchema(schema) {
-	return v.model(schema);
+	v.model(schema);
+	return schema;
 }
 
 module.exports = {

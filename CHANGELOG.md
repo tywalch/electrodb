@@ -304,3 +304,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Added
 - Adds the new filter expression methods: `size()`, `type()` and `escape`. Addresses Issue#208 [[read more]](https://electrodb.dev/en/queries/filters/#operations)
 - Adds the `createSchema()` function for helping create and type ElectroDB schemas without instantiating an Entity. Addresses Issue#167. [[read more]](https://electrodb.dev/en/reference/typscript/#createSchema)
+
+## [2.4.1] - 2022-01-20
+### Fixed
+- Recently added `createSchema()` function would validate but not return the schema object provided
