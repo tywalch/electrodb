@@ -163,7 +163,8 @@ The filter functions available above all come from the list of functions support
 The `name()` function allows you create a reference to an attribute's name, which can be useful to create filters referencing an attribute as it is currently stored. The function will add a `ExpressionAttributeNames` property for this record and return the partial expression for use in your filter.
 
 This example demonstrates how you might find animals that were last fed by someone other than their "keeper".
-```
+
+```typescript
 animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
   .where(({ lastFedBy, keeper }, { name }) => `
     ${name(lastFedBy)} != ${name(keeper)}
@@ -176,7 +177,7 @@ The `value()` function can be paired with `name()` as convenience when building 
 
 This example shows how you can implement the `eq` operation without using the ElectroDB `eq` function
 
-```
+```typescript
 animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
   .where(({ keeper }, { name, value, eq }) => `
     ${name(keeper)} = ${value(keeper, 'Tiger King')}
@@ -188,7 +189,8 @@ animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
 The `escape()` method allows you to provide any primitive to an expression without the need for a specific attribute. In many ways, this function is like a less restrictive version of `value()`. This can be useful when using static values and/or when creating custom FilterExpressions
 
 This example shows how you might use escape to apply a filter against the `size()` of an attribute.
-```
+
+```typescript
 animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
   .where(({ diet }, { size, escape }) => `
     ${size(diet)} > ${escape(2)}
