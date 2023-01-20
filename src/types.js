@@ -271,6 +271,23 @@ const ResultOrderOption = {
 
 const ResultOrderParam = 'ScanIndexForward';
 
+const DynamoDBAttributeTypes = Object.entries({
+	string: 'S',
+	stringSet: 'SS',
+	number: 'N',
+	numberSet: 'NS',
+	binary: 'B',
+	binarySet: 'BS',
+	boolean: 'BOOL',
+	null: 'NULL',
+	list: 'L',
+	map: 'M',
+}).reduce((obj, [name, type]) => {
+	obj[name] = type;
+	obj[type] = type;
+	return obj;
+}, {});
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -303,6 +320,7 @@ module.exports = {
 	ElectroInstanceTypes,
 	MethodTypeTranslation,
 	EventSubscriptionTypes,
+	DynamoDBAttributeTypes,
 	AttributeMutationMethods,
 	AllPages,
 	ResultOrderOption,
