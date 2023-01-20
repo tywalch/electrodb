@@ -302,7 +302,5 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.4.0] - 2022-01-19
 ### Added
-- Added the new filter expression methods: `size()`, `type()` and `escape` [[read more]](https://electrodb.dev/en/queries/filters/#operations)
-- Add the `createSchema()` function for helping create and type ElectroDB schemas without instantiating an Entity [[read more]](https://electrodb.dev/en/reference/typscript/#createSchema)
-### Changed
-- ElectroDB will now filter out empty `Set` type attributes from being passed to the DocumentClient. This was a frequently requested feature for convenience.
+- Adds the new filter expression methods: `size()`, `type()` and `escape`. Addresses Issue#208 [[read more]](https://electrodb.dev/en/queries/filters/#operations)
+- Adds the `createSchema()` function for helping create and type ElectroDB schemas without instantiating an Entity. Addresses Issue#167. [[read more]](https://electrodb.dev/en/reference/typscript/#createSchema)
