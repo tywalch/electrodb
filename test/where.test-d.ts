@@ -1775,6 +1775,9 @@ expectType<{
 entityWithSK.getWhereCallback((a, o) => {
   const attr = magnify(a);
   const op = magnify(o);
+  op.escape(1);
+  op.escape('1');
+  op.escape(true);
   expectType<string>(a.attr1);
   expectType<string>(attr.attr2)
   expectType<"123" | "def" | "ghi">(attr.attr3)
@@ -1786,7 +1789,7 @@ entityWithSK.getWhereCallback((a, o) => {
   expectType<number>(attr.attr9)
   expectType<boolean>(attr.attr10)
   expectType<
-    'eq'
+    | 'eq'
     | 'ne'
     | 'gt'
     | 'lt'
@@ -1800,6 +1803,9 @@ entityWithSK.getWhereCallback((a, o) => {
     | 'notContains'
     | 'value'
     | 'name'
+    | 'escape'
+    | 'size'
+    | 'type'
   >(keys(op));
 
   expectType<string>(o.eq(a.attr1, ''));

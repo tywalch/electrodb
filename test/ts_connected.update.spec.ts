@@ -1,9 +1,11 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import {CustomAttributeType, Entity} from "../index";
+import {CustomAttributeType, Entity, Attribute} from "../index";
+import { createNumberEntity } from './mocks.test';
 import { expect } from "chai";
 import {v4 as uuid} from "uuid";
 import moment from "moment";
 import DynamoDB from "aws-sdk/clients/dynamodb";
+
 const client = new DynamoDB.DocumentClient({
     region: "us-east-1",
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
@@ -574,6 +576,7 @@ describe("Update Item", () => {
                 name8: {}, // unfortunate combination, user defined illogical defaults that resulted in non-typed validation error
             }).params()).to.throw('Invalid value type at entity path: "name8.legal.middle". Value is required. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute');
         });
+
         it('should not clobber a deeply nested attribute when updating', async () => {
             const customers = new Entity(
                 {
@@ -667,6 +670,301 @@ describe("Update Item", () => {
                         last: 'exotic',
                     }
                 }
+            });
+        });
+
+        it('should allow non-existent numbers to be added', async () => {
+            const {entity} = createNumberEntity({client, table});
+            const name = uuid();
+            const type = uuid();
+            await entity.create({name, type}).go();
+            const num = 2;
+            const before = await entity.patch({name, type})
+                .data(({ prop }, { add }) => {
+                    add(prop, num)
+                })
+                .go({response: 'all_old'});
+            const after = await entity.get({name, type}).go();
+            expect(before.data.prop).to.be.undefined;
+            expect(after.data?.prop).to.equal(num);
+        });
+
+        describe('undefined values when using data method', () => {
+           const createEntityWithAttributeType = (attrType: Attribute['type']) => {
+               return new Entity({
+                   model: {
+                       entity: "tasks",
+                       version: "1",
+                       service: "taskapp",
+                   },
+                   attributes: {
+                       id: {
+                           type: "string",
+                           required: true,
+                       },
+                       prop: attrType === 'map'
+                           ? { type: 'map', properties: { val: {type: 'string' } } }
+                           : attrType === 'list'
+                               ? { type: 'list', items: { type: 'string' } }
+                               : attrType === 'set'
+                                   ? { type: 'set', items: 'string' }
+                                   : { type: 'string' }
+                   },
+                   indexes: {
+                       projects: {
+                           pk: {
+                               field: "pk",
+                               composite: ["id"],
+                           },
+                           sk: {
+                               field: "sk",
+                               // create composite keys for partial sort key queries
+                               composite: [],
+                           },
+                       },
+                   },
+               }, { table, client })
+           }
+
+           const types: ReadonlyArray<Attribute['type']> = [
+               'map',
+               'list',
+               'set',
+               'string'
+           ];
+           const operations = [
+               'set',
+               'add',
+               'subtract',
+           ] as const;
+
+           for (const type of types) {
+               it(`should not apply "set" operation when passed an undefined value for a "${type}" attribute`, async () => {
+                  const entity = createEntityWithAttributeType(type);
+                  const performUpdate = async (val: any) => {
+                      let params: any;
+                      const id = uuid();
+                      const results = await entity.update({id})
+                          .data((attr, op) => {
+                              op.set(attr.prop, val);
+                          }).go({
+                          response: 'all_new',
+                          logger: (event) => {
+                              if (event.type === 'query') {
+                                  params = event.params;
+                              }
+                          },
+                      });
+
+                      return {
+                          id,
+                          params,
+                          data: results.data
+                      }
+                  }
+
+                  const {data, params, id} = await performUpdate(undefined);
+                  expect(params).to.deep.equal({
+                      "UpdateExpression": "SET #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                      "ExpressionAttributeNames": {
+                          "#id": "id",
+                          "#__edb_e__": "__edb_e__",
+                          "#__edb_v__": "__edb_v__"
+                      },
+                      "ExpressionAttributeValues": {
+                          ":id_u0": id,
+                          ":__edb_e___u0": "tasks",
+                          ":__edb_v___u0": "1"
+                      },
+                      "TableName": "electro",
+                      "Key": {
+                          "pk": `$taskapp#id_${id}`,
+                          "sk": "$tasks_1"
+                      },
+                      "ReturnValues": "ALL_NEW"
+                  });
+                  expect(data).to.deep.equal({id});
+               });
+           }
+        });
+
+        describe('Set attributes and empty sets', () => {
+            const tasks = new Entity(
+                {
+                    model: {
+                        entity: "tasks",
+                        version: "1",
+                        service: "taskapp",
+                    },
+                    attributes: {
+                        id: {
+                            type: "string",
+                            required: true,
+                        },
+                        str: {
+                            type: 'string'
+                        },
+                        set: {
+                            type: 'set',
+                            items: 'string'
+                        },
+                        map: {
+                            type: 'map',
+                            properties: {
+                                set: {
+                                    type: 'set',
+                                    items: 'string',
+                                },
+                                map: {
+                                    type: 'map',
+                                    properties: {
+                                        set: {
+                                            type: 'set',
+                                            items: 'string',
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    indexes: {
+                        projects: {
+                            pk: {
+                                field: "pk",
+                                composite: ["id"],
+                            },
+                            sk: {
+                                field: "sk",
+                                // create composite keys for partial sort key queries
+                                composite: [],
+                            },
+                        },
+                    },
+                },
+                { table, client }
+            );
+            it('should not try perform a set operation an empty Set attribute', async () => {
+                const id = uuid();
+                let params1: any;
+                await tasks.create({ id, map: { map: {} }}).go();
+                await tasks
+                    .update({ id })
+                    .data((attr, op) => {
+                        op.set(attr.set, []);
+                        op.set(attr.map.set, []);
+                        op.set(attr.map.map.set, []);
+                    })
+                    .go({
+                        logger: (event) => {
+                            if (event.type === 'query') {
+                                params1 = event.params;
+                            }
+                        }
+                    });
+
+                expect(params1).to.deep.equal({
+                    "UpdateExpression": "SET #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                    "ExpressionAttributeNames": {
+                        "#id": "id",
+                        "#__edb_e__": "__edb_e__",
+                        "#__edb_v__": "__edb_v__"
+                    },
+                    "ExpressionAttributeValues": {
+                        ":id_u0": id,
+                        ":__edb_e___u0": "tasks",
+                        ":__edb_v___u0": "1"
+                    },
+                    "TableName": "electro",
+                    "Key": {
+                        "pk": `$taskapp#id_${id}`,
+                        "sk": "$tasks_1"
+                    }
+                });
+
+                // should perform set just fine
+                const id2 = uuid();
+                let params2: any;
+                await tasks.create({ id: id2, map: { map: {} }}).go();
+                await tasks
+                    .update({ id: id2 })
+                    .data((attr, op) => {
+                        op.set(attr.set, ['set1']);
+                        op.set(attr.map.set, ['set2']);
+                        op.set(attr.map.map.set, ['set3']);
+                    })
+                    .go({
+                        logger: (event) => {
+                            if (event.type === 'query') {
+                                params2 = event.params;
+                            }
+                        }
+                    });
+                expect(params2.UpdateExpression).to.equal("SET #set = :set_u0, #map.#set = :set_u1, #map.#map.#set = :set_u2, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0");
+                expect(params2.ExpressionAttributeValues[":set_u0"].values).to.deep.equal(["set1"]);
+                expect(params2.ExpressionAttributeValues[":set_u1"].values).to.deep.equal(["set2"]);
+                expect(params2.ExpressionAttributeValues[":set_u2"].values).to.deep.equal(["set3"]);
+            });
+
+            it('should not try perform an add operation an empty Set attribute', async () => {
+                const id = uuid();
+                let params1: any;
+                await tasks.create({ id, map: { map: {} }}).go();
+                await tasks
+                    .update({ id })
+                    .data((attr, op) => {
+                        op.add(attr.set, []);
+                        op.add(attr.map.set, []);
+                        op.add(attr.map.map.set, []);
+                    })
+                    .go({
+                        logger: (event) => {
+                            if (event.type === 'query') {
+                                params1 = event.params;
+                            }
+                        }
+                    });
+
+                expect(params1).to.deep.equal({
+                    "UpdateExpression": "SET #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                    "ExpressionAttributeNames": {
+                        "#id": "id",
+                        "#__edb_e__": "__edb_e__",
+                        "#__edb_v__": "__edb_v__"
+                    },
+                    "ExpressionAttributeValues": {
+                        ":id_u0": id,
+                        ":__edb_e___u0": "tasks",
+                        ":__edb_v___u0": "1"
+                    },
+                    "TableName": "electro",
+                    "Key": {
+                        "pk": `$taskapp#id_${id}`,
+                        "sk": "$tasks_1"
+                    }
+                });
+
+                // should perform add just fine
+                const id2 = uuid();
+                let params2: any;
+                await tasks.create({ id: id2, map: { map: {} }}).go();
+                await tasks
+                    .update({ id: id2 })
+                    .data((attr, op) => {
+                        op.add(attr.set, ['set1']);
+                        op.add(attr.map.set, ['set2']);
+                        op.add(attr.map.map.set, ['set3']);
+                    })
+                    .go({
+                        logger: (event) => {
+                            if (event.type === 'query') {
+                                params2 = event.params;
+                            }
+                        }
+                    });
+                expect(params2.UpdateExpression).to.equal("SET #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #set :set_u0, #map.#set :set_u1, #map.#map.#set :set_u2");
+                expect(params2.ExpressionAttributeValues[":set_u0"].values).to.deep.equal(["set1"]);
+                expect(params2.ExpressionAttributeValues[":set_u1"].values).to.deep.equal(["set2"]);
+                expect(params2.ExpressionAttributeValues[":set_u2"].values).to.deep.equal(["set3"]);
             });
         });
 

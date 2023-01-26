@@ -365,7 +365,7 @@ const item: Item = {
 
 type AttributeNames = "attr1" | "attr2" | "attr3" | "attr4" | "attr5" | "attr6" | "attr7" | "attr8" | "attr9";
 const AttributeName = "" as AttributeNames;
-type OperationNames = "eq" | "ne" | "gt" | "lt" | "gte" | "lte" | "between" | "begins" | "exists" | "notExists" | "contains" | "notContains" | "value" | "name";
+type OperationNames = "eq" | "ne" | "gt" | "lt" | "gte" | "lte" | "between" | "begins" | "exists" | "notExists" | "contains" | "notContains" | "value" | "name" | 'size' | 'escape' | 'type';
 
 
 type WithSKMyIndexCompositeAttributes = {

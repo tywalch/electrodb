@@ -1,6 +1,7 @@
 const sleep = async (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import { Entity, EntityItem } from "../index";
+import { Entity, EntityItem, CreateEntityItem, ElectroEvent} from "../index";
+import { createStringEntity, createAnyEntity, createNumberEntity } from './mocks.test';
 import { expect } from "chai";
 import {v4 as uuid} from "uuid"
 import DynamoDB from "aws-sdk/clients/dynamodb";
@@ -8,7 +9,14 @@ const client = new DynamoDB.DocumentClient({
     region: "us-east-1",
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
+
 const table = 'electro';
+
+function getParams(event?: ElectroEvent) {
+    if (event?.type === 'query') {
+        return JSON.parse(JSON.stringify(event.params));
+    }
+}
 
 describe("Where Clause Queries", () => {
     before(async () => sleep(1000));
@@ -636,4 +644,237 @@ describe("Where Clause Queries", () => {
             ConditionExpression: '#project = :project0'
         });
     });
+
+    it('should apply a size filter on query', async () => {
+        const { entity, logCollector } = createStringEntity({table, client});
+        const type = uuid();
+        const items: CreateEntityItem<typeof entity>[] = [
+            {
+                name: uuid(),
+                type: type,
+                prop: 'a'
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: 'ab'
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: 'abc'
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: 'abcd'
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: 'abcde'
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: 'abcdef'
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: 'abcdefg'
+            },
+        ];
+
+        await entity.put(items).go();
+        logCollector.reset();
+
+        const minSize = 3;
+        const maxSize = 5;
+        const exception = 'a'
+        const { data } = await entity.query
+            .records({type})
+            .where(({prop}, {size, escape, eq}) => `
+                ${size(prop)} >= ${escape(minSize)} OR ${eq(prop, escape(exception))} OR ${size(prop)} <= ${escape(maxSize)}
+            `)
+            .go();
+
+        const log = logCollector.get().find(event => event.type === 'query');
+
+        expect(
+            data.sort((a, z) => a.name.localeCompare(z.name))
+        ).to.deep.equal(items
+            .sort((a, z) => a.name.localeCompare(z.name))
+            .filter(item => {
+                return (item.prop && item.prop.length >= minSize) ||
+                    (item.prop && item.prop.length <= maxSize) ||
+                    item.prop === exception;
+            })
+        );
+
+        expect(getParams(log)).to.deep.equal({
+            "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+            "TableName": "electro",
+            "ExpressionAttributeNames": {
+                "#prop": "prop",
+                "#pk": "pk",
+                "#sk1": "sk"
+            },
+            "ExpressionAttributeValues": {
+                ":30": minSize,
+                ":a0": exception,
+                ":50": maxSize,
+                ":pk": `$taskapp#type_${type}`,
+                ":sk1": "$tasks_1#name_"
+            },
+            "FilterExpression": "size(#prop) >= :30 OR #prop = :a0 OR size(#prop) <= :50"
+        });
+    });
+
+    it('should apply an attribute type filter on query', async () => {
+        const { entity, logCollector } = createAnyEntity({table, client});
+        const type = uuid();
+        const items: CreateEntityItem<typeof entity>[] = [
+            {
+                name: uuid(),
+                type: type,
+                prop: ['list', 'attribute']
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: { map: 'attribute' }
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: 'string'
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: 123
+            },
+            {
+                name: uuid(),
+                type: type,
+                prop: true
+            },
+        ];
+
+        await entity.put(items).go();
+        logCollector.reset();
+
+        const { data } = await entity.query
+            .records({type})
+            .where(({prop}, {type}) => `
+                ${type(prop, 'L')} OR ${type(prop, 'BOOL')}
+            `)
+            .go();
+
+        const log = logCollector.get().find(event => event.type === 'query');
+        const results = data.sort((a, z) => a.name.localeCompare(z.name));
+        const expected = items.sort((a, z) => a.name.localeCompare(z.name))
+            .filter(item => Array.isArray(item.prop) || typeof item.prop === 'boolean')
+
+        expect(results).to.deep.equal(expected);
+        expect(getParams(log)).to.deep.equal({
+            KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+            TableName: 'electro',
+            ExpressionAttributeNames: { '#prop': 'prop', '#pk': 'pk', '#sk1': 'sk' },
+            ExpressionAttributeValues: {
+                ':prop0': 'L',
+                ':prop1': 'BOOL',
+                ':pk': `$taskapp#type_${type}`,
+                ':sk1': '$tasks_1#name_'
+            },
+            FilterExpression: 'attribute_type(#prop, :prop0) OR attribute_type(#prop, :prop1)',
+        });
+
+        it('should accept number literals via "escape"', async () => {
+            const { entity, logCollector } = createNumberEntity({table, client});
+            const type = uuid();
+            const items: CreateEntityItem<typeof entity>[] = [
+                {
+                    name: uuid(),
+                    type: type,
+                    prop: 1
+                },
+                {
+                    name: uuid(),
+                    type: type,
+                    prop: 2
+                },
+                {
+                    name: uuid(),
+                    type: type,
+                    prop: 3
+                },
+                {
+                    name: uuid(),
+                    type: type,
+                    prop: 4
+                },
+                {
+                    name: uuid(),
+                    type: type,
+                    prop: 5
+                },
+                {
+                    name: uuid(),
+                    type: type,
+                    prop: 6
+                },
+                {
+                    name: uuid(),
+                    type: type,
+                    prop: 7
+                },
+            ];
+
+            await entity.put(items).go();
+            logCollector.reset();
+
+            const minSize = 3;
+            const maxSize = 5;
+            const exception = 1
+            const { data } = await entity.query
+                .records({type})
+                .where(({prop}, { escape, eq, name }) => `
+                    ${name(prop)} >= ${escape(minSize)} OR ${eq(prop, escape(exception))} OR ${name(prop)} <= ${escape(maxSize)}
+                `)
+                .go();
+
+            const log = logCollector.get().find(event => event.type === 'query');
+
+            expect(
+                data.sort((a, z) => a.name.localeCompare(z.name))
+            ).to.deep.equal(items
+                .sort((a, z) => a.name.localeCompare(z.name))
+                .filter(item => {
+                    return (item.prop && item.prop >= minSize) ||
+                        (item.prop && item.prop <= maxSize) ||
+                        item.prop === exception;
+                })
+            );
+
+            expect(getParams(log)).to.deep.equal({
+                "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+                "TableName": "electro",
+                "ExpressionAttributeNames": {
+                    "#prop": "prop",
+                    "#pk": "pk",
+                    "#sk1": "sk"
+                },
+                "ExpressionAttributeValues": {
+                    ":30": minSize,
+                    ":a0": exception,
+                    ":50": maxSize,
+                    ":pk": `$taskapp#type_${type}`,
+                    ":sk1": "$tasks_1#name_"
+                },
+                "FilterExpression": "#prop >= :30 OR #prop = :a0 OR #prop <= :50"
+            });
+        });
+    })
 });

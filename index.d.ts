@@ -116,6 +116,18 @@ export type IsolatedCollectionAttributes<E extends {[name: string]: Entity<any, 
     }[keyof E]
 }
 
+type DynamoDBAttributeType =
+    | 'S'
+    | 'SS'
+    | 'N'
+    | 'NS'
+    | 'B'
+    | 'BS'
+    | 'BOOL'
+    | 'NULL'
+    | 'L'
+    | 'M'
+
 export interface CollectionWhereOperations {
     eq: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     ne: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
@@ -131,6 +143,12 @@ export interface CollectionWhereOperations {
     notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    size: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    type: <T, A extends WhereAttributeSymbol<T>>(attr: A, type: DynamoDBAttributeType) => string;
+    escape: <T extends string | number | boolean>(value: T) => T extends string ? string
+        : T extends number ? number
+        : T extends boolean ? boolean
+        : never;
 }
 
 export type CollectionWhereCallback<E extends {[name: string]: Entity<any, any, any, any>}, I extends Partial<AllEntityAttributes<E>>> =
@@ -2199,6 +2217,13 @@ export interface WhereOperations<A extends string, F extends string, C extends s
     notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V : never) => A extends WhereAttributeSymbol<infer V> ? V : never;
     name: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
+    size: <T, A extends WhereAttributeSymbol<T>>(attr: A) => number;
+    type: <T, A extends WhereAttributeSymbol<T>>(attr: A, type: DynamoDBAttributeType) => string;
+    escape: <T extends string | number | boolean>(value: T) =>
+        T extends string ? string
+        : T extends number ? number
+        : T extends boolean ? boolean
+        : never;
 }
 
 export interface DataUpdateOperations<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> {
@@ -2352,3 +2377,5 @@ declare function CustomAttributeType<T>(
 ): T extends string | number | boolean
     ? OpaquePrimitiveTypeName<T>
     : CustomAttributeTypeName<T>;
+
+declare function createSchema<A extends string, F extends string, C extends string, S extends Schema<A,F,C>>(schema: S): S
