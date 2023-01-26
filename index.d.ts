@@ -1550,13 +1550,13 @@ export interface Schema<A extends string, F extends string, C extends string> {
             readonly pk: {
                 readonly casing?: "upper" | "lower" | "none" | "default";
                 readonly field: string;
-                readonly composite?: ReadonlyArray<F>;
+                readonly composite: ReadonlyArray<F>;
                 readonly template?: string;
             }
             readonly sk?: {
                 readonly casing?: "upper" | "lower" | "none" | "default";
                 readonly field: string;
-                readonly composite?: ReadonlyArray<F>;
+                readonly composite: ReadonlyArray<F>;
                 readonly template?: string;
             }
         }
