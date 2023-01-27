@@ -2257,6 +2257,10 @@ export type EntityConfiguration = {
     client?: DocumentClient;
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
+    identifiers?: {
+      entity?: string;
+      version?: string;
+    },
 };
 
 export class Entity<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> {
