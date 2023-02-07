@@ -28,9 +28,11 @@ const results = await StoreLocations.get({
 ```
 ## Response Format
 
+> Note: ElectroDB exports a helper type `EntityItem` [[read more](/latest/reference/typescript/)] which represents the item type returned by ElectroDB
+
 ```typescript
 {
-  data: Array<YOUR_SCHEMA>,
+  data: EntityItem<typeof StoreLocations> | null,
   cursor: string | undefined
 }
 ```
