@@ -4641,7 +4641,12 @@ describe('enum set', () => {
 
             expect(withElectro.userId).to.equal(withoutElectro.userId);
             expect(partialQueryWithOwnership.data).to.deep.equal([withElectro]);
-            expect(partialQueryWithoutOwnership.data).to.deep.equal([withElectro, withoutElectro]);
+
+            expect(partialQueryWithoutOwnership.data.sort((a, z) => {
+                return a.id.localeCompare(z.id);
+            })).to.deep.equal([withoutElectro, withElectro].sort((a, z) => {
+                return a.id.localeCompare(z.id);
+            }));
         });
     });
 })
