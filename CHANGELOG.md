@@ -308,3 +308,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.4.1] - 2022-01-20
 ### Fixed
 - Recently added `createSchema()` function would validate but not return the schema object provided
+
+## [2.4.2] - 2022-03-03
+### Fixed
+- Restores `ignoreOwnership` execution option. Addresses [issue #194](https://github.com/tywalch/electrodb/issues/194) which calls out regression with `ignoreOwnership`. This flag is now appropriately applied to "query", "get", and "scan" operations.

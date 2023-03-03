@@ -583,7 +583,7 @@ class Entity {
 			for (let i = 0; i < responses.length; i++) {
 				const item = responses[i];
 				const slot = orderMaintainer.getOrder(item);
-				const formatted = this.formatResponse({Item: item}, index, config);
+				const formatted = this.formatResponse({ Item: item }, index, config);
 				if (slot !== -1) {
 					resultsAll[slot] = formatted.data;
 				} else {
@@ -617,6 +617,8 @@ class Entity {
 						if (Object.keys(results).length === 0) {
 							results = null;
 						}
+					} else if (!config._objectOnEmpty) {
+						results = null;
 					}
 				} else if (response.Items) {
 					results = [];
@@ -881,7 +883,7 @@ class Entity {
 		return pager
 	}
 
-	_applyParameterOptions(params, ...options) {
+	_normalizeExecutionOptions({ provided = [] } = {}) {
 		let config = {
 			includeKeys: false,
 			originalErr: false,
@@ -909,7 +911,7 @@ class Entity {
 			order: undefined,
 		};
 
-		config = options.reduce((config, option) => {
+		return provided.filter(Boolean).reduce((config, option) => {
 			if (typeof option.order === 'string') {
 				switch (option.order.toLowerCase()) {
 					case 'asc':
@@ -933,7 +935,7 @@ class Entity {
 			}
 
 			if (option.formatCursor) {
-				const isValid = ['serialize', 'deserialize'].every(method => 
+				const isValid = ['serialize', 'deserialize'].every(method =>
 					method in option.formatCursor &&
 					validations.isFunction(option.formatCursor[method])
 				);
@@ -1058,16 +1060,18 @@ class Entity {
 			config.params = Object.assign({}, config.params, option.params);
 			return config;
 		}, config);
+	}
 
+	_applyParameterOptions({ params = {}, options = {} } = {}) {
 		let parameters = Object.assign({}, params);
 
-		for (let customParameter of Object.keys(config.params)) {
-			if (config.params[customParameter] !== undefined) {
-				parameters[customParameter] = config.params[customParameter];
+		for (let customParameter of Object.keys(options.params || {})) {
+			if (options.params[customParameter] !== undefined) {
+				parameters[customParameter] = options.params[customParameter];
 			}
 		}
 
-		return { parameters, config };
+		return parameters;
 	}
 
 	addListeners(logger) {
@@ -1117,7 +1121,7 @@ class Entity {
 	}
 	/* istanbul ignore next */
 	_params(state, config = {}) {
-		let { keys = {}, method = "", put = {}, update = {}, filter = {}, options = {}, updateProxy, upsert } = state.query;
+		const { keys = {}, method = "", put = {}, update = {}, filter = {}, upsert } = state.query;
 		let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
@@ -1148,8 +1152,13 @@ class Entity {
 			default:
 				throw new Error(`Invalid method: ${method}`);
 		}
-		let applied = this._applyParameterOptions(params, options, config);
-		return this._applyParameterExpressions(method, applied.parameters, applied.config, filter);
+
+		let appliedParameters = this._applyParameterOptions({
+			params,
+			options: config,
+		});
+
+		return this._applyParameterExpressions(method, appliedParameters, config, filter);
 	}
 
 	_applyParameterExpressions(method, parameters, config, filter) {
@@ -1251,12 +1260,19 @@ class Entity {
 	_batchGetParams(state, config = {}) {
 		let table = config.table || this.getTableName();
 		let userDefinedParams = config.params || {};
+
+		// TableName is added when the config provided includes "table"
+		// this is evaluated upstream so we remove it to avoid forming
+		// bad syntax. Code should reconsider how this is applied to
+		// make this cleaner :(
+		delete userDefinedParams.TableName;
+
 		let records = [];
 		for (let itemState of state.subStates) {
 			let method = itemState.query.method;
 			let params = this._params(itemState, config);
 			if (method === MethodTypes.get) {
-				let {Key} = params;
+				let { Key } = params;
 				records.push(Key);
 			}
 		}
@@ -1356,11 +1372,7 @@ class Entity {
 			),
 			FilterExpression: `begins_with(#${pkField}, :${pkField})`,
 		};
-		params.ExpressionAttributeNames["#" + this.identifiers.entity] = this.identifiers.entity;
-		params.ExpressionAttributeNames["#" + this.identifiers.version] = this.identifiers.version;
-		params.ExpressionAttributeValues[":" + this.identifiers.entity] = this.getName();
-		params.ExpressionAttributeValues[":" + this.identifiers.version] = this.getVersion();
-		params.FilterExpression = `${params.FilterExpression} AND #${this.identifiers.entity} = :${this.identifiers.entity} AND #${this.identifiers.version} = :${this.identifiers.version}`;
+
 		if (hasSortKey) {
 			let skField = this.model.indexes[accessPattern].sk.field;
 			params.FilterExpression = `${params.FilterExpression} AND begins_with(#${skField}, :${skField})`;
@@ -1691,8 +1703,16 @@ class Entity {
 			default:
 				throw new Error(`Invalid query type: ${state.query.type}`);
 		}
-		let applied = this._applyParameterOptions(parameters, state.query.options, options);
-		return this._applyProjectionExpressions(applied);
+
+		const appliedParameters = this._applyParameterOptions({
+			params: parameters,
+			options,
+		});
+
+		return this._applyProjectionExpressions({
+			parameters: appliedParameters,
+			config: options,
+		});
 	}
 
 	_makeBetweenQueryParams(index, filter, pk, ...sk) {
@@ -2293,7 +2313,6 @@ class Entity {
 	   indexType,
 	   isCollection = false,
 	}) {
-
 		this._validateIndex(index);
 		const excludePostfix = indexType === IndexTypes.clustered && isCollection;
 		const transforms = this._makeKeyTransforms(queryType);
