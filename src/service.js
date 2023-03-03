@@ -391,12 +391,17 @@ class Service {
 					return this.expectCursorOwner(cursor).deserializeCursor(cursor);
 				}
 			},
-			expressions: {
+			identifiers: {
 				names: identifiers.names || {},
 				values: identifiers.values || {},
 				expression: allEntities.length > 1
 					? `(${expression})`
 					: expression
+			},
+			expressions: {
+				names: {},
+				values: {},
+				expression: '',
 			},
 			attributes,
 			entities,

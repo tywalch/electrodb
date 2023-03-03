@@ -504,10 +504,10 @@ describe("Where Clause Queries", () => {
                 ':complete0': false,
                 ':pk': '$taskapp#team_',
                 ':sk': '$tasks_1#project_',
-                ':__edb_e__': 'tasks',
-                ':__edb_v__': '1'
+                ':__edb_e__0': 'tasks',
+                ':__edb_v__0': '1'
             },
-            FilterExpression: 'begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND #complete = :complete0'
+            FilterExpression: 'begins_with(#pk, :pk) AND begins_with(#sk, :sk) AND (#complete = :complete0) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0'
         });
 
         const where2 = MyEntity.scan.where(({ complete }, { eq }) => eq(complete, true))
@@ -524,10 +524,10 @@ describe("Where Clause Queries", () => {
                 ':complete0': true,
                 ':pk': '$taskapp#team_',
                 ':sk': '$tasks_1#project_',
-                ':__edb_e__': 'tasks',
-                ':__edb_v__': '1'
+                ':__edb_e__0': 'tasks',
+                ':__edb_v__0': '1'
             },
-            FilterExpression: 'begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND #complete = :complete0'
+            FilterExpression: 'begins_with(#pk, :pk) AND begins_with(#sk, :sk) AND (#complete = :complete0) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0'
         });
 
         const where3 = MyEntity.scan.where(({ complete }, { eq }) => eq(complete, true))
@@ -544,10 +544,10 @@ describe("Where Clause Queries", () => {
                 ':complete0': true,
                 ':pk': '$taskapp#team_',
                 ':sk': '$tasks_1#project_',
-                ':__edb_e__': 'tasks',
-                ':__edb_v__': '1'
+                ':__edb_e__0': 'tasks',
+                ':__edb_v__0': '1'
             },
-            FilterExpression: 'begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sk, :sk) AND #complete = :complete0'
+            FilterExpression: 'begins_with(#pk, :pk) AND begins_with(#sk, :sk) AND (#complete = :complete0) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0'
         });
     });
 

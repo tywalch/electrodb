@@ -4490,4 +4490,147 @@ describe('enum set', () => {
         const sixth = await entity.get({id}).go();
         expect(sixth.data).to.deep.equal({ id, optional: 'hi', tags: ['HISTORY']});
     });
+
+    describe('ignore ownership', () => {
+       const BlogEntry = new Entity(
+           {
+               model: {
+                   version: "1",
+                   entity: "Entry",
+                   service: "blog",
+               },
+               attributes: {
+                   id: {
+                       type: "string",
+                       required: true,
+                       readOnly: true,
+                   },
+                   userId: {
+                       type: "string",
+                       required: true,
+                       readOnly: true,
+                   },
+                   title: {
+                       type: "string",
+                   }
+               },
+               indexes: {
+                   record: {
+                       pk: {
+                           field: "pk",
+                           composite: ["id"],
+                           template: "E_${id}",
+                           casing: "none"
+                       },
+                       sk: {
+                           field: "sk",
+                           composite: [],
+                           template: "METADATA",
+                           casing: "none"
+                       },
+                   },
+                   userEntries: {
+                       index: "gsi1pk-gsi1sk-index",
+                       pk: {
+                           field: "gsi1pk",
+                           composite: ["userId"],
+                           template: "U_${userId}",
+                           casing: "none"
+                       },
+                       sk: {
+                           field: "gsi1sk",
+                           composite: ["id"],
+                           template: "E_${id}#",
+                           casing: "none"
+                       },
+                   }
+               },
+           },
+           {table, client}
+       );
+
+       const createBlogEntryAttributes = () => {
+           return {
+               id: uuid(),
+               title: uuid(),
+               userId: uuid(),
+           }
+       }
+
+       const createEntry = async () => {
+           const withElectro = createBlogEntryAttributes();
+           const withoutElectro = createBlogEntryAttributes();
+           await BlogEntry.put(withElectro).go();
+           await client.put({
+               Item: {
+                   ...withoutElectro,
+                   pk: `E_${withoutElectro.id}`,
+                   sk: 'METADATA',
+                   gsi1pk: `U_${withoutElectro.userId}`,
+                   gsi1sk: `E_${withoutElectro.id}#`
+               },
+               TableName: table,
+           }).promise();
+
+           return {
+               withElectro,
+               withoutElectro
+           };
+       }
+
+       it('should get results', async () => {
+           const {withElectro, withoutElectro} = await createEntry();
+
+           const withElectroAndOwnership = await BlogEntry.get(withElectro).go();
+           const withElectroAndWithoutOwnership = await BlogEntry.get(withElectro).go({ ignoreOwnership: true });
+
+           const withoutElectroAndOwnership = await BlogEntry.get(withoutElectro).go();
+           const withoutElectroAndWithoutOwnership = await BlogEntry.get(withoutElectro).go({ ignoreOwnership: true });
+
+           expect(withElectroAndOwnership.data).to.deep.equal(withElectro);
+           expect(withElectroAndWithoutOwnership.data).to.deep.equal(withElectro);
+           expect(withoutElectroAndOwnership.data).to.be.null;
+           expect(withoutElectroAndWithoutOwnership.data).to.deep.equal(withoutElectro);
+       });
+
+        it('should batch get results', async () => {
+            const {withElectro, withoutElectro} = await createEntry();
+
+            const withElectroAndOwnership = await BlogEntry.get([withElectro, withoutElectro]).go({ preserveBatchOrder: true });
+            const withElectroAndWithoutOwnership = await BlogEntry.get([withElectro, withoutElectro]).go({
+                ignoreOwnership: true,
+                preserveBatchOrder: true,
+            });
+
+            expect(withElectroAndOwnership.data).to.deep.equal([withElectro, null])
+            expect(withElectroAndWithoutOwnership.data).to.deep.equal([ withElectro, withoutElectro ])
+        });
+
+        it('should query results', async () => {
+            const {withElectro, withoutElectro} = await createEntry();
+
+            const withElectroAndOwnership = await BlogEntry.query.record(withElectro).go();
+            const withElectroAndWithoutOwnership = await BlogEntry.query.record(withElectro).go({ ignoreOwnership: true });
+            const withElectroAndOwnershipGSI = await BlogEntry.query.userEntries(withElectro).go();
+            const withElectroAndWithoutOwnershipGSI = await BlogEntry.query.userEntries(withElectro).go({ ignoreOwnership: true });
+
+            const withoutElectroAndOwnership = await BlogEntry.query.record(withoutElectro).go();
+            const withoutElectroAndWithoutOwnership = await BlogEntry.query.record(withoutElectro).go({ ignoreOwnership: true });
+            const withoutElectroAndOwnershipGSI = await BlogEntry.query.userEntries(withoutElectro).go();
+
+            const withoutElectroAndWithoutOwnershipGSI = await BlogEntry.query.userEntries(withoutElectro).go({
+                ignoreOwnership: true,
+            });
+
+            expect(withElectroAndOwnership.data).to.deep.equal([withElectro]);
+            expect(withElectroAndWithoutOwnership.data).to.deep.equal([withElectro]);
+            expect(withElectroAndOwnershipGSI.data).to.deep.equal([withElectro]);
+            expect(withElectroAndWithoutOwnershipGSI.data).to.deep.equal([withElectro]);
+
+            expect(withoutElectroAndOwnership.data).to.deep.equal([]);
+            expect(withoutElectroAndWithoutOwnership.data).to.deep.equal([withoutElectro]);
+            expect(withoutElectroAndOwnershipGSI.data).to.deep.equal([]);
+            expect(withoutElectroAndWithoutOwnershipGSI.data).to.deep.equal([withoutElectro]);
+        });
+    });
 })

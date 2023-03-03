@@ -1684,12 +1684,12 @@ describe("Entity", () => {
 					"#store": "storeId"
 				},
 				"ExpressionAttributeValues": {
-					":__edb_e__": "MallStores",
-					":__edb_v__": "1",
+					":__edb_e__0": "MallStores",
+					":__edb_v__0": "1",
 					":pk": "$mallstoredirectory_1$mallstores#id_",
 					":store0": "Starblix"
 				},
-				"FilterExpression": "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #store = :store0",
+				"FilterExpression": "begins_with(#pk, :pk) AND (#store = :store0) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0",
 				"TableName": "StoreDirectory"
 			})
 		})
@@ -2299,10 +2299,10 @@ describe("Entity", () => {
 				ExpressionAttributeValues: {
 					':partition_key': '$MallStoreDirectory#id_',
 					':sort_key': '$MYCOLLECTION#MALLSTORES_1#MALL_',
-					':__edb_e__': 'MallStores',
-					':__edb_v__': '1'
+					':__edb_e__0': 'MallStores',
+					':__edb_v__0': '1'
 				},
-				FilterExpression: 'begins_with(#partition_key, :partition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
+				FilterExpression: 'begins_with(#partition_key, :partition_key) AND begins_with(#sort_key, :sort_key) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0'
 			});
 			expect(collectionParams).to.deep.equal({
 				KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
@@ -2587,10 +2587,10 @@ describe("Entity", () => {
 				ExpressionAttributeValues: {
 					':partition_key': "mIxEdCaSe#",
 					':sort_key': 'MALL#',
-					':__edb_e__': 'MallStores',
-					':__edb_v__': '1'
+					':__edb_e__0': 'MallStores',
+					':__edb_v__0': '1'
 				},
-				FilterExpression: 'begins_with(#partition_key, :partition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
+				FilterExpression: 'begins_with(#partition_key, :partition_key) AND begins_with(#sort_key, :sort_key) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0'
 			});
 		});
 	})
@@ -2959,10 +2959,10 @@ describe("Entity", () => {
 				ExpressionAttributeValues: {
 					':partition_key': '$mallstoredirectory_1#id_',
 					':sort_key': '$mallstores#mall_',
-					':__edb_e__': 'MallStores',
-					':__edb_v__': '1'
+					':__edb_e__0': 'MallStores',
+					':__edb_v__0': '1'
 				},
-				FilterExpression: 'begins_with(#partition_key, :partition_key) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#sort_key, :sort_key)'
+				FilterExpression: 'begins_with(#partition_key, :partition_key) AND begins_with(#sort_key, :sort_key) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0'
 			});
 		});
 		it("Should stop making a key early when there is a gap in the supplied composite attributes", () => {
@@ -4306,12 +4306,12 @@ describe("Entity", () => {
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
 				ExpressionAttributeValues: {
-					":__edb_e__": "MallStores",
-					":__edb_v__": "1",
+					":__edb_e__0": "MallStores",
+					":__edb_v__0": "1",
 					':leaseEnd0': '123',
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd0"
+				FilterExpression: "begins_with(#pk, :pk) AND (#leaseEnd = :leaseEnd0) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
@@ -4324,11 +4324,11 @@ describe("Entity", () => {
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#pk': 'pk' },
 				ExpressionAttributeValues: {
-					":__edb_e__": "MallStores",
-					":__edb_v__": "1",
+					":__edb_e__0": "MallStores",
+					":__edb_v__0": "1",
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__"
+				FilterExpression: "begins_with(#pk, :pk) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
@@ -4344,12 +4344,12 @@ describe("Entity", () => {
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#leaseEnd': 'leaseEnd', '#pk': 'pk' },
 				ExpressionAttributeValues: {
-					":__edb_e__": "MallStores",
-					":__edb_v__": "1",
+					":__edb_e__0": "MallStores",
+					":__edb_v__0": "1",
 					':leaseEnd0': '123',
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND #leaseEnd = :leaseEnd0"
+				FilterExpression: "begins_with(#pk, :pk) AND (#leaseEnd = :leaseEnd0) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
@@ -4365,11 +4365,11 @@ describe("Entity", () => {
 				TableName: 'StoreDirectory',
 				ExpressionAttributeNames: { "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__", '#pk': 'pk' },
 				ExpressionAttributeValues: {
-					":__edb_e__": "MallStores",
-					":__edb_v__": "1",
+					":__edb_e__0": "MallStores",
+					":__edb_v__0": "1",
 					':pk': '$mallstoredirectory_1$mallstores#id_'
 				},
-				FilterExpression: "begins_with(#pk, :pk) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__"
+				FilterExpression: "begins_with(#pk, :pk) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
 			});
 			expect(shouldScan).to.be.true;
 			expect(keys).to.be.deep.equal([]);
@@ -4670,10 +4670,10 @@ describe("Entity", () => {
 				"ExpressionAttributeValues": {
 					":PRIMARY_KEY": "$organizer#accountid_",
 					":SORT_KEY": "$group_1",
-					":__edb_e__": "group",
-					":__edb_v__": "1",
+					":__edb_e__0": "group",
+					":__edb_v__0": "1",
 				},
-				"FilterExpression": "begins_with(#PRIMARY_KEY, :PRIMARY_KEY) AND #__edb_e__ = :__edb_e__ AND #__edb_v__ = :__edb_v__ AND begins_with(#SORT_KEY, :SORT_KEY)"
+				"FilterExpression": "begins_with(#PRIMARY_KEY, :PRIMARY_KEY) AND begins_with(#SORT_KEY, :SORT_KEY) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
 			});
 		});
 	});

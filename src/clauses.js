@@ -37,7 +37,7 @@ let clauses = {
 				return state;
 			}
 			try {
-				const {pk, sk} = state.getCompositeAttributes();
+				const { pk, sk } = state.getCompositeAttributes();
 				return state
 					.setType(QueryTypes.clustered_collection)
 					.setMethod(MethodTypes.query)
@@ -49,6 +49,22 @@ let clauses = {
 						// we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
 						if (sk.length > 1) {
 							state.filterProperties(FilterOperationNames.eq, {...unused, ...composites});
+						}
+					})
+					.whenOptions(({ options, state }) => {
+						if (!options.ignoreOwnership) {
+							state.query.options.expressions.names = {
+								...state.query.options.expressions.names,
+								...state.query.options.identifiers.names,
+							};
+							state.query.options.expressions.values = {
+								...state.query.options.expressions.values,
+								...state.query.options.identifiers.values,
+							};
+							state.query.options.expressions.expression =
+								state.query.options.expressions.expression.length > 1
+									? `(${state.query.options.expressions.expression}) AND ${state.query.options.identifiers.expression}`
+									: `${state.query.options.identifiers.expression}`;
 						}
 					});
 
@@ -72,7 +88,23 @@ let clauses = {
 					.setType(QueryTypes.collection)
 					.setMethod(MethodTypes.query)
 					.setCollection(collection)
-					.setPK(entity._expectFacets(facets, pk));
+					.setPK(entity._expectFacets(facets, pk))
+					.whenOptions(({ options, state }) => {
+						if (!options.ignoreOwnership) {
+							state.query.options.expressions.names = {
+								...state.query.options.expressions.names,
+								...state.query.options.identifiers.names,
+							};
+							state.query.options.expressions.values = {
+								...state.query.options.expressions.values,
+								...state.query.options.identifiers.values,
+							};
+							state.query.options.expressions.expression =
+								state.query.options.expressions.expression.length > 1
+									? `(${state.query.options.expressions.expression}) AND ${state.query.options.identifiers.expression}`
+									: `${state.query.options.identifiers.expression}`;
+						}
+					});
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -87,7 +119,13 @@ let clauses = {
 				return state;
 			}
 			try {
-				return state.setMethod(MethodTypes.scan);
+				return state.setMethod(MethodTypes.scan)
+					.whenOptions(({ state, options }) => {
+						if (!options.ignoreOwnership) {
+							state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.entity, entity.getName());
+							state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.version, entity.getVersion());
+						}
+					});
 			} catch(err) {
 				state.setError(err);
 				return state;
@@ -478,10 +516,13 @@ let clauses = {
 						if (sk.length > 1) {
 							state.filterProperties(FilterOperationNames.eq, {...unused, ...composites});
 						}
-						if (state.query.options.indexType === IndexTypes.clustered && Object.keys(composites).length < sk.length) {
-							state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.entity, entity.getName())
-								.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.version, entity.getVersion());
-						}
+
+						state.whenOptions(({ options, state }) => {
+							if (state.query.options.indexType === IndexTypes.clustered && Object.keys(composites).length < sk.length && !options.ignoreOwnership) {
+								state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.entity, entity.getName())
+									.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.version, entity.getVersion());
+							}
+						});
 					});
 			} catch(err) {
 				state.setError(err);
@@ -632,20 +673,26 @@ let clauses = {
 					throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
 				}
 				const method = state.getMethod();
+				const normalizedOptions = entity._normalizeExecutionOptions({ provided: [ state.getOptions(), state.query.options, options ] });
+				state.applyWithOptions(normalizedOptions);
 				let results;
 				switch (method) {
-					case MethodTypes.query:
-						results = entity._queryParams(state, options);
+					case MethodTypes.query: {
+						results = entity._queryParams(state, normalizedOptions);
 						break;
-					case MethodTypes.batchWrite:
-						results = entity._batchWriteParams(state, options);
-						break
-					case MethodTypes.batchGet:
-						results = entity._batchGetParams(state, options);
+					}
+					case MethodTypes.batchWrite: {
+						results = entity._batchWriteParams(state, normalizedOptions);
 						break;
-					default:
-						results = entity._params(state, options);
+					}
+					case MethodTypes.batchGet: {
+						results = entity._batchGetParams(state, normalizedOptions);
 						break;
+					}
+					default: {
+						results = entity._params(state, normalizedOptions);
+						break;
+					}
 				}
 
 				if (method === MethodTypes.update && results.ExpressionAttributeValues && Object.keys(results.ExpressionAttributeValues).length === 0) {
@@ -653,6 +700,14 @@ let clauses = {
 					// todo: change the getValues() method to return undefined in this case (would potentially require a more generous refactor)
 					delete results.ExpressionAttributeValues;
 				}
+
+				if (options._returnOptions) {
+					return {
+						params: results,
+						options: normalizedOptions,
+					}
+				}
+
 				return results;
 			} catch(err) {
 				throw err;
@@ -671,9 +726,8 @@ let clauses = {
 					throw new e.ElectroError(e.ErrorCodes.NoClientDefined, "No client defined on model");
 				}
 				options.terminalOperation = TerminalOperation.go;
-				let params = clauses.params.action(entity, state, options);
-				let {config} = entity._applyParameterOptions({}, state.getOptions(), options);
-				return entity.go(state.getMethod(), params, config);
+				const paramResults = clauses.params.action(entity, state, { ...options, _returnOptions: true });
+				return entity.go(state.getMethod(), paramResults.params, paramResults.options);
 			} catch(err) {
 				return Promise.reject(err);
 			}
@@ -718,6 +772,7 @@ class ChainState {
 			options,
 		};
 		this.subStates = [];
+		this.applyAfterOptions = [];
 		this.hasSortKey = hasSortKey;
 		this.prev = null;
 		this.self = null;
@@ -910,6 +965,18 @@ class ChainState {
 	applyPut(data = {}) {
 		this.query.put.data = {...this.query.put.data, ...data};
 		return this;
+	}
+
+	whenOptions(fn) {
+		if (v.isFunction(fn)) {
+			this.applyAfterOptions.push((options) => {
+				fn({ options, state: this });
+			});
+		}
+	}
+
+	applyWithOptions(options = {}) {
+		this.applyAfterOptions.forEach((fn) => fn(options));
 	}
 }
 
