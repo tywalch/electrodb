@@ -4559,7 +4559,11 @@ describe('enum set', () => {
 
        const createEntry = async () => {
            const withElectro = createBlogEntryAttributes();
-           const withoutElectro = createBlogEntryAttributes();
+           const withoutElectro = {
+               ...createBlogEntryAttributes(),
+               // use a shared userId for partial queries
+               userId: withElectro.userId,
+           };
            await BlogEntry.put(withElectro).go();
            await client.put({
                Item: {
@@ -4622,6 +4626,9 @@ describe('enum set', () => {
                 ignoreOwnership: true,
             });
 
+            const partialQueryWithOwnership = await BlogEntry.query.userEntries({userId: withElectro.userId}).go();
+            const partialQueryWithoutOwnership = await BlogEntry.query.userEntries({userId: withElectro.userId}).go({ ignoreOwnership: true });
+
             expect(withElectroAndOwnership.data).to.deep.equal([withElectro]);
             expect(withElectroAndWithoutOwnership.data).to.deep.equal([withElectro]);
             expect(withElectroAndOwnershipGSI.data).to.deep.equal([withElectro]);
@@ -4631,6 +4638,10 @@ describe('enum set', () => {
             expect(withoutElectroAndWithoutOwnership.data).to.deep.equal([withoutElectro]);
             expect(withoutElectroAndOwnershipGSI.data).to.deep.equal([]);
             expect(withoutElectroAndWithoutOwnershipGSI.data).to.deep.equal([withoutElectro]);
+
+            expect(withElectro.userId).to.equal(withoutElectro.userId);
+            expect(partialQueryWithOwnership.data).to.deep.equal([withElectro]);
+            expect(partialQueryWithoutOwnership.data).to.deep.equal([withElectro, withoutElectro]);
         });
     });
 })
