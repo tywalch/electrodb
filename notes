@@ -6,3 +6,16 @@
     - skip for match/find
     - do not apply automatic filters on queries
 - validate
+
+todo: transaction functionality
+- Response structures
+    - transactGet doesn't need status?
+- correct params for go()
+
+todo: transaction tests
+- v2/v3 client
+- works with params or function
+- return status impact
+- `check` with where clause
+- params vs go
+
