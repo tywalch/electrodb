@@ -1590,13 +1590,13 @@ describe("Entity", () => {
 			buildingOne = "BuildingA";
 			buildingTwo = "BuildingF";
 			let get = MallStores.get({ id });
-			expect(get).to.have.keys("go", "params", "filter", "rentsLeaseEndFilter", "where");
+			expect(get).to.have.keys("commit", "go", "params", "filter", "rentsLeaseEndFilter", "where");
 			let del = MallStores.delete({ id });
-			expect(del).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
+			expect(del).to.have.keys("commit", "go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let update = MallStores.update({ id }).set({ rent, category });
-			expect(update).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
+			expect(update).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
 			let patch = MallStores.patch({ id }).set({ rent, category });
-			expect(patch).to.have.keys("go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
+			expect(patch).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
 			let put = MallStores.put({
 				store,
 				mall,
@@ -1606,7 +1606,7 @@ describe("Entity", () => {
 				leaseEnd,
 				unit,
 			});
-			expect(put).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
+			expect(put).to.have.keys("commit", "go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let create = MallStores.create({
 				store,
 				mall,
@@ -1616,7 +1616,7 @@ describe("Entity", () => {
 				leaseEnd,
 				unit,
 			});
-			expect(create).to.have.keys("go", "params", "where", "filter", "rentsLeaseEndFilter");
+			expect(create).to.have.keys("commit", "go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let queryUnitsBetween = MallStores.query
 				.units({ mall })
 				.between({ building: buildingOne }, { building: buildingTwo });

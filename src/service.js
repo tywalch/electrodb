@@ -1,6 +1,6 @@
 const { Entity } = require("./entity");
 const { clauses } = require("./clauses");
-const { KeyCasing, ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions, IndexTypes } = require("./types");
+const { TableIndex, TransactionCommitSymbol, TransactionMethods, KeyCasing, ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions, IndexTypes } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
@@ -9,6 +9,7 @@ const v = require("./validations");
 const c = require('./client');
 const e = require("./errors");
 const u = require("./util");
+const txn = require("./transaction");
 
 const ConstructorTypes = {
 	beta: "beta",
@@ -68,6 +69,22 @@ class Service {
 		this.compositeAttributes = {};
 		this.collections = {};
 		this.identifiers = {};
+		this.transaction = {
+			get: (fn) => {
+				return txn.createTransaction({
+					fn,
+					getService: () => this,
+					method: TransactionMethods.transactGet,
+				});
+			},
+			write: (fn) => {
+				return txn.createTransaction({
+					fn,
+					getService: () => this,
+					method: TransactionMethods.transactWrite,
+				});
+			}
+		};
 		this._instance = ElectroInstance.service;
 		this._instanceType = ElectroInstanceTypes.service;
 	}
@@ -94,6 +111,22 @@ class Service {
 		this.compositeAttributes = {};
 		this.collections = {};
 		this.identifiers = {};
+		this.transaction = {
+			get: (fn) => {
+				return txn.createTransaction({
+					fn,
+					getService: () => this,
+					method: TransactionMethods.transactGet,
+				});
+			},
+			write: (fn) => {
+				return txn.createTransaction({
+					fn,
+					getService: () => this,
+					method: TransactionMethods.transactWrite,
+				});
+			}
+		};
 		this._instance = ElectroInstance.service;
 		this._instanceType = ElectroInstanceTypes.service;
 	}
@@ -288,35 +321,137 @@ class Service {
 		return identifiers;
 	}
 
-	cleanseRetrievedData(collection = "", entities, data = {}, config = {}) {
+	cleanseCanceledData(index = TableIndex, entities, data = {}, config = {}) {
 		if (config.raw) {
 			return data;
 		}
-		data.Items = data.Items || [];
-		let index = this.collectionSchema[collection].index;
-		let results = {};
-		let identifiers = this._getEntityIdentifiers(entities);
-		for (let {alias} of identifiers) {
-			results[alias] = [];
-		}
-		for (let record of data.Items) {
-			let entityAlias;
-			for (let {name, version, nameField, versionField, alias} of identifiers) {
-				if (record[nameField] !== undefined && record[nameField] === name && record[versionField] !== undefined && record[versionField] === version) {
-					entityAlias = alias;
-					break;
-				}
+		const identifiers = this._getEntityIdentifiers(entities);
+		const canceled = data.canceled || [];
+		const paramItems = config._paramItems || [];
+		const results = [];
+		for (let i = 0; i < canceled.length; i++) {
+			const { Item, Code, Message } = canceled[i] || {};
+			const paramItem = paramItems[i];
+			const committed = Code === 'None';
+			const result = {
+				committed,
 			}
+
+			if (!committed) {
+				result.code = Code;
+				result.message = Message;
+			}
+
+			if (Item) {
+				const entityAlias = this.matchToEntityAlias({
+					record: Item,
+					paramItem,
+					identifiers
+				});
+				result.existing = entities[entityAlias].formatResponse({Item}, index, {
+					...config,
+					pager: false,
+					parse: undefined,
+				}).data;
+			} else {
+				result.existing = null;
+			}
+
+			results.push(result);
+		}
+
+		return results;
+	}
+
+	matchToEntityAlias({ paramItem, identifiers, record }) {
+		let entity;
+		let entityAlias;
+
+		if (paramItem && v.isFunction(paramItem[TransactionCommitSymbol])) {
+			const committed = paramItem[TransactionCommitSymbol]();
+			entity = committed.entity;
+		}
+
+		for (let {name, version, nameField, versionField, alias} of identifiers) {
+			if (entity && entity.model.entity === name && entity.model.version === version) {
+				entityAlias = alias;
+				break;
+			} else if (record[nameField] !== undefined && record[nameField] === name && record[versionField] !== undefined && record[versionField] === version) {
+				entityAlias = alias;
+				break;
+			}
+		}
+
+		return entityAlias;
+	}
+
+	cleanseTransactionData(index = TableIndex, entities, data = {}, config = {}) {
+		if (config.raw) {
+			return data;
+		}
+		const identifiers = this._getEntityIdentifiers(entities);
+		data.Items = data.Items || [];
+		const paramItems = config._paramItems || [];
+		const results = [];
+		for (let i = 0; i < data.Items.length; i++) {
+			const record = data.Items[i];
+			if (!record) {
+				results.push(null);
+				continue;
+			}
+
+			const paramItem = paramItems[i];
+			const entityAlias = this.matchToEntityAlias({paramItem, identifiers, record});
 			if (!entityAlias) {
 				continue;
 			}
+
 			// pager=false because we don't want the entity trying to parse the lastEvaluatedKey
-			let items = this.collectionSchema[collection].entities[entityAlias].formatResponse({Item: record}, index, {
+			let formatted = entities[entityAlias].formatResponse({ Item: record }, index, {
 				...config,
 				pager: false,
 				parse: undefined
 			});
-			results[entityAlias].push(items.data);
+
+			results.push(formatted.data);
+		}
+
+		return results;
+	}
+
+	cleanseRetrievedData(index = TableIndex, entities, data = {}, config = {}) {
+		if (config.raw) {
+			return data;
+		}
+		const identifiers = this._getEntityIdentifiers(entities);
+
+		data.Items = data.Items || [];
+
+		const results = {};
+		for (let {alias} of identifiers) {
+			results[alias] = [];
+		}
+
+		for (let i = 0; i < data.Items.length; i++) {
+			const record = data.Items[i];
+
+			if (!record) {
+				continue;
+			}
+
+			const entityAlias = this.matchToEntityAlias({identifiers, record});
+
+			if (!entityAlias) {
+				continue;
+			}
+			// pager=false because we don't want the entity trying to parse the lastEvaluatedKey
+			let formatted = entities[entityAlias].formatResponse({Item: record}, index, {
+				...config,
+				pager: false,
+				parse: undefined
+			});
+
+			results[entityAlias].push(formatted.data);
 		}
 		return results;
 	}
@@ -364,7 +499,7 @@ class Service {
 		name = "",
 		initialClauses = {},
 	}, facets = {}) {
-		const { entities, attributes, identifiers, indexType } = this.collectionSchema[name];
+		const { entities, attributes, identifiers, indexType, index } = this.collectionSchema[name];
 		const compositeAttributes = this.compositeAttributes[name];
 		const allEntities = Object.values(entities);
 		const entity = allEntities[0];
@@ -381,7 +516,10 @@ class Service {
 		let options = {
 			// expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
 			parse: (options, data) => {
-				return this.cleanseRetrievedData(name, entities, data, options);
+				if (options.raw) {
+					return data;
+				}
+				return this.cleanseRetrievedData(index, entities, data, options);
 			},
 			formatCursor: {
 				serialize: (key) => {

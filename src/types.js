@@ -23,6 +23,7 @@ const QueryTypes = {
 };
 
 const MethodTypes = {
+	check: "check",
 	put: "put",
 	get: "get",
 	query: "query",
@@ -35,7 +36,26 @@ const MethodTypes = {
 	batchGet: "batchGet",
 	batchWrite: "batchWrite",
 	upsert: "upsert",
+	transactWrite: "transactWrite",
+	transactGet: "transactGet",
 };
+
+const TransactionMethods = {
+	transactWrite: MethodTypes.transactWrite,
+	transactGet: MethodTypes.transactGet,
+}
+
+const TransactionOperations = {
+	[MethodTypes.get]: "Get",
+	[MethodTypes.check]: "ConditionCheck",
+	[MethodTypes.put]: "Put",
+	[MethodTypes.create]: "Put",
+	[MethodTypes.upsert]: "Update",
+	[MethodTypes.update]: "Update",
+	[MethodTypes.patch]: "Update",
+	[MethodTypes.remove]: "Delete",
+	[MethodTypes.delete]: "Delete",
+}
 
 const MethodTypeTranslation = {
 	put: "put",
@@ -50,6 +70,8 @@ const MethodTypeTranslation = {
 	batchGet: "batchGet",
 	batchWrite: "batchWrite",
 	upsert: "update",
+	transactWrite: 'transactWrite',
+	transactGet: 'transactGet',
 }
 
 const IndexTypes = {
@@ -198,6 +220,7 @@ const ItemOperations = {
 };
 
 const AttributeProxySymbol = Symbol("attribute_proxy");
+const TransactionCommitSymbol = Symbol('transaction_commit');
 
 const BuilderTypes = {
 	update: "update",
@@ -325,4 +348,7 @@ module.exports = {
 	AllPages,
 	ResultOrderOption,
 	ResultOrderParam,
+	TransactionCommitSymbol,
+	TransactionOperations,
+	TransactionMethods,
 };

@@ -229,6 +229,10 @@ class Entity {
 		return validations.model(model);
 	}
 
+	check(compositeAttributes = {}) {
+		return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index).check(compositeAttributes);
+	}
+
 	get(facets = {}) {
 		let index = TableIndex;
 		if (Array.isArray(facets)) {
@@ -285,10 +289,20 @@ class Entity {
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).remove(facets);
 	}
 
+	async transactWrite(parameters, config) {
+		let response = await this._exec(MethodTypes.transactWrite, parameters, config);
+		return response;
+	}
+
+	async transactGet(parameters, config) {
+		let response = await this._exec(MethodTypes.transactGet, parameters, config);
+		return response;
+	}
+
 	async go(method, parameters = {}, config = {}) {
 		let stackTrace;
 		if (!config.originalErr) {
-			stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+			// stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		}
 		try {
 			switch (method) {
@@ -486,7 +500,7 @@ class Entity {
 			case FormatToReturnValues.all_old:
 			case FormatToReturnValues.updated_new:
 			case FormatToReturnValues.updated_old:
-				return this.formatResponse(response, config);
+				return this.formatResponse(response, TableIndex, config);
 			case FormatToReturnValues.default:
 			default:
 				return this._formatDefaultResponse(method, parameters.IndexName, parameters, config, response);
@@ -596,7 +610,7 @@ class Entity {
 	formatResponse(response, index, config = {}) {
 		let stackTrace;
 		if (!config.originalErr) {
-			stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+			// stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		}
 		try {
 			let results = {};
@@ -883,7 +897,7 @@ class Entity {
 		return pager
 	}
 
-	_normalizeExecutionOptions({ provided = [] } = {}) {
+	_normalizeExecutionOptions({ provided = [], context = {} } = {}) {
 		let config = {
 			includeKeys: false,
 			originalErr: false,
@@ -931,7 +945,11 @@ class Entity {
 					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "format" provided: "${option.format}". Allowed values include ${u.commaSeparatedString(Object.keys(ReturnValues))}.`);
 				}
 				config.response = format;
-				config.params.ReturnValues = FormatToReturnValues[format];
+				if (context.operation === MethodTypes.transactWrite) {
+					config.params.ReturnValuesOnConditionCheckFailure = FormatToReturnValues[format];
+				} else {
+					config.params.ReturnValues = FormatToReturnValues[format];
+				}
 			}
 
 			if (option.formatCursor) {
@@ -1125,6 +1143,7 @@ class Entity {
 		let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
+			case MethodTypes.check:
 			case MethodTypes.get:
 			case MethodTypes.delete:
 			case MethodTypes.remove:

@@ -108,7 +108,7 @@ class WhereFactory {
 		let filterParents = Object.entries(injected)
 			.filter(clause => {
 				let [name, { children }] = clause;
-				return children.includes("go");
+				return children.find(child => ['go', 'commit'].includes(child));
 			})
 			.map(([name]) => name);
 		let modelFilters = Object.keys(filters);
@@ -118,7 +118,7 @@ class WhereFactory {
 			injected[name] = {
 				name,
 				action: this.buildClause(filter),
-				children: ["params", "go", "where", ...modelFilters],
+				children: ["params", "go", "commit", "where", ...modelFilters],
 			};
 		}
 		filterChildren.push("where");
@@ -127,7 +127,7 @@ class WhereFactory {
 			action: (entity, state, fn) => {
 				return this.buildClause(fn)(entity, state);
 			},
-			children: ["params", "go", "where", ...modelFilters],
+			children: ["params", "go", "commit", "where", ...modelFilters],
 		};
 		for (let parent of filterParents) {
 			injected[parent] = { ...injected[parent] };
