@@ -137,14 +137,18 @@ class Entity extends ElectroDB.Entity {
                 return {
                     promise: async () => {
                         printToScreen({params, entity: this, cache: true});
-                    }
+                        return {};
+                    },
+                    on: () => {},
                 }
             },
             transactGet: (params) => {
                 return {
                     promise: async () => {
                         printToScreen({params, entity: this, cache: true});
-                    }
+                        return {Responses: []};
+                    },
+                    on: () => {},
                 }
             },
         };
@@ -186,6 +190,7 @@ class Entity extends ElectroDB.Entity {
     _makeChain(index, clauses, rootClause, options) {
         const params = clauses.params.action;
         const go = clauses.go.action;
+        const commit = clauses.commit.action;
         clauses.params.action = (entity, state, options) => {
             try {
                 params(entity, state, options);
@@ -196,6 +201,13 @@ class Entity extends ElectroDB.Entity {
         clauses.go.action = async (entity, state, options) => {
             try {
                 return await go(entity, state, options);
+            } catch(err) {
+                printMessage("error", err.message);
+            }
+        }
+        clauses.commit.action = (...params) => {
+            try {
+                return commit(...params);
             } catch(err) {
                 printMessage("error", err.message);
             }

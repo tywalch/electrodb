@@ -1411,7 +1411,7 @@ class Entity {
 		});
 		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
 		let TableName = this.getTableName();
-		return {Key, TableName};
+		return { Key, TableName };
 	}
 
 	_removeAttributes(item, keys) {

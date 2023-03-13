@@ -1,5 +1,8 @@
 const lib = require('@aws-sdk/lib-dynamodb')
+// const lib = {};
 const {unmarshallOutput} = require('@aws-sdk/lib-dynamodb/dist-cjs/commands/utils');
+// const unmarshallOutput = (val) => val;
+
 const { isFunction } = require('./validations');
 const { ElectroError, ErrorCodes } = require('./errors');
 const DocumentClientVersions = {
