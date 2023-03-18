@@ -18,7 +18,7 @@ import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
 
 The `update()` method in ElectroDB allows you to update individual properties of an item. This method utilizes the DynamoDB operation `update` under the hood.
 
-> The DynamoDB method `update()` will create an item if one does not exist. Because updates have reduced attribute validations when compared to `put`, the practical ramifications of this is that an `update` can create a record without all the attributes you'd expect from a newly created item. Depending on your project's unique needs, the methods [patch](/latest/mutations/patch) or [upsert](/latest/mutations/upsert) may be a better fit.
+> The DynamoDB method `update()` will create an item if one does not exist. Because updates have reduced attribute validations when compared to `put`, the practical ramifications of this is that an `update` can create a record without all the attributes you'd expect from a newly created item. Depending on your project's unique needs, the methods [patch](/en/mutations/patch) or [upsert](/en/mutations/upsert) may be a better fit.
 
 <ExampleSetup />
 
@@ -378,7 +378,7 @@ await StoreLocations
 
 #### Data
 
-The `data()` allows for different approach to updating your item, by accepting a callback with a similar argument signature to the [where clause](/latest/mutations/conditionals).
+The `data()` allows for different approach to updating your item, by accepting a callback with a similar argument signature to the [where clause](/en/mutations/conditionals).
 
 The callback provided to the `data` method is injected with an `attributes` object as the first parameter, and an `operations` object as the second parameter. All operations accept an attribute from the `attributes` object as a first parameter, and optionally accept a second `value` parameter.
 

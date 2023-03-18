@@ -17,7 +17,7 @@ layout: ../../../layouts/MainLayout.astro
 ElectroDB can be supplied with callbacks (see: [loggers](#loggers) and [listeners](#listeners) to learn how) to be invoked after certain request lifecycles. This can be useful for logging, analytics, expanding functionality, and more. The following are events currently supported by ElectroDB -- if you would like to see additional events feel free to create a github issue to discuss your concept/need!
 
 ### Query Event
-The `query` event occurs when a query is made via the terminal method [`go()`](/latest/core-concepts/executing-queries) . The event includes the exact parameters given to the provided client, the ElectroDB method used, and the ElectroDB configuration provided.
+The `query` event occurs when a query is made via the terminal method [`go()`](/en/core-concepts/executing-queries) . The event includes the exact parameters given to the provided client, the ElectroDB method used, and the ElectroDB configuration provided.
 
 *Type:*
 ```typescript
@@ -118,7 +118,7 @@ entity.get({ prop1, prop2 }).go();
 ```
 
 ## Loggers
-A logger callback function can be provided both the at the instantiation of an `Entity` or `Service` instance or as a [Execution Option](/latest/core-concepts/executing-queries). The property `logger` is implemented as a convenience property; under the hood ElectroDB uses this property identically to how it uses a [Listener](#listeners).
+A logger callback function can be provided both the at the instantiation of an `Entity` or `Service` instance or as a [Execution Option](/en/core-concepts/executing-queries). The property `logger` is implemented as a convenience property; under the hood ElectroDB uses this property identically to how it uses a [Listener](#listeners).
 
 *On the instantiation of an `Entity`:*
 ```typescript
@@ -166,7 +166,7 @@ const service = new Service({ task, user }, {
 });
 ```
 
-*As a [Execution Option](/latest/core-concepts/execution-options):*
+*As a [Execution Option](/en/core-concepts/execution-options):*
 ```typescript
 const logger = (event: ElectroEvent) => {
     console.log(JSON.stringify(event, null, 4));
@@ -178,7 +178,7 @@ task.query
 ```
 
 ## Listeners
-ElectroDB can be supplied with callbacks (called "Listeners") to be invoked after certain request lifecycles. Unlike [Attribute Getters and Setters](/latest/modeling/attributes#attribute-getters-and-setters), Listeners are implemented to react to events passively, not to modify values during the request lifecycle. Listeners can be useful for logging, analytics, expanding functionality, and more. Listeners can be provide both the at the instantiation of an `Entity` or `Service` instance or as a [Execution Option](/latest/core-concepts/executing-queries).
+ElectroDB can be supplied with callbacks (called "Listeners") to be invoked after certain request lifecycles. Unlike [Attribute Getters and Setters](/en/modeling/attributes#attribute-getters-and-setters), Listeners are implemented to react to events passively, not to modify values during the request lifecycle. Listeners can be useful for logging, analytics, expanding functionality, and more. Listeners can be provide both the at the instantiation of an `Entity` or `Service` instance or as a [Execution Option](/en/core-concepts/executing-queries).
 
 > Listeners treated as synchronous callbacks and are not awaited. In the event that a callback throws an exception, ElectroDB will quietly catch and log the exception with `console.error` to prevent the exception from impacting your query.
 
@@ -243,7 +243,7 @@ const service = new Service({ task, user }, {
 });
 ```
 
-*As a [Execution Option](/latest/core-concepts/executing-queries):*
+*As a [Execution Option](/en/core-concepts/executing-queries):*
 
 ```typescript
 const listener1 = (event: ElectroEvent) => {
