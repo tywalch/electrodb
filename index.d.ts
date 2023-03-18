@@ -732,7 +732,7 @@ export interface SingleRecordOperationOptions<A extends string, F extends string
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
 }
 
-type GoGetTerminalTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, Params> = <Options extends GoQueryTerminalOptions<keyof ResponseItem>>(options?: Options) =>
+type GoGetTerminalTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, Params> = <Options extends TransactGetQueryOptions<keyof ResponseItem>>(options?: Options) =>
     Options extends GoQueryTerminalOptions<infer Attr>
         ? CommittedTransactionResult<{
             [Name in keyof ResponseItem as Name extends Attr
@@ -741,14 +741,8 @@ type GoGetTerminalTransaction<A extends string, F extends string, C extends stri
         }, Params>
         : CommittedTransactionResult<ResponseItem, Params>
 
-type GoSingleTerminalTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, Params> = <Options extends GoQueryTerminalOptions<keyof ResponseItem>>(options?: Options) =>
-    Options extends GoQueryTerminalOptions<infer Attr>
-        ? CommittedTransactionResult<{
-                [Name in keyof ResponseItem as Name extends Attr
-                    ? Name
-                    : never]: ResponseItem[Name]
-            } | null, Params>
-        : CommittedTransactionResult<ResponseItem, Params>
+type GoSingleTerminalTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, Params> = <Options extends TransactWriteQueryOptions>(options?: Options) =>
+    CommittedTransactionResult<ResponseItem, Params>
 
 export interface SingleRecordOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType, Params> {
     commit: GoSingleTerminalTransaction<A,F,C,S, ResponseType, Params>;
@@ -759,26 +753,26 @@ export interface GetOperationOptionsTransaction<A extends string, F extends stri
     commit: GoGetTerminalTransaction<A,F,C,S, ResponseType, Params>;
 }
 
-export type DeleteRecordOperationGoTransaction<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => CommittedTransactionResult<T, TransactWriteItem>;
+export type DeleteRecordOperationGoTransaction<ResponseType, Options = TransactWriteQueryOptions> = <T = ResponseType>(options?: Options) => CommittedTransactionResult<T, TransactWriteItem>;
 
 export interface DeleteRecordOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    commit: DeleteRecordOperationGoTransaction<ResponseType, DeleteQueryOptions>;
+    commit: DeleteRecordOperationGoTransaction<ResponseType, TransactWriteQueryOptions>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,DeleteRecordOperationOptionsTransaction<A,F,C,S,ResponseType>>;
 }
 
-export type PutRecordGoTransaction<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => CommittedTransactionResult<T, TransactWriteItem>;
+export type PutRecordGoTransaction<ResponseType, Options = TransactWriteQueryOptions> = <T = ResponseType>(options?: Options) => CommittedTransactionResult<T, TransactWriteItem>;
 
 export interface PutRecordOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    commit: PutRecordGoTransaction<ResponseType, PutQueryOptions>;
+    commit: PutRecordGoTransaction<ResponseType, TransactWriteQueryOptions>;
     where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, PutRecordOperationOptionsTransaction<A, F, C, S, ResponseType>>;
 }
 
 export interface UpsertRecordOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    commit: PutRecordGoTransaction<ResponseType, UpdateQueryParams>;
+    commit: PutRecordGoTransaction<ResponseType, TransactWriteQueryOptions>;
     where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptionsTransaction<A, F, C, S, ResponseType>>;
 }
 
-export type UpdateRecordGoTransaction<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) => CommittedTransactionResult<Partial<T>, TransactWriteItem>
+export type UpdateRecordGoTransaction<ResponseType> = <T = ResponseType, Options extends TransactWriteQueryOptions = TransactWriteQueryOptions>(options?: Options) => CommittedTransactionResult<Partial<T>, TransactWriteItem>
 
 export interface SetRecordActionOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
     commit: UpdateRecordGoTransaction<TableItem>;
@@ -997,6 +991,28 @@ interface GoQueryTerminalOptions<Attributes> {
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
     order?: 'asc' | 'desc';
+}
+
+interface TransactWriteQueryOptions {
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    table?: string;
+    params?: object;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+    listeners?: Array<ElectroEventListener>;
+    logger?: ElectroEventListener;
+    response?: 'all_old';
+}
+
+interface TransactGetQueryOptions<Attributes> {
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    table?: string;
+    params?: object;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+    attributes?: ReadonlyArray<Attributes>;
+    listeners?: Array<ElectroEventListener>;
+    logger?: ElectroEventListener;
 }
 
 export interface ParamTerminalOptions<Attributes> {
