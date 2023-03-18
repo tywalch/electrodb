@@ -31,10 +31,10 @@ function createTransaction(options) {
                 _returnParamItems: true
             });
 
-            let success = true;
+            let canceled = false;
             if (paramItems.length === 0) {
                 return {
-                    success,
+                    committed,
                     data: [],
                 }
             }
@@ -47,7 +47,7 @@ function createTransaction(options) {
                     } else if (data.canceled) {
                         // FUCK THIS ENDS UP BEING UNMARSHALLED DATA :( :( :( :(
                         // console.log('canceled', JSON.stringify(data.canceled, null, 4));
-                        success = false;
+                        canceled = true;
                         return service.cleanseCanceledData(TableIndex, service.entities, data, {
                             ...options,
                             _isTransaction: true,
@@ -63,8 +63,10 @@ function createTransaction(options) {
                         });
                     } else {
                         return new Array(paramItems ? paramItems.length : 0).fill({
-                            success: true,
-                            item: [],
+                            code: 'None',
+                            failed: false,
+                            message: undefined,
+                            item: null,
                         });
                     }
                 }
@@ -72,7 +74,7 @@ function createTransaction(options) {
 
             return {
                 ...response,
-                success,
+                canceled,
             }
         }
     }

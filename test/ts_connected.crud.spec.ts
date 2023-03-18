@@ -2880,10 +2880,10 @@ describe("Entity", () => {
            const result = await createNewUser({email, organization, username})
                .then((data) => ({success: true, result: data}))
                .catch(err => ({success: false, result: err.message}));
-           console.log('result %o', result);
+
            // expect(result.success).to.be.false;
-           // expect(result.result).to.equal('Transaction cancelled, please refer cancellation reasons for specific reasons [ConditionalCheckFailed, ConditionalCheckFailed]');
-       });
+           expect(result.result).to.equal('Transaction cancelled, please refer cancellation reasons for specific reasons [ConditionalCheckFailed, ConditionalCheckFailed]');
+       })
     });
 });
 

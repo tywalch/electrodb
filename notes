@@ -18,4 +18,5 @@ todo: transaction tests
 - return status impact
 - `check` with where clause
 - params vs go
+- trim execution options
 

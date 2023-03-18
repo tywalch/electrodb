@@ -1,6 +1,6 @@
-const lib = require('@aws-sdk/lib-dynamodb')
+const lib = require('@aws-sdk/lib-dynamodb');
 // const lib = {};
-const {unmarshallOutput} = require('@aws-sdk/lib-dynamodb/dist-cjs/commands/utils');
+const { unmarshallOutput } = require('@aws-sdk/lib-dynamodb/dist-cjs/commands/utils');
 // const unmarshallOutput = (val) => val;
 
 const { isFunction } = require('./validations');
@@ -91,6 +91,7 @@ class DocumentClientV2Wrapper {
             }
         }
     }
+
     transactWrite(params) {
         const transactionRequest = this.client.transactWrite(params);
         return this._transact(transactionRequest);
@@ -177,40 +178,49 @@ class DocumentClientV3Wrapper {
             return this.client.send(command);
         });
     }
+
     transactWrite(params) {
         return this.promiseWrap(async () => {
-            const transactionRequest = this.client.transactWrite(params);
-            let cancellationReasons;
-            transactionRequest.on('extractError', (response) => {
-                try {
-                    cancellationReasons = JSON.parse(response.httpResponse.body.toString()).CancellationReasons;
-                } catch (err) {}
-            });
-
-            return new Promise((resolve, reject) => {
-                transactionRequest.send((err, response) => {
-                    if (err) {
-                        if (Array.isArray(cancellationReasons)) {
-                            return {
-                                cancelled: cancellationReasons.map(reason => {
-                                    if (reason.Item) {
-                                        return unmarshallOutput(reason, [{ key: "Item" }]);
-                                    }
-                                    return reason;
-                                })
-                            }
+            const command = new this.lib.TransactWriteCommand(params);
+            return this.client.send(command)
+                .then((result) => {
+                    return result;
+                })
+                .catch(err => {
+                    if (err.CancellationReasons) {
+                        return {
+                            canceled: err.CancellationReasons.map(reason => {
+                                if (reason.Item) {
+                                    return unmarshallOutput(reason, [{ key: "Item" }]);
+                                }
+                                return reason;
+                            })
                         }
-                        return reject(err);
                     }
-                    return resolve(response);
+                    throw err;
                 });
-            })
         });
     }
     transactGet(params) {
         return this.promiseWrap(async () => {
             const command = new this.lib.TransactGetCommand(params);
-            return this.client.send(command);
+            return this.client.send(command)
+                .then((result) => {
+                    return result;
+                })
+                .catch(err => {
+                    if (err.CancellationReasons) {
+                        return {
+                            canceled: err.CancellationReasons.map(reason => {
+                                if (reason.Item) {
+                                    return unmarshallOutput(reason, [{ key: "Item" }]);
+                                }
+                                return reason;
+                            })
+                        }
+                    }
+                    throw err;
+                });
         });
     }
     createSet(value) {

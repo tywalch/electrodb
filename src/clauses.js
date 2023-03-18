@@ -6,19 +6,6 @@ const v = require("./validations");
 const e = require("./errors");
 const u = require("./util");
 
-function toTransactionParams(method, parameters) {
-	const operation = TransactionOperations[method];
-	if (operation) {
-		return {
-			[operation]: parameters
-		}
-	} else if (method === MethodTypes.get) {
-		return parameters;
-	} else {
-		throw new Error('Invalid commit method');
-	}
-}
-
 function batchAction(action, type, entity, state, payload) {
 	if (state.getError() !== null) {
 		return state;

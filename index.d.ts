@@ -715,11 +715,11 @@ export interface RecordsActionOptions<A extends string,
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,RecordsActionOptions<A,F,C,S,Items,IndexCompositeAttributes>>;
 }
 
-type TransactWriteRecord<T> = {
-    committed: boolean;
-    code: 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
-    message: string;
-    existing: null | T;
+type TransactionItem<T> = {
+    failed: boolean;
+    code?: 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
+    message?: string | undefined;
+    item: null | T;
 };
 
 type CommittedTransactionResult<T, Params> =
@@ -2469,14 +2469,14 @@ type TransactGetFunctionOptions = {
 type TransactWriteExtractedType<T extends readonly any[], A extends readonly any[] = []> =
     T extends [infer F, ...infer R] ?
         F extends CommittedTransactionResult<infer V, TransactWriteItem>
-            ? TransactWriteExtractedType<R, [...A, TransactWriteRecord<V>]>
+            ? TransactWriteExtractedType<R, [...A, TransactionItem<V>]>
             : never
     : A;
 
 type TransactGetExtractedType<T extends readonly any[], A extends readonly any[] = []> =
     T extends [infer F, ...infer R] ?
         F extends CommittedTransactionResult<infer V, TransactGetItem>
-            ? TransactWriteExtractedType<R, [...A, V]>
+            ? TransactWriteExtractedType<R, [...A, TransactionItem<V>]>
             : never
         : A
 
@@ -2510,7 +2510,7 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     transaction: {
         write: <T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactWriteItem>>>(fn: TransactWriteFunction<E,T,R>) => {
             go: (options?: TransactWriteFunctionOptions) => Promise<{
-                success: boolean;
+                canceled: boolean;
                 data: TransactWriteExtractedType<R>
             }>;
             params: <O extends TransactWriteFunctionOptions = TransactWriteFunctionOptions>(options?: O) => TransactWriteCommandInput
@@ -2518,7 +2518,7 @@ export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
 
         get: <T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactGetItem>>>(fn: TransactGetFunction<E,T,R>) => {
             go: (options?: TransactGetFunctionOptions) => Promise<{
-                success: boolean;
+                canceled: boolean;
                 data: TransactGetExtractedType<R>
             }>;
             params: <O extends TransactGetFunctionOptions = TransactGetFunctionOptions>(options?: O) => TransactGetCommandInput

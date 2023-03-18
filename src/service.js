@@ -332,14 +332,11 @@ class Service {
 		for (let i = 0; i < canceled.length; i++) {
 			const { Item, Code, Message } = canceled[i] || {};
 			const paramItem = paramItems[i];
-			const committed = Code === 'None';
+			const failed = Code !== 'None';
 			const result = {
-				committed,
-			}
-
-			if (!committed) {
-				result.code = Code;
-				result.message = Message;
+				failed,
+				code: Code,
+				message: Message,
 			}
 
 			if (Item) {
@@ -348,13 +345,13 @@ class Service {
 					paramItem,
 					identifiers
 				});
-				result.existing = entities[entityAlias].formatResponse({Item}, index, {
+				result.item = entities[entityAlias].formatResponse({Item}, index, {
 					...config,
 					pager: false,
 					parse: undefined,
 				}).data;
 			} else {
-				result.existing = null;
+				result.item = null;
 			}
 
 			results.push(result);
@@ -416,7 +413,10 @@ class Service {
 			results.push(formatted.data);
 		}
 
-		return results;
+		return results.map(item => ({
+			failed: false,
+			item,
+		}));
 	}
 
 	cleanseRetrievedData(index = TableIndex, entities, data = {}, config = {}) {
