@@ -18,7 +18,7 @@ layout: ../../../layouts/MainLayout.astro
 
 A Collection is a grouping of Entities with the same Partition Key and allows you to make efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities.
 
-> ElectroDB Collections use a single DynamoDB query to retrieve results. One query is made to retrieve results for all Entities (the benefits of single table design), however keep in mind that DynamoDB returns all records in order of the Entity's sort key. In cases where your partition contains a large volume of items, it is possible some entities will not return items during pagination. This can be mitigated through the use of [Index Types](/latest/modeling/indexes#index-types).
+> ElectroDB Collections use a single DynamoDB query to retrieve results. One query is made to retrieve results for all Entities (the benefits of single table design), however keep in mind that DynamoDB returns all records in order of the Entity's sort key. In cases where your partition contains a large volume of items, it is possible some entities will not return items during pagination. This can be mitigated through the use of [Index Types](/en/modeling/indexes#index-types).
 
 Collections are defined on an Index, and the name of the collection should represent what the query would return as a pseudo `Entity`. Additionally, Collection names must be unique across a `Service`.
 
@@ -179,7 +179,7 @@ await TaskApp.collections
 
 ## Collection Queries vs Entity Queries
 
-To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection queries for [isolated indexes](/latest/modeling/indexes#isolated-indexes) only leverage [Composite Attributes](/latest/modeling/indexes#composing-attributes) from an access pattern's Partition Key, while Collection queries for [clustered indexes](/latest/modeling/indexes#clustered-indexes) allow you to query on both Partition and Sort Keys.
+To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection queries for [isolated indexes](/en/modeling/indexes#isolated-indexes) only leverage [Composite Attributes](/en/modeling/indexes#composing-attributes) from an access pattern's Partition Key, while Collection queries for [clustered indexes](/en/modeling/indexes#clustered-indexes) allow you to query on both Partition and Sort Keys.
 
 To better explain how Collection Queries are formed, here is a juxtaposition of an Entity Query's parameters vs a Collection Query's parameters:
 
@@ -257,7 +257,7 @@ The notable difference between the two is how much of the Sort Key is specified 
 
 ## Collection Response Structure
 
-Unlike Entity Queries which return an array, Collection Queries return an object. This object will have a key for every Entity name (or [Entity Alias](/latest/modeling/services#creation)) associated with that Collection, and an array for all results queried that belong to that Entity.
+Unlike Entity Queries which return an array, Collection Queries return an object. This object will have a key for every Entity name (or [Entity Alias](/en/modeling/services#creation)) associated with that Collection, and an array for all results queried that belong to that Entity.
 
 For example, using the "TaskApp" models defined [above](#collections), we would expect the following response from a query to the "assignments" collection:
 
@@ -295,9 +295,9 @@ Because the Tasks and Employee Entities both associated their index (`gsi2`) wit
 
 ## Sub-Collections
 
-Sub-Collections are an extension of [Collection](/latest/modeling/collections) functionality that allow you to model more advanced access patterns. Collections and Sub-Collections are defined on [Indexes](/latest/modeling/indexes) via a property called `collection`, as either a string or string array respectively.
+Sub-Collections are an extension of [Collection](/en/modeling/collections) functionality that allow you to model more advanced access patterns. Collections and Sub-Collections are defined on [Indexes](/en/modeling/indexes) via a property called `collection`, as either a string or string array respectively.
 
-> Sub-Collections are only supported on ["isolated" index](/latest/modeling/indexes#isolated-indexes) types.
+> Sub-Collections are only supported on ["isolated" index](/en/modeling/indexes#isolated-indexes) types.
 
 
 The following is an example of functionally identical collections, implemented as a string (referred to as a "collection") and then as a string array (referred to as sub-collections):
@@ -647,11 +647,11 @@ Looking above we can see that the `assignments` collection is actually a subset 
 
 ElectroDB puts an emphasis on allowing users to define more domain specific naming. Instead of referring to indexes by their name on the table, ElectroDB allows users to define their indexes as Access Patterns. 
 
-> Please refer to the Entities defined in the section [Sub-Collections](/latest/modeling/indexes#sub-collections) as the source of examples within this section.
+> Please refer to the Entities defined in the section [Sub-Collections](/en/modeling/indexes#sub-collections) as the source of examples within this section.
 
 ### Index Naming Conventions
 
-The following is an access pattern on the "employees" entity defined [here](/latest/modeling/#sub-collections):
+The following is an access pattern on the "employees" entity defined [here](/en/modeling/#sub-collections):
 
 ```typescript
 staff: {

@@ -101,7 +101,7 @@ Below is an example schema for a "Book" entity
 
 ### Model
 
-The `model` property on your schema defines meta information about your entity. These values are used to isolate your entity amongst other entities that may be located in the same table. Assuming you use ElectroDB's [default indexing mechanisms](/latest/modeling/indexes#composite-attribute-arrays), ElectroDB will ensure proper isolation occurs between entities located within the same table.
+The `model` property on your schema defines meta information about your entity. These values are used to isolate your entity amongst other entities that may be located in the same table. Assuming you use ElectroDB's [default indexing mechanisms](/en/modeling/indexes#composite-attribute-arrays), ElectroDB will ensure proper isolation occurs between entities located within the same table.
 
 In the below `model` example, ElectroDB will define isolation with the following hierarchy: `service > entity > version`.
 
@@ -115,7 +115,7 @@ In the below `model` example, ElectroDB will define isolation with the following
 
 ### Attributes
 
-The [Attributes page](/latest/modeling/attributes) contains everything you need to know about attributes in ElectroDB. In the context of an overall schema, the `attributes` object defines all attributes that can be defined on an entity item. Additionally, the [indexes object](#indexes) will reference attributes defined here.
+The [Attributes page](/en/modeling/attributes) contains everything you need to know about attributes in ElectroDB. In the context of an overall schema, the `attributes` object defines all attributes that can be defined on an entity item. Additionally, the [indexes object](#indexes) will reference attributes defined here.
 
 :::caution
 The `attributes` object should not contain fields that represent your partition or sort keys. ElectroDB creates mappings to your partition and sort keys in the [indexes object](#indexes).
@@ -157,7 +157,7 @@ The `attributes` object should not contain fields that represent your partition 
 
 ### Indexes
 
-ElectroDB aims to make Single-Table Design simple and accessible for both simple and complex use cases. With Single-Table Design, generic key and indexes names are preferred. The examples noted here will use generic names, though more information and examples (including examples without generic names) can be found on the [Indexes](/latest/modeling/indexes) page.
+ElectroDB aims to make Single-Table Design simple and accessible for both simple and complex use cases. With Single-Table Design, generic key and indexes names are preferred. The examples noted here will use generic names, though more information and examples (including examples without generic names) can be found on the [Indexes](/en/modeling/indexes) page.
 
 The following DynamoDB table definition creates a generic Pay-Per-Request table that contains a single Global Secondary Index.
 

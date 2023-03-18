@@ -106,7 +106,7 @@ Make sure you have spelled the identifier correctly or that you actually passed 
 You are trying to use the custom Key Composite Attribute Template, and the format you passed is invalid.
 
 **What to do about it:**
-Checkout the section on [Composite Attribute Templates](/latest/modeling/indexes#composite attribute-templates) and verify your template conforms to the rules detailed there.
+Checkout the section on [Composite Attribute Templates](/en/modeling/indexes#composite attribute-templates) and verify your template conforms to the rules detailed there.
 
 ### Duplicate Indexes
 **Code: 1004**
@@ -228,7 +228,7 @@ Identify the index you're using as the Primary Index and ensure it _does not_ ha
 Some attribute on your model has an invalid configuration.
 
 **What to do about it:**
-Use the error to identify which column needs to examined, double-check the properties on that attribute. Checkout the section on [Attributes](/latest/modeling/attributes) for more information on how they are structured.
+Use the error to identify which column needs to examined, double-check the properties on that attribute. Checkout the section on [Attributes](/en/modeling/attributes) for more information on how they are structured.
 
 ### Invalid Model
 **Code: 1009**
@@ -237,7 +237,7 @@ Use the error to identify which column needs to examined, double-check the prope
 Some properties on your model are missing or invalid.
 
 **What to do about it:**
-Checkout the section on [Schemas](/latest/modeling/schema) to verify your model against what is expected.
+Checkout the section on [Schemas](/en/modeling/schema) to verify your model against what is expected.
 
 ### Invalid Options
 **Code: 1010**
@@ -246,7 +246,7 @@ Checkout the section on [Schemas](/latest/modeling/schema) to verify your model 
 Some properties on your options object are missing or invalid.
 
 **What to do about it:**
-Checkout the section on [Model/Service Options](/latest/modeling/service#options) to verify your model against what is expected.
+Checkout the section on [Model/Service Options](/en/modeling/service#options) to verify your model against what is expected.
 
 ### Duplicate Index Fields
 **Code: 1014**
@@ -261,7 +261,7 @@ This is likely a typo, if not double-check the names of the fields you assigned 
 **Code: 1015**
 
 **Why this occurred:**
-Within one index you tried to use the same composite attribute in both the PK and SK. A composite attribute may only be used once within an index. With ElectroDB it is not uncommon to use the same value as both the PK and SK when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a composite attribute, checkout [this section](/latest/modeling/indexes#indexes-without-sort-keys) for more information.
+Within one index you tried to use the same composite attribute in both the PK and SK. A composite attribute may only be used once within an index. With ElectroDB it is not uncommon to use the same value as both the PK and SK when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a composite attribute, checkout [this section](/en/modeling/indexes#indexes-without-sort-keys) for more information.
 
 **What to do about it:**
 Determine how you can change your access pattern to not duplicate the composite attribute. Remember that an empty array for an SK is valid.
@@ -273,7 +273,7 @@ Determine how you can change your access pattern to not duplicate the composite 
 You are trying to use the custom Key Composite Attribute Template, and a Composite Attribute Array on your model, and they do not contain identical composite attributes.
 
 **What to do about it:**
-Checkout the section on [Composite Attribute Templates](/latest/modeling/indexes#composite attribute-templates) and verify your template conforms to the rules detailed there. Both properties must contain the same attributes and be provided in the same order.
+Checkout the section on [Composite Attribute Templates](/en/modeling/indexes#composite attribute-templates) and verify your template conforms to the rules detailed there. Both properties must contain the same attributes and be provided in the same order.
 
 ### Invalid Index With Attribute Name
 **Code: 1018**
@@ -282,7 +282,7 @@ Checkout the section on [Composite Attribute Templates](/latest/modeling/indexes
 ElectroDB's design revolves around best practices related to modeling in single table design. This includes giving indexed fields generic names. If the PK and SK fields on your table indexes also match the names of attributes on your Entity you will need to make special considerations to make sure ElectroDB can accurately map your data.  
 
 **What to do about it:**
-Checkout the section [Using ElectroDB with existing data](/latest/core-concepts/use-electrodb-with-existing-table) to learn more about considerations to make when using attributes as index fields.
+Checkout the section [Using ElectroDB with existing data](/en/core-concepts/use-electrodb-with-existing-table) to learn more about considerations to make when using attributes as index fields.
 
 ### Invalid Collection on Index With Attribute Field Names
 **Code: 1019**
@@ -291,7 +291,7 @@ Checkout the section [Using ElectroDB with existing data](/latest/core-concepts/
 Collections allow for unique access patterns to be modeled between entities. It does this by appending prefixes to your key composites. If an Entity leverages an attribute field as an index key, ElectroDB will be unable to prefix your value because that would result in modifying the value itself.   
 
 **What to do about it:**
-Checkout the section [Collections](/latest/modeling/collections) to learn more about collections, as well as the section [Using ElectroDB with existing data](/latest/core-concepts/use-electrodb-with-existing-table) to learn more about considerations to make when using attributes as index fields.
+Checkout the section [Collections](/en/modeling/collections) to learn more about collections, as well as the section [Using ElectroDB with existing data](/en/core-concepts/use-electrodb-with-existing-table) to learn more about considerations to make when using attributes as index fields.
 
 ## Invalid Query Errors
 
@@ -311,13 +311,13 @@ The error should describe the missing composite attributes, ensure those composi
 You never specified a Table for DynamoDB to use.
 
 **What to do about it:**
-Tables can be defined on the [Service Options](/latest/modeling/service#options) object when you create an Entity or Service, or if that is not known at the time of creation, it can be supplied as a [Execution Options](/latest/core-concepts/executing-queries) and supplied on each query individually. If can be supplied on both, in that case the Query Option will override the Service Option.
+Tables can be defined on the [Service Options](/en/modeling/service#options) object when you create an Entity or Service, or if that is not known at the time of creation, it can be supplied as a [Execution Options](/en/core-concepts/executing-queries) and supplied on each query individually. If can be supplied on both, in that case the Query Option will override the Service Option.
 
 ### Invalid Concurrency Option
 **Code: 2004**
 
 **Why this occurred:**
-When performing a bulk operation ([Batch Get](/latest/queries/batch-get), [Batch Delete Records](/latest/mutations/batch-delete), [Batch Put Records](/latest/mutations/batch-put)) you can pass a [Execution Options](/latest/core-concepts/executing-queries) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+When performing a bulk operation ([Batch Get](/en/queries/batch-get), [Batch Delete Records](/en/mutations/batch-delete), [Batch Put Records](/en/mutations/batch-put)) you can pass a [Execution Options](/en/core-concepts/executing-queries) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 **What to do about it:*   *
 Expect this error only if you're providing a `concurrency` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
@@ -326,7 +326,7 @@ Expect this error only if you're providing a `concurrency` option. Double-check 
 **Code: 2005**
 
 **Why this occurred:**
-When performing a query [Query](#building-queries) you can pass a [Execution Options](/latest/core-concepts/executing-queries) called `pages`, which impacts how many DynamoDB pages a query should iterate through. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+When performing a query [Query](#building-queries) you can pass a [Execution Options](/en/core-concepts/executing-queries) called `pages`, which impacts how many DynamoDB pages a query should iterate through. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 **What to do about it:**
 Expect this error only if you're providing a `pages` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
@@ -335,7 +335,7 @@ Expect this error only if you're providing a `pages` option. Double-check the va
 **Code: 2006**
 
 **Why this occurred:**
-When performing a query [Query](#building-queries) you can pass a [Execution Options](/latest/core-concepts/executing-queries) called `limit`, which impacts how many DynamoDB items a query should return. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+When performing a query [Query](#building-queries) you can pass a [Execution Options](/en/core-concepts/executing-queries) called `limit`, which impacts how many DynamoDB items a query should return. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 **What to do about it:**
 Expect this error only if you're providing a `limit` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
@@ -403,7 +403,7 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 **Code: 5004**
 
 **Why this occurred:**
-When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied pager. This error can occur when you supply an invalid pager, or when you are using a different [pager option](/latest/queries/pagination#pager) to a pager than what was used when retrieving it. Consult the section on [Pagination](/latest/queries/pagination) to learn more.
+When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied pager. This error can occur when you supply an invalid pager, or when you are using a different [pager option](/en/queries/pagination#pager) to a pager than what was used when retrieving it. Consult the section on [Pagination](/en/queries/pagination) to learn more.
 
 **What to do about it:**
 If you are sure the pager you are passing to `.page()` is the same you received from `.page()` this could be an unexpected error. To mitigate the issue use the Query Option `{pager: "raw"}` and please open a support issue.
@@ -413,7 +413,7 @@ If you are sure the pager you are passing to `.page()` is the same you received 
 **Code: 5005**
 
 **Why this occurred:**
-When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied [pager option](/latest/queries/pagination#pager). This error can occur when you supply a pager that resolves to more than one Entity. This can happen if your entities share the same composite attributes for the index you are querying on, and you are using the Query Option `{pager: "item""}`.
+When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied [pager option](/en/queries/pagination#pager). This error can occur when you supply a pager that resolves to more than one Entity. This can happen if your entities share the same composite attributes for the index you are querying on, and you are using the Query Option `{pager: "item""}`.
 
 **What to do about it:**
-Because this scenario is possible with otherwise well considered/thoughtful entity models, the default `pager` type used by ElectroDB is `"named"`. To avoid this error, you will need to use either the `"raw"` or `"named"` [pager options](/latest/queries/pagination#pager) for any index that could result in an ambiguous Entity owner.
+Because this scenario is possible with otherwise well considered/thoughtful entity models, the default `pager` type used by ElectroDB is `"named"`. To avoid this error, you will need to use either the `"raw"` or `"named"` [pager options](/en/queries/pagination#pager) for any index that could result in an ambiguous Entity owner.
