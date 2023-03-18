@@ -302,7 +302,7 @@ class Entity {
 	async go(method, parameters = {}, config = {}) {
 		let stackTrace;
 		if (!config.originalErr) {
-			// stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+			stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		}
 		try {
 			switch (method) {
@@ -610,7 +610,7 @@ class Entity {
 	formatResponse(response, index, config = {}) {
 		let stackTrace;
 		if (!config.originalErr) {
-			// stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+			stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		}
 		try {
 			let results = {};
