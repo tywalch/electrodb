@@ -39,7 +39,7 @@ When a transaction is canceled, due to conflict or other failure, ElectroDB will
 ### Mutations
 The mutations available on each injected entity are identical to the mutations available on all entities, with the addition of a transaction specific method `check`. Below are the mutations available on the injected entities and the corresponding DynamoDB parlance for each.
 
-> The `check` method exists only within a transaction. It is similar to a `get` method in that you must provide all composite attribute's, but unlike `get` you can use the `where` clause to apply a condition expression.
+> The `check` method exists only within a transaction. It is similar to a `get` method, in that you must provide identifying attributes, but unlike `get` you can use the `where` clause to apply a condition expression.
 
 ElectroDB Name   | DynamoDB Name
 ---------------- | -------------
