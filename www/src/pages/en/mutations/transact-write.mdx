@@ -34,7 +34,7 @@ await yourService.transaction
     ]).go();
 ```
 
-> When a transaction is canceled, due to conflict or other failure, ElectroDB will detail about the nature of the failure on each individual operation. By default, ElectroDB will return a reason for the failure, but if you provide the Execution Option `{ response: 'all_old' }` to the mutation `.commit()` function, ElectroDB will return the currently stored item (if it exists) on failure.
+When a transaction is canceled, due to conflict or other failure, ElectroDB will return information about the nature of the failure for each individual operation. By default, ElectroDB will return a reason for the failure if one exists, however if you provide the Execution Option `{ response: 'all_old' }` to the mutation `.commit()` function, ElectroDB will also return the currently stored item on failure. 
 
 ### Mutations
 The mutations available on each injected entity are identical to the mutations available on all entities, with the addition of a transaction specific method `check`. Below are the mutations available on the injected entities and the corresponding DynamoDB parlance for each.
