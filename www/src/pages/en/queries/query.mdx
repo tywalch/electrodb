@@ -95,7 +95,7 @@ Carefully considering the sequential order **Composite Attributes** are defined 
 For a comprehensive and interactive guide to build queries please visit this runkit: https://runkit.com/tywalch/electrodb-building-queries.
 
 ### Access Pattern Queries
-When you define your [indexes](/latest/modeling/indexes) in your model, you are defining the Access Patterns of your entity. The [composite attributes](/latest/modeling/indexes#composite-attribute-arrays) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
+When you define your [indexes](/en/modeling/indexes) in your model, you are defining the Access Patterns of your entity. The [composite attributes](/en/modeling/indexes#composite-attribute-arrays) you choose, and their order, ultimately define the finite set of index queries that can be made. The more you can leverage these index queries the better from both a cost and performance perspective.
 
 Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this to multiply our available access patterns and use the Sort Key Operations: `begins`, `between`, `lt`, `lte`, `gt`, and `gte`. These queries are more performant and cost-effective than filters. The costs associated with DynamoDB directly correlate to how effectively you leverage Sort Key Operations.
 

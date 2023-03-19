@@ -51,8 +51,8 @@ indexes: {
 | Property       | Type                                   | Required | Description |
 | -------------- | :------------------------------------: | :------: | ----------- |
 | `index`        | `string`                               | no       | Required when the `Index` defined is a *Global/Local Secondary Index*; but is omitted for the table's primary index.
-| `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](/latest/modeling/collections) below for more on this functionality).
-| `type`         | `isolated`, `clustered`                | no       | Allows you to optimize your index for either [entity isolation](/latest/modeling/indexes#isolated-indexes) (high volume of records per partition) or (entity relationships)[#clustered-indexes] (high relationship density per partition). When omitted, ElectroDB defaults to `isolation`.
+| `collection`   | `string`, `string[]`                   | no       | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](/en/modeling/collections) below for more on this functionality).
+| `type`         | `isolated`, `clustered`                | no       | Allows you to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (high volume of records per partition) or (entity relationships)[#clustered-indexes] (high relationship density per partition). When omitted, ElectroDB defaults to `isolation`.
 | `pk`           | `object`                               | yes      | Configuration for the pk of that index or table
 | `pk.composite` | `string[]`                             | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composing-attributes) below for more on this functionality).
 | `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
@@ -73,7 +73,7 @@ There are two ways to provide composite:
 1. As a [Composite Attribute Array](#composite-attribute-arrays)
 2. As a [Composite Attribute Template](#composite-attribute-templates)
 
-For example, in the following **Access Pattern**, "`locations`" is made up of the composite attributes `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the [schema](/latest/modeling/schema):
+For example, in the following **Access Pattern**, "`locations`" is made up of the composite attributes `storeId`, `mallId`, `buildingId` and `unitId` which map to defined attributes in the [schema](/en/modeling/schema):
 
 #### Input
 
@@ -271,34 +271,34 @@ As described in the above two sections ([Composite Attributes](#composing-attrib
 
 - When updating/patching an Attribute that is also a composite attribute for secondary index, ElectroDB will perform a runtime check that the operation will leave a key in a partially built state. For example: if a Sort Key is defined as having the Composite Attributes `["prop1", "prop2", "prop3"]`, than an update to the `prop1` Attribute will require supplying the `prop2` and `prop3` Attributes as well. This prevents a loss of key fidelity because ElectroDB is not able to update a key partially in place with its existing values.
 
-- As described and detailed in [Composite Attribute Arrays](/latest/modeling/indexes#composite-attribute-arrays), you can use the `label` property on an Attribute shorten a composite attribute's prefix on a key. This can allow trim down the length of your keys.
+- As described and detailed in [Composite Attribute Arrays](/en/modeling/indexes#composite-attribute-arrays), you can use the `label` property on an Attribute shorten a composite attribute's prefix on a key. This can allow trim down the length of your keys.
 
 ## Index Mapping
-ElectroDB supports many ways to map your indexes to your unique table. From indexes with only a partition key, to numeric sort keys, to existing tables with unconventional key structures. You can learn more about how your indexes map to your table definition on the [Schema page](/latest/modeling/schema#indexes).
+ElectroDB supports many ways to map your indexes to your unique table. From indexes with only a partition key, to numeric sort keys, to existing tables with unconventional key structures. You can learn more about how your indexes map to your table definition on the [Schema page](/en/modeling/schema#indexes).
 
 ## Index Types
-ElectroDB helps manage your key structure, and works to abstract out the details of how your keys are created/formatted. Depending on your unique data set, you may need ElectroDB to optimize your index for either [entity isolation](/latest/modeling/indexes#isolated-indexes) (i.e. high volume of records per partition) or (entity relationships)[/latest/modeling/indexes#clustered-indexes] (i.e. high relationship density per partition).
+ElectroDB helps manage your key structure, and works to abstract out the details of how your keys are created/formatted. Depending on your unique data set, you may need ElectroDB to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (i.e. high volume of records per partition) or (entity relationships)[/en/modeling/indexes#clustered-indexes] (i.e. high relationship density per partition).
 
 This option changes how ElectroDB formats your keys for storage, so it is an important consideration to make early in your modeling phase. As a result, this choice cannot be simply walked back without requiring a migration. The choice between `clustered` and `isolated` depends wholly on your unique dataset and access patterns.
 
-> You can use [Collections](/latest/modeling/collections) with both `isolated` and `clustered` indexes. Isolated indexes are limited to only querying across the partition key while Clustered indexes can also leverage the Sort Key.
+> You can use [Collections](/en/modeling/collections) with both `isolated` and `clustered` indexes. Isolated indexes are limited to only querying across the partition key while Clustered indexes can also leverage the Sort Key.
 
 ### Isolated Indexes
 By default, and when omitted, ElectroDB will create your index as an `isolated` index. Isolated indexes optimizes your index structure for faster and more efficient retrieval of items within an individual Entity.
 
-*Choose* `isolated` if you have strong access pattern requirements to retrieve only records for only your entity on that index. While an `isolated` index is more limited in its ability to be used in a [collection](/latest/modeling/collections), it can perform better than a `clustered` index if a collection contains a highly unequal distribution of entities within a collection.
+*Choose* `isolated` if you have strong access pattern requirements to retrieve only records for only your entity on that index. While an `isolated` index is more limited in its ability to be used in a [collection](/en/modeling/collections), it can perform better than a `clustered` index if a collection contains a highly unequal distribution of entities within a collection.
 *Don't choose* `isolated` if the primary use-cases for your index is to query across entities -- this index type does limit the extent to which indexes can be leveraged to improve query efficiency.
 
 ### Clustered Indexes
 When your index type is defined as `clustered`, ElectroDB will optimize your index for relationships within a partition. Clustered indexes optimize your index structure for more homogenous partitions, which allows for more efficient queries across multiple entities.
 
-*Choose* `clustered` if you have a high degree of grouped or similar data that needs to be frequently accessed together. This index works best in [collections](/latest/modeling/collections) when member entities are more evenly distributed within a partition.
+*Choose* `clustered` if you have a high degree of grouped or similar data that needs to be frequently accessed together. This index works best in [collections](/en/modeling/collections) when member entities are more evenly distributed within a partition.
 *Don't choose* `clustered` if your need to query across entities is secondary to its primary purpose -- this index type limits the efficiency of querying your individual entity.
 
 ### Indexes Without Sort Keys
-When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](/latest/modeling/collections) for more detail.
+When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](/en/modeling/collections) for more detail.
 
-> It is generally recommended to always use Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesn't _need_ an additional property to define a unique record, having an `sk` with no defined composite attributes (e.g. an empty array) still opens the door to many more query opportunities like [collections](/latest/modeling/collections).
+> It is generally recommended to always use Sort Keys when using ElectroDB as they allow for more advanced query opportunities. Even if your model doesn't _need_ an additional property to define a unique record, having an `sk` with no defined composite attributes (e.g. an empty array) still opens the door to many more query opportunities like [collections](/en/modeling/collections).
 
 #### Example
 
@@ -319,7 +319,7 @@ When using indexes without Sort Keys, that should be expressed as an index *with
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gwAhnwDWfOAF44qCgHcU6TFgAUHOInUa4ICI2oAuTdu0Ul2I2WFi+ZADRaTANwpQ+wXpYCM9x9r6uTsC0FJbWokJgYGR+uA4mQjAMwMwArjAUfEYIfhrAjNm52thgoeQCUMCoAOa+JiZQFACOqcCNBXAMqRRFcUWoQiBlOfXFWKWWFVW18aNwjS1tFB1dPaO4sbN5qPoAHpmFo408UB0jc2Cih3MaBMDUHWSXdTdwPOAQ7hlGANpk+WQALpFDQbG4AenBKBo9GIABEAEJwKoZKBgRowCQwAAWFDgVCEtFEcAgBDgQlQcAABmIqSC4JC4OiIKVYDgRJ1cfjCcTSeS4HxoPBRBQcLxyfTGdVgC5KVU9gA6XqxLR9DRIYTMGiWLAQVJQAD6mpoBoGQzIeA4AEpONxeAJkYwpOQQFgDcdoIwDQDODx+PAzXjpGRXabBhQDczWdh2FxwnwtArqhQYCokPk8FbE9UICobXGROJE2B0mnHXYZOHM9nc-mOPGFS1XFhEx7TmWM7gsxok7W2EA)
 
 ### Indexes With Sort Keys
-When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the Sort Key in your model, but it does exist on the table, simply use an empty for the `composite` property. An empty array is still very useful, and opens the door to more query opportunities and access patterns like [collections](/latest/modeling/collections).
+When using indexes with Sort Keys, that should be expressed as an index *with* an `sk` property. If you don't wish to use the Sort Key in your model, but it does exist on the table, simply use an empty for the `composite` property. An empty array is still very useful, and opens the door to more query opportunities and access patterns like [collections](/en/modeling/collections).
 
 #### Example
 
@@ -426,7 +426,7 @@ It may be the case that an index field is also an attribute. For example, if a t
 
 > If you have the unique opportunity to use ElectroDB with a new project, it is strongly recommended to use generically named index fields that are separate from your business attributes.
 
-When your attribute's name, or [`field` property](/latest/modeling/attributes#attribute-options) on an attribute, matches the `field` property on an indexes' `pk` or `sk` ElectroDB will forego its usual index key prefixing.
+When your attribute's name, or [`field` property](/en/modeling/attributes#attribute-options) on an attribute, matches the `field` property on an indexes' `pk` or `sk` ElectroDB will forego its usual index key prefixing.
 
 #### Example
 

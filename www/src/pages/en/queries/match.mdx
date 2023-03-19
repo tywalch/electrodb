@@ -12,11 +12,11 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-Match is a convenience method based off of ElectroDB's [find](/latest/queries/find) method. Similar to Find, Match does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on.
+Match is a convenience method based off of ElectroDB's [find](/en/queries/find) method. Similar to Find, Match does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on.
 
 > The Match method is useful when the index chosen does not matter or is not known. If your secondary indexes do not contain all attributes then this method might not be right for you. The mechanism that picks the best index for a given payload is subject to improvement and change without triggering a breaking change release version.
 
-Match differs from [Find](/latest/queries/find) in that it will also include all supplied values into a query filter.
+Match differs from [Find](/en/queries/find) in that it will also include all supplied values into a query filter.
 
 import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
 
