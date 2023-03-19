@@ -59,7 +59,7 @@ function formatParamLabel(state, entity) {
     if (!state) {
         return null;
     } else if (typeof state === "string") {
-        return state;
+        return `<h2>${state}</h2>`;
     } else {
         const method = state.query.method;
         const type = state.query.type;
@@ -70,6 +70,8 @@ function formatParamLabel(state, entity) {
             return `<h2>Queries the collection ${formatProper(collection)}, on the service ${formatProper(entity.model.service)}, by ${keys}</h2>`;
         } else if (method === "query") {
             return `<h2>Queries the access pattern ${formatProper(accessPattern)}, on the entity ${formatProper(entity.model.name)}, by ${keys}</h2>`;
+        } else if (state.self === 'commit') {
+            // handled inside the "client" so each operation doesn't get its own printed line
         } else {
             return `<h2>Performs ${aOrAn(method)} ${formatProper(method)} operation, on the entity ${formatProper(entity.model.name)}</h2>`;
         }
@@ -80,7 +82,7 @@ function printToScreen({params, state, entity, cache} = {}) {
     const innerHtml = appDiv.innerHTML;
     const label = formatParamLabel(state, entity);
     if (cache) {
-        window.electroParams.push({title: label, json: params});
+        window.electroParams.push({ title: label, json: params });
     }
     let code = `<pre class="language-json"><code class="language-json">${JSON.stringify(params, null, 4)}</code></pre>`;
     if (label) {
@@ -137,7 +139,7 @@ class Entity extends ElectroDB.Entity {
                 transactWrite: (params) => {
                     return {
                         promise: async () => {
-                            printToScreen({ params, entity: this, cache: true });
+                            printToScreen({ params, entity: this, cache: true, state: 'Performs a TransactWrite operation' });
                             return {};
                         },
                         on: () => {},
@@ -146,12 +148,13 @@ class Entity extends ElectroDB.Entity {
                 transactGet: (params) => {
                     return {
                         promise: async () => {
-                            printToScreen({params, entity: this, cache: true});
+                            printToScreen({ params, entity: this, cache: true, state: 'Performs a TransactGet operation' });
                             return { Responses: [] };
                         },
                         on: () => {},
                     }
                 },
+                createSet: (val) => val,
             }
         });
     }
@@ -161,14 +164,16 @@ class Entity extends ElectroDB.Entity {
             const params = super[method](state, config);
             if (params && typeof params.catch === "function") {
                 params.catch(err => {
-                    console.log(err);
+                    console.log('param creation rejected: %o', err);
                     printMessage("error", err.message);
                 });
             }
-            printToScreen({params, state, entity: this, cache: true});
+            if (state.self !== "commit") {
+                printToScreen({params, state, entity: this, cache: true});
+            }
             return params;
         } catch(err) {
-            console.log(err);
+            console.log('create params error: %o', err);
             printMessage("error", err.message);
         }
     }
@@ -195,7 +200,7 @@ class Entity extends ElectroDB.Entity {
         const commit = clauses.commit.action;
         clauses.params.action = (entity, state, options) => {
             try {
-                params(entity, state, options);
+                return params(entity, state, options);
             } catch(err) {
                 printMessage("error", err.message);
             }
@@ -207,9 +212,9 @@ class Entity extends ElectroDB.Entity {
                 printMessage("error", err.message);
             }
         }
-        clauses.commit.action = (...params) => {
+        clauses.commit.action = (entity, state, options) => {
             try {
-                return commit(...params);
+                return commit(entity, state, options);
             } catch(err) {
                 printMessage("error", err.message);
             }

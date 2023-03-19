@@ -18,3 +18,4 @@ replaceLine "2" "$safe_line_unmarshall_output" "$filePath"
 npm run build:browser
 replaceLine "1" "$original_line_lib" "$filePath"
 replaceLine "2" "$original_line_unmarshall_output" "$filePath"
+rm ./src/client.js.bak
