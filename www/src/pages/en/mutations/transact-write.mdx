@@ -1,0 +1,119 @@
+---
+title: Transact Write
+description: Performing write transactions
+keywords:
+  - electrodb
+  - docs
+  - dynamodb
+  - TransactWrite
+  - transactWrite
+  - transaction
+  - transactions
+layout: ../../../layouts/MainLayout.astro
+---
+
+import TableDefinition from '../../../partials/table-definition.mdx';
+
+<TableDefinition />
+
+To perform write transactions with ElectroDB, you will first need to create a [Service]
+
+<details>
+    <summary>Imports</summary>
+
+    ```typescript
+    import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+    import { Entity, Service } from 'electrodb';
+
+    const table = 'electro';
+    const client = new DynamoDBClient();
+    ```
+
+</details>
+
+
+```typescript
+const agent = new Entity(
+    {
+        model: {
+            entity: 'agent',
+            version: '1',
+            service: 'mi6',
+        },
+        attributes: {
+            id: {
+                type: 'string',
+            },
+            email: {
+                type: 'string',
+                required: true,
+            },
+            fullName: {
+                type: 'string'
+            },
+            phoneNumber: {
+                type: 'string'
+            },
+            handler: {
+                type: 'string'
+            },
+            isHandler: {
+                type: 'boolean',
+            }
+        },
+        indexes: {
+            projects: {
+                pk: {
+                    field: 'pk',
+                    composite: ['id']
+                },
+                sk: {
+                    field: 'sk',
+                    composite: []
+                }
+            }
+        }
+    },
+    { table, client }
+);
+
+// entity that owns unique constraints
+const uniqueConstraint = new Entity({
+    model: {
+        entity: "unique",
+        version: "1",
+        service: serviceName,
+    },
+    attributes: {
+        name: {
+            type: "string",
+            required: true,
+        },
+        value: {
+            type: "string",
+            required: true,
+        },
+        entity: {
+            type: "string",
+            required: true,
+        },
+        meta: {
+            type: "any",
+        }
+    },
+    indexes: {
+        value: {
+            pk: {
+                field: "pk",
+                composite: ["value"]
+            },
+            sk: {
+                field: "sk",
+                composite: ["name", "entity"]
+            }
+        }
+    }
+}, { table, client });
+
+const service = new Service({uniqueConstraint, agent});
+```

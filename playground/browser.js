@@ -122,36 +122,38 @@ function promiseCallback(results) {
 }
 
 class Entity extends ElectroDB.Entity {
-    constructor(...params) {
-        super(...params);
-        this.client = {
-            put: () => promiseCallback({}),
-            delete: () => promiseCallback({}),
-            update: () => promiseCallback({}),
-            get: () => promiseCallback({Item: {}}),
-            query: () => promiseCallback({Items: []}),
-            scan: () => promiseCallback({Items: []}),
-            batchWrite: () => promiseCallback({UnprocessedKeys: {[this._getTableName()]: {Keys: []}}}),
-            batchGet: () => promiseCallback({Responses: {[this._getTableName()]: []}, UnprocessedKeys: {[this._getTableName()]: {Keys: []}}}),
-            transactWrite: (params) => {
-                return {
-                    promise: async () => {
-                        printToScreen({params, entity: this, cache: true});
-                        return {};
-                    },
-                    on: () => {},
-                }
-            },
-            transactGet: (params) => {
-                return {
-                    promise: async () => {
-                        printToScreen({params, entity: this, cache: true});
-                        return {Responses: []};
-                    },
-                    on: () => {},
-                }
-            },
-        };
+    constructor(schema, options = {}) {
+        super(schema, {
+            ...options,
+            client: {
+                put: () => promiseCallback({}),
+                delete: () => promiseCallback({}),
+                update: () => promiseCallback({}),
+                get: () => promiseCallback({Item: {}}),
+                query: () => promiseCallback({Items: []}),
+                scan: () => promiseCallback({Items: []}),
+                batchWrite: () => promiseCallback({UnprocessedKeys: {[options.table]: {Keys: []}}}),
+                batchGet: () => promiseCallback({Responses: {[options.table]: []}, UnprocessedKeys: {[options.table]: {Keys: []}}}),
+                transactWrite: (params) => {
+                    return {
+                        promise: async () => {
+                            printToScreen({ params, entity: this, cache: true });
+                            return {};
+                        },
+                        on: () => {},
+                    }
+                },
+                transactGet: (params) => {
+                    return {
+                        promise: async () => {
+                            printToScreen({params, entity: this, cache: true});
+                            return { Responses: [] };
+                        },
+                        on: () => {},
+                    }
+                },
+            }
+        });
     }
 
     _demoParams(method, state, config) {

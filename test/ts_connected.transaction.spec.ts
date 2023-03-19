@@ -1,6 +1,6 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 import { DocumentClient as V2Client } from "aws-sdk/clients/dynamodb";
-import { DynamoDBClient as V3Client, TransactGetItemsOutput } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient as V3Client } from '@aws-sdk/client-dynamodb';
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
 import { Entity, Service, CreateEntityItem, EntityItem } from "../index";
