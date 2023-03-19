@@ -20,7 +20,7 @@ In cases where you must keep multiple records in sync, enforce constraints acros
 
 ## Performing Write Transactions
 
-To perform `write` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods `transaction.get()` and `transaction.write()`. These methods accept a callback function which is then provided with the entities of the service, and should return an array of mutations. Creating mutations within a transaction is nearly identical to other mutations, only instead of terminating your query with a `.go()` or `.params()` you use `.commit()` instead.
+To perform `write` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods: `transaction.get()` and `transaction.write()`. These methods accept a callback function, which is then provided with the entities of the service, should return an array of mutations. Creating mutations within a transaction is nearly identical to other mutations except instead of terminating your query with `.go()` or `.params()` you use `.commit()` instead.
 
 ```typescript
 await yourService.transaction
