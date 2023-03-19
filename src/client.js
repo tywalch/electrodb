@@ -100,11 +100,11 @@ class DocumentClientV2Wrapper {
         return this._transact(transactionRequest);
     }
 
-    createSet(value) {
+    createSet(value, ...rest) {
         if (Array.isArray(value)) {
-            return this.client.createSet(value);
+            return this.client.createSet(value, ...rest);
         } else {
-            return this.client.createSet([value]);
+            return this.client.createSet([value], ...rest);
         }
     }
 }
