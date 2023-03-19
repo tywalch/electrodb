@@ -332,10 +332,11 @@ class Service {
 		for (let i = 0; i < canceled.length; i++) {
 			const { Item, Code, Message } = canceled[i] || {};
 			const paramItem = paramItems[i];
-			const failed = Code !== 'None';
+			const code = Code || 'None';
+			const failed = code !== 'None';
 			const result = {
 				failed,
-				code: Code,
+				code,
 				message: Message,
 			}
 

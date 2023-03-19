@@ -715,9 +715,11 @@ export interface RecordsActionOptions<A extends string,
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,RecordsActionOptions<A,F,C,S,Items,IndexCompositeAttributes>>;
 }
 
-type TransactionItem<T> = {
+export type TransactionItemCode = 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
+
+export type TransactionItem<T> = {
     failed: boolean;
-    code?: 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
+    code: TransactionItemCode;
     message?: string | undefined;
     item: null | T;
 };
@@ -2478,9 +2480,7 @@ type TransactWriteFunctionOptions = {
     token?: string;
 };
 
-type TransactGetFunctionOptions = {
-    token?: string;
-};
+type TransactGetFunctionOptions = {};
 
 type TransactWriteExtractedType<T extends readonly any[], A extends readonly any[] = []> =
     T extends [infer F, ...infer R] ?

@@ -409,6 +409,22 @@ describe('service transactions', () => {
                         canceled: false
                     });
                 });
+
+                it('should accept an empty array without throwing and simply return an empty array back', async () => {
+                    const serviceName = uuid();
+                    const { service } = createTeamService({
+                        table,
+                        client,
+                        serviceName,
+                    });
+
+                    const results = await service.transaction.get(() => []).go();
+
+                    expect(results).to.deep.equal({
+                        canceled: false,
+                        data: []
+                    });
+                });
             });
 
             describe('transactWrite', () => {
@@ -1021,6 +1037,22 @@ describe('service transactions', () => {
                             },
                         ],
                         canceled: false,
+                    });
+                });
+
+                it('should accept an empty array without throwing and simply return an empty array back', async () => {
+                    const serviceName = uuid();
+                    const { service } = createTeamService({
+                        table,
+                        client,
+                        serviceName,
+                    });
+
+                    const results = await service.transaction.write(() => []).go();
+
+                    expect(results).to.deep.equal({
+                        canceled: false,
+                        data: []
                     });
                 });
             });

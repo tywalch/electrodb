@@ -16,7 +16,83 @@ import TableDefinition from '../../../partials/table-definition.mdx';
 
 <TableDefinition />
 
-To perform write transactions with ElectroDB, you will first need to create a [Service]
+In cases where you must keep multiple records in sync, enforce constraints across entities, and/or ensure request idempotency you can use ElectroDB's Transact [Get](/en/queries/transact-get)/[Write](/en/mutations/transact-write) methods. There are many articles and guides on use-cases for DynamoDB's Transaction APIs, resource links can be found [at the bottom of this document](#resources). This page will focus on how to use ElectroDB's transaction API.
+
+## Performing Write Transactions
+
+To perform `write` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods `transaction.get()` and `transaction.write()`. These methods accept a callback function which is then provided with the entities of the service, and should return an array of mutations. Creating mutations within a transaction is nearly identical to other mutations, only instead of terminating your query with a `.go()` or `.params()` you use `.commit()` instead.
+
+```typescript
+await yourService.transaction
+    .write(({ entity1, entity2 }) => [
+        entity1.create({ prop1: 'value1', prop2: 'value2' })
+            .commit({ response: 'all_old' }),
+
+        entity2.update({ prop1: 'value1', prop2: 'value2' })
+            .set({ prop3: 'value3' })
+            .commit({ response: 'all_old' }),
+    ]).go();
+```
+
+> When a transaction is canceled, due to conflict or other failure, ElectroDB will detail about the nature of the failure on each individual operation. By default, ElectroDB will return a reason for the failure, but if you provide the Execution Option `{ response: 'all_old' }` to the mutation `.commit()` function, ElectroDB will return the currently stored item (if it exists) on failure.
+
+### Mutations
+The mutations available on each injected entity are identical to the mutations available on all entities, with the addition of a transaction specific method `check`. Below are the mutations available on the injected entities and the corresponding DynamoDB parlance for each.
+
+> The `check` method exists only within a transaction. It is similar to a `get` method in that you must provide all composite attribute's, but unlike `get` you can use the `where` clause to apply a condition expression.
+
+ElectroDB Name   | DynamoDB Name
+---------------- | -------------
+`check`          | `ConditionCheck`
+`delete`         | `Delete`
+`remove`         | `Delete`
+`put`            | `Put`
+`create`         | `Put`
+`upsert`         | `Update`
+`update`         | `Update`
+`patch`          | `Update`
+
+## Response Format
+Unlike the DocumentClient, if your transaction fails to write, ElectroDB will resolve and signal failure through a top-level boolean `canceled`, and with additional detail for each operation provided in the transaction.
+
+### TransactionItem
+
+For each operation provided in your transaction, you can expect the following interface to be returned, which is also exported for TypeScript users. ElectroDB will return an array of the same size as what was provided, with results for each operation in the same order as they were provided.
+
+```typescript
+type TransactionItem<T> = {
+    failed: boolean;
+    code?: TransactionItemCode; // 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
+    message?: string | undefined;
+    item: null | T;
+}
+```
+
+Property        | Type                   | Description
+--------------- | :--------------------: | -----------
+failed          | `boolean`              | If the transaction failed to write, this value will be `true`
+code            | `TransactionItemCode`  | The `code` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more. ElectroDB exports this type under the name `TransactionItemCode`
+message         | `string`, `undefined`  | The `message` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.
+item            | `EntityItem`, `null`   | When committing your mutation, if you use the execution option `{ response: 'all_old' }` DynamoDB will include the targeted record as it exists in your table if the transaction fails. In the documentation, this param is called `ReturnValuesOnConditionCheckFailure`.
+
+### Returned
+
+Calling the async `.go()` method on a transaction returns the following interface. If your transaction failed, expect the `canceled` boolean to be true. The array `data` contains the results of each operation provided to the transaction in exactly the order it was provided.
+
+```typescript
+{
+    data: TransactionItem[];
+    canceled: boolean;
+}
+```
+
+## Examples
+
+The following code creates two [Entities](/en/modeling/entities), and a [Service](/en/modeling/services) to join them, that will be used in our Transact Write examples. This `Service` contains entities/information the top-secret British military intelligence organization: MI6.
+
+### Setup
+
+For the examples below, use the following imports and dependencies at the top of your file.
 
 <details>
     <summary>Imports</summary>
@@ -26,11 +102,14 @@ To perform write transactions with ElectroDB, you will first need to create a [S
     import { Entity, Service } from 'electrodb';
 
     const table = 'electro';
-    const client = new DynamoDBClient();
+    const client = new DynamoDBClient({});
     ```
 
 </details>
 
+#### Agent entity
+
+The `agent` entity models records for each MI6 agents and personnel
 
 ```typescript
 const agent = new Entity(
@@ -38,51 +117,62 @@ const agent = new Entity(
         model: {
             entity: 'agent',
             version: '1',
-            service: 'mi6',
+            service: 'MI6',
         },
         attributes: {
             id: {
+                type: 'string',
+            },
+            designation: {
                 type: 'string',
             },
             email: {
                 type: 'string',
                 required: true,
             },
-            fullName: {
-                type: 'string'
+            firstName: {
+                type: 'string',
             },
-            phoneNumber: {
-                type: 'string'
+            lastName: {
+                type: 'string',
             },
-            handler: {
-                type: 'string'
-            },
-            isHandler: {
+            alive: {
                 type: 'boolean',
+                required: true,
+            },
+            kills: {
+                type: 'number',
+                default: 0,
             }
         },
         indexes: {
-            projects: {
+            operatives: {
                 pk: {
                     field: 'pk',
-                    composite: ['id']
+                    composite: ['designation']
                 },
                 sk: {
                     field: 'sk',
-                    composite: []
+                    composite: ['id']
                 }
             }
         }
     },
     { table, client }
 );
+```
 
+#### Constraint entity
+
+The `constraint` entity is a utility available to all entities within the `MI6` service. It can be used to enforce uniqueness for any property within a namespace.
+
+```typescript
 // entity that owns unique constraints
-const uniqueConstraint = new Entity({
+const constraint = new Entity({
     model: {
-        entity: "unique",
+        entity: "constraint",
         version: "1",
-        service: serviceName,
+        service: "MI6",
     },
     attributes: {
         name: {
@@ -96,9 +186,6 @@ const uniqueConstraint = new Entity({
         entity: {
             type: "string",
             required: true,
-        },
-        meta: {
-            type: "any",
         }
     },
     indexes: {
@@ -111,9 +198,127 @@ const uniqueConstraint = new Entity({
                 field: "sk",
                 composite: ["name", "entity"]
             }
+        },
+        name: {
+            index: 'gsi1pk-gsi2sk-index',
+            pk: {
+                field: 'gsi1pk',
+                composite: ['name', 'entity']
+            },
+            sk: {
+                field: 'gsi1sk',
+                composite: ['value']
+            }
         }
     }
 }, { table, client });
-
-const service = new Service({uniqueConstraint, agent});
 ```
+#### MI6 service
+
+Services allow you to build namespaces with a single table, in this case we will create a service called `mi6` with our two entities.
+
+```typescript
+const mi6 = new Service({ constraint, agent });
+```
+
+### Example - Unique Constraint
+
+The following is an example of how you might implement a simple unique constraint mechanism to ensure a property (in this case email) remains unique across your service.
+
+```typescript
+import { CreateEntityItem } from 'electrodb';
+
+type NewAgent = CreateEntityItem<typeof agent>;
+
+async function createNewAgent(newAgent: NewAgent) {
+    return mi6.transaction.write(({ agent, constraint }) => [
+        agent.create(newAgent).commit({ response: 'all_old' }),
+        constraint.create({
+            name: 'email',
+            value: newAgent.email,
+            entity: agent.schema.model.entity,
+        }).commit(),
+    ]).go();
+}
+```
+
+### Example - Idempotent writes
+
+Leading into idempotency is one of the best ways to reduce complexity in your applications. The more you can reduce your app's dependencies on timing or improve its tolerance for duplicative operations the better. Making use of DynamoDB's atomic write capabilities for operations like incrementing numbers is a powerful tool when you need to manage changing state.
+
+Unfortunately some operations, like incrementing a number, can easily cause our app to get out of sync. In failure scenarios where retrying or replaying is necessary, incrementing a number could result in duplicate operations. Transactions can be helpful in the situation by allowing you to provide a [ClientRequestToken](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_RequestParameters) to ensure an operation is only performed once. At the time of writing, request tokens are valid for 10 minutes, though always consult the latest documentation for more information about this feature.
+
+Below is an example of how you might use a `ClientRequestToken`
+
+```typescript
+type IncrementAgentKillsOptions = {
+    id: string;
+    kills: number;
+    token: string;
+    designation: string;
+}
+
+async function incrementAgentKills(
+    options: IncrementAgentKillsOptions
+) {
+    const { id, designation, kills, token } = options;
+
+    return mi6.transaction.write(({ agent }) => [
+        agent.patch({ id, designation }).add({ kills }).commit(),
+    ]).go({ token });
+}
+```
+
+#### Token
+The `token` (a `ClientRequestToken` in DynamoDB parlance) should be unique for a given command. It can be helpful to use a deterministic value (like a composite string) to ensure it is always the same for a given command.
+
+```typescript
+const token = 'daily-headcount-count-2022-03-16';
+```
+
+Regardless of how many times `incrementAgentKills` is called, so long as the value for `token` remains the same, and you remain within DynamoDB's timing window, your operation will not duplicate your incrementation. Using this functionality can greatly simply your retry logic in the case of failure.
+
+```typescript
+
+// kills `0` -> `2`
+await incrementAgentKills({
+    token,
+    id: '7',
+    kills: 2,
+    designation: '00',
+});
+
+// still results in `2`
+await incrementAgentKills({
+    token,
+    id: '7',
+    kills: 2,
+    designation: '00',
+});
+```
+
+## Execution Options
+
+> The transaction itself has execution options but so does each call to `.commit()` within a transaction.
+
+Execution options can be provided to the `.params()` and `.go()` terminal functions to change query behavior or add customer parameters to a query.
+
+By default, **ElectroDB** enables you to work with records as the names and properties defined in the model. Additionally, it removes the need to deal directly with the docClient parameters which can be complex for a team without as much experience with DynamoDB. The Query Options object can be passed to both the `.params()` and `.go()` methods when building you query. Below are the options available:
+
+```typescript
+{
+  token?: string;
+}
+```
+
+Option             | Default              | Description
+------------------ | :------------------: | -----------
+token              | _none_               | Adds the provided value as a `ClientRequestToken` along with your request to DynamoDB.
+
+## Resources
+
+The following are some links to help you understand the mechanics behind DynamoDB Transacts
+- [Alex DeBrie - DynamoDB Transactions: Use Cases and Examples](https://www.alexdebrie.com/posts/dynamodb-transactions/)
+- [AWS - Amazon DynamoDB Transactions: How it works](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html)
+- [AWS - TransactWriteItems API](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html)
+- [Rafal Wilinski - DynamoDB Transactions the Ultimate Guide](https://dynobase.dev/dynamodb-transactions/)

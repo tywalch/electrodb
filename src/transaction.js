@@ -34,7 +34,7 @@ function createTransaction(options) {
             let canceled = false;
             if (paramItems.length === 0) {
                 return {
-                    committed,
+                    canceled,
                     data: [],
                 }
             }
@@ -45,8 +45,6 @@ function createTransaction(options) {
                     if (options.raw) {
                         return data;
                     } else if (data.canceled) {
-                        // FUCK THIS ENDS UP BEING UNMARSHALLED DATA :( :( :( :(
-                        // console.log('canceled', JSON.stringify(data.canceled, null, 4));
                         canceled = true;
                         return service.cleanseCanceledData(TableIndex, service.entities, data, {
                             ...options,
