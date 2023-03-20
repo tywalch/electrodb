@@ -349,11 +349,11 @@ describe('service transactions', () => {
                     const get1 = await getTeamAndTask({taskId, teamId, projectId});
                     expect(get1).to.deep.equal({ data: [
                             {
-                                failed: false,
+                                rejected: false,
                                 item: null,
                             },
                             {
-                                failed: false,
+                                rejected: false,
                                 item: null,
                             }
                         ], canceled: false });
@@ -364,7 +364,7 @@ describe('service transactions', () => {
                     expect(get2).to.deep.equal({
                         data: [
                             {
-                                failed: false,
+                                rejected: false,
                                 item: {
                                     teamId: 'started-at-the-bottoms',
                                     description: 'Create the most delicious burger ever made',
@@ -374,7 +374,7 @@ describe('service transactions', () => {
                                 },
                             },
                             {
-                                failed: false,
+                                rejected: false,
                                 item: null,
                             },
                         ],
@@ -387,7 +387,7 @@ describe('service transactions', () => {
                     expect(get3).to.deep.equal({
                         data: [
                             {
-                                failed: false,
+                                rejected: false,
                                 item: {
                                     teamId: 'started-at-the-bottoms',
                                     description: 'Create the most delicious burger ever made',
@@ -397,7 +397,7 @@ describe('service transactions', () => {
                                 }
                             },
                             {
-                                failed: false,
+                                rejected: false,
                                 item: {
                                     teamName: 'Started at the Bottoms',
                                     teamId: 'started-at-the-bottoms',
@@ -935,13 +935,13 @@ describe('service transactions', () => {
                     expect(creation1).to.deep.equal({
                         data: [
                             {
-                                failed: false,
+                                rejected: false,
                                 code: 'None',
                                 message: undefined,
                                 item: null,
                             },
                             {
-                                failed: false,
+                                rejected: false,
                                 code: 'None',
                                 message: undefined,
                                 item: null,
@@ -963,13 +963,13 @@ describe('service transactions', () => {
                     expect(creation2).to.deep.equal({
                         data: [
                             {
-                                failed: false,
+                                rejected: false,
                                 code: 'None',
                                 message: undefined,
                                 item: null,
                             },
                             {
-                                failed: true,
+                                rejected: true,
                                 code: 'ConditionalCheckFailed',
                                 message: 'The conditional request failed',
                                 item: {
@@ -999,13 +999,13 @@ describe('service transactions', () => {
                     expect(update1).to.deep.equal({
                         data: [
                             {
-                                failed: false,
+                                rejected: false,
                                 code: 'None',
                                 message: undefined,
                                 item: null,
                             },
                             {
-                                failed: true,
+                                rejected: true,
                                 code: 'ConditionalCheckFailed',
                                 message: 'The conditional request failed.',
                                 item: null,
@@ -1024,13 +1024,13 @@ describe('service transactions', () => {
                     expect(update2).to.deep.equal({
                         data: [
                             {
-                                failed: false,
+                                rejected: false,
                                 code: 'None',
                                 message: undefined,
                                 item: null,
                             },
                             {
-                                failed: false,
+                                rejected: false,
                                 code: 'None',
                                 message: undefined,
                                 item: null,

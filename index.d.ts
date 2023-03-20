@@ -718,10 +718,10 @@ export interface RecordsActionOptions<A extends string,
 export type TransactionItemCode = 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
 
 export type TransactionItem<T> = {
-    failed: boolean;
+    item: null | T;
+    rejected: boolean;
     code: TransactionItemCode;
     message?: string | undefined;
-    item: null | T;
 };
 
 type CommittedTransactionResult<T, Params> =

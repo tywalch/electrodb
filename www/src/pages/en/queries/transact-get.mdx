@@ -36,7 +36,7 @@ For each operation provided in your transaction, you can expect the following in
 
 ```typescript
 type TransactionItem<T> = {
-    failed: boolean;
+    rejected: boolean;
     code?: TransactionItemCode; // 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
     message?: string | undefined;
     item: null | T;
@@ -45,10 +45,10 @@ type TransactionItem<T> = {
 
 Property        | Type                   | Description
 --------------- | :--------------------: | -----------
-failed          | `boolean`              | If the transaction failed to write, this value will be `true`
+item            | `EntityItem`, `null`   | The item if one existed at the time of query.
 code            | `TransactionItemCode`  | The `code` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.
+rejected        | `boolean`              | If your `get` was rejected, this value will be `true`. Because transactions are an all-or-nothing mutation, it only takes one rejection in a group to cancel the whole transaction.
 message         | `string`, `undefined`  | The `message` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.
-item            | `EntityItem`, `null`   | The item if one existed at the time of query
 
 
 ## Response Format
@@ -60,7 +60,7 @@ Calling the async `.go()` method on a transaction returns the following interfac
 
 ```typescript
 {
-    data: TransactionItem[];
+    data: TransactionItem<T>[];
     canceled: boolean;
 }
 ```

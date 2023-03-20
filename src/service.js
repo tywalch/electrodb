@@ -333,9 +333,9 @@ class Service {
 			const { Item, Code, Message } = canceled[i] || {};
 			const paramItem = paramItems[i];
 			const code = Code || 'None';
-			const failed = code !== 'None';
+			const rejected = code !== 'None';
 			const result = {
-				failed,
+				rejected,
 				code,
 				message: Message,
 			}
@@ -415,7 +415,7 @@ class Service {
 		}
 
 		return results.map(item => ({
-			failed: false,
+			rejected: false,
 			item,
 		}));
 	}

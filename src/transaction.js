@@ -61,10 +61,10 @@ function createTransaction(options) {
                         });
                     } else {
                         return new Array(paramItems ? paramItems.length : 0).fill({
-                            code: 'None',
-                            failed: false,
-                            message: undefined,
                             item: null,
+                            code: 'None',
+                            rejected: false,
+                            message: undefined,
                         });
                     }
                 }
