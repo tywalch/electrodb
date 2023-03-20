@@ -20,7 +20,7 @@ In cases where you must keep multiple records in sync, enforce constraints acros
 
 ## Performing Write Transactions
 
-To perform `write` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods `transaction.get()` and `transaction.write()`. These methods accept a callback function which is then provided with the entities of the service, and should return an array of mutations. Creating mutations within a transaction is nearly identical to other mutations, only instead of terminating your query with a `.go()` or `.params()` you use `.commit()` instead.
+To perform `write` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods: `transaction.get()` and `transaction.write()`. These methods accept a callback function, which is then provided with the entities of the service, should return an array of mutations. Creating mutations within a transaction is nearly identical to other mutations except instead of terminating your query with `.go()` or `.params()` you use `.commit()` instead.
 
 ```typescript
 await yourService.transaction
@@ -34,12 +34,12 @@ await yourService.transaction
     ]).go();
 ```
 
-> When a transaction is canceled, due to conflict or other failure, ElectroDB will detail about the nature of the failure on each individual operation. By default, ElectroDB will return a reason for the failure, but if you provide the Execution Option `{ response: 'all_old' }` to the mutation `.commit()` function, ElectroDB will return the currently stored item (if it exists) on failure.
+When a transaction is canceled, due to conflict or other failure, ElectroDB will return information about the nature of the failure for each individual operation. By default, ElectroDB will return a reason for the failure if one exists, however if you provide the Execution Option `{ response: 'all_old' }` to the mutation `.commit()` function, ElectroDB will also return the currently stored item on failure. 
 
 ### Mutations
-The mutations available on each injected entity are identical to the mutations available on all entities, with the addition of a transaction specific method `check`. Below are the mutations available on the injected entities and the corresponding DynamoDB parlance for each.
+The mutations available within a transaction are identical to the mutations available on all entities individually, with the _addition_ of a the method `check`. Below are the mutations available on the injected entities and the corresponding DynamoDB parlance for each.
 
-> The `check` method exists only within a transaction. It is similar to a `get` method in that you must provide all composite attribute's, but unlike `get` you can use the `where` clause to apply a condition expression.
+> The `check` method exists only within a transaction. It is similar to a `get` method, in that you must provide identifying attributes, but unlike `get` you can use the `where` clause to apply a condition expression.
 
 ElectroDB Name   | DynamoDB Name
 ---------------- | -------------
