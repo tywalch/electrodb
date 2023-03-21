@@ -244,7 +244,7 @@ async function createNewAgent(newAgent: NewAgent) {
 
 ### Example - Idempotent writes
 
-Leading into idempotency is one of the best ways to reduce complexity in your applications. The more you can reduce your app's dependencies on timing or improve its tolerance for duplicative operations the better. Making use of DynamoDB's atomic write capabilities for operations like incrementing numbers is a powerful tool when you need to manage changing state.
+Architecting with idempotency in mind is one of the best ways to reduce complexity in your applications. The more you can reduce your app's dependencies on timing and/or improve it's tolerance for duplicative operations the better. Making use of DynamoDB's atomic write capabilities for operations like incrementing numbers is a powerful tool when you need to manage changing state.
 
 Unfortunately some operations, like incrementing a number, can easily cause our app to get out of sync. In failure scenarios where retrying or replaying is necessary, incrementing a number could result in duplicate operations. Transactions can be helpful in the situation by allowing you to provide a [ClientRequestToken](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_RequestParameters) to ensure an operation is only performed once. At the time of writing, request tokens are valid for 10 minutes, though always consult the latest documentation for more information about this feature.
 
