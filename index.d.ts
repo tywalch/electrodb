@@ -2496,25 +2496,43 @@ type TransactGetExtractedType<T extends readonly any[], A extends readonly any[]
             : never
         : A
 
-
-type TransactWriteFunction<E extends {[name: string]: Entity<any, any, any, any>}, T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactWriteItem>> > = (entities: {
+type TransactWriteEntities<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
         ? TransactWriteEntity<A,F,C,S>
         : never;
-}) => [...R];
+}
 
-type TransactGetFunction<E extends {[name: string]: Entity<any, any, any, any>}, T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactGetItem>> > = (entities: {
+type TransactGetEntities<E extends {[name: string]: Entity<any, any, any, any>}> = {
     [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
         ? TransactGetEntity<A,F,C,S>
         : never;
-}) => [...R];
+}
 
+type TransactWriteFunction<E extends {[name: string]: Entity<any, any, any, any>}, T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactWriteItem>> > = (entities: TransactWriteEntities<E>) => [...R];
+
+type TransactGetFunction<E extends {[name: string]: Entity<any, any, any, any>}, T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactGetItem>> > = (entities: TransactGetEntities<E>) => [...R];
 
 export type ServiceConfiguration = {
     table?: string;
     client?: DocumentClient;
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
+};
+
+declare function createWriteTransaction<E extends {[name: string]: Entity<any, any, any, any>}, T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactWriteItem>>>(entities: E, fn: TransactWriteFunction<E,T,R>): {
+    go: (options?: TransactWriteFunctionOptions) => Promise<{
+        canceled: boolean;
+        data: TransactWriteExtractedType<R>
+    }>;
+    params: <O extends TransactWriteFunctionOptions = TransactWriteFunctionOptions>(options?: O) => TransactWriteCommandInput
+}
+
+declare function createGetTransaction<E extends {[name: string]: Entity<any, any, any, any>},T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactGetItem>>>(entities: E, fn: TransactGetFunction<E,T,R>): {
+    go: (options?: TransactGetFunctionOptions) => Promise<{
+        canceled: boolean;
+        data: TransactGetExtractedType<R>
+    }>;
+    params: <O extends TransactGetFunctionOptions = TransactGetFunctionOptions>(options?: O) => TransactGetCommandInput
 };
 
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {

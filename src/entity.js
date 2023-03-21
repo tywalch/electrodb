@@ -24,6 +24,7 @@ const { AllPages,
 	IndexTypes,
 	PartialComparisons,
 	MethodTypeTranslation,
+	TransactionCommitSymbol,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -35,6 +36,7 @@ const c = require('./client');
 const u = require("./util");
 const e = require("./errors");
 const { validate } = require("jsonschema");
+const v = require('./validations');
 
 class Entity {
 	constructor(model, config = {}) {
@@ -3153,7 +3155,49 @@ class Entity {
 	}
 }
 
+function getEntityIdentifiers(entities) {
+	let identifiers = [];
+	for (let alias of Object.keys(entities)) {
+		let entity = entities[alias];
+		let name = entity.model.entity;
+		let version = entity.model.version;
+		identifiers.push({
+			name,
+			alias,
+			version,
+			entity,
+			nameField: entity.identifiers.entity,
+			versionField: entity.identifiers.version
+		});
+	}
+	return identifiers;
+}
+
+function matchToEntityAlias({ paramItem, identifiers, record } = {}) {
+	let entity;
+	let entityAlias;
+
+	if (paramItem && v.isFunction(paramItem[TransactionCommitSymbol])) {
+		const committed = paramItem[TransactionCommitSymbol]();
+		entity = committed.entity;
+	}
+
+	for (let {name, version, nameField, versionField, alias} of identifiers) {
+		if (entity && entity.model.entity === name && entity.model.version === version) {
+			entityAlias = alias;
+			break;
+		} else if (record[nameField] !== undefined && record[nameField] === name && record[versionField] !== undefined && record[versionField] === version) {
+			entityAlias = alias;
+			break;
+		}
+	}
+
+	return entityAlias;
+}
+
 module.exports = {
 	Entity,
 	clauses,
+	getEntityIdentifiers,
+	matchToEntityAlias,
 };

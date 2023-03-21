@@ -1,15 +1,15 @@
-const { Entity } = require("./entity");
+const { Entity, getEntityIdentifiers, matchToEntityAlias } = require("./entity");
 const { clauses } = require("./clauses");
-const { TableIndex, TransactionCommitSymbol, TransactionMethods, KeyCasing, ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions, IndexTypes } = require("./types");
+const { TableIndex, TransactionMethods, KeyCasing, ServiceVersions, Pager, ElectroInstance, ElectroInstanceTypes, ModelVersions, IndexTypes } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
 const { WhereFactory } = require("./where");
-const { getInstanceType, getModelVersion, applyBetaModelOverrides } = require("./util");
 const v = require("./validations");
 const c = require('./client');
 const e = require("./errors");
 const u = require("./util");
 const txn = require("./transaction");
+const { getInstanceType, getModelVersion, applyBetaModelOverrides } = require("./util");
 
 const ConstructorTypes = {
 	beta: "beta",
@@ -73,14 +73,14 @@ class Service {
 			get: (fn) => {
 				return txn.createTransaction({
 					fn,
-					getService: () => this,
+					getEntities: () => this.entities,
 					method: TransactionMethods.transactGet,
 				});
 			},
 			write: (fn) => {
 				return txn.createTransaction({
 					fn,
-					getService: () => this,
+					getEntities: () => this.entities,
 					method: TransactionMethods.transactWrite,
 				});
 			}
@@ -115,14 +115,14 @@ class Service {
 			get: (fn) => {
 				return txn.createTransaction({
 					fn,
-					getService: () => this,
+					getEntities: () => this.entities,
 					method: TransactionMethods.transactGet,
 				});
 			},
 			write: (fn) => {
 				return txn.createTransaction({
 					fn,
-					getService: () => this,
+					getEntities: () => this.entities,
 					method: TransactionMethods.transactWrite,
 				});
 			}
@@ -303,128 +303,11 @@ class Service {
 		}
 	}
 
-	_getEntityIdentifiers(entities) {
-		let identifiers = [];
-		for (let alias of Object.keys(entities)) {
-			let entity = entities[alias];
-			let name = entity.model.entity;
-			let version = entity.model.version;
-			identifiers.push({
-				name,
-				alias,
-				version,
-				entity,
-				nameField: entity.identifiers.entity,
-				versionField: entity.identifiers.version
-			});
-		}
-		return identifiers;
-	}
-
-	cleanseCanceledData(index = TableIndex, entities, data = {}, config = {}) {
-		if (config.raw) {
-			return data;
-		}
-		const identifiers = this._getEntityIdentifiers(entities);
-		const canceled = data.canceled || [];
-		const paramItems = config._paramItems || [];
-		const results = [];
-		for (let i = 0; i < canceled.length; i++) {
-			const { Item, Code, Message } = canceled[i] || {};
-			const paramItem = paramItems[i];
-			const code = Code || 'None';
-			const rejected = code !== 'None';
-			const result = {
-				rejected,
-				code,
-				message: Message,
-			}
-
-			if (Item) {
-				const entityAlias = this.matchToEntityAlias({
-					record: Item,
-					paramItem,
-					identifiers
-				});
-				result.item = entities[entityAlias].formatResponse({Item}, index, {
-					...config,
-					pager: false,
-					parse: undefined,
-				}).data;
-			} else {
-				result.item = null;
-			}
-
-			results.push(result);
-		}
-
-		return results;
-	}
-
-	matchToEntityAlias({ paramItem, identifiers, record }) {
-		let entity;
-		let entityAlias;
-
-		if (paramItem && v.isFunction(paramItem[TransactionCommitSymbol])) {
-			const committed = paramItem[TransactionCommitSymbol]();
-			entity = committed.entity;
-		}
-
-		for (let {name, version, nameField, versionField, alias} of identifiers) {
-			if (entity && entity.model.entity === name && entity.model.version === version) {
-				entityAlias = alias;
-				break;
-			} else if (record[nameField] !== undefined && record[nameField] === name && record[versionField] !== undefined && record[versionField] === version) {
-				entityAlias = alias;
-				break;
-			}
-		}
-
-		return entityAlias;
-	}
-
-	cleanseTransactionData(index = TableIndex, entities, data = {}, config = {}) {
-		if (config.raw) {
-			return data;
-		}
-		const identifiers = this._getEntityIdentifiers(entities);
-		data.Items = data.Items || [];
-		const paramItems = config._paramItems || [];
-		const results = [];
-		for (let i = 0; i < data.Items.length; i++) {
-			const record = data.Items[i];
-			if (!record) {
-				results.push(null);
-				continue;
-			}
-
-			const paramItem = paramItems[i];
-			const entityAlias = this.matchToEntityAlias({paramItem, identifiers, record});
-			if (!entityAlias) {
-				continue;
-			}
-
-			// pager=false because we don't want the entity trying to parse the lastEvaluatedKey
-			let formatted = entities[entityAlias].formatResponse({ Item: record }, index, {
-				...config,
-				pager: false,
-				parse: undefined
-			});
-
-			results.push(formatted.data);
-		}
-
-		return results.map(item => ({
-			rejected: false,
-			item,
-		}));
-	}
-
 	cleanseRetrievedData(index = TableIndex, entities, data = {}, config = {}) {
 		if (config.raw) {
 			return data;
 		}
-		const identifiers = this._getEntityIdentifiers(entities);
+		const identifiers = getEntityIdentifiers(entities);
 
 		data.Items = data.Items || [];
 
@@ -440,7 +323,7 @@ class Service {
 				continue;
 			}
 
-			const entityAlias = this.matchToEntityAlias({identifiers, record});
+			const entityAlias = matchToEntityAlias({identifiers, record});
 
 			if (!entityAlias) {
 				continue;
@@ -874,4 +757,6 @@ class Service {
 	}
 }
 
-module.exports = { Service };
+module.exports = {
+	Service,
+};
