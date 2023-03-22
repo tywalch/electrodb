@@ -24,6 +24,7 @@ const { AllPages,
 	IndexTypes,
 	PartialComparisons,
 	MethodTypeTranslation,
+	TransactionCommitSymbol,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -35,6 +36,7 @@ const c = require('./client');
 const u = require("./util");
 const e = require("./errors");
 const { validate } = require("jsonschema");
+const v = require('./validations');
 
 class Entity {
 	constructor(model, config = {}) {
@@ -229,6 +231,10 @@ class Entity {
 		return validations.model(model);
 	}
 
+	check(compositeAttributes = {}) {
+		return this._makeChain(TableIndex, this._clausesWithFilters, clauses.index).check(compositeAttributes);
+	}
+
 	get(facets = {}) {
 		let index = TableIndex;
 		if (Array.isArray(facets)) {
@@ -283,6 +289,16 @@ class Entity {
 		let index = TableIndex;
 		let options = {};
 		return this._makeChain(index, this._clausesWithFilters, clauses.index, options).remove(facets);
+	}
+
+	async transactWrite(parameters, config) {
+		let response = await this._exec(MethodTypes.transactWrite, parameters, config);
+		return response;
+	}
+
+	async transactGet(parameters, config) {
+		let response = await this._exec(MethodTypes.transactGet, parameters, config);
+		return response;
 	}
 
 	async go(method, parameters = {}, config = {}) {
@@ -486,7 +502,7 @@ class Entity {
 			case FormatToReturnValues.all_old:
 			case FormatToReturnValues.updated_new:
 			case FormatToReturnValues.updated_old:
-				return this.formatResponse(response, config);
+				return this.formatResponse(response, TableIndex, config);
 			case FormatToReturnValues.default:
 			default:
 				return this._formatDefaultResponse(method, parameters.IndexName, parameters, config, response);
@@ -883,7 +899,7 @@ class Entity {
 		return pager
 	}
 
-	_normalizeExecutionOptions({ provided = [] } = {}) {
+	_normalizeExecutionOptions({ provided = [], context = {} } = {}) {
 		let config = {
 			includeKeys: false,
 			originalErr: false,
@@ -931,7 +947,11 @@ class Entity {
 					throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Invalid value for query option "format" provided: "${option.format}". Allowed values include ${u.commaSeparatedString(Object.keys(ReturnValues))}.`);
 				}
 				config.response = format;
-				config.params.ReturnValues = FormatToReturnValues[format];
+				if (context.operation === MethodTypes.transactWrite) {
+					config.params.ReturnValuesOnConditionCheckFailure = FormatToReturnValues[format];
+				} else {
+					config.params.ReturnValues = FormatToReturnValues[format];
+				}
 			}
 
 			if (option.formatCursor) {
@@ -1125,6 +1145,7 @@ class Entity {
 		let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
+			case MethodTypes.check:
 			case MethodTypes.get:
 			case MethodTypes.delete:
 			case MethodTypes.remove:
@@ -1392,7 +1413,7 @@ class Entity {
 		});
 		let Key = this._makeParameterKey(index, keys.pk, ...keys.sk);
 		let TableName = this.getTableName();
-		return {Key, TableName};
+		return { Key, TableName };
 	}
 
 	_removeAttributes(item, keys) {
@@ -3134,7 +3155,49 @@ class Entity {
 	}
 }
 
+function getEntityIdentifiers(entities) {
+	let identifiers = [];
+	for (let alias of Object.keys(entities)) {
+		let entity = entities[alias];
+		let name = entity.model.entity;
+		let version = entity.model.version;
+		identifiers.push({
+			name,
+			alias,
+			version,
+			entity,
+			nameField: entity.identifiers.entity,
+			versionField: entity.identifiers.version
+		});
+	}
+	return identifiers;
+}
+
+function matchToEntityAlias({ paramItem, identifiers, record } = {}) {
+	let entity;
+	let entityAlias;
+
+	if (paramItem && v.isFunction(paramItem[TransactionCommitSymbol])) {
+		const committed = paramItem[TransactionCommitSymbol]();
+		entity = committed.entity;
+	}
+
+	for (let {name, version, nameField, versionField, alias} of identifiers) {
+		if (entity && entity.model.entity === name && entity.model.version === version) {
+			entityAlias = alias;
+			break;
+		} else if (record[nameField] !== undefined && record[nameField] === name && record[versionField] !== undefined && record[versionField] === version) {
+			entityAlias = alias;
+			break;
+		}
+	}
+
+	return entityAlias;
+}
+
 module.exports = {
 	Entity,
 	clauses,
+	getEntityIdentifiers,
+	matchToEntityAlias,
 };

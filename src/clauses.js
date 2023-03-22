@@ -1,4 +1,4 @@
-const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TableIndex, TerminalOperation, KeyTypes, IndexTypes } = require("./types");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TransactionCommitSymbol, TransactionOperations, TerminalOperation, KeyTypes, IndexTypes } = require("./types");
 const {AttributeOperationProxy, UpdateOperations, FilterOperationNames} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
@@ -28,7 +28,7 @@ function batchAction(action, type, entity, state, payload) {
 let clauses = {
 	index: {
 		name: "index",
-		children: ["get", "delete", "update", "query", "upsert", "put", "scan", "collection", "clusteredCollection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
+		children: ["check", "get", "delete", "update", "query", "upsert", "put", "scan", "collection", "clusteredCollection", "create", "remove", "patch", "batchPut", "batchDelete", "batchGet"],
 	},
 	clusteredCollection: {
 		name: "clusteredCollection",
@@ -156,7 +156,15 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go"],
+		children: ["params", "go", "commit"],
+	},
+	check: {
+		name: 'check',
+		action(...params) {
+			return clauses.get.action(...params)
+				.setMethod(MethodTypes.check);
+		},
+		children: ["commit"],
 	},
 	batchGet: {
 		name: "batchGet",
@@ -190,7 +198,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["where", "params", "go"],
+		children: ["where", "params", "go", "commit"],
 	},
 	remove: {
 		name: "remove",
@@ -220,7 +228,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["where", "params", "go"],
+		children: ["where", "params", "go", "commit"],
 	},
 	upsert: {
 		name: 'upsert',
@@ -245,7 +253,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go", "where"],
+		children: ["params", "go", "where", "commit"],
 	},
 	put: {
 		name: "put",
@@ -271,7 +279,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go"],
+		children: ["params", "go", "commit"],
 	},
 	batchPut: {
 		name: "batchPut",
@@ -307,7 +315,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go"],
+		children: ["params", "go", "commit"],
 	},
 	patch: {
 		name: "patch",
@@ -336,7 +344,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["set", "append","updateRemove", "updateDelete", "add", "subtract", "data"],
+		children: ["set", "append","updateRemove", "updateDelete", "add", "subtract", "data", "commit"],
 	},
 	update: {
 		name: "update",
@@ -359,7 +367,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
 	data: {
 		name: "data",
@@ -389,7 +397,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
 	set: {
 		name: "set",
@@ -406,7 +414,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
 	append: {
 		name: "append",
@@ -423,7 +431,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
 	updateRemove: {
 		name: "remove",
@@ -443,7 +451,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
 	updateDelete: {
 		name: "delete",
@@ -460,7 +468,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
 	add: {
 		name: "add",
@@ -477,7 +485,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
 	subtract: {
 		name: "subtract",
@@ -494,7 +502,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
 	query: {
 		name: "query",
@@ -662,6 +670,35 @@ let clauses = {
 		},
 		children: ["go", "params"],
 	},
+	commit: {
+		name: 'commit',
+		action(entity, state, options) {
+			if (state.getError() !== null) {
+				throw state.error;
+			}
+
+			const results = clauses.params.action(entity, state, {
+				...options,
+				_returnOptions: true,
+				_isTransaction: true,
+			});
+
+			const method = TransactionOperations[state.query.method];
+			if (!method) {
+				throw new Error('Invalid commit method');
+			}
+
+			return {
+				[method]: results.params,
+				[TransactionCommitSymbol]: () => {
+					return {
+						entity,
+					}
+				},
+			}
+		},
+		children: [],
+	},
 	params: {
 		name: "params",
 		action(entity, state, options = {}) {
@@ -673,7 +710,10 @@ let clauses = {
 					throw new e.ElectroError(e.ErrorCodes.MissingTable, `Table name not defined. Table names must be either defined on the model, instance configuration, or as a query option.`);
 				}
 				const method = state.getMethod();
-				const normalizedOptions = entity._normalizeExecutionOptions({ provided: [ state.getOptions(), state.query.options, options ] });
+				const normalizedOptions = entity._normalizeExecutionOptions({
+					provided: [ state.getOptions(), state.query.options, options ],
+					context: { operation: options._isTransaction ? MethodTypes.transactWrite : undefined }
+				});
 				state.applyWithOptions(normalizedOptions);
 				let results;
 				switch (method) {

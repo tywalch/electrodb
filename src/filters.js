@@ -76,7 +76,7 @@ class FilterFactory {
 		let filterParents = Object.entries(injected)
 			.filter(clause => {
 				let [name, { children }] = clause;
-				return children.includes("go");
+				return children.find(child => ['go', 'commit'].includes(child));
 			})
 			.map(([name]) => name);
 		let modelFilters = Object.keys(filters);
@@ -86,7 +86,7 @@ class FilterFactory {
 			injected[name] = {
 				name: name,
 				action: this.buildClause(filter),
-				children: ["params", "go", "filter", ...modelFilters],
+				children: ["params", "go", "commit", "filter", ...modelFilters],
 			};
 		}
 		filterChildren.push("filter");
@@ -95,7 +95,7 @@ class FilterFactory {
 			action: (entity, state, fn) => {
 				return this.buildClause(fn)(entity, state);
 			},
-			children: ["params", "go", "filter", ...modelFilters],
+			children: ["params", "go", "commit", "filter", ...modelFilters],
 		};
 		for (let parent of filterParents) {
 			injected[parent] = { ...injected[parent] };

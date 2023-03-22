@@ -768,9 +768,9 @@ describe("Service Offline", () => {
 				let entity1 = new Entity(model1);
 				let entity2 = new Entity(model2 );
 				let service = new Service({entity1, entity2}, {table, client});
-				expect(service.client).to.equal(client);
-				expect(entity1.client).to.equal(client);
-				expect(entity2.client).to.equal(client);
+				expect(service.client.client).to.equal(client);
+				expect(entity1.client.client).to.equal(client);
+				expect(entity2.client.client).to.equal(client);
 			});
 		});
 	})

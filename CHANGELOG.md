@@ -312,3 +312,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.4.2] - 2022-03-03
 ### Fixed
 - Restores `ignoreOwnership` execution option. Addresses [issue #194](https://github.com/tywalch/electrodb/issues/194) which calls out regression with `ignoreOwnership`. This flag is now appropriately applied to "query", "get", and "scan" operations.
+
+## [2.5.0] - 2022-03-19
+### Added
+- Adds transaction functionality: `get` and `write` transactions are now supported in ElectroDB via [transact write](https://electrodb.dev/en/mutations/transact-write) and [transact get](https://electrodb.dev/en/queries/transact-get) methods.  

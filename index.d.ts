@@ -1,5 +1,8 @@
-
+import {ScanCommandInput, GetCommandInput, QueryCommandInput, DeleteCommandInput, BatchWriteCommandInput, UpdateCommandInput, UpdateCommand, PutCommandInput, BatchGetCommandInput, TransactWriteCommandInput, TransactGetCommandInput} from '@aws-sdk/lib-dynamodb';
 export type DocumentClientMethod = (parameters: any) => {promise: () => Promise<any>};
+
+type TransactGetItem = Extract<Required<TransactGetCommandInput['TransactItems']>, Array<any>>[number];
+type TransactWriteItem = Extract<Required<TransactWriteCommandInput['TransactItems']>, Array<any>>[number];
 
 export type DocumentClient = {
     get: DocumentClientMethod;
@@ -712,11 +715,88 @@ export interface RecordsActionOptions<A extends string,
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,RecordsActionOptions<A,F,C,S,Items,IndexCompositeAttributes>>;
 }
 
+export type TransactionItemCode = 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
+
+export type TransactionItem<T> = {
+    item: null | T;
+    rejected: boolean;
+    code: TransactionItemCode;
+    message?: string | undefined;
+};
+
+type CommittedTransactionResult<T, Params> =
+    & Params
+    & { [TransactionSymbol]: T };
+
 export interface SingleRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
     go: GoGetTerminal<A,F,C,S, ResponseType>;
     params: ParamTerminal<A,F,C,S,ResponseType>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptions<A,F,C,S,ResponseType>>;
 }
+
+type GoGetTerminalTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, Params> = <Options extends TransactGetQueryOptions<keyof ResponseItem>>(options?: Options) =>
+    Options extends GoQueryTerminalOptions<infer Attr>
+        ? CommittedTransactionResult<{
+            [Name in keyof ResponseItem as Name extends Attr
+                ? Name
+                : never]: ResponseItem[Name]
+        }, Params>
+        : CommittedTransactionResult<ResponseItem, Params>
+
+type GoSingleTerminalTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem, Params> = <Options extends TransactWriteQueryOptions>(options?: Options) =>
+    CommittedTransactionResult<ResponseItem, Params>
+
+export interface SingleRecordOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType, Params> {
+    commit: GoSingleTerminalTransaction<A,F,C,S, ResponseType, Params>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,SingleRecordOperationOptionsTransaction<A,F,C,S,ResponseType, Params>>;
+}
+
+export interface GetOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType, Params> {
+    commit: GoGetTerminalTransaction<A,F,C,S, ResponseType, Params>;
+}
+
+export type DeleteRecordOperationGoTransaction<ResponseType, Options = TransactWriteQueryOptions> = <T = ResponseType>(options?: Options) => CommittedTransactionResult<T, TransactWriteItem>;
+
+export interface DeleteRecordOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
+    commit: DeleteRecordOperationGoTransaction<ResponseType, TransactWriteQueryOptions>;
+    where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,DeleteRecordOperationOptionsTransaction<A,F,C,S,ResponseType>>;
+}
+
+export type PutRecordGoTransaction<ResponseType, Options = TransactWriteQueryOptions> = <T = ResponseType>(options?: Options) => CommittedTransactionResult<T, TransactWriteItem>;
+
+export interface PutRecordOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
+    commit: PutRecordGoTransaction<ResponseType, TransactWriteQueryOptions>;
+    where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, PutRecordOperationOptionsTransaction<A, F, C, S, ResponseType>>;
+}
+
+export interface UpsertRecordOperationOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
+    commit: PutRecordGoTransaction<ResponseType, TransactWriteQueryOptions>;
+    where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptionsTransaction<A, F, C, S, ResponseType>>;
+}
+
+export type UpdateRecordGoTransaction<ResponseType> = <T = ResponseType, Options extends TransactWriteQueryOptions = TransactWriteQueryOptions>(options?: Options) => CommittedTransactionResult<Partial<T>, TransactWriteItem>
+
+export interface SetRecordActionOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
+    commit: UpdateRecordGoTransaction<TableItem>;
+    params: ParamRecord<UpdateQueryParams>;
+    set: SetRecordTransaction<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    remove: RemoveRecordTransaction<A,F,C,S, Array<keyof SetItem<A,F,C,S>>,IndexCompositeAttributes,TableItem>;
+    add: SetRecordTransaction<A,F,C,S, AddItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    subtract: SetRecordTransaction<A,F,C,S, SubtractItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    append: SetRecordTransaction<A,F,C,S, AppendItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    delete: SetRecordTransaction<A,F,C,S, DeleteItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    data: DataUpdateMethodRecordTransaction<A,F,C,S, Item<A,F,C,S,S["attributes"]>,IndexCompositeAttributes,TableItem>;
+    where: WhereClause<A,F,C,S, Item<A,F,C,S,S["attributes"]>,SetRecordActionOptionsTransaction<A,F,C,S,SetAttr,IndexCompositeAttributes,TableItem>>;
+}
+
+export type RemoveRecordTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, RemoveAttr, IndexCompositeAttributes, TableItem> = (properties: RemoveAttr) =>
+    SetRecordActionOptionsTransaction<A,F,C,S, RemoveAttr, IndexCompositeAttributes, TableItem>;
+
+export type SetRecordTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> = (properties: SetAttr) =>
+    SetRecordActionOptionsTransaction<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>;
+
+export type DataUpdateMethodRecordTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr, IndexCompositeAttributes, TableItem> =
+    DataUpdateMethod<A,F,C,S, UpdateData<A,F,C,S>, SetRecordActionOptionsTransaction<A,F,C,S, SetAttr, IndexCompositeAttributes, TableItem>>
 
 export interface BatchGetRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
     go: GoBatchGetTerminal<A,F,C,S,ResponseType>
@@ -913,6 +993,28 @@ interface GoQueryTerminalOptions<Attributes> {
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
     order?: 'asc' | 'desc';
+}
+
+interface TransactWriteQueryOptions {
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    table?: string;
+    params?: object;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+    listeners?: Array<ElectroEventListener>;
+    logger?: ElectroEventListener;
+    response?: 'all_old';
+}
+
+interface TransactGetQueryOptions<Attributes> {
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    table?: string;
+    params?: object;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+    attributes?: ReadonlyArray<Attributes>;
+    listeners?: Array<ElectroEventListener>;
+    logger?: ElectroEventListener;
 }
 
 export interface ParamTerminalOptions<Attributes> {
@@ -2151,6 +2253,7 @@ export declare const WhereSymbol: unique symbol;
 export declare const UpdateDataSymbol: unique symbol;
 export declare const CustomAttributeSymbol: unique symbol;
 export declare const OpaquePrimitiveSymbol: unique symbol;
+export declare const TransactionSymbol: unique symbol;
 
 export type WhereAttributeSymbol<T extends any> =
         { [WhereSymbol]: void }
@@ -2335,6 +2438,80 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     client: any;
 }
 
+
+export class TransactWriteEntity<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> {
+    readonly schema: S;
+    constructor(schema: S);
+
+    check(key: AllTableIndexCompositeAttributes<A,F,C,S>): SingleRecordOperationOptionsTransaction<A,F,C,S, ResponseItem<A,F,C,S>, TransactWriteItem>;
+    delete(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptionsTransaction<A,F,C,S, ResponseItem<A,F,C,S>>;
+    remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptionsTransaction<A,F,C,S, ResponseItem<A,F,C,S>>
+    put(record: PutItem<A,F,C,S>): PutRecordOperationOptionsTransaction<A,F,C,S, ResponseItem<A,F,C,S>>;
+    create(record: PutItem<A,F,C,S>): PutRecordOperationOptionsTransaction<A,F,C,S, ResponseItem<A,F,C,S>>
+    upsert(record: PutItem<A,F,C,S>): UpsertRecordOperationOptionsTransaction<A,F,C,S, ResponseItem<A,F,C,S>>;
+    update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
+        set: SetRecordTransaction<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        remove: RemoveRecordTransaction<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        add: SetRecordTransaction<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        subtract: SetRecordTransaction<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        append: SetRecordTransaction<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        delete: SetRecordTransaction<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        data: DataUpdateMethodRecordTransaction<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+    };
+    patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
+        set: SetRecordTransaction<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        remove: RemoveRecordTransaction<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        add: SetRecordTransaction<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        subtract: SetRecordTransaction<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        append: SetRecordTransaction<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        delete: SetRecordTransaction<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        data: DataUpdateMethodRecordTransaction<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+    };
+}
+
+export class TransactGetEntity<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> {
+    readonly schema: S;
+    constructor(schema: S);
+
+    get(key: AllTableIndexCompositeAttributes<A,F,C,S>): GetOperationOptionsTransaction<A,F,C,S, ResponseItem<A,F,C,S>, TransactGetItem>;
+}
+
+type TransactWriteFunctionOptions = {
+    token?: string;
+};
+
+type TransactGetFunctionOptions = {};
+
+type TransactWriteExtractedType<T extends readonly any[], A extends readonly any[] = []> =
+    T extends [infer F, ...infer R] ?
+        F extends CommittedTransactionResult<infer V, TransactWriteItem>
+            ? TransactWriteExtractedType<R, [...A, TransactionItem<V>]>
+            : never
+    : A;
+
+type TransactGetExtractedType<T extends readonly any[], A extends readonly any[] = []> =
+    T extends [infer F, ...infer R] ?
+        F extends CommittedTransactionResult<infer V, TransactGetItem>
+            ? TransactWriteExtractedType<R, [...A, TransactionItem<V>]>
+            : never
+        : A
+
+type TransactWriteEntities<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+        ? TransactWriteEntity<A,F,C,S>
+        : never;
+}
+
+type TransactGetEntities<E extends {[name: string]: Entity<any, any, any, any>}> = {
+    [EntityName in keyof E]: E[EntityName] extends Entity<infer A, infer F, infer C, infer S>
+        ? TransactGetEntity<A,F,C,S>
+        : never;
+}
+
+type TransactWriteFunction<E extends {[name: string]: Entity<any, any, any, any>}, T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactWriteItem>> > = (entities: TransactWriteEntities<E>) => [...R];
+
+type TransactGetFunction<E extends {[name: string]: Entity<any, any, any, any>}, T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactGetItem>> > = (entities: TransactGetEntities<E>) => [...R];
+
 export type ServiceConfiguration = {
     table?: string;
     client?: DocumentClient;
@@ -2342,11 +2519,46 @@ export type ServiceConfiguration = {
     logger?: ElectroEventListener;
 };
 
+declare function createWriteTransaction<E extends {[name: string]: Entity<any, any, any, any>}, T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactWriteItem>>>(entities: E, fn: TransactWriteFunction<E,T,R>): {
+    go: (options?: TransactWriteFunctionOptions) => Promise<{
+        canceled: boolean;
+        data: TransactWriteExtractedType<R>
+    }>;
+    params: <O extends TransactWriteFunctionOptions = TransactWriteFunctionOptions>(options?: O) => TransactWriteCommandInput
+}
+
+declare function createGetTransaction<E extends {[name: string]: Entity<any, any, any, any>},T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactGetItem>>>(entities: E, fn: TransactGetFunction<E,T,R>): {
+    go: (options?: TransactGetFunctionOptions) => Promise<{
+        canceled: boolean;
+        data: TransactGetExtractedType<R>
+    }>;
+    params: <O extends TransactGetFunctionOptions = TransactGetFunctionOptions>(options?: O) => TransactGetCommandInput
+};
+
 export class Service<E extends {[name: string]: Entity<any, any, any, any>}> {
     entities: E;
     collections:
         ClusteredCollectionQueries<E, ClusteredCollectionAssociations<E>>
         & IsolatedCollectionQueries<E, IsolatedCollectionAssociations<E>>
+
+    transaction: {
+        write: <T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactWriteItem>>>(fn: TransactWriteFunction<E,T,R>) => {
+            go: (options?: TransactWriteFunctionOptions) => Promise<{
+                canceled: boolean;
+                data: TransactWriteExtractedType<R>
+            }>;
+            params: <O extends TransactWriteFunctionOptions = TransactWriteFunctionOptions>(options?: O) => TransactWriteCommandInput
+        };
+
+        get: <T, R extends ReadonlyArray<CommittedTransactionResult<T, TransactGetItem>>>(fn: TransactGetFunction<E,T,R>) => {
+            go: (options?: TransactGetFunctionOptions) => Promise<{
+                canceled: boolean;
+                data: TransactGetExtractedType<R>
+            }>;
+            params: <O extends TransactGetFunctionOptions = TransactGetFunctionOptions>(options?: O) => TransactGetCommandInput
+        };
+    }
+
     constructor(entities: E, config?: ServiceConfiguration);
 
     setTableName(tableName: string): void;

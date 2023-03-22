@@ -1,0 +1,78 @@
+---
+title: Transact Get
+description: Performing get transactions
+keywords:
+  - electrodb
+  - docs
+  - dynamodb
+  - TransactGet
+  - transactGet
+  - transaction
+  - transactions
+layout: ../../../layouts/MainLayout.astro
+---
+
+import TableDefinition from '../../../partials/table-definition.mdx';
+
+<TableDefinition />
+
+In cases where your data is frequently changing, but you need to ensure that results retrieved from multiple `get` where not modified during retrieval, you can reach for `transaction.get()`.
+
+## Performing Write Transactions
+
+To perform `get` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods `transaction.get()` and `transaction.write()`. These methods accept a callback function which is then provided with the entities of the service, and should return an array of queries. Creating a `get` query within a transaction is identical to performing `get` directly on an entity, only instead of terminating your query with a `.go()` or `.params()` you use `.commit()` instead.
+
+```typescript
+await yourService.transaction
+    .get(({ entity1, entity2 }) => [
+        entity1.get({ prop1: 'value1', prop2: 'value2' }).commit(),
+        entity2.get({ prop1: 'value2', prop2: 'value3' }).commit(),
+    ]).go();
+```
+
+### TransactionItem
+
+For each operation provided in your transaction, you can expect the following interface to be returned, which is also exported for TypeScript users. ElectroDB will return an array of the same size as what was provided, with results for each operation in the same order as they were provided.
+
+```typescript
+type TransactionItem<T> = {
+    rejected: boolean;
+    code?: TransactionItemCode; // 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
+    message?: string | undefined;
+    item: null | T;
+}
+```
+
+Property        | Type                   | Description
+--------------- | :--------------------: | -----------
+item            | `EntityItem`, `null`   | The item if one existed at the time of query.
+code            | `TransactionItemCode`  | The `code` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.
+rejected        | `boolean`              | If your `get` was rejected, this value will be `true`. Because transactions are an all-or-nothing mutation, it only takes one rejection in a group to cancel the whole transaction.
+message         | `string`, `undefined`  | The `message` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.
+
+
+## Response Format
+Unlike the DocumentClient, if your transaction fails to write, ElectroDB will resolve and signal failure through a top-level boolean `canceled`, and with additional detail for each operation provided in the transaction.
+
+### Returned
+
+Calling the async `.go()` method on a transaction returns the following interface. If your transaction failed, expect the `canceled` boolean to be true. The array `data` contains the results of each operation provided to the transaction in exactly the order it was provided.
+
+```typescript
+{
+    data: TransactionItem<T>[];
+    canceled: boolean;
+}
+```
+
+## Execution Options
+
+Execution options can be provided to the `.params()` and `.go()` terminal functions to change query behavior or add customer parameters to a query.
+
+> This method does not currently have any execution options.
+
+The following are some links to help you understand the mechanics behind DynamoDB Transacts
+- [Alex DeBrie - DynamoDB Transactions: Use Cases and Examples](https://www.alexdebrie.com/posts/dynamodb-transactions/)
+- [AWS - Amazon DynamoDB Transactions: How it works](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html)
+- [AWS - TransactGetItems API](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactGetItems.html)
+- [Rafal Wilinski - DynamoDB Transactions the Ultimate Guide](https://dynobase.dev/dynamodb-transactions/)

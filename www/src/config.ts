@@ -46,6 +46,7 @@ export type Sidebar = Record<
   typeof KNOWN_LANGUAGE_CODES[number],
   Record<string, { text: string; link: string }[]>
 >;
+
 export const SIDEBAR: Sidebar = {
   en: {
     'Core Concepts': [
@@ -70,6 +71,7 @@ export const SIDEBAR: Sidebar = {
       { text: 'Find', link: 'en/queries/find' },
       { text: 'Match', link: 'en/queries/match' },
       { text: 'Scan', link: 'en/queries/scan' },
+      { text: 'Transact Get', link: 'en/queries/transact-get' },
       { text: 'Pagination', link: 'en/queries/pagination' },
       { text: 'Filter Expressions', link: 'en/queries/filters' },
     ],
@@ -83,6 +85,7 @@ export const SIDEBAR: Sidebar = {
       { text: 'Delete', link: 'en/mutations/delete' },
       { text: 'Batch Delete', link: 'en/mutations/batch-delete' },
       { text: 'Remove', link: 'en/mutations/remove' },
+      { text: 'Transact Write', link: 'en/mutations/transact-write' },
       { text: 'Conditions Expressions', link: 'en/mutations/conditions' },
     ],
     Reference: [

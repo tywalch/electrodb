@@ -1,18 +1,112 @@
 const lib = require('@aws-sdk/lib-dynamodb')
+const util = require('@aws-sdk/lib-dynamodb/dist-cjs/commands/utils')
 const { isFunction } = require('./validations');
 const { ElectroError, ErrorCodes } = require('./errors');
-
 const DocumentClientVersions = {
     v2: 'v2',
     v3: 'v3',
     electro: 'electro',
 };
+const unmarshallOutput = util.unmarshallOutput || ((val) => val);
 
 const v3Methods = ['send'];
 const v2Methods = ['get', 'put', 'update', 'delete', 'batchWrite', 'batchGet', 'scan', 'query', 'createSet', 'transactWrite', 'transactGet'];
 const supportedClientVersions = {
     [DocumentClientVersions.v2]: v2Methods,
     [DocumentClientVersions.v3]: v3Methods,
+}
+
+class DocumentClientV2Wrapper {
+    static init(client) {
+        return new DocumentClientV2Wrapper(client, lib);
+    }
+
+    constructor(client, lib) {
+        this.client = client;
+        this.lib = lib;
+        this.__v = 'v2';
+    }
+
+    get(params) {
+        return this.client.get(params);
+    }
+
+    put(params) {
+        return this.client.put(params);
+    }
+
+    update(params) {
+        return this.client.update(params);
+    }
+
+    delete(params) {
+        return this.client.delete(params);
+    }
+
+    batchWrite(params) {
+        return this.client.batchWrite(params);
+    }
+
+    batchGet(params) {
+        return this.client.batchGet(params);
+    }
+
+    scan(params) {
+        return this.client.scan(params);
+    }
+
+    query(params) {
+        return this.client.query(params);
+    }
+
+    _transact(transactionRequest) {
+        let cancellationReasons;
+        transactionRequest.on('extractError', (response) => {
+            try {
+                cancellationReasons = JSON.parse(response.httpResponse.body.toString()).CancellationReasons;
+            } catch (err) {}
+        });
+
+        return {
+            async promise() {
+                return transactionRequest.promise()
+                    .catch((err) => {
+                        if (err) {
+                            if (Array.isArray(cancellationReasons)) {
+                                return {
+                                    canceled: cancellationReasons
+                                        .map(reason => {
+                                            if (reason.Item) {
+                                                return unmarshallOutput(reason, [{ key: "Item" }]);
+                                            }
+                                            return reason;
+                                        })
+                                };
+                            }
+                            throw err;
+                        }
+                    });
+            }
+        }
+    }
+
+    transactWrite(params) {
+        const transactionRequest = this.client.transactWrite(params);
+        return this._transact(transactionRequest);
+    }
+
+    transactGet(params) {
+        const transactionRequest = this.client.transactGet(params);
+        return this._transact(transactionRequest);
+    }
+
+    createSet(value, ...rest) {
+        if (Array.isArray(value)) {
+            return this.client.createSet(value, ...rest);
+        } else {
+            return this.client.createSet([value], ...rest);
+        }
+    }
 }
 
 class DocumentClientV3Wrapper {
@@ -23,6 +117,7 @@ class DocumentClientV3Wrapper {
     constructor(client, lib) {
         this.client = client;
         this.lib = lib;
+        this.__v = 'v3';
     }
 
     promiseWrap(fn) {
@@ -81,16 +176,49 @@ class DocumentClientV3Wrapper {
             return this.client.send(command);
         });
     }
+
     transactWrite(params) {
         return this.promiseWrap(async () => {
             const command = new this.lib.TransactWriteCommand(params);
-            return this.client.send(command);
+            return this.client.send(command)
+                .then((result) => {
+                    return result;
+                })
+                .catch(err => {
+                    if (err.CancellationReasons) {
+                        return {
+                            canceled: err.CancellationReasons.map(reason => {
+                                if (reason.Item) {
+                                    return unmarshallOutput(reason, [{ key: "Item" }]);
+                                }
+                                return reason;
+                            })
+                        }
+                    }
+                    throw err;
+                });
         });
     }
     transactGet(params) {
         return this.promiseWrap(async () => {
             const command = new this.lib.TransactGetCommand(params);
-            return this.client.send(command);
+            return this.client.send(command)
+                .then((result) => {
+                    return result;
+                })
+                .catch(err => {
+                    if (err.CancellationReasons) {
+                        return {
+                            canceled: err.CancellationReasons.map(reason => {
+                                if (reason.Item) {
+                                    return unmarshallOutput(reason, [{ key: "Item" }]);
+                                }
+                                return reason;
+                            })
+                        }
+                    }
+                    throw err;
+                });
         });
     }
     createSet(value) {
@@ -103,7 +231,9 @@ class DocumentClientV3Wrapper {
 }
 
 function identifyClientVersion(client = {}) {
-    if (client instanceof DocumentClientV3Wrapper) return DocumentClientVersions.electro;
+    if (client instanceof DocumentClientV3Wrapper || client instanceof DocumentClientV2Wrapper) {
+        return DocumentClientVersions.electro;
+    }
     for (const [version, methods] of Object.entries(supportedClientVersions)) {
         const hasMethods = methods.every(method => {
             return method in client && isFunction(client[method]);
@@ -121,6 +251,7 @@ function normalizeClient(client) {
         case DocumentClientVersions.v3:
             return DocumentClientV3Wrapper.init(client);
         case DocumentClientVersions.v2:
+            return DocumentClientV2Wrapper.init(client);
         case DocumentClientVersions.electro:
             return client;
         default:
@@ -136,6 +267,7 @@ function normalizeConfig(config = {}) {
 }
 
 module.exports = {
+    util,
     v2Methods,
     v3Methods,
     normalizeClient,
@@ -144,4 +276,5 @@ module.exports = {
     DocumentClientVersions,
     supportedClientVersions,
     DocumentClientV3Wrapper,
+    DocumentClientV2Wrapper,
 };
