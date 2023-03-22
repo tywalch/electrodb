@@ -18,7 +18,7 @@ import TableDefinition from '../../../partials/table-definition.mdx';
 
 In cases where your data is frequently changing, but you need to ensure that results retrieved from multiple `get` where not modified during retrieval, you can reach for `transaction.get()`.
 
-## Performing Write Transactions
+## Performing Get Transactions
 
 To perform `get` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods `transaction.get()` and `transaction.write()`. These methods accept a callback function which is then provided with the entities of the service, and should return an array of queries. Creating a `get` query within a transaction is identical to performing `get` directly on an entity, only instead of terminating your query with a `.go()` or `.params()` you use `.commit()` instead.
 
