@@ -1,8 +1,22 @@
-import {ScanCommandInput, GetCommandInput, QueryCommandInput, DeleteCommandInput, BatchWriteCommandInput, UpdateCommandInput, UpdateCommand, PutCommandInput, BatchGetCommandInput, TransactWriteCommandInput, TransactGetCommandInput} from '@aws-sdk/lib-dynamodb';
 export type DocumentClientMethod = (parameters: any) => {promise: () => Promise<any>};
 
-type TransactGetItem = Extract<Required<TransactGetCommandInput['TransactItems']>, Array<any>>[number];
-type TransactWriteItem = Extract<Required<TransactWriteCommandInput['TransactItems']>, Array<any>>[number];
+type TransactWriteItem =
+    | { Put : { [param: string]: any} }
+    | { Update : { [param: string]: any} }
+    | { Delete : { [param: string]: any} }
+    | { ConditionCheck : { [param: string]: any} };
+
+type TransactWriteCommandInput = {
+    TransactItems: TransactWriteItem[];
+    ClientRequestToken?: string;
+}
+
+type TransactGetItem =
+    | { Get : { [param: string]: any} };
+
+type TransactGetCommandInput = {
+    TransactItems: TransactGetItem[];
+}
 
 export type DocumentClient = {
     get: DocumentClientMethod;

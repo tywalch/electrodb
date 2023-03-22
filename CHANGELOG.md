@@ -315,4 +315,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.5.0] - 2022-03-19
 ### Added
-- Adds transaction functionality: `get` and `write` transactions are now supported in ElectroDB via [transact write](https://electrodb.dev/en/mutations/transact-write) and [transact get](https://electrodb.dev/en/queries/transact-get) methods.  
+- Adds transaction functionality: `get` and `write` transactions are now supported in ElectroDB via [transact write](https://electrodb.dev/en/mutations/transact-write) and [transact get](https://electrodb.dev/en/queries/transact-get) methods.
+
+## [2.5.1] - 2022-03-22
+### Fixed 
+- The previous version exported typings directly from the AWS dynamodb client package which, because it was so large, caused the playground to take a massive performance hit. Instead, the library now expose a simplistic version of those types instead. 
