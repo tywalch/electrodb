@@ -14,7 +14,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-Calculated attributes are attributes that might react to the retrieval of other attributes. The values for these attributes are transformed on retrieval, and are not persisted to DynamoDB.
+Virtual attributes are attributes that might react to the retrieval of other attributes. The values for these attributes are transformed on retrieval, and are not persisted to DynamoDB.
 
 In this example we have an attribute `"displayPrice"` that needs its getter called anytime an item's `"price"` attribute is retrieved.  The attribute `"displayPrice"` uses `watch` to return a formatted price string based whenever an item with a `"price"` attribute is queried.  Additionally, `"displayPrice"` always returns `undefined` from its setter callback to ensure that it will never write data back to the table.
 
