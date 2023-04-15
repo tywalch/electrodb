@@ -96,18 +96,27 @@ A notable Pagination Option is `pager`. This property defines the post-processin
 Simple pagination example:
 
 ```typescript
-async function getAllStores(mallId) {
-  let stores = [];
+// EntityItem is the type for a returned item
+// QueryResponse is the type for the full electrodb response to a query
+import { EntityItem, QueryResponse } from 'electrodb';
+
+// (your entity)
+import { users } from './entities';
+
+type UserItem = EntityItem<typeof users>;
+type UserQueryResponse = QueryResponse<typeof users>;
+
+async function getTeamMembers(team: string) {
+  let members: UserItem[] = [];
   let cursor = null;
-
   do {
-    const results = await MallStores.query
-      .leases({ mallId })
-      .go({ pager });
-    stores = [...stores, ...results.data];
+    const results: UserQueryResponse = await users.query
+      .members({ team })
+      .go({ cursor });
+    members = [...members, ...results.data];
     cursor = results.cursor;
-  } while(pager !== null);
+  } while(cursor !== null);
 
-  return stores;
+  return members;
 }
 ```
