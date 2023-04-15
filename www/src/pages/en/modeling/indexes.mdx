@@ -14,6 +14,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import { Picture } from '@astrojs/image/components';
+
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will be referenced as _"Access Patterns"_.
 
 All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
@@ -294,6 +296,25 @@ When your index type is defined as `clustered`, ElectroDB will optimize your ind
 
 *Choose* `clustered` if you have a high degree of grouped or similar data that needs to be frequently accessed together. This index works best in [collections](/en/modeling/collections) when member entities are more evenly distributed within a partition.
 *Don't choose* `clustered` if your need to query across entities is secondary to its primary purpose -- this index type limits the efficiency of querying your individual entity.
+
+### Isolated vs Clustered
+
+The following images illustrate the difference between an `isolated` and `clustered` index type. Each blue line represents an "employee" entity record and each yellow line represents a "task" entity record. 
+
+In this example, the following records have the same partition key composite attributes. 
+
+<div style={{textAlign: 'center'}}>
+  <img src="/isolated.png" style={{ maxWidth: '75%' }} />
+</div>
+
+In an `isolated` index type, entities sharing a partition key do not co-mingle. While this is not ideal for querying across entities, it is ideal for efficently targetting (or "isolating") a single entity type. 
+
+<div style={{textAlign: 'center'}}>
+  <img src="/clustered.png" style={{ maxWidth: '75%' }} />
+</div>
+
+In a `clustered` index type, entities sharing a partition key intermix (or "cluster") together. This is ideal for querying across entities, but not ideal for efficently targetting a single entity type.
+
 
 ### Indexes Without Sort Keys
 When using indexes without Sort Keys, that should be expressed as an index *without* an `sk` property at all. Indexes without an `sk` cannot have a collection, see [Collections](/en/modeling/collections) for more detail.
