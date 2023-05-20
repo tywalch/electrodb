@@ -1,13 +1,15 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import {CreateEntityItem, Entity, EntityItem} from "../index";
+import {CreateEntityItem, Entity, EntityItem, Service} from "../index";
 import { expect } from "chai";
 import {v4 as uuid} from "uuid";
 import moment from "moment";
 import DynamoDB from "aws-sdk/clients/dynamodb";
+
 const client = new DynamoDB.DocumentClient({
     region: "us-east-1",
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
+
 const sleep = async (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const SERVICE = "BugBeater";
 const ENTITY = "TEST_ENTITY";
@@ -4514,4 +4516,5 @@ describe('enum set', () => {
             }));
         });
     });
-})
+});
+
