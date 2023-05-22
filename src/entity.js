@@ -2378,7 +2378,11 @@ class Entity {
 		const subCollections = this.model.subCollections[collection];
 		const index = this.model.translations.collections.fromCollectionToIndex[collection];
 		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+		const prefixes = this.model.prefixes[index];
 		const prefix = this._makeCollectionPrefix(subCollections);
+		if (prefixes.sk && prefixes.sk.isCustom) {
+			return '';
+		}
 		return this._formatKeyCasing(accessPattern, prefix);
 	}
 
@@ -2528,6 +2532,7 @@ class Entity {
 				key: supplied[facets[0]],
 			};
 		}
+
 		let key = prefix;
 		let foundCount = 0;
 		for (let i = 0; i < labels.length; i++) {
@@ -2565,9 +2570,11 @@ class Entity {
 			key += postfix;
 		}
 
+		const transformedKey = transform(u.formatKeyCasing(key, casing));
+
 		return {
 			fulfilled,
-			key: transform(u.formatKeyCasing(key, casing))
+			key: transformedKey,
 		};
 	}
 
