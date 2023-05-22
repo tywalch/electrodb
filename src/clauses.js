@@ -52,7 +52,7 @@ let clauses = {
 						}
 					})
 					.whenOptions(({ options, state }) => {
-						if (!options.ignoreOwnership) {
+						if (!options.ignoreOwnership && !state.getParams()) {
 							state.query.options.expressions.names = {
 								...state.query.options.expressions.names,
 								...state.query.options.identifiers.names,
@@ -90,7 +90,7 @@ let clauses = {
 					.setCollection(collection)
 					.setPK(entity._expectFacets(facets, pk))
 					.whenOptions(({ options, state }) => {
-						if (!options.ignoreOwnership) {
+						if (!options.ignoreOwnership && !state.getParams()) {
 							state.query.options.expressions.names = {
 								...state.query.options.expressions.names,
 								...state.query.options.identifiers.names,
@@ -121,7 +121,7 @@ let clauses = {
 			try {
 				return state.setMethod(MethodTypes.scan)
 					.whenOptions(({ state, options }) => {
-						if (!options.ignoreOwnership) {
+						if (!options.ignoreOwnership && !state.getParams()) {
 							state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.entity, entity.getName());
 							state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.version, entity.getVersion());
 						}
@@ -247,6 +247,12 @@ let clauses = {
 					.ifSK(() => {
 						entity._expectFacets(record, attributes.sk);
 						state.setSK(entity._buildQueryFacets(record, attributes.sk));
+					})
+					.whenOptions(({ state, options }) => {
+						if (!state.getParams()) {
+							state.query.update.set(entity.identifiers.entity, entity.getName());
+							state.query.update.set(entity.identifiers.version, entity.getVersion());
+						}
 					});
 			} catch(err) {
 				state.setError(err);
@@ -526,7 +532,7 @@ let clauses = {
 						}
 
 						state.whenOptions(({ options, state }) => {
-							if (state.query.options.indexType === IndexTypes.clustered && Object.keys(composites).length < sk.length && !options.ignoreOwnership) {
+							if (state.query.options.indexType === IndexTypes.clustered && Object.keys(composites).length < sk.length && !options.ignoreOwnership && !state.getParams()) {
 								state.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.entity, entity.getName())
 									.unsafeApplyFilter(FilterOperationNames.eq, entity.identifiers.version, entity.getVersion());
 							}
@@ -714,7 +720,9 @@ let clauses = {
 					provided: [ state.getOptions(), state.query.options, options ],
 					context: { operation: options._isTransaction ? MethodTypes.transactWrite : undefined }
 				});
+
 				state.applyWithOptions(normalizedOptions);
+
 				let results;
 				switch (method) {
 					case MethodTypes.query: {
@@ -740,6 +748,8 @@ let clauses = {
 					// todo: change the getValues() method to return undefined in this case (would potentially require a more generous refactor)
 					delete results.ExpressionAttributeValues;
 				}
+
+				state.setParams(results);
 
 				if (options._returnOptions) {
 					return {
@@ -816,6 +826,17 @@ class ChainState {
 		this.hasSortKey = hasSortKey;
 		this.prev = null;
 		this.self = null;
+		this.params = null;
+	}
+
+	getParams() {
+		return this.params;
+	}
+
+	setParams(params) {
+		if (params) {
+			this.params = params;
+		}
 	}
 
 	init(entity, allClauses, currentClause) {

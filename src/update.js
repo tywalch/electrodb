@@ -11,6 +11,7 @@ class UpdateExpression extends ExpressionState {
             subtract: new Set(),
             delete: new Set()
         };
+        this.seen = new Map();
         this.type = BuilderTypes.update;
     }
 
@@ -18,10 +19,29 @@ class UpdateExpression extends ExpressionState {
         this.operations[type].add(expression);
     }
 
-    set(name, value) {
-        const n = this.setName({}, name, name);
-        const v = this.setValue(name, value);
-        this.add(ItemOperations.set, `${n.prop} = ${v}`);
+    unadd(type, expression) {
+        this.operations[type].delete(expression);
+    }
+
+    set(name, value, operation) {
+        const seen = this.seen.get(name);
+        let n;
+        let v;
+        if (seen) {
+            n = seen.name;
+            v = seen.value;
+            this.unadd(ItemOperations.set, seen.expression);
+        } else {
+            n = this.setName({}, name, name);
+            v = this.setValue(name, value);
+        }
+        const expression = `${n.prop} = ${v}`;
+        this.seen.set(name, {
+            name: n,
+            value: v,
+            expression,
+        });
+        this.add(operation || ItemOperations.set, expression);
     }
 
     remove(name) {

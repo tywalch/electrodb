@@ -1660,12 +1660,12 @@ class Entity {
 		};
 	}
 
-	_makeUpsertParams({update, upsert} = {}, pk, sk) {
+	_makeUpsertParams({ update, upsert } = {}, pk, sk) {
 		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
 		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
 		const keyNames = Object.keys(indexKey);
-		update.set(this.identifiers.entity, this.getName());
-		update.set(this.identifiers.version, this.getVersion());
+		// update.set(this.identifiers.entity, this.getName());
+		// update.set(this.identifiers.version, this.getVersion());
 		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
 			const value = u.getFirstDefined(upsertAttributes[field], updatedKeys[field]);
 			if (!keyNames.includes(field)) {

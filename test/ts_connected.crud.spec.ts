@@ -3602,10 +3602,10 @@ describe('attributes query option', () => {
         ] as const;
 
         const options = [
-            [undefined, undefined],
-            [{}, undefined],
-            [{order: 'asc'}, true],
-            [{order: 'desc'}, false],
+            ['none', undefined, undefined] as const,
+            ['empty', {}, undefined] as const,
+            ['asc', {order: 'asc'}, true],
+            ['desc', {order: 'desc'}, false] as const,
         ] as const;
 
         await entity.put([
@@ -3630,7 +3630,7 @@ describe('attributes query option', () => {
         ]).go();
 
         for (const [description, operation] of queries) {
-            for (const [queryOptions, output] of options) {
+            for (const [label, queryOptions, output] of options) {
                 try {
                     // @ts-ignore
                     const params = operation.params(queryOptions);
@@ -3638,6 +3638,8 @@ describe('attributes query option', () => {
                 
                     // @ts-ignore
                     const results = await operation.go(queryOptions);
+
+                    // @ts-ignore
                     const isDesc = output === false;
                     if (isDesc) {
                         expect(results.data[0]?.prop4).to.equal('prop4c');
@@ -3649,7 +3651,8 @@ describe('attributes query option', () => {
                         expect(results.data[2]?.prop4).to.equal('prop4c');
                     }
                 } catch(err: any) {
-                    throw new Error(`${err.message}: ${description}`);
+                    err.message = `when ${description} with ${label}: ${err.message}`;
+                    throw err;
                 }
             }
         }     
@@ -4518,3 +4521,99 @@ describe('enum set', () => {
     });
 });
 
+describe('terminal methods', () => {
+    it('should allow repeated calls to a terminal method without breaking side effects', async () => {
+        const entity = new Entity({
+            model: {
+                version: '1',
+                entity: uuid(),
+                service: uuid(),
+            },
+            attributes: {
+                id: {
+                    type: 'string'
+                },
+                accountId: {
+                    type: 'string'
+                },
+                name: {
+                    type: 'string'
+                },
+                description: {
+                    type: 'string'
+                }
+            },
+            indexes: {
+                records: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['accountId']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['id']
+                    }
+                }
+            }
+        }, {
+            table,
+            client
+        });
+        const accountId = uuid();
+        const createItem = () => {
+            return {
+                accountId,
+                id: uuid(),
+                name: uuid(),
+                description: uuid(),
+            }
+        }
+
+        type TestOperationOptions = {
+            name: string;
+            operation: {
+                go: () => Promise<any>;
+                params: () => any
+            };
+            idempotent?: boolean;
+        }
+
+        const testOperation = async (name: string, operation: TestOperationOptions['operation'], idempotent: boolean = true) => {
+            try {
+                const params1 = operation.params();
+                const params2 = operation.params();
+                await operation.go();
+                const params3 = operation.params();
+                if (idempotent) {
+                    await operation.go();
+                }
+                expect(params1).to.deep.equal(params2);
+                expect(params2).to.deep.equal(params3);
+            } catch(err: any) {
+                err.message = `${name} operation: ${err.message}`;
+                throw err;
+            }
+        }
+
+        await testOperation('put', entity.put(createItem()));
+        await testOperation('batch_put', entity.put([createItem(), createItem()]));
+        await testOperation('create', entity.create(createItem()), false);
+        await testOperation('upsert', entity.upsert(createItem()));
+        await testOperation('get', entity.get(createItem()));
+        await testOperation('batch_get', entity.get([createItem(), createItem()]));
+        await testOperation('query', entity.query.records(createItem()));
+        await testOperation('match', entity.match(createItem()));
+        await testOperation('find', entity.find(createItem()));
+        await testOperation('scan', entity.scan);
+        await testOperation('delete', entity.delete(createItem()));
+        await testOperation('update', entity.update(createItem()).set({name: 'update'}));
+
+        const toPatch = createItem();
+        await entity.put(toPatch).go();
+        await testOperation('patch', entity.patch(toPatch).set({ name: 'update' }));
+
+        const toRemove = createItem();
+        await entity.put(toRemove).go();
+        await testOperation('remove', entity.remove(toRemove), false);
+    })
+});
