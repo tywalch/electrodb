@@ -449,7 +449,7 @@ class Entity {
 		let results = config._isCollectionQuery
 			? {}
 			: [];
-		let ExclusiveStartKey = this._formatExclusiveStartKey(config);
+		let ExclusiveStartKey = this._formatExclusiveStartKey(config, parameters.IndexName);
 		if (ExclusiveStartKey === null) {
 			ExclusiveStartKey = undefined;
 		}
@@ -695,10 +695,15 @@ class Entity {
 		return config.formatCursor.serialize(page) || null;
 	}
 
-	_formatExclusiveStartKey(config) {
+	_formatExclusiveStartKey(config, indexName = TableIndex) {
 		let exclusiveStartKey = config.cursor;
 		if (config.raw || config.pager === Pager.raw) {
 			return exclusiveStartKey || null;
+		} else if(config.pager === Pager.item) {
+			return {
+				...(indexName !== TableIndex ? this._constructPagerIndex(indexName, exclusiveStartKey) : undefined),
+				...this._constructPagerIndex(TableIndex, exclusiveStartKey)
+			}
 		}
 		return config.formatCursor.deserialize(exclusiveStartKey) || null;
 	}
