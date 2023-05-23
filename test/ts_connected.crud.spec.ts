@@ -1,7 +1,7 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import {CreateEntityItem, Entity, EntityItem, Service} from "../index";
+import { CreateEntityItem, Entity, EntityItem, QueryResponse } from "../index";
 import { expect } from "chai";
-import {v4 as uuid} from "uuid";
+import { v4 as uuid } from "uuid";
 import moment from "moment";
 import DynamoDB from "aws-sdk/clients/dynamodb";
 
@@ -4617,3 +4617,76 @@ describe('terminal methods', () => {
         await testOperation('remove', entity.remove(toRemove), false);
     })
 });
+
+describe('query limit', () => {
+    it('adding a limit should not cause dropped items when paginating', async () => {
+        const entity = new Entity({
+            model: {
+                version: '1',
+                entity: uuid(),
+                service: uuid(),
+            },
+            attributes: {
+                id: {
+                    type: 'string'
+                },
+                accountId: {
+                    type: 'string'
+                },
+                name: {
+                    type: 'string'
+                },
+                description: {
+                    type: 'string'
+                }
+            },
+            indexes: {
+                records: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['accountId']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['id']
+                    }
+                }
+            }
+        }, {
+            table,
+            client
+        });
+        const accountId = uuid();
+        const createItem = () => {
+            return {
+                accountId,
+                id: uuid(),
+                name: uuid(),
+                description: uuid(),
+            }
+        }
+        const limit = 10;
+        const itemCount = 100;
+
+        const items = new Array(itemCount).fill({}).map(createItem);
+        await entity.put(items).go();
+
+        let iterations = 0;
+        let cursor: string | null = null;
+        let results: EntityItem<typeof entity>[] = [];
+        do {
+            const response: QueryResponse<typeof entity> = await entity.query
+                .records({accountId})
+                .go({ cursor, limit });
+            results = results.concat(response.data);
+            cursor = response.cursor;
+            iterations++;
+        } while (cursor);
+
+        expect(
+            items.sort((a, z) => a.id.localeCompare(z.id))
+        ).to.deep.equal(
+            results.sort((a, z) => a.id.localeCompare(z.id))
+        );
+    });
+})
