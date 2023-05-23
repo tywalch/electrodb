@@ -474,15 +474,24 @@ class Entity {
 		}
 		let pages = this._normalizePagesValue(config.pages);
 		let max = this._normalizeLimitValue(config.limit);
+		let providedLimit = parameters.Limit;
+		delete parameters.Limit;
 		let iterations = 0;
 		let count = 0;
 		let hydratedUnprocessed = [];
 		const shouldHydrate = config.hydrate && method === MethodTypes.query;
 		do {
 			let limit = max === undefined
-				? parameters.Limit
+				? providedLimit
 				: max - count;
-			let response = await this._exec(method, { ExclusiveStartKey, ...parameters, Limit: limit }, config);
+			let response = await this._exec(method, { ExclusiveStartKey, ...parameters }, config);
+			response = this._maybeApplyArtificialLimit({
+				response,
+				limit,
+				indexName: parameters.IndexName
+			});
+			// console.log('RESPONSE', JSON.stringify({ response }, null, 4));
+
 			ExclusiveStartKey = response.LastEvaluatedKey;
 			response = this.formatResponse(response, parameters.IndexName, {
 				...config,
@@ -653,6 +662,36 @@ class Entity {
 				}
 			}
 		}
+	}
+
+	_maybeApplyArtificialLimit({response, limit, indexName = TableIndex}) {
+		let Items = [];
+		for (let i = 0; i < limit; i++) {
+			const item = response.Items[i];
+			Items.push(item);
+		}
+		let LastEvaluatedKey = response.LastEvaluatedKey;
+		if (Array.isArray(response.Items) && response.Items.length > limit) {
+			const itemAtLimit = Items[Items.length - 1];
+			const indexFields = this.model.translations.keys[indexName];
+			const tableIndexFields = this.model.translations.keys[TableIndex];
+			LastEvaluatedKey = {
+				[indexFields.pk]: itemAtLimit[indexFields.pk],
+				[tableIndexFields.pk]: itemAtLimit[tableIndexFields.pk],
+			}
+			if (indexFields.sk && itemAtLimit[indexFields.sk]) {
+				LastEvaluatedKey[indexFields.sk] = itemAtLimit[indexFields.sk]
+			}
+			if (tableIndexFields.sk && itemAtLimit[tableIndexFields.sk]) {
+				LastEvaluatedKey[tableIndexFields.sk] = itemAtLimit[tableIndexFields.sk]
+			}
+		}
+
+		return {
+			...response,
+			Items,
+			LastEvaluatedKey,
+		};
 	}
 
 	formatResponse(response, index, config = {}) {
