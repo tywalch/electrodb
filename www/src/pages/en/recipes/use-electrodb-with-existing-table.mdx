@@ -12,7 +12,7 @@ layout: ../../../layouts/MainLayout.astro
 
 When using ElectroDB with an existing table and/or data model, there are a few configurations you may need to make to your ElectroDB model. Read the sections below to see if any of the following cases fits your particular needs.
 
-Whenever using ElectroDB with existing tables/data, it is best to use the [Execution Option](/en/core-concepts/executing-queries) `ignoreOwnership`. ElectroDB leaves some meta-data on items to help ensure data queried and returned from DynamoDB does not leak between entities. Because your data was not made by ElectroDB, these checks could impede your ability to return data.
+Whenever using ElectroDB with existing tables/data, it is best to use the [Execution Option](/en/core-concepts/executing-queries#execution-options) `ignoreOwnership`. ElectroDB leaves some meta-data on items to help ensure data queried and returned from DynamoDB does not leak between entities. Because your data was not made by ElectroDB, these checks could impede your ability to return data.
 
 ```typescript
 // when building params
