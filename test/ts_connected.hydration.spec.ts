@@ -2323,17 +2323,101 @@ describe('query hydration', () => {
         });
     });
     // --------------------------- END NO IDENTIFIERS --------------------------- //
-    /*
-        should hydrate keys only query index
-        should hydrate keys only clustered index
-        should hydrate normal query index without failure
-        should hydrate collection query
-        should hydrate clustered collection query
-        should weed out items that do not belong to entity
-        should hydrate table index query without failure
 
-        variations:
-          a: custom keys
-          b: no identifiers
-    */
+    it('should return keys for a given query without error', async () => {
+        const entity = new Entity({
+            model: {
+                entity: uuid(),
+                version: '1',
+                service: uuid(),
+            },
+            attributes: {
+                organizationId: {
+                    type: 'string'
+                },
+                accountId: {
+                    type: 'string'
+                },
+                name: {
+                    type: 'string'
+                },
+                description: {
+                    type: 'string'
+                },
+                city: {
+                    type: 'string'
+                },
+                county: {
+                    type: 'string'
+                },
+                state: {
+                    type: 'string'
+                }
+            },
+            indexes: {
+                account: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['organizationId']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['accountId']
+                    }
+                },
+                location: {
+                    index: 'gsi1pk-gsi1sk-index',
+                    pk: {
+                        field: 'gsi1pk',
+                        composite: ['name'],
+                    },
+                    sk: {
+                        field: 'gsi1sk',
+                        composite: ['state', 'county', 'city'],
+                    }
+                }
+            }
+        }, { table, client });
+
+        const name = uuid();
+        const organizationId = uuid();
+        const items = createItems(10, () => {
+            return {
+                name,
+                organizationId,
+                state: uuid(),
+                county: uuid(),
+                city: uuid(),
+                accountId: uuid(),
+                description: uuid(),
+            }
+        });
+
+        const keys = items
+            .map(item => entity.put(item).params())
+            .map((params: any) => {
+                expect(typeof params.Item.pk).to.equal('string');
+                expect(typeof params.Item.sk).to.equal('string');
+                expect(typeof params.Item.gsi1pk).to.equal('string');
+                expect(typeof params.Item.gsi1sk).to.equal('string');
+                return {
+                    pk: params.Item.pk,
+                    sk: params.Item.sk,
+                    gsi1pk: params.Item.gsi1pk,
+                    gsi1sk: params.Item.gsi1sk,
+                }
+            });
+
+        await entity.put(items).go();
+
+        const { data } = await entity.query
+            .location({name})
+            .go({ ignoreOwnership: true, data: 'includeKeys' });
+
+        expect(
+            data.sort((a: any, z: any) => a.gsi1sk.localeCompare(z.gsi1sk))
+        ).to.deep.equal(
+            keys.sort((a, z) => a.gsi1sk.localeCompare(z.gsi1sk))
+        );
+    })
 });

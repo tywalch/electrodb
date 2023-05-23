@@ -305,18 +305,25 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Adds the new filter expression methods: `size()`, `type()` and `escape`. Addresses Issue#208 [[read more]](https://electrodb.dev/en/queries/filters/#operations)
 - Adds the `createSchema()` function for helping create and type ElectroDB schemas without instantiating an Entity. Addresses Issue#167. [[read more]](https://electrodb.dev/en/reference/typscript/#createSchema)
 
-## [2.4.1] - 2022-01-20
+## [2.4.1] - 2023-01-20
 ### Fixed
 - Recently added `createSchema()` function would validate but not return the schema object provided
 
-## [2.4.2] - 2022-03-03
+## [2.4.2] - 2023-03-03
 ### Fixed
 - Restores `ignoreOwnership` execution option. Addresses [issue #194](https://github.com/tywalch/electrodb/issues/194) which calls out regression with `ignoreOwnership`. This flag is now appropriately applied to "query", "get", and "scan" operations.
 
-## [2.5.0] - 2022-03-19
+## [2.5.0] - 2023-03-19
 ### Added
 - Adds transaction functionality: `get` and `write` transactions are now supported in ElectroDB via [transact write](https://electrodb.dev/en/mutations/transact-write) and [transact get](https://electrodb.dev/en/queries/transact-get) methods.
 
-## [2.5.1] - 2022-03-22
+## [2.5.1] - 2023-03-22
 ### Fixed 
-- The previous version exported typings directly from the AWS dynamodb client package which, because it was so large, caused the playground to take a massive performance hit. Instead, the library now expose a simplistic version of those types instead. 
+- The previous version exported typings directly from the AWS dynamodb client package which, because it was so large, caused the playground to take a massive performance hit. Instead, the library now expose a simplistic version of those types instead.
+
+## [2.6.0] - 2023-05-22
+### Added
+- Adds new query execution option `hydrate`. When a GSI uses a `KEYS_ONLY` projection, the `hydrate` option will perform the query and then a subsequent `batchGet` to "hydrate" the results.
+
+### Fixed
+- A common issue amongst new users, was unexpected errors when using a terminal method twice on a query chain. This would often come up when a user called `.params()` to log out parameters and then call `.go()` on the same chain. The fix was to prevent duplicative side effects from occurring on each subsequent terminal method call.     
