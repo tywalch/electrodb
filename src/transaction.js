@@ -119,29 +119,43 @@ function createTransaction(options) {
                 ...options,
                 parse: (options, data) => {
                     if (options.raw) {
-                        return data;
+                        return {
+                            data
+                        };
                     } else if (data.canceled) {
                         canceled = true;
-                        return cleanseCanceledData(TableIndex, getEntities(), data, {
+                        const cleansed = cleanseCanceledData(TableIndex, getEntities(), data, {
                             ...options,
                             _isTransaction: true,
                             _paramItems: paramItems,
                         });
+
+                        return {
+                            data: cleansed,
+                        }
                     } else if (data.Responses) {
-                        return cleanseTransactionData(TableIndex, getEntities(), {
+                        const cleansed = cleanseTransactionData(TableIndex, getEntities(), {
                             Items: data.Responses.map(response => response.Item)
                         }, {
                             ...options,
                             _isTransaction: true,
                             _paramItems: paramItems,
                         });
+
+                        return {
+                            data: cleansed,
+                        }
                     } else {
-                        return new Array(paramItems ? paramItems.length : 0).fill({
+                        const items = new Array(paramItems ? paramItems.length : 0).fill({
                             item: null,
                             code: 'None',
                             rejected: false,
                             message: undefined,
                         });
+
+                        return {
+                            data: items,
+                        }
                     }
                 }
             });

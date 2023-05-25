@@ -1,9 +1,8 @@
 const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
-const { Entity, clauses } = require("../src/entity");
+const { Entity } = require("../src/entity");
 const { Service } = require("../src/service");
 const { expect } = require("chai");
-const moment = require("moment");
 const uuid = require("uuid").v4;
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const table = "electro";
@@ -862,10 +861,11 @@ describe("Entities with custom identifiers and versions", () => {
 		let collectionA = await service.collections
 			.collectionA({prop1})
 			.where(({prop2}, {eq}) => eq(prop2, "prop2Value"))
-			.go({raw: true})
+			.go({ raw: true })
 			.then(res => res.data)
-			.then((data) => ({success: true, data}))
-			.catch(err => ({success: false, err}));
+			.then((data) => ({ success: true, data }))
+			.catch(err => ({ success: false, err }));
+
 		expect(collectionA.success).to.be.true;
 		expect(collectionA.data).to.be.deep.equal({
 			"Items": [

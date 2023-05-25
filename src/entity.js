@@ -382,9 +382,7 @@ class Entity {
 				let response = await this._exec(MethodTypes.batchWrite, params, config);
 				if (validations.isFunction(config.parse)) {
 					let parsed = config.parse(config, response);
-					if (parsed) {
-						results.push(parsed);
-					}
+					results.push(parsed.data);
 				} else {
 					let {unprocessed} = this.formatBulkWriteResponse(response, config);
 					for (let u of unprocessed) {
@@ -432,7 +430,8 @@ class Entity {
 			await Promise.all(operation.map(async params => {
 				let response = await this._exec(MethodTypes.batchGet, params, config);
 				if (validations.isFunction(config.parse)) {
-					resultsAll.push(config.parse(config, response));
+					const parsed = config.parse(config, response);
+					resultsAll.push(parsed.data);
 				} else {
 					this.applyBulkGetResponseFormatting({
 						orderMaintainer,
@@ -473,22 +472,40 @@ class Entity {
 			ExclusiveStartKey = undefined;
 		}
 		let pages = this._normalizePagesValue(config.pages);
-		let max = this._normalizeLimitValue(config.limit);
+		let configLimit = this._normalizeNumberOptionsValue('limit', config.limit);
+		let configCount = this._normalizeNumberOptionsValue('count', config.count);
+		let max = this._safeMinimum(configLimit, configCount);
 		let iterations = 0;
 		let count = 0;
 		let hydratedUnprocessed = [];
 		const shouldHydrate = config.hydrate && method === MethodTypes.query;
 		do {
-			let limit = max === undefined
-				? parameters.Limit
-				: max - count;
-			let response = await this._exec(method, { ExclusiveStartKey, ...parameters, Limit: limit }, config);
-			ExclusiveStartKey = response.LastEvaluatedKey;
+			let remainingCount = configCount !== undefined
+				? max - count
+				: undefined;
+
+			let limit = configLimit !== undefined
+				? max - count
+				: undefined;
+
+			let params = { ExclusiveStartKey, ...parameters };
+
+			if (config.raw || (limit !== undefined && remainingCount === undefined)) {
+				params.Limit = limit;
+			}
+
+			let response = await this._exec(method, params, config);
+
 			response = this.formatResponse(response, parameters.IndexName, {
 				...config,
+				count: remainingCount,
 				includeKeys: shouldHydrate || config.includeKeys,
 				ignoreOwnership: shouldHydrate || config.ignoreOwnership,
+				_returnLastEvaluatedKeyRaw: true,
 			});
+
+			ExclusiveStartKey = response.lastEvaluatedKey;
+			delete response.lastEvaluatedKey;
 
 			if (config.raw) {
 				return response;
@@ -655,15 +672,35 @@ class Entity {
 		}
 	}
 
+	_getLastEvaluatedKeyFromItem({indexName = TableIndex, item}) {
+		const indexFields = this.model.translations.keys[indexName];
+		const tableIndexFields = this.model.translations.keys[TableIndex];
+		const lastEvaluatedKey = {
+			[indexFields.pk]: item[indexFields.pk],
+			[tableIndexFields.pk]: item[tableIndexFields.pk],
+		}
+		if (indexFields.sk && item[indexFields.sk]) {
+			lastEvaluatedKey[indexFields.sk] = item[indexFields.sk]
+		}
+		if (tableIndexFields.sk && item[tableIndexFields.sk]) {
+			lastEvaluatedKey[tableIndexFields.sk] = item[tableIndexFields.sk]
+		}
+
+		return lastEvaluatedKey;
+	}
+
 	formatResponse(response, index, config = {}) {
 		let stackTrace;
 		if (!config.originalErr) {
 			stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
 		}
+		let lastEvaluatedKey = response.LastEvaluatedKey;
 		try {
 			let results = {};
 			if (validations.isFunction(config.parse)) {
-				results = config.parse(config, response);
+				const parsed = config.parse(config, response);
+				results = parsed.data;
+				lastEvaluatedKey = parsed.lastEvaluatedKey;
 			} else if (config.raw && !config._isPagination) {
 				if (response.TableName) {
 					results = {};
@@ -683,12 +720,27 @@ class Entity {
 						results = null;
 					}
 				} else if (response.Items) {
+					let size = typeof config.count === 'number' ? config.count : response.Items.length;
+					let count = 0;
+					let lastItem;
 					results = [];
-					for (let item of response.Items) {
+					for (let i = 0; i < response.Items.length; i++) {
+						const item = { ...response.Items[i] };
 						if (config.ignoreOwnership || this.ownsItem(item)) {
 							let record = this.model.schema.formatItemForRetrieval(item, config);
 							if (Object.keys(record).length > 0) {
+								count = count + 1;
+								if (count > size) {
+									if (lastItem) {
+										lastEvaluatedKey = this._getLastEvaluatedKeyFromItem({
+											indexName: index,
+											item: lastItem,
+										});
+									}
+									break;
+								}
 								results.push(record);
+								lastItem = response.Items[i];
 							}
 						}
 					}
@@ -704,8 +756,11 @@ class Entity {
 				}
 			}
 
-			if (config._isPagination || response.LastEvaluatedKey) {
-				const nextPage = this._formatReturnPager(config, response.LastEvaluatedKey);
+			if (config._isPagination || lastEvaluatedKey) {
+				const nextPage = this._formatReturnPager(config, lastEvaluatedKey);
+				if (config._returnLastEvaluatedKeyRaw) {
+					return { cursor: nextPage || null, data: results, lastEvaluatedKey };
+				}
 				return { cursor: nextPage || null, data: results };
 			}
 
@@ -818,14 +873,29 @@ class Entity {
 		return value;
 	}
 
-	_normalizeLimitValue(value) {
+	_normalizeNumberOptionsValue(option, value) {
 		if (value !== undefined) {
 			value = parseInt(value);
 			if (isNaN(value) || value < 1) {
-				throw new e.ElectroError(e.ErrorCodes.InvalidLimitOption, "Query option 'limit' must be of type 'number' and greater than zero.");
+				throw new e.ElectroError(e.ErrorCodes.InvalidLimitOption, `Query option '${option}' must be of type 'number' and greater than zero.`);
 			}
 		}
 		return value;
+	}
+
+	_safeMinimum(...values) {
+		let eligibleNumbers = [];
+		for (let value of values) {
+			if (typeof value === 'number') {
+				eligibleNumbers.push(value);
+			}
+		}
+
+		if (eligibleNumbers.length) {
+			return Math.min(...eligibleNumbers);
+		}
+
+		return undefined;
 	}
 
 	_createKeyDeconstructor(prefixes = {}, labels = [], attributes = {}) {
@@ -881,65 +951,6 @@ class Entity {
 			return results;
 		}
 	}
-
-	// _deconstructKeys(index, keyType, key, backupFacets = {}) {
-	// 	if (typeof key !== "string" || key.length === 0) {
-	// 		return null;
-	// 	}
-	//
-	// 	let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
-	// 	let {prefix, isCustom} = this.model.prefixes[index][keyType];
-	// 	let {facets} = this.model.indexes[accessPattern][keyType];
-	// 	let names = [];
-	// 	let types = [];
-	// 	let pattern = `^${this._regexpEscape(prefix)}`;
-	// 	let labels = this.model.facets.labels[index][keyType] || [];
-	// 	for (let {name, label} of labels) {
-	// 		let attr = this.model.schema.attributes[name];
-	// 		if (attr) {
-	// 			if (isCustom) {
-	// 				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
-	// 			} else {
-	// 				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
-	// 			}
-	// 			names.push(name);
-	// 			types.push(attr.type);
-	// 		}
-	// 	}
-	// 	pattern += "$";
-	// 	let regex = new RegExp(pattern, "i");
-	// 	let match = key.match(regex);
-	// 	let results = {};
-	// 	if (match) {
-	// 		for (let i = 0; i < names.length; i++) {
-	// 			let key = names[i];
-	// 			let value = match[i+1];
-	// 			let type = types[i];
-	// 			switch (type) {
-	// 				case "number":
-	// 					value = parseFloat(value);
-	// 					break;
-	// 				case "boolean":
-	// 					value = value === "true";
-	// 					break;
-	// 			}
-	// 			results[key] = value;
-	// 		}
-	// 	} else {
-	// 		if (Object.keys(backupFacets || {}).length === 0) {
-	// 			// this can occur when a scan is performed but returns no results given the current filters or record timing
-	// 			return {};
-	// 		}
-	// 		for (let facet of facets) {
-	// 			if (backupFacets[facet] === undefined) {
-	// 				throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, 'LastEvaluatedKey contains entity that does not match the entity used to query. Use {pager: "raw"} query option.');
-	// 			} else {
-	// 				results[facet] = backupFacets[facet];
-	// 			}
-	// 		}
-	// 	}
-	// 	return results;
-	// }
 
 	_deconstructIndex({index = TableIndex, keys = {}} = {}) {
 		const hasIndex = !!this.model.translations.keys[index];
@@ -1157,6 +1168,10 @@ class Entity {
 			if (option.limit !== undefined) {
 				config.limit = option.limit;
 				config.params.Limit = option.limit;
+			}
+
+			if (typeof option.count === 'number') {
+				config.count = option.count;
 			}
 
 			if (validations.isStringHasLength(option.table)) {
@@ -1664,8 +1679,6 @@ class Entity {
 		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
 		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
 		const keyNames = Object.keys(indexKey);
-		// update.set(this.identifiers.entity, this.getName());
-		// update.set(this.identifiers.version, this.getVersion());
 		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
 			const value = u.getFirstDefined(upsertAttributes[field], updatedKeys[field]);
 			if (!keyNames.includes(field)) {

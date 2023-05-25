@@ -325,5 +325,9 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Added
 - Adds new query execution option `hydrate`. When a GSI uses a `KEYS_ONLY` projection, the `hydrate` option will perform the query and then a subsequent `batchGet` to "hydrate" the results.
 
+### Changed
+- The execution option `limit` is now better optimized for cases where filters might result in index "misses". The `limit` option used to use the `Limit` parameter, but this could result in requiring more requests when user applied filters caused no items from being returned in a single request.   
+
 ### Fixed
-- A common issue amongst new users, was unexpected errors when using a terminal method twice on a query chain. This would often come up when a user called `.params()` to log out parameters and then call `.go()` on the same chain. The fix was to prevent duplicative side effects from occurring on each subsequent terminal method call.     
+- A common issue amongst new users, was unexpected errors when using a terminal method twice on a query chain. This would often come up when a user called `.params()` to log out parameters and then call `.go()` on the same chain. The fix was to prevent duplicative side effects from occurring on each subsequent terminal method call. Addresses gh issue #239.
+

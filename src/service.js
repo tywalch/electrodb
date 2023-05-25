@@ -305,19 +305,26 @@ class Service {
 
 	cleanseRetrievedData(index = TableIndex, entities, data = {}, config = {}) {
 		if (config.raw) {
-			return data;
+			if (config._returnLastEvaluatedKeyRaw) {
+				return {data, lastEvaluatedKey: data.LastEvaluatedKey};
+			} else {
+				return { data };
+			}
 		}
 		const identifiers = getEntityIdentifiers(entities);
 
 		data.Items = data.Items || [];
 
 		const results = {};
+		let size = typeof config.count === 'number' ? config.count : data.Items.length;
+		let count = 0;
+		let lastEvaluatedKey = data.LastEvaluatedKey;
 		for (let {alias} of identifiers) {
 			results[alias] = [];
 		}
 
 		for (let i = 0; i < data.Items.length; i++) {
-			const record = data.Items[i];
+			const record = { ...data.Items[i] };
 
 			if (!record) {
 				continue;
@@ -333,7 +340,7 @@ class Service {
 			let formatted;
 			if (config.hydrate) {
 				formatted = {
-					data: record // entities[entityAlias]._formatKeysToItem(index, record),
+					data: record
 				};
 			} else {
 				formatted = entities[entityAlias].formatResponse({Item: record}, index, {
@@ -343,9 +350,29 @@ class Service {
 				});
 			}
 
-			results[entityAlias].push(formatted.data);
+			if (formatted.data) {
+				count = count + 1;
+				if (count > size) {
+					lastEvaluatedKey = entities[entityAlias]._getLastEvaluatedKeyFromItem({
+						indexName: index,
+						item: data.Items[i - 1],
+					});
+					break;
+				}
+				results[entityAlias].push(formatted.data);
+			}
 		}
-		return results;
+
+		if (config._returnLastEvaluatedKeyRaw) {
+			return {
+				data: results,
+				lastEvaluatedKey
+			};
+		} else {
+			return {
+				data: results,
+			}
+		}
 	}
 
 	findKeyOwner(lastEvaluatedKey) {
@@ -409,7 +436,7 @@ class Service {
 			// expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
 			parse: (options, data) => {
 				if (options.raw) {
-					return data;
+					return { data };
 				}
 				return this.cleanseRetrievedData(index, entities, data, options);
 			},

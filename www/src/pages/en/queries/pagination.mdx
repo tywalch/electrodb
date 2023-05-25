@@ -22,7 +22,11 @@ All ElectroDB `query` and `scan` operations return a `cursor`, which is a string
 
 The terminal method `go()` accepts a `cursor` when executing a `query` or `scan` to continue paginating for more results. Pass the cursor from the previous query to your next query and ElectroDB will continue its pagination where it left off.
 
-> To limit the number of items ElectroDB will retrieve, read more about the [Query Options](/en/core-concepts/execution-queries) `pages` and `limit`.
+> To limit the number of items ElectroDB will retrieve, read more about the [Execution Options](/en/core-concepts/execution-queries) `pages` and `limit`.
+
+## Limit
+
+The execution option `limit` allows you to specify a number of items you'd like to receive. If the number of items returned in a single request to DynamoDB is above the `limit` provided, ElectroDB will paginate until the limit is reached. When using `limit` with `.params()` the DynamoDB `Limit` parameter will be applied.
 
 ### Entities
 

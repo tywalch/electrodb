@@ -4618,8 +4618,8 @@ describe('terminal methods', () => {
     })
 });
 
-describe('query limit', () => {
-    it('adding a limit should not cause dropped items when paginating', async () => {
+describe('query size', () => {
+    it('adding a size should not cause dropped items when paginating', async () => {
         const entity = new Entity({
             model: {
                 version: '1',
@@ -4665,19 +4665,20 @@ describe('query limit', () => {
                 description: uuid(),
             }
         }
-        const limit = 10;
+        const count = 10;
         const itemCount = 100;
+        const items = new Array(itemCount)
+            .fill({})
+            .map(createItem);
 
-        const items = new Array(itemCount).fill({}).map(createItem);
         await entity.put(items).go();
-
         let iterations = 0;
         let cursor: string | null = null;
         let results: EntityItem<typeof entity>[] = [];
         do {
             const response: QueryResponse<typeof entity> = await entity.query
                 .records({accountId})
-                .go({ cursor, limit });
+                .go({ cursor, count });
             results = results.concat(response.data);
             cursor = response.cursor;
             iterations++;
