@@ -990,6 +990,25 @@ interface GoBatchGetTerminalOptions<Attributes> {
     logger?: ElectroEventListener;
 }
 
+interface ServiceQueryGoTerminalOptions {
+    cursor?: string | null,
+    data?: 'raw' | 'includeKeys' | 'attributes';
+    /** @depricated use 'data=raw' instead */
+    raw?: boolean;
+    /** @depricated use 'data=raw' instead */
+    includeKeys?: boolean;
+    table?: string;
+    limit?: number;
+    params?: object;
+    originalErr?: boolean;
+    ignoreOwnership?: boolean;
+    pages?: number | 'all';
+    listeners?: Array<ElectroEventListener>;
+    logger?: ElectroEventListener;
+    order?: 'asc' | 'desc';
+    hydrate?: boolean;
+}
+
 interface GoQueryTerminalOptions<Attributes> {
     cursor?: string | null,
     data?: 'raw' | 'includeKeys' | 'attributes';
@@ -1007,6 +1026,7 @@ interface GoQueryTerminalOptions<Attributes> {
     listeners?: Array<ElectroEventListener>;
     logger?: ElectroEventListener;
     order?: 'asc' | 'desc';
+    hydrate?: boolean;
 }
 
 interface TransactWriteQueryOptions {
@@ -1123,7 +1143,7 @@ export type EntityParseMultipleItems<A extends string, F extends string, C exten
 
 export type ParamTerminal<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseItem> = <P extends any = any, Options extends ParamTerminalOptions<keyof ResponseItem> = ParamTerminalOptions<keyof ResponseItem>>(options?: Options) => P;
 
-export type ServiceQueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
+export type ServiceQueryRecordsGo<ResponseType, Options = ServiceQueryGoTerminalOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
 export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
@@ -1660,6 +1680,7 @@ export interface Schema<A extends string, F extends string, C extends string> {
     };
     readonly indexes: {
         [accessPattern: string]: {
+            readonly project?: 'keys_only';
             readonly index?: string;
             readonly type?: 'clustered' | 'isolated';
             readonly collection?: AccessPatternCollection<C>;

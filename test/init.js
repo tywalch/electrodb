@@ -8,6 +8,7 @@ const noStringKeys = require("./definitions/nostringkeys.json");
 const keyNamesAttributeNames = require("./definitions/keynamesattributenames.json");
 const leadingUnderscoreKeys = require('./definitions/leadingunderscorekeys.json');
 const localSecondaryIndexes = require('./definitions/localsecondaryindexes.json');
+const keysOnly = require('./definitions/keysonly.json');
 
 const configuration = {
   endpoint: process.env.LOCAL_DYNAMO_ENDPOINT || "http://localhost:8000",
@@ -50,10 +51,17 @@ async function createTable(table, definition) {
   }
 }
 
-createTable("electro", definition);
-createTable("electro_customkeys", customKeys);
-createTable("electro_nosort", noSortKeys);
-createTable("electro_nostringkeys", noStringKeys);
-createTable("electro_keynamesattributenames", keyNamesAttributeNames);
-createTable("electro_leadingunderscorekeys", leadingUnderscoreKeys);
-createTable("electro_localsecondaryindex", localSecondaryIndexes);
+async function main() {
+  await Promise.all([
+   createTable("electro", definition),
+   createTable("electro_customkeys", customKeys),
+   createTable("electro_nosort", noSortKeys),
+   createTable("electro_nostringkeys", noStringKeys),
+   createTable("electro_keynamesattributenames", keyNamesAttributeNames),
+   createTable("electro_leadingunderscorekeys", leadingUnderscoreKeys),
+   createTable("electro_localsecondaryindex", localSecondaryIndexes),
+   createTable("electro_keysonly", keysOnly),
+  ]);
+}
+
+main().catch(console.log);

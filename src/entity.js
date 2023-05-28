@@ -35,7 +35,6 @@ const validations = require("./validations");
 const c = require('./client');
 const u = require("./util");
 const e = require("./errors");
-const { validate } = require("jsonschema");
 const v = require('./validations');
 
 class Entity {
@@ -105,24 +104,27 @@ class Entity {
 			this.getVersion() === item[this.identifiers.version] &&
 			validations.isStringHasLength(item[this.identifiers.entity]) &&
 			validations.isStringHasLength(item[this.identifiers.version])
-		)
+		) || !!this.ownsKeys(item)
 	}
 
-	ownsLastEvaluatedKey(key = {}) {
+	ownsKeys(key = {}) {
 		let {pk, sk} = this.model.prefixes[TableIndex];
 		let hasSK = this.model.lookup.indexHasSortKeys[TableIndex];
 		let pkMatch = typeof key[pk.field] === "string" && key[pk.field].startsWith(pk.prefix);
+		let skMatch = pkMatch && !hasSK;
 		if (pkMatch && hasSK) {
-			return typeof key[sk.field] === "string" && key[sk.field].startsWith(sk.prefix);
+			skMatch = typeof key[sk.field] === "string" && key[sk.field].startsWith(sk.prefix);
 		}
-		return pkMatch;
+
+		return (pkMatch && skMatch &&
+			this._formatKeysToItem(TableIndex, key) !== null);
 	}
 
 	ownsCursor(cursor) {
 		if (typeof cursor === 'string') {
 			cursor = u.cursorFormatter.deserialize(cursor);
 		}
-		return this.ownsLastEvaluatedKey(cursor);
+		return this.ownsKeys(cursor);
 	}
 
 	serializeCursor(key) {
@@ -445,6 +447,23 @@ class Entity {
 		return { data: resultsAll, unprocessed: unprocessedAll };
 	}
 
+	async hydrate(index, keys = [], config) {
+		const items = keys
+			.map(key => this._formatKeysToItem(index, key))
+			.filter(item => item !== null);
+
+		const results = await this.get(items).go({
+			...config,
+			hydrate: false,
+			parse: undefined,
+			hydrator: undefined,
+			_isCollectionQuery: false,
+			preserveBatchOrder: true,
+			ignoreOwnership: config._providedIgnoreOwnership,
+		});
+		return results;
+	}
+
 	async executeQuery(method, parameters, config = {}) {
 		let results = config._isCollectionQuery
 			? {}
@@ -457,13 +476,20 @@ class Entity {
 		let max = this._normalizeLimitValue(config.limit);
 		let iterations = 0;
 		let count = 0;
+		let hydratedUnprocessed = [];
+		const shouldHydrate = config.hydrate && method === MethodTypes.query;
 		do {
 			let limit = max === undefined
 				? parameters.Limit
 				: max - count;
-			let response = await this._exec(method, {ExclusiveStartKey, ...parameters, Limit: limit}, config);
+			let response = await this._exec(method, { ExclusiveStartKey, ...parameters, Limit: limit }, config);
 			ExclusiveStartKey = response.LastEvaluatedKey;
-			response = this.formatResponse(response, parameters.IndexName, config);
+			response = this.formatResponse(response, parameters.IndexName, {
+				...config,
+				includeKeys: shouldHydrate || config.includeKeys,
+				ignoreOwnership: shouldHydrate || config.ignoreOwnership,
+			});
+
 			if (config.raw) {
 				return response;
 			} else if (config._isCollectionQuery) {
@@ -471,14 +497,26 @@ class Entity {
 					if (max) {
 						count += response.data[entity].length;
 					}
+					let items = response.data[entity];
+					if (shouldHydrate && items.length) {
+						const hydrated = await config.hydrator(entity, parameters.IndexName, items, config);
+						items = hydrated.data;
+						hydratedUnprocessed = hydratedUnprocessed.concat(hydrated.unprocessed);
+					}
 					results[entity] = results[entity] || [];
-					results[entity] = [...results[entity], ...response.data[entity]];
+					results[entity] = [...results[entity], ...items];
 				}
 			} else if (Array.isArray(response.data)) {
 				if (max) {
 					count += response.data.length;
 				}
-				results = [...results, ...response.data];
+				let items = response.data;
+				if (shouldHydrate) {
+					const hydrated = await this.hydrate(parameters.IndexName, items, config);
+					items = hydrated.data;
+					hydratedUnprocessed = hydratedUnprocessed.concat(hydrated.unprocessed);
+				}
+				results = [...results, ...items];
 			} else {
 				return response;
 			}
@@ -490,6 +528,14 @@ class Entity {
 		);
 
 		const cursor = this._formatReturnPager(config, ExclusiveStartKey);
+
+		if (shouldHydrate) {
+			return {
+				cursor,
+				data: results,
+				unprocessed: hydratedUnprocessed,
+			};
+		}
 		return { data: results, cursor };
 	}
 
@@ -782,20 +828,13 @@ class Entity {
 		return value;
 	}
 
-	_deconstructKeys(index, keyType, key, backupFacets = {}) {
-		if (typeof key !== "string" || key.length === 0) {
-			return null;
-		}
-		
-		let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
-		let {prefix, isCustom} = this.model.prefixes[index][keyType];
-		let {facets} = this.model.indexes[accessPattern][keyType];
+	_createKeyDeconstructor(prefixes = {}, labels = [], attributes = {}) {
+		let {prefix, isCustom, postfix} = prefixes;
 		let names = [];
 		let types = [];
-		let pattern = `^${this._regexpEscape(prefix)}`;
-		let labels = this.model.facets.labels[index][keyType] || [];
+		let pattern = `^${this._regexpEscape(prefix || '')}`;
 		for (let {name, label} of labels) {
-			let attr = this.model.schema.attributes[name];
+			let attr = attributes[name];
 			if (attr) {
 				if (isCustom) {
 					pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
@@ -806,74 +845,162 @@ class Entity {
 				types.push(attr.type);
 			}
 		}
-		pattern += "$";
-		let regex = RegExp(pattern);
-		let match = key.match(regex);
-		let results = {};
-		if (match) {
-			for (let i = 0; i < names.length; i++) {
-				let key = names[i];
-				let value = match[i+1];
-				let type = types[i];
-				switch (type) {
-					case "number":
-						value = parseFloat(value);
-						break;
-					case "boolean":
-						value = value === "true";
-						break;
-				}
-				results[key] = value;
-			}
-		} else {
-			if (Object.keys(backupFacets || {}).length === 0) {
-				// this can occur when a scan is performed but returns no results given the current filters or record timing
-				return {};
-			}
-			for (let facet of facets) {
-				if (backupFacets[facet] === undefined) {
-					throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, 'LastEvaluatedKey contains entity that does not match the entity used to query. Use {pager: "raw"} query option.');
-				} else {
-					results[facet] = backupFacets[facet];
-				}
-			}
+		if (typeof postfix === 'string') {
+			pattern += this._regexpEscape(postfix);
 		}
-		return results;
+		pattern += "$";
+
+		let regex = new RegExp(pattern, "i");
+
+		return ({ key } = {}) => {
+			if (!['string', 'number'].includes(typeof key)) {
+				return null;
+			}
+			key = `${key}`;
+			let match = key.match(regex);
+			let results = {};
+			if (match) {
+				for (let i = 0; i < names.length; i++) {
+					let key = names[i];
+					let value = match[i + 1];
+					let type = types[i];
+					switch (type) {
+						case "number":
+							value = parseFloat(value);
+							break;
+						case "boolean":
+							value = value === "true";
+							break;
+					}
+					results[key] = value;
+				}
+			} else {
+				results = null;
+			}
+
+			return results;
+		}
 	}
 
+	// _deconstructKeys(index, keyType, key, backupFacets = {}) {
+	// 	if (typeof key !== "string" || key.length === 0) {
+	// 		return null;
+	// 	}
+	//
+	// 	let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+	// 	let {prefix, isCustom} = this.model.prefixes[index][keyType];
+	// 	let {facets} = this.model.indexes[accessPattern][keyType];
+	// 	let names = [];
+	// 	let types = [];
+	// 	let pattern = `^${this._regexpEscape(prefix)}`;
+	// 	let labels = this.model.facets.labels[index][keyType] || [];
+	// 	for (let {name, label} of labels) {
+	// 		let attr = this.model.schema.attributes[name];
+	// 		if (attr) {
+	// 			if (isCustom) {
+	// 				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
+	// 			} else {
+	// 				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
+	// 			}
+	// 			names.push(name);
+	// 			types.push(attr.type);
+	// 		}
+	// 	}
+	// 	pattern += "$";
+	// 	let regex = new RegExp(pattern, "i");
+	// 	let match = key.match(regex);
+	// 	let results = {};
+	// 	if (match) {
+	// 		for (let i = 0; i < names.length; i++) {
+	// 			let key = names[i];
+	// 			let value = match[i+1];
+	// 			let type = types[i];
+	// 			switch (type) {
+	// 				case "number":
+	// 					value = parseFloat(value);
+	// 					break;
+	// 				case "boolean":
+	// 					value = value === "true";
+	// 					break;
+	// 			}
+	// 			results[key] = value;
+	// 		}
+	// 	} else {
+	// 		if (Object.keys(backupFacets || {}).length === 0) {
+	// 			// this can occur when a scan is performed but returns no results given the current filters or record timing
+	// 			return {};
+	// 		}
+	// 		for (let facet of facets) {
+	// 			if (backupFacets[facet] === undefined) {
+	// 				throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, 'LastEvaluatedKey contains entity that does not match the entity used to query. Use {pager: "raw"} query option.');
+	// 			} else {
+	// 				results[facet] = backupFacets[facet];
+	// 			}
+	// 		}
+	// 	}
+	// 	return results;
+	// }
 
-
-	_deconstructIndex(index = TableIndex, lastEvaluated, lastReturned) {
+	_deconstructIndex({index = TableIndex, keys = {}} = {}) {
+		const hasIndex = !!this.model.translations.keys[index];
+		if (!hasIndex) {
+			return null;
+		}
 		let pkName = this.model.translations.keys[index].pk;
 		let skName = this.model.translations.keys[index].sk;
-		let pkFacets = this._deconstructKeys(index, KeyTypes.pk, lastEvaluated[pkName], lastReturned);
-		let skFacets = this._deconstructKeys(index, KeyTypes.sk, lastEvaluated[skName], lastReturned);
-		let facets = {...pkFacets};
-		if (skFacets && Object.keys(skFacets).length) {
-			facets = {...skFacets, ...pkFacets};
+		const indexHasSortKey = this.model.lookup.indexHasSortKeys[index];
+		const deconstructors = this.model.keys.deconstructors[index];
+		const pk = keys[pkName];
+		if (pk === undefined) {
+			return null;
 		}
-		return facets;
+		const pkComposites = deconstructors.pk({key: pk});
+		if (pkComposites === null) {
+			return null;
+		}
+		let skComposites = {};
+		if (indexHasSortKey) {
+			const sk = keys[skName];
+			if (!sk) {
+				return null;
+			}
+			skComposites = deconstructors.sk({key: sk});
+			if (skComposites === null) {
+				return null;
+			}
+		}
+		return {
+			...pkComposites,
+			...skComposites,
+		}
 	}
 
-	_formatKeysToItem(index = TableIndex, lastEvaluated, lastReturned) {
-		if (lastEvaluated === null || typeof lastEvaluated !== "object" || Object.keys(lastEvaluated).length === 0) {
-			return lastEvaluated;
+	_formatKeysToItem(index = TableIndex, keys) {
+		if (keys === null || typeof keys !== "object" || Object.keys(keys).length === 0) {
+			return keys;
 		}
 		let tableIndex = TableIndex;
-		let pager = this._deconstructIndex(index, lastEvaluated, lastReturned);
+		let indexParts = this._deconstructIndex({index, keys});
+		if (indexParts === null) {
+			return null;
+		}
 		// lastEvaluatedKeys from query calls include the index pk/sk as well as the table index's pk/sk
 		if (index !== tableIndex) {
-			pager = {...pager, ...this._deconstructIndex(tableIndex, lastEvaluated, lastReturned)};
+			const tableIndexParts = this._deconstructIndex({index: tableIndex, keys});
+			if (tableIndexParts === null) {
+				return null;
+			}
+			indexParts = { ...indexParts, ...tableIndexParts };
 		}
-		let pagerIsEmpty = Object.keys(pager).length === 0;
-		let pagerIsIncomplete = this.model.facets.byIndex[tableIndex].all.find(facet => pager[facet.name] === undefined);
-		if (pagerIsEmpty || pagerIsIncomplete) {
+		let noPartsFound = Object.keys(indexParts).length === 0;
+		let partsAreIncomplete = this.model.facets.byIndex[tableIndex].all.find(facet => indexParts[facet.name] === undefined);
+		if (noPartsFound || partsAreIncomplete) {
 			// In this case no suitable record could be found be the deconstructed pager.
 			// This can be valid in cases where a scan is performed but returns no results.
 			return null;
 		}
 
-		return pager;
+		return indexParts;
 	}
 
 	_constructPagerIndex(index = TableIndex, item) {
@@ -916,6 +1043,7 @@ class Entity {
 			cursor: null,
 			data: 'attributes',
 			ignoreOwnership: false,
+			_providedIgnoreOwnership: false,
 			_isPagination: false,
 			_isCollectionQuery: false,
 			pages: 1,
@@ -925,6 +1053,8 @@ class Entity {
 			terminalOperation: undefined,
 			formatCursor: u.cursorFormatter,
 			order: undefined,
+			hydrate: false,
+			hydrator: (_entity, _indexName, items) => items,
 		};
 
 		return provided.filter(Boolean).reduce((config, option) => {
@@ -1060,6 +1190,7 @@ class Entity {
 
 			if (option.ignoreOwnership) {
 				config.ignoreOwnership = option.ignoreOwnership;
+				config._providedIgnoreOwnership = option.ignoreOwnership;
 			}
 
 			if (option.listeners) {
@@ -1074,6 +1205,15 @@ class Entity {
 				} else {
 					throw new e.ElectroError(e.ErrorCodes.InvalidLoggerProvided, `Loggers must be of type function`);
 				}
+			}
+
+			if (option.hydrate) {
+				config.hydrate = true;
+				config.ignoreOwnership = true;
+			}
+
+			if (validations.isFunction(option.hydrator)) {
+				config.hydrator = option.hydrator;
 			}
 
 			config.page = Object.assign({}, config.page, option.page);
@@ -1520,12 +1660,12 @@ class Entity {
 		};
 	}
 
-	_makeUpsertParams({update, upsert} = {}, pk, sk) {
+	_makeUpsertParams({ update, upsert } = {}, pk, sk) {
 		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
 		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
 		const keyNames = Object.keys(indexKey);
-		update.set(this.identifiers.entity, this.getName());
-		update.set(this.identifiers.version, this.getVersion());
+		// update.set(this.identifiers.entity, this.getName());
+		// update.set(this.identifiers.version, this.getVersion());
 		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
 			const value = u.getFirstDefined(upsertAttributes[field], updatedKeys[field]);
 			if (!keyNames.includes(field)) {
@@ -2238,7 +2378,11 @@ class Entity {
 		const subCollections = this.model.subCollections[collection];
 		const index = this.model.translations.collections.fromCollectionToIndex[collection];
 		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+		const prefixes = this.model.prefixes[index];
 		const prefix = this._makeCollectionPrefix(subCollections);
+		if (prefixes.sk && prefixes.sk.isCustom) {
+			return '';
+		}
 		return this._formatKeyCasing(accessPattern, prefix);
 	}
 
@@ -2293,7 +2437,7 @@ class Entity {
 		if (!prefixes) {
 			throw new Error(`Invalid index: ${index}`);
 		}
-		let partitionKey = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk, {excludeLabelTail: true});
+		let partitionKey = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk, { excludeLabelTail: true });
 		let pk = partitionKey.key;
 		let sk = [];
 		let fulfilled = false;
@@ -2388,6 +2532,7 @@ class Entity {
 				key: supplied[facets[0]],
 			};
 		}
+
 		let key = prefix;
 		let foundCount = 0;
 		for (let i = 0; i < labels.length; i++) {
@@ -2425,9 +2570,11 @@ class Entity {
 			key += postfix;
 		}
 
+		const transformedKey = transform(u.formatKeyCasing(key, casing));
+
 		return {
 			fulfilled,
-			key: transform(u.formatKeyCasing(key, casing))
+			key: transformedKey,
 		};
 	}
 
@@ -3125,6 +3272,17 @@ class Entity {
 			indexes[indexAccessPattern.fromIndexToAccessPattern[indexName]].pk.labels = facets.labels[indexName].pk;
 			indexes[indexAccessPattern.fromIndexToAccessPattern[indexName]].sk.labels = facets.labels[indexName].sk;
 		}
+		const deconstructors = {};
+		for (const indexName of Object.keys(facets.labels)) {
+			const keyTypes = prefixes[indexName] || {};
+			deconstructors[indexName] = {};
+			for (const keyType in keyTypes) {
+				const prefixes = keyTypes[keyType];
+				const labels = facets.labels[indexName][keyType] || [];
+				const attributes = schema.attributes;
+				deconstructors[indexName][keyType] = this._createKeyDeconstructor(prefixes, labels, attributes);
+			}
+		}
 
 		return {
 			name,
@@ -3150,6 +3308,9 @@ class Entity {
 				indexes: indexAccessPattern,
 				collections: indexCollection,
 			},
+			keys: {
+				deconstructors,
+			},
 			original: model,
 		};
 	}
@@ -3173,20 +3334,22 @@ function getEntityIdentifiers(entities) {
 	return identifiers;
 }
 
-function matchToEntityAlias({ paramItem, identifiers, record } = {}) {
+function matchToEntityAlias({ paramItem, identifiers, record, entities = {} } = {}) {
 	let entity;
-	let entityAlias;
-
 	if (paramItem && v.isFunction(paramItem[TransactionCommitSymbol])) {
 		const committed = paramItem[TransactionCommitSymbol]();
 		entity = committed.entity;
 	}
 
+	let entityAlias;
 	for (let {name, version, nameField, versionField, alias} of identifiers) {
 		if (entity && entity.model.entity === name && entity.model.version === version) {
 			entityAlias = alias;
 			break;
-		} else if (record[nameField] !== undefined && record[nameField] === name && record[versionField] !== undefined && record[versionField] === version) {
+		} else if (record[nameField] !== undefined && record[versionField] !== undefined && record[nameField] === name && record[versionField] === version) {
+			entityAlias = alias;
+			break;
+		} else if (entities[alias] && entities[alias].ownsKeys(record)) {
 			entityAlias = alias;
 			break;
 		}

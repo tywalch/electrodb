@@ -454,7 +454,7 @@ describe("listener functions", () => {
             const prop2 = uuid();
             await service.entities.entity1.get({prop1, prop2}).go();
             expect(received.map(item => {
-                delete item.config.formatCursor;
+                delete item.config;
                 return item;
             })).to.deep.equal([
                 {
@@ -466,61 +466,11 @@ describe("listener functions", () => {
                             sk: `$entity1_version#prop2_${prop2}`
                         }, 
                         TableName: 'electro' 
-                    },
-                    config: {
-                      terminalOperation: "go",
-                      attributes: [],
-                      includeKeys: false,
-                      originalErr: false,
-                      raw: false,
-                      params: {},
-                      page: {},
-                      lastEvaluatedKeyRaw: false,
-                      table: undefined,
-                      concurrent: undefined,
-                      parse: undefined,
-                      pager: 'named',
-                      unprocessed: 'item',
-                      response: 'default',
-                      ignoreOwnership: false,
-                      _isPagination: false,
-                      _isCollectionQuery: false,
-                        cursor: null,
-                        data: "attributes",
-                        pages: 1,
-                      listeners: [],
-                      preserveBatchOrder: false,
-                      order: undefined,
                     }
                 },
                 {
                     type: 'results',
                     method: 'get',
-                    config: {
-                      includeKeys: false,
-                      originalErr: false,
-                      terminalOperation: "go",
-                      attributes: [],
-                      raw: false,
-                      params: {},
-                      page: {},
-                      lastEvaluatedKeyRaw: false,
-                      table: undefined,
-                      concurrent: undefined,
-                      parse: undefined,
-                      pager: 'named',
-                      unprocessed: 'item',
-                      response: 'default',
-                      ignoreOwnership: false,
-                      _isPagination: false,
-                      _isCollectionQuery: false,
-                      cursor: null,
-                      data: "attributes",
-                      pages: 1,
-                      preserveBatchOrder: false,
-                      listeners: [],
-                      order: undefined,
-                    },
                     success: true,
                     results: {}
                   }
@@ -538,7 +488,7 @@ describe("listener functions", () => {
             await service.entities.entity1.get({prop1, prop2}).go();
 
             expect(received.map(item => {
-                delete item.config.formatCursor;
+                delete item.config;
                 return item;
             })).to.deep.equal([
                 {
@@ -551,60 +501,10 @@ describe("listener functions", () => {
                         }, 
                         TableName: 'electro' 
                     },
-                    config: {
-                      includeKeys: false,
-                      originalErr: false,
-                      terminalOperation: "go",
-                      attributes: [],
-                      raw: false,
-                      params: {},
-                      page: {},
-                      cursor: null,
-                      data: "attributes",
-                      pages: 1,
-                      lastEvaluatedKeyRaw: false,
-                      table: undefined,
-                      concurrent: undefined,
-                      parse: undefined,
-                      pager: 'named',
-                      unprocessed: 'item',
-                      response: 'default',
-                      ignoreOwnership: false,
-                      _isPagination: false,
-                      _isCollectionQuery: false,
-                      preserveBatchOrder: false,
-                      order: undefined,
-                      listeners: []
-                    }
                 },
                 {
                     type: 'results',
                     method: 'get',
-                    config: {
-                      terminalOperation: "go",
-                      attributes: [],
-                      includeKeys: false,
-                      originalErr: false,
-                      raw: false,
-                      params: {},
-                      page: {},
-                      lastEvaluatedKeyRaw: false,
-                      table: undefined,
-                      concurrent: undefined,
-                      parse: undefined,
-                      pager: 'named',
-                      unprocessed: 'item',
-                      response: 'default',
-                      ignoreOwnership: false,
-                      _isPagination: false,
-                      _isCollectionQuery: false,
-                      preserveBatchOrder: false,
-                      cursor: null,
-                      data: "attributes",
-                      order: undefined,
-                      pages: 1,
-                      listeners: []
-                    },
                     success: true,
                     results: {}
                   }

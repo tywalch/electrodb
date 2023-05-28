@@ -323,17 +323,25 @@ class Service {
 				continue;
 			}
 
-			const entityAlias = matchToEntityAlias({identifiers, record});
+			const entityAlias = matchToEntityAlias({identifiers, record, entities: this.entities});
 
 			if (!entityAlias) {
 				continue;
 			}
+
 			// pager=false because we don't want the entity trying to parse the lastEvaluatedKey
-			let formatted = entities[entityAlias].formatResponse({Item: record}, index, {
-				...config,
-				pager: false,
-				parse: undefined
-			});
+			let formatted;
+			if (config.hydrate) {
+				formatted = {
+					data: record // entities[entityAlias]._formatKeysToItem(index, record),
+				};
+			} else {
+				formatted = entities[entityAlias].formatResponse({Item: record}, index, {
+					...config,
+					pager: false,
+					parse: undefined,
+				});
+			}
 
 			results[entityAlias].push(formatted.data);
 		}
@@ -429,6 +437,69 @@ class Service {
 			entities,
 			indexType,
 			compositeAttributes,
+			hydrator: async (entity, index, items, config) => {
+				if (entity && entities[entity]) {
+					return entities[entity].hydrate(index, items, {
+						...config,
+						parse: undefined,
+						hydrator: undefined,
+						_isCollectionQuery: false,
+						ignoreOwnership: config._providedIgnoreOwnership,
+					});
+				}
+
+				// let itemLookup = [];
+				let entityItemRefs = {};
+				// let entityResultRefs = {};
+				for (let i = 0; i < items.length; i++) {
+					const item = items[i];
+					for (let entityName in entities) {
+						entityItemRefs[entityName] = entityItemRefs[entityName] || [];
+						const entity = entities[entityName];
+						if (entity.ownsKeys(item)) {
+							// const entityItemRefsIndex =
+							entityItemRefs[entityName].push({
+								item,
+								itemSlot: i,
+							});
+							// itemLookup[i] = {
+							// 	entityName,
+							// 	entityItemRefsIndex,
+							// 	originalItem: item,
+							// }
+						}
+					}
+				}
+
+				let unprocessed = [];
+				let data = new Array(items.length).fill(null);
+				for (const entityName in entityItemRefs) {
+					const itemRefs = entityItemRefs[entityName];
+					const items = itemRefs.map(ref => ref.item);
+					const results = await entities[entity].hydrate(index, items, {
+						...config,
+						parse: undefined,
+						hydrate: false,
+						hydrator: undefined,
+						_isCollectionQuery: false,
+						ignoreOwnership: config._providedIgnoreOwnership,
+					});
+					unprocessed = unprocessed.concat(results.unprocessed);
+					if (results.data.length !== itemRefs.length) {
+						throw new Error('Temporary: something wrong');
+					}
+					for (let r = 0; r < itemRefs.length; r++) {
+						const itemRef = itemRefs[r];
+						const hydrated = results.data[r];
+						data[itemRef.itemSlot] = hydrated;
+					}
+				}
+
+				return {
+					data,
+					unprocessed,
+				}
+			}
 		};
 
 		return entity.collection(name, clauses, facets, options);

@@ -237,10 +237,15 @@ function getFirstDefined(...params) {
   return params.find(val => val !== undefined);
 }
 
+function regexpEscape(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 module.exports = {
   getUnique,
   batchItems,
   addPadding,
+  regexpEscape,
   removePadding,
   removeFixings,
   parseJSONPath,

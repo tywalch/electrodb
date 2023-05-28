@@ -107,6 +107,8 @@ export const SIDEBAR: Sidebar = {
       { text: 'Creating virtual attributes', link: 'en/recipes/virtual-attribute' },
       { text: 'Adding meta timestamps', link: 'en/recipes/created-at-updated-at' },
       { text: 'Using opaque types', link: 'en/recipes/opaque-types' },
+      { text: 'Using ElectroDB with an Existing Dataset', link: 'en/recipes/use-electrodb-with-existing-table'},
+      { text: 'Using KEYS_ONLY Global Secondary Indexes', link: 'en/recipes/keys-only-gsi' },
     ],
   },
 };
