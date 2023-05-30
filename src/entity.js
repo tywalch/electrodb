@@ -1,6 +1,7 @@
 "use strict";
 const { Schema } = require("./schema");
-const { AllPages, 
+const {
+	AllPages,
 	KeyCasing, 
 	TableIndex, 
 	FormatToReturnValues, 
@@ -58,6 +59,9 @@ class Entity {
 		this._clausesWithFilters = this._whereBuilder.injectWhereClauses(this._clausesWithFilters);
 
 		this.query = {};
+		this.conversions = {
+			byAccessPattern: {}
+		};
 		for (let accessPattern in this.model.indexes) {
 			let index = this.model.indexes[accessPattern].index;
 			this.query[accessPattern] = (...values) => {
@@ -66,7 +70,26 @@ class Entity {
 				}
 				return this._makeChain(index, this._clausesWithFilters, clauses.index, options).query(...values);
 			};
+
+			const indexName = index.index;
+
+			this.conversions.byAccessPattern[accessPattern] = {
+				fromComposite: {
+					toCursor: (composite) => this._fromCompositeToCursor({indexName, provided: composite}),
+					toKeys: (composite) => this._fromCompositeToKeys({indexName, provided: composite}),
+				},
+				fromKeys: {
+					toCursor: (keys) => this._fromKeysToCursor({indexName, provided: keys}),
+					toComposite: (keys) => this._fromKeysToComposite({indexName, provided: keys}),
+				},
+				fromCursor: {
+					toKeys: (cursor) => this._fromCursorToKeys({indexName, provided: cursor}),
+					toComposite: (cursor) => this._fromCursortoComposite({indexName, provided: cursor}),
+				}
+			};
+
 		}
+
 		this.config.identifiers = config.identifiers || {};
 		this.identifiers = {
 			entity: this.config.identifiers.entity || "__edb_e__",
@@ -733,6 +756,66 @@ class Entity {
 		return this.formatResponse(item, TableIndex, config);
 	}
 
+	_fromCompositeToCursor({indexName = TableIndex, provided}) {
+		if (!provided || Object.keys(provided).length === 0) {
+			return null;
+		}
+
+		const keys = this._formatSuppliedPager(indexName, provided);
+		return this._fromKeysToCursor({indexName, provided: keys});
+	}
+
+	_fromCompositeToKeys({indexName = TableIndex, provided}) {
+		return this._formatSuppliedPager(indexName, provided);
+	}
+
+	_fromCursorToKeys({ provided }) {
+		if (typeof provided !== 'string') {
+			return null;
+		}
+
+		return u.cursorFormatter.deserialize(provided);
+	}
+
+	_fromKeysToCursor({indexName = TableIndex, provided}) {
+		const keys = this._trimKeysToIndex({indexName, provided});
+		return u.cursorFormatter.serialize(keys);
+	}
+
+	_fromKeysToComposite({indexName = TableIndex, provided}) {
+		const results = this._deconstructIndex({index: indexName, keys: provided});
+		return results;
+	}
+
+	_fromCursortoComposite({indexName = TableIndex, provided}) {
+		const keys = this._fromCursorToKeys({indexName, provided});
+		return this._fromKeysToComposite({indexName, provided: keys});
+	}
+
+	_trimKeysToIndex({indexName = TableIndex, provided}) {
+		if (!provided) {
+			return null;
+		}
+
+		const pkName = this.model.translations.keys[indexName].pk;
+		const skName = this.model.translations.keys[indexName].sk;
+		const tablePKName = this.model.translations.keys[TableIndex].pk;
+		const tableSKName = this.model.translations.keys[TableIndex].sk;
+
+		const keys = {
+			[pkName]: provided[pkName],
+			[skName]: provided[skName],
+			[tablePKName]: provided[tablePKName],
+			[tableSKName]: provided[tableSKName],
+		};
+
+		if (!keys || Object.keys(keys).length === 0) {
+			return null;
+		}
+
+		return keys;
+	}
+
 	_formatReturnPager(config, lastEvaluatedKey) {
 		let page = lastEvaluatedKey || null;
 		if (config.raw || config.pager === Pager.raw) {
@@ -881,65 +964,6 @@ class Entity {
 			return results;
 		}
 	}
-
-	// _deconstructKeys(index, keyType, key, backupFacets = {}) {
-	// 	if (typeof key !== "string" || key.length === 0) {
-	// 		return null;
-	// 	}
-	//
-	// 	let accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
-	// 	let {prefix, isCustom} = this.model.prefixes[index][keyType];
-	// 	let {facets} = this.model.indexes[accessPattern][keyType];
-	// 	let names = [];
-	// 	let types = [];
-	// 	let pattern = `^${this._regexpEscape(prefix)}`;
-	// 	let labels = this.model.facets.labels[index][keyType] || [];
-	// 	for (let {name, label} of labels) {
-	// 		let attr = this.model.schema.attributes[name];
-	// 		if (attr) {
-	// 			if (isCustom) {
-	// 				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
-	// 			} else {
-	// 				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
-	// 			}
-	// 			names.push(name);
-	// 			types.push(attr.type);
-	// 		}
-	// 	}
-	// 	pattern += "$";
-	// 	let regex = new RegExp(pattern, "i");
-	// 	let match = key.match(regex);
-	// 	let results = {};
-	// 	if (match) {
-	// 		for (let i = 0; i < names.length; i++) {
-	// 			let key = names[i];
-	// 			let value = match[i+1];
-	// 			let type = types[i];
-	// 			switch (type) {
-	// 				case "number":
-	// 					value = parseFloat(value);
-	// 					break;
-	// 				case "boolean":
-	// 					value = value === "true";
-	// 					break;
-	// 			}
-	// 			results[key] = value;
-	// 		}
-	// 	} else {
-	// 		if (Object.keys(backupFacets || {}).length === 0) {
-	// 			// this can occur when a scan is performed but returns no results given the current filters or record timing
-	// 			return {};
-	// 		}
-	// 		for (let facet of facets) {
-	// 			if (backupFacets[facet] === undefined) {
-	// 				throw new e.ElectroError(e.ErrorCodes.LastEvaluatedKey, 'LastEvaluatedKey contains entity that does not match the entity used to query. Use {pager: "raw"} query option.');
-	// 			} else {
-	// 				results[facet] = backupFacets[facet];
-	// 			}
-	// 		}
-	// 	}
-	// 	return results;
-	// }
 
 	_deconstructIndex({index = TableIndex, keys = {}} = {}) {
 		const hasIndex = !!this.model.translations.keys[index];
@@ -2437,7 +2461,8 @@ class Entity {
 		if (!prefixes) {
 			throw new Error(`Invalid index: ${index}`);
 		}
-		let partitionKey = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk, { excludeLabelTail: true });
+		// let partitionKey = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk, { excludeLabelTail: true });
+		let partitionKey = this._makeKey(prefixes.pk, facets.pk, pkFacets, this.model.facets.labels[index].pk);
 		let pk = partitionKey.key;
 		let sk = [];
 		let fulfilled = false;

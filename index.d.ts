@@ -874,6 +874,46 @@ interface QueryOperations<A extends string, F extends string, C extends string, 
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,QueryBranches<A,F,C,S,ResponseItem,IndexCompositeAttributes>>
 }
 
+type IndexKeyComposite<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> =
+    & IndexCompositeAttributes<A,F,C,S,I>
+    & TableIndexCompositeAttributes<A,F,C,S>;
+
+export type Conversions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    fromItem: {
+      toCursor: (item: {
+          [I in keyof S["indexes"]]: IndexKeyComposite<A,F,C,S,I>
+      }[keyof S['indexes']]) => string | null;
+    },
+    byAccessPattern: {
+        [I in keyof S["indexes"]]: {
+            fromKeys: {
+                toCursor: (item: Record<string, string | number>) => string | null;
+                toComposite: (item: Record<string, string | number>) => IndexKeyComposite<A,F,C,S,I> | null;
+            },
+            fromCursor: {
+                toKeys: (cursor: string) => Record<string, string | number> | null;
+                toComposite: (cursor: string) => IndexKeyComposite<A,F,C,S,I> | null;
+            },
+            fromComposite: {
+                toCursor: (composite: IndexKeyComposite<A,F,C,S,I>) => string | null;
+                toKeys: (composite: IndexKeyComposite<A,F,C,S,I>) => Record<string, string | number> | null;
+            }
+            // toCursor: {
+                // fromKeys: (item: Record<string, string | number>) => string | null;
+                // fromComposite: (composite: IndexKeyComposite<A,F,C,S,I>) => string | null;
+            // };
+            // toComposite: {
+                // fromKeys: (item: Record<string, string | number>) => IndexKeyComposite<A,F,C,S,I> | null;
+                // fromCursor: (cursor: string) => IndexKeyComposite<A,F,C,S,I> | null;
+            // };
+            // toKeys: {
+                // fromCursor: (cursor: string) => Record<string, string | number> | null;
+                // fromComposite: (composite: IndexKeyComposite<A,F,C,S,I>) => Record<string, string | number> | null;
+            // }
+        }
+    }
+}
+
 export type Queries<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
     [I in keyof S["indexes"]]: <CompositeAttributes extends IndexCompositeAttributes<A,F,C,S,I>>(composite: CompositeAttributes) =>
         IndexSKAttributes<A,F,C,S,I> extends infer SK
@@ -1156,7 +1196,7 @@ export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T =
 export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
     Promise<{ unprocessed: ResponseType }>
 
-export type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
+export type ParamRecord<Options = ParamOptions> = <P = Record<string, any>>(options?: Options) => P;
 
 export class ElectroError extends Error {
     readonly name: 'ElectroError';
@@ -2443,6 +2483,7 @@ export class Entity<A extends string, F extends string, C extends string, S exte
 
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>;
     query: Queries<A,F,C,S>;
+    conversions: Conversions<A,F,C,S>;
 
     parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseSingleInput, options?: Options):
         Options extends ParseOptions<infer Attr>
