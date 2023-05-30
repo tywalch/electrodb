@@ -588,6 +588,8 @@ describe('key formatting', () => {
                                     time: '2020-01-01T00:00:00.000Z',
                                     message: "Hi"
                                 }]).params();
+                                pkTest('pk', batchPutParams[0].RequestItems[table][0].PutRequest.Item.userId);
+                                skTest('sk', batchPutParams[0].RequestItems[table][0].PutRequest.Item.requestId);
                             });
 
                             it('should perform an update', () => {
@@ -597,7 +599,7 @@ describe('key formatting', () => {
                                 }).set({
                                     message: "Hello"
                                 }).params();
-                                // updateParams).to.equal(';
+
                                 pkTest('pk', updateParams.Key.userId);
                                 skTest('sk', updateParams.Key.requestId);
                             });
@@ -607,7 +609,7 @@ describe('key formatting', () => {
                                     time: "123",
                                     userId: "Brad-01"
                                 }).params();
-                                // getParams).to.equal(';
+
                                 pkTest('pk', getParams['Key']['userId']);
                                 skTest('sk', getParams['Key']['requestId']);
                             });
@@ -617,6 +619,8 @@ describe('key formatting', () => {
                                     time: "123",
                                     userId: "Brad-01"
                                 }]).params();
+                                pkTest('pk', batchGetParams[0].RequestItems[table].Keys[0].userId);
+                                skTest('sk', batchGetParams[0].RequestItems[table].Keys[0].requestId);
                             });
                         });
                     }
