@@ -2568,7 +2568,7 @@ type TransactWriteExtractedType<T extends readonly any[], A extends readonly any
 type TransactGetExtractedType<T extends readonly any[], A extends readonly any[] = []> =
     T extends [infer F, ...infer R] ?
         F extends CommittedTransactionResult<infer V, TransactGetItem>
-            ? TransactWriteExtractedType<R, [...A, TransactionItem<V>]>
+            ? TransactGetExtractedType<R, [...A, TransactionItem<V>]>
             : never
         : A
 

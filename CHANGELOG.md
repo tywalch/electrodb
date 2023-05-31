@@ -326,4 +326,5 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Adds new query execution option `hydrate`. When a GSI uses a `KEYS_ONLY` projection, the `hydrate` option will perform the query and then a subsequent `batchGet` to "hydrate" the results.
 
 ### Fixed
-- A common issue amongst new users, was unexpected errors when using a terminal method twice on a query chain. This would often come up when a user called `.params()` to log out parameters and then call `.go()` on the same chain. The fix was to prevent duplicative side effects from occurring on each subsequent terminal method call.     
+- A common issue amongst new users, was unexpected errors when using a terminal method twice on a query chain. This would often come up when a user called `.params()` to log out parameters and then call `.go()` on the same chain. The fix was to prevent duplicative side effects from occurring on each subsequent terminal method call.
+- Fixes typing issue with transactGet api that would type `response.data` as `never` when the transaction included more than one element. 
