@@ -2,6 +2,7 @@ import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { Entity } from '../';
 import {expect} from "chai";
 import {v4 as uuid} from "uuid";
+const u = require('../src/util');
 
 const client = new DocumentClient({
     endpoint: 'http://localhost:8000',
@@ -215,6 +216,168 @@ describe('conversions', () => {
         }
     }, { table, client });
 
+    const validateMatchingCorrespondence = (options: {
+        label: string;
+        pkComposite: string[],
+        skComposite: string[],
+        provided: Record<string, any>,
+        composite: Record<string, any>
+    }): void => {
+        const {label, pkComposite, skComposite, composite, provided} = options;
+        try {
+            expect(pkComposite.length + skComposite.length).to.be.greaterThan(0);
+            expect(Object.keys(provided).length).to.be.greaterThan(0);
+            expect(Object.keys(composite).length).to.be.greaterThan(0);
+
+            for (const attribute of pkComposite) {
+                const compositeValue = composite[attribute];
+                expect(compositeValue).to.not.be.undefined;
+
+                const itemValue = provided[attribute];
+                expect(itemValue).to.not.be.undefined;
+                expect(`${itemValue}`.toLowerCase()).to.equal(`${compositeValue}`.toLowerCase());
+            }
+            let skBroken = false;
+            for (const attribute of skComposite) {
+                const compositeValue = composite[attribute];
+
+                const itemValue = provided[attribute];
+
+                if (itemValue === undefined) {
+                    skBroken = true;
+                }
+
+                if (compositeValue === undefined && itemValue !== undefined) {
+                    throw new Error('Composite broken but should not be');
+                }
+
+                expect(`${itemValue}`.toLowerCase()).to.equal(`${compositeValue}`.toLowerCase());
+            }
+        } catch(err: any) {
+            err.message = `${label}: ${err.message}`;
+            throw err;
+        }
+    }
+
+    const evaluateFromComposite = (item: typeof record) => {
+        const cursor = entity.conversions.fromComposite.toCursor(item);
+        expect(cursor).not.to.be.null;
+
+        const keys = entity.conversions.fromComposite.toKeys(item);
+        expect(keys).not.to.be.null;
+
+        const cursorFromKeys = entity.conversions.fromKeys.toCursor(keys!);
+        expect(cursorFromKeys).not.to.be.null;
+        expect(cursor).to.equal(cursorFromKeys);
+
+        const keysFromCursor = entity.conversions.fromCursor.toKeys(cursor!);
+        expect(keysFromCursor).not.to.be.null;
+
+        const compositeFromCursor = entity.conversions.fromCursor.toComposite(cursor!);
+        expect(compositeFromCursor).not.to.be.null;
+
+        const compositeFromKeys = entity.conversions.fromKeys.toComposite(keys!);
+        expect(compositeFromKeys).not.to.be.null;
+        expect(keys).to.deep.equal(keysFromCursor);
+
+        expect(Object.entries(compositeFromCursor!).length).to.be.greaterThan(0);
+
+        for (const [accessPattern, definition] of Object.entries(entity.schema.indexes)) {
+            try {
+                validateMatchingCorrespondence({
+                    label: `${accessPattern} from cursor`,
+                    skComposite: 'sk' in definition && definition.sk.composite ? definition.sk.composite : [],
+                    pkComposite: definition.pk.composite,
+                    composite: compositeFromCursor!,
+                    provided: item
+                });
+
+                validateMatchingCorrespondence({
+                    label: `${accessPattern} from keys`,
+                    skComposite: 'sk' in definition && definition.sk.composite ? definition.sk.composite : [],
+                    pkComposite: definition.pk.composite,
+                    composite: compositeFromKeys!,
+                    provided: item
+                });
+            } catch(err) {
+                console.log({
+                    decodedCursor: u.cursorFormatter.deserialize(cursor),
+                    item,
+                    cursor,
+                    keys,
+                    cursorFromKeys,
+                    keysFromCursor,
+                    compositeFromCursor,
+                    compositeFromKeys,
+                })
+                throw err;
+            }
+        }
+    }
+
+    const evaluateFromKeys = (keys: any) => {
+        const item = entity.conversions.fromKeys.toComposite(keys);
+        if (!item) {
+            throw new Error('Item not defined!');
+        }
+        // @ts-ignore
+        const cursor = entity.conversions.fromComposite.toCursor(item);
+        expect(cursor).not.to.be.null;
+
+        const keysFromCursor = entity.conversions.fromCursor.toKeys(cursor!);
+        expect(keysFromCursor).not.to.be.null;
+
+        const cursorFromKeys = entity.conversions.fromKeys.toCursor(keysFromCursor!);
+        expect(cursorFromKeys).not.to.be.null;
+        expect(cursor).to.equal(cursorFromKeys);
+
+        const compositeFromCursor = entity.conversions.fromCursor.toComposite(cursor!);
+        expect(compositeFromCursor).not.to.be.null;
+
+        // @ts-ignore
+        const keysFromComposite = entity.conversions.fromComposite.toKeys(item);
+        expect(keysFromComposite).not.to.be.null;
+        expect(keysFromCursor).to.deep.equal(keysFromComposite);
+
+        const compositeFromKeys = entity.conversions.fromKeys.toComposite(keysFromComposite!);
+
+        expect(Object.entries(compositeFromCursor!).length).to.be.greaterThan(0);
+        expect(!!compositeFromKeys).to.be.true;
+        for (const [accessPattern, definition] of Object.entries(entity.schema.indexes)) {
+            try {
+                validateMatchingCorrespondence({
+                    label: `${accessPattern} from cursor`,
+                    skComposite: 'sk' in definition && definition.sk.composite ? definition.sk.composite : [],
+                    pkComposite: definition.pk.composite,
+                    composite: compositeFromCursor!,
+                    provided: item
+                });
+
+                validateMatchingCorrespondence({
+                    label: `${accessPattern} from keys`,
+                    skComposite: 'sk' in definition && definition.sk.composite ? definition.sk.composite : [],
+                    pkComposite: definition.pk.composite,
+                    composite: compositeFromKeys!,
+                    provided: item
+                });
+            } catch(err) {
+                console.log({
+                    decodedCursor: u.cursorFormatter.deserialize(cursor),
+                    keys,
+                    item,
+                    cursor,
+                    cursorFromKeys,
+                    keysFromCursor,
+                    compositeFromCursor,
+                    keysFromComposite,
+                    compositeFromKeys,
+                    definition,
+                })
+                throw err;
+            }
+        }
+    }
+
     const evaluateAccessPattern = (accessPattern: keyof typeof entity.schema.indexes, item: typeof record) => {
         const cursor = entity.conversions.byAccessPattern[accessPattern].fromComposite.toCursor(item);
         expect(cursor).not.to.be.null;
@@ -237,33 +400,37 @@ describe('conversions', () => {
         expect(keys).to.deep.equal(keysFromCursor);
 
         expect(Object.entries(compositeFromCursor!).length).to.be.greaterThan(0);
+        const definition = entity.schema.indexes[accessPattern];
+        try {
+            validateMatchingCorrespondence({
+                label: `${accessPattern} from cursor`,
+                skComposite: 'sk' in definition && definition.sk.composite ? definition.sk.composite : [],
+                pkComposite: definition.pk.composite,
+                composite: compositeFromCursor!,
+                provided: item
+            });
 
-        for (const [name, value] of Object.entries(compositeFromCursor!)) {
-            if (name in item) {
-                const itemValue = item[name as keyof typeof item]
-                if (typeof itemValue === 'string') {
-                    expect(itemValue.toLowerCase()).to.equal(value.toLowerCase());
-                } else {
-                    expect(itemValue).to.equal(value);
-                }
-            } else {
-                throw new Error('Composite not in item!');
-            }
-        }
-
-        expect(Object.entries(compositeFromKeys!).length).to.be.greaterThan(0);
-
-        for (const [name, value] of Object.entries(compositeFromKeys!)) {
-            if (name in item) {
-                const itemValue = item[name as keyof typeof item]
-                if (typeof itemValue === 'string') {
-                    expect(itemValue.toLowerCase()).to.equal(value.toLowerCase());
-                } else {
-                    expect(itemValue).to.equal(value);
-                }
-            } else {
-                throw new Error('Composite not in item!');
-            }
+            validateMatchingCorrespondence({
+                label: `${accessPattern} from keys`,
+                skComposite: 'sk' in definition && definition.sk.composite ? definition.sk.composite : [],
+                pkComposite: definition.pk.composite,
+                composite: compositeFromKeys!,
+                provided: item
+            });
+        } catch(err) {
+            console.log({
+                decodedCursor: u.cursorFormatter.deserialize(cursor),
+                accessPattern,
+                item,
+                cursor,
+                keys,
+                cursorFromKeys,
+                keysFromCursor,
+                compositeFromCursor,
+                compositeFromKeys,
+                definition,
+            });
+            throw err;
         }
     }
 
@@ -276,12 +443,12 @@ describe('conversions', () => {
         const cursor = entity.conversions.byAccessPattern[accessPattern].fromComposite.toCursor(item);
         expect(cursor).not.to.be.null;
 
-        const cursorFromKeys = entity.conversions.byAccessPattern[accessPattern].fromKeys.toCursor(keys!);
-        expect(cursorFromKeys).not.to.be.null;
-        expect(cursor).to.equal(cursorFromKeys);
-
         const keysFromCursor = entity.conversions.byAccessPattern[accessPattern].fromCursor.toKeys(cursor!);
         expect(keysFromCursor).not.to.be.null;
+
+        const cursorFromKeys = entity.conversions.byAccessPattern[accessPattern].fromKeys.toCursor(keysFromCursor!);
+        expect(cursorFromKeys).not.to.be.null;
+        expect(cursor).to.equal(cursorFromKeys);
 
         const compositeFromCursor = entity.conversions.byAccessPattern[accessPattern].fromCursor.toComposite(cursor!);
         expect(compositeFromCursor).not.to.be.null;
@@ -292,36 +459,40 @@ describe('conversions', () => {
         expect(keysFromCursor).to.deep.equal(keysFromComposite);
 
         expect(Object.entries(compositeFromCursor!).length).to.be.greaterThan(0);
+        const compositeFromKeys = entity.conversions.byAccessPattern[accessPattern].fromKeys.toComposite(keysFromComposite!);
+        expect(!!compositeFromKeys).to.be.true;
 
-        for (const [name, value] of Object.entries(compositeFromCursor!)) {
-            if (name in item) {
-                const itemValue = item[name as keyof typeof item]
-                if (typeof itemValue === 'string') {
-                    expect(itemValue.toLowerCase()).to.equal(value.toLowerCase());
-                } else {
-                    expect(itemValue).to.equal(value);
-                }
-            } else {
-                throw new Error('Composite not in item!');
-            }
-        }
+        const definition = entity.schema.indexes[accessPattern];
+        try {
+            validateMatchingCorrespondence({
+                label: `${accessPattern} from cursor`,
+                skComposite: 'sk' in definition && definition.sk.composite ? definition.sk.composite : [],
+                pkComposite: definition.pk.composite,
+                composite: compositeFromCursor!,
+                provided: item
+            });
 
-        expect(Object.entries(keysFromComposite!).length).to.be.greaterThan(0);
-
-        for (const [name, value] of Object.entries(keysFromComposite!)) {
-            if (name in keysFromComposite!) {
-                const itemValue = keys[name as keyof typeof keys];
-                if (typeof itemValue === 'string') {
-                    if (typeof value !== 'string') {
-                        throw new Error('Value not string!');
-                    }
-                    expect(itemValue.toLowerCase()).to.equal(value.toLowerCase());
-                } else {
-                    expect(itemValue).to.equal(value);
-                }
-            } else {
-                throw new Error('Composite not in item!');
-            }
+            validateMatchingCorrespondence({
+                label: `${accessPattern} from keys`,
+                skComposite: 'sk' in definition && definition.sk.composite ? definition.sk.composite : [],
+                pkComposite: definition.pk.composite,
+                composite: compositeFromKeys!,
+                provided: item
+            });
+        } catch(err) {
+            console.log({
+                accessPattern,
+                keys,
+                item,
+                cursor,
+                cursorFromKeys,
+                keysFromCursor,
+                compositeFromCursor,
+                keysFromComposite,
+                compositeFromKeys,
+                definition,
+            })
+            throw err;
         }
     }
 
@@ -352,26 +523,49 @@ describe('conversions', () => {
         kind: 'kindProperty',
     }
 
-    for (let i = 0; i < accessPatterns.length; i++) {
-        const [description, accessPattern] = accessPatterns[i];
-        it(`should perform all conversions without loss starting with an item for an index that ${description}`, () => {
-            evaluateAccessPattern(accessPattern, record);
+    describe('top-level conversions', () => {
+
+        it('should perform all conversions without loss starting with an item', () => {
+            evaluateFromComposite(record);
         });
 
-        it(`should perform all conversions without loss starting with keys for an index that ${description}`, () => {
+        it('should perform all conversions without loss starting with keys', () => {
             const params = entity.put(record).params();
-            const keys: Record<string, string | number> = {};
+            const keys = params.Item;
             for (const prop in params.Item) {
                 if (prop.startsWith('gsi') || prop === 'pk' || prop === 'sk') {
                     keys[prop] = params.Item[prop];
                 }
             }
-
-            expect(Object.keys(keys).length).to.equal(22);
-
-            evaluateAccessPatternFromKeys(accessPattern, keys);
+            evaluateFromKeys(keys);
         });
-    }
+
+    });
+
+    describe('byAccessPattern conversions', () => {
+
+        for (let i = 0; i < accessPatterns.length; i++) {
+            const [description, accessPattern] = accessPatterns[i];
+            it(`should perform all conversions without loss starting with an item for an index that ${description}`, () => {
+                evaluateAccessPattern(accessPattern, record);
+            });
+
+            it(`should perform all conversions without loss starting with keys for an index that ${description}`, () => {
+                const params = entity.put(record).params();
+                const keys: Record<string, string | number> = {};
+                for (const prop in params.Item) {
+                    if (prop.startsWith('gsi') || prop === 'pk' || prop === 'sk') {
+                        keys[prop] = params.Item[prop];
+                    }
+                }
+
+                expect(Object.keys(keys).length).to.equal(22);
+
+                evaluateAccessPatternFromKeys(accessPattern, keys);
+            });
+        }
+
+    });
 });
 
 describe('key formatting', () => {

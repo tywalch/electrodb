@@ -60,6 +60,18 @@ class Entity {
 
 		this.query = {};
 		this.conversions = {
+			fromComposite: {
+				toKeys: (composite) => this._fromCompositeToKeys({ provided: composite }),
+				toCursor: (composite) => this._fromCompositeToCursor({ provided: composite }),
+			},
+			fromKeys: {
+				toCursor: (keys) => this._fromKeysToCursor({provided: keys}),
+				toComposite: (keys) => this._fromKeysToComposite({ provided: keys }),
+			},
+			fromCursor: {
+				toKeys: (cursor) => this._fromCursorToKeys({provided: cursor}),
+				toComposite: (cursor) => this._fromCursorToComposite({provided: cursor}),
+			},
 			byAccessPattern: {}
 		};
 		for (let accessPattern in this.model.indexes) {
@@ -71,20 +83,22 @@ class Entity {
 				return this._makeChain(index, this._clausesWithFilters, clauses.index, options).query(...values);
 			};
 
-			const indexName = index.index;
-
 			this.conversions.byAccessPattern[accessPattern] = {
 				fromComposite: {
-					toCursor: (composite) => this._fromCompositeToCursor({indexName, provided: composite}),
-					toKeys: (composite) => this._fromCompositeToKeys({indexName, provided: composite}),
+					toCursor: (composite) => this._fromCompositeToCursorByIndex({indexName: index, provided: composite}),
+					toKeys: (composite) => {
+						return this._fromCompositeToKeysByIndex({indexName: index, provided: composite})
+					},
 				},
 				fromKeys: {
-					toCursor: (keys) => this._fromKeysToCursor({indexName, provided: keys}),
-					toComposite: (keys) => this._fromKeysToComposite({indexName, provided: keys}),
+					toCursor: (keys) => this._fromKeysToCursorByIndex({indexName: index, provided: keys}),
+					toComposite: (keys) => {
+						return this._fromKeysToCompositeByIndex({indexName: index, provided: keys});
+					},
 				},
 				fromCursor: {
-					toKeys: (cursor) => this._fromCursorToKeys({indexName, provided: cursor}),
-					toComposite: (cursor) => this._fromCursortoComposite({indexName, provided: cursor}),
+					toKeys: (cursor) => this._fromCursorToKeysByIndex({indexName: index, provided: cursor}),
+					toComposite: (cursor) => this._fromCursorToCompositeByIndex({indexName: index, provided: cursor}),
 				}
 			};
 
@@ -119,6 +133,36 @@ class Entity {
 	getVersion() {
 		return this.model.version;
 	}
+
+	// ownsItem(item) {
+	// 	return (
+	// 		item &&
+	// 		this.getName() === item[this.identifiers.entity] &&
+	// 		this.getVersion() === item[this.identifiers.version] &&
+	// 		validations.isStringHasLength(item[this.identifiers.entity]) &&
+	// 		validations.isStringHasLength(item[this.identifiers.version])
+	// 	) || !!this.ownsKeys(item)
+	// }
+
+	// ownsKeys({keys = {}}) {
+	// 	let {pk, sk} = this.model.prefixes[TableIndex];
+	// 	let hasSK = this.model.lookup.indexHasSortKeys[TableIndex];
+	// 	let pkMatch = typeof keys[pk.field] === "string" && keys[pk.field].startsWith(pk.prefix);
+	// 	let skMatch = pkMatch && !hasSK;
+	// 	if (pkMatch && hasSK) {
+	// 		skMatch = typeof keys[sk.field] === "string" && keys[sk.field].startsWith(sk.prefix);
+	// 	}
+	//
+	// 	return (pkMatch && skMatch &&
+	// 		this._formatKeysToItem(TableIndex, key) !== null);
+	// }
+
+	// ownsCursor({ cursor }) {
+	// 	if (typeof cursor === 'string') {
+	// 		cursor = u.cursorFormatter.deserialize(cursor);
+	// 	}
+	// 	return this.ownsKeys({ keys: cursor });
+	// }
 
 	ownsItem(item) {
 		return (
@@ -491,6 +535,7 @@ class Entity {
 		let results = config._isCollectionQuery
 			? {}
 			: [];
+		// let ExclusiveStartKey = this._formatExclusiveStartKey({config, indexName: parameters.IndexName });
 		let ExclusiveStartKey = this._formatExclusiveStartKey(config);
 		if (ExclusiveStartKey === null) {
 			ExclusiveStartKey = undefined;
@@ -697,6 +742,7 @@ class Entity {
 				results = response;
 			} else {
 				if (response.Item) {
+					// if (config.ignoreOwnership || this.ownsItem({item: response.Item})) {
 					if (config.ignoreOwnership || this.ownsItem(response.Item)) {
 						results = this.model.schema.formatItemForRetrieval(response.Item, config);
 						if (Object.keys(results).length === 0) {
@@ -708,6 +754,7 @@ class Entity {
 				} else if (response.Items) {
 					results = [];
 					for (let item of response.Items) {
+						// if (config.ignoreOwnership || this.ownsItem({item: response.Item})) {
 						if (config.ignoreOwnership || this.ownsItem(item)) {
 							let record = this.model.schema.formatItemForRetrieval(item, config);
 							if (Object.keys(record).length > 0) {
@@ -756,20 +803,65 @@ class Entity {
 		return this.formatResponse(item, TableIndex, config);
 	}
 
-	_fromCompositeToCursor({indexName = TableIndex, provided}) {
+	_fromCompositeToKeys({provided}) {
 		if (!provided || Object.keys(provided).length === 0) {
 			return null;
 		}
 
-		const keys = this._formatSuppliedPager(indexName, provided);
-		return this._fromKeysToCursor({indexName, provided: keys});
+		let keys = {};
+		for (const { index } of Object.values(this.model.indexes)) {
+			const indexKeys = this._fromCompositeToKeysByIndex({indexName: index, provided});
+			if (indexKeys) {
+				keys = {
+					...keys,
+					...indexKeys,
+				}
+			}
+		}
+
+		return Object.keys(keys).length
+			? keys
+			: null;
 	}
 
-	_fromCompositeToKeys({indexName = TableIndex, provided}) {
-		return this._formatSuppliedPager(indexName, provided);
+	_fromCompositeToCursor({provided}) {
+		const keys = this._fromCompositeToKeys({provided});
+		if (!keys || Object.keys(keys).length === 0) {
+			return null;
+		}
+		return u.cursorFormatter.serialize(keys);
 	}
 
-	_fromCursorToKeys({ provided }) {
+	_fromKeysToCursor({provided}) {
+		if (!provided || Object.keys(provided).length === 0) {
+			return null;
+		}
+		return u.cursorFormatter.serialize(provided);
+	}
+
+	_fromKeysToComposite({provided}) {
+		if (!provided || Object.keys(provided).length === 0) {
+			return null;
+		}
+
+		let keys = {};
+		for (const { index } of Object.values(this.model.indexes)) {
+			const composite = this._fromKeysToCompositeByIndex({indexName: index, provided});
+			if (composite) {
+				for (const attribute in composite) {
+					if (keys[attribute] === undefined) {
+						keys[attribute] = composite[attribute];
+					}
+				}
+			}
+		}
+
+		return Object.keys(keys).length
+			? keys
+			: null;
+	}
+
+	_fromCursorToKeys({provided}) {
 		if (typeof provided !== 'string') {
 			return null;
 		}
@@ -777,19 +869,85 @@ class Entity {
 		return u.cursorFormatter.deserialize(provided);
 	}
 
-	_fromKeysToCursor({indexName = TableIndex, provided}) {
+	_fromCursorToComposite({provided}) {
+		if (typeof provided !== 'string') {
+			return null;
+		}
+
+		const keys = this._fromCursorToKeys({provided});
+		if (!keys){
+			return null;
+		}
+
+		return this._fromKeysToComposite({provided: keys});
+	}
+
+	_fromCompositeToCursorByIndex({indexName = TableIndex, provided}) {
+		if (!provided || Object.keys(provided).length === 0) {
+			return null;
+		}
+
+		const keys = this._formatSuppliedPager(indexName, provided);
+		return this._fromKeysToCursorByIndex({indexName, provided: keys});
+	}
+
+	_fromCompositeToKeysByIndex({indexName = TableIndex, provided}) {
+		return this._formatSuppliedPager(indexName, provided);
+	}
+
+	_fromCursorToKeysByIndex({ provided }) {
+		if (typeof provided !== 'string') {
+			return null;
+		}
+
+		return u.cursorFormatter.deserialize(provided);
+	}
+
+	_fromKeysToCursorByIndex({indexName = TableIndex, provided}) {
 		const keys = this._trimKeysToIndex({indexName, provided});
-		return u.cursorFormatter.serialize(keys);
+		if (!keys || Object.keys(keys).length === 0) {
+			return null;
+		}
+		return u.cursorFormatter.serialize(provided);
 	}
 
-	_fromKeysToComposite({indexName = TableIndex, provided}) {
-		const results = this._deconstructIndex({index: indexName, keys: provided});
-		return results;
+	_fromKeysToCompositeByIndex({indexName = TableIndex, provided}) {
+		let allKeys = {};
+
+		const indexKeys = this._deconstructIndex({index: indexName, keys: provided});
+		if (!indexKeys) {
+			return null;
+		}
+
+		allKeys = {
+			...indexKeys,
+		}
+
+		let tableKeys;
+		if (indexName !== TableIndex) {
+			tableKeys = this._deconstructIndex({index: TableIndex, keys: provided});
+		}
+
+		if (tableKeys === null) {
+			return null;
+		}
+
+		allKeys = {
+			...allKeys,
+			...tableKeys,
+		};
+
+		return Object.keys(allKeys).length > 0
+			? allKeys
+			: null;
 	}
 
-	_fromCursortoComposite({indexName = TableIndex, provided}) {
-		const keys = this._fromCursorToKeys({indexName, provided});
-		return this._fromKeysToComposite({indexName, provided: keys});
+	_fromCursorToCompositeByIndex({indexName = TableIndex, provided}) {
+		const keys = this._fromCursorToKeysByIndex({indexName, provided});
+		if (!keys || Object.keys(keys).length === 0) {
+			return null;
+		}
+		return this._fromKeysToCompositeByIndex({indexName, provided: keys});
 	}
 
 	_trimKeysToIndex({indexName = TableIndex, provided}) {
@@ -823,6 +981,24 @@ class Entity {
 		}
 		return config.formatCursor.serialize(page) || null;
 	}
+
+	// _formatExclusiveStartKey({config, indexName = TableIndex}) {
+	// 	let exclusiveStartKey = config.cursor;
+	// 	if (config.raw || config.pager === Pager.raw) {
+	// 		return this._trimKeysToIndex({ provided: exclusiveStartKey, indexName }) || null;
+	// 	}
+	// 	let keys;
+	// 	if (config.pager === Pager.item) {
+	// 		keys = this._fromCompositeToKeysByIndex({indexName, provided: exclusiveStartKey});
+	// 	} else {
+	// 		keys = config.formatCursor.deserialize(exclusiveStartKey);
+	// 	}
+	// 	if (!keys) {
+	// 		return null;
+	// 	}
+	//
+	// 	return this._trimKeysToIndex({provided: keys, indexName}) || null;
+	// }
 
 	_formatExclusiveStartKey(config) {
 		let exclusiveStartKey = config.cursor;
@@ -918,13 +1094,16 @@ class Entity {
 		let pattern = `^${this._regexpEscape(prefix || '')}`;
 		for (let {name, label} of labels) {
 			let attr = attributes[name];
+			if (isCustom && !name && label) {
+				// this case is for when someone uses a direct attribute reference but with a postfix (zoinks ;P)
+				pattern += `${this._regexpEscape(label)}`;
+			} else if (isCustom) {
+				pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
+			} else {
+				pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
+			}
+			names.push(name);
 			if (attr) {
-				if (isCustom) {
-					pattern += `${this._regexpEscape(label === undefined ? "" : label)}(.+)`;
-				} else {
-					pattern += `#${this._regexpEscape(label === undefined ? name : label)}_(.+)`;
-				}
-				names.push(name);
 				types.push(attr.type);
 			}
 		}
@@ -948,12 +1127,14 @@ class Entity {
 					let value = match[i + 1];
 					let type = types[i];
 					switch (type) {
-						case "number":
+						case "number": {
 							value = parseFloat(value);
 							break;
-						case "boolean":
+						}
+						case "boolean": {
 							value = value === "true";
 							break;
+						}
 					}
 					results[key] = value;
 				}
@@ -1045,9 +1226,9 @@ class Entity {
 		let tableIndex = TableIndex;
 		let pager = this._constructPagerIndex(index, item);
 		if (index !== tableIndex) {
-			pager = {...pager, ...this._constructPagerIndex(tableIndex, item)}
+			pager = {...pager, ...this._constructPagerIndex(tableIndex, item)};
 		}
-		return pager
+		return pager;
 	}
 
 	_normalizeExecutionOptions({ provided = [], context = {} } = {}) {
@@ -3359,7 +3540,7 @@ function getEntityIdentifiers(entities) {
 	return identifiers;
 }
 
-function matchToEntityAlias({ paramItem, identifiers, record, entities = {} } = {}) {
+function matchToEntityAlias({ paramItem, identifiers, record, entities = {}, allowMatchOnKeys = false } = {}) {
 	let entity;
 	if (paramItem && v.isFunction(paramItem[TransactionCommitSymbol])) {
 		const committed = paramItem[TransactionCommitSymbol]();
@@ -3374,6 +3555,15 @@ function matchToEntityAlias({ paramItem, identifiers, record, entities = {} } = 
 		} else if (record[nameField] !== undefined && record[versionField] !== undefined && record[nameField] === name && record[versionField] === version) {
 			entityAlias = alias;
 			break;
+		// } else if (allowMatchOnKeys && entities[alias] && entities[alias].ownsKeys({keys: record})) {
+		// 	if (entityAlias) {
+		// 		if (alias !== entityAlias) {
+		// 			throw new Error('Key ownership found to be not distinct');
+		// 		}
+		// 	} else {
+		// 		entityAlias = alias;
+		// 	}
+		// }
 		} else if (entities[alias] && entities[alias].ownsKeys(record)) {
 			entityAlias = alias;
 			break;
