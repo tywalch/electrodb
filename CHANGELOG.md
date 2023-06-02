@@ -324,7 +324,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.6.0] - 2023-05-22
 ### Added
 - Adds new query execution option `hydrate`. When a GSI uses a `KEYS_ONLY` projection, the `hydrate` option will perform the query and then a subsequent `batchGet` to "hydrate" the results.
-- Adds new `conversion` methods to help transform values between composite attributes, keys, and cursors 
+- Adds new `conversion` methods to help transform values between "composite attributes", "keys", and "cursors". 
+- Adds improved return typing for `patch` operations. The response type for `patch` now returns an Entity item when passed the execution options `{ response: 'all_new' }` or `{ response: 'all_old' }`. 
 
 ### Fixed
 - A common issue amongst new users, was unexpected errors when using a terminal method twice on a query chain. This would often come up when a user called `.params()` to log out parameters and then call `.go()` on the same chain. The fix was to prevent duplicative side effects from occurring on each subsequent terminal method call.

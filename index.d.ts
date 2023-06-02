@@ -1202,7 +1202,16 @@ export type ServiceQueryRecordsGo<ResponseType, Options = ServiceQueryGoTerminal
 
 export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) => Promise<{data: Partial<T>}>
+export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) =>
+    Options extends infer O
+        ? 'response' extends keyof O
+        ? O['response'] extends 'all_new'
+            ? Promise<{data: T}>
+            : O['response'] extends 'all_old'
+                ? Promise<{data: T}>
+                : Promise<{data: Partial<T>}>
+        : Promise<{data: Partial<T>}>
+        : never;
 
 export type PutRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
 
@@ -2474,13 +2483,13 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
-        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
     };
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
