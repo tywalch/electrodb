@@ -511,9 +511,16 @@ class Entity {
 	}
 
 	async hydrate(index, keys = [], config) {
-		const items = keys
-			.map(key => this._formatKeysToItem(index, key))
-			.filter(item => item !== null);
+		const items = [];
+		const validKeys = [];
+		for (let i = 0; i < keys.length; i++) {
+			const key = keys[i];
+			const item = this._formatKeysToItem(index, key);
+			if (item !== null) {
+				items.push(item);
+				validKeys.push(key);
+			}
+		}
 
 		const results = await this.get(items).go({
 			...config,
@@ -522,9 +529,28 @@ class Entity {
 			hydrator: undefined,
 			_isCollectionQuery: false,
 			preserveBatchOrder: true,
-			ignoreOwnership: config._providedIgnoreOwnership,
+			ignoreOwnership: config._providedIgnoreOwnership
 		});
-		return results;
+
+		const unprocessed = [];
+		const data = [];
+
+		for (let i = 0; i < results.data.length; i++) {
+			const key = validKeys[i];
+			const item = results.data[i];
+			if (!item) {
+				if (key) {
+					unprocessed.push(key);
+				}
+			} else {
+				data.push(item);
+			}
+		}
+
+		return {
+			unprocessed,
+			data,
+		};
 	}
 
 	async executeQuery(method, parameters, config = {}) {
@@ -738,8 +764,7 @@ class Entity {
 				results = response;
 			} else {
 				if (response.Item) {
-					// if (config.ignoreOwnership || this.ownsItem({item: response.Item})) {
-					if (config.ignoreOwnership || this.ownsItem(response.Item) || (config.hydrate && this.ownsKeys(response.Item))) {
+					if (((config.ignoreOwnership || config.hydrate) && this.ownsKeys(response.Item)) || this.ownsItem(response.Item)) {
 						results = this.model.schema.formatItemForRetrieval(response.Item, config);
 						if (Object.keys(results).length === 0) {
 							results = null;
@@ -750,8 +775,7 @@ class Entity {
 				} else if (response.Items) {
 					results = [];
 					for (let item of response.Items) {
-						// if (config.ignoreOwnership || this.ownsItem({item: response.Item})) {
-						if (config.ignoreOwnership || this.ownsItem(item) || (config.hydrate && this.ownsKeys(response.Item))) {
+						if (((config.ignoreOwnership || config.hydrate) && this.ownsKeys(item)) || this.ownsItem(item)) {
 							let record = this.model.schema.formatItemForRetrieval(item, config);
 							if (Object.keys(record).length > 0) {
 								results.push(record);
@@ -1132,7 +1156,9 @@ class Entity {
 							break;
 						}
 					}
-					results[key] = value;
+					if (key && value !== undefined) {
+						results[key] = value;
+					}
 				}
 			} else {
 				results = null;
