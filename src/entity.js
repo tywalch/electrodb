@@ -167,7 +167,26 @@ class Entity {
 			this.getVersion() === item[this.identifiers.version] &&
 			validations.isStringHasLength(item[this.identifiers.entity]) &&
 			validations.isStringHasLength(item[this.identifiers.version])
-		) //|| !!this.ownsKeys(item)
+		)
+	}
+
+	_attributesIncludeKeys(attributes = []) {
+		let {pk, sk} = this.model.prefixes[TableIndex];
+		let pkFound = false;
+		let skFound = false;
+		for (let i = 0; i < attributes.length; i++) {
+			const attribute = attributes[i];
+			if (attribute === sk.field) {
+				skFound = true;
+			}
+			if (attribute === pk.field) {
+				skFound = true;
+			}
+			if (pkFound && skFound) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	ownsKeys(key = {}) {
@@ -764,7 +783,11 @@ class Entity {
 				results = response;
 			} else {
 				if (response.Item) {
-					if (((config.ignoreOwnership || config.hydrate) && this.ownsKeys(response.Item)) || this.ownsItem(response.Item)) {
+					if (
+						(config.ignoreOwnership && config.attributes && config.attributes.length > 0 && !this._attributesIncludeKeys(config.attributes)) ||
+						((config.ignoreOwnership || config.hydrate) && this.ownsKeys(response.Item)) ||
+						this.ownsItem(response.Item)
+					) {
 						results = this.model.schema.formatItemForRetrieval(response.Item, config);
 						if (Object.keys(results).length === 0) {
 							results = null;
@@ -775,7 +798,11 @@ class Entity {
 				} else if (response.Items) {
 					results = [];
 					for (let item of response.Items) {
-						if (((config.ignoreOwnership || config.hydrate) && this.ownsKeys(item)) || this.ownsItem(item)) {
+						if (
+							(config.ignoreOwnership && config.attributes && config.attributes.length > 0 && !this._attributesIncludeKeys(config.attributes)) ||
+							((config.ignoreOwnership || config.hydrate) && this.ownsKeys(item)) ||
+							this.ownsItem(item)
+						) {
 							let record = this.model.schema.formatItemForRetrieval(item, config);
 							if (Object.keys(record).length > 0) {
 								results.push(record);

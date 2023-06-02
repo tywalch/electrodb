@@ -1,0 +1,140 @@
+---
+title: Conversions
+description: Conversion utilities for transforming keys to cursors to composite attributes
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - composite
+  - attribute
+  - key
+  - cursor
+  - conversions
+layout: ../../../layouts/MainLayout.astro
+---
+
+ElectroDB does a lot of work behind the scenes to manage DynamoDB keys. This work alleviates the burden of key management and the pitfalls of formatting. In the event that your code might still need to interact with keys, the following conversion utility functions can help.
+
+## Conversions
+
+All conversion functions can be found on your entity under the `conversions` namespace.
+
+### Example Entity
+
+```typescript
+import { Entity } from 'electrodb';
+
+const thing = new Entity({
+    model: {
+        entity: 'thing',
+        version: '1',
+        service: 'thingstore'
+    },
+    attributes: {
+        organizationId: {
+            type: 'string'
+        },
+        accountId: {
+            type: 'string'
+        },
+        name: {
+            type: 'string'
+        },
+        description: {
+            type: 'string'
+        },
+    },
+    indexes: {
+        records: {
+            pk: {
+                field: 'pk',
+                composite: ['organizationId']
+            },
+            sk: {
+                field: 'sk',
+                composite: ['accountId']
+            }
+        },
+    }
+}, { table: 'my_table' });
+```
+
+
+### Composite
+With `conversions`, you can convert the attributes that construct a key to `keys` directly or to a `cursor`. Provide the attributes that define your keys, and ElectroDB will output
+
+```typescript
+const composite = {
+    accountId: "be0c1696-50e5-47b2-8e7b-ec14d842a3f0",
+    organizationId: "a13417bc-0105-4ca1-98ed-dc83204d9c08",
+};
+```
+
+#### From Composite
+
+Methods return a value of `null` when a conversion could not be made with the provided values.
+
+```typescript
+// from Composite to all possible index Keys
+thing.conversions.fromComposite.toKeys(item);
+// from Composite to Cursor
+thing.conversions.fromComposite.toCursor(item);
+
+// from Composite to Keys for a specific access pattern
+thing.conversions.byAccessPattern.records.fromComposite.toKeys(item);
+// from Composite to Cursor for a specific access pattern
+thing.conversions.byAccessPattern.records.fromComposite.toCursor(item);
+```
+
+### Keys
+
+DynamoDB Keys are not typically exposed by ElectroDB. These conversions can help in cases where you need to convert to ElectroDB values or work with item identifiers directly.
+
+```typescript
+const keys = {
+    pk: "$thingstore#organizationid_a13417bc-0105-4ca1-98ed-dc83204d9c08",
+    sk: "$thing_1#accountid_be0c1696-50e5-47b2-8e7b-ec14d842a3f0"
+};
+```
+
+#### From Keys
+
+Methods return a value of `null` when a conversion could not be made with the provided values.
+
+> Note: when converting Keys to Composite values, ElectroDB will destructure keys into individual attributes, but the casing of your keys will match that of your keys. Be mindful when using the composite values you receive when using things link `filter` if casing is not consistent between your keys and your attributes.
+
+```typescript
+// from Keys to Composite attribute values
+thing.conversions.fromKeys.toComposite(keys);
+// from Keys to Cursor
+thing.conversions.fromKeys.toCursor(keys);
+
+// from Keys to Composite  for a specific access pattern
+thing.conversions.byAccessPattern.records.fromKeys.toComposite(keys);
+// from Keys to Cursor  for a specific access pattern
+thing.conversions.byAccessPattern.records.fromKeys.toCursor(keys);
+// from Cursor to Composite by access pattern
+```
+
+### Cursor
+
+```typescript
+const cursor = "eyJwayI6IiR0aGluZ3N0b3JlI29yZ2FuaXphdGlvbmlkX2ExMzQxN2JjLTAxMDUtNGNhMS05OGVkLWRjODMyMDRkOWMwOCIsInNrIjoiJHRoaW5nXzEjYWNjb3VudGlkX2JlMGMxNjk2LTUwZTUtNDdiMi04ZTdiLWVjMTRkODQyYTNmMCJ9";
+```
+
+#### From Cursor
+
+Methods return a value of `null` when a conversion could not be made with the provided values.
+
+```typescript
+// from Cursor to Composite
+thing.conversions.fromCursor.toComposite(cursor);
+// from Cursor to Keys
+thing.conversions.fromCursor.toKeys(cursor);
+
+// from Cursor to Composite attributes for a specific access pattern
+thing.conversions.byAccessPattern.records.fromCursor.toComposite(cursor);
+// from Cursor to Keys  for a specific access pattern
+thing.conversions.byAccessPattern.records.fromCursor.toKeys(cursor);
+```
