@@ -171,7 +171,7 @@ class Entity {
 			this.getVersion() === item[this.identifiers.version] &&
 			validations.isStringHasLength(item[this.identifiers.entity]) &&
 			validations.isStringHasLength(item[this.identifiers.version])
-		) || !!this.ownsKeys(item)
+		) //|| !!this.ownsKeys(item)
 	}
 
 	ownsKeys(key = {}) {
@@ -743,7 +743,7 @@ class Entity {
 			} else {
 				if (response.Item) {
 					// if (config.ignoreOwnership || this.ownsItem({item: response.Item})) {
-					if (config.ignoreOwnership || this.ownsItem(response.Item)) {
+					if (config.ignoreOwnership || this.ownsItem(response.Item) || (config.hydrate && this.ownsKeys(response.Item))) {
 						results = this.model.schema.formatItemForRetrieval(response.Item, config);
 						if (Object.keys(results).length === 0) {
 							results = null;
@@ -755,7 +755,7 @@ class Entity {
 					results = [];
 					for (let item of response.Items) {
 						// if (config.ignoreOwnership || this.ownsItem({item: response.Item})) {
-						if (config.ignoreOwnership || this.ownsItem(item)) {
+						if (config.ignoreOwnership || this.ownsItem(item) || (config.hydrate && this.ownsKeys(response.Item))) {
 							let record = this.model.schema.formatItemForRetrieval(item, config);
 							if (Object.keys(record).length > 0) {
 								results.push(record);
