@@ -84,22 +84,18 @@ class Entity {
 			};
 
 			this.conversions.byAccessPattern[accessPattern] = {
-				fromComposite: {
-					toCursor: (composite) => this._fromCompositeToCursorByIndex({indexName: index, provided: composite}),
-					toKeys: (composite) => {
-						return this._fromCompositeToKeysByIndex({indexName: index, provided: composite})
-					},
-				},
 				fromKeys: {
 					toCursor: (keys) => this._fromKeysToCursorByIndex({indexName: index, provided: keys}),
-					toComposite: (keys) => {
-						return this._fromKeysToCompositeByIndex({indexName: index, provided: keys});
-					},
+					toComposite: (keys) => this._fromKeysToCompositeByIndex({indexName: index, provided: keys}),
 				},
 				fromCursor: {
 					toKeys: (cursor) => this._fromCursorToKeysByIndex({indexName: index, provided: cursor}),
 					toComposite: (cursor) => this._fromCursorToCompositeByIndex({indexName: index, provided: cursor}),
-				}
+				},
+				fromComposite: {
+					toCursor: (composite) => this._fromCompositeToCursorByIndex({indexName: index, provided: composite}),
+					toKeys: (composite) => this._fromCompositeToKeysByIndex({indexName: index, provided: composite}),
+				},
 			};
 
 		}
@@ -929,7 +925,7 @@ class Entity {
 		}
 
 		if (tableKeys === null) {
-			return null;
+			return allKeys;
 		}
 
 		allKeys = {

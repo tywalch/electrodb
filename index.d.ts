@@ -884,7 +884,7 @@ type IndexKeyCompositeWithMaybeTableIndex<A extends string, F extends string, C 
 
 type IndexKeyCompositeFromItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> =
     & Partial<IndexCompositeAttributes<A,F,C,S,I>>
-    & TableIndexCompositeAttributes<A,F,C,S>;
+    & Partial<TableIndexCompositeAttributes<A,F,C,S>>;
 
 export type Conversions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
     fromComposite: {
@@ -911,14 +911,18 @@ export type Conversions<A extends string, F extends string, C extends string, S 
         [I in keyof S["indexes"]]: {
             fromKeys: {
                 toCursor: (keys: Record<string, string | number>) => string | null;
+                // keys supplied may include the table index, maybe not so composite attributes for the table index are `Partial`
                 toComposite: <T = IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>>(keys: Record<string, string | number>) => T | null;
             },
             fromCursor: {
                 toKeys: <T = Record<string, string | number>>(cursor: string) => T | null;
-                toComposite: <T = IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>>(cursor: string) => T | null;
+                // a cursor must have the table index defined along with the keys for the index (if applicable)
+                toComposite: <T = IndexKeyComposite<A,F,C,S,I>>(cursor: string) => T | null;
             },
             fromComposite: {
-                toCursor: (composite: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>) => string | null;
+                // a cursor must have the table index defined along with the keys for the index (if applicable)
+                toCursor: (composite: IndexKeyComposite<A,F,C,S,I>) => string | null;
+                // maybe the only keys you need are for this index and not the
                 toKeys: <T = Record<string, string | number>>(composite: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>) => T | null;
             }
         }
