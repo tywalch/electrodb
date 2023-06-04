@@ -3987,3 +3987,117 @@ expectAssignable<AvailableParsingOptions>(undefined);
 expectAssignable<AvailableParsingOptions>({});
 expectAssignable<AvailableParsingOptions>({ignoreOwnership: true});
 expectAssignable<AvailableParsingOptions>({ignoreOwnership: false});
+
+normalEntity2
+    .update({
+        prop1: 'abc',
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go()
+    .then(results => {
+        expectType<{
+            prop1?: string | undefined;
+            prop2?: string | undefined;
+            prop3?: string | undefined;
+            prop5?: number | undefined;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });
+
+normalEntity2
+    .update({
+        prop1: 'abc',
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go({response: 'updated_new'})
+    .then(results => {
+        expectType<{
+            prop1?: string | undefined;
+            prop2?: string | undefined;
+            prop3?: string | undefined;
+            prop5?: number | undefined;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });
+
+normalEntity2
+    .update({
+        prop1: 'abc',
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go({response: 'all_new'})
+    .then(results => {
+        expectType<{
+            prop1?: string;
+            prop2?: string;
+            prop3?: string;
+            prop5?: number;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });
+
+normalEntity2
+    .patch({
+        prop1: 'abc',
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go()
+    .then(results => {
+        expectType<{
+            prop1?: string | undefined;
+            prop2?: string | undefined;
+            prop3?: string | undefined;
+            prop5?: number | undefined;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });
+
+normalEntity2
+    .patch({
+        prop1: 'abc',
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go({response: 'updated_new'})
+    .then(results => {
+        expectType<{
+            prop1?: string | undefined;
+            prop2?: string | undefined;
+            prop3?: string | undefined;
+            prop5?: number | undefined;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });
+
+normalEntity2
+    .patch({
+        prop1: 'abc',
+        prop2: 'def',
+        prop5: 123
+    })
+    .set({attr6: 456})
+    .go({response: 'all_new'})
+    .then(results => {
+        expectType<{
+            prop1: string;
+            prop2: string;
+            prop3: string;
+            prop5: number;
+            attr6?: number | undefined;
+            attr9?: number | undefined;
+        }>(magnify(results.data));
+    });

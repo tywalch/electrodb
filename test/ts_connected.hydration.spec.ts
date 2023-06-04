@@ -1977,10 +1977,10 @@ describe('query hydration', () => {
                 lastKind = item.kind;
             });
 
-            const results = await entity.query.location({ name }).go({ hydrate: true });
+            const results = await entity.query.location({ name }).go({ hydrate: true, ignoreOwnership: true });
             expectEqualArrays('state', results.data, items);
 
-            const similarResults = await similarEntity.query.location({name}).go({ hydrate: true });
+            const similarResults = await similarEntity.query.location({name}).go({ hydrate: true, ignoreOwnership: true });
             expectEqualArrays('state', similarResults.data, similarItems);
         });
 
@@ -2068,7 +2068,7 @@ describe('query hydration', () => {
                 .map(params => client.put(params).promise())
             );
 
-            const results = await entity.query.account({organizationId}).go({ hydrate: true });
+            const results = await entity.query.account({ organizationId }).go({ hydrate: true, ignoreOwnership: true });
             expectEqualArrays('state', results.data, items);
         });
 
@@ -2076,7 +2076,7 @@ describe('query hydration', () => {
             const serviceName = uuid();
             const entity1 = new Entity({
                 model: {
-                    entity: uuid(),
+                    entity: `e1_${uuid()}`,
                     version: '1',
                     service: serviceName,
                 },
@@ -2134,7 +2134,7 @@ describe('query hydration', () => {
 
             const entity2 = new Entity({
                 model: {
-                    entity: uuid(),
+                    entity: `e2_${uuid()}`,
                     version: '1',
                     service: serviceName,
                 },
@@ -2221,6 +2221,7 @@ describe('query hydration', () => {
             await Promise.all(items
                 .map(item => entity2.put(item).params())
                 .map((params: any) => {
+                    params.Item.description = `${params.Item.description}_entity2`;
                     expect(typeof params.Item['__edb_e__']).to.equal('string');
                     delete params.Item['__edb_e__'];
                     expect(typeof params.Item['__edb_v__']).to.equal('string');
@@ -2230,7 +2231,7 @@ describe('query hydration', () => {
                 .map(params => client.put(params).promise())
             );
 
-            const results = await entity1.query.location({ name }).go({ hydrate: true });
+            const results = await entity1.query.location({ name }).go({ hydrate: true, ignoreOwnership: true });
             expectEqualArrays('state', results.data, items);
         });
 
@@ -2318,7 +2319,7 @@ describe('query hydration', () => {
             );
 
             await entity.put(items).go();
-            const results = await entity.query.account({organizationId}).go({hydrate: true});
+            const results = await entity.query.account({organizationId}).go({ hydrate: true, ignoreOwnership: true });
             expectEqualArrays('state', results.data, items);
         });
     });

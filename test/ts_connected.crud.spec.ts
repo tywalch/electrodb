@@ -3158,7 +3158,7 @@ describe('attributes query option', () => {
                 "attr5": item.attr5,
                 "prop9": item.attr9, // should convert attribute names to field names when specifying attributes
                 "attr2": item.attr2,
-                "attr10": item.attr10
+                "attr10": item.attr10,
             }
         });
         const queryRawGo = await entityWithSK.query.myIndex({
@@ -3233,12 +3233,7 @@ describe('attributes query option', () => {
             ignoreOwnership: true,
             attributes: ['attr2', 'attr9', 'attr5', 'attr10']
         }).then(res => res.data);
-        expect(getIgnoreOwnership).to.deep.equal({
-            "attr5": item.attr5,
-            "attr9": item.attr9,
-            "attr2": item.attr2,
-            "attr10": item.attr10
-        })
+
         expect(getIgnoreOwnershipParams.ExpressionAttributeNames).to.deep.equal({
             "#attr2": "attr2",
             "#prop9": "prop9", // should convert attribute names to field names when specifying attributes
@@ -3246,6 +3241,13 @@ describe('attributes query option', () => {
             "#attr10": "attr10",
         });
         expect(getIgnoreOwnershipParams.ProjectionExpression).to.equal("#attr2, #prop9, #attr5, #attr10");
+
+        expect(getIgnoreOwnership).to.deep.equal({
+            "attr5": item.attr5,
+            "attr9": item.attr9,
+            "attr2": item.attr2,
+            "attr10": item.attr10
+        });
 
         const queryIgnoreOwnershipGo = await entityWithSK.query.myIndex({
             attr1: item.attr1,
@@ -4618,44 +4620,45 @@ describe('terminal methods', () => {
     })
 });
 
-describe('query limit', () => {
-    it('adding a limit should not cause dropped items when paginating', async () => {
-        const entity = new Entity({
-            model: {
-                version: '1',
-                entity: uuid(),
-                service: uuid(),
+describe('conversion use cases: pagination', () => {
+    const entity = new Entity({
+        model: {
+            version: '1',
+            entity: uuid(),
+            service: uuid(),
+        },
+        attributes: {
+            id: {
+                type: 'string'
             },
-            attributes: {
-                id: {
-                    type: 'string'
-                },
-                accountId: {
-                    type: 'string'
-                },
-                name: {
-                    type: 'string'
-                },
-                description: {
-                    type: 'string'
-                }
+            accountId: {
+                type: 'string'
             },
-            indexes: {
-                records: {
-                    pk: {
-                        field: 'pk',
-                        composite: ['accountId']
-                    },
-                    sk: {
-                        field: 'sk',
-                        composite: ['id']
-                    }
+            name: {
+                type: 'string'
+            },
+            description: {
+                type: 'string'
+            }
+        },
+        indexes: {
+            records: {
+                pk: {
+                    field: 'pk',
+                    composite: ['accountId']
+                },
+                sk: {
+                    field: 'sk',
+                    composite: ['id']
                 }
             }
-        }, {
-            table,
-            client
-        });
+        }
+    }, {
+        table,
+        client
+    });
+
+    async function loadItems() {
         const accountId = uuid();
         const createItem = () => {
             return {
@@ -4665,12 +4668,18 @@ describe('query limit', () => {
                 description: uuid(),
             }
         }
-        const limit = 10;
+
         const itemCount = 100;
 
         const items = new Array(itemCount).fill({}).map(createItem);
         await entity.put(items).go();
 
+        return {items, accountId};
+    }
+
+    it('adding a limit should not cause dropped items when paginating', async () => {
+        const {items, accountId} = await loadItems();
+        const limit = 10;
         let iterations = 0;
         let cursor: string | null = null;
         let results: EntityItem<typeof entity>[] = [];
@@ -4680,6 +4689,58 @@ describe('query limit', () => {
                 .go({ cursor, limit });
             results = results.concat(response.data);
             cursor = response.cursor;
+            iterations++;
+        } while (cursor);
+
+        expect(
+            items.sort((a, z) => a.id.localeCompare(z.id))
+        ).to.deep.equal(
+            results.sort((a, z) => a.id.localeCompare(z.id))
+        );
+    });
+
+    it('should let you use a entity level toCursor conversion to create a cursor based on the last item returned', async () => {
+        const { items, accountId } = await loadItems();
+        const limit = 10;
+        let iterations = 0;
+        let cursor: string | null = null;
+        let results: EntityItem<typeof entity>[] = [];
+        do {
+            const response: QueryResponse<typeof entity> = await entity.query
+                .records({accountId})
+                .go({ cursor, limit });
+            results = results.concat(response.data);
+            if (response.data[response.data.length - 1]) {
+                cursor = entity.conversions.fromComposite.toCursor(response.data[response.data.length - 1]);
+            } else {
+                cursor = null;
+            }
+            iterations++;
+        } while (cursor);
+
+        expect(
+            items.sort((a, z) => a.id.localeCompare(z.id))
+        ).to.deep.equal(
+            results.sort((a, z) => a.id.localeCompare(z.id))
+        );
+    });
+
+    it('should let you use the index specific toCursor conversion to create a cursor based on the last item returned', async () => {
+        const { items, accountId } = await loadItems();
+        const limit = 10;
+        let iterations = 0;
+        let cursor: string | null = null;
+        let results: EntityItem<typeof entity>[] = [];
+        do {
+            const response: QueryResponse<typeof entity> = await entity.query
+                .records({accountId})
+                .go({ cursor, limit });
+            results = results.concat(response.data);
+            if (response.data[response.data.length - 1]) {
+                cursor = entity.conversions.byAccessPattern.records.fromComposite.toCursor(response.data[response.data.length - 1]);
+            } else {
+                cursor = null;
+            }
             iterations++;
         } while (cursor);
 

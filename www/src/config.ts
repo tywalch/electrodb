@@ -94,6 +94,7 @@ export const SIDEBAR: Sidebar = {
       { text: 'DynamoDB Client', link: 'en/reference/dynamodb-client' },
       { text: 'Events & Logging', link: 'en/reference/events-logging' },
       { text: 'Parse', link: 'en/reference/parse' },
+      { text: 'Conversions', link: 'en/reference/conversions' },
     ],
     Examples: [
       { text: 'Human resources database', link: 'en/examples/human-resources' },

@@ -323,7 +323,7 @@ class Service {
 				continue;
 			}
 
-			const entityAlias = matchToEntityAlias({identifiers, record, entities: this.entities});
+			const entityAlias = matchToEntityAlias({identifiers, record, entities: this.entities, allowMatchOnKeys: config.ignoreOwnership });
 
 			if (!entityAlias) {
 				continue;
@@ -456,6 +456,7 @@ class Service {
 					for (let entityName in entities) {
 						entityItemRefs[entityName] = entityItemRefs[entityName] || [];
 						const entity = entities[entityName];
+						// if (entity.ownsKeys({ keys: item })) {
 						if (entity.ownsKeys(item)) {
 							// const entityItemRefsIndex =
 							entityItemRefs[entityName].push({

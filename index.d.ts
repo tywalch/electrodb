@@ -874,6 +874,65 @@ interface QueryOperations<A extends string, F extends string, C extends string, 
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,QueryBranches<A,F,C,S,ResponseItem,IndexCompositeAttributes>>
 }
 
+type IndexKeyComposite<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> =
+    & IndexCompositeAttributes<A,F,C,S,I>
+    & TableIndexCompositeAttributes<A,F,C,S>;
+
+type IndexKeyCompositeWithMaybeTableIndex<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> =
+    & IndexCompositeAttributes<A,F,C,S,I>
+    & Partial<TableIndexCompositeAttributes<A,F,C,S>>;
+
+type IndexKeyCompositeFromItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends keyof S["indexes"]> =
+    & Partial<IndexCompositeAttributes<A,F,C,S,I>>
+    & Partial<TableIndexCompositeAttributes<A,F,C,S>>;
+
+type ConversionOptions = {
+    strict?: 'all' | 'pk' | 'none';
+}
+
+export type Conversions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
+    fromComposite: {
+      toCursor: (composite: {
+          [I in keyof S["indexes"]]: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>
+      }[keyof S['indexes']]) => string;
+      toKeys: <T = Record<string, string | number>>(composite: {
+          [I in keyof S["indexes"]]: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>
+      }[keyof S['indexes']], options?: ConversionOptions) => T;
+    },
+    fromKeys: {
+        toComposite: <T = {
+            [I in keyof S["indexes"]]: IndexKeyCompositeFromItem<A,F,C,S,I>
+        }[keyof S['indexes']]>(keys: Record<string, string | number>) => T;
+        toCursor: (keys: Record<string, string | number>) => string;
+    },
+    fromCursor: {
+        toKeys: <T = Record<string, string | number>> (cursor: string) => T;
+        toComposite: <T = Partial<{
+            [I in keyof S["indexes"]]: IndexKeyCompositeFromItem<A,F,C,S,I>
+        }>[keyof S['indexes']]>(cursor: string) => T;
+    },
+    byAccessPattern: {
+        [I in keyof S["indexes"]]: {
+            fromKeys: {
+                toCursor: (keys: Record<string, string | number>) => string;
+                // keys supplied may include the table index, maybe not so composite attributes for the table index are `Partial`
+                toComposite: <T = IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>>(keys: Record<string, string | number>, options?: ConversionOptions) => T;
+            },
+            fromCursor: {
+                toKeys: <T = Record<string, string | number>>(cursor: string, options?: ConversionOptions) => T;
+                // a cursor must have the table index defined along with the keys for the index (if applicable)
+                toComposite: <T = IndexKeyComposite<A,F,C,S,I>>(cursor: string, options?: ConversionOptions) => T;
+            },
+            fromComposite: {
+                // a cursor must have the table index defined along with the keys for the index (if applicable)
+                toCursor: (composite: IndexKeyComposite<A,F,C,S,I>, options?: ConversionOptions) => string;
+                // maybe the only keys you need are for this index and not the
+                toKeys: <T = Record<string, string | number>>(composite: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>, options?: ConversionOptions) => T;
+            }
+        }
+    }
+}
+
 export type Queries<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
     [I in keyof S["indexes"]]: <CompositeAttributes extends IndexCompositeAttributes<A,F,C,S,I>>(composite: CompositeAttributes) =>
         IndexSKAttributes<A,F,C,S,I> extends infer SK
@@ -1147,7 +1206,16 @@ export type ServiceQueryRecordsGo<ResponseType, Options = ServiceQueryGoTerminal
 
 export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) => Promise<{data: Partial<T>}>
+export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) =>
+    Options extends infer O
+        ? 'response' extends keyof O
+        ? O['response'] extends 'all_new'
+            ? Promise<{data: T}>
+            : O['response'] extends 'all_old'
+                ? Promise<{data: T}>
+                : Promise<{data: Partial<T>}>
+        : Promise<{data: Partial<T>}>
+        : never;
 
 export type PutRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
 
@@ -1156,7 +1224,7 @@ export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T =
 export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
     Promise<{ unprocessed: ResponseType }>
 
-export type ParamRecord<Options = ParamOptions> = <P>(options?: Options) => P;
+export type ParamRecord<Options = ParamOptions> = <P = Record<string, any>>(options?: Options) => P;
 
 export class ElectroError extends Error {
     readonly name: 'ElectroError';
@@ -2419,13 +2487,13 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
-        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
-        data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
     };
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -2443,6 +2511,7 @@ export class Entity<A extends string, F extends string, C extends string, S exte
 
     scan: RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], TableIndexCompositeAttributes<A,F,C,S>>;
     query: Queries<A,F,C,S>;
+    conversions: Conversions<A,F,C,S>;
 
     parse<Options extends ParseOptions<keyof ResponseItem<A,F,C,S>>>(item: ParseSingleInput, options?: Options):
         Options extends ParseOptions<infer Attr>
@@ -2527,7 +2596,7 @@ type TransactWriteExtractedType<T extends readonly any[], A extends readonly any
 type TransactGetExtractedType<T extends readonly any[], A extends readonly any[] = []> =
     T extends [infer F, ...infer R] ?
         F extends CommittedTransactionResult<infer V, TransactGetItem>
-            ? TransactWriteExtractedType<R, [...A, TransactionItem<V>]>
+            ? TransactGetExtractedType<R, [...A, TransactionItem<V>]>
             : never
         : A
 

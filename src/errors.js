@@ -187,6 +187,24 @@ const ErrorCodes = {
     name: "InvalidLimitOption",
     sym: ErrorCode,
   },
+  InvalidConversionKeysProvided: {
+    code: 2007,
+    section: "invalid-conversion-values-provided",
+    name: "InvalidConversionKeysProvided",
+    sym: ErrorCode,
+  },
+  InvalidConversionCursorProvided: {
+    code: 2008,
+    section: "invalid-conversion-values-provided",
+    name: "InvalidConversionCursorProvided",
+    sym: ErrorCode,
+  },
+  InvalidConversionCompositeProvided: {
+    code: 2009,
+    section: "invalid-conversion-values-provided",
+    name: "InvalidConversionCompositeProvided",
+    sym: ErrorCode,
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",

@@ -18,6 +18,8 @@ import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
 
 In DynamoDB, `update` operations by default will create an item if record being updated does not exist. Alternatively, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not created when updating items in your table.
 
+> Unlike the `update` method, `patch` has a return type of [EntityItem](/en/reference/typescript#entityitem-type). This is because `patch` is considered a "safer" update because it will not result in an item being accidentally created by DynamoDB. Accidental creations via `update` can result in partial items and incorrect typing.
+
 ```javascript
 await entity.patch({ attr1: "value1", attr2: "value2" })
   .set({ attr4: "value4" })
