@@ -1648,7 +1648,7 @@
             "id": "d650eca5-66e3-49ab-9134-e2765b7cfcfd",
             "organizationId": "1f1c8373-76c1-49f2-b983-7f963d67e8a5"
         },
-        "error": "expected 'Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes' to deeply equal undefined",
+        "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
         "strict": "pk",
         "success": true,
         "target": "top",
