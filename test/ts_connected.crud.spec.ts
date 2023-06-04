@@ -4620,7 +4620,7 @@ describe('terminal methods', () => {
     })
 });
 
-describe('pagination use cases', () => {
+describe('conversion use cases: pagination', () => {
     const entity = new Entity({
         model: {
             version: '1',
@@ -4699,29 +4699,7 @@ describe('pagination use cases', () => {
         );
     });
 
-    it('should let you use a top toCursor to create a cursor based on the last item returned', async () => {
-        const {items, accountId} = await loadItems();
-        const limit = 10;
-        let iterations = 0;
-        let cursor: string | null = null;
-        let results: EntityItem<typeof entity>[] = [];
-        do {
-            const response: QueryResponse<typeof entity> = await entity.query
-                .records({accountId})
-                .go({ cursor, limit });
-            results = results.concat(response.data);
-            cursor = entity.conversions.fromComposite.toCursor(response.data[response.data.length - 1]);
-            iterations++;
-        } while (cursor);
-
-        expect(
-            items.sort((a, z) => a.id.localeCompare(z.id))
-        ).to.deep.equal(
-            results.sort((a, z) => a.id.localeCompare(z.id))
-        );
-    });
-
-    it('should let you use the index specific toCursor to create a cursor based on the last item returned', async () => {
+    it('should let you use a entity level toCursor conversion to create a cursor based on the last item returned', async () => {
         const { items, accountId } = await loadItems();
         const limit = 10;
         let iterations = 0;
@@ -4732,7 +4710,37 @@ describe('pagination use cases', () => {
                 .records({accountId})
                 .go({ cursor, limit });
             results = results.concat(response.data);
-            cursor = entity.conversions.byAccessPattern.records.fromComposite.toCursor(response.data[response.data.length - 1]);
+            if (response.data[response.data.length - 1]) {
+                cursor = entity.conversions.fromComposite.toCursor(response.data[response.data.length - 1]);
+            } else {
+                cursor = null;
+            }
+            iterations++;
+        } while (cursor);
+
+        expect(
+            items.sort((a, z) => a.id.localeCompare(z.id))
+        ).to.deep.equal(
+            results.sort((a, z) => a.id.localeCompare(z.id))
+        );
+    });
+
+    it('should let you use the index specific toCursor conversion to create a cursor based on the last item returned', async () => {
+        const { items, accountId } = await loadItems();
+        const limit = 10;
+        let iterations = 0;
+        let cursor: string | null = null;
+        let results: EntityItem<typeof entity>[] = [];
+        do {
+            const response: QueryResponse<typeof entity> = await entity.query
+                .records({accountId})
+                .go({ cursor, limit });
+            results = results.concat(response.data);
+            if (response.data[response.data.length - 1]) {
+                cursor = entity.conversions.byAccessPattern.records.fromComposite.toCursor(response.data[response.data.length - 1]);
+            } else {
+                cursor = null;
+            }
             iterations++;
         } while (cursor);
 

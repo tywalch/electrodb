@@ -4,6 +4,18 @@ import {expect} from "chai";
 import {v4 as uuid} from "uuid";
 const u = require('../src/util');
 
+type ConversionTest = {
+    item: any;
+    keys: any;
+    success: boolean;
+    target: 'byCategory' | 'byOrganization' | 'top';
+    description: string;
+    error: string;
+    strict?: 'all' | 'pk' | 'none';
+}
+
+const conversionTests: ConversionTest[] = require('./conversions');
+
 const client = new DocumentClient({
     endpoint: 'http://localhost:8000',
     region: 'us-east-1',
@@ -496,22 +508,6 @@ describe('conversions', () => {
         }
     }
 
-    const accessPatterns = [
-        ['has default electrodb key structure', 'defaultKeyStructure'],
-        ['has custom key structure using template', 'customKeyStructure'],
-        ['has default key structure but with only a pk', 'pkOnlyDefaultKeyStructure'],
-        ['has custom key structure with template but with only a pk', 'pkOnlyCustomKeyStructure'],
-        ['has direct attribute reference key', 'attributeRefKeyStructure'],
-        ['has default key structure but on a clustered index', 'defaultKeyStructureClustered'],
-        ['has custom key structure but with a clustered index', 'customKeyStructureClustered'],
-        ['has direct attribute reference but with index defined as clustered', 'attributeRefKeyStructureClustered'],
-        ['has default key structure but on a clustered index and caseless keys', 'defaultKeyStructureClusteredCaseless'],
-        ['has custom key structure but with a clustered index and caseless keys', 'customKeyStructureClusteredCaseless'],
-        ['has default key structure but with only a pk and caseless keys', 'pkOnlyDefaultKeyStructureClusteredCaseless'],
-        ['has custom key structure with template but with only a pk and caseless keys', 'pkOnlyCustomKeyStructureClusteredCaseless'],
-        ['has direct attribute reference key and caseless keys', 'attributeRefKeyStructureClusteredCaseless'],
-    ] as const;
-
     const record = {
         name: 'nameProperty',
         accountId: 'accountIdProperty',
@@ -521,7 +517,7 @@ describe('conversions', () => {
         state: 'stateProperty',
         count: 10,
         kind: 'kindProperty',
-    }
+    };
 
     describe('top-level conversions', () => {
 
@@ -540,12 +536,122 @@ describe('conversions', () => {
             evaluateFromKeys(keys);
         });
 
+        describe('should create keys based on strictness', () => {
+            const table = uuid();
+            const entityName = 'conversionentity';
+            const serviceName = 'conversionservice';
+            const entity = new Entity({
+                model: {
+                    service: serviceName,
+                    entity: entityName,
+                    version: '1',
+                },
+                attributes: {
+                    accountId: {
+                        type: 'string'
+                    },
+                    organizationId: {
+                        type: 'string'
+                    },
+                    id: {
+                        type: 'string'
+                    },
+                    category: {
+                        type: 'string',
+                    },
+                    createdAt: {
+                        type: 'number'
+                    },
+                    name: {
+                        type: 'string',
+                    },
+                    description: {
+                        type: 'string',
+                    }
+                },
+                indexes: {
+                    byOrganization: {
+                        pk: {
+                            field: 'pk',
+                            composite: ['organizationId'],
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: ['accountId', 'id']
+                        }
+                    },
+                    byCategory: {
+                        index: 'gsi1pk-gsi1sk-index',
+                        pk: {
+                            field: 'gsi1pk',
+                            composite: ['category']
+                        },
+                        sk: {
+                            field: 'gsi1sk',
+                            composite: ['createdAt', 'name']
+                        }
+                    }
+                }
+            }, {table});
+
+            function getConversion(target: ConversionTest['target'], strict?: 'all' | 'pk' | 'none') {
+                switch (target) {
+                    case "byCategory":
+                        return (composite: any) => entity.conversions.byAccessPattern.byCategory.fromComposite.toKeys(composite, {strict});
+                    case "byOrganization":
+                        return (composite: any) => entity.conversions.byAccessPattern.byOrganization.fromComposite.toKeys(composite, {strict});
+                    case "top":
+                        return (composite: any) => entity.conversions.fromComposite.toKeys(composite, {strict});
+                    default:
+                        throw new Error(`Unknown target: "${target}"`);
+                }
+            }
+
+            for (const test of conversionTests) {
+                it(test.description, () => {
+                    const conversion = getConversion(test.target, test.strict);
+                    try {
+                        const keys = conversion(test.item);
+                        expect(keys).to.deep.equal(test.keys);
+                    } catch (err: any) {
+                        expect(err.message).to.deep.equal(test.error);
+                    }
+                });
+            }
+        });
     });
 
     describe('byAccessPattern conversions', () => {
+        const accessPatterns = [
+            ['has default electrodb key structure', 'defaultKeyStructure'],
+            ['has custom key structure using template', 'customKeyStructure'],
+            ['has default key structure but with only a pk', 'pkOnlyDefaultKeyStructure'],
+            ['has custom key structure with template but with only a pk', 'pkOnlyCustomKeyStructure'],
+            ['has direct attribute reference key', 'attributeRefKeyStructure'],
+            ['has default key structure but on a clustered index', 'defaultKeyStructureClustered'],
+            ['has custom key structure but with a clustered index', 'customKeyStructureClustered'],
+            ['has direct attribute reference but with index defined as clustered', 'attributeRefKeyStructureClustered'],
+            ['has default key structure but on a clustered index and caseless keys', 'defaultKeyStructureClusteredCaseless'],
+            ['has custom key structure but with a clustered index and caseless keys', 'customKeyStructureClusteredCaseless'],
+            ['has default key structure but with only a pk and caseless keys', 'pkOnlyDefaultKeyStructureClusteredCaseless'],
+            ['has custom key structure with template but with only a pk and caseless keys', 'pkOnlyCustomKeyStructureClusteredCaseless'],
+            ['has direct attribute reference key and caseless keys', 'attributeRefKeyStructureClusteredCaseless'],
+        ] as const;
+
+        const record = {
+            name: 'nameProperty',
+            accountId: 'accountIdProperty',
+            organizationId: 'organizationIdProperty',
+            city: 'cityProperty',
+            county: 'countyProperty',
+            state: 'stateProperty',
+            count: 10,
+            kind: 'kindProperty',
+        };
 
         for (let i = 0; i < accessPatterns.length; i++) {
             const [description, accessPattern] = accessPatterns[i];
+
             it(`should perform all conversions without loss starting with an item for an index that ${description}`, () => {
                 evaluateAccessPattern(accessPattern, record);
             });

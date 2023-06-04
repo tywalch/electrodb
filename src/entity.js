@@ -61,11 +61,11 @@ class Entity {
 		this.query = {};
 		this.conversions = {
 			fromComposite: {
-				toKeys: (composite) => this._fromCompositeToKeys({ provided: composite }),
-				toCursor: (composite) => this._fromCompositeToCursor({ provided: composite }),
+				toKeys: (composite, options = {}) => this._fromCompositeToKeys({ provided: composite }, options),
+				toCursor: (composite) => this._fromCompositeToCursor({ provided: composite }, { strict: 'all' }),
 			},
 			fromKeys: {
-				toCursor: (keys) => this._fromKeysToCursor({provided: keys}),
+				toCursor: (keys) => this._fromKeysToCursor({provided: keys}, {}),
 				toComposite: (keys) => this._fromKeysToComposite({ provided: keys }),
 			},
 			fromCursor: {
@@ -93,8 +93,8 @@ class Entity {
 					toComposite: (cursor) => this._fromCursorToCompositeByIndex({indexName: index, provided: cursor}),
 				},
 				fromComposite: {
-					toCursor: (composite) => this._fromCompositeToCursorByIndex({indexName: index, provided: composite}),
-					toKeys: (composite) => this._fromCompositeToKeysByIndex({indexName: index, provided: composite}),
+					toCursor: (composite) => this._fromCompositeToCursorByIndex({indexName: index, provided: composite}, { strict: 'all' }),
+					toKeys: (composite, options = {}) => this._fromCompositeToKeysByIndex({indexName: index, provided: composite}, options),
 				},
 			};
 
@@ -838,7 +838,6 @@ class Entity {
 		}
 	}
 
-
 	parse(item, options = {}) {
 		if (item === undefined || item === null) {
 			return null;
@@ -850,14 +849,17 @@ class Entity {
 		return this.formatResponse(item, TableIndex, config);
 	}
 
-	_fromCompositeToKeys({provided}) {
+	_fromCompositeToKeys({provided}, options = {}) {
 		if (!provided || Object.keys(provided).length === 0) {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCompositeProvided, 'Invalid conversion composite provided');
 		}
 
 		let keys = {};
+		const secondaryIndexStrictMode = (options.strict === 'all') ? 'pk' : 'none';
 		for (const { index } of Object.values(this.model.indexes)) {
-			const indexKeys = this._fromCompositeToKeysByIndex({indexName: index, provided});
+			const indexKeys = this._fromCompositeToKeysByIndex({ indexName: index, provided }, {
+				strict: index === TableIndex ? options.strict : secondaryIndexStrictMode,
+			});
 			if (indexKeys) {
 				keys = {
 					...keys,
@@ -866,34 +868,37 @@ class Entity {
 			}
 		}
 
-		return Object.keys(keys).length
-			? keys
-			: null;
+
+		if (Object.keys(keys).length === 0) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCompositeProvided, 'Invalid conversion composite provided');
+		}
+
+		return keys;
 	}
 
-	_fromCompositeToCursor({provided}) {
-		const keys = this._fromCompositeToKeys({provided});
+	_fromCompositeToCursor({provided}, options = {}) {
+		const keys = this._fromCompositeToKeys({provided}, options);
 		if (!keys || Object.keys(keys).length === 0) {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCompositeProvided, 'Invalid conversion composite provided');
 		}
 		return u.cursorFormatter.serialize(keys);
 	}
 
-	_fromKeysToCursor({provided}) {
+	_fromKeysToCursor({provided}, options = {}) {
 		if (!provided || Object.keys(provided).length === 0) {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, 'Invalid keys provided');
 		}
 		return u.cursorFormatter.serialize(provided);
 	}
 
-	_fromKeysToComposite({provided}) {
+	_fromKeysToComposite({provided}, options = {}) {
 		if (!provided || Object.keys(provided).length === 0) {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, 'Provided keys could not be used to form composite attributes');
 		}
 
 		let keys = {};
 		for (const { index } of Object.values(this.model.indexes)) {
-			const composite = this._fromKeysToCompositeByIndex({indexName: index, provided});
+			const composite = this._fromKeysToCompositeByIndex({indexName: index, provided}, options);
 			if (composite) {
 				for (const attribute in composite) {
 					if (keys[attribute] === undefined) {
@@ -903,67 +908,86 @@ class Entity {
 			}
 		}
 
-		return Object.keys(keys).length
-			? keys
-			: null;
+		if (Object.keys(keys).length === 0) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, 'Provided keys could not be used to form composite attributes');
+		}
+
+		return keys;
 	}
 
-	_fromCursorToKeys({provided}) {
+	_fromCursorToKeys({provided}, options = {}) {
 		if (typeof provided !== 'string') {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCursorProvided, 'Invalid conversion cursor provided');
 		}
 
 		return u.cursorFormatter.deserialize(provided);
 	}
 
-	_fromCursorToComposite({provided}) {
+	_fromCursorToComposite({provided}, options = {}) {
 		if (typeof provided !== 'string') {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCursorProvided, 'Invalid conversion cursor provided');
 		}
 
-		const keys = this._fromCursorToKeys({provided});
+		const keys = this._fromCursorToKeys({provided}, options);
 		if (!keys){
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCursorProvided, 'Invalid conversion cursor provided');
 		}
 
-		return this._fromKeysToComposite({provided: keys});
+		return this._fromKeysToComposite({provided: keys}, options);
 	}
 
-	_fromCompositeToCursorByIndex({indexName = TableIndex, provided}) {
+	_fromCompositeToCursorByIndex({indexName = TableIndex, provided}, options = {}) {
 		if (!provided || Object.keys(provided).length === 0) {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCompositeProvided, 'Invalid conversion composite provided');
 		}
 
-		const keys = this._formatSuppliedPager(indexName, provided);
-		return this._fromKeysToCursorByIndex({indexName, provided: keys});
+		const keys = this._formatSuppliedPager(indexName, provided, {
+			relaxedPk: false,
+			relaxedSk: false,
+		});
+
+		return this._fromKeysToCursorByIndex({indexName, provided: keys}, options);
 	}
 
-	_fromCompositeToKeysByIndex({indexName = TableIndex, provided}) {
-		return this._formatSuppliedPager(indexName, provided);
+	_fromCompositeToKeysByIndex({indexName = TableIndex, provided}, options = {}) {
+		return this._formatSuppliedPager(indexName, provided, {
+			relaxedPk: options.strict !== 'pk' && options.strict !== 'all',
+			relaxedSk: options.strict !== 'all',
+		});
 	}
 
-	_fromCursorToKeysByIndex({ provided }) {
-		if (typeof provided !== 'string') {
-			return null;
+	_fromCursorToKeysByIndex({ provided }, options = {}) {
+		if (typeof provided !== 'string' || provided.length < 1) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCursorProvided, 'Invalid conversion cursor provided');
 		}
 
 		return u.cursorFormatter.deserialize(provided);
 	}
 
-	_fromKeysToCursorByIndex({indexName = TableIndex, provided}) {
-		const keys = this._trimKeysToIndex({indexName, provided});
-		if (!keys || Object.keys(keys).length === 0) {
-			return null;
+	_fromKeysToCursorByIndex({indexName = TableIndex, provided}, options = {}) {
+		const isValidTableIndex = this._verifyKeys({indexName: TableIndex, provided});
+		const isValidIndex = this._verifyKeys({indexName, provided});
+		if (!isValidTableIndex) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, 'Provided keys did not include valid properties for the primary index');
+		} else if (!isValidIndex) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, `Provided keys did not include valid properties for the index "${indexName}"`);
 		}
+
+		const keys = this._trimKeysToIndex({ indexName, provided });
+
+		if (!keys || Object.keys(keys).length === 0) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, `Provided keys not defined`);
+		}
+
 		return u.cursorFormatter.serialize(provided);
 	}
 
-	_fromKeysToCompositeByIndex({indexName = TableIndex, provided}) {
+	_fromKeysToCompositeByIndex({indexName = TableIndex, provided}, options = {}) {
 		let allKeys = {};
 
-		const indexKeys = this._deconstructIndex({index: indexName, keys: provided});
+		const indexKeys = this._deconstructIndex({ index: indexName, keys: provided });
 		if (!indexKeys) {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, `Provided keys did not include valid properties for the index "${indexName}"`);
 		}
 
 		allKeys = {
@@ -984,17 +1008,19 @@ class Entity {
 			...tableKeys,
 		};
 
-		return Object.keys(allKeys).length > 0
-			? allKeys
-			: null;
+		if (Object.keys(allKeys).length === 0) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, 'Provided keys could not be used to form composite attributes');
+		}
+
+		return allKeys;
 	}
 
-	_fromCursorToCompositeByIndex({indexName = TableIndex, provided}) {
-		const keys = this._fromCursorToKeysByIndex({indexName, provided});
+	_fromCursorToCompositeByIndex({indexName = TableIndex, provided}, options = {}) {
+		const keys = this._fromCursorToKeysByIndex({indexName, provided}, options);
 		if (!keys || Object.keys(keys).length === 0) {
-			return null;
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionCursorProvided, 'Invalid conversion cursor provided');
 		}
-		return this._fromKeysToCompositeByIndex({indexName, provided: keys});
+		return this._fromKeysToCompositeByIndex({indexName, provided: keys}, options);
 	}
 
 	_trimKeysToIndex({indexName = TableIndex, provided}) {
@@ -1019,6 +1045,18 @@ class Entity {
 		}
 
 		return keys;
+	}
+
+	_verifyKeys({indexName, provided}) {
+		if (!provided) {
+			throw new e.ElectroError(e.ErrorCodes.InvalidConversionKeysProvided, `Provided keys not defined`);
+		}
+
+		const pkName = this.model.translations.keys[indexName].pk;
+		const skName = this.model.translations.keys[indexName].sk;
+
+		return provided[pkName] !== undefined &&
+			(!skName || provided[skName] !== undefined);
 	}
 
 	_formatReturnPager(config, lastEvaluatedKey) {
@@ -1257,26 +1295,30 @@ class Entity {
 		return indexParts;
 	}
 
-	_constructPagerIndex(index = TableIndex, item) {
-		let pkAttributes = this._expectFacets(item, this.model.facets.byIndex[index].pk);
-		let skAttributes = this._expectFacets(item, this.model.facets.byIndex[index].sk);
+	_constructPagerIndex(index = TableIndex, item, options = {}) {
+		let pkAttributes = options.relaxedPk ? item : this._expectFacets(item, this.model.facets.byIndex[index].pk);
+		let skAttributes = options.relaxedSk ? item : this._expectFacets(item, this.model.facets.byIndex[index].sk);
+
 		let keys = this._makeIndexKeys({
 			index,
 			pkAttributes,
 			skAttributes: [skAttributes],
 		});
+
 		return this._makeParameterKey(index, keys.pk, ...keys.sk);
 	}
 
-	_formatSuppliedPager(index = TableIndex, item) {
+	_formatSuppliedPager(index = TableIndex, item, options = {}) {
 		if (typeof item !== "object" || Object.keys(item).length === 0) {
 			return item;
 		}
+
 		let tableIndex = TableIndex;
-		let pager = this._constructPagerIndex(index, item);
+		let pager = this._constructPagerIndex(index, item, options);
 		if (index !== tableIndex) {
-			pager = {...pager, ...this._constructPagerIndex(tableIndex, item)};
+			pager = {...pager, ...this._constructPagerIndex(tableIndex, item, options)};
 		}
+
 		return pager;
 	}
 

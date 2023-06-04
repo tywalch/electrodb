@@ -886,44 +886,48 @@ type IndexKeyCompositeFromItem<A extends string, F extends string, C extends str
     & Partial<IndexCompositeAttributes<A,F,C,S,I>>
     & Partial<TableIndexCompositeAttributes<A,F,C,S>>;
 
+type ConversionOptions = {
+    strict?: 'all' | 'pk' | 'none';
+}
+
 export type Conversions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> = {
     fromComposite: {
       toCursor: (composite: {
-          [I in keyof S["indexes"]]: IndexKeyCompositeFromItem<A,F,C,S,I>
-      }[keyof S['indexes']]) => string | null;
+          [I in keyof S["indexes"]]: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>
+      }[keyof S['indexes']]) => string;
       toKeys: <T = Record<string, string | number>>(composite: {
-          [I in keyof S["indexes"]]: IndexKeyCompositeFromItem<A,F,C,S,I>
-      }[keyof S['indexes']]) => T | null;
+          [I in keyof S["indexes"]]: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>
+      }[keyof S['indexes']], options?: ConversionOptions) => T;
     },
     fromKeys: {
         toComposite: <T = {
             [I in keyof S["indexes"]]: IndexKeyCompositeFromItem<A,F,C,S,I>
-        }[keyof S['indexes']]>(keys: Record<string, string | number>) => T | null;
-        toCursor: (keys: Record<string, string | number>) => string | null;
+        }[keyof S['indexes']]>(keys: Record<string, string | number>) => T;
+        toCursor: (keys: Record<string, string | number>) => string;
     },
     fromCursor: {
-        toKeys: <T = Record<string, string | number>> (cursor: string) => T | null;
+        toKeys: <T = Record<string, string | number>> (cursor: string) => T;
         toComposite: <T = Partial<{
             [I in keyof S["indexes"]]: IndexKeyCompositeFromItem<A,F,C,S,I>
-        }>[keyof S['indexes']]>(cursor: string) => T | null;
+        }>[keyof S['indexes']]>(cursor: string) => T;
     },
     byAccessPattern: {
         [I in keyof S["indexes"]]: {
             fromKeys: {
-                toCursor: (keys: Record<string, string | number>) => string | null;
+                toCursor: (keys: Record<string, string | number>) => string;
                 // keys supplied may include the table index, maybe not so composite attributes for the table index are `Partial`
-                toComposite: <T = IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>>(keys: Record<string, string | number>) => T | null;
+                toComposite: <T = IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>>(keys: Record<string, string | number>, options?: ConversionOptions) => T;
             },
             fromCursor: {
-                toKeys: <T = Record<string, string | number>>(cursor: string) => T | null;
+                toKeys: <T = Record<string, string | number>>(cursor: string, options?: ConversionOptions) => T;
                 // a cursor must have the table index defined along with the keys for the index (if applicable)
-                toComposite: <T = IndexKeyComposite<A,F,C,S,I>>(cursor: string) => T | null;
+                toComposite: <T = IndexKeyComposite<A,F,C,S,I>>(cursor: string, options?: ConversionOptions) => T;
             },
             fromComposite: {
                 // a cursor must have the table index defined along with the keys for the index (if applicable)
-                toCursor: (composite: IndexKeyComposite<A,F,C,S,I>) => string | null;
+                toCursor: (composite: IndexKeyComposite<A,F,C,S,I>, options?: ConversionOptions) => string;
                 // maybe the only keys you need are for this index and not the
-                toKeys: <T = Record<string, string | number>>(composite: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>) => T | null;
+                toKeys: <T = Record<string, string | number>>(composite: IndexKeyCompositeWithMaybeTableIndex<A,F,C,S,I>, options?: ConversionOptions) => T;
             }
         }
     }
