@@ -686,12 +686,7 @@
             "accountId": "8ef26ffb-e807-4ed5-9bf3-04ae7e068542",
             "organizationId": "3b54c2d0-ddfd-4043-9fc2-ee4e1d8d9da8"
         },
-        "keys": {
-            "pk": "$conversionservice#organizationid_3b54c2d0-ddfd-4043-9fc2-ee4e1d8d9da8",
-            "sk": "$conversionentity_1#accountid_8ef26ffb-e807-4ed5-9bf3-04ae7e068542#id_d9f1fe6c-26b0-453d-af3a-043825ebb559",
-            "gsi1pk": "$conversionservice#category_",
-            "gsi1sk": "$conversionentity_1#createdat_"
-        },
+        "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
         "strict": "pk",
         "success": true,
         "target": "top",
@@ -856,12 +851,7 @@
         "item": {
             "organizationId": "4991a5b2-1184-4728-b071-73ab246a9f0a"
         },
-        "keys": {
-            "pk": "$conversionservice#organizationid_4991a5b2-1184-4728-b071-73ab246a9f0a",
-            "sk": "$conversionentity_1#accountid_",
-            "gsi1pk": "$conversionservice#category_",
-            "gsi1sk": "$conversionentity_1#createdat_"
-        },
+        "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
         "strict": "pk",
         "success": true,
         "target": "top",
@@ -1330,12 +1320,13 @@
     {
         "item": {
             "accountId": "6782797b-9dee-460a-9101-f01ac9f8b475",
-            "organizationId": "147c7832-1e99-46ad-b22f-3f7478dcbc49"
+            "organizationId": "147c7832-1e99-46ad-b22f-3f7478dcbc49",
+            "category": "fire"
         },
         "keys": {
             "pk": "$conversionservice#organizationid_147c7832-1e99-46ad-b22f-3f7478dcbc49",
             "sk": "$conversionentity_1#accountid_6782797b-9dee-460a-9101-f01ac9f8b475#id_",
-            "gsi1pk": "$conversionservice#category_",
+            "gsi1pk": "$conversionservice#category_fire",
             "gsi1sk": "$conversionentity_1#createdat_"
         },
         "strict": "pk",
@@ -1657,12 +1648,7 @@
             "id": "d650eca5-66e3-49ab-9134-e2765b7cfcfd",
             "organizationId": "1f1c8373-76c1-49f2-b983-7f963d67e8a5"
         },
-        "keys": {
-            "pk": "$conversionservice#organizationid_1f1c8373-76c1-49f2-b983-7f963d67e8a5",
-            "sk": "$conversionentity_1#accountid_",
-            "gsi1pk": "$conversionservice#category_",
-            "gsi1sk": "$conversionentity_1#createdat_"
-        },
+        "error": "expected 'Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes' to deeply equal undefined",
         "strict": "pk",
         "success": true,
         "target": "top",
@@ -2377,12 +2363,7 @@
             "createdAt": 1685906199440,
             "organizationId": "a060003f-8826-4d8d-8402-bcd8f93adebf"
         },
-        "keys": {
-            "pk": "$conversionservice#organizationid_a060003f-8826-4d8d-8402-bcd8f93adebf",
-            "sk": "$conversionentity_1#accountid_7d078ba2-f273-40b4-a78d-c5b74ebf41df#id_117290cc-483a-45cd-90d8-4820a9f8d119",
-            "gsi1pk": "$conversionservice#category_",
-            "gsi1sk": "$conversionentity_1#createdat_1685906199440#name_f6aa64c3-76f5-458a-a31f-c27973da86d5"
-        },
+        "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
         "strict": "pk",
         "success": true,
         "target": "top",

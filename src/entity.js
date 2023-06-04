@@ -855,7 +855,7 @@ class Entity {
 		}
 
 		let keys = {};
-		const secondaryIndexStrictMode = (options.strict === 'all') ? 'pk' : 'none';
+		const secondaryIndexStrictMode = options.strict === 'all' || options.strict === 'pk' ? 'pk' : 'none';
 		for (const { index } of Object.values(this.model.indexes)) {
 			const indexKeys = this._fromCompositeToKeysByIndex({ indexName: index, provided }, {
 				strict: index === TableIndex ? options.strict : secondaryIndexStrictMode,
