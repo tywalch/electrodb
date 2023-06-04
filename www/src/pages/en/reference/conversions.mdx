@@ -60,6 +60,7 @@ const thing = new Entity({
 }, { table: 'my_table' });
 ```
 
+---
 
 ### Composite
 With `conversions`, you can convert the attributes that construct a key to `keys` directly or to a `cursor`. Provide the attributes that define your keys, and ElectroDB will output
@@ -123,6 +124,8 @@ thing.conversions.fromComposite.toKeys(item, {strict: 'all'});
 | 'pk'    | byAccessPattern | secondary index     | Requires all primary _and_ index partition key composites to be present but allows for partial sort key composites
 | 'none'  | byAccessPattern | secondary index     | Formats all primary _and_ index keys as completely as possible with the values provided
 
+---
+
 ### Keys
 
 DynamoDB Keys are not typically exposed by ElectroDB. These conversions can help in cases where you need to convert to ElectroDB values or work with item identifiers directly.
@@ -150,6 +153,8 @@ thing.conversions.byAccessPattern.records.fromKeys.toComposite(keys);
 thing.conversions.byAccessPattern.records.fromKeys.toCursor(keys);
 // from Cursor to Composite by access pattern
 ```
+
+---
 
 ### Cursor
 
