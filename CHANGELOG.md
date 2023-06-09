@@ -329,4 +329,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Fixed
 - A common issue amongst new users, was unexpected errors when using a terminal method twice on a query chain. This would often come up when a user called `.params()` to log out parameters and then call `.go()` on the same chain. The fix was to prevent duplicative side effects from occurring on each subsequent terminal method call.
-- Fixes typing issue with transactGet api that would type `response.data` as `never` when the transaction included more than one element. 
+- Fixes typing issue with transactGet api that would type `response.data` as `never` when the transaction included more than one element.
+
+## [2.6.1] - 2023-06-09
+### Added
+- For queries, ElectroDB now trims the ExclusiveStartKey object to only include the keys associated with the index provided. DynamoDB currently rejects queries when properties not associated with the keys of the queried index are provided on the ExclusiveStartKey. By removing irrelevant properties, ElectroDB offers users more flexibility and opportunities for dynamic querying.       

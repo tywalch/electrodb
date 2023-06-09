@@ -576,8 +576,7 @@ class Entity {
 		let results = config._isCollectionQuery
 			? {}
 			: [];
-		// let ExclusiveStartKey = this._formatExclusiveStartKey({config, indexName: parameters.IndexName });
-		let ExclusiveStartKey = this._formatExclusiveStartKey(config);
+		let ExclusiveStartKey = this._formatExclusiveStartKey({config, indexName: parameters.IndexName });
 		if (ExclusiveStartKey === null) {
 			ExclusiveStartKey = undefined;
 		}
@@ -1067,30 +1066,22 @@ class Entity {
 		return config.formatCursor.serialize(page) || null;
 	}
 
-	// _formatExclusiveStartKey({config, indexName = TableIndex}) {
-	// 	let exclusiveStartKey = config.cursor;
-	// 	if (config.raw || config.pager === Pager.raw) {
-	// 		return this._trimKeysToIndex({ provided: exclusiveStartKey, indexName }) || null;
-	// 	}
-	// 	let keys;
-	// 	if (config.pager === Pager.item) {
-	// 		keys = this._fromCompositeToKeysByIndex({indexName, provided: exclusiveStartKey});
-	// 	} else {
-	// 		keys = config.formatCursor.deserialize(exclusiveStartKey);
-	// 	}
-	// 	if (!keys) {
-	// 		return null;
-	// 	}
-	//
-	// 	return this._trimKeysToIndex({provided: keys, indexName}) || null;
-	// }
-
-	_formatExclusiveStartKey(config) {
+	_formatExclusiveStartKey({config, indexName = TableIndex}) {
 		let exclusiveStartKey = config.cursor;
 		if (config.raw || config.pager === Pager.raw) {
-			return exclusiveStartKey || null;
+			return this._trimKeysToIndex({ provided: exclusiveStartKey, indexName }) || null;
 		}
-		return config.formatCursor.deserialize(exclusiveStartKey) || null;
+		let keys;
+		if (config.pager === Pager.item) {
+			keys = this._fromCompositeToKeysByIndex({indexName, provided: exclusiveStartKey});
+		} else {
+			keys = config.formatCursor.deserialize(exclusiveStartKey);
+		}
+		if (!keys) {
+			return null;
+		}
+
+		return this._trimKeysToIndex({provided: keys, indexName}) || null;
 	}
 
 	setClient(client) {
