@@ -693,8 +693,8 @@ let getKeys = ((val) => {}) as GetKeys;
     });
 
     // Results
-    expectAssignable<Promise<Item>>(entityWithSK.delete({attr1: "abc", attr2: "def"}).go({response: "all_old"}).then(res => res.data));
-    expectAssignable<Promise<ItemWithoutSK>>(entityWithoutSK.delete({attr1: "abc"}).go({response: "all_old"}).then(res => res.data));
+    expectAssignable<Promise<Item | null>>(entityWithSK.delete({attr1: "abc", attr2: "def"}).go({response: "all_old"}).then(res => res.data));
+    expectAssignable<Promise<ItemWithoutSK | null>>(entityWithoutSK.delete({attr1: "abc"}).go({response: "all_old"}).then(res => res.data));
 
     expectAssignable<"paramtest">(entityWithSK.delete({attr1: "abc", attr2: "def"}).params<"paramtest">());
     expectAssignable<"paramtest">(entityWithoutSK.delete({attr1: "abc"}).params<"paramtest">());

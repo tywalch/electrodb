@@ -1210,16 +1210,16 @@ export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends Up
     Options extends infer O
         ? 'response' extends keyof O
         ? O['response'] extends 'all_new'
-            ? Promise<{data: T}>
+            ? Promise<{ data: T }>
             : O['response'] extends 'all_old'
-                ? Promise<{data: T}>
-                : Promise<{data: Partial<T>}>
-        : Promise<{data: Partial<T>}>
+                ? Promise<{ data: T }>
+                : Promise<{ data: Partial<T> }>
+        : Promise<{ data: Partial<T> }>
         : never;
 
 export type PutRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
 
-export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
+export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T | null }>;
 
 export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
     Promise<{ unprocessed: ResponseType }>
@@ -2419,8 +2419,8 @@ export interface WhereOperations<A extends string, F extends string, C extends s
     begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     exists: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
     notExists: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
-    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
-    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends string[] ? string : V extends number[] ? number : V : never) => string;
+    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends string[] ? string : V extends number[] ? number : V : never) => string;
     value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V : never) => A extends WhereAttributeSymbol<infer V> ? V : never;
     name: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
     size: <T, A extends WhereAttributeSymbol<T>>(attr: A) => number;
