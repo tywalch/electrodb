@@ -156,8 +156,8 @@ export interface CollectionWhereOperations {
     begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     exists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
     notExists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
-    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
-    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends Array<infer I> ? I : V : never) => string;
+    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends Array<infer I> ? I : V : never) => string;
     value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
     size: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
@@ -2419,8 +2419,8 @@ export interface WhereOperations<A extends string, F extends string, C extends s
     begins: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     exists: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
     notExists: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
-    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends string[] ? string : V extends number[] ? number : V : never) => string;
-    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends string[] ? string : V extends number[] ? number : V : never) => string;
+    contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends Array<infer I> ? I : V : never) => string;
+    notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends Array<infer I> ? I : V : never) => string;
     value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V : never) => A extends WhereAttributeSymbol<infer V> ? V : never;
     name: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
     size: <T, A extends WhereAttributeSymbol<T>>(attr: A) => number;

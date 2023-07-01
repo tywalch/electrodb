@@ -1585,60 +1585,6 @@ const casingEntity = new MockEntity({
   }
 });
 
-const entityWithEveryType = new MockEntity({
-    model: {
-        entity: "readOnlyEntity",
-        service: "tests",
-        version: "1"
-    },
-    attributes: {
-        prop1: {
-            type: 'string',
-        },
-
-        prop2: {
-            type: 'number',
-        },
-        prop3: {
-            type: 'boolean',
-        },
-        prop4: {
-            type: ['abc'] as const,
-        },
-        prop5: {
-            type: 'map',
-            properties: {
-                mapProperty: {
-                    type: 'string'
-                }
-            }
-        },
-        prop6: {
-            type: 'list',
-            items: {
-                type: 'string'
-            }
-        },
-        prop7: {
-            type: 'set',
-            items: 'string'
-        },
-    },
-    indexes: {
-        record: {
-            collection: "complexShapes",
-            pk: {
-                composite: ["prop1"],
-                field: "pk"
-            },
-            sk: {
-                composite: ["prop2"],
-                field: "sk"
-            }
-        }
-    }
-})
-
 const readOnlyEntity = new MockEntity({
   model: {
     entity: "readOnlyEntity",
@@ -1951,6 +1897,9 @@ entityWithComplexShapes.getWhereCallback((a, o) => {
 
   o.contains(a.prop6, 1);
   o.notContains(a.prop6, 1);
+
+  o.contains(a.prop4, {val2: 5, val3: [], val4: [4]});
+  o.notContains(a.prop4, {val2: 5, val3: [], val4: [4]});
 
   o.value(a.prop4[0].val2, 1);
 
