@@ -621,9 +621,14 @@ export type BatchGetEntityItem<E extends Entity<any, any, any, any>> =
         ? ResponseItem<A, F, C, S>[]
         : never;
 
+export type UpdateEntityResponseItem<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AllTableIndexCompositeAttributes<A,F,C,S>
+        : never;
+
 export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
-        ? Partial<ResponseItem<A,F,C,S>>
+        ? SetItem<A,F,C,S>
         : never;
 
 export type UpdateAddEntityItem<E extends Entity<any, any, any, any>> =
@@ -692,7 +697,7 @@ export type BatchGetResponse<E extends Entity<any, any, any, any>> =
     } : never;
 
 export type UpdateEntityResponse<E extends Entity<any, any, any, any>> = {
-    data: UpdateEntityItem<E>;
+    data: UpdateEntityResponseItem<E>;
 }
 export type UpdateAddEntityResponse<E extends Entity<any, any, any, any>> = {
     data: UpdateAddEntityItem<E>;
@@ -793,7 +798,7 @@ export type UpdateRecordGoTransaction<ResponseType> = <T = ResponseType, Options
 export interface SetRecordActionOptionsTransaction<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
     commit: UpdateRecordGoTransaction<TableItem>;
     params: ParamRecord<UpdateQueryParams>;
-    set: SetRecordTransaction<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    set: SetRecordTransaction<A,F,C,S, SetItem<A,F,C,S>, IndexCompositeAttributes, TableItem>;
     remove: RemoveRecordTransaction<A,F,C,S, Array<keyof SetItem<A,F,C,S>>,IndexCompositeAttributes,TableItem>;
     add: SetRecordTransaction<A,F,C,S, AddItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     subtract: SetRecordTransaction<A,F,C,S, SubtractItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
@@ -818,19 +823,19 @@ export interface BatchGetRecordOperationOptions<A extends string, F extends stri
 }
 
 export interface PutRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: PutRecordGo<ResponseType, PutQueryOptions>;
+    go: PutRecordGo<ResponseType>;
     params: ParamRecord<PutQueryOptions>;
     where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, PutRecordOperationOptions<A, F, C, S, ResponseType>>;
 }
 
 export interface UpsertRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: UpdateRecordGo<ResponseType>;
+    go: UpsertRecordGo<ResponseType, AllTableIndexCompositeAttributes<A,F,C,S>>;
     params: ParamRecord<UpdateQueryParams>;
     where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A, F, C, S, ResponseType>>;
 }
 
 export interface DeleteRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: DeleteRecordOperationGo<ResponseType, DeleteQueryOptions>;
+    go: DeleteRecordOperationGo<ResponseType, AllTableIndexCompositeAttributes<A,F,C,S>>;
     params: ParamRecord<DeleteQueryOptions>;
     where: WhereClause<A,F,C,S,Item<A,F,C,S,S["attributes"]>,DeleteRecordOperationOptions<A,F,C,S,ResponseType>>;
 }
@@ -841,9 +846,10 @@ export interface BatchWriteOperationOptions<A extends string, F extends string, 
 }
 
 export interface SetRecordActionOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, SetAttr,IndexCompositeAttributes,TableItem> {
-    go: UpdateRecordGo<TableItem>;
+    go: UpdateRecordGo<TableItem, AllTableIndexCompositeAttributes<A,F,C,S>>;
     params: ParamRecord<UpdateQueryParams>;
-    set: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    set: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes, TableItem>;
+    // ifNotExists: SetRecord<A,F,C,S, SetItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     remove: SetRecord<A,F,C,S, Array<keyof SetItem<A,F,C,S>>,IndexCompositeAttributes,TableItem>;
     add: SetRecord<A,F,C,S, AddItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
@@ -1005,7 +1011,7 @@ export interface DeleteQueryOptions extends QueryOptions {
 }
 
 export interface PutQueryOptions extends QueryOptions {
-    response?: "default" | "none" | 'all_old';
+    response?: "default" | "none" | 'all_old' | 'all_new';
 }
 
 export interface ParamOptions {
@@ -1206,20 +1212,52 @@ export type ServiceQueryRecordsGo<ResponseType, Options = ServiceQueryGoTerminal
 
 export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T, cursor: string | null }>;
 
-export type UpdateRecordGo<ResponseType> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) =>
+export type UpdateRecordGo<ResponseType, Keys> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) =>
+    Options extends infer O
+        ? 'response' extends keyof O
+            ? O['response'] extends 'all_new'
+                ? Promise<{ data: T }>
+                : O['response'] extends 'all_old'
+                    ? Promise<{ data: T }>
+                    : O['response'] extends 'default'
+                        ? Promise<{ data: Keys }>
+                        : O['response'] extends 'none'
+                            ? Promise<{ data: null }>
+                            : Promise<{ data: Partial<T> }>
+            : Promise<{ data: Keys }>
+        : never;
+
+export type UpsertRecordGo<ResponseType, Keys> = <T = ResponseType, Options extends UpdateQueryOptions = UpdateQueryOptions>(options?: Options) =>
+    Options extends infer O
+        ? 'response' extends keyof O
+            ? O['response'] extends 'all_new'
+                ? Promise<{ data: T }>
+                : O['response'] extends 'all_old'
+                    ? Promise<{ data: T }>
+                    : O['response'] extends 'default'
+                        ? Promise<{ data: Keys }>
+                            : O['response'] extends 'none'
+                                ? Promise<{ data: null }>
+                                : Promise<{ data: Partial<T> }>
+            : Promise<{ data: Keys }>
+        : never;
+
+export type PutRecordGo<ResponseType> = <T = ResponseType, Options extends PutQueryOptions = PutQueryOptions>(options?: Options) => Promise<{ data: T }>
+
+export type DeleteRecordOperationGo<ResponseType, Keys> = <T = ResponseType, Options extends DeleteQueryOptions = DeleteQueryOptions>(options?: Options) =>
     Options extends infer O
         ? 'response' extends keyof O
         ? O['response'] extends 'all_new'
             ? Promise<{ data: T }>
             : O['response'] extends 'all_old'
                 ? Promise<{ data: T }>
-                : Promise<{ data: Partial<T> }>
-        : Promise<{ data: Partial<T> }>
+                : O['response'] extends 'default'
+                    ? Promise<{ data: Keys }>
+                    : O['response'] extends 'none'
+                        ? Promise<{ data: null }>
+                        : Promise<{ data: Partial<T> }>
+        : Promise<{ data: Keys }>
         : never;
-
-export type PutRecordGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T }>;
-
-export type DeleteRecordOperationGo<ResponseType, Options = QueryOptions> = <T = ResponseType>(options?: Options) => Promise<{ data: T | null }>;
 
 export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(options?: O) =>
     Promise<{ unprocessed: ResponseType }>

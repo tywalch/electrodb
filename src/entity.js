@@ -673,7 +673,7 @@ class Entity {
 			case MethodTypes.delete:
 			case MethodTypes.remove:
 			case MethodTypes.upsert:
-				return this.formatResponse(response, index, {...config});
+				return this.formatResponse(response, index, { ...config, _objectOnEmpty: true });
 			default:
 				return this.formatResponse(response, index, config);
 		}
@@ -814,7 +814,11 @@ class Entity {
 						results = null;
 					}
 				} else if (config._objectOnEmpty) {
-					return { data: {} };
+					return {
+						data: {
+							...config._includeOnResponseItem,
+						}
+					};
 				} else {
 					results = null;
 				}
@@ -1342,6 +1346,7 @@ class Entity {
 			order: undefined,
 			hydrate: false,
 			hydrator: (_entity, _indexName, items) => items,
+			_includeOnResponseItem: {},
 		};
 
 		return provided.filter(Boolean).reduce((config, option) => {
@@ -1501,6 +1506,13 @@ class Entity {
 
 			if (validations.isFunction(option.hydrator)) {
 				config.hydrator = option.hydrator;
+			}
+
+			if (option._includeOnResponseItem) {
+				config._includeOnResponseItem = {
+					...config._includeOnResponseItem,
+					...option._includeOnResponseItem,
+				}
 			}
 
 			config.page = Object.assign({}, config.page, option.page);
@@ -1944,6 +1956,52 @@ class Entity {
 				[this.identifiers.version]: this.getVersion(),
 			},
 			TableName: this.getTableName(),
+		};
+	}
+
+	_applyUpsertAttributes({update, fields, attributes, keys, keyNames, ifNotExists}) {
+		for (const field of [...fields]) {
+			const value = u.getFirstDefined(attributes[field], keys[field]);
+			if (!keyNames.includes(field)) {
+				let operation = ifNotExists ? ItemOperations.ifNotExists : ItemOperations.set;
+				const name = this.model.schema.translationForRetrieval[field];
+				if (name) {
+					if (this.model.schema.readOnlyAttributes.has(name)) {
+						operation = ItemOperations.ifNotExists;
+					}
+				}
+				update.set(field, value, operation);
+			}
+		}
+	}
+
+	_makeUpsertParamsNew({ update, upsert } = {}, pk, sk) {
+		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
+		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
+		const keyNames = Object.keys(indexKey);
+		this._applyUpsertAttributes({
+			update,
+			fields: [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)],
+			attributes: upsertAttributes,
+			keys: updatedKeys,
+			keyNames,
+		});
+
+		const ifNotExistsAttributes = this._getPutKeys(pk, sk && sk.facets, upsert.ifNotExists).setAttributes
+		this._applyUpsertAttributes({
+			update,
+			keyNames,
+			keys: {},
+			attributes: ifNotExistsAttributes,
+			fields: Object.keys(ifNotExistsAttributes),
+		})
+
+		return {
+			TableName: this.getTableName(),
+			UpdateExpression: update.build(),
+			ExpressionAttributeNames: update.getNames(),
+			ExpressionAttributeValues: update.getValues(),
+			Key: indexKey,
 		};
 	}
 

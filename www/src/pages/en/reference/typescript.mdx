@@ -174,8 +174,8 @@ This type represents an item that you would pass your entity's `set` method when
 ```typescript
 export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
   E extends Entity<infer A, infer F, infer C, infer S>
-  ? SetItem<A, F, C, S>
-  : never;
+    ? SetItem<A, F, C, S>
+    : never;
 ```
 
 **Use:**

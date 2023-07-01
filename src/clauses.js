@@ -185,13 +185,17 @@ let clauses = {
 			}
 			try {
 				const {pk, sk} = state.getCompositeAttributes();
+				const pkComposite = entity._expectFacets(facets, pk);
+				state.addOption('_includeOnResponseItem', pkComposite);
 				return state
 					.setMethod(MethodTypes.delete)
 					.setType(QueryTypes.eq)
-					.setPK(entity._expectFacets(facets, pk))
+					.setPK(pkComposite)
 					.ifSK(() => {
 						entity._expectFacets(facets, sk);
-						state.setSK(state.buildQueryComposites(facets, sk));
+						const skComposite = state.buildQueryComposites(facets, sk);
+						state.setSK(skComposite);
+						state.addOption('_includeOnResponseItem', {...skComposite, ...pkComposite});
 					});
 			} catch(err) {
 				state.setError(err);
@@ -215,13 +219,17 @@ let clauses = {
 				if (sk) {
 					filter.unsafeSet(FilterOperationNames.exists, sk);
 				}
+				const pkComposite = entity._expectFacets(facets, attributes.pk);
+				state.addOption('_includeOnResponseItem', pkComposite);
 				return state
 					.setMethod(MethodTypes.delete)
 					.setType(QueryTypes.eq)
-					.setPK(entity._expectFacets(facets, attributes.pk))
+					.setPK(pkComposite)
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(state.buildQueryComposites(facets, attributes.sk));
+						const skComposite = state.buildQueryComposites(facets, attributes.sk);
+						state.setSK(skComposite);
+						state.addOption('_includeOnResponseItem', {...skComposite, ...pkComposite});
 					});
 			} catch(err) {
 				state.setError(err);
@@ -239,14 +247,18 @@ let clauses = {
 			try {
 				let record = entity.model.schema.checkCreate({...payload});
 				const attributes = state.getCompositeAttributes();
+				const pkComposite = entity._expectFacets(record, attributes.pk);
+				state.addOption('_includeOnResponseItem', pkComposite);
 				return state
 					.setMethod(MethodTypes.upsert)
 					.setType(QueryTypes.eq)
 					.applyUpsert(record)
-					.setPK(entity._expectFacets(record, attributes.pk))
+					.setPK(pkComposite)
 					.ifSK(() => {
 						entity._expectFacets(record, attributes.sk);
-						state.setSK(entity._buildQueryFacets(record, attributes.sk));
+						const skComposite = entity._buildQueryFacets(record, attributes.sk);
+						state.setSK(skComposite);
+						state.addOption('_includeOnResponseItem', {...skComposite, ...pkComposite});
 					})
 					.whenOptions(({ state, options }) => {
 						if (!state.getParams()) {
@@ -337,13 +349,17 @@ let clauses = {
 				if (sk) {
 					filter.unsafeSet(FilterOperationNames.exists, sk);
 				}
+				const pkComposite = entity._expectFacets(facets, attributes.pk);
+				state.addOption('_includeOnResponseItem', pkComposite);
 				return state
 					.setMethod(MethodTypes.update)
 					.setType(QueryTypes.eq)
-					.setPK(entity._expectFacets(facets, attributes.pk))
+					.setPK(pkComposite)
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(state.buildQueryComposites(facets, attributes.sk));
+						const skComposite = state.buildQueryComposites(facets, attributes.sk);
+						state.setSK(skComposite);
+						state.addOption('_includeOnResponseItem', {...skComposite, ...pkComposite});
 					});
 			} catch(err) {
 				state.setError(err);
@@ -360,13 +376,17 @@ let clauses = {
 			}
 			try {
 				const attributes = state.getCompositeAttributes();
+				const pkComposite = entity._expectFacets(facets, attributes.pk);
+				state.addOption('_includeOnResponseItem', pkComposite);
 				return state
 					.setMethod(MethodTypes.update)
 					.setType(QueryTypes.eq)
-					.setPK(entity._expectFacets(facets, attributes.pk))
+					.setPK(pkComposite)
 					.ifSK(() => {
 						entity._expectFacets(facets, attributes.sk);
-						state.setSK(state.buildQueryComposites(facets, attributes.sk));
+						const skComposite = state.buildQueryComposites(facets, attributes.sk);
+						state.setSK(skComposite);
+						state.addOption('_includeOnResponseItem', {...pkComposite, ...skComposite});
 					});
 			} catch(err) {
 				state.setError(err);
@@ -422,6 +442,39 @@ let clauses = {
 		},
 		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
+	// upsertIfNotExists: {
+	// 	name: "upsertIfNotExists",
+	// 	action(entity, state, data) {
+	// 		if (state.getError() !== null) {
+	// 			return state;
+	// 		}
+	// 		try {
+	// 			entity.model.schema.checkUpdate(data, { allowReadOnly: true });
+	// 			return state.applyUpsert(data, { ifNotExists: true });
+	// 		} catch(err) {
+	// 			state.setError(err);
+	// 			return state;
+	// 		}
+	// 	},
+	// 	children: ["params", "go", "where", "commit", "upsertIfNotExists"],
+	// },
+	// ifNotExists: {
+	// 	name: "ifNotExists",
+	// 	action(entity, state, data) {
+	// 		if (state.getError() !== null) {
+	// 			return state;
+	// 		}
+	// 		try {
+	// 			entity.model.schema.checkUpdate(data);
+	// 			state.query.updateProxy.fromObject(ItemOperations.ifNotExists, data);
+	// 			return state;
+	// 		} catch(err) {
+	// 			state.setError(err);
+	// 			return state;
+	// 		}
+	// 	},
+	// 	children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+	// },
 	append: {
 		name: "append",
 		action(entity, state, data = {}) {
@@ -808,7 +861,8 @@ class ChainState {
 				data: {},
 			},
 			upsert: {
-				data: {}
+				data: {},
+				ifNotExists: {},
 			},
 			keys: {
 				provided: [],
@@ -1018,8 +1072,12 @@ class ChainState {
 		}
 	}
 
-	applyUpsert(data = {}) {
-		this.query.upsert.data = {...this.query.upsert.data, ...data};
+	applyUpsert(data = {}, { ifNotExists } = {}) {
+		if (ifNotExists) {
+			this.query.upsert.ifNotExists = {...this.query.upsert.ifNotExists, ...data};
+		} else {
+			this.query.upsert.data = {...this.query.upsert.data, ...data};
+		}
 		return this;
 	}
 

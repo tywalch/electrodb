@@ -275,7 +275,7 @@ describe("Entity", () => {
             let updatedStore = await MallStores.update(secondStore)
                 .set({ rent: newRent })
                 .go();
-            expect(updatedStore.data).to.be.empty;
+            expect(updatedStore.data).to.deep.equal(secondStore);
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
             expect(secondStoreAfterUpdate.data?.rent).to.equal(newRent);
         }).timeout(20000);
@@ -621,7 +621,7 @@ describe("Entity", () => {
                 .set({ rent: newRent })
                 .go()
                 .then(res => res.data);
-            expect(updatedStore).to.be.empty;
+            expect(updatedStore).to.deep.equal(secondStore);
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go().then(res => res.data);
             expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
         }).timeout(20000);
@@ -1032,11 +1032,94 @@ describe("Entity", () => {
             let prop2 = uuid();
             await record.put({ prop1, prop2 }).go();
             let recordExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
-            await record.delete({ prop1, prop2 }).go();
+            const result = await record.delete({ prop1, prop2 }).go();
+            expect(result.data).to.deep.equal({ prop1, prop2 });
             await sleep(150);
             let recordNoLongerExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
             expect(!!Object.keys(recordExists || {}).length).to.be.true;
             expect(recordNoLongerExists).to.be.null;
+        });
+
+        it("Should create then remove a record", async () => {
+            const table = "electro";
+            const record = new Entity({
+                    model: {
+                        service: SERVICE,
+                        entity: ENTITY,
+                        version: "1",
+                    },
+                    attributes: {
+                        prop1: {
+                            type: "string",
+                        },
+                        prop2: {
+                            type: "string",
+                        },
+                    },
+                    indexes: {
+                        main: {
+                            pk: {
+                                field: "pk",
+                                composite: ["prop1"],
+                            },
+                            sk: {
+                                field: "sk",
+                                composite: ["prop2"],
+                            },
+                        },
+                    },
+                },
+                { client, table },
+            );
+            let prop1 = uuid();
+            let prop2 = uuid();
+            await record.put({ prop1, prop2 }).go();
+            let recordExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
+            const result = await record.remove({ prop1, prop2 }).go();
+            expect(result.data).to.deep.equal({ prop1, prop2 });
+            await sleep(150);
+            let recordNoLongerExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
+            expect(!!Object.keys(recordExists || {}).length).to.be.true;
+            expect(recordNoLongerExists).to.be.null;
+        });
+
+        it("Should throw when trying to remove a record that does not exist", async () => {
+            const table = "electro";
+            const record = new Entity({
+                    model: {
+                        service: SERVICE,
+                        entity: ENTITY,
+                        version: "1",
+                    },
+                    attributes: {
+                        prop1: {
+                            type: "string",
+                        },
+                        prop2: {
+                            type: "string",
+                        },
+                    },
+                    indexes: {
+                        main: {
+                            pk: {
+                                field: "pk",
+                                composite: ["prop1"],
+                            },
+                            sk: {
+                                field: "sk",
+                                composite: ["prop2"],
+                            },
+                        },
+                    },
+                },
+                { client, table },
+            );
+            let prop1 = uuid();
+            let prop2 = uuid();
+            let recordNotExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
+            expect(recordNotExists).to.equal(null);
+            const result = await record.remove({ prop1, prop2 }).go().then(() => true).catch(() => false);
+            expect(result).to.equal(false);
         });
     });
 
@@ -1115,7 +1198,7 @@ describe("Entity", () => {
                 .update({ date, id })
                 .set({ prop1: updatedProp1 })
                 .go().then(res => res.data);
-            expect(updatedRecord).to.be.empty;
+            expect(updatedRecord).to.deep.equal({ date, id });
             let getUpdatedRecord = await db.get({ date, id }).go().then(res => res.data);
             expect(getUpdatedRecord).to.deep.equal({
                 id,
