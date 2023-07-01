@@ -673,7 +673,7 @@ class Entity {
 			case MethodTypes.delete:
 			case MethodTypes.remove:
 			case MethodTypes.upsert:
-				return this.formatResponse(response, index, {...config, _objectOnEmpty: true});
+				return this.formatResponse(response, index, {...config});
 			default:
 				return this.formatResponse(response, index, config);
 		}
@@ -1951,12 +1951,17 @@ class Entity {
 		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
 		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
 		const keyNames = Object.keys(indexKey);
-		// update.set(this.identifiers.entity, this.getName());
-		// update.set(this.identifiers.version, this.getVersion());
 		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
 			const value = u.getFirstDefined(upsertAttributes[field], updatedKeys[field]);
 			if (!keyNames.includes(field)) {
-				update.set(field, value);
+				let operation = ItemOperations.set;
+				const name = this.model.schema.translationForRetrieval[field];
+				if (name) {
+					if (this.model.schema.readOnlyAttributes.has(name)) {
+						operation = ItemOperations.ifNotExists;
+					}
+				}
+				update.set(field, value, operation);
 			}
 		}
 

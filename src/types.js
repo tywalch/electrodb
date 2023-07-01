@@ -217,6 +217,7 @@ const ItemOperations = {
 	"add": "add",
 	"subtract": "subtract",
 	"append": "append",
+	"ifNotExists": "ifNotExists"
 };
 
 const AttributeProxySymbol = Symbol("attribute_proxy");

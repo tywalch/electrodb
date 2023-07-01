@@ -824,7 +824,7 @@ export interface PutRecordOperationOptions<A extends string, F extends string, C
 }
 
 export interface UpsertRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: PutRecordGo<ResponseType, UpdateQueryParams>;
+    go: UpdateRecordGo<ResponseType>;
     params: ParamRecord<UpdateQueryParams>;
     where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A, F, C, S, ResponseType>>;
 }

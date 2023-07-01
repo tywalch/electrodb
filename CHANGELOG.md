@@ -338,4 +338,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.7.0] - 2023-07-01
 ### Fixed
 - Fixes typing for `contains` where conditions to accept collection element values (e.g., `set` and `list` type attributes).
-- Fixes return typing for `delete` and `remove` operations to `EntityItem | null`. This is likely to break compilation for some implementations, apologies, but the previous typing was incorrect.   
+- Fixes return typing for `delete` and `remove` operations to `EntityItem | null`. This is likely to break compilation for some implementations, apologies, but the previous typing was incorrect.
+
+### Changed
+- Upsert operations now take into consideration `readOnly` attributes when applying changes. If an attribute is configured as `readOnly` ElectroDB will apply the property with an `if_not_exists` set operation to prevent overwriting the existing value if one is set.  

@@ -18,6 +18,8 @@ import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
 
 The `upsert` method is another ElectroDB exclusive method. Upsert is similar to the [put-method](/en/mutations/put) in that it will create a record if one does not exist. Unlike the `put` method, however, `upsert` perform an update if that record already exists.
 
+> _Note: `upsert` will apply a dynamodb `set` operation on all attributes provided. If an attribute is configured as `readOnly`, ElectroDB will apply a `if_not_exists` condition to prevent overwriting the existing value._
+
 ```typescript
 await StoreLocations
   .upsert({
