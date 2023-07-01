@@ -333,4 +333,9 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.6.1] - 2023-06-09
 ### Added
-- For queries, ElectroDB now trims the ExclusiveStartKey object to only include the keys associated with the index provided. DynamoDB currently rejects queries when properties not associated with the keys of the queried index are provided on the ExclusiveStartKey. By removing irrelevant properties, ElectroDB offers users more flexibility and opportunities for dynamic querying.       
+- For queries, ElectroDB now trims the ExclusiveStartKey object to only include the keys associated with the index provided. DynamoDB currently rejects queries when properties not associated with the keys of the queried index are provided on the ExclusiveStartKey. By removing irrelevant properties, ElectroDB offers users more flexibility and opportunities for dynamic querying.
+  
+## [2.7.0] - 2023-07-01
+### Fixed
+- Fixes typing for `append` update operations to allow for `string` and `number` values when attribute is a `set` type.
+- Fixes return typing for `delete` and `remove` operations to `EntityItem | null`. This is likely to break compilation for some implementations, apologies, but the previous typing was incorrect.   
