@@ -601,6 +601,11 @@ export type ElectroEventListener = (event: ElectroEvent) => void;
 //     details: any;
 // };
 
+export type EntityIdentifiers<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AllTableIndexCompositeAttributes<A, F, C, S>
+        : never;
+
 export type EntityItem<E extends Entity<any, any, any, any>> =
     E extends Entity<infer A, infer F, infer C, infer S>
         ? ResponseItem<A, F, C, S>
