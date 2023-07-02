@@ -442,39 +442,6 @@ let clauses = {
 		},
 		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
 	},
-	// upsertIfNotExists: {
-	// 	name: "upsertIfNotExists",
-	// 	action(entity, state, data) {
-	// 		if (state.getError() !== null) {
-	// 			return state;
-	// 		}
-	// 		try {
-	// 			entity.model.schema.checkUpdate(data, { allowReadOnly: true });
-	// 			return state.applyUpsert(data, { ifNotExists: true });
-	// 		} catch(err) {
-	// 			state.setError(err);
-	// 			return state;
-	// 		}
-	// 	},
-	// 	children: ["params", "go", "where", "commit", "upsertIfNotExists"],
-	// },
-	// ifNotExists: {
-	// 	name: "ifNotExists",
-	// 	action(entity, state, data) {
-	// 		if (state.getError() !== null) {
-	// 			return state;
-	// 		}
-	// 		try {
-	// 			entity.model.schema.checkUpdate(data);
-	// 			state.query.updateProxy.fromObject(ItemOperations.ifNotExists, data);
-	// 			return state;
-	// 		} catch(err) {
-	// 			state.setError(err);
-	// 			return state;
-	// 		}
-	// 	},
-	// 	children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
-	// },
 	append: {
 		name: "append",
 		action(entity, state, data = {}) {
