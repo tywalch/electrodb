@@ -333,4 +333,13 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.6.1] - 2023-06-09
 ### Added
-- For queries, ElectroDB now trims the ExclusiveStartKey object to only include the keys associated with the index provided. DynamoDB currently rejects queries when properties not associated with the keys of the queried index are provided on the ExclusiveStartKey. By removing irrelevant properties, ElectroDB offers users more flexibility and opportunities for dynamic querying.       
+- For queries, ElectroDB now trims the ExclusiveStartKey object to only include the keys associated with the index provided. DynamoDB currently rejects queries when properties not associated with the keys of the queried index are provided on the ExclusiveStartKey. By removing irrelevant properties, ElectroDB offers users more flexibility and opportunities for dynamic querying.
+  
+## [2.7.0] - 2023-07-01
+### Fixed
+- Fixes return typing for `delete`, `remove`, `update` and `upsert` operations. These types were incorrect and did not reflect the real values returned. Instead of breaking the APIs, changing response types to `T | null`, the new response type is now the Entity's key composite values by default. You can also now use the Execution Option `response` to get back the item as it exists in the table. This is the closed I could get to a non-breaking change that also fixes the incorrect return typing for these methods.      
+- Fixes typing for `contains` where conditions to accept collection element values (e.g., `set` and `list` type attributes).
+- The exported type `UpdateEntityItem` was incorrectly typed, it now includes the correct typing as the values that can be passed to the `set` method 
+
+### Changed
+- Upsert operations now take into consideration `readOnly` attributes when applying changes. If an attribute is configured as `readOnly` ElectroDB will apply the property with an `if_not_exists` set operation to prevent overwriting the existing value if one is set.  

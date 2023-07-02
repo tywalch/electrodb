@@ -1,11 +1,21 @@
-import {WhereAttributeSymbol, UpdateEntityItem, Schema, EntityItem, Entity, Service, ResponseItem} from './';
+import {
+    WhereAttributeSymbol,
+    UpdateEntityItem,
+    Schema,
+    EntityItem,
+    Entity,
+    Service,
+    UpdateEntityResponse,
+} from './';
 import {expectType, expectError, expectAssignable, expectNotAssignable, expectNotType} from 'tsd';
 import * as tests from './test/tests.test-d';
 
 type Resolve<T> = T extends Function | string | number | boolean
   ? T : {[Key in keyof T]: Resolve<T[Key]>}
 
-const magnify = <T>(value: T): Resolve<T> => { return {} as Resolve<T> };
+const magnify = <T>(value: T): Resolve<T> => {
+    return value as Resolve<T>
+};
 
 let entityWithSK = new Entity({
     model: {
@@ -3187,7 +3197,7 @@ expectError(() => {
         .go()
 });
 
-type ComplexShapesUpdateItem = UpdateEntityItem<typeof entityWithComplexShapes>;
+type ComplexShapesUpdate = UpdateEntityResponse<typeof entityWithComplexShapes>;
 
 const updateWithWhere = entityWithComplexShapes.update({
     prop1: 'abc', prop2: 'def',
@@ -3221,7 +3231,19 @@ entityWithComplexShapes.update({
   .go({
     
   }).then(res => {
-    expectType<ComplexShapesUpdateItem>(res.data);
+    expectType<ComplexShapesUpdate>(res);
+});
+
+entityWithComplexShapes.patch({
+    prop1: 'abc', prop2: 'def',
+})
+    .data((attr, op) => {
+    })
+    .where((attr, op) => op.eq(attr.prop3.val1, 'def'))
+    .go({
+        response: 'all_new'
+    }).then(res => {
+    expectType<EntityItem<typeof entityWithComplexShapes>>(res.data);
 });
 
 entityWithComplexShapes.update({
@@ -3232,7 +3254,7 @@ entityWithComplexShapes.update({
   .go({
     originalErr: true,
   }).then(res => {
-    expectType<ComplexShapesUpdateItem>(res.data);
+    expectType<{ prop1: string, prop2: string }>(magnify(res.data));
 });
 
 entityWithComplexShapes.update({
@@ -3247,7 +3269,7 @@ entityWithComplexShapes.update({
     
   })
   .then(res => {
-    expectType<ComplexShapesUpdateItem>(res.data);
+    expectType<ComplexShapesUpdate>(res);
 });
 
 entityWithComplexShapes.remove({

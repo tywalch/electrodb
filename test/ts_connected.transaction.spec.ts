@@ -572,7 +572,7 @@ describe('service transactions', () => {
                             {
                                 Update: {
                                     TableName: 'electro',
-                                    UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #title = :title_u0, #description = :description_u0, #taskId = :taskId_u0, #projectId = :projectId_u0, #teamId = :teamId_u0',
+                                    UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #title = :title_u0, #description = :description_u0, #taskId = if_not_exists(#taskId, :taskId_u0), #projectId = if_not_exists(#projectId, :projectId_u0), #teamId = if_not_exists(#teamId, :teamId_u0)',
                                     ExpressionAttributeNames: {
                                         '#title': 'title',
                                         '#__edb_e__': '__edb_e__',
@@ -724,7 +724,7 @@ describe('service transactions', () => {
                             {
                                 Update: {
                                     TableName: 'electro',
-                                    UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #teamName = :teamName_u0, #teamId = :teamId_u0, #teamLead = :teamLead_u0, #department = :department_u0',
+                                    UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #teamName = :teamName_u0, #teamId = if_not_exists(#teamId, :teamId_u0), #teamLead = :teamLead_u0, #department = :department_u0',
                                     ExpressionAttributeNames: {
                                         '#teamLead': 'teamLead',
                                         '#__edb_e__': '__edb_e__',

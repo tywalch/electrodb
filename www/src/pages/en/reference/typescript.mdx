@@ -43,7 +43,7 @@ The follow highlight many of the types exported utility types from ElectroDB:
 
 ### QueryResponse Type
 
-The QueryResponse type is the same type returned by an ElectroDB Query.
+The `QueryResponse` type is the same type returned by an ElectroDB Query.
 
 **Definition:**
 
@@ -54,15 +54,33 @@ export type QueryResponse<E extends Entity<any, any, any, any>> = {
 }
 ```
 
-**Use:**
+**Usage:**
 
 ```typescript
 type EntitySchema = QueryResponse<typeof MyEntity>
 ```
 
+### EntityIdentifiers Type
+
+The `EntityIdentifiers` type an object containing each of your Entity's Primary Index composite attributes. It is the object used by `get`, `update`, `patch`, `delete`, and `remove` to uniquely identify an item.
+
+**Definition:**
+```typescript
+export type EntityIdentifiers<E extends Entity<any, any, any, any>> =
+    E extends Entity<infer A, infer F, infer C, infer S>
+        ? AllTableIndexCompositeAttributes<A, F, C, S>
+        : never;
+```
+
+**Usage:**
+
+```typescript
+type Keys = EntityIdentifiers<typeof MyEntity>
+```
+
 ### EntityRecord Type
 
-The EntityRecord type is an object containing every attribute an Entity's model.
+The `EntityRecord` type is an object containing every attribute an Entity's model.
 
 **Definition:**
 
@@ -73,7 +91,7 @@ type EntityRecord<E extends Entity<any, any, any, any>> =
         : never;
 ```
 
-**Use:**
+**Usage:**
 
 ```typescript
 type Item = EntityRecord<typeof MyEntity>
@@ -92,7 +110,7 @@ export type EntityItem<E extends Entity<any, any, any, any>> =
   : never;
 ```
 
-**Use:**
+**Usage:**
 
 ```typescript
 type Item = EntityItem<typeof MyEntityInstance>;
@@ -121,7 +139,7 @@ export type CollectionItem<SERVICE extends Service<any>, COLLECTION extends keyo
         : never
 ```
 
-**Use:**
+**Usage:**
 
 ```typescript
 type CollectionResults = CollectionItem<typeof MyServiceInstance, "collectionName">
@@ -140,7 +158,7 @@ export type CollectionResponse<SERVICE extends Service<any>, COLLECTION extends 
 }
 ```
 
-**Use:**
+**Usage:**
 
 ```typescript
 type CollectionResults = CollectionResponse<typeof MyServiceInstance, "collectionName">
@@ -159,7 +177,7 @@ export type CreateEntityItem<E extends Entity<any, any, any, any>> =
   : never;
 ```
 
-**Use:**
+**Usage:**
 
 ```typescript
 type NewThing = CreateEntityItem<typeof MyEntityInstance>;
@@ -174,11 +192,11 @@ This type represents an item that you would pass your entity's `set` method when
 ```typescript
 export type UpdateEntityItem<E extends Entity<any, any, any, any>> =
   E extends Entity<infer A, infer F, infer C, infer S>
-  ? SetItem<A, F, C, S>
-  : never;
+    ? SetItem<A, F, C, S>
+    : never;
 ```
 
-**Use:**
+**Usage:**
 
 ```typescript
 type UpdateProperties = UpdateEntityItem<typeof MyEntityInstance>;

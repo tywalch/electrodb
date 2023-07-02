@@ -275,7 +275,7 @@ describe("Entity", () => {
             let updatedStore = await MallStores.update(secondStore)
                 .set({ rent: newRent })
                 .go();
-            expect(updatedStore.data).to.be.empty;
+            expect(updatedStore.data).to.deep.equal(secondStore);
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go();
             expect(secondStoreAfterUpdate.data?.rent).to.equal(newRent);
         }).timeout(20000);
@@ -621,7 +621,7 @@ describe("Entity", () => {
                 .set({ rent: newRent })
                 .go()
                 .then(res => res.data);
-            expect(updatedStore).to.be.empty;
+            expect(updatedStore).to.deep.equal(secondStore);
             let secondStoreAfterUpdate = await MallStores.get(secondStore).go().then(res => res.data);
             expect(secondStoreAfterUpdate?.rent).to.equal(newRent);
         }).timeout(20000);
@@ -1032,11 +1032,94 @@ describe("Entity", () => {
             let prop2 = uuid();
             await record.put({ prop1, prop2 }).go();
             let recordExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
-            await record.delete({ prop1, prop2 }).go();
+            const result = await record.delete({ prop1, prop2 }).go();
+            expect(result.data).to.deep.equal({ prop1, prop2 });
             await sleep(150);
             let recordNoLongerExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
             expect(!!Object.keys(recordExists || {}).length).to.be.true;
             expect(recordNoLongerExists).to.be.null;
+        });
+
+        it("Should create then remove a record", async () => {
+            const table = "electro";
+            const record = new Entity({
+                    model: {
+                        service: SERVICE,
+                        entity: ENTITY,
+                        version: "1",
+                    },
+                    attributes: {
+                        prop1: {
+                            type: "string",
+                        },
+                        prop2: {
+                            type: "string",
+                        },
+                    },
+                    indexes: {
+                        main: {
+                            pk: {
+                                field: "pk",
+                                composite: ["prop1"],
+                            },
+                            sk: {
+                                field: "sk",
+                                composite: ["prop2"],
+                            },
+                        },
+                    },
+                },
+                { client, table },
+            );
+            let prop1 = uuid();
+            let prop2 = uuid();
+            await record.put({ prop1, prop2 }).go();
+            let recordExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
+            const result = await record.remove({ prop1, prop2 }).go();
+            expect(result.data).to.deep.equal({ prop1, prop2 });
+            await sleep(150);
+            let recordNoLongerExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
+            expect(!!Object.keys(recordExists || {}).length).to.be.true;
+            expect(recordNoLongerExists).to.be.null;
+        });
+
+        it("Should throw when trying to remove a record that does not exist", async () => {
+            const table = "electro";
+            const record = new Entity({
+                    model: {
+                        service: SERVICE,
+                        entity: ENTITY,
+                        version: "1",
+                    },
+                    attributes: {
+                        prop1: {
+                            type: "string",
+                        },
+                        prop2: {
+                            type: "string",
+                        },
+                    },
+                    indexes: {
+                        main: {
+                            pk: {
+                                field: "pk",
+                                composite: ["prop1"],
+                            },
+                            sk: {
+                                field: "sk",
+                                composite: ["prop2"],
+                            },
+                        },
+                    },
+                },
+                { client, table },
+            );
+            let prop1 = uuid();
+            let prop2 = uuid();
+            let recordNotExists = await record.get({ prop1, prop2 }).go().then(res => res.data);
+            expect(recordNotExists).to.equal(null);
+            const result = await record.remove({ prop1, prop2 }).go().then(() => true).catch(() => false);
+            expect(result).to.equal(false);
         });
     });
 
@@ -1115,7 +1198,7 @@ describe("Entity", () => {
                 .update({ date, id })
                 .set({ prop1: updatedProp1 })
                 .go().then(res => res.data);
-            expect(updatedRecord).to.be.empty;
+            expect(updatedRecord).to.deep.equal({ date, id });
             let getUpdatedRecord = await db.get({ date, id }).go().then(res => res.data);
             expect(getUpdatedRecord).to.deep.equal({
                 id,
@@ -3957,7 +4040,7 @@ describe('upsert', () => {
                             type: 'string'
                         }
                     }
-                }
+                },
             },
             indexes: {
                 tasks: {
@@ -3975,6 +4058,160 @@ describe('upsert', () => {
         },
         { table, client }
     );
+
+    it('should not overwrite readonly properties', async () => {
+        const thing = new Entity({
+            model: {
+                entity: 'thing',
+                version: '1',
+                service: 'thingstore'
+            },
+            attributes: {
+                organizationId: {
+                    type: 'string'
+                },
+                accountId: {
+                    type: 'string'
+                },
+                name: {
+                    type: 'string'
+                },
+                description: {
+                    type: 'string'
+                },
+                value: {
+                    type: 'string',
+                    readOnly: true,
+                }
+            },
+            indexes: {
+                records: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['organizationId']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['accountId']
+                    }
+                },
+                byName: {
+                    index: 'gsi1pk-gsi1sk-index',
+                    pk: {
+                        field: 'gsi1pk',
+                        composite: ['name']
+                    },
+                    sk: {
+                        field: 'gsi1sk',
+                        composite: ['description']
+                    }
+                }
+            }
+        }, { table, client });
+        const organizationId = uuid();
+        const accountId = uuid();
+        const name = uuid();
+
+        const put = await thing.create({
+            organizationId,
+            accountId,
+            name,
+            value: 'abc'
+        }).go();
+
+        expect(put.data.value).to.equal('abc');
+
+        const upserted = await thing
+            .upsert({
+                organizationId,
+                accountId,
+                name,
+                value: 'def',
+            })
+            .go({response: 'all_new'});
+
+        expect(upserted.data.value).to.equal('abc');
+
+        const get = await thing.get({organizationId, accountId}).go();
+
+        expect(get.data?.value).to.equal('abc');
+    });
+
+    it('should allow calculated field createdAt/updatedAt pattern with upsert', async () => {
+        const entity = new Entity({
+            model: {
+                entity: "transaction",
+                service: "bank",
+                version: "1"
+            },
+            attributes: {
+                accountNumber: {
+                    type: "string"
+                },
+                transactionId: {
+                    type: "string"
+                },
+                description: {
+                    type: "string",
+                },
+                createdAt: {
+                    type: "number",
+                    readOnly: true,
+                    required: true,
+                    default: () => Date.now(),
+                    set: () => Date.now(),
+                },
+                updatedAt: {
+                    type: "number",
+                    watch: "*",
+                    required: true,
+                    default: () => Date.now(),
+                    set: () => Date.now(),
+                }
+            },
+            indexes: {
+                transactions: {
+                    pk: {
+                        field: "pk",
+                        composite: ["accountNumber"]
+                    },
+                    sk: {
+                        field: "sk",
+                        composite: ["transactionId"]
+                    }
+                }
+            }
+        }, { table, client });
+
+        const accountNumber = uuid();
+        const transactionId = uuid();
+        const description = uuid();
+
+        const put = await entity.create({
+            accountNumber,
+            transactionId,
+            description,
+        }).go();
+
+        expect(typeof put.data.createdAt).to.equal('number');
+        expect(typeof put.data.updatedAt).to.equal('number');
+
+        const upserted = await entity
+            .upsert({
+                accountNumber,
+                transactionId,
+                description,
+            })
+            .go({response: 'all_new'});
+
+        expect(upserted.data.createdAt).to.equal(put.data.createdAt);
+        expect(upserted.data.updatedAt).not.to.equal(put.data.updatedAt);
+
+        const get = await entity.get({accountNumber, transactionId}).go();
+
+        expect(get.data?.createdAt).to.equal(put.data.createdAt);
+        expect(get.data?.updatedAt).not.to.equal(put.data.updatedAt);
+    })
 
     it('should create an item if one did not exist prior', async () => {
         const project = uuid();

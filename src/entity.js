@@ -673,7 +673,7 @@ class Entity {
 			case MethodTypes.delete:
 			case MethodTypes.remove:
 			case MethodTypes.upsert:
-				return this.formatResponse(response, index, {...config, _objectOnEmpty: true});
+				return this.formatResponse(response, index, { ...config, _objectOnEmpty: true });
 			default:
 				return this.formatResponse(response, index, config);
 		}
@@ -814,7 +814,11 @@ class Entity {
 						results = null;
 					}
 				} else if (config._objectOnEmpty) {
-					return { data: {} };
+					return {
+						data: {
+							...config._includeOnResponseItem,
+						}
+					};
 				} else {
 					results = null;
 				}
@@ -1342,6 +1346,7 @@ class Entity {
 			order: undefined,
 			hydrate: false,
 			hydrator: (_entity, _indexName, items) => items,
+			_includeOnResponseItem: {},
 		};
 
 		return provided.filter(Boolean).reduce((config, option) => {
@@ -1501,6 +1506,13 @@ class Entity {
 
 			if (validations.isFunction(option.hydrator)) {
 				config.hydrator = option.hydrator;
+			}
+
+			if (option._includeOnResponseItem) {
+				config._includeOnResponseItem = {
+					...config._includeOnResponseItem,
+					...option._includeOnResponseItem,
+				}
 			}
 
 			config.page = Object.assign({}, config.page, option.page);
@@ -1951,12 +1963,17 @@ class Entity {
 		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
 		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
 		const keyNames = Object.keys(indexKey);
-		// update.set(this.identifiers.entity, this.getName());
-		// update.set(this.identifiers.version, this.getVersion());
 		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
 			const value = u.getFirstDefined(upsertAttributes[field], updatedKeys[field]);
 			if (!keyNames.includes(field)) {
-				update.set(field, value);
+				let operation = ItemOperations.set;
+				const name = this.model.schema.translationForRetrieval[field];
+				if (name) {
+					if (this.model.schema.readOnlyAttributes.has(name)) {
+						operation = ItemOperations.ifNotExists;
+					}
+				}
+				update.set(field, value, operation);
 			}
 		}
 

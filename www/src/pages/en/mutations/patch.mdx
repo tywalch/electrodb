@@ -26,10 +26,13 @@ await entity.patch({ attr1: "value1", attr2: "value2" })
   .go();
 ```
 
-## Response Format
+## Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
 ```typescript
 {
-  data: { YOUR_SCHEMA }
+  data: EntityIdentifiers<typeof StoreLocations>
 }
 ```
 

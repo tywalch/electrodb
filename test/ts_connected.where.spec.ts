@@ -53,6 +53,14 @@ describe("Where Clause Queries", () => {
             complex: {
                 type: "any",
                 field: "c"
+            },
+            tags: {
+                type: 'set',
+                items: 'string',
+            },
+            codes: {
+                type: 'set',
+                items: 'number',
             }
         },
         filters: {},
@@ -77,18 +85,30 @@ describe("Where Clause Queries", () => {
         "Dog",
         "Pig",
         "Rooster",
-        "Shark",
         "Sheep",
+        "Shark",
     ];
+    const animalTags: Record<string, string[]> = {
+        "Chicken": ["feet", "edible", "beak"],
+        "Chick": ["feet", "edible", "beak"],
+        "Cow": ["hooves", "edible", "snoot"],
+        "Dog": ["paws", "snoot"],
+        "Pig": ["hooves", "edible", "snout"],
+        "Rooster": ["feet", "beak"],
+        "Sheep": ["hooves", "snoot"],
+        "Shark": ["swims", "nose"],
+    }
     let penRows: EntityItem<typeof WhereTests>[] = [];
     before(async () => {
-        let results = await Promise.all(animals.map(animal => {
+        await Promise.all(animals.map(animal => {
+            const tags = animalTags[animal];
+            const codes = tags.map(tag => tag.length);
             let row = uuid();
             penRows.push({pen, row, animal});
             if (animal === "Shark") {
-                return WhereTests.put({pen, row, animal, dangerous: true}).go().then(res => res.data)
+                return WhereTests.put({pen, row, animal, dangerous: true, tags, codes}).go().then(res => res.data)
             } else {
-                return WhereTests.put({pen, row, animal}).go().then(res => res.data)
+                return WhereTests.put({pen, row, animal, tags, codes}).go().then(res => res.data)
             }
         }));
     })
@@ -224,7 +244,8 @@ describe("Where Clause Queries", () => {
             "Sheep",
         ]);
     })
-    it("Should filter 'contains' with 'where'", async () => {
+
+    it("Should filter 'contains' with 'where' on string attribute", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, op) => op.contains(animal, "Chick"))
@@ -237,8 +258,73 @@ describe("Where Clause Queries", () => {
             "Chicken",
             "Chick"
         ]);
-    })
-    it("Should filter 'notContains' with 'where'", async () => {
+    });
+
+    it("Should filter 'contains' with 'where' on string set attribute", async () => {
+        let animals = await WhereTests.query
+            .farm({ pen })
+            .where(({ tags }, op) => op.contains(tags, 'hooves'))
+            .go()
+            .then(res => res.data)
+        expect(animals)
+            .to.be.an("array")
+            .and.have.length(3);
+        expect(animals.map(pen => pen.animal)).to.have.members([
+            "Cow",
+            "Pig",
+            "Sheep",
+        ]);
+    });
+
+    it("Should filter 'notContains' with 'where' on string set attribute", async () => {
+        let animals = await WhereTests.query
+            .farm({ pen })
+            .where(({ tags }, op) => `${op.contains(tags, 'hooves')} and ${op.notContains(tags, 'edible')}`)
+            .go()
+            .then(res => res.data)
+        expect(animals)
+            .to.be.an("array")
+            .and.have.length(1);
+        expect(animals.map(pen => pen.animal)).to.have.members([
+            "Sheep",
+        ]);
+    });
+
+    it("Should filter 'contains' with 'where' on numeric set attribute", async () => {
+        let animals = await WhereTests.query
+            .farm({ pen })
+            .where(({ codes }, op) => op.contains(codes, 5))
+            .go()
+            .then(res => res.data)
+        expect(animals)
+            .to.be.an("array")
+            .and.have.length(5);
+        expect(animals.map(pen => pen.animal)).to.have.members([
+            "Cow",
+            "Dog",
+            "Pig",
+            "Sheep",
+            "Shark"
+        ]);
+    });
+
+    it("Should filter 'notContains' with 'where' on numeric set attribute", async () => {
+        let animals = await WhereTests.query
+            .farm({ pen })
+            .where(({ codes }, op) => `${op.contains(codes, 5)} and ${op.notContains(codes, 4)}`)
+            .go()
+            .then(res => res.data)
+        expect(animals)
+            .to.be.an("array")
+            .and.have.length(3);
+        expect(animals.map(pen => pen.animal)).to.have.members([
+            "Cow",
+            "Pig",
+            "Sheep",
+        ]);
+    });
+
+    it("Should filter 'notContains' with 'where' on string attribute", async () => {
         let animals = await WhereTests.query
             .farm({pen})
             .where(({animal}, {notContains}) => notContains(animal, "o"))
@@ -328,7 +414,10 @@ describe("Where Clause Queries", () => {
             .set({dangerous: true})
             .where(({dangerous}, {notExists}) => notExists(dangerous))
             .go().then(res => res.data);
-        expect(results).to.be.empty;
+        expect(results).to.deep.equal({
+            pen: penRow.pen,
+            row: penRow.row,
+        });
         let after = await WhereTests.get(penRow).go(consistentRead).then(res => res.data);
         expect(after?.dangerous).to.be.true;
         let doesExist = await WhereTests.patch(penRow)
@@ -615,7 +704,7 @@ describe("Where Clause Queries", () => {
 
         expect(params).to.deep.equal({
             TableName: 'electro',
-            UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #studio = :studio_u0, #productionHouse = :productionHouse_u0, #project = :project_u0, #actor = :actor_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0',
+            UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #studio = if_not_exists(#studio, :studio_u0), #productionHouse = if_not_exists(#productionHouse, :productionHouse_u0), #project = :project_u0, #actor = if_not_exists(#actor, :actor_u0), #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0',
             ExpressionAttributeNames: {
                 '#project': 'project',
                 '#__edb_e__': '__edb_e__',
@@ -876,5 +965,5 @@ describe("Where Clause Queries", () => {
                 "FilterExpression": "#prop >= :30 OR #prop = :a0 OR #prop <= :50"
             });
         });
-    })
+    });
 });

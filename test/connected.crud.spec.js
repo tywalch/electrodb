@@ -294,7 +294,10 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let updatedStore = await MallStores.update(secondStore)
 						.set({ rent: newRent })
 						.go().then(res => res.data);
-					expect(updatedStore).to.be.empty;
+					expect(updatedStore).to.deep.equal({
+						sector: updatedStore.sector,
+						id: updatedStore.id,
+					});
 					let secondStoreAfterUpdate = await MallStores.get(secondStore).go().then(res => res.data);
 					expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 				}).timeout(20000);
@@ -636,7 +639,10 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					let updatedStore = await MallStores.update(secondStore)
 						.set({ rent: newRent })
 						.go().then(res => res.data);
-					expect(updatedStore).to.be.empty;
+					expect(updatedStore).to.deep.equal({
+						sector: updatedStore.sector,
+						id: updatedStore.id,
+					});
 					let secondStoreAfterUpdate = await MallStores.get(secondStore).go().then(res => res.data);
 					expect(secondStoreAfterUpdate.rent).to.equal(newRent);
 				}).timeout(20000);
@@ -1224,7 +1230,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						.update({ date, id })
 						.set({ prop1: updatedProp1 })
 						.go().then(res => res.data);
-					expect(updatedRecord).to.be.empty;
+					expect(updatedRecord).to.deep.equal({ date, id });
 					let getUpdatedRecord = await db.get({ date, id }).go().then(res => res.data);
 					expect(getUpdatedRecord).to.deep.equal({
 						id,
@@ -4236,8 +4242,14 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					expect(putRecord).to.deep.equal({ number1: 55, number2: 66 });
 					expect(getRecord).to.deep.equal({ number1: 55, number2: 66 });
 					expect(queryRecord).to.deep.equal([{ number1: 55, number2: 66, number3: 77 }]);
-					expect(updateRecord).to.be.empty;
-					expect(deleteRecord).to.be.empty;
+					expect(updateRecord).to.deep.equal({
+						number1: 55,
+						number2: 66,
+					});
+					expect(deleteRecord).to.deep.equal({
+						number1: 55,
+						number2: 66,
+					});
 				});
 			});
 			describe("Illegal key names", () => {

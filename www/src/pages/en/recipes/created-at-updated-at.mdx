@@ -16,9 +16,11 @@ layout: ../../../layouts/MainLayout.astro
 
 In this example we can easily create both `updatedAt` and `createdAt` attributes on our model. `createdAt` will use ElectroDB's `set` and `readOnly` attribute properties, while `updatedAt` will make use of `readOnly`, and `watch` with the "watchAll" syntax: `{watch: "*"}`. By supplying an asterisk, instead of an array of attribute names, attributes can be defined to watch _all_ changes to _all_ attributes.
 
-Using `watch` in conjunction with `readOnly` is another powerful modeling technique. This combination allows you to model attributes that can only be modified via the model and not via the user. This is useful for attributes that need to be locked down and/or strictly calculated. 
+Using `watch` in conjunction with `readOnly` is another powerful modeling technique. This combination allows you to model attributes that can only be modified via the model and not via the user. This is useful for attributes that need to be locked down and/or strictly calculated.
 
-Notable about this example is that both `updatedAt` and `createdAt` use the `set` property without using its arguments. The `readOnly` only prevents modification of an attributes on `update`, and `patch`. By disregarding the arguments passed to `set`, the `updatedAt` and `createdAt` attributes are then effectively locked down from user influence/manipulation.        
+Notice that both `updatedAt` and `createdAt` use the `set` property without using its arguments. The `readOnly` prevents modification of an attributes on `update`, `patch`, and `upsert`. By discarding the arguments passed to `set`, the `createdAt` attribute becomes effectively locked down from user influence/manipulation.
+
+Additionally, `updatedAt` and `createdAt` are `required` and have `default` options. The `required` option ensures that new items cannot be created without these properties, and that these properties cannot be deleted. Lastly, `default` option then has the typing implication that it becomes an optional property to provide on `create`, `patch` and `upsert` operations.
 
 ```typescript
 {
@@ -40,24 +42,27 @@ Notable about this example is that both `updatedAt` and `createdAt` use the `set
     createdAt: {
       type: "number",
       readOnly: true,
-      set: () => Date.now()
+      required: true,
+      default: () => Date.now(),
+      set: () => Date.now(),
     },
     updatedAt: {
       type: "number",
-      readOnly: true,
       watch: "*",
-      set: () => Date.now()
+      required: true,
+      default: () => Date.now(),
+      set: () => Date.now(),
     }
   },
   indexes: {
     transactions: {
       pk: {
         field: "pk",
-        facets: ["accountNumber"]
+        composite: ["accountNumber"]
       },
       sk: {
         field: "sk",
-        facets: ["transactionId"]
+        composite: ["transactionId"]
       }
     }
   }

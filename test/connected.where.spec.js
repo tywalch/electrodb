@@ -301,7 +301,10 @@ describe("Where Clause Queries", () => {
 			.set({dangerous: true})
 			.where(({dangerous}, {notExists}) => notExists(dangerous))
 			.go().then(res => res.data);
-		expect(results).to.be.empty;
+		expect(results).to.deep.equal({
+			pen: penRow.pen,
+			row: penRow.row,
+		});
 		let after = await WhereTests.get(penRow).go(consistentRead).then(res => res.data);
 		expect(after.dangerous).to.be.true;
 		let doesExist = await WhereTests.patch(penRow)

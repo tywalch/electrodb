@@ -1429,15 +1429,14 @@ class Schema {
 			: attribute.getValidate(value);
 	}
 
-	checkUpdate(payload = {}) {
+	checkUpdate(payload = {}, { allowReadOnly } = {}) {
 		let record = {};
 		for (let [path, attribute] of this.traverser.getAll()) {
 			let value = payload[path];
 			if (value === undefined) {
 				continue;
 			}
-			if (attribute.readOnly) {
-				// todo: #electroerror
+			if (attribute.readOnly && !allowReadOnly) {
 				throw new e.ElectroAttributeValidationError(attribute.path, `Attribute "${attribute.path}" is Read-Only and cannot be updated`);
 			} else {
 				record[path] = attribute.getValidate(value);

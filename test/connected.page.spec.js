@@ -480,7 +480,18 @@ describe("Page", () => {
 
   describe("query pagination", () => {
     it("query should always return string or null", async () => {
-      const ExclusiveStartKey = {key: 'hi'};
+      const entity1 = new Tasks(TasksModel, {table});
+      const createParams = entity1.create({
+        task: uuid(),
+        project: uuid(),
+        employee: uuid(),
+        points: 5,
+      }).params();
+
+      const ExclusiveStartKey = {
+        pk: createParams.Item.pk,
+        sk: createParams.Item.sk,
+      };
       const {client, calls} = createClient({
         mockResponses: [
           {
@@ -524,8 +535,7 @@ describe("Page", () => {
         if (i === 0) {
           expect(call.ExclusiveStartKey).to.be.undefined;
         } else {
-          expect(call.ExclusiveStartKey.key).to.equal('hi');
-          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
+          expect(call.ExclusiveStartKey).to.deep.equal(ExclusiveStartKey);
         }
       }
     });

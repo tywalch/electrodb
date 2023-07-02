@@ -748,7 +748,7 @@ const entityWithComplexShapes = new MockEntity({
       },
       prop6: {
           type: "set",
-          items: "string"
+          items: "number"
       }
   },
   indexes: {
@@ -1724,8 +1724,8 @@ expectType<{
     val3: string[]; 
     val4: number[]; 
   }[]; 
-  prop5: string[]; 
-  prop6: string[]; 
+  prop5: string[];
+  prop6: number[];
 }>(entityWithComplexShapes.getWhereAttributes());
 
 // DataUpdateAttributes
@@ -1764,7 +1764,7 @@ expectType<{
     val4: number[]; 
   }[]; 
   prop5: string[]; 
-  prop6: string[]; 
+  prop6: number[];
 }>(entityWithComplexShapes.getDataUpdateAttributes());
 
 expectType<{
@@ -1866,7 +1866,7 @@ entityWithComplexShapes.getWhereCallback((a, o) => {
     val4: number[]; 
   }[]>(a.prop4);
   expectType<string[]>(a.prop5);
-  expectType<string[]>(a.prop6);
+  expectType<number[]>(a.prop6);
 
   expectError(() => o.eq(a.prop4, 1));
   expectError(() => o.ne(a.prop4, 1));
@@ -1888,8 +1888,19 @@ entityWithComplexShapes.getWhereCallback((a, o) => {
   o.lte(a.prop4[0].val2, 1);
   o.between(a.prop4[0].val2, 1, 1);
   o.begins(a.prop4[0].val2, 1);
-  o.contains(a.prop4[0].val2, 1);
-  o.notContains(a.prop4[0].val2, 1);
+
+  o.contains(a.prop3.val1, '1');
+  o.notContains(a.prop3.val1, '1');
+
+  o.contains(a.prop5, '1');
+  o.notContains(a.prop5, '1');
+
+  o.contains(a.prop6, 1);
+  o.notContains(a.prop6, 1);
+
+  o.contains(a.prop4, {val2: 5, val3: [], val4: [4]});
+  o.notContains(a.prop4, {val2: 5, val3: [], val4: [4]});
+
   o.value(a.prop4[0].val2, 1);
 
   return '';
