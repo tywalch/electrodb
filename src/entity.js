@@ -1969,7 +1969,8 @@ class Entity {
 				let operation = ItemOperations.set;
 				const name = this.model.schema.translationForRetrieval[field];
 				if (name) {
-					if (this.model.schema.readOnlyAttributes.has(name)) {
+					const attribute = this.model.schema.attributes[name];
+					if (this.model.schema.readOnlyAttributes.has(name) && (!attribute || !attribute.indexes || attribute.indexes.length === 0)) {
 						operation = ItemOperations.ifNotExists;
 					}
 				}

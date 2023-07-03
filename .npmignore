@@ -13,3 +13,4 @@ playground/
 *.sh
 .idea/
 www/
+*.yml

@@ -280,6 +280,135 @@ describe("Entity", () => {
             expect(secondStoreAfterUpdate.data?.rent).to.equal(newRent);
         }).timeout(20000);
 
+        it('should overwrite readonly properties if they exist in a key', async () => {
+            let createdAt = 1;
+            const updatedAt = Date.now();
+            const thing = new Entity({
+                model: {
+                    entity: "transaction",
+                    service: "bank",
+                    version: "1"
+                },
+                attributes: {
+                    accountNumber: {
+                        type: "string"
+                    },
+                    transactionId: {
+                        type: "string"
+                    },
+                    transactionType: {
+                        type: 'string',
+                    },
+                    description: {
+                        type: "string",
+                    },
+                    source: {
+                        type: 'string',
+                        readOnly: true,
+                    },
+                    createdAt: {
+                        type: "number",
+                        readOnly: true,
+                        required: true,
+                        default: () => 1,
+                        set: () => createdAt++,
+                    },
+                    updatedAt: {
+                        type: "number",
+                        watch: "*",
+                        required: true,
+                        default: () => updatedAt,
+                        set: () => updatedAt,
+                    }
+                },
+                indexes: {
+                    transactions: {
+                        pk: {
+                            field: "pk",
+                            composite: ["accountNumber"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["transactionId"]
+                        }
+                    },
+                    byCreated: {
+                        index: 'gis1pk-gsi1sk-index',
+                        pk: {
+                            field: 'gsi1pk',
+                            composite: ['transactionType']
+                        },
+                        sk: {
+                            field: 'gsi1sk',
+                            composite: ['createdAt']
+                        }
+                    }
+                }
+            }, { table, client });
+
+            const accountNumber = uuid();
+            const transactionId = uuid();
+            const description1 = uuid();
+            const source1 = uuid();
+
+            const description2 = uuid();
+            const source2 = uuid();
+
+            const params = await thing
+                .upsert({
+                    transactionId,
+                    accountNumber,
+                    description: description1,
+                    source: source1,
+                })
+                .params();
+
+            expect(params.UpdateExpression).to.equal('SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #accountNumber = :accountNumber_u0, #transactionId = :transactionId_u0, #description = :description_u0, #source = if_not_exists(#source, :source_u0), #createdAt = :createdAt_u0, #updatedAt = :updatedAt_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0');
+
+            const upserted1 = await thing
+                .upsert({
+                    transactionId,
+                    accountNumber,
+                    description: description1,
+                    source: source1,
+                })
+                .go({ response: 'all_new' });
+
+            const firstCreatedAt = createdAt - 1;
+
+            expect(upserted1.data).to.deep.equal({
+                updatedAt,
+                transactionId,
+                accountNumber,
+                description: description1,
+                source: source1,
+                createdAt: firstCreatedAt,
+            });
+
+            const upserted2 = await thing
+                .upsert({
+                    transactionId,
+                    accountNumber,
+                    description: description2,
+                    source: source2,
+                })
+                .go({response: 'all_new'});
+
+            const secondCreatedAt = createdAt - 1;
+
+            expect(upserted2.data).to.deep.equal({
+                transactionId,
+                accountNumber,
+                description: description2,
+                source: source1,
+                updatedAt,
+                createdAt: secondCreatedAt,
+            });
+
+            expect(firstCreatedAt).to.not.equal(secondCreatedAt);
+            expect(secondCreatedAt - 1).to.equal(firstCreatedAt);
+        });
+
         it("Should not create a overwrite existing record", async () => {
             let id = uuid();
             let mall = "EastPointe";
@@ -310,7 +439,7 @@ describe("Entity", () => {
             } catch(err: any) {
                 expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
             }
-            expect(recordTwo).to.be.null
+            expect(recordTwo).to.be.null;
         });
 
         it("Should only update a record if it already exists", async () => {
@@ -338,7 +467,7 @@ describe("Entity", () => {
             // mall would be changed by the setter
             expect(recordOne).to.deep.equal({...record, mall: mall + "abc"});
             let patchResultsOne = await MallStores.patch({sector, id})
-                .set({rent: "100.00"})
+                .set({ rent: '100.00' })
                 .go()
                 .then(res => res.data);
             let patchResultsTwo = null;
@@ -350,7 +479,7 @@ describe("Entity", () => {
             } catch(err: any) {
                 expect(err.message).to.be.equal('Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error');
             }
-            expect(patchResultsTwo).to.be.null
+            expect(patchResultsTwo).to.be.null;
         });
 
         it("Should pass back the original dynamodb error when originalErr is set to true", async () => {

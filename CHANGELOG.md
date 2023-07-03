@@ -342,4 +342,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 - The exported type `UpdateEntityItem` was incorrectly typed, it now includes the correct typing as the values that can be passed to the `set` method 
 
 ### Changed
-- Upsert operations now take into consideration `readOnly` attributes when applying changes. If an attribute is configured as `readOnly` ElectroDB will apply the property with an `if_not_exists` set operation to prevent overwriting the existing value if one is set.  
+- Upsert operations now take into consideration `readOnly` attributes when applying changes. If an attribute is configured as `readOnly` ElectroDB will apply the property with an `if_not_exists` set operation to prevent overwriting the existing value if one is set.
+
+## [2.7.1] - 2023-07-03
+### Fixed
+- Upsert now only allies `if_not_exists()` if the attribute is not a composite attribute in an index. 

@@ -704,7 +704,7 @@ describe("Where Clause Queries", () => {
 
         expect(params).to.deep.equal({
             TableName: 'electro',
-            UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #studio = if_not_exists(#studio, :studio_u0), #productionHouse = if_not_exists(#productionHouse, :productionHouse_u0), #project = :project_u0, #actor = if_not_exists(#actor, :actor_u0), #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0',
+            UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #studio = :studio_u0, #productionHouse = :productionHouse_u0, #project = :project_u0, #actor = :actor_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0',
             ExpressionAttributeNames: {
                 '#project': 'project',
                 '#__edb_e__': '__edb_e__',

@@ -12,7 +12,8 @@
     "coverage:local:coveralls": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
     "coverage:local:html": "npm run test:init && nyc npm run test:unit && nyc report --reporter=html",
     "build:browser": "browserify playground/browser.js -o playground/bundle.js",
-    "build": "sh buildbrowser.sh"
+    "build": "sh buildbrowser.sh",
+    "start:containers": "docker compose up -d"
   },
   "repository": {
     "type": "git",
