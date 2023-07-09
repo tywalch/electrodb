@@ -29,14 +29,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build docker
-#        run: docker-compose -f "docker-compose.yml" up -d --build
-        run: docker-compose -f "docker-compose.yml" up dynamodb -d
       - name: Install dependencies
         run: npm install
       - name: Run tests
         run: npm test
-      - name: Tear down
-        if: always()
-        run: docker-compose -f "docker-compose.yml" down
 

@@ -8,21 +8,18 @@ services:
     networks:
       - edb
   electro:
-    build:
-      context: ./
-      dockerfile: Dockerfile
+    image: node:18-alpine
     environment:
       LOCAL_DYNAMO_ENDPOINT: "http://dynamodb:8000"
       AWS_REGION: "us-east-1"
       AWS_ACCESS_KEY_ID: "test"
       AWS_SECRET_ACCESS_KEY: "test"
+    command: "tail -f /dev/null"
+    working_dir: /usr/src/app
     volumes:
-      - ../:/usr/src/app
+      - .:/usr/src/app
     networks:
       - edb
-    expose:
-      - "8080"
-      - "5050"
 networks:
   edb:
     driver: "bridge"

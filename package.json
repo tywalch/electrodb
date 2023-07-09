@@ -4,7 +4,7 @@
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test:types && npm run test:init && npm run test:unit",
+    "test:run": "npm run test:types && npm run test:init && npm run test:unit",
     "test:init": "node ./test/init.js",
     "test:unit": "mocha -r ts-node/register ./test/**.spec.*",
     "test:types": "tsd",
@@ -13,7 +13,8 @@
     "coverage:local:html": "npm run test:init && nyc npm run test:unit && nyc report --reporter=html",
     "build:browser": "browserify playground/browser.js -o playground/bundle.js",
     "build": "sh buildbrowser.sh",
-    "start:containers": "docker compose up -d"
+    "test": "./test.sh",
+    "test:ci": "npm install && npm test"
   },
   "repository": {
     "type": "git",
