@@ -1,11 +1,25 @@
 version: '3.8'
 services:
   dynamodb:
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    command: "-jar DynamoDBLocal.jar -inMemory"
     image: "amazon/dynamodb-local:latest"
-    container_name: dynamodb-local
     ports:
       - "8000:8000"
+    networks:
+      - edb
+  electro:
+    image: node:18-alpine
+    environment:
+      LOCAL_DYNAMO_ENDPOINT: "http://dynamodb:8000"
+      AWS_REGION: "us-east-1"
+      AWS_ACCESS_KEY_ID: "test"
+      AWS_SECRET_ACCESS_KEY: "test"
+    command: "tail -f /dev/null"
+    working_dir: /usr/src/app
     volumes:
-      - "./docker/dynamodb:/home/dynamodblocal/data"
-    working_dir: /home/dynamodblocal
+      - .:/usr/src/app
+    networks:
+      - edb
+networks:
+  edb:
+    driver: "bridge"

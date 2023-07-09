@@ -10,6 +10,10 @@ const leadingUnderscoreKeys = require('./definitions/leadingunderscorekeys.json'
 const localSecondaryIndexes = require('./definitions/localsecondaryindexes.json');
 const keysOnly = require('./definitions/keysonly.json');
 
+if (typeof process.env.LOCAL_DYNAMO_ENDPOINT !== 'string' && !process.env.LOCAL_DYNAMO_ENDPOINT.length) {
+    throw new Error('Tests are only intended to be used against dyanmodb local to prevent needless cost. If you would like to proceed without dynamodb-local, remove this line.');
+}
+
 const configuration = {
   endpoint: process.env.LOCAL_DYNAMO_ENDPOINT || "http://localhost:8000",
   region: "us-east-1"
