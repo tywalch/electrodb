@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run test:types && npm run test:init && npm run test:unit",
-    "test:init": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 node ./test/init.js",
-    "test:unit": "LOCAL_DYNAMO_ENDPOINT=http://localhost:8000 mocha -r ts-node/register ./test/**.spec.*",
+    "test:init": "node ./test/init.js",
+    "test:unit": "mocha -r ts-node/register ./test/**.spec.*",
     "test:types": "tsd",
     "coverage": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
     "coverage:local:coveralls": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
