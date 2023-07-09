@@ -1,4 +1,4 @@
-name: electrodb
+name: cicd
 
 on:
   push:
