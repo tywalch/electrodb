@@ -14,7 +14,11 @@
     "build:browser": "browserify playground/browser.js -o playground/bundle.js",
     "build": "sh buildbrowser.sh",
     "test": "./test.sh",
-    "test:ci": "npm install && npm test"
+    "test:ci": "npm install && npm test",
+    "ddb:start": "docker compose up -d",
+    "ddb:load": "docker compose exec electro npm run test:init",
+    "ddb:stop": "docker compose stop",
+    "example:taskapp": "npm run ddb:start && npm run ddb:load && ts-node ./examples/taskmanager/src/index.ts; npm run ddb:stop"
   },
   "repository": {
     "type": "git",
