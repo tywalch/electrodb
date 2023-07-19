@@ -50,6 +50,22 @@
           "Projection":{
               "ProjectionType":"ALL"
           }
+      },
+      {
+          "IndexName":"gsi2pk-gsi2sk-index",
+          "KeySchema":[
+              {
+                  "AttributeName":"gsi2pk",
+                  "KeyType":"HASH"
+              },
+              {
+                  "AttributeName":"gsi2sk",
+                  "KeyType":"RANGE"
+              }
+          ],
+          "Projection":{
+              "ProjectionType":"ALL"
+          }
       }
   ],
   "BillingMode":"PAY_PER_REQUEST"

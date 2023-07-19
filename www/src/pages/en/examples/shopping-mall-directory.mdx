@@ -151,7 +151,7 @@ Fulfilling [Requirement #1](#shopping-mall-requirements).
 let mallId = "EastPointe";
 
 let stores = await StoreLocations.query
-    .malls({ mallId })
+    .units({ mallId })
     .go();
 ```
 
@@ -164,7 +164,7 @@ let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 
 let stores = await StoreLocations.query
-    .malls({ mallId, buildingId })
+    .units({ mallId, buildingId })
     .go();
 ```
 
@@ -178,7 +178,7 @@ let buildingId = "BuildingA1";
 let unitId = "B47";
 
 let stores = await StoreLocations.query
-    .malls({ mallId, buildingId, unitId })
+    .units({ mallId, buildingId, unitId })
     .go();
 ```
 
@@ -191,7 +191,7 @@ let mallId = "EastPointe";
 let category = "food/coffee";
 
 let stores = await StoreLocations.query
-    .malls({mallId})
+    .units({ mallId })
     .where((attr, op) => op.eq(attr.category, category))
     .go();
 ```
@@ -200,12 +200,12 @@ let stores = await StoreLocations.query
 Fulfilling [Requirement #3](#shopping-mall-requirements).
 
 ```typescript
-let mallId = "EastPointe";
+let storeId = "LatteLarrys";
 let q2StartDate = "2020-04-01";
 
 let stores = await StoreLocations.query
-    .leases({mallId})
-    .lt({leaseEndDate: q2StateDate})
+    .leases({ storeId })
+    .lt({leaseEndDate: q2StartDate})
     .go();
 ```
 
@@ -214,11 +214,12 @@ let stores = await StoreLocations.query
 Fulfilling [Requirement #3](#shopping-mall-requirements).
 
 ```typescript
-let mallId = "EastPointe";
+let storeId = "LatteLarrys";
 let q4StartDate = "2020-10-01";
 let q4EndDate = "2020-12-31";
 
-let stores = await StoreLocations.leases(mallId)
+let stores = await StoreLocations.query
+    .leases({ storeId })
     .between(
         { leaseEndDate: q4StartDate },
         { leaseEndDate: q4EndDate })
@@ -230,13 +231,13 @@ let stores = await StoreLocations.leases(mallId)
 Fulfilling [Requirement #3](#shopping-mall-requirements).
 
 ```typescript
-let mallId = "EastPointe";
+let storeId = "LatteLarrys";
 let yearStarDate = "2020-01-01";
 let yearEndDate = "2020-12-31";
 let storeId = "LatteLarrys";
 
-let stores = await StoreLocations.leases(mallId)
-    .between (
+let stores = await StoreLocations.query
+    .leases({ storeId })    .between (
       { leaseEndDate: yearStarDate },
       { leaseEndDate: yearEndDate })
     .where((attr, op) => op.eq(attr.category, "Spite Store"))
@@ -252,6 +253,6 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 
 let stores = await StoreLocations.query
-    .malls({ mallId, buildingId, storeId })
+    .units({ mallId, buildingId, storeId })
     .go();
 ```
