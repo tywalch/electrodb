@@ -1005,6 +1005,70 @@ describe("Simple Crud On Complex Entity", () => {
         expect(putItem).to.deep.equal({ stringVal, stringVal2, map: {} });
     });
 
+    it("show allow for empty required maps to be added by the user", async () => {
+        const entity = new Entity({
+            model: {
+                entity: "user",
+                service: "versioncontrol",
+                version: "1"
+            },
+            attributes: {
+                stringVal: {
+                    type: "string",
+                },
+                stringVal2: {
+                    type: "string",
+                },
+                map: {
+                    type: "map",
+                    required: true,
+                    properties: {
+                        test: {
+                            type: "string"
+                        }
+                    }
+                }
+            },
+            indexes: {
+                user: {
+                    collection: "overview",
+                    pk: {
+                        composite: ["stringVal"],
+                        field: "pk"
+                    },
+                    sk: {
+                        composite: ["stringVal2"],
+                        field: "sk"
+                    }
+                },
+            }
+        }, {table, client});
+        const stringVal = uuid();
+        const stringVal2 = uuid();
+        const params = entity.put({stringVal, stringVal2, map: {}}).params();
+        expect(params).to.deep.equal({
+            Item: {
+                stringVal,
+                stringVal2,
+                map: {},
+                pk: `$versioncontrol#stringval_${stringVal}`,
+                sk: `$overview#user_1#stringval2_${stringVal2}`,
+                __edb_e__: 'user',
+                __edb_v__: '1'
+            },
+            TableName: 'electro'
+        });
+        const putItem = await entity.put({stringVal, stringVal2, map: {}}).go().then(res => res.data);
+
+        const getItem = await entity.get({stringVal, stringVal2}).go().then(res => res.data);
+        if (getItem) {
+            // poor man's typing test
+            getItem.map.test
+        }
+        expect(putItem).to.deep.equal(getItem);
+        expect(putItem).to.deep.equal({ stringVal, stringVal2, map: {} });
+    });
+
     it("show allow for empty maps to be added via default", async () => {
         const entity = new Entity({
             model: {
@@ -1064,7 +1128,7 @@ describe("Simple Crud On Complex Entity", () => {
         expect(putItem).to.deep.equal({ stringVal, stringVal2, map: {} });
     });
 
-    it("show allow for empty maps to be added via default", async () => {
+    it("show allow for empty maps to be added via set", async () => {
         const entity = new Entity({
             model: {
                 entity: "user",
