@@ -1058,13 +1058,13 @@ describe("Simple Crud On Complex Entity", () => {
             },
             TableName: 'electro'
         });
-        const putItem = await entity.put({stringVal, stringVal2, map: {}}).go().then(res => res.data);
-
-        const getItem = await entity.get({stringVal, stringVal2}).go().then(res => res.data);
-        if (getItem) {
-            // poor man's typing test
-            getItem.map.test
-        }
+        const putItem = await entity.put({
+            stringVal,
+            stringVal2,
+            map: {}
+        }).go().then(res => res.data);
+        const getItem = await entity.get({stringVal, stringVal2})
+            .go().then(res => res.data);
         expect(putItem).to.deep.equal(getItem);
         expect(putItem).to.deep.equal({ stringVal, stringVal2, map: {} });
     });

@@ -542,8 +542,9 @@ class MapAttribute extends Attribute {
 		const getter = get || ((val) => {
 			const isEmpty = !val || Object.keys(val).length === 0;
 			const isNotRequired = !this.required;
+			const doesNotHaveDefault = this.default === undefined;
 			const isRoot = this.isRoot;
-			if (isEmpty && isRoot && !isNotRequired) {
+			if (isEmpty && isRoot && isNotRequired && doesNotHaveDefault) {
 				return undefined;
 			}
 			return val;
