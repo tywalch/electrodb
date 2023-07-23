@@ -346,4 +346,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.7.1] - 2023-07-03
 ### Fixed
-- Upsert now only allies `if_not_exists()` if the attribute is not a composite attribute in an index. 
+- Upsert now only allies `if_not_exists()` if the attribute is not a composite attribute in an index.
+
+## [2.7.2] - 2023-07-03
+### Fixed
+- Fixed bug (reported [here](https://github.com/tywalch/electrodb/issues/271)) where root map object with required flag would not set empty object even when it was provided. 
