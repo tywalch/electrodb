@@ -1,5 +1,6 @@
 import {Entity, Resolve} from '../';
 import { expectType } from 'tsd';
+import {Return} from "aws-sdk/clients/cloudsearchdomain";
 
 const troubleshoot = <Params extends any[], Response>(fn: (...params: Params) => Response, response: Response) => {};
 const magnify = <T>(value: T): Resolve<T> => { return {} as Resolve<T> };
@@ -108,6 +109,44 @@ const entityWithSK = new Entity({
   }
 });
 
+const requiredMapAttributeEntity = new Entity({
+    model: {
+        entity: "user",
+        service: "versioncontrol",
+        version: "1"
+    },
+    attributes: {
+        stringVal: {
+            type: "string",
+        },
+        stringVal2: {
+            type: "string",
+        },
+        map: {
+            type: "map",
+            required: true,
+            properties: {
+                test: {
+                    type: "string"
+                }
+            },
+        }
+    },
+    indexes: {
+        user: {
+            collection: "overview",
+            pk: {
+                composite: ["stringVal"],
+                field: "pk"
+            },
+            sk: {
+                composite: ["stringVal2"],
+                field: "sk"
+            }
+        },
+    }
+});
+
 entityWithSK.update({
     attr1: 'abc', 
     attr2: 'def'
@@ -133,3 +172,23 @@ expectType<{
     attr10?: boolean | undefined;
     attr11?: string[] | undefined;
 }>(magnify(upsertOptions));
+
+const getItem = async () => {
+    const item = await requiredMapAttributeEntity.get({stringVal: 'abc', stringVal2: 'def'}).go();
+    if (item.data) {
+        return item.data;
+    }
+
+    throw new Error('Not exists!');
+}
+
+type Item = Awaited<ReturnType<typeof getItem>>
+const item = {} as Item;
+
+expectType<{
+    stringVal: string;
+    stringVal2: string;
+    map: {
+        test?: string;
+    }
+}>(magnify(item));
