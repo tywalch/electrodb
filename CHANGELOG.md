@@ -357,4 +357,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Adds new `cast` option for indexes to allow users to cast index values to a different type than their composite attribute. This change comers from a user requested feature and addresses issue #237
 
 ### Fixed
-- Fixed edge case when model defines an index without composites while using the template syntax that prevented `ignoreOwnership` from correctly gating return records    
+- Fixed edge case when model defines an index without composites while using the template syntax that prevented `ignoreOwnership` from correctly gating return records
+
+## [2.8.1] - 2023-08-06
+### Fixed
+- Fixes bug with creating sets when client is provided or changed after initial Entity construction 

@@ -19,12 +19,14 @@ const v3Client = new V3Client({
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 
+
+
 const clients = [
     [c.DocumentClientVersions.v2, v2Client],
     [c.DocumentClientVersions.v3, v3Client]
 ];
 
-function createEntity(client: (typeof v2Client | typeof v3Client)) {
+function createEntity(client?: (typeof v2Client | typeof v3Client)) {
     return new Entity({
         model: {
             entity: uuid(),
@@ -264,6 +266,28 @@ describe('dynamodb sdk client compatibility', () => {
                 }).go({response: 'all_new'});
                 expect(updateRecord.data.prop3).to.be.an('array').with.length(1);
                 expect(updateRecord.data.prop3).to.deep.equal([prop3[1]]);
+            });
+
+            it('should work with sets even when client is given to Service and not the Entity directly', async () => {
+                const entity = createEntity();
+                const service = new Service({entity}, {client});
+                const prop1 = uuid();
+                const prop2 = uuid();
+                const prop3 = ['abc', 'def'];
+                const item = {
+                    prop1,
+                    prop2,
+                    prop3,
+                };
+                await service.entities.entity.create(item).go();
+                const result1 = await service.entities.entity.get({prop1, prop2}).go();
+                expect(result1.data).to.deep.equal(item);
+                await service.entities.entity
+                    .patch({prop1, prop2})
+                    .add({prop3: ['hij']})
+                    .go();
+                const result2 = await service.entities.entity.get({prop1, prop2}).go();
+                expect(result2.data?.prop3?.sort()).to.deep.equal([...prop3, 'hij'].sort());
             });
         });
     }
