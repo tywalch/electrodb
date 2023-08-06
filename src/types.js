@@ -312,6 +312,11 @@ const DynamoDBAttributeTypes = Object.entries({
 	return obj;
 }, {});
 
+const CastKeyOptions = {
+	string: 'string',
+	number: 'number',
+}
+
 module.exports = {
 	Pager,
 	KeyTypes,
@@ -331,6 +336,7 @@ module.exports = {
 	ItemOperations,
 	AttributeTypes,
 	EntityVersions,
+	CastKeyOptions,
 	ServiceVersions,
 	ExpressionTypes,
 	ElectroInstance,

@@ -1119,7 +1119,7 @@ class Schema {
 				prefix,
 				postfix,
 				traverser,
-				isKeyField,
+				isKeyField: isKeyField || isKey,
 				isRoot: !!isRoot,
 				label: attribute.label,
 				required: !!attribute.required,

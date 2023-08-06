@@ -9,6 +9,7 @@ const keyNamesAttributeNames = require("./definitions/keynamesattributenames.jso
 const leadingUnderscoreKeys = require('./definitions/leadingunderscorekeys.json');
 const localSecondaryIndexes = require('./definitions/localsecondaryindexes.json');
 const keysOnly = require('./definitions/keysonly.json');
+const castKeys = require('./definitions/castkeys.json');
 
 if (typeof process.env.LOCAL_DYNAMO_ENDPOINT !== 'string' && !process.env.LOCAL_DYNAMO_ENDPOINT.length) {
     throw new Error('Tests are only intended to be used against dyanmodb local to prevent needless cost. If you would like to proceed without dynamodb-local, remove this line.');
@@ -65,6 +66,7 @@ async function main() {
    createTable("electro_leadingunderscorekeys", leadingUnderscoreKeys),
    createTable("electro_localsecondaryindex", localSecondaryIndexes),
    createTable("electro_keysonly", keysOnly),
+   createTable("electro_castkeys", castKeys),
   ]);
 }
 

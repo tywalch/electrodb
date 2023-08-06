@@ -250,7 +250,7 @@ attributes: {
 If you have the need to avoid ElectroDB's type validation, you can use the `any` type. This attribute type is an escape hatch for edge-case scenarios. The `any` attribute can only be used as a root attribute (i.e. `any` cannot be nested below `map` and `list` attribute types).
 
 ### Custom Attributes
-If you have a need for a custom attribute type (beyond those supported by ElectroDB) you can use the the export function `CustomAttributeType` or `OpaquePrimitiveType`. These functions can be passed a generic and that allow you to specify a custom attribute with ElectroDB:
+If you have a need for a custom attribute type (beyond those supported by ElectroDB) you can use the export function `CustomAttributeType` or `OpaquePrimitiveType`. These functions can be passed a generic and that allow you to specify a custom attribute with ElectroDB:
 
 #### CustomAttributeType
 This function allows for a narrowing of ElectroDB's `any`, `string`, and `number` types. This can be useful for expressing complex attribute types.
