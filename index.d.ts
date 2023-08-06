@@ -1780,6 +1780,8 @@ export interface IndexWithSortKey {
 
 export type AccessPatternCollection<C extends string> = C | ReadonlyArray<C>;
 
+export type KeyCastOption = 'string' | 'number'
+
 export interface Schema<A extends string, F extends string, C extends string> {
     readonly model: {
         readonly entity: string;
@@ -1800,12 +1802,14 @@ export interface Schema<A extends string, F extends string, C extends string> {
                 readonly field: string;
                 readonly composite: ReadonlyArray<F>;
                 readonly template?: string;
+                readonly cast?: KeyCastOption;
             }
             readonly sk?: {
                 readonly casing?: "upper" | "lower" | "none" | "default";
                 readonly field: string;
                 readonly composite: ReadonlyArray<F>;
                 readonly template?: string;
+                readonly cast?: KeyCastOption;
             }
         }
     }

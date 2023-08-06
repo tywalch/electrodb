@@ -17,7 +17,7 @@ type ConversionTest = {
 const conversionTests: ConversionTest[] = require('./conversions');
 
 const client = new DocumentClient({
-    endpoint: 'http://localhost:8000',
+    endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? 'http://localhost:8000',
     region: 'us-east-1',
 });
 
@@ -927,5 +927,453 @@ describe('key formatting', () => {
                 }
             }
         }
+    });
+});
+
+describe('static template key ownership', () => {
+    it('should return items when no composite attributes are in the key templates', async () => {
+        const table = 'electro';
+        const ProductSchema = new Entity({
+            model: {
+                entity: 'Product',
+                version: '1',
+                service: 'aa',
+            },
+            attributes: {
+                name: {
+                    type: 'string',
+                },
+                enabled: {
+                    type: 'boolean'
+                }
+            },
+            indexes: {
+                primary: {
+                    pk: {
+                        field: 'pk',
+                        casing: 'none',
+                        template: '#PRODUCTS',
+                        composite: [],
+                    },
+                    sk: {
+                        field: 'sk',
+                        casing: 'none',
+                        template: '#PRODUCTS',
+                        composite: [],
+                    },
+                },
+            },
+        },{ table, client});
+
+        const item = {
+            pk: '#PRODUCTS',
+            sk: '#PRODUCTS',
+            enabled: true,
+            name: uuid(),
+        }
+    
+        await client.put({
+            Item: item,
+            TableName: table
+        }).promise();
+
+        const getResults = await ProductSchema
+            .get({})
+            .go({ ignoreOwnership: true });
+
+        expect(getResults.data).to.deep.equal({
+            enabled: item.enabled,
+            name: item.name,
+        });
+
+        const queryResults = await ProductSchema.query
+            .primary({})
+            .go({ignoreOwnership: true});
+
+        expect(queryResults.data[0]).to.deep.equal({
+            enabled: item.enabled,
+            name: item.name,
+        });
+    });
+
+    it('should return items when no composite attributes are in the key templates and no sk', async () => {
+        const table = 'electro_nosort';
+        const ProductSchema = new Entity({
+            model: {
+                entity: 'Product',
+                version: '1',
+                service: 'aa',
+            },
+            attributes: {
+                name: {
+                    type: 'string',
+                },
+                enabled: {
+                    type: 'boolean'
+                }
+            },
+            indexes: {
+                primary: {
+                    pk: {
+                        field: 'partition_key',
+                        casing: 'none',
+                        template: '#PRODUCTS',
+                        composite: [],
+                    }
+                },
+            },
+        },{ table, client});
+
+        const item = {
+            partition_key: '#PRODUCTS',
+            enabled: true,
+            name: uuid(),
+        }
+    
+        await client.put({
+            Item: item,
+            TableName: table
+        }).promise();
+
+        const results = await ProductSchema
+            .get({})
+            .go({ ignoreOwnership: true });
+
+        expect(results.data).to.deep.equal({
+            enabled: item.enabled,
+            name: item.name,
+        });
+    });
+});
+
+describe('index casting', () => {
+    it('should not allow "number" cast to be used when more than one composite attribute is used with composites', () => {
+        const gameId = uuid();
+        const gamerTag = uuid();
+        const timestamp = Date.now();
+        const score = 500;
+
+        const item = {
+            gameId, 
+            gamerTag, 
+            timestamp, 
+            score,
+        }
+
+        const table = 'electro_castkeys';
+        expect(() => new Entity({
+            model: {
+                entity: "HighScore",
+                version: "1",
+                service: "Leaderboard"
+            },
+            attributes: {
+                gameId: {
+                    type: 'string'
+                },
+                gamerTag: {
+                    type: "string",
+                },
+                timestamp: {
+                    type: "number",
+                },
+                score: {
+                    type: "number",
+                },
+            },
+            indexes: {
+                castToNumber: {
+                    pk: {
+                        field: "pk",
+                        cast: 'string',
+                        composite: ["gamerTag"],
+                    },
+                    sk: {
+                        field: "sk",
+                        cast: 'number',
+                        composite: ["score", "timestamp"]
+                    }
+                }
+            }
+        }, { table, client })).to.throw('Invalid "cast" option provided for sk definition on index "(Primary Index)". Keys can only be cast to \'number\' if they are a composite of one numeric attribute. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model');
+    });
+
+    it('should not allow "number" cast to be used when more than one composite attribute is used with templates', () => {
+        const gameId = uuid();
+        const gamerTag = uuid();
+        const timestamp = Date.now();
+        const score = 500;
+
+        const item = {
+            gameId, 
+            gamerTag, 
+            timestamp, 
+            score,
+        }
+
+        const table = 'electro_castkeys';
+        expect(() => new Entity({
+            model: {
+                entity: "HighScore",
+                version: "1",
+                service: "Leaderboard"
+            },
+            attributes: {
+                gameId: {
+                    type: 'string'
+                },
+                gamerTag: {
+                    type: "string",
+                },
+                timestamp: {
+                    type: "number",
+                },
+                score: {
+                    type: "number",
+                },
+            },
+            indexes: {
+                castToNumber: {
+                    pk: {
+                        field: "pk",
+                        cast: 'string',
+                        composite: ["gamerTag"],
+                    },
+                    sk: {
+                        field: "sk",
+                        cast: 'number',
+                        composite: ["score", "timestamp"],
+                        template: '${score}#${timestamp}'
+                    }
+                }
+            }
+        }, { table, client })).to.throw('Invalid "cast" option provided for sk definition on index "(Primary Index)". Keys can only be cast to \'number\' if they are a composite of one numeric attribute. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model');
+    });
+
+    it('should reject when provided string index composite cannot be cast to number', () => {
+        const gamerTag = uuid();
+
+        const table = 'electro_castkeys';
+        const booleanHighScore = new Entity({
+            model: {
+                entity: "BooleanHighScore",
+                version: "1",
+                service: "Leaderboard"
+            },
+            attributes: {
+                gamerTag: {
+                    type: "string",
+                },
+                score: {
+                    type: "boolean",
+                },
+            },
+            indexes: {
+                castToNumber: {
+                    pk: {
+                        field: "pk",
+                        cast: 'string',
+                        composite: ["gamerTag"],
+                    },
+                    sk: {
+                        field: "sk",
+                        cast: 'number',
+                        composite: ["score"]
+                    }
+                }
+            }
+        }, { table, client });
+
+        const stringHighScore = new Entity({
+            model: {
+                entity: "stringHighScore",
+                version: "1",
+                service: "Leaderboard"
+            },
+            attributes: {
+                gamerTag: {
+                    type: "string",
+                },
+                score: {
+                    type: "string",
+                },
+            },
+            indexes: {
+                castToNumber: {
+                    pk: {
+                        field: "pk",
+                        cast: 'string',
+                        composite: ["gamerTag"],
+                    },
+                    sk: {
+                        field: "sk",
+                        cast: 'number',
+                        composite: ["score"]
+                    }
+                }
+            }
+        }, { table, client });
+
+        const successCases = [
+            {
+                expected: 1,
+                params: booleanHighScore.put({gamerTag, score: true}).params(),
+            },
+            {
+                expected: 0,
+                params: booleanHighScore.put({gamerTag, score: false}).params(),
+            },
+            {
+                expected: 1,
+                params: stringHighScore.put({gamerTag, score: '1'}).params(),
+            },
+            {
+                expected: 100,
+                params: stringHighScore.put({gamerTag, score: '100'}).params(),
+            },
+            {
+                expected: 50,
+                params: stringHighScore.put({gamerTag, score: '0050'}).params(),
+            },
+        ];
+
+        for (const successCase of successCases) {
+            expect(successCase.params.Item.sk).to.equal(successCase.expected);
+        }
+
+        expect(() => stringHighScore.put({gamerTag, score: 'abc'}).params()).to.throw('');
+    });
+
+    it('should allow for more granular control to choose how they can type their keys', async () => {
+        const table = 'electro_castkeys';        
+        const highScore = new Entity({
+            model: {
+                entity: "HighScore",
+                version: "1",
+                service: "Leaderboard"
+            },
+            attributes: {
+                gameId: {
+                    type: 'string'
+                },
+                gamerTag: {
+                    type: "string",
+                },
+                timestamp: {
+                    type: "number",
+                },
+                score: {
+                    type: "number",
+                },
+            },
+            indexes: {
+                castToNumber: {
+                    pk: {
+                        field: "pk",
+                        cast: 'number',
+                        composite: ["score"],
+                    },
+                    sk: {
+                        field: "sk",
+                        cast: 'number',
+                        composite: ["timestamp"]
+                    }
+                },
+                castToNumberNoSk: {
+                    index: "gsi2pk-gsi2sk-index",
+                    pk: {
+                        field: "gsi2pk",
+                        cast: 'number',
+                        composite: ['score'],
+                    },
+                },
+                castViaTemplate: {
+                    index: "gsi3pk-gsi3sk-index",
+                    pk: {
+                        field: "gsi3pk",
+                        composite: ['score'],
+                        template: '${score}',
+                    },
+                    sk: {
+                        field: "gsi3sk",
+                        composite: ['timestamp'],
+                        template: '${timestamp}'
+                    }
+                },
+                castToString: {
+                    index: "gsi4pk-gsi4sk-index",
+                    pk: {
+                        field: "gsi4pk",
+                        cast: 'string',
+                        composite: ['score'],
+                        template: '${score}',
+                        
+                    },
+                    sk: {
+                        field: "gsi4sk",
+                        cast: 'string',
+                        composite: ['timestamp'],
+                        template: '${timestamp}',
+                    }
+                },
+                castToStringNoSk: {
+                    index: "gsi5pk-gsi5sk-index",
+                    pk: {
+                        field: "gsi5pk",
+                        cast: 'string',
+                        composite: ['score'],
+                        template: '${score}',
+                        
+                    }
+                },
+            }
+        }, { table, client });
+
+        const gameId = uuid();
+        const gamerTag = uuid();
+        const timestamp = Date.now();
+        const score = 500;
+
+        const item = {
+            gameId, 
+            gamerTag, 
+            timestamp, 
+            score,
+        }
+
+        const params = highScore.put(item).params();
+        expect(params.Item).to.deep.equal({
+            __edb_e__: "HighScore",
+            __edb_v__: "1",
+            gameId,
+            gamerTag,
+            timestamp,
+            score,
+            pk: score,
+            sk: timestamp,
+            gsi2pk: score,
+            gsi3pk: score,
+            gsi3sk: timestamp,
+            gsi4pk: `${score}`,
+            gsi4sk: `${timestamp}`,
+            gsi5pk: `${score}`,
+        });
+
+        await highScore.put(item).go();
+
+        const castToNumber = await highScore.query.castToNumber({score, timestamp}).go().then(r => r.data[0]);
+        expect(castToNumber).to.deep.equal(item);
+
+        const castToNumberNoSk = await highScore.query.castToNumberNoSk({score}).go().then(r => r.data[0]);
+        expect(castToNumberNoSk).to.deep.equal(item);
+
+        const castViaTemplate = await highScore.query.castViaTemplate({score, timestamp}).go().then(r => r.data[0]);
+        expect(castViaTemplate).to.deep.equal(item);
+
+        const castToString = await highScore.query.castToString({score, timestamp}).go().then(r => r.data[0]);
+        expect(castToString).to.deep.equal(item);
+
+        const castToStringNoSk = await highScore.query.castToStringNoSk({score}).go().then(r => r.data[0]);
+        expect(castToStringNoSk).to.deep.equal(item);
     });
 });

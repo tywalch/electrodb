@@ -38,11 +38,15 @@ indexes: {
 			field: string;
 			composite: AttributeName[];
 			template?: string;
+            cast?: 'string' | 'number';
+            casing?: 'upper' | 'lower' | 'none';
 		},
 		sk?: {
 			field: string;
 			composite: AttributesName[];
             template?: string;
+            cast?: 'string' | 'number';
+            casing?: 'upper' | 'lower' | 'none';
 		},
 	}
 }
@@ -59,12 +63,14 @@ indexes: {
 | `pk.composite` | `string[]`                             | yes      | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composing-attributes) below for more on this functionality).
 | `pk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
 | `pk.field`     | `string`                               | yes      | The name of the index Partition Key field as it exists in DynamoDB, if named differently in the schema attributes.
-| `pk.casing`    | `default`, `upper`, `lower`, `none`    | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`. 
+| `pk.casing`    | `default`, `upper`, `lower`, `none`    | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
+| `pk.cast`      | `string`, `number`                     | no       | The `cast` option allows you to define a different primitive type for your key than your attribute. When `number` is used, you are only allowed to have one composite attribute, string values are validated at runtime with `parseInt`, and booleans are cast to `1` or `0`. Default: `string`.
 | `sk`           | `object`                               | no       | Configuration for the sk of that index or table
 | `sk.composite` | `string[]`                             | no       | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).
 | `sk.template`  | `string`                               | no       | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).
 | `sk.field`     | `string`                               | yes      | The name of the index Sort Key field as it exists in DynamoDB, if named differently in the schema attributes.
-| `pk.casing`    | `default`, `upper`, `lower`, `none`,   | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
+| `sk.casing`    | `default`, `upper`, `lower`, `none`,   | no       | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.
+| `sk.cast`      | `string`, `number`                     | no       | The `cast` option allows you to define a different primitive type for your key than your attribute. When `number` is used, you are only allowed to have one composite attribute, string values are validated at runtime with `parseInt`, and booleans are cast to `1` or `0`. Default: `string`.
 
 ## Composing Indexes
 A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key**, or a **Sort Key** key, which define an `index`.

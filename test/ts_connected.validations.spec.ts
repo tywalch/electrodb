@@ -88,7 +88,7 @@ describe('padding validation', () => {
             }
         })).to.throw('Invalid padding definition for the attribute "num". Padding is not currently supported for attributes that are also defined as table indexes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition');
     });
-})
+});
 
 describe("user attribute validation", () => {
     describe("root primitives user validation", () => {
@@ -1956,3 +1956,58 @@ describe('Index definition validations', function () {
         expect(createEntity).to.throw("Sort Key (sk) on Access Pattern 'global1' is defined with the composite attribute(s) \"prop6\", \"prop7\", but the accessPattern 'lsi1pk-lsi1sk-index' defines this field with the composite attributes \"prop5\", \"prop2\"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-fields");
     });
 });
+
+describe('index casting model validation', () => {
+    it('should valid cast value on model', () => {
+        const validCastValues = [
+            undefined,
+            'string',
+            'number',
+        ];
+        const invalidCastValues = [
+            'boolean',
+            'abc',
+            {},
+            1234
+        ];
+
+        const createEntity = (castValue: any) => {
+            return new Entity({
+                model: {
+                    entity: 'casting',
+                    service: 'testing',
+                    version: '1'
+                },
+                attributes: {
+                    id: {
+                        type: 'number'
+                    },
+                    name: {
+                        type: 'string'
+                    }
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: 'pk',
+                            cast: castValue,
+                            composite: ['id']
+                        },
+                        sk: {
+                            field: 'sk',
+                            composite: [],
+                        }
+                    }
+                }
+            });
+        };
+
+        for (const validValue of validCastValues) {
+            expect(() => createEntity(validValue)).not.to.throw();
+        }
+
+        for (const invalidValue of invalidCastValues) {
+            expect(() => createEntity(invalidValue)).to.throw('');
+        }
+    });
+})

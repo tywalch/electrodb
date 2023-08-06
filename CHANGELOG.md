@@ -350,4 +350,11 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.7.2] - 2023-07-03
 ### Fixed
-- Fixed bug (reported [here](https://github.com/tywalch/electrodb/issues/271)) where root map object with required flag would not set empty object even when it was provided. 
+- Fixed bug (reported [here](https://github.com/tywalch/electrodb/issues/271)) where root map object with required flag would not set empty object even when it was provided.
+
+## [2.8.0] - 2023-08-06
+### Adds
+- Adds new `cast` option for indexes to allow users to cast index values to a different type than their composite attribute. This change comers from a user requested feature and addresses issue #237
+
+### Fixed
+- Fixed edge case when model defines an index without composites while using the template syntax that prevented `ignoreOwnership` from correctly gating return records    

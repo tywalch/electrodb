@@ -113,6 +113,11 @@ const Index = {
 					type: "string",
 					enum: ["upper", "lower", "none", "default"],
 					required: false,
+				},
+				cast: {
+					type: "string",
+					enum: ["string", "number"],
+					required: false,
 				}
 			},
 		},
@@ -145,6 +150,11 @@ const Index = {
 				casing: {
 					type: "string",
 					enum: ["upper", "lower", "none", "default"],
+					required: false,
+				},
+				cast: {
+					type: "string",
+					enum: ["string", "number"],
 					required: false,
 				}
 			},
