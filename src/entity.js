@@ -3595,7 +3595,6 @@ class Entity {
 
 	_parseModel(model, config = {}) {
 		/** start beta/v1 condition **/
-		const {client} = config;
 		let modelVersion = u.getModelVersion(model);
 		let service, entity, version, table, name;
 		switch(modelVersion) {
@@ -3635,7 +3634,10 @@ class Entity {
 			indexAccessPattern,
 			indexHasSubCollections,
 		} = this._normalizeIndexes(model.indexes);
-		let schema = new Schema(model.attributes, facets, {client, isRoot: true});
+		let schema = new Schema(model.attributes, facets, {
+			getClient: () => this.client,
+			isRoot: true,
+		});
 		let filters = this._normalizeFilters(model.filters);
 		// todo: consider a rename
 		let prefixes = this._normalizeKeyFixings({service, entity, version, indexes, modelVersion, clusteredIndexes, schema});

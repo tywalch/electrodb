@@ -127,7 +127,7 @@ class Attribute {
 		this.parent = { parentType: this.type, parentPath: this.path };
 		this.get = this._makeGet(definition.get);
 		this.set = this._makeSet(definition.set);
-		this.client = definition.client;
+		this.getClient = definition.getClient;
 	}
 
 	static buildChildAttributes(type, definition, parent) {
@@ -145,25 +145,25 @@ class Attribute {
 	}
 
 	static buildChildListItems(definition, parent) {
-		const {items, client} = definition;
+		const {items, getClient} = definition;
 		const prop = {...items, ...parent};
 		// The use of "*" is to ensure the child's name is "*" when added to the traverser and searching for the children of a list
-		return Schema.normalizeAttributes({ '*': prop }, {}, {client, traverser: parent.traverser, parent}).attributes["*"];
+		return Schema.normalizeAttributes({ '*': prop }, {}, {getClient, traverser: parent.traverser, parent}).attributes["*"];
 	}
 
 	static buildChildSetItems(definition, parent) {
-		const {items, client} = definition;
+		const {items, getClient} = definition;
 
 		const allowedTypes = [AttributeTypes.string, AttributeTypes.boolean, AttributeTypes.number, AttributeTypes.enum];
 		if (!Array.isArray(items) && !allowedTypes.includes(items)) {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "items" definition for Set attribute: "${definition.path}". Acceptable item types include ${u.commaSeparatedString(allowedTypes)}`);
 		}
 		const prop = {type: items, ...parent};
-		return Schema.normalizeAttributes({ prop }, {}, {client, traverser: parent.traverser, parent}).attributes.prop;
+		return Schema.normalizeAttributes({ prop }, {}, {getClient, traverser: parent.traverser, parent}).attributes.prop;
 	}
 
 	static buildChildMapProperties(definition, parent) {
-		const {properties, client} = definition;
+		const {properties, getClient} = definition;
 		if (!properties || typeof properties !== "object") {
 			throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid "properties" definition for Map attribute: "${definition.path}". The "properties" definition must describe the attributes that the Map will accept`);
 		}
@@ -171,7 +171,7 @@ class Attribute {
 		for (let name of Object.keys(properties)) {
 			attributes[name] = {...properties[name], ...parent};
 		}
-		return Schema.normalizeAttributes(attributes, {}, {client, traverser: parent.traverser, parent});
+		return Schema.normalizeAttributes(attributes, {}, {getClient, traverser: parent.traverser, parent});
 	}
 
 	static buildPath(name, type, parentPath) {
@@ -886,11 +886,12 @@ class SetAttribute extends Attribute {
 	}
 
 	_createDDBSet(value) {
-		if (this.client && typeof this.client.createSet === "function") {
+		const client = this.getClient();
+		if (client && typeof client.createSet === "function") {
 			value = Array.isArray(value)
 				? Array.from(new Set(value))
 				: value;
-			return this.client.createSet(value, { validate: true });
+			return client.createSet(value, { validate: true });
 		} else {
 			return new DynamoDBSet(value, this.items.type);
 		}
@@ -1005,10 +1006,10 @@ class SetAttribute extends Attribute {
 }
 
 class Schema {
-	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), client, parent, isRoot} = {}) {
+	constructor(properties = {}, facets = {}, {traverser = new AttributeTraverser(), getClient, parent, isRoot} = {}) {
 		this._validateProperties(properties, parent);
-		let schema = Schema.normalizeAttributes(properties, facets, {traverser, client, parent, isRoot});
-		this.client = client;
+		let schema = Schema.normalizeAttributes(properties, facets, {traverser, getClient, parent, isRoot});
+		this.getClient = getClient;
 		this.attributes = schema.attributes;
 		this.enums = schema.enums;
 		this.translationForTable = schema.translationForTable;
@@ -1021,7 +1022,7 @@ class Schema {
 		this.isRoot = !!isRoot;
 	}
 
-	static normalizeAttributes(attributes = {}, facets = {}, {traverser, client, parent, isRoot} = {}) {
+	static normalizeAttributes(attributes = {}, facets = {}, {traverser, getClient, parent, isRoot} = {}) {
 		const attributeHasParent = !!parent;
 		let invalidProperties = [];
 		let normalized = {};
@@ -1114,7 +1115,7 @@ class Schema {
 			let definition = {
 				name,
 				field,
-				client,
+				getClient,
 				casing,
 				prefix,
 				postfix,
