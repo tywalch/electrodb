@@ -45,7 +45,7 @@ await StoreLocations.find({
   "ExpressionAttributeNames": {
     "#mallId": "mallId",
     "#buildingId": "buildingId",
-    "#pk": "gis1pk",
+    "#pk": "gsi1pk",
     "#sk1": "gsi1sk"
   },
   "ExpressionAttributeValues": {
@@ -54,7 +54,7 @@ await StoreLocations.find({
     ":pk": "$mallstoredirectory#mallid_eastpointe",
     ":sk1": "$mallstore_1#buildingid_buildinga1#unitid_"
   },
-  "IndexName": "gis1pk-gsi1sk-index",
+  "IndexName": "gsi1pk-gsi1sk-index",
 }
 ```
 

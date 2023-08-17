@@ -49,7 +49,7 @@ await StoreLocations
 ```json
 {
     "TableName": "StoreDirectory",
-    "UpdateExpression": "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #unitId = :unitId_u0, #category = :category_u0, #leaseEndDate = :leaseEndDate_u0, #rent = :rent_u0, #discount = :discount_u0, #gis1pk = :gis1pk_u0, #gsi1sk = :gsi1sk_u0, #gis2pk = :gis2pk_u0, #gsi2sk = :gsi2sk_u0",
+    "UpdateExpression": "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #unitId = :unitId_u0, #category = :category_u0, #leaseEndDate = :leaseEndDate_u0, #rent = :rent_u0, #discount = :discount_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0",
     "ExpressionAttributeNames": {
         "#__edb_e__": "__edb_e__",
         "#__edb_v__": "__edb_v__",
@@ -62,9 +62,9 @@ await StoreLocations
         "#leaseEndDate": "leaseEndDate",
         "#rent": "rent",
         "#discount": "discount",
-        "#gis1pk": "gis1pk",
+        "#gsi1pk": "gsi1pk",
         "#gsi1sk": "gsi1sk",
-        "#gis2pk": "gis2pk",
+        "#gsi2pk": "gsi2pk",
         "#gsi2sk": "gsi2sk"
     },
     "ExpressionAttributeValues": {
@@ -79,9 +79,9 @@ await StoreLocations
         ":leaseEndDate_u0": "2020-03-22",
         ":rent_u0": "4500.00",
         ":discount_u0": "0.00",
-        ":gis1pk_u0": "$mallstoredirectory#mallid_eastpointe",
+        ":gsi1pk_u0": "$mallstoredirectory#mallid_eastpointe",
         ":gsi1sk_u0": "$mallstore_1#buildingid_buildinga1#unitid_b47",
-        ":gis2pk_u0": "$mallstoredirectory#storeid_lattelarrys",
+        ":gsi2pk_u0": "$mallstoredirectory#storeid_lattelarrys",
         ":gsi2sk_u0": "$mallstore_1#leaseenddate_2020-03-22"
     },
     "Key": {

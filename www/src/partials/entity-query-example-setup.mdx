@@ -151,9 +151,9 @@ const StoreLocations = new Entity({
             }
         },
         units: {
-            index: "gis1pk-gsi1sk-index",
+            index: "gsi1pk-gsi1sk-index",
             pk: {
-                field: "gis1pk",
+                field: "gsi1pk",
                 composite: ["mallId"]
             },
             sk: {
@@ -162,9 +162,9 @@ const StoreLocations = new Entity({
             }
         },
         leases: {
-            index: "gis2pk-gsi2sk-index",
+            index: "gsi2pk-gsi2sk-index",
             pk: {
-                field: "gis2pk",
+                field: "gsi2pk",
                 composite: ["storeId"]
             },
             sk: {

@@ -50,7 +50,7 @@ await StoreLocations.find({
     "#buildingId": "buildingId",
     "#leaseEndDate": "leaseEndDate",
     "#rent": "rent",
-    "#pk": "gis1pk",
+    "#pk": "gsi1pk",
     "#sk1": "gsi1sk"
   },
   "ExpressionAttributeValues": {
@@ -61,7 +61,7 @@ await StoreLocations.find({
     ":pk": "$mallstoredirectory#mallid_eastpointe",
     ":sk1": "$mallstore_1#buildingid_buildinga1#unitid_"
   },
-  "IndexName": "gis1pk-gsi1sk-index",
+  "IndexName": "gsi1pk-gsi1sk-index",
   "FilterExpression": "#mallId = :mallId1 AND#buildingId = :buildingId1 AND#leaseEndDate = :leaseEndDate1 AND#rent = :rent1"
 }
 ```
