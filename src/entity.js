@@ -1886,12 +1886,20 @@ class Entity {
 		// should only happen when an attribute is changed.
 		const { indexKey, updatedKeys, deletedKeys = [] } = this._getUpdatedKeys(pk, sk, preparedUpdateValues, removed);
 		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
-
 		for (const path of Object.keys(preparedUpdateValues)) {
 			if (modifiedAttributeNames[path] !== undefined && preparedUpdateValues[path] !== undefined) {
 				update.updateValue(modifiedAttributeNames[path], preparedUpdateValues[path]);
 			} else if (preparedUpdateValues[path] !== undefined) {
-				update.set(path, preparedUpdateValues[path]);
+				const attr = this.model.schema.getAttribute(path);
+				if (attr) {
+					// attributes might enter into this flow because they were triggered via a `watch` event and were
+					// not supplied directly by the user. In this case we should set the field name.
+					// TODO: This will only work with root attributes and should be refactored for nested attributes.
+					update.set(attr.field, preparedUpdateValues[path]);
+				} else {
+					// this could be fields added by electro that don't apeear in the schema
+					update.set(path, preparedUpdateValues[path]);
+				}
 			}
 		}
 
@@ -1901,7 +1909,6 @@ class Entity {
 			const wasNotAlreadyModified = modifiedAttributeNames[indexKey] === undefined;
 			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
 				update.set(indexKey, updatedKeys[indexKey]);
-
 			}
 		}
 
@@ -1948,7 +1955,6 @@ class Entity {
 	_makePutParams({ data } = {}, pk, sk) {
 		let { updatedKeys, setAttributes } = this._getPutKeys(pk, sk && sk.facets, data);
 		let translatedFields = this.model.schema.translateToFields(setAttributes);
-
 		return {
 			Item: {
 				...translatedFields,
@@ -2406,8 +2412,10 @@ class Entity {
 					indexKey[sk] = keys.sk[0];
 				}
 			}
-			updatedKeys[pk] = keys.pk;
-			if (sk) {
+			if (keys.pk !== undefined && keys.pk !== '') {
+				updatedKeys[pk] = keys.pk;
+			}
+			if (sk && keys.sk[0] !== undefined && keys.sk[0] !== '') {
 				updatedKeys[sk] = keys.sk[0];
 			}
 		}
@@ -3298,7 +3306,9 @@ class Entity {
 			if (Array.isArray(sk.facets)) {
 				let duplicates = pk.facets.filter(facet => sk.facets.includes(facet));
 				if (duplicates.length !== 0) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexCompositeAttributes, `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${u.commaSeparatedString(duplicates)}. Composite attributes may only be used once within an index. If this leaves the Sort Key (sk) without any composite attributes simply set this to be an empty array.`);
+					if (sk.facets.length > 1) {
+						throw new e.ElectroError(e.ErrorCodes.DuplicateIndexCompositeAttributes, `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${u.commaSeparatedString(duplicates)}. Composite attributes can only be used more than once in an index if your sort key is limitted to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys.`);
+					}
 				}
 			}
 

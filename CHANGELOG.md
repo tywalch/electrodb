@@ -350,7 +350,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.7.2] - 2023-07-03
 ### Fixed
-- Fixed bug (reported [here](https://github.com/tywalch/electrodb/issues/271)) where root map object with required flag would not set empty object even when it was provided.
+- Fixed bug reported via [Issue#271](https://github.com/tywalch/electrodb/issues/271) where root map object with required flag would not set empty object even when it was provided.
 
 ## [2.8.0] - 2023-08-06
 ### Adds
@@ -361,4 +361,11 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.8.1] - 2023-08-06
 ### Fixed
-- Fixes bug with creating sets when client is provided or changed after initial Entity construction 
+- Fixes bug with creating sets when client is provided or changed after initial Entity construction
+
+## [2.8.2] - 2023-08-19
+### Fixed
+- Fixes bug reported via [Issue#281](https://github.com/tywalch/electrodb/issues/281) where ElectroDB failed to use an attribute's `field` name when it was updated via `watch`.
+- Fixes bug reported via [Issue#229](https://github.com/tywalch/electrodb/issues/229) where ElectroDB would generate empty string keys on item creating. This would occur only in cases where a key's field name matched an attribute's field name.
+### Changed
+- Relaxes validation surrounding the use of composite attributes appearing as composite attributes in both the partition and sort key for the same index. Reported in issue [Issue#265](https://github.com/tywalch/electrodb/issues/265), validation surrounding this pattern have been relaxed to only throw when a composite attribute in both the pk and sk AND the sk contains greater than one composite attribute. This constraint is critical for ElectroDB to reliably generate/format sort key values.    
