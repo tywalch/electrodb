@@ -3306,7 +3306,9 @@ class Entity {
 			if (Array.isArray(sk.facets)) {
 				let duplicates = pk.facets.filter(facet => sk.facets.includes(facet));
 				if (duplicates.length !== 0) {
-					throw new e.ElectroError(e.ErrorCodes.DuplicateIndexCompositeAttributes, `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${u.commaSeparatedString(duplicates)}. Composite attributes may only be used once within an index. If this leaves the Sort Key (sk) without any composite attributes simply set this to be an empty array.`);
+					if (sk.facets.length > 1) {
+						throw new e.ElectroError(e.ErrorCodes.DuplicateIndexCompositeAttributes, `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${u.commaSeparatedString(duplicates)}. Composite attributes can only be used more than once in an index if your sort key is limitted to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys.`);
+					}
 				}
 			}
 

@@ -261,7 +261,7 @@ This is likely a typo, if not double-check the names of the fields you assigned 
 **Code: 1015**
 
 **Why this occurred:**
-Within one index you tried to use the same composite attribute in both the PK and SK. A composite attribute may only be used once within an index. With ElectroDB it is not uncommon to use the same value as both the PK and SK when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. If this is your situation remember that ElectroDB does put a value in the SortKey even if does not include a composite attribute, checkout [this section](/en/modeling/indexes#indexes-without-sort-keys) for more information.
+Within one index you tried to use the same composite attribute in both the PK and SK, and that SK contained more than one composite attribute. With DynamoDB, there is a lot of literature that advocate using the same value as both the PK and SK when a Sort Key exists on a table -- this usually is done because some value is required in that column but for that entity it is not necessary. This constraint is critical for ElectroDB to reliably generate/format sort key values. If this is your situation remember that ElectroDB does put a value in the SortKey even when you model does not define a composite attribute, checkout [this section](/en/modeling/indexes#indexes-without-sort-keys) for more information.
 
 **What to do about it:**
 Determine how you can change your access pattern to not duplicate the composite attribute. Remember that an empty array for an SK is valid.

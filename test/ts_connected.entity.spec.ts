@@ -1517,7 +1517,7 @@ describe('sparse index formatting', () => {
                "__edb_v__": "1"
            },
            "TableName": "your_table_name"
-       })
+       });
 
        const params2 = tasks.put({ team: 'team' }).params();
        expect(params2).to.deep.equal({
@@ -1528,7 +1528,7 @@ describe('sparse index formatting', () => {
                "__edb_v__": "1"
            },
            "TableName": "your_table_name"
-       })
+       });
 
        const params3 = tasks.put({ team: 'team', task: 'abc' }).params();
        expect(params3).to.deep.equal({
@@ -1540,7 +1540,7 @@ describe('sparse index formatting', () => {
                "__edb_v__": "1"
            },
            "TableName": "your_table_name"
-       })
+       });
 
        const params4 = tasks.put({ team: 'team', code: 'abc' }).params();
        expect(params4).to.deep.equal({
@@ -1552,6 +1552,6 @@ describe('sparse index formatting', () => {
                "__edb_v__": "1"
            },
            "TableName": "your_table_name"
-       })
+       });
    });
 });
