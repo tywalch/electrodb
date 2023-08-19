@@ -1955,7 +1955,6 @@ class Entity {
 	_makePutParams({ data } = {}, pk, sk) {
 		let { updatedKeys, setAttributes } = this._getPutKeys(pk, sk && sk.facets, data);
 		let translatedFields = this.model.schema.translateToFields(setAttributes);
-
 		return {
 			Item: {
 				...translatedFields,
@@ -2413,8 +2412,10 @@ class Entity {
 					indexKey[sk] = keys.sk[0];
 				}
 			}
-			updatedKeys[pk] = keys.pk;
-			if (sk) {
+			if (keys.pk !== undefined && keys.pk !== '') {
+				updatedKeys[pk] = keys.pk;
+			}
+			if (sk && keys.sk[0] !== undefined && keys.sk[0] !== '') {
 				updatedKeys[sk] = keys.sk[0];
 			}
 		}

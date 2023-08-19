@@ -366,3 +366,4 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.8.2] - 2023-08-19
 ### Fixed
 - Fixes bug reported via [Issue#281](https://github.com/tywalch/electrodb/issues/281) where ElectroDB failed to use an attribute's `field` name when it was updated via `watch`.
+- Fixes bug reported via [Issue#229](https://github.com/tywalch/electrodb/issues/229) where ElectroDB would generate empty string keys on item creating. This would occur only in cases where a key's field name matched an attribute's field name.       

@@ -1457,3 +1457,101 @@ describe('attribute watch', () => {
        });
    });
 });
+
+describe('sparse index formatting', () => {
+   it('when keys are attribute names, should not produce empty string pk key', () => {
+       const table = "your_table_name";
+       const tasks = new Entity(
+           {
+               model: {
+                   entity: "tasks",
+                   version: "1",
+                   service: "taskapp"
+               },
+               attributes: {
+                   team: {
+                       type: "string",
+                       required: true
+                   },
+                   task: {
+                       type: "string",
+                       required: false
+                   },
+                   code: {
+                       type: "string",
+                       required: false,
+                   },
+               },
+               indexes: {
+                   projects: {
+                       pk: {
+                           field: "pk",
+                           composite: ["team"]
+                       },
+
+                   },
+
+                   withCode: {
+                       // sparse index that should only be populated if code set
+                       index: "with-code-index",
+                       pk: {
+                           field: "code",
+                           composite: ["code"]
+                       },
+                       sk: {
+                           field: "task",
+                           composite: ["task"]
+                       }
+                   }
+               }
+           },
+           { table }
+       );
+
+       const params1 = tasks.put({ team: 'team', task: undefined }).params();
+       expect(params1).to.deep.equal({
+           "Item": {
+               "team": "team",
+               "pk": "$taskapp$tasks_1#team_team",
+               "__edb_e__": "tasks",
+               "__edb_v__": "1"
+           },
+           "TableName": "your_table_name"
+       })
+
+       const params2 = tasks.put({ team: 'team' }).params();
+       expect(params2).to.deep.equal({
+           "Item": {
+               "team": "team",
+               "pk": "$taskapp$tasks_1#team_team",
+               "__edb_e__": "tasks",
+               "__edb_v__": "1"
+           },
+           "TableName": "your_table_name"
+       })
+
+       const params3 = tasks.put({ team: 'team', task: 'abc' }).params();
+       expect(params3).to.deep.equal({
+           "Item": {
+               "team": "team",
+               "task": "abc",
+               "pk": "$taskapp$tasks_1#team_team",
+               "__edb_e__": "tasks",
+               "__edb_v__": "1"
+           },
+           "TableName": "your_table_name"
+       })
+
+       const params4 = tasks.put({ team: 'team', code: 'abc' }).params();
+       expect(params4).to.deep.equal({
+           "Item": {
+               "team": "team",
+               "code": "abc",
+               "pk": "$taskapp$tasks_1#team_team",
+               "__edb_e__": "tasks",
+               "__edb_v__": "1"
+           },
+           "TableName": "your_table_name"
+       })
+   });
+});
