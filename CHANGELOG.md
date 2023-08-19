@@ -350,7 +350,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.7.2] - 2023-07-03
 ### Fixed
-- Fixed bug (reported [here](https://github.com/tywalch/electrodb/issues/271)) where root map object with required flag would not set empty object even when it was provided.
+- Fixed bug reported via [Issue#271](https://github.com/tywalch/electrodb/issues/271) where root map object with required flag would not set empty object even when it was provided.
 
 ## [2.8.0] - 2023-08-06
 ### Adds
@@ -361,4 +361,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.8.1] - 2023-08-06
 ### Fixed
-- Fixes bug with creating sets when client is provided or changed after initial Entity construction 
+- Fixes bug with creating sets when client is provided or changed after initial Entity construction
+
+## [2.8.2] - 2023-08-19
+### Fixed
+- Fixes bug reported via [Issue#281](https://github.com/tywalch/electrodb/issues/281) where ElectroDB failed to use an attribute's `field` name when it was updated via `watch`.

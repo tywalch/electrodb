@@ -1377,3 +1377,83 @@ describe('index casting', () => {
         expect(castToStringNoSk).to.deep.equal(item);
     });
 });
+
+describe('attribute watch', () => {
+   it("should use an attribute's field name when updating an attribute via 'watch'", () => {
+       const tasks = new Entity(
+           {
+               model: {
+                   entity: "tasks",
+                   version: "1",
+                   service: "taskapp",
+               },
+               attributes: {
+                   id: { type: "string" },
+                   expiresAt: { type: "string" },
+                   localFieldName: {
+                       type: "string",
+                       field: "TTL", // This should be used when updating
+                       watch: ["expiresAt"],
+                       set: (_, { expiresAt }) => expiresAt.split('').reverse().join(''),
+                   },
+               },
+               indexes: {
+                   byId: {
+                       pk: { field: "PK", composite: ["id"] },
+                       sk: { field: "SK", composite: [] },
+                   },
+               },
+           },
+           { table: "taskapp" },
+       );
+
+       const expiresAt = 'abc';
+       const params1 = tasks.update({ id: "test" }).set({ expiresAt }).params();
+       expect(params1).to.deep.equal({
+           "UpdateExpression": "SET #expiresAt = :expiresAt_u0, #TTL = :TTL_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+           "ExpressionAttributeNames": {
+               "#expiresAt": "expiresAt",
+               "#TTL": "TTL",
+               "#id": "id",
+               "#__edb_e__": "__edb_e__",
+               "#__edb_v__": "__edb_v__"
+           },
+           "ExpressionAttributeValues": {
+               ":expiresAt_u0": 'abc',
+               ":TTL_u0": 'cba',
+               ":id_u0": "test",
+               ":__edb_e___u0": "tasks",
+               ":__edb_v___u0": "1"
+           },
+           "TableName": "taskapp",
+           "Key": {
+               "PK": "$taskapp#id_test",
+               "SK": "$tasks_1"
+           }
+       });
+
+       const params2 = tasks.update({ id: "test" }).set({ expiresAt, localFieldName: '1' }).params();
+       expect(params2).to.deep.equal({
+           "UpdateExpression": "SET #expiresAt = :expiresAt_u0, #localFieldName = :localFieldName_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+           "ExpressionAttributeNames": {
+               "#expiresAt": "expiresAt",
+               "#localFieldName": "TTL",
+               "#id": "id",
+               "#__edb_e__": "__edb_e__",
+               "#__edb_v__": "__edb_v__"
+           },
+           "ExpressionAttributeValues": {
+               ":expiresAt_u0": "abc",
+               ":localFieldName_u0": "cba",
+               ":id_u0": "test",
+               ":__edb_e___u0": "tasks",
+               ":__edb_v___u0": "1"
+           },
+           "TableName": "taskapp",
+           "Key": {
+               "PK": "$taskapp#id_test",
+               "SK": "$tasks_1"
+           }
+       });
+   });
+});

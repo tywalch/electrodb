@@ -1886,12 +1886,20 @@ class Entity {
 		// should only happen when an attribute is changed.
 		const { indexKey, updatedKeys, deletedKeys = [] } = this._getUpdatedKeys(pk, sk, preparedUpdateValues, removed);
 		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
-
 		for (const path of Object.keys(preparedUpdateValues)) {
 			if (modifiedAttributeNames[path] !== undefined && preparedUpdateValues[path] !== undefined) {
 				update.updateValue(modifiedAttributeNames[path], preparedUpdateValues[path]);
 			} else if (preparedUpdateValues[path] !== undefined) {
-				update.set(path, preparedUpdateValues[path]);
+				const attr = this.model.schema.getAttribute(path);
+				if (attr) {
+					// attributes might enter into this flow because they were triggered via a `watch` event and were
+					// not supplied directly by the user. In this case we should set the field name.
+					// TODO: This will only work with root attributes and should be refactored for nested attributes.
+					update.set(attr.field, preparedUpdateValues[path]);
+				} else {
+					// this could be fields added by electro that don't apeear in the schema
+					update.set(path, preparedUpdateValues[path]);
+				}
 			}
 		}
 
@@ -1901,7 +1909,6 @@ class Entity {
 			const wasNotAlreadyModified = modifiedAttributeNames[indexKey] === undefined;
 			if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
 				update.set(indexKey, updatedKeys[indexKey]);
-
 			}
 		}
 
