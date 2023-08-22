@@ -2683,13 +2683,13 @@ describe("Update Item", () => {
                 .params();
 
             expect(params).to.deep.equal({
-                "UpdateExpression": "SET #deleted = :deleted_u0, #GSI1SK = :GSI1SK_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#pk": "pk",
                     "#sk": "sk",
                     "#createdAt": "createdAt",
                     "#deleted": "deleted",
-                    "#GSI1SK": "GSI1SK",
+                    "#gsi1sk": "gsi1sk",
                     "#id": "id",
                     "#__edb_e__": "__edb_e__",
                     "#__edb_v__": "__edb_v__"
@@ -2697,7 +2697,7 @@ describe("Update Item", () => {
                 "ExpressionAttributeValues": {
                     ":createdAt0": "2023-08-22",
                     ":deleted_u0": true,
-                    ":GSI1SK_u0": "$organization_1#deleted_true#createdat_2023-08-22",
+                    ":gsi1sk_u0": "$organization_1#deleted_true#createdat_2023-08-22",
                     ":id_u0": "2Tz0fHi80CE3dqA6bMIehSvTryv",
                     ":__edb_e___u0": "organization",
                     ":__edb_v___u0": "1"
@@ -2779,11 +2779,11 @@ describe("Update Item", () => {
                 .params();
 
             expect(params).to.deep.equal({
-                "UpdateExpression": "SET #deleted = :deleted_u0, #GSI1SK = :GSI1SK_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#createdAt": "createdAt",
                     "#deleted": "deleted",
-                    "#GSI1SK": "GSI1SK",
+                    "#gsi1sk": "gsi1sk",
                     "#id": "id",
                     "#__edb_e__": "__edb_e__",
                     "#__edb_v__": "__edb_v__"
@@ -2791,7 +2791,7 @@ describe("Update Item", () => {
                 "ExpressionAttributeValues": {
                     ":createdAt0": "2023-08-22",
                     ":deleted_u0": true,
-                    ":GSI1SK_u0": "$organization_1#deleted_true#createdat_2023-08-22",
+                    ":gsi1sk_u0": "$organization_1#deleted_true#createdat_2023-08-22",
                     ":id_u0": "2Tz0fHi80CE3dqA6bMIehSvTryv",
                     ":__edb_e___u0": "organization",
                     ":__edb_v___u0": "1"

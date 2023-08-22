@@ -1737,3 +1737,1232 @@ it('should add entity filter when clustered index is partially provided on entit
         "FilterExpression": "(#prop2 = :prop20) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0"
     });
 });
+
+describe('composite compatibility', () => {
+    it('should validate that partition keys are not mixed/matched custom keys', () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    user: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    accountId: {
+                        type: 'string',
+                    },
+                    status: {
+                        // use an array to type an enum
+                        type: ["open", "in-progress", "on-hold", "closed"] as const,
+                        default: "open"
+                    },
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    },
+                    assigned: {
+                        // collections allow for queries across multiple entities
+                        collection: "assignments",
+                        type: "clustered",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            // map to your GSI Hash/Partition key
+                            field: "gsi1pk",
+                            composite: ["accountId"],
+                        },
+                        sk: {
+                            // map to your GSI Range/Sort key
+                            field: "gsi1sk",
+                            composite: ["user", "team"],
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        /* Users Entity */
+        const users = new Entity(
+            {
+                model: {
+                    entity: "user",
+                    service: "taskapp",
+                    version: "1"
+                },
+                attributes: {
+                    team: {
+                        type: "string"
+                    },
+                    user: {
+                        type: "string"
+                    },
+                    role: {
+                        type: ["dev", "senior", "staff", "principal"] as const,
+                        set: (title: string) => {
+                            // save as index for comparison
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ].indexOf(title);
+                        },
+                        get: (index: number) => {
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ][index] || "other";
+                        }
+                    },
+                    manager: {
+                        type: "string",
+                    },
+                    firstName: {
+                        type: "string"
+                    },
+                    lastName: {
+                        type: "string"
+                    },
+                    accountId: {
+                        type: "string",
+                    }
+                },
+                indexes: {
+                    members: {
+                        collection: "organization",
+                        pk: {
+                            composite: ["team"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: ["user"],
+                            field: "sk"
+                        }
+                    },
+                    user: {
+                        type: "clustered",
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: ["accountId"],
+                            field: "gsi1pk",
+                            template: "ACCT#${accountId}",
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["user", "lastName", "team"],
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the partition key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not, Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "accountId" on established index "gsi1pk-gsi1sk-index". Established composite attribute "accountId" on established index "gsi1pk-gsi1sk-index" was defined with label "accountId" while provided composite attribute "accountId" on provided index "gsi1pk-gsi1sk-index" is defined with label "ACCT#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+    });
+
+    it('should validate that sort keys are not mixed/matched custom keys', () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    user: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    accountId: {
+                        type: 'string',
+                    },
+                    status: {
+                        // use an array to type an enum
+                        type: ["open", "in-progress", "on-hold", "closed"] as const,
+                        default: "open"
+                    },
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    },
+                    assigned: {
+                        // collections allow for queries across multiple entities
+                        collection: "assignments",
+                        type: "clustered",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            // map to your GSI Hash/Partition key
+                            field: "gsi1pk",
+                            composite: ["accountId"],
+                        },
+                        sk: {
+                            // map to your GSI Range/Sort key
+                            field: "gsi1sk",
+                            composite: ["user", "team"],
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        /* Users Entity */
+        const users = new Entity(
+            {
+                model: {
+                    entity: "user",
+                    service: "taskapp",
+                    version: "1"
+                },
+                attributes: {
+                    team: {
+                        type: "string"
+                    },
+                    user: {
+                        type: "string"
+                    },
+                    role: {
+                        type: ["dev", "senior", "staff", "principal"] as const,
+                        set: (title: string) => {
+                            // save as index for comparison
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ].indexOf(title);
+                        },
+                        get: (index: number) => {
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ][index] || "other";
+                        }
+                    },
+                    manager: {
+                        type: "string",
+                    },
+                    firstName: {
+                        type: "string"
+                    },
+                    lastName: {
+                        type: "string"
+                    },
+                    accountId: {
+                        type: "string",
+                    }
+                },
+                indexes: {
+                    members: {
+                        collection: "organization",
+                        pk: {
+                            composite: ["team"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: ["user"],
+                            field: "sk"
+                        }
+                    },
+                    user: {
+                        type: "clustered",
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: ["accountId"],
+                            field: "gsi1pk",
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["user", "lastName", "team"],
+                            template: "U#${user}#N#${lastName}#T#${team}"
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the sort key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not, Sort Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "user" on established index "gsi1pk-gsi1sk-index". Established composite attribute "user" on established index "gsi1pk-gsi1sk-index" was defined with label "user" while provided composite attribute "user" on provided index "gsi1pk-gsi1sk-index" is defined with label "U#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+    });
+
+    it('should validate template sort key labels until the composite attributes differ when using clustered indexes', () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    user: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    accountId: {
+                        type: 'string',
+                    },
+                    status: {
+                        // use an array to type an enum
+                        type: ["open", "in-progress", "on-hold", "closed"] as const,
+                        default: "open"
+                    },
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    },
+                    assigned: {
+                        // collections allow for queries across multiple entities
+                        collection: "assignments",
+                        type: "clustered",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            // map to your GSI Hash/Partition key
+                            field: "gsi1pk",
+                            composite: [],
+                        },
+                        sk: {
+                            // map to your GSI Range/Sort key
+                            field: "gsi1sk",
+                            composite: ["user", "accountId", "team"],
+                            template: "USER#${user}#ACCOUNTID#${accountId}#TEAMZ#${team}"
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        /* Users Entity */
+        const users = new Entity(
+            {
+                model: {
+                    entity: "user",
+                    service: "taskapp",
+                    version: "1"
+                },
+                attributes: {
+                    team: {
+                        type: "string"
+                    },
+                    user: {
+                        type: "string"
+                    },
+                    role: {
+                        type: ["dev", "senior", "staff", "principal"] as const,
+                        set: (title: string) => {
+                            // save as index for comparison
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ].indexOf(title);
+                        },
+                        get: (index: number) => {
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ][index] || "other";
+                        }
+                    },
+                    manager: {
+                        type: "string",
+                    },
+                    firstName: {
+                        type: "string"
+                    },
+                    lastName: {
+                        type: "string"
+                    },
+                    accountId: {
+                        type: "string",
+                    }
+                },
+                indexes: {
+                    members: {
+                        collection: "organization",
+                        pk: {
+                            composite: ["team"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: ["user"],
+                            field: "sk"
+                        }
+                    },
+                    user: {
+                        type: "clustered",
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: [],
+                            field: "gsi1pk",
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["user", "accountId", "team"],
+                            template: "USER#${user}#ACCOUNTID#${accountId}#TEAM#${team}"
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". Sort Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "team" on established index "gsi1pk-gsi1sk-index". Established composite attribute "team" on established index "gsi1pk-gsi1sk-index" was defined with label "#TEAMZ#" while provided composite attribute "team" on provided index "gsi1pk-gsi1sk-index" is defined with label "#TEAM#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+    });
+
+    it('should allow template sort key labels until the composite attributes differ when using clustered indexes', () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    user: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    accountId: {
+                        type: 'string',
+                    },
+                    status: {
+                        // use an array to type an enum
+                        type: ["open", "in-progress", "on-hold", "closed"] as const,
+                        default: "open"
+                    },
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    },
+                    assigned: {
+                        // collections allow for queries across multiple entities
+                        collection: "assignments",
+                        type: "clustered",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            // map to your GSI Hash/Partition key
+                            field: "gsi1pk",
+                            composite: [],
+                        },
+                        sk: {
+                            // map to your GSI Range/Sort key
+                            field: "gsi1sk",
+                            composite: ["user", "accountId", "status", "team"],
+                            template: "USER#${user}#ACCOUNTID#${accountId}#STATUS#${status}#TEAM#${team}"
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        /* Users Entity */
+        const users = new Entity(
+            {
+                model: {
+                    entity: "user",
+                    service: "taskapp",
+                    version: "1"
+                },
+                attributes: {
+                    team: {
+                        type: "string"
+                    },
+                    user: {
+                        type: "string"
+                    },
+                    role: {
+                        type: ["dev", "senior", "staff", "principal"] as const,
+                        set: (title: string) => {
+                            // save as index for comparison
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ].indexOf(title);
+                        },
+                        get: (index: number) => {
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ][index] || "other";
+                        }
+                    },
+                    manager: {
+                        type: "string",
+                    },
+                    firstName: {
+                        type: "string"
+                    },
+                    lastName: {
+                        type: "string"
+                    },
+                    accountId: {
+                        type: "string",
+                    }
+                },
+                indexes: {
+                    members: {
+                        collection: "organization",
+                        pk: {
+                            composite: ["team"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: ["user"],
+                            field: "sk"
+                        }
+                    },
+                    user: {
+                        type: "clustered",
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: [],
+                            field: "gsi1pk",
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["user", "accountId", "team"],
+                            template: "USER#${user}#ACCOUNTID#${accountId}#TEAM#${team}"
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        const service = new Service({tasks, users});
+        const params = service.collections.assignments({ accountId: "acct_059", user: "tyler.walch" }).params();
+        expect(params.ExpressionAttributeValues[":sk1"]).to.equal("user#tyler.walch#accountid#acct_059");
+    });
+
+    it('should validate partition key template string compatibility', () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    user: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    status: {
+                        // use an array to type an enum
+                        type: ["open", "in-progress", "on-hold", "closed"] as const,
+                        default: "open"
+                    },
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    },
+                    assigned: {
+                        // collections allow for queries across multiple entities
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            // map to your GSI Hash/Partition key
+                            field: "gsi1pk",
+                            composite: ["user"],
+                        },
+                        sk: {
+                            // map to your GSI Range/Sort key
+                            field: "gsi1sk",
+                            composite: ["status"]
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        /* Users Entity */
+        const users = new Entity(
+            {
+                model: {
+                    entity: "user",
+                    service: "taskapp",
+                    version: "1"
+                },
+                attributes: {
+                    team: {
+                        type: "string"
+                    },
+                    user: {
+                        type: "string"
+                    },
+                    role: {
+                        type: ["dev", "senior", "staff", "principal"] as const,
+                        set: (title: string) => {
+                            // save as index for comparison
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ].indexOf(title);
+                        },
+                        get: (index: number) => {
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ][index] || "other";
+                        }
+                    },
+                    manager: {
+                        type: "string",
+                    },
+                    firstName: {
+                        type: "string"
+                    },
+                    lastName: {
+                        type: "string"
+                    }
+                },
+                indexes: {
+                    members: {
+                        collection: "organization",
+                        pk: {
+                            composite: ["team"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: ["user"],
+                            field: "sk"
+                        }
+                    },
+                    user: {
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: ["user"],
+                            field: "gsi1pk",
+                            template: "USER#${user}"
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: []
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the partition key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not, Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "user" on established index "gsi1pk-gsi1sk-index". Established composite attribute "user" on established index "gsi1pk-gsi1sk-index" was defined with label "user" while provided composite attribute "user" on provided index "gsi1pk-gsi1sk-index" is defined with label "USER#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+    });
+
+    it('should validate partition key template string compatibility when pk has postfix', () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    user: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    status: {
+                        // use an array to type an enum
+                        type: ["open", "in-progress", "on-hold", "closed"] as const,
+                        default: "open"
+                    },
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    },
+                    assigned: {
+                        // collections allow for queries across multiple entities
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            // map to your GSI Hash/Partition key
+                            field: "gsi1pk",
+                            composite: ["user"],
+                            template: "USER_START#${user}"
+                        },
+                        sk: {
+                            // map to your GSI Range/Sort key
+                            field: "gsi1sk",
+                            composite: ["status"]
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        /* Users Entity */
+        const users = new Entity(
+            {
+                model: {
+                    entity: "user",
+                    service: "taskapp",
+                    version: "1"
+                },
+                attributes: {
+                    team: {
+                        type: "string"
+                    },
+                    user: {
+                        type: "string"
+                    },
+                    role: {
+                        type: ["dev", "senior", "staff", "principal"] as const,
+                        set: (title: string) => {
+                            // save as index for comparison
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ].indexOf(title);
+                        },
+                        get: (index: number) => {
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ][index] || "other";
+                        }
+                    },
+                    manager: {
+                        type: "string",
+                    },
+                    firstName: {
+                        type: "string"
+                    },
+                    lastName: {
+                        type: "string"
+                    }
+                },
+                indexes: {
+                    members: {
+                        collection: "organization",
+                        pk: {
+                            composite: ["team"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: ["user"],
+                            field: "sk"
+                        }
+                    },
+                    user: {
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: ["user"],
+                            field: "gsi1pk",
+                            template: "USER_START#${user}#USER_END"
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: []
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "undefined" on established index "gsi1pk-gsi1sk-index". Established composite attribute "undefined" on established index "gsi1pk-gsi1sk-index" was defined with label "undefined" while provided composite attribute "" on provided index "gsi1pk-gsi1sk-index" is defined with label "#USER_END". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+    });
+
+    it('should allow compatible partition key templates', () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    user: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    status: {
+                        // use an array to type an enum
+                        type: ["open", "in-progress", "on-hold", "closed"] as const,
+                        default: "open"
+                    },
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    },
+                    assigned: {
+                        // collections allow for queries across multiple entities
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            // map to your GSI Hash/Partition key
+                            field: "gsi1pk",
+                            composite: ["user"],
+                            template: "USER#${user}"
+                        },
+                        sk: {
+                            // map to your GSI Range/Sort key
+                            field: "gsi1sk",
+                            composite: ["status"]
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        /* Users Entity */
+        const users = new Entity(
+            {
+                model: {
+                    entity: "user",
+                    service: "taskapp",
+                    version: "1"
+                },
+                attributes: {
+                    team: {
+                        type: "string"
+                    },
+                    user: {
+                        type: "string"
+                    },
+                    role: {
+                        type: ["dev", "senior", "staff", "principal"] as const,
+                        set: (title: string) => {
+                            // save as index for comparison
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ].indexOf(title);
+                        },
+                        get: (index: number) => {
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ][index] || "other";
+                        }
+                    },
+                    manager: {
+                        type: "string",
+                    },
+                    firstName: {
+                        type: "string"
+                    },
+                    lastName: {
+                        type: "string"
+                    }
+                },
+                indexes: {
+                    members: {
+                        collection: "organization",
+                        pk: {
+                            composite: ["team"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: ["user"],
+                            field: "sk"
+                        }
+                    },
+                    user: {
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: ["user"],
+                            field: "gsi1pk",
+                            template: "USER#${user}"
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: []
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        const service = new Service({tasks, users});
+        const params = service.collections.assignments({ user: "tyler.walch" }).params();
+
+        expect(params.ExpressionAttributeValues[':pk']).to.equal("user#tyler.walch");
+    });
+
+    it('should allow compatible partition key templates with postfix', () => {
+        const tasks = new Entity(
+            {
+                model: {
+                    entity: "tasks",
+                    version: "1",
+                    service: "taskapp"
+                },
+                attributes: {
+                    team: {
+                        type: "string",
+                        required: true
+                    },
+                    task: {
+                        type: "string",
+                        required: true
+                    },
+                    project: {
+                        type: "string",
+                        required: true
+                    },
+                    user: {
+                        type: "string",
+                        required: true
+                    },
+                    title: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string"
+                    },
+                    status: {
+                        // use an array to type an enum
+                        type: ["open", "in-progress", "on-hold", "closed"] as const,
+                        default: "open"
+                    },
+                },
+                indexes: {
+                    projects: {
+                        pk: {
+                            field: "pk",
+                            composite: ["team"]
+                        },
+                        sk: {
+                            field: "sk",
+                            // create composite keys for partial sort key queries
+                            composite: ["project", "task"]
+                        }
+                    },
+                    assigned: {
+                        // collections allow for queries across multiple entities
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            // map to your GSI Hash/Partition key
+                            field: "gsi1pk",
+                            composite: ["user"],
+                            template: "USER#${user}#USER"
+                        },
+                        sk: {
+                            // map to your GSI Range/Sort key
+                            field: "gsi1sk",
+                            composite: ["status"]
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        /* Users Entity */
+        const users = new Entity(
+            {
+                model: {
+                    entity: "user",
+                    service: "taskapp",
+                    version: "1"
+                },
+                attributes: {
+                    team: {
+                        type: "string"
+                    },
+                    user: {
+                        type: "string"
+                    },
+                    role: {
+                        type: ["dev", "senior", "staff", "principal"] as const,
+                        set: (title: string) => {
+                            // save as index for comparison
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ].indexOf(title);
+                        },
+                        get: (index: number) => {
+                            return [
+                                "dev",
+                                "senior",
+                                "staff",
+                                "principal"
+                            ][index] || "other";
+                        }
+                    },
+                    manager: {
+                        type: "string",
+                    },
+                    firstName: {
+                        type: "string"
+                    },
+                    lastName: {
+                        type: "string"
+                    }
+                },
+                indexes: {
+                    members: {
+                        collection: "organization",
+                        pk: {
+                            composite: ["team"],
+                            field: "pk"
+                        },
+                        sk: {
+                            composite: ["user"],
+                            field: "sk"
+                        }
+                    },
+                    user: {
+                        collection: "assignments",
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            composite: ["user"],
+                            field: "gsi1pk",
+                            template: "USER#${user}#USER"
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: []
+                        }
+                    }
+                }
+            },
+            { table, client }
+        );
+
+        const service = new Service({tasks, users});
+        const params = service.collections.assignments({ user: "tyler.walch" }).params();
+        expect(params.ExpressionAttributeValues[':pk']).to.equal("user#tyler.walch#user");
+    });
+});
