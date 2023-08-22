@@ -1884,7 +1884,11 @@ class Entity {
 		// We need to remove the pk/sk facets from before applying the Attribute setters because these values didnt
 		// change, and we also don't want to trigger the setters of any attributes watching these facets because that
 		// should only happen when an attribute is changed.
-		const { indexKey, updatedKeys, deletedKeys = [] } = this._getUpdatedKeys(pk, sk, preparedUpdateValues, removed);
+		const attributesAndComposites = {
+			...update.composites,
+			...preparedUpdateValues,
+		};
+		const { indexKey, updatedKeys, deletedKeys = [] } = this._getUpdatedKeys(pk, sk, attributesAndComposites, removed);
 		const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
 		for (const path of Object.keys(preparedUpdateValues)) {
 			if (modifiedAttributeNames[path] !== undefined && preparedUpdateValues[path] !== undefined) {
@@ -2343,7 +2347,7 @@ class Entity {
 			let incompleteAccessPatterns = incomplete.map(({index}) => this.model.translations.indexes.fromIndexToAccessPattern[index]);
 			let missingFacets = incomplete.reduce((result, { missing }) => [...result, ...missing], []);
 			throw new e.ElectroError(e.ErrorCodes.IncompleteCompositeAttributes,
-				`Incomplete composite attributes: Without the composite attributes ${u.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${u.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))} `,
+				`Incomplete composite attributes: Without the composite attributes ${u.commaSeparatedString(missingFacets)} the following access patterns cannot be updated: ${u.commaSeparatedString(incompleteAccessPatterns.filter((val) => val !== undefined))}. If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes.`,
 			);
 		}
 		return complete;

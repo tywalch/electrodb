@@ -137,6 +137,45 @@ const StoreLocations = new Entity({
             required: false,
             default: "0.00",
             validate: /^(\d+\.\d{2})$/
+        },
+        tenants: {
+            type: "set",
+            items: "string",
+        },
+        warnings: {
+            type: "number",
+            default: 0,
+        },
+        deposit: {
+            type: "number",
+        },
+        contact: {
+            type: "set",
+            items: "string",
+        },
+        rentalAgreement: {
+            type: "list",
+            items: {
+                type: "map",
+                properties: {
+                    type: {
+                        type: "string"
+                    },
+                    detail: {
+                        type: "string",
+                    }
+                }
+            }
+        },
+        petFee: {
+            type: "number"
+        },
+        fees: {
+            type: "number"
+        },
+        tags: {
+            type: "set",
+            items: "string",
         }
     },
     indexes: {

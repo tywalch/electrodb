@@ -1,5 +1,5 @@
 const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TransactionCommitSymbol, TransactionOperations, TerminalOperation, KeyTypes, IndexTypes } = require("./types");
-const {AttributeOperationProxy, UpdateOperations, FilterOperationNames} = require("./operations");
+const {AttributeOperationProxy, UpdateOperations, FilterOperationNames, UpdateOperationNames} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
 const v = require("./validations");
@@ -366,7 +366,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["set", "append","updateRemove", "updateDelete", "add", "subtract", "data", "commit"],
+		children: ["set", "append","updateRemove", "updateDelete", "add", "subtract", "data", "composite", "commit"],
 	},
 	update: {
 		name: "update",
@@ -393,7 +393,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
 	},
 	data: {
 		name: "data",
@@ -423,7 +423,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
 	},
 	set: {
 		name: "set",
@@ -440,7 +440,32 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+	},
+	composite: {
+		name: "composite",
+		action(entity, state, composites = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				for (const attrName in composites) {
+					// todo: validate attrName is facet
+					if (entity.model.facets.byAttr[attrName]) {
+						const wasSet = state.query.update.addComposite(attrName, composites[attrName]);
+						if (!wasSet) {
+							throw new e.ElectroError(e.ErrorCodes.DuplicateUpdateCompositesProvided, `The composite attribute ${attrName} has been provided more than once with different values. Remove the duplication before running again`);
+						}
+						state.applyCondition(FilterOperationNames.eq, attrName, composites[attrName]);
+					}
+				}
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
 	},
 	append: {
 		name: "append",
@@ -457,7 +482,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
 	},
 	updateRemove: {
 		name: "remove",
@@ -477,7 +502,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
 	},
 	updateDelete: {
 		name: "delete",
@@ -494,7 +519,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
 	},
 	add: {
 		name: "add",
@@ -511,7 +536,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
 	},
 	subtract: {
 		name: "subtract",
@@ -528,7 +553,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit"],
+		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
 	},
 	query: {
 		name: "query",
@@ -960,6 +985,17 @@ class ChainState {
 			const attribute = this.attributes[name];
 			if (attribute !== undefined) {
 				this.unsafeApplyFilter(operation, attribute.field, ...values);
+			}
+		}
+		return this;
+	}
+
+	applyCondition(operation, name, ...values) {
+		if (FilterOperationNames[operation] !== undefined && name !== undefined && values.length > 0) {
+			const attribute = this.attributes[name];
+			if (attribute !== undefined) {
+				const filter = this.query.filter[ExpressionTypes.ConditionExpression];
+				filter.unsafeSet(operation, attribute.field, ...values);
 			}
 		}
 		return this;

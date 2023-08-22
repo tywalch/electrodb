@@ -856,19 +856,19 @@ describe("Entity", () => {
 				},{
 					input: "set",
 					fail: true,
-					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "set" but is a composite attribute of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "set" but is a composite attribute of the following indexes: Table Index`
 				},{
 					input: "list",
 					fail: true,
-					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "list" but is a composite attribute of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "list" but is a composite attribute of the following indexes: Table Index`
 				},{
 					input: "map",
 					fail: true,
-					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "map" but is a composite attribute of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "map" but is a composite attribute of the following indexes: Table Index`
 				},{
 					input: "any",
 					fail: true,
-					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "any" but is a composite attribute of the the following indexes: Table Index`
+					message: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "id" is defined as being type "any" but is a composite attribute of the following indexes: Table Index`
 				}
 			];
 
@@ -1356,7 +1356,7 @@ describe("Entity", () => {
 							},
 						},
 					}),
-			).to.throw(`Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a composite attribute of the the following indexes: Table Index`);
+			).to.throw(`Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "regexp" is defined as being type "raccoon" but is a composite attribute of the following indexes: Table Index`);
 		});
 		it("Should prevent the update of the main partition key without the user needing to define the property as read-only in their schema", async () => {
 			let id = uuid();
@@ -1594,9 +1594,9 @@ describe("Entity", () => {
 			let del = MallStores.delete({ id });
 			expect(del).to.have.keys("commit", "go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let update = MallStores.update({ id }).set({ rent, category });
-			expect(update).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
+			expect(update).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove", "composite");
 			let patch = MallStores.patch({ id }).set({ rent, category });
-			expect(patch).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove");
+			expect(patch).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove", "composite");
 			let put = MallStores.put({
 				store,
 				mall,
@@ -4206,7 +4206,7 @@ describe("Entity", () => {
 				},{
 					success: false,
 					output: {
-						err: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "prop1" is defined as being type "invalid_value" but is a composite attribute of the the following indexes: Table Index`
+						err: `Invalid composite attribute definition: Composite attributes must be one of the following: string, number, boolean, enum. The attribute "prop1" is defined as being type "invalid_value" but is a composite attribute of the following indexes: Table Index`
 					},
 					input: {
 						model: {
@@ -8071,13 +8071,13 @@ describe("Entity", () => {
 				description: "should throw because result would create incomplete key without prop7",
 				success: false,
 				input: { prop0, prop6 },
-				output: 'Incomplete composite attributes: Without the composite attributes "prop7" the following access patterns cannot be updated: "accessPattern3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
+				output: `Incomplete composite attributes: Without the composite attributes "prop7" the following access patterns cannot be updated: "accessPattern3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 			},
 			{
 				description: "should throw because result would create incomplete key without prop6",
 				success: false,
 				input: { prop0, prop7 },
-				output: 'Incomplete composite attributes: Without the composite attributes "prop6" the following access patterns cannot be updated: "accessPattern3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
+				output: `Incomplete composite attributes: Without the composite attributes "prop6" the following access patterns cannot be updated: "accessPattern3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 			},
 			{
 				description: "should update prop9 and build gsi3sk",
@@ -8113,19 +8113,19 @@ describe("Entity", () => {
 				description: "should throw because result would create incomplete key without prop12",
 				success: false,
 				input: { prop0, prop11 },
-				output: `Incomplete composite attributes: Without the composite attributes "prop12" the following access patterns cannot be updated: "accessPattern5"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
+				output: `Incomplete composite attributes: Without the composite attributes "prop12" the following access patterns cannot be updated: "accessPattern5". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 			},
 			{
 				description: "should throw because result would create incomplete key without prop15",
 				success: false,
 				input: { prop0, prop14 },
-				output: `Incomplete composite attributes: Without the composite attributes "prop15" the following access patterns cannot be updated: "accessPattern6"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
+				output: `Incomplete composite attributes: Without the composite attributes "prop15" the following access patterns cannot be updated: "accessPattern6". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 			},
 			{
 				description: "should throw because result would create incomplete key without prop14",
 				success: false,
 				input: { prop0, prop15 },
-				output: `Incomplete composite attributes: Without the composite attributes "prop14" the following access patterns cannot be updated: "accessPattern6"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
+				output: `Incomplete composite attributes: Without the composite attributes "prop14" the following access patterns cannot be updated: "accessPattern6". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`
 			},
 			{
 				description: "should update prop14, prop15, and set gsi5sk",

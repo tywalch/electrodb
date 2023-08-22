@@ -955,8 +955,36 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<SetParameters>({attr6: "1234"});
     expectError<SetParametersWithoutSK>({attr6: "1234"});
 
+    let compositeFn = entityWithSK.update({attr1: "abc", attr2: "def"}).composite;
+    let compositeFnWithoutSK = entityWithoutSK.update({attr1: "abc"}).composite;
+
+    type CompositeParameters = Parameter<typeof compositeFn>;
+    type CompositeParametersWithoutSK = Parameter<typeof compositeFnWithoutSK>;
+
+    const compositeParameters = {} as CompositeParameters;
+    const compositeParametersWithoutSk = {} as CompositeParametersWithoutSK;
+
+    expectType<Partial<({
+        attr3: "123" | "def" | "ghi";
+        attr4: "abc" | "ghi";
+        attr9: number;
+        attr5: string;
+    } | {
+        attr6: number;
+        attr9: number;
+        attr4: "abc" | "ghi";
+        attr5: string;
+    })>>(magnify(compositeParameters));
+
+    expectType<Partial<({
+        attr6: number;
+        attr9: number;
+    } | {
+        attr5: string;
+    })>>(magnify(compositeParametersWithoutSk));
+
     // Finishers
-    type UpdateParametersFinishers = "set" | "delete" | "remove" | "go" | "params" | "where" | "add" | "subtract" | "append" | "data";
+    type UpdateParametersFinishers = "set" | "delete" | "remove" | "go" | "params" | "where" | "add" | "subtract" | "append" | "data" | "composite";
 
     let updateItem = entityWithSK.update({attr1: "abc", attr2: "def"}).set({});
     let updateItemWithoutSK = entityWithoutSK.update({attr1: "abc"}).set({});
@@ -1021,8 +1049,36 @@ let getKeys = ((val) => {}) as GetKeys;
     expectError<PatchParameters>({attr6: "1234"});
     expectError<PatchParametersWithoutSK>({attr6: "1234"});
 
+    let compositePatchFn = entityWithSK.update({attr1: "abc", attr2: "def"}).composite;
+    let compositePatchFnWithoutSK = entityWithoutSK.update({attr1: "abc"}).composite;
+
+    type CompositePatchParameters = Parameter<typeof compositePatchFn>;
+    type CompositePatchParametersWithoutSK = Parameter<typeof compositePatchFnWithoutSK>;
+
+    const compositePatchParameters = {} as CompositePatchParameters;
+    const compositePatchParametersWithoutSk = {} as CompositePatchParametersWithoutSK;
+
+    expectType<Partial<({
+        attr3: "123" | "def" | "ghi";
+        attr4: "abc" | "ghi";
+        attr9: number;
+        attr5: string;
+    } | {
+        attr6: number;
+        attr9: number;
+        attr4: "abc" | "ghi";
+        attr5: string;
+    })>>(magnify(compositePatchParameters));
+
+    expectType<Partial<({
+        attr6: number;
+        attr9: number;
+    } | {
+        attr5: string;
+    })>>(magnify(compositePatchParametersWithoutSk));
+
     // Finishers
-    type PatchParametersFinishers = "set" | "delete" | "remove" | "go" | "params" | "where" | "add" | "subtract" | "append" | "data";
+    type PatchParametersFinishers = "set" | "delete" | "remove" | "go" | "params" | "where" | "add" | "subtract" | "append" | "data" | "composite";
 
     let patchItem = entityWithSK.patch({attr1: "abc", attr2: "def"}).set({});
     let patchItemWithoutSK = entityWithoutSK.patch({attr1: "abc"}).set({});

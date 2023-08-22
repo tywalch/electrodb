@@ -1171,7 +1171,7 @@ class Schema {
 
 			if (facets.byAttr && facets.byAttr[definition.name] !== undefined && (!ValidFacetTypes.includes(definition.type) && !Array.isArray(definition.type))) {
 				let assignedIndexes = facets.byAttr[name].map(assigned => assigned.index === "" ? "Table Index" : assigned.index);
-				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid composite attribute definition: Composite attributes must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a composite attribute of the the following indexes: ${assignedIndexes.join(", ")}`);
+				throw new e.ElectroError(e.ErrorCodes.InvalidAttributeDefinition, `Invalid composite attribute definition: Composite attributes must be one of the following: ${ValidFacetTypes.join(", ")}. The attribute "${name}" is defined as being type "${attribute.type}" but is a composite attribute of the following indexes: ${assignedIndexes.join(", ")}`);
 			}
 
 			if (usedAttrs[definition.field] || usedAttrs[name]) {
@@ -1438,9 +1438,9 @@ class Schema {
 
 	checkUpdate(payload = {}, { allowReadOnly } = {}) {
 		let record = {};
-		for (let [path, attribute] of this.traverser.getAll()) {
-			let value = payload[path];
-			if (value === undefined) {
+		for (let [path, value] of Object.entries(payload)) {
+			let attribute = this.traverser.paths.get(path);
+			if (attribute === undefined) {
 				continue;
 			}
 			if (attribute.readOnly && !allowReadOnly) {

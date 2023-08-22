@@ -13,16 +13,32 @@ layout: ../../../layouts/MainLayout.astro
 ---
 
 import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import TasksModel from "../../../partials/tasks-example.entity.mdx";
 
 <ExampleSetup />
 
-In DynamoDB, `update` operations by default will create an item if record being updated does not exist. Alternatively, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not created when updating items in your table.
+In DynamoDB, `update` operations will create an item by default if record being updated does not exist. Alternatively, the `patch` method will utilize the `attribute_exists()` parameter dynamically to ensure records are only "patched" and not created when updating items in your table.
 
 > Unlike the `update` method, `patch` has a return type of [EntityItem](/en/reference/typescript#entityitem-type). This is because `patch` is considered a "safer" update because it will not result in an item being accidentally created by DynamoDB. Accidental creations via `update` can result in partial items and incorrect typing.
 
-```javascript
-await entity.patch({ attr1: "value1", attr2: "value2" })
-  .set({ attr4: "value4" })
+<TasksModel />
+
+```typescript
+tasks
+  .patch({
+    team: "core",
+    task: "45-662",
+    project: "backend"
+  })
+  .set({ status: "open" })
+  .add({ points: 5 })
+  .append({
+    comments: [{
+      user: "janet",
+      body: "This seems half-baked."
+    }]
+  })
+  .where(( {status}, {eq} ) => eq(status, "in-progress"))
   .go();
 ```
 
@@ -32,11 +48,845 @@ await entity.patch({ attr1: "value1", attr2: "value2" })
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof tasks>
 }
 ```
 
 ## Equivalent Parameters
+```json
+{
+    "UpdateExpression": "SET #status = :status_u0, #comments = list_append(#comments, :comments_u0), #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #team = :team_u0, #project = :project_u0, #task = :task_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #points :points_u0",
+    "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk": "sk",
+        "#status": "status",
+        "#points": "points",
+        "#comments": "comments",
+        "#updatedAt": "updatedAt",
+        "#gsi1sk": "gsi1sk",
+        "#team": "team",
+        "#project": "project",
+        "#task": "task",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":status0": "in-progress",
+        ":status_u0": "open",
+        ":points_u0": 5,
+        ":comments_u0": [
+            {
+                "user": "janet",
+                "body": "This seems half-baked."
+            }
+        ],
+        ":updatedAt_u0": 1692723798360,
+        ":gsi1sk_u0": "$assignments#tasks_1#status_open",
+        ":team_u0": "core",
+        ":project_u0": "backend",
+        ":task_u0": "45-662",
+        ":__edb_e___u0": "tasks",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "your_table_name",
+    "Key": {
+        "pk": "$taskapp#team_core",
+        "sk": "$tasks_1#project_backend#task_45-662"
+    },
+    "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #status = :status0"
+}
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/PQKgBAsg9gJgpgGzARwK5wE4Es4GcA0YuccYGeqCALgUQBYCG5YA7llXWAGbZwB2MXGBDAAUKKwBbAA5QMVMAG8wAUT5V2AT0IBlTADcsAY1IBfbhiiSwAIkRwjVSzABGNgNzijUPrgVUGFwRSAF5bTShUDAB9AKC4aL4GSTgPcVAwABUGXABrITUNKk1hMW9ffxz8sDC+OBZVdS0AClEwJTb2sElYRAAuDq6u-iLNAZsAvNwbfE6h-UxcLB9xgEYZua7iDEMTccnchmlpG03TWaGGKicsF1QqPAHFTfaH5KeXruLpOHG-bD4AHMNkMhuQ0FhyDABk50J9zp8Dh9QV9ND8-jcgSCUWQ4BCoTCMHCUQiUdJLAArBxUZE476-Wz-LBYi448GoSFwaFgWFweGsoaoba0lH0jEA4EC0Hsznc3n8xHsYIi0FixmYyWfdoygk8olwKXtUmg+C4IzYaQaFaDOlohk2JlYhUovxXIUqobAYBgIWkBh8MBMDAMEpUKA8u2BgP8VCSLUR9FgADaNigPz4M1szIAtOSoIDyLhpoRU3xs3QoAgYJmbEYEFBiNWALqBoTlPyGrrwLgMSg02xp-inEmd2TMmge1GJmx8WMuTDYobGoYBQG4SevO1-OBUReg9hwSTr9US4eg5ddbySFLqY-PHEJ+0ILB+PdDA9HjdT+2SI5v0F5j88g4He8aCsKNoPiuW4nsywJgV0F4Pi4sBjJBUGbtOjrwRhRoIaY8YESOnx1g2XJfmqDoav+7T6Awz4wFcDLAEmAAM2YAJxNooAAspjZmxnHcQATPxglcYoonAJ2SFgOacBMTAACC-b3ra06zpI84YDRYDdr21ADM0ACUNQAHxgAAIkxAB0fBQCwJmdu0Xpyf69kKPO3SwFgXA4DAgZcA8GByeQinxmFMAAPJ8AgaHysRKKoNIjEPMpqnxpRmnabprksFcRicFwchyYwQJ4Dy4b+iUVw3HcDzxvlVCFeMIC5d6xAKEYUTkOoPJSHgAQyKwdD8D6KXhQ+nVGaZIQWdZDx2Q5TkRQp0WxfF+rwmcUrMvAAAejzoe0eZUo4oEPtIuRfu0fmINyNhXbp7RXrISwPAMKZvJINhNoRzlENdx2gndVZ-Lkz1gK58lMXJVhvQeYC5HAmhCMVIXSEwGj0UQcgKMjJRoJgIEIa9DYHp9j2UtSNYHL9hHOqCORLICdTcmpKLQ5WwSOMsviBgg9YNOjKDoLwQgMOaDZCJIfZYNIwRgCM7Akw+3iC9SfPjMzWCszeNC6XtcD7eMa5YKsV3Zmbqx5NmRv7bpV03VD3q-tIlVgBEURgAA4joACSYAABI5HQwAAApYyrPhIyjCGgw91tPQDL3w+TH3JjYvo6X9D6ye0eTO65bse17IV+4HABK-qAnAwA6HjseaPHOBg7Y1t5JDZPvQyKaulQQr03njNDC4ku5PWgJfsXRwexwpAV2ASQpGAMdl1ZmjL1AlkAEI8oEwTxvbptLMJltm8Jtv247QMcziCcn1gZ8QyncMyOnvdU1AZ27rnOL54DZ2D926n07q-buFNM7fRrKRRsv0AZEXPGcToxplBxEVgRYynhRAHFwJ0GymNmp0GaHfb64xvDkD3EiWwPEACs2YABsDDhJ7lOtScYY8jDIwEGeUwxl8GdRIUQAIA9jypnTDYMAfD8EMBgDAIRY5bwDFoVI-h7QbJHHTPIu+V59bHiTHfdo2dxgUn9Duf8KEYBoRsJkOgL4iAkCPGARgCAuDZjHsjGANkzxGj-tI9RLBRrkGaM0JQ-chTnCUHicws0LJ4maOE2gNgcx5gLHgaYxk1FgBsoCKAJl3BAA)
+
+## Operations
+
+Update Methods are available **_after_** the `update()` or `patch()` method is called, and allow you to perform alter an item stored dynamodb. Each Update Method corresponds to a [DynamoDB UpdateExpression clause](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html).
+
+> ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. For example, If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client.
+
+Update/Patch Method                    | Attribute Types                                              | Parameter
+-------------------------------------- | ------------------------------------------------------------ | ---------
+[set](#update-method-set)              | `number` `string` `boolean` `enum` `map` `list` `set` `any`  | `object`
+[remove](#update-method-remove)        | `number` `string` `boolean` `enum` `map` `list` `set` `any`  | `array`
+[add](#update-method-add)              | `number` `any` `set`                                         | `object`
+[subtract](#update-method-subtract)    | `number`                                                     | `object`
+[append](#update-method-append)        | `any` `list`                                                 | `object`
+[delete](#update-method-delete)        | `any` `set`                                                  | `object`
+[data](#update-method-data)            | `*`                                                          | `callback`
+
+The methods above can be used (and reused) in a chain to form update parameters, when finished with `.params()` or `.go()` terminal. If your application requires the update method to return values related to the update (e.g. via the `ReturnValues` DocumentClient parameters), you can use the [Execution Option](#execution-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
+
+### Set
+
+The `set()` method will accept all attributes defined on the model. Provide a value to apply or replace onto the item.
+
+#### Example
+
+<ExampleSetup />
+
+```javascript
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .set({category: "food/meal"})
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+```
+
+#### Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
+```typescript
+{
+  data: EntityIdentifiers<typeof StoreLocations>
+}
+```
+
+#### Equivalent Parameters
+
+```json
+{
+    "UpdateExpression": "SET #category = :category_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+    "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk": "sk",
+        "#category": "category",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":category_u0": "food/meal",
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #category = :category0"
+}
+```
+
+### Remove
+
+The `remove()` method will accept all attributes defined on the model. Unlike most other update methods, the `remove()` method accepts an array with the names of the attributes that should be removed.
+
+> that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed.
+
+#### Example
+
+<ExampleSetup />
+
+```javascript
+await StoreLocations
+    .patch({ cityId, mallId, storeId, buildingId })
+    .remove(["discount"])
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+```
+
+#### Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
+```typescript
+{
+  data: EntityIdentifiers<typeof StoreLocations>
+}
+```
+
+#### Equivalent Parameters
+
+```json
+{
+    "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount",
+    "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk": "sk",
+        "#category": "category",
+        "#discount": "discount",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #category = :category0"
+}
+```
+
+### Add
+
+The `add()` method will accept attributes with type `number`, `set`, and `any` defined on the model. In the case of a `number` attribute, provide a number to _add_ to the existing attribute's value on the item.
+
+If the attribute is defined as `any`, the syntax compatible with the attribute type `set` will be used. For this reason, do not use the attribute type `any` to represent a `number`.
+
+#### Example
+
+<ExampleSetup />
+
+```javascript
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .add({
+      warnings: 1,       // "number" attribute
+      tenants: ["larry"]  // "set" attribute
+    })
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+```
+
+#### Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
+```typescript
+{
+  data: EntityIdentifiers<typeof StoreLocations>
+}
+```
+
+#### Equivalent Parameters
+
+```json
+{
+    "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #warnings :warnings_u0, #tenants :tenants_u0",
+    "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk": "sk",
+        "#category": "category",
+        "#warnings": "warnings",
+        "#tenants": "tenants",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":warnings_u0": 1,
+        ":tenants_u0": [
+            "larry"
+        ],
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #category = :category0"
+}
+```
+
+### Subtract
+
+The `subtract()` method will accept attributes with type `number`. In the case of a `number` attribute, provide a number to _subtract_ from the existing attribute's value on the item.
+
+#### Example
+
+<ExampleSetup />
+
+```javascript
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .subtract({deposit: 500})
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+```
+
+#### Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
+```typescript
+{
+  data: EntityIdentifiers<typeof StoreLocations>
+}
+```
+
+#### Equivalent Parameters
+
+```json
+{
+    "UpdateExpression": "SET #deposit = #deposit - :deposit_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+    "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk": "sk",
+        "#category": "category",
+        "#deposit": "deposit",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":deposit_u0": 500,
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #category = :category0"
+}
+```
+
+### Append
+
+The `append()` method will accept attributes with type `any`. This is a convenience method for working with DynamoDB lists, and is notably different that [`set`](#update-method-set) because it will add an element to an existing array, rather than overwrite the existing value.
+
+#### Example
+
+<ExampleSetup />
+
+```javascript
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .append({
+      rentalAgreement: [{
+        type: "ammendment",
+        detail: "no soup for you"
+      }]
+    })
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+```
+
+#### Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
+```typescript
+{
+  data: EntityIdentifiers<typeof StoreLocations>
+}
+```
+
+#### Equivalent Parameters
+```json
+{
+    "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+    "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk": "sk",
+        "#category": "category",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #category = :category0"
+}
+```
+
+### Delete
+
+The `delete()` method will accept attributes with type `any` or `set` . This operation removes items from a the `contract` attribute, defined as a `set` attribute.
+
+#### Example
+
+<ExampleSetup />
+
+```javascript
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .delete({contact: ['555-345-2222']})
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+```
+
+#### Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
+```typescript
+{
+  data: EntityIdentifiers<typeof StoreLocations>
+}
+```
+
+#### Equivalent Parameters
+```json
+{
+    "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 DELETE #contact :contact_u0",
+    "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk": "sk",
+        "#category": "category",
+        "#contact": "contact",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":contact_u0": [
+            "555-345-2222"
+        ],
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #category = :category0"
+}
+```
+
+#### Data
+
+The `data()` allows for different approach to updating your item, by accepting a callback with a similar argument signature to the [where clause](/en/mutations/conditionals).
+
+The callback provided to the `data` method is injected with an `attributes` object as the first parameter, and an `operations` object as the second parameter. All operations accept an attribute from the `attributes` object as a first parameter, and optionally accept a second `value` parameter.
+
+As mentioned above, this method is functionally similar to the `where` clause with one exception: The callback provided to `data()` is not expected to return a value. When you invoke an injected `operation` method, the side effects are applied directly to update expression you are building.
+
+operation     | example                               | result                                                                | description
+------------- | ------------------------------------- | --------------------------------------------------------------------- | -----------
+`set`         | `set(category, value)`                | `#category = :category0`                                              | Add or overwrite existing value
+`add`         | `add(tenant, name)`                   | `#tenant :tenant1`                                                    | Add value to existing `set` attribute (used when provided attribute is of type `any` or `set`)
+`add`         | `add(rent, amount)`                   | `#rent = #rent + :rent0`                                              | Mathematically add given number to existing number on record
+`subtract`    | `subtract(deposit, amount)`           | `#deposit = #deposit - :deposit0`                                     | Mathematically subtract given number from existing number on record
+`remove`      | `remove(petFee)`                      | `#petFee`                                                             | Remove attribute/property from item
+`append`      | `append(rentalAgreement, amendment)`  | `#rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0)` | Add element to existing `list` attribute
+`delete`      | `delete(tenant, name)`                | `#tenant :tenant1`                                                    | Remove item from existing `set` attribute
+`del`         | `del(tenant, name)`                   | `#tenant :tenant1`                                                    | Alias for `delete` operation
+`name`        | `name(rent)`                          | `#rent`                                                               | Reference another attribute's name, can be passed to other operation that allows leveraging existing attribute values in calculating new values
+`value`       | `value(rent, amount)`                 | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
+`ifNotExists` | `ifNotExists(rent, amount)`           | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record
+
+> Usage of `name` and `value` operations allow for some escape hatching in the case that a custom operation needs to be expressed. When used however, ElectroDB loses the context necessary to validate the expression created by the user. In practical terms, this means the `validation` function/regex on the impacted attribute will not be called.
+
+#### Example
+
+<ExampleSetup />
+
+```javascript
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .data((a, o) => {
+        const newTenant = o.value(a.tenants, ["larry"]);
+        o.set(a.category, "food/meal");   // electrodb "enum"   -> dynamodb "string"
+        o.add(a.tenants, newTenant);       // electrodb "set"    -> dynamodb "set"
+        o.add(a.warnings, 1);               // electrodb "number" -> dynamodb "number"
+        o.subtract(a.deposit, 200);       // electrodb "number" -> dynamodb "number"
+        o.remove(a.discount);          // electrodb "number" -> dynamodb "number"
+        o.append(a.rentalAgreement, [{    // electrodb "list"   -> dynamodb "list"
+            type: "ammendment",           // electrodb "map"    -> dynamodb "map"
+            detail: "no soup for you"
+        }]);
+        o.delete(a.tags, ['coffee']);
+        o.del(a.contact, ['555-345-2222']); // electrodb "set"    -> dynamodb "set"
+        o.add(a.fees, o.name(a.petFee)); // electrodb "number" -> dynamodb "number"
+    })
+    .where((attr, op) => op.eq(attr.category, "food/coffee"))
+    .go()
+```
+
+#### Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
+```typescript
+{
+  data: EntityIdentifiers<typeof StoreLocations>
+}
+```
+
+#### Equivalent Parameters
+```json
+{
+    "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #fees = #fees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenants :tenants_u0, #warnings :warnings_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+    "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk": "sk",
+        "#category": "category",
+        "#tenants": "tenants",
+        "#warnings": "warnings",
+        "#deposit": "deposit",
+        "#discount": "discount",
+        "#rentalAgreement": "rentalAgreement",
+        "#tags": "tags",
+        "#contact": "contact",
+        "#petFee": "petFee",
+        "#fees": "fees",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":tenants_u0": [
+            "larry"
+        ],
+        ":category_u0": "food/meal",
+        ":warnings_u0": 1,
+        ":deposit_u0": 200,
+        ":rentalAgreement_u0": [
+            {
+                "type": "ammendment",
+                "detail": "no soup for you"
+            }
+        ],
+        ":tags_u0": [
+            "coffee"
+        ],
+        ":contact_u0": [
+            "555-345-2222"
+        ],
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #category = :category0"
+}
+```
+
+#### Composite
+
+When updating attributes that appear in an index composite, there is an opportunity for data consistency issues to appear. If a secondary index key is a composite of two or more attributes, it is critical those values stay in sync with their attribute values. ElectroDB prevents data inconsistencies between attributes and keys by adding a constraint to updates to prevent partial key updates, and requires you provide all attributes associated with an index key.
+
+> [Read more](/en/reference/errors#missing-composite-attributes) about "Missing Composite Attribute" errors
+
+One edge case arises when requiring all composite attributes for a key are provided: if one of your attributes is flagged as `readOnly`, how can you provide it to an update? This edge case is handled with the `.composite()` chain method. This method allows you to provide key composite members without providing those values to a mutation method like `set`. The value provided will only be used in key construction and a `ConditionExpression` to assert the value provided will automatically be added.
+
+#### Example
+
+<details>
+<summary>Example Entity</summary>
+```typescript
+import { Entity } from 'electrodb';
+
+const table = 'electro';
+
+const Organization = new Entity({
+    model: {
+        entity: "organization",
+        service: "app",
+        version: "1"
+    },
+    attributes: {
+        id: {
+            type: "string",
+        },
+        name: {
+            type: "string",
+            required: true,
+        },
+        description: {
+            type: "string",
+        },
+        deleted: {
+            type: "boolean",
+            required: true,
+            default: false,
+        },
+        createdAt: {
+            type: "string",
+            readOnly: true,
+            required: true,
+            set: () => new Date().toISOString(),
+            default: () => new Date().toISOString(),
+        },
+    },
+    indexes: {
+        record: {
+            pk: {
+                field: "pk",
+                composite: ["id"]
+            },
+            sk: {
+                field: "sk",
+                composite: []
+            }
+        },
+        all: {
+            index: "gsi1pk-gsi1sk-index",
+            pk: {
+                field: "gsi1pk",
+                composite: []
+            },
+            sk: {
+                field: "gsi1sk",
+                composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
+            }
+        },
+    },
+}, { table });
+```
+</details>
+
+
+```javascript
+const id = "00001";
+const existing = await Organization.get({id}).go();
+
+if (existing.data?.deleted) {
+    await Organization.patch({id: '00001'})
+        .set({ deleted: false })
+        .composite({ createdAt: existing.data.createdAt })
+        .go();
+}
+```
+
+#### Equivalent Parameters
+```json
+{
+    "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+    "ExpressionAttributeNames": {
+        "#createdAt": "createdAt",
+        "#deleted": "deleted",
+        "#gsi1sk": "gsi1sk",
+        "#id": "id",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":createdAt0": "2023-08-22T17:26:27.718Z",
+        ":deleted_u0": false,
+        ":gsi1sk_u0": "$organization_1#deleted_false#createdat_2023-08-22t17:26:27.718z",
+        ":id_u0": "00001",
+        ":__edb_e___u0": "organization",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$app#id_00001",
+        "sk": "$organization_1"
+    },
+    "ConditionExpression": "#createdAt = :createdAt0"
+}
+```
+
+#### Complex Data Types
+
+ElectroDB supports updating DynamoDB's complex types (`list`, `map`, `set`) with all of its Update Methods.
+
+When using the chain methods [set](#update-method-set), [add](#update-method-add), [subtract](#update-method-subtract), [remove](#update-method-remove), [append](#update-method-append), and [delete](#update-method-delete), you can access `map` properties, `list` elements, and `set` items by supplying the json path of the property as the name of the attribute.
+
+The [`data()` method](#update-method-data) also allows for working with complex types. Unlike using the update chain methods, the `data()` method ensures type safety when using TypeScript. When using the injected `attributes` object, simply drill into the attribute itself to apply your update directly to the required object.
+
+The following are examples on how update complex attributes, using both with chain methods and the `data()` method.
+
+#### Example 1: Set property on a `map` attribute
+
+Specifying a property on a `map` attribute is expressed with dot notation.
+
+```javascript
+// via Chain Method
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .set({'mapAttribute.mapProperty':  "value"})
+    .go();
+
+// via Data Method
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "value"))
+    .go()
+```
+
+#### Example 2: Removing an element from a `list` attribute
+
+Specifying an index on a `list` attribute is expressed with square brackets containing the element's index number.
+
+```javascript
+// via Chain Method
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .remove(['listAttribute[0]'])
+    .go();
+
+// via Data Method
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .data(({listAttribute}, {remove}) => remove(listAttribute[0]))
+    .go();
+```
+
+#### Example 3: Adding an item to a `set` attribute, on a `map` attribute, that is an element of a `list` attribute
+
+All other complex structures are simply variations on the above two examples.
+
+```javascript
+// Set values must use the DocumentClient to create a `set`
+const newSetValue = StoreLocations.client.createSet("setItemValue");
+
+// via Data Method
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .add({'listAttribute[1].setAttribute': newSetValue})
+    .go();
+
+await StoreLocations
+    .patch({cityId, mallId, storeId, buildingId})
+    .data(({listAttribute}, {add}) => {
+        add(listAttribute[1].setAttribute, newSetValue)
+    })
+    .go();
+```
+
+
+## Updating Composite Attributes
+
+ElectroDB adds some constraints to update calls to prevent the accidental loss of data. If an access pattern is defined with multiple composite attributes, then ElectroDB ensure the attributes cannot be updated individually. If an attribute involved in an index composite is updated, then the index key also must be updated, and if the whole key cannot be formed by the attributes supplied to the update, then it cannot create a composite key without overwriting the old data.
+
+This example shows why a partial update to a composite key is prevented by ElectroDB:
+
+```json
+{
+  "index": "my-gsi",
+  "pk": {
+    "field": "gsi1pk",
+    "composite": ["attr1"]
+  },
+  "sk": {
+    "field": "gsi1sk",
+    "composite": ["attr2", "attr3"]
+  }
+}
+```
+
+The above secondary index definition would generate the following index keys:
+
+```json
+{
+  "gsi1pk": "$service#attr1_value1",
+  "gsi1sk": "$entity_version#attr2_value2#attr3_value6"
+}
+```
+
+If a user attempts to update the attribute `attr2`, then ElectroDB has no way of knowing value of the attribute `attr3` or if forming the composite key without it would overwrite its value. The same problem exists if a user were to update `attr3`, ElectroDB cannot update the key without knowing each composite attribute's value.
+
+In the event that a secondary index includes composite values from the table's primary index, ElectroDB will draw from the values supplied for the update key to address index gaps in the secondary index. For example:
+
+For the defined indexes:
+
+```json
+{
+  "accessPattern1": {
+    "pk": {
+      "field": "pk",
+      "composite": ["attr1"]
+    },
+    "sk": {
+      "field": "sk",
+      "composite": ["attr2"]
+    }
+  },
+  "accessPattern2": {
+    "index": "my-gsi",
+    "pk": {
+      "field": "gsi1pk",
+      "composite": ["attr3"]
+    },
+    "sk": {
+      "field": "gsi1sk",
+      "composite": ["attr2", "attr4"]
+    }
+  }
+}
+```
+
+A user could update `attr4` alone because ElectroDB is able to leverage the value for `attr2` from values supplied to the `update()` method:
+
+#### Example
+```typescript
+entity.patch({ attr1: "value1", attr2: "value2" })
+  .set({ attr4: "value4" })
+  .go();
+```
+
+#### Default Response Format
+
+> _Note: Use the Execution Option `response` to impact the response type_
+
+```typescript
+{
+  data: EntityIdentifiers<typeof StoreLocations>
+}
+```
+
+#### Equivalent Parameters
 ```json
 {
   "UpdateExpression": "SET #attr4 = :attr4_u0, #gsi1sk = :gsi1sk_u0, #attr1 = :attr1_u0, #attr2 = :attr2_u0",
@@ -57,10 +907,11 @@ await entity.patch({ attr1: "value1", attr2: "value2" })
   "Key": {
     "pk": "$service#attr1_value1",
     "sk": "$entity_version#attr2_value2"
-  },
-  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
+  }
 }
 ```
+
+> Included in the update are all attributes from the table's primary index. These values are automatically included on all updates in the event an update results in an insert.
 
 ## Execution Options
 

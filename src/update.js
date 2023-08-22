@@ -11,8 +11,18 @@ class UpdateExpression extends ExpressionState {
             subtract: new Set(),
             delete: new Set(),
         };
+        this.composites = {};
         this.seen = new Map();
         this.type = BuilderTypes.update;
+    }
+    addComposite(attrName, value) {
+        if (value !== undefined) {
+            if (this.composites[attrName] === undefined || this.composites[attrName] === value) {
+                this.composites[attrName] = value;
+                return true;
+            }
+        }
+        return false;
     }
 
     add(type, expression) {

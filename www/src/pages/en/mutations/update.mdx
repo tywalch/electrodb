@@ -13,16 +13,19 @@ layout: ../../../layouts/MainLayout.astro
 ---
 
 import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import TasksModel from "../../../partials/tasks-example.entity.mdx";
 
 <ExampleSetup />
+
+> _NOTE: Use caution when using the `update` method. DynamoDB will create non-existent items when using `update` which can result in partial items to be written to your table. When possible, use the [patch](/en/mutations/patch) or [upsert](/en/mutations/upsert) methods. If these methods cannot be used it is strongly recommended to use conditions when using `update` to prevent accidental item creation_
 
 The `update()` method in ElectroDB allows you to update individual properties of an item. This method utilizes the DynamoDB operation `update` under the hood.
 
 The DynamoDB method `update()` will create an item if one does not exist. Because updates have reduced attribute validations when compared to `put`, the practical ramifications of this is that an `update` can create a record without all the attributes you'd expect from a newly created item. Depending on your project's unique needs, the methods [patch](/en/mutations/patch) or [upsert](/en/mutations/upsert) may be a better fit.
 
-> Unlike the `patch` method, `update` has a return type of [`Partial<EntityItem>`](/en/reference/typescript#entityitem-type). This is because an `update` is not considered a "safe" operation because can result in an item being accidentally created by DynamoDB. Accidental creations via `update` can result in partial items and therefore incorrect typing.
+> Unlike the `patch` method, `update` has a return type of [`Partial<EntityItem>`](/en/reference/typescript#entityitem-type).
 
-<ExampleSetup />
+<TasksModel />
 
 ```typescript
 tasks
@@ -45,11 +48,11 @@ tasks
 
 ## Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof tasks>
 }
 ```
 
@@ -112,6 +115,8 @@ The `set()` method will accept all attributes defined on the model. Provide a va
 
 #### Example
 
+<ExampleSetup />
+
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -122,7 +127,7 @@ await StoreLocations
 
 #### Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
@@ -158,17 +163,20 @@ The `remove()` method will accept all attributes defined on the model. Unlike mo
 > that the attribute property `required` functions as a sort of `NOT NULL` flag. Because of this, if a property exists as `required:true` it will not be possible to _remove_ that property in particular. If the attribute is a property is on "map", and the "map" is not required, then the "map" _can_ be removed.
 
 #### Example
+
+<ExampleSetup />
+
 ```javascript
 await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .remove(["category"])
+    .update({ cityId, mallId, storeId, buildingId })
+    .remove(["discount"])
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
 ```
 
 #### Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
@@ -180,19 +188,32 @@ await StoreLocations
 
 ```json
 {
-  "UpdateExpression": "REMOVE #category",
-  "ExpressionAttributeNames": {
-    "#category": "category"
-  },
-  "ExpressionAttributeValues": {
-    ":category0": "food/coffee"
-  },
-  "TableName": "StoreDirectory",
-  "Key": {
-    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
-    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
-  },
-  "ConditionExpression": "#category = :category0"
+    "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount",
+    "ExpressionAttributeNames": {
+        "#category": "category",
+        "#discount": "discount",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "#category = :category0"
 }
 ```
 
@@ -204,14 +225,14 @@ If the attribute is defined as `any`, the syntax compatible with the attribute t
 
 #### Example
 
-```javascript
-const newTenant = client.createSet("larry");
+<ExampleSetup />
 
+```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .add({
-      rent: 100,         // "number" attribute
-      tenant: ["larry"]  // "set" attribute
+      warnings: 1,       // "number" attribute
+      tenants: ["larry"] // "set" attribute
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
@@ -219,7 +240,7 @@ await StoreLocations
 
 #### Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
@@ -231,23 +252,37 @@ await StoreLocations
 
 ```json
 {
-  "UpdateExpression": "SET #rent = #rent + :rent0 ADD #tenant :tenant0",
-  "ExpressionAttributeNames": {
-    "#category": "category",
-    "#rent": "rent",
-    "#tenant": "tenant"
-  },
-  "ExpressionAttributeValues": {
-    ":category0": "food/coffee",
-    ":rent0": 100,
-    ":tenant0": ["larry"]
-  },
-  "TableName": "StoreDirectory",
-  "Key": {
-    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
-    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
-  },
-  "ConditionExpression": "#category = :category0"
+    "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #warnings :warnings_u0, #tenants :tenants_u0",
+    "ExpressionAttributeNames": {
+        "#category": "category",
+        "#warnings": "warnings",
+        "#tenants": "tenants",
+        "#cityId": "cityId",
+        "#mallId": "mallId",
+        "#buildingId": "buildingId",
+        "#storeId": "storeId",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":category0": "food/coffee",
+        ":warnings_u0": 1,
+        ":tenants_u0": [
+            "larry"
+        ],
+        ":cityId_u0": "Portland",
+        ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
+        ":storeId_u0": "LatteLarrys",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+    },
+    "ConditionExpression": "#category = :category0"
 }
 ```
 
@@ -256,6 +291,8 @@ await StoreLocations
 The `subtract()` method will accept attributes with type `number`. In the case of a `number` attribute, provide a number to _subtract_ from the existing attribute's value on the item.
 
 #### Example
+
+<ExampleSetup />
 
 ```javascript
 await StoreLocations
@@ -267,7 +304,7 @@ await StoreLocations
 
 #### Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
@@ -302,6 +339,9 @@ await StoreLocations
 The `append()` method will accept attributes with type `any`. This is a convenience method for working with DynamoDB lists, and is notably different that [`set`](#update-method-set) because it will add an element to an existing array, rather than overwrite the existing value.
 
 #### Example
+
+<ExampleSetup />
+
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -317,7 +357,7 @@ await StoreLocations
 
 #### Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
@@ -356,6 +396,9 @@ await StoreLocations
 The `delete()` method will accept attributes with type `any` or `set` . This operation removes items from a the `contract` attribute, defined as a `set` attribute.
 
 #### Example
+
+<ExampleSetup />
+
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
@@ -366,7 +409,7 @@ await StoreLocations
 
 #### Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
@@ -420,24 +463,26 @@ operation     | example                               | result                  
 > Usage of `name` and `value` operations allow for some escape hatching in the case that a custom operation needs to be expressed. When used however, ElectroDB loses the context necessary to validate the expression created by the user. In practical terms, this means the `validation` function/regex on the impacted attribute will not be called.
 
 #### Example
+
+<ExampleSetup />
+
 ```javascript
 await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .data((a, o) => {
-        const newTenant = a.value(attr.tenant, "larry");
+        const newTenant = o.value(a.tenants, ["larry"]);
         o.set(a.category, "food/meal");   // electrodb "enum"   -> dynamodb "string"
-        o.add(a.tenant, newTenant);       // electrodb "set"    -> dynamodb "set"
-        o.add(a.rent, 100);               // electrodb "number" -> dynamodb "number"
+        o.add(a.tenants, newTenant);       // electrodb "set"    -> dynamodb "set"
+        o.add(a.warnings, 1);               // electrodb "number" -> dynamodb "number"
         o.subtract(a.deposit, 200);       // electrodb "number" -> dynamodb "number"
-        o.remove(attr.discount);          // electrodb "number" -> dynamodb "number"
+        o.remove(a.discount);          // electrodb "number" -> dynamodb "number"
         o.append(a.rentalAgreement, [{    // electrodb "list"   -> dynamodb "list"
             type: "ammendment",           // electrodb "map"    -> dynamodb "map"
             detail: "no soup for you"
         }]);
-        o.delete(a.tags, ['coffee']);     // electrodb "set"    -> dynamodb "set"
-        o.del(a.contact, '555-345-2222'); // electrodb "string" -> dynamodb "string"
-        o.add(a.fees, op.name(a.petFee)); // electrodb "number" -> dynamodb "number"
-        o.add(a.leaseHolders, newTenant); // electrodb "set"    -> dynamodb "set"
+        o.delete(a.tags, ['coffee']);
+        o.del(a.contact, ['555-345-2222']); // electrodb "set"    -> dynamodb "set"
+        o.add(a.fees, o.name(a.petFee)); // electrodb "number" -> dynamodb "number"
     })
     .where((attr, op) => op.eq(attr.category, "food/coffee"))
     .go()
@@ -445,7 +490,7 @@ await StoreLocations
 
 #### Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
@@ -456,42 +501,51 @@ await StoreLocations
 #### Equivalent Parameters
 ```json
 {
-    "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+    "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #fees = #fees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenants :tenants_u0, #warnings :warnings_u0 DELETE #tags :tags_u0, #contact :contact_u0",
     "ExpressionAttributeNames": {
         "#category": "category",
-        "#tenant": "tenant",
-        "#rent": "rent",
+        "#tenants": "tenants",
+        "#warnings": "warnings",
         "#deposit": "deposit",
         "#discount": "discount",
         "#rentalAgreement": "rentalAgreement",
         "#tags": "tags",
         "#contact": "contact",
-        "#totalFees": "totalFees",
         "#petFee": "petFee",
-        "#leaseHolders": "leaseHolders",
-        "#buildingId": "buildingId",
+        "#fees": "fees",
         "#cityId": "cityId",
         "#mallId": "mallId",
+        "#buildingId": "buildingId",
         "#storeId": "storeId",
-        "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
     },
     "ExpressionAttributeValues": {
-        ":buildingId_u0": "A34",
-        ":cityId_u0": "portland",
         ":category0": "food/coffee",
+        ":tenants_u0": [
+            "larry"
+        ],
         ":category_u0": "food/meal",
-        ":tenant_u0": ["larry"],
-        ":rent_u0": 100,
+        ":warnings_u0": 1,
         ":deposit_u0": 200,
-        ":rentalAgreement_u0": [{
-            "type": "amendment",
-            "detail": "no soup for you"
-        }],
-        ":tags_u0": ["coffee"],
-        ":contact_u0": ["555-345-2222"],
+        ":rentalAgreement_u0": [
+            {
+                "type": "ammendment",
+                "detail": "no soup for you"
+            }
+        ],
+        ":tags_u0": [
+            "coffee"
+        ],
+        ":contact_u0": [
+            "555-345-2222"
+        ],
+        ":cityId_u0": "Portland",
         ":mallId_u0": "EastPointe",
+        ":buildingId_u0": "A34",
         ":storeId_u0": "LatteLarrys",
-        ":__edb_e___u0": "MallStore", ":__edb_v___u0": "1",
+        ":__edb_e___u0": "MallStore",
+        ":__edb_v___u0": "1"
     },
     "TableName": "electro",
     "Key": {
@@ -499,6 +553,122 @@ await StoreLocations
         "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
     },
     "ConditionExpression": "#category = :category0"
+}
+```
+
+#### Composite
+
+When updating attributes that appear in an index composite, there is an opportunity for data consistency issues to appear. If a secondary index key is a composite of two or more attributes, it is critical those values stay in sync with their attribute values. ElectroDB prevents data inconsistencies between attributes and keys by adding a constraint to updates to prevent partial key updates, and requires you provide all attributes associated with an index key.
+
+> [Read more](/en/reference/errors#missing-composite-attributes) about "Missing Composite Attribute" errors
+
+One edge case arises when requiring all composite attributes for a key are provided: if one of your attributes is flagged as `readOnly`, how can you provide it to an update? This edge case is handled with the `.composite()` chain method. This method allows you to provide key composite members without providing those values to a mutation method like `set`. The value provided will only be used in key construction and a `ConditionExpression` to assert the value provided will automatically be added.
+
+#### Example
+
+<details>
+    <summary>Example Entity</summary>
+    ```typescript
+    import { Entity } from 'electrodb';
+
+    const table = 'electro';
+
+    const Organization = new Entity({
+        model: {
+            entity: "organization",
+            service: "app",
+            version: "1"
+        },
+        attributes: {
+            id: {
+                type: "string",
+            },
+            name: {
+                type: "string",
+                required: true,
+            },
+            description: {
+                type: "string",
+            },
+            deleted: {
+                type: "boolean",
+                required: true,
+                default: false,
+            },
+            createdAt: {
+                type: "string",
+                readOnly: true,
+                required: true,
+                set: () => new Date().toISOString(),
+                default: () => new Date().toISOString(),
+            },
+        },
+        indexes: {
+            record: {
+                pk: {
+                field: "pk",
+                composite: ["id"]
+            },
+            sk: {
+                field: "sk",
+                composite: []
+            }
+        },
+            all: {
+                index: "gsi1pk-gsi1sk-index",
+                pk: {
+                    field: "gsi1pk",
+                    composite: []
+                },
+                sk: {
+                    field: "gsi1sk",
+                    composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
+            }
+        },
+    },
+}, { table });
+    ```
+</details>
+
+
+```javascript
+const id = "00001";
+const existing = await Organization.get({id}).go();
+
+if (existing.data?.deleted) {
+    await Organization.update({id: '00001'})
+        .set({ deleted: false })
+        .composite({ createdAt: existing.data.createdAt })
+        .go();
+}
+```
+
+#### Equivalent Parameters
+```json
+{
+    "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+    "ExpressionAttributeNames": {
+        "#createdAt": "createdAt",
+        "#deleted": "deleted",
+        "#gsi1sk": "gsi1sk",
+        "#id": "id",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":createdAt0": "2023-08-22T16:37:45.700Z",
+        ":deleted_u0": false,
+        ":gsi1sk_u0": "$organization_1#deleted_false#createdat_2023-08-22t16:37:45.700z",
+        ":id_u0": "00001",
+        ":__edb_e___u0": "organization",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$app#id_00001",
+        "sk": "$organization_1"
+    },
+    "ConditionExpression": "#createdAt = :createdAt0"
 }
 ```
 
@@ -643,7 +813,7 @@ entity.update({ attr1: "value1", attr2: "value2" })
 
 #### Default Response Format
 
-> _Note: Use the Execution Option `response` to impact the the response type_
+> _Note: Use the Execution Option `response` to impact the response type_
 
 ```typescript
 {
