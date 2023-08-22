@@ -438,7 +438,7 @@ await StoreLocations
 }
 ```
 
-#### Data
+### Data
 
 The `data()` allows for different approach to updating your item, by accepting a callback with a similar argument signature to the [where clause](/en/mutations/conditionals).
 
@@ -556,122 +556,6 @@ await StoreLocations
 }
 ```
 
-#### Composite
-
-When updating attributes that appear in an index composite, there is an opportunity for data consistency issues to appear. If a secondary index key is a composite of two or more attributes, it is critical those values stay in sync with their attribute values. ElectroDB prevents data inconsistencies between attributes and keys by adding a constraint to updates to prevent partial key updates, and requires you provide all attributes associated with an index key.
-
-> [Read more](/en/reference/errors#missing-composite-attributes) about "Missing Composite Attribute" errors
-
-One edge case arises when requiring all composite attributes for a key are provided: if one of your attributes is flagged as `readOnly`, how can you provide it to an update? This edge case is handled with the `.composite()` chain method. This method allows you to provide key composite members without providing those values to a mutation method like `set`. The value provided will only be used in key construction and a `ConditionExpression` to assert the value provided will automatically be added.
-
-#### Example
-
-<details>
-    <summary>Example Entity</summary>
-    ```typescript
-    import { Entity } from 'electrodb';
-
-    const table = 'electro';
-
-    const Organization = new Entity({
-        model: {
-            entity: "organization",
-            service: "app",
-            version: "1"
-        },
-        attributes: {
-            id: {
-                type: "string",
-            },
-            name: {
-                type: "string",
-                required: true,
-            },
-            description: {
-                type: "string",
-            },
-            deleted: {
-                type: "boolean",
-                required: true,
-                default: false,
-            },
-            createdAt: {
-                type: "string",
-                readOnly: true,
-                required: true,
-                set: () => new Date().toISOString(),
-                default: () => new Date().toISOString(),
-            },
-        },
-        indexes: {
-            record: {
-                pk: {
-                field: "pk",
-                composite: ["id"]
-            },
-            sk: {
-                field: "sk",
-                composite: []
-            }
-        },
-            all: {
-                index: "gsi1pk-gsi1sk-index",
-                pk: {
-                    field: "gsi1pk",
-                    composite: []
-                },
-                sk: {
-                    field: "gsi1sk",
-                    composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
-            }
-        },
-    },
-}, { table });
-    ```
-</details>
-
-
-```javascript
-const id = "00001";
-const existing = await Organization.get({id}).go();
-
-if (existing.data?.deleted) {
-    await Organization.update({id: '00001'})
-        .set({ deleted: false })
-        .composite({ createdAt: existing.data.createdAt })
-        .go();
-}
-```
-
-#### Equivalent Parameters
-```json
-{
-    "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
-    "ExpressionAttributeNames": {
-        "#createdAt": "createdAt",
-        "#deleted": "deleted",
-        "#gsi1sk": "gsi1sk",
-        "#id": "id",
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__"
-    },
-    "ExpressionAttributeValues": {
-        ":createdAt0": "2023-08-22T16:37:45.700Z",
-        ":deleted_u0": false,
-        ":gsi1sk_u0": "$organization_1#deleted_false#createdat_2023-08-22t16:37:45.700z",
-        ":id_u0": "00001",
-        ":__edb_e___u0": "organization",
-        ":__edb_v___u0": "1"
-    },
-    "TableName": "electro",
-    "Key": {
-        "pk": "$app#id_00001",
-        "sk": "$organization_1"
-    },
-    "ConditionExpression": "#createdAt = :createdAt0"
-}
-```
-
 #### Complex Data Types
 
 ElectroDB supports updating DynamoDB's complex types (`list`, `map`, `set`) with all of its Update Methods.
@@ -740,6 +624,121 @@ await StoreLocations
     .go();
 ```
 
+### Composite
+
+When updating attributes that appear in an index composite, there is an opportunity for data consistency issues to appear. If a secondary index key is a composite of two or more attributes, it is critical those values stay in sync with their attribute values. ElectroDB prevents data inconsistencies between attributes and keys by adding a constraint to updates to prevent partial key updates, and requires you provide all attributes associated with an index key.
+
+> [Read more](/en/reference/errors#missing-composite-attributes) about "Missing Composite Attribute" errors
+
+One edge case arises when requiring all composite attributes for a key are provided: if one of your attributes is flagged as `readOnly`, how can you provide it to an update? This edge case is handled with the `.composite()` chain method. This method allows you to provide key composite members without providing those values to a mutation method like `set`. The value provided will only be used in key construction and a `ConditionExpression` to assert the value provided will automatically be added.
+
+#### Example
+
+<details>
+    <summary>Example Entity</summary>
+    ```typescript
+    import { Entity } from 'electrodb';
+
+    const table = 'electro';
+
+    const Organization = new Entity({
+    model: {
+    entity: "organization",
+    service: "app",
+    version: "1"
+},
+    attributes: {
+    id: {
+    type: "string",
+},
+    name: {
+    type: "string",
+    required: true,
+},
+    description: {
+    type: "string",
+},
+    deleted: {
+    type: "boolean",
+    required: true,
+    default: false,
+},
+    createdAt: {
+    type: "string",
+    readOnly: true,
+    required: true,
+    set: () => new Date().toISOString(),
+    default: () => new Date().toISOString(),
+},
+},
+    indexes: {
+    record: {
+    pk: {
+    field: "pk",
+    composite: ["id"]
+},
+    sk: {
+    field: "sk",
+    composite: []
+}
+},
+    all: {
+    index: "gsi1pk-gsi1sk-index",
+    pk: {
+    field: "gsi1pk",
+    composite: []
+},
+    sk: {
+    field: "gsi1sk",
+    composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
+}
+},
+},
+}, { table });
+    ```
+</details>
+
+
+```javascript
+const id = "00001";
+const existing = await Organization.get({id}).go();
+
+if (existing.data?.deleted) {
+    await Organization.update({id: '00001'})
+        .set({ deleted: false })
+        .composite({ createdAt: existing.data.createdAt })
+        .go();
+}
+```
+
+#### Equivalent Parameters
+```json
+{
+    "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+    "ExpressionAttributeNames": {
+        "#createdAt": "createdAt",
+        "#deleted": "deleted",
+        "#gsi1sk": "gsi1sk",
+        "#id": "id",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+        ":createdAt0": "2023-08-22T16:37:45.700Z",
+        ":deleted_u0": false,
+        ":gsi1sk_u0": "$organization_1#deleted_false#createdat_2023-08-22t16:37:45.700z",
+        ":id_u0": "00001",
+        ":__edb_e___u0": "organization",
+        ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+        "pk": "$app#id_00001",
+        "sk": "$organization_1"
+    },
+    "ConditionExpression": "#createdAt = :createdAt0"
+}
+```
 
 ## Updating Composite Attributes
 
