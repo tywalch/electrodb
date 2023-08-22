@@ -685,7 +685,7 @@ class Service {
 		}
 		const [invalidDefinition, invalidIndexMessages] = this._validateCollectionDefinition(definition, providedIndex);
 		if (invalidDefinition) {
-			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Validation Error while joining entity, "${name}". ${invalidIndexMessages.join(", ")}`);
+			throw new e.ElectroError(e.ErrorCodes.InvalidJoin, `Validation Error while joining entity, "${name}". ${invalidIndexMessages.join("; ")}`);
 		}
 		const sharedSortKeyAttributes = [];
 		const sharedSortKeyCompositeAttributeLabels = [];

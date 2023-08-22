@@ -1892,7 +1892,8 @@ describe('composite compatibility', () => {
             { table, client }
         );
 
-        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the partition key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not, Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "accountId" on established index "gsi1pk-gsi1sk-index". Established composite attribute "accountId" on established index "gsi1pk-gsi1sk-index" was defined with label "accountId" while provided composite attribute "accountId" on provided index "gsi1pk-gsi1sk-index" is defined with label "ACCT#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the partition key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not; Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "accountId" on established index "gsi1pk-gsi1sk-index". Established composite attribute "accountId" on established index "gsi1pk-gsi1sk-index" was defined with label "accountId" while provided composite attribute "accountId" on provided index "gsi1pk-gsi1sk-index" is defined with label "ACCT#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+        expect(() => new Service({users, tasks})).to.throw('Validation Error while joining entity, "users". The usage of key templates the partition key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not; Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "accountId" on established index "gsi1pk-gsi1sk-index". Established composite attribute "accountId" on established index "gsi1pk-gsi1sk-index" was defined with label "accountId" while provided composite attribute "accountId" on provided index "gsi1pk-gsi1sk-index" is defined with label "ACCT#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
     });
 
     it('should validate that sort keys are not mixed/matched custom keys', () => {
@@ -2048,7 +2049,8 @@ describe('composite compatibility', () => {
             { table, client }
         );
 
-        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the sort key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not, Sort Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "user" on established index "gsi1pk-gsi1sk-index". Established composite attribute "user" on established index "gsi1pk-gsi1sk-index" was defined with label "user" while provided composite attribute "user" on provided index "gsi1pk-gsi1sk-index" is defined with label "U#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the sort key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not; Sort Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "user" on established index "gsi1pk-gsi1sk-index". Established composite attribute "user" on established index "gsi1pk-gsi1sk-index" was defined with label "user" while provided composite attribute "user" on provided index "gsi1pk-gsi1sk-index" is defined with label "U#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+        expect(() => new Service({users, tasks})).to.throw('Validation Error while joining entity, "users". The usage of key templates the sort key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not; Sort Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "user" on established index "gsi1pk-gsi1sk-index". Established composite attribute "user" on established index "gsi1pk-gsi1sk-index" was defined with label "user" while provided composite attribute "user" on provided index "gsi1pk-gsi1sk-index" is defined with label "U#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
     });
 
     it('should validate template sort key labels until the composite attributes differ when using clustered indexes', () => {
@@ -2205,6 +2207,7 @@ describe('composite compatibility', () => {
             { table, client }
         );
         expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". Sort Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "team" on established index "gsi1pk-gsi1sk-index". Established composite attribute "team" on established index "gsi1pk-gsi1sk-index" was defined with label "#TEAMZ#" while provided composite attribute "team" on provided index "gsi1pk-gsi1sk-index" is defined with label "#TEAM#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+        expect(() => new Service({users, tasks})).to.throw('Validation Error while joining entity, "users". Sort Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "team" on established index "gsi1pk-gsi1sk-index". Established composite attribute "team" on established index "gsi1pk-gsi1sk-index" was defined with label "#TEAMZ#" while provided composite attribute "team" on provided index "gsi1pk-gsi1sk-index" is defined with label "#TEAM#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
     });
 
     it('should allow template sort key labels until the composite attributes differ when using clustered indexes', () => {
@@ -2361,9 +2364,20 @@ describe('composite compatibility', () => {
             { table, client }
         );
 
-        const service = new Service({tasks, users});
-        const params = service.collections.assignments({ accountId: "acct_059", user: "tyler.walch" }).params();
-        expect(params.ExpressionAttributeValues[":sk1"]).to.equal("user#tyler.walch#accountid#acct_059");
+        function one() {
+            const service = new Service({tasks, users});
+            const params = service.collections.assignments({accountId: "acct_059", user: "tyler.walch"}).params();
+            expect(params.ExpressionAttributeValues[":sk1"]).to.equal("user#tyler.walch#accountid#acct_059");
+        }
+
+        function two() {
+            const service = new Service({users, tasks});
+            const params = service.collections.assignments({accountId: "acct_059", user: "tyler.walch"}).params();
+            expect(params.ExpressionAttributeValues[":sk1"]).to.equal("user#tyler.walch#accountid#acct_059");
+        }
+
+        one();
+        two();
     });
 
     it('should validate partition key template string compatibility', () => {
@@ -2511,7 +2525,8 @@ describe('composite compatibility', () => {
             { table, client }
         );
 
-        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the partition key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not, Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "user" on established index "gsi1pk-gsi1sk-index". Established composite attribute "user" on established index "gsi1pk-gsi1sk-index" was defined with label "user" while provided composite attribute "user" on provided index "gsi1pk-gsi1sk-index" is defined with label "USER#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+        expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". The usage of key templates the partition key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not; Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "user" on established index "gsi1pk-gsi1sk-index". Established composite attribute "user" on established index "gsi1pk-gsi1sk-index" was defined with label "user" while provided composite attribute "user" on provided index "gsi1pk-gsi1sk-index" is defined with label "USER#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+        expect(() => new Service({users, tasks})).to.throw('Validation Error while joining entity, "users". The usage of key templates the partition key on index gsi1pk-gsi1sk-index must be consistent across all Entities, some entities provided use template while others do not; Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "user" on established index "gsi1pk-gsi1sk-index". Established composite attribute "user" on established index "gsi1pk-gsi1sk-index" was defined with label "user" while provided composite attribute "user" on provided index "gsi1pk-gsi1sk-index" is defined with label "USER#". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
     });
 
     it('should validate partition key template string compatibility when pk has postfix', () => {
@@ -2661,6 +2676,7 @@ describe('composite compatibility', () => {
         );
 
         expect(() => new Service({tasks, users})).to.throw('Validation Error while joining entity, "users". Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "undefined" on established index "gsi1pk-gsi1sk-index". Established composite attribute "undefined" on established index "gsi1pk-gsi1sk-index" was defined with label "undefined" while provided composite attribute "" on provided index "gsi1pk-gsi1sk-index" is defined with label "#USER_END". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
+        expect(() => new Service({users, tasks})).to.throw('Validation Error while joining entity, "users". Partition Key composite attributes provided for index "gsi1pk-gsi1sk-index" contain conflicting composite attribute labels for established composite attribute "undefined" on established index "gsi1pk-gsi1sk-index". Established composite attribute "undefined" on established index "gsi1pk-gsi1sk-index" was defined with label "undefined" while provided composite attribute "" on provided index "gsi1pk-gsi1sk-index" is defined with label "#USER_END". Composite attribute labels definitions must match between all members of a collection to ensure key structures will resolve to identical Partition Keys. Please ensure these labels definitions are identical for all entities associated with this service. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join');
     });
 
     it('should allow compatible partition key templates', () => {
@@ -2809,10 +2825,20 @@ describe('composite compatibility', () => {
             { table, client }
         );
 
-        const service = new Service({tasks, users});
-        const params = service.collections.assignments({ user: "tyler.walch" }).params();
+        function one() {
+            const service = new Service({tasks, users});
+            const params = service.collections.assignments({user: "tyler.walch"}).params();
+            expect(params.ExpressionAttributeValues[':pk']).to.equal("user#tyler.walch");
+        }
 
-        expect(params.ExpressionAttributeValues[':pk']).to.equal("user#tyler.walch");
+        function two() {
+            const service = new Service({users, tasks});
+            const params = service.collections.assignments({user: "tyler.walch"}).params();
+            expect(params.ExpressionAttributeValues[':pk']).to.equal("user#tyler.walch");
+        }
+
+        one();
+        two();
     });
 
     it('should allow compatible partition key templates with postfix', () => {
@@ -2961,8 +2987,18 @@ describe('composite compatibility', () => {
             { table, client }
         );
 
-        const service = new Service({tasks, users});
-        const params = service.collections.assignments({ user: "tyler.walch" }).params();
-        expect(params.ExpressionAttributeValues[':pk']).to.equal("user#tyler.walch#user");
+        function one() {
+            const service = new Service({tasks, users});
+            const params = service.collections.assignments({user: "tyler.walch"}).params();
+            expect(params.ExpressionAttributeValues[':pk']).to.equal("user#tyler.walch#user");
+        }
+        function two() {
+            const service = new Service({users, tasks});
+            const params = service.collections.assignments({user: "tyler.walch"}).params();
+            expect(params.ExpressionAttributeValues[':pk']).to.equal("user#tyler.walch#user");
+        }
+
+        one();
+        two();
     });
 });
