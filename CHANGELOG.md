@@ -350,7 +350,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.7.2] - 2023-07-03
 ### Fixed
-- Fixed bug reported via [Issue#271](https://github.com/tywalch/electrodb/issues/271) where root map object with required flag would not set empty object even when it was provided.
+- Fixed bug reported via [Issue#271](https://github.com/tywalch/electrodb/issues/271): Root map object with required flag would not set empty object even when it was provided.
 
 ## [2.8.0] - 2023-08-06
 ### Adds
@@ -365,7 +365,11 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.8.2] - 2023-08-19
 ### Fixed
-- Fixes bug reported via [Issue#281](https://github.com/tywalch/electrodb/issues/281) where ElectroDB failed to use an attribute's `field` name when it was updated via `watch`.
-- Fixes bug reported via [Issue#229](https://github.com/tywalch/electrodb/issues/229) where ElectroDB would generate empty string keys on item creating. This would occur only in cases where a key's field name matched an attribute's field name.
+- Fixes bug reported via [Issue#281](https://github.com/tywalch/electrodb/issues/281): ElectroDB failed to use an attribute's `field` name when it was updated via `watch`.
+- Fixes bug reported via [Issue#229](https://github.com/tywalch/electrodb/issues/229): ElectroDB would generate empty string keys on item creating. This would occur only in cases where a key's field name matched an attribute's field name.
 ### Changed
 - Relaxes validation surrounding the use of composite attributes appearing as composite attributes in both the partition and sort key for the same index. Reported in issue [Issue#265](https://github.com/tywalch/electrodb/issues/265), validation surrounding this pattern have been relaxed to only throw when a composite attribute in both the pk and sk AND the sk contains greater than one composite attribute. This constraint is critical for ElectroDB to reliably generate/format sort key values.    
+
+## [2.9.0]
+### Adds
+- Addresses [Issue#277](https://github.com/tywalch/electrodb/issues/277) Introduces new `composite()` method for `update` and `patch` operations. The `composite` method is used to help electrodb complete and format keys when updating a subset of the key's composite attributes. Prior to this update, updating a key partially resulted in an [invalid query error](https://electrodb.dev/en/reference/errors/#missing-composite-attributes), which [caused difficulties](https://github.com/tywalch/electrodb/issues/277) when some composite attributes were flagged as readOnly. [[read more](https://electrodb.dev/en/mutations/patch#composite)]   
