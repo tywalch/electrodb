@@ -552,4 +552,9 @@ const FilterOperationNames = Object.keys(FilterOperations).reduce((ops, name) =>
     return ops;
 }, {});
 
-module.exports = {UpdateOperations, FilterOperations, FilterOperationNames, ExpressionState, AttributeOperationProxy};
+const UpdateOperationNames = Object.keys(UpdateOperations).reduce((ops, name) => {
+    ops[name] = name;
+    return ops;
+}, {});
+
+module.exports = {UpdateOperations, UpdateOperationNames, FilterOperations, FilterOperationNames, ExpressionState, AttributeOperationProxy};

@@ -47,7 +47,7 @@ class FilterExpression extends ExpressionState {
 	unsafeSet(operation, name, ...values) {
 		const {template} = FilterOperations[operation] || {};
 		if (template === undefined) {
-			throw new Error(`Invalid operation: "${operation}". Please report`);
+			throw new Error(`Invalid operation: "${operation}". Please report this issue via a bug ticket.`);
 		}
 		const names = this.setName({}, name, name);
 		const valueExpressions = values.map(value => this.setValue(name, value));

@@ -57,7 +57,7 @@ const author = new Entity(
 );
 
 // the "book" entity holds represents a physical book at the library
-// because book details (like the the author or release date) do not
+// because book details (like the author or release date) do not
 // change over time, we can use denormalization to remove the need
 // for a single book entity. This allows us to treat this entity as
 // both an authority on book information and an individual book.

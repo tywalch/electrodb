@@ -205,6 +205,12 @@ const ErrorCodes = {
     name: "InvalidConversionCompositeProvided",
     sym: ErrorCode,
   },
+  DuplicateUpdateCompositesProvided: {
+    code: 2010,
+    section: "duplicate-update-composites-provided",
+    name: "DuplicateUpdateCompositesProvided",
+    sym: ErrorCode,
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",

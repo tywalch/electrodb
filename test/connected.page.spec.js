@@ -15,7 +15,6 @@ AWS.config.update({region, endpoint});
 const client = new AWS.DynamoDB.DocumentClient();
 const table =  "electro";
 const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 function noOpClientMethods() {
   return c.v2Methods
       .reduce((client, method) => {
@@ -275,7 +274,7 @@ describe("Page", () => {
   const service = new Service({tasks, tasks2, tasks3});
 
   before(async function() {
-    this.timeout(10000);
+    this.timeout(20000);
     await Promise.all([
         tasks.load(total),
         tasks2.load(total)
@@ -313,7 +312,7 @@ describe("Page", () => {
       do {
         const response = test.type === 'query'
           ? await tasks.query[test.input.index](test.input.key).go({cursor, limit, pages})
-          : await tasks.scan.go({cursor, limit, pages});
+          : await tasks.scan.go({ cursor, limit, pages });
         results = results.concat(response.data);
         cursor = response.cursor;
       } while (cursor !== null);

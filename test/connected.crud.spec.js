@@ -3201,7 +3201,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							}
 						});
 					} else {
-						expect(getRecord).to.have.keys(['$metadata', 'ConsumedCapacity', 'Item']);
+						expect(getRecord).to.have.keys(['$metadata', 'Item']);
 					}
 					let updateRecord = await db
 						.update({ id, date })
@@ -3210,7 +3210,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 					if (clientVersion === c.DocumentClientVersions.v2) {
 						expect(updateRecord).to.deep.equal({});
 					} else {
-						expect(updateRecord).to.have.keys(['$metadata', 'Attributes', 'ConsumedCapacity', 'ItemCollectionMetrics']);
+						expect(updateRecord).to.have.keys(['$metadata', 'Attributes', 'ItemCollectionMetrics']);
 					}
 
 					let queryRecord = await db.query.record({ id, date }).go({ raw: true }).then(res => res.data);
@@ -3231,7 +3231,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 							ScannedCount: 1,
 						});
 					} else {
-						expect(queryRecord).to.have.keys(['Items', 'Count', 'ScannedCount', 'LastEvaluatedKey', 'ConsumedCapacity', '$metadata']);
+						expect(queryRecord).to.have.keys(['Items', 'Count', 'ScannedCount', 'LastEvaluatedKey', '$metadata']);
 					}
 					let recordWithKeys = await db.get({id, date}).go({includeKeys: true}).then(res => res.data);
 					expect(recordWithKeys).to.deep.equal({
@@ -3533,7 +3533,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						throw null;
 					} catch(err) {
 						expect(err).to.not.be.null;
-						expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
+						expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
 					}
 				});
 
@@ -3545,7 +3545,7 @@ for (const [clientVersion, client] of [[c.DocumentClientVersions.v2, v2Client], 
 						throw null;
 					} catch(err) {
 						expect(err).to.not.be.null;
-						expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
+						expect(err.message).to.equal(`Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
 					}
 				});
 

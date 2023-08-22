@@ -810,6 +810,7 @@ export interface SetRecordActionOptionsTransaction<A extends string, F extends s
     append: SetRecordTransaction<A,F,C,S, AppendItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     delete: SetRecordTransaction<A,F,C,S, DeleteItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     data: DataUpdateMethodRecordTransaction<A,F,C,S, Item<A,F,C,S,S["attributes"]>,IndexCompositeAttributes,TableItem>;
+    composite: UpdateComposite<A,F,C,S, SetRecordActionOptionsTransaction<A,F,C,S,SetAttr,IndexCompositeAttributes,TableItem>>;
     where: WhereClause<A,F,C,S, Item<A,F,C,S,S["attributes"]>,SetRecordActionOptionsTransaction<A,F,C,S,SetAttr,IndexCompositeAttributes,TableItem>>;
 }
 
@@ -860,6 +861,7 @@ export interface SetRecordActionOptions<A extends string, F extends string, C ex
     subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
     delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>,IndexCompositeAttributes,TableItem>;
+    composite: UpdateComposite<A,F,C,S, SetRecordActionOptions<A,F,C,S,SetAttr,IndexCompositeAttributes,TableItem>>;
     data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>,IndexCompositeAttributes,TableItem>;
     where: WhereClause<A,F,C,S, Item<A,F,C,S,S["attributes"]>,SetRecordActionOptions<A,F,C,S,SetAttr,IndexCompositeAttributes,TableItem>>;
 }
@@ -2171,6 +2173,12 @@ export type UpdatableItemAttribute<A extends Attribute> =
                                         : never
         : never
 
+type UpdateComposite<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, Response> = (
+    compositeAttributes: Partial<{
+        [I in keyof S["indexes"] as I extends infer Name ? Name extends TableIndexName<A,F,C,S> ? never : Name : never]: IndexPKAttributes<A, F, C, S, I> & IndexSKAttributes<A, F, C, S, I>;
+    }[keyof S["indexes"] extends infer KeyName ? KeyName extends TableIndexName<A,F,C,S> ? never : KeyName : never]>
+) => Response;
+
 export type RemovableItemAttribute<A extends Attribute> =
     A['type'] extends OpaquePrimitiveTypeName<infer T>
         ? T
@@ -2541,6 +2549,7 @@ export class Entity<A extends string, F extends string, C extends string, S exte
         append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
         delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        composite: UpdateComposite<A,F,C,S, SetRecordActionOptions<A,F,C,S, SetItem<A,F,C,S>,TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>>;
     };
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
@@ -2550,6 +2559,7 @@ export class Entity<A extends string, F extends string, C extends string, S exte
         append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         delete: SetRecord<A,F,C,S, DeleteItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         data: DataUpdateMethodRecord<A,F,C,S, Item<A,F,C,S,S["attributes"]>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        composite: UpdateComposite<A,F,C,S, SetRecordActionOptions<A,F,C,S, SetItem<A,F,C,S>,TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>>;
     };
 
     find(record: Partial<Item<A,F,C,S,S["attributes"]>>): RecordsActionOptions<A,F,C,S, ResponseItem<A,F,C,S>[], AllTableIndexCompositeAttributes<A,F,C,S>>;

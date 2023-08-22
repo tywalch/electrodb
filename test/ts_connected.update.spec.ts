@@ -2615,6 +2615,196 @@ describe("Update Item", () => {
             });
         });
 
+        it("should allow for partial update of a gsi composite index with the composite method on patch", () => {
+            const table = "electro";
+            const Organization = new Entity({
+                model: {
+                    entity: "organization",
+                    service: "app",
+                    version: "1"
+                },
+                attributes: {
+                    id: {
+                        type: "string",
+                    },
+                    name: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string",
+                    },
+                    deleted: {
+                        type: "boolean",
+                        default: false,
+                    },
+                    createdAt: {
+                        type: "string",
+                        readOnly: true,
+                        required: true,
+                        set: () => new Date().toISOString(),
+                        default: () => new Date().toISOString(),
+                    },
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: "pk",
+                            composite: ["id"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: []
+                        }
+                    },
+                    all: {
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            field: "gsi1pk",
+                            composite: []
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
+                        }
+                    },
+                },
+            }, { table });
+
+            expect(() => Organization
+                .patch({ id: "2Tz0fHi80CE3dqA6bMIehSvTryv" })
+                .set({ deleted: true })
+                .params()).to.throw(`Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "all". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
+
+            const params = Organization
+                .patch({ id: "2Tz0fHi80CE3dqA6bMIehSvTryv" })
+                .composite({ createdAt: "2023-08-22" })
+                .set({ deleted: true })
+                .params();
+
+            expect(params).to.deep.equal({
+                "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "ExpressionAttributeNames": {
+                    "#pk": "pk",
+                    "#sk": "sk",
+                    "#createdAt": "createdAt",
+                    "#deleted": "deleted",
+                    "#gsi1sk": "gsi1sk",
+                    "#id": "id",
+                    "#__edb_e__": "__edb_e__",
+                    "#__edb_v__": "__edb_v__"
+                },
+                "ExpressionAttributeValues": {
+                    ":createdAt0": "2023-08-22",
+                    ":deleted_u0": true,
+                    ":gsi1sk_u0": "$organization_1#deleted_true#createdat_2023-08-22",
+                    ":id_u0": "2Tz0fHi80CE3dqA6bMIehSvTryv",
+                    ":__edb_e___u0": "organization",
+                    ":__edb_v___u0": "1"
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": "$app#id_2tz0fhi80ce3dqa6bmiehsvtryv",
+                    "sk": "$organization_1"
+                },
+                "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #createdAt = :createdAt0"
+            });
+        });
+
+        it("should allow for partial update of a gsi composite index with the composite method on update", () => {
+            const table = "electro";
+            const Organization = new Entity({
+                model: {
+                    entity: "organization",
+                    service: "app",
+                    version: "1"
+                },
+                attributes: {
+                    id: {
+                        type: "string",
+                    },
+                    name: {
+                        type: "string",
+                        required: true,
+                    },
+                    description: {
+                        type: "string",
+                    },
+                    deleted: {
+                        type: "boolean",
+                        default: false,
+                    },
+                    createdAt: {
+                        type: "string",
+                        readOnly: true,
+                        required: true,
+                        set: () => new Date().toISOString(),
+                        default: () => new Date().toISOString(),
+                    },
+                },
+                indexes: {
+                    record: {
+                        pk: {
+                            field: "pk",
+                            composite: ["id"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: []
+                        }
+                    },
+                    all: {
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            field: "gsi1pk",
+                            composite: []
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
+                        }
+                    },
+                },
+            }, { table });
+
+            expect(() => Organization
+                .update({ id: "2Tz0fHi80CE3dqA6bMIehSvTryv" })
+                .set({ deleted: true })
+                .params()).to.throw(`Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "all". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
+
+            const params = Organization
+                .update({ id: "2Tz0fHi80CE3dqA6bMIehSvTryv" })
+                .composite({ createdAt: "2023-08-22" })
+                .set({ deleted: true })
+                .params();
+
+            expect(params).to.deep.equal({
+                "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "ExpressionAttributeNames": {
+                    "#createdAt": "createdAt",
+                    "#deleted": "deleted",
+                    "#gsi1sk": "gsi1sk",
+                    "#id": "id",
+                    "#__edb_e__": "__edb_e__",
+                    "#__edb_v__": "__edb_v__"
+                },
+                "ExpressionAttributeValues": {
+                    ":createdAt0": "2023-08-22",
+                    ":deleted_u0": true,
+                    ":gsi1sk_u0": "$organization_1#deleted_true#createdat_2023-08-22",
+                    ":id_u0": "2Tz0fHi80CE3dqA6bMIehSvTryv",
+                    ":__edb_e___u0": "organization",
+                    ":__edb_v___u0": "1"
+                },
+                "TableName": "electro",
+                "Key": {
+                    "pk": "$app#id_2tz0fhi80ce3dqa6bmiehsvtryv",
+                    "sk": "$organization_1"
+                },
+                "ConditionExpression": "#createdAt = :createdAt0"
+            });
+        });
+
         it("should not allow for partial deletion of a gsi composite index", async () => {
             const users = new Entity({
                 model: {
@@ -2711,7 +2901,7 @@ describe("Update Item", () => {
                 ])
                 .params();
 
-            expect(error).to.throw(`Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`)
+            expect(error).to.throw(`Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`)
 
             const error2 = await users
                 .update({username})
@@ -2720,7 +2910,7 @@ describe("Update Item", () => {
                 ])
                 .go()
                 .catch(err => err);
-            expect(error2.message).to.equal(`Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved"  - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
+            expect(error2.message).to.equal(`Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`);
         });
 
         it("should respect readOnly", async () => {

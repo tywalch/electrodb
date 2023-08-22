@@ -14,7 +14,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-Lets look at the needs of an application used to manage Employees. The application Looks at employees, offices, tasks, and projects.
+Let's look at the needs of an application used to manage Employees. The application Looks at employees, offices, tasks, and projects.
 
 ## Table Definition
 
@@ -514,7 +514,6 @@ await EmployeeApp.entities.employees
         ${between(dateHired, startDate, endDate)} OR
         ${between(birthday, startDate, endDate)}
     `)
-	.upcomingCelebrations("2020-05-01", "2020-06-01")
 	.go();
 
 // on the entity
@@ -524,7 +523,6 @@ await employees
         ${between(dateHired, startDate, endDate)} OR
         ${between(birthday, startDate, endDate)}
     `)
-    .upcomingCelebrations("2020-05-01", "2020-06-01")
     .go();
 ```
 
