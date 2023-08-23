@@ -374,3 +374,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Adds
 - Addresses [Issue#277](https://github.com/tywalch/electrodb/issues/277) Introduces new `composite()` method for `update` and `patch` operations. The `composite` method is used to help electrodb complete and format keys when updating a subset of the key's composite attributes. Prior to this update, updating a key partially resulted in an [invalid query error](https://electrodb.dev/en/reference/errors/#missing-composite-attributes), which [caused difficulties](https://github.com/tywalch/electrodb/issues/277) when some composite attributes were flagged as readOnly. [[read more](https://electrodb.dev/en/mutations/patch#composite)]
 - Adds more deliberate collection validation to ensure entity compatibility. This will allow for indexes defined with "template" be used with collections. This also might cause some existing implementations to now throw on service instantiation, however that would mean these services were never valid to begin with.
+
+## [2.9.1]
+### Fixed
+- Version `2.9.0` was accidentally published without the dependency `@aws-sdk/lib-dynamodb`
