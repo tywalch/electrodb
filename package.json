@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
@@ -32,7 +32,6 @@
   "homepage": "https://github.com/tywalch/electrodb#readme",
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.395.0",
-    "@aws-sdk/lib-dynamodb": "^3.395.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
@@ -67,6 +66,7 @@
     "directory": "test"
   },
   "dependencies": {
+    "@aws-sdk/lib-dynamodb": "^3.395.0",
     "jsonschema": "1.2.7"
   }
 }
