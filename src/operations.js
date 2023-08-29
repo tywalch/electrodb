@@ -262,6 +262,12 @@ const FilterOperations = {
         },
         strict: false,
         canNest: true,
+    },
+    eqOrNotExists: {
+        template: function eq(options, attr, name, value) {
+            return `(${name} = ${value} or attribute_not_exists(${name})`;
+        },
+        strict: false,
     }
 };
 

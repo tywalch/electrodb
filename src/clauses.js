@@ -456,7 +456,7 @@ let clauses = {
 						if (!wasSet) {
 							throw new e.ElectroError(e.ErrorCodes.DuplicateUpdateCompositesProvided, `The composite attribute ${attrName} has been provided more than once with different values. Remove the duplication before running again`);
 						}
-						state.applyCondition(FilterOperationNames.eq, attrName, composites[attrName]);
+						state.applyCondition(FilterOperationNames.eqOrNotExists, attrName, composites[attrName]);
 					}
 				}
 				return state;
