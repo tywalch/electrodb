@@ -424,7 +424,7 @@ await library.collections
 const { data, cursor } = await book.query.copies({ isbn: '9783453435773' }).go();
 ```
 
-### Get all of the books on loan to a specific member
+### Get all the books on loan to a specific member
 
 ```typescript
 const { data, cursor } = await book.query.loans({ memberId: '0000001' }).go();
@@ -468,7 +468,7 @@ const results = await library.collections
 
 ### Get all books/copies by an author's full name.
 
-This is a duplicate access pattern for this entity but it allows for additional access patterns, including a cross-entity collection
+This is a duplicate access pattern for this entity, but it allows for additional access patterns, including a cross-entity collection
 ```typescript
 const {data, cursor} = await book.query
     .author({ authorLastName: 'king', authorFirstName: 'stephen' })
@@ -538,7 +538,7 @@ await genre.query.book({ isbn: '9783453435773' }).go();
 await genre.query.title({bookTitle: 'it'}).go();
 ```
 
-### Get the sub genres associated with a book and one of its main genres
+### Get the sub-genres associated with a book and one of its main genres
 ```typescript
 await genre.query.book({ isbn: '9783453435773', genre: 'horror' }).go();
 await genre.query.title({ bookTitle: 'it', genre: 'horror' }).go();

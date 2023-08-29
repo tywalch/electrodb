@@ -4,6 +4,10 @@
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
+    "build": "sh buildbrowser.sh",
+    "build:browser": "browserify playground/browser.js -o playground/bundle.js",
+    "test": "./test.sh",
+    "test:ci": "npm install && npm test",
     "test:run": "npm run test:types && npm run test:init && npm run test:unit",
     "test:init": "node ./test/init.js",
     "test:unit": "mocha -r ts-node/register ./test/**.spec.*",
@@ -11,14 +15,12 @@
     "coverage": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
     "coverage:local:coveralls": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
     "coverage:local:html": "npm run test:init && nyc npm run test:unit && nyc report --reporter=html",
-    "build:browser": "browserify playground/browser.js -o playground/bundle.js",
-    "build": "sh buildbrowser.sh",
-    "test": "./test.sh",
-    "test:ci": "npm install && npm test",
     "ddb:start": "docker compose up -d",
     "ddb:load": "docker compose exec electro npm run test:init",
     "ddb:stop": "docker compose stop",
-    "example:taskapp": "npm run ddb:start && npm run ddb:load && ts-node ./examples/taskmanager/src/index.ts; npm run ddb:stop"
+    "examples:load:library": "npm run ddb:start && ts-node ./examples/library/load.ts",
+    "examples:load:taskmanager": "npm run ddb:start && ts-node ./examples/taskmanager/load.ts",
+    "examples:load:versioncontrol": "npm run ddb:start && ts-node ./examples/versioncontrol/load.ts"
   },
   "repository": {
     "type": "git",
@@ -32,6 +34,7 @@
   "homepage": "https://github.com/tywalch/electrodb#readme",
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.395.0",
+    "@faker-js/faker": "^8.0.2",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",

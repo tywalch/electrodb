@@ -18,15 +18,15 @@ import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
 
 <ExampleSetup />
 
-In DynamoDB, an index is a data structure that can be used to efficiently query data in a table. There are two types of indexes in DynamoDB: local secondary indexes and global secondary indexes.
+In DynamoDB, an index serves as a data structure designed to improve the efficiency of data queries within a table. DynamoDB offers two types of indexes: local secondary indexes and global secondary indexes.
 
-A local secondary index allows you to query data based on the table's primary key, but with the added flexibility of using a different sort key than the one used for the table's primary key. This can be useful for querying data in different ways than the one used for the table's primary key.
+A local secondary index enables queries based on the table's primary key while offering the flexibility to use a different sort key. This feature is useful for querying data in ways that differ from the default sort key associated with the table's primary key.
 
-A global secondary index, on the other hand, allows you to query data based on an entirely different primary key than the one used for the table. This can be useful for querying data that is not associated with the table's primary key, or for querying data in a different way than the one used for the table's primary key.
+On the other hand, a global secondary index allows for queries based on a completely different primary key than the one associated with the table. This is particularly useful for querying data unrelated to the table's primary key, or for alternative query methods.
 
-Overall, indexes in DynamoDB can be used to improve the performance of queries by allowing you to query data more efficiently. This can be especially useful for large tables with a lot of data, where efficient querying is critical to the performance of your application.
+Overall, utilizing indexes in DynamoDB can significantly improve query performance, especially in large tables with extensive data. Efficient querying is crucial for optimal application performance.
 
-ElectroDB, queries are built around the **Access Patterns** defined in the Schema and are capable of using partial key **Composite Attributes** to create performant lookups. To accomplish this, ElectroDB defines partition and sort keys as a composite of one or more attributes. This is described at length in the [Modeling Indexes](/en/modeling/indexes) section.
+In ElectroDB, queries are constructed around the 'Access Patterns' defined in the Schema. They can leverage partial key 'Composite Attributes' to enable efficient lookups. ElectroDB defines partition and sort keys as composites of one or more attributes, which is elaborated in the [Modeling Indexes](/en/modeling/indexes) section.
 
 ## Query Methods
 
@@ -47,7 +47,7 @@ ElectroDB Method                    | DynamoDB Method        | Purpose
 
 DynamoDB offers three methods for updating and creating records: `put`, `update`, and `batchWrite`. For the uninitiated, all three of these methods will create an item if it doesn't exist. The difference between `put`/`batchWrite` and `update` this that a `put` will overwrite the existing item while an `update` will only modify the fields provided if the item already exists.
 
-Addtionally, ElectroDB offers a few mutation methods beyond `put`, `update`, and `delete` to more ergonomically fit your use case. Below is a table that explains each ElectroDB method, which DynamoDB operation the method maps to, and a short description of the method's purpose.
+Additionally, ElectroDB offers a few mutation methods beyond `put`, `update`, and `delete` to more ergonomically fit your use case. Below is a table that explains each ElectroDB method, which DynamoDB operation the method maps to, and a short description of the method's purpose.
 
 ElectroDB Method                    | DynamoDB Method        | Purpose
 ----------------------------------- | ---------------------- | -------------------
@@ -80,7 +80,7 @@ const params = MallStores.query
     .between(
       { leaseEndDate:  "2020-06-01" }, 
       { leaseEndDate:  "2020-07-31" })
-    .filter(attr) => attr.rent.lte("5000.00"))
+    .where(({ rent }, { lte }) => lte(rent, "5000.00"))
     .params();
 ```
 
@@ -113,7 +113,7 @@ const results = await MallStores.query
 	.between(
 		{ leaseEndDate:  "2020-06-01" }, 
 		{ leaseEndDate:  "2020-07-31" })
-	.filter(({rent}) => rent.lte("5000.00"))
+	.where(({ rent }, { lte }) => lte(rent, "5000.00"))
 	.go();
 ```
 

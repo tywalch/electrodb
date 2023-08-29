@@ -73,7 +73,7 @@ indexes: {
 | `sk.cast`      | `string`, `number`                     | no       | The `cast` option allows you to define a different primitive type for your key than your attribute. When `number` is used, you are only allowed to have one composite attribute, string values are validated at runtime with `parseInt`, and booleans are cast to `1` or `0`. Default: `string`.
 
 ## Composing Indexes
-A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key**, or a **Sort Key** key, which define an `index`.
+A **Composite Attribute** is a segment of a key based on one of the attributes. **Composite Attributes** are concatenated together from either a **Partition Key**, or a **Sort Key**, which define an `index`.
 
 > Only attributes with a type of `"string"`, `"number"`, `"boolean"`, or `string[]` (enum) can be used as composite attributes.
 
@@ -351,7 +351,7 @@ When using indexes with Sort Keys, that should be expressed as an index *with* a
 #### Example
 
 ```typescript
-// ElectroDB interprets as index *having* SK, but this model doesnt assign any composite attributes to it.
+// ElectroDB interprets as index *having* SK, but this model does not assign any composite attributes to it.
 {
   indexes: {
     myIndex: {

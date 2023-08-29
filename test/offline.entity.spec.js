@@ -7547,8 +7547,6 @@ describe("Entity", () => {
 					sk: '$setters_1#prop2_def-prop2',
 					gsi1pk: "$testing#prop3_hij-prop3",
 					gsi1sk: "$setters_1#prop4_klm-prop4",
-					gsi2pk: "$testing#prop5_",
-					gsi2sk: "$setters_1#prop6_",
 					__edb_e__: 'setters',
 					__edb_v__: '1'
 				},

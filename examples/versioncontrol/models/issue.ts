@@ -1,12 +1,15 @@
 /* istanbul ignore file */
-import {Entity} from "../../../";
 import moment from "moment";
-import {NotYetViewed, TicketTypes, IssueTicket, StatusTypes, toStatusString, toStatusCode} from "./types";
+import { v4 as uuid } from 'uuid';
+import { faker } from '@faker-js/faker';
+import { Entity, CreateEntityItem, EntityItem } from '../../../';
+import { NotYetViewed, TicketTypes, IssueTicket, StatusTypes, toStatusString, toStatusCode } from "./types";
+import { table, client } from '../../common';
 
-export const issues = new Entity({
+export const Issue = new Entity({
   model: {
-    entity: "issues",
-    service: "versioncontrol",
+    entity: "issue",
+    service: "version-control",
     version: "1"
   },
   attributes: {
@@ -31,7 +34,7 @@ export const issues = new Entity({
       type: "string",
       readOnly: true,
       watch: ["issueNumber"],
-      set: (_, {issueNumber}) => issueNumber
+      set: (_, { issueNumber }) => issueNumber
     },
     status: {
       type: StatusTypes,
@@ -48,6 +51,7 @@ export const issues = new Entity({
     createdAt: {
       type: "string",
       set: () => moment.utc().format(),
+      default: () => moment.utc().format(),
       readOnly: true,
     },
     updatedAt: {
@@ -106,12 +110,12 @@ export const issues = new Entity({
       }
     }
   }
-});
+}, { table, client });
 
-export const issueComments = new Entity({
+export const IssueComment = new Entity({
   model: {
-    entity: "issueComment",
-    service: "versioncontrol",
+    entity: "issue-comment",
+    service: "version-control",
     version: "1"
   },
   attributes: {
@@ -154,6 +158,7 @@ export const issueComments = new Entity({
     createdAt: {
       type: "string",
       set: () => moment.utc().format(),
+      default: () => moment.utc().format(),
       readOnly: true,
     },
     updatedAt: {
@@ -200,4 +205,39 @@ export const issueComments = new Entity({
       }
     }
   }
-});
+}, { table, client });
+
+export type CreateIssueItem = CreateEntityItem<typeof Issue>;
+
+export type IssueItem = EntityItem<typeof Issue>;
+
+export function createMockIssue(overrides?: Partial<CreateIssueItem>): CreateIssueItem {
+  return {
+    body: faker.lorem.paragraph(),
+    issueNumber: faker.number.int({min: 1, max: 9000}).toString().padStart(4, '0'),
+    repoName: `${faker.hacker.verb()}${faker.hacker.noun()}`,
+    repoOwner: faker.internet.userName(),
+    status: faker.helpers.arrayElement(['Open', 'Closed']),
+    subject: `${faker.hacker.noun()} is not ${faker.hacker.ingverb()}`,
+    username: faker.internet.userName(),
+    ticketType: faker.helpers.arrayElement(['Issue', 'PullRequest']),
+    ...overrides
+  };
+}
+
+export type CreateIssueCommentItem = CreateEntityItem<typeof IssueComment>;
+
+export type IssueCommentItem = EntityItem<typeof IssueComment>;
+
+export function createMockIssueComment(overrides?: Partial<CreateIssueCommentItem>): CreateIssueCommentItem {
+  return {
+    commentId: uuid(),
+    body: faker.lorem.sentences({min: 1, max: 3}),
+    username: faker.internet.userName(),
+    repoOwner: faker.internet.userName(),
+    issueNumber: faker.number.int({min: 1, max: 9000}).toString().padStart(4, '0'),
+    repoName: `${faker.hacker.verb()}${faker.hacker.noun()}`,
+    replyTo: faker.internet.userName(),
+    ...overrides
+  };
+}

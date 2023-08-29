@@ -1,6 +1,8 @@
 /* istanbul ignore file */
-import {Entity} from "../../..";
 import moment from "moment";
+import { faker } from '@faker-js/faker';
+import { Entity, CreateEntityItem, EntityItem } from '../../../';
+import { table, client } from '../../common';
 
 export const licenses = [
   "afl-3.0",
@@ -39,10 +41,10 @@ export const licenses = [
   "zlib"
 ] as const;
 
-export const repositories = new Entity({
+export const Repository = new Entity({
   model: {
-    entity: "repositories",
-    service: "versioncontrol",
+    entity: "Repository",
+    service: "version-control",
     version: "1"
   },
   attributes: {
@@ -59,7 +61,7 @@ export const repositories = new Entity({
       type: "string",
       readOnly: true,
       watch: ["repoOwner"],
-      set: (_, {repoOwner}) => repoOwner
+      set: (_, { repoOwner }) => repoOwner
     },
     description: {
       type: "string"
@@ -89,6 +91,7 @@ export const repositories = new Entity({
     createdAt: {
       type: "string",
       set: () => moment.utc().format(),
+      default: () => moment.utc().format(),
       readOnly: true,
     },
     updatedAt: {
@@ -123,4 +126,29 @@ export const repositories = new Entity({
       }
     },
   }
-});
+}, { table, client });
+
+export type CreateRepositoryItem = CreateEntityItem<typeof Repository>;
+
+export type RepositoryItem = EntityItem<typeof Repository>;
+
+export function createMockRepository(overrides?: Partial<CreateRepositoryItem>): CreateRepositoryItem {
+  return {
+    about: faker.lorem.sentences({min: 1, max: 3}),
+    username: faker.internet.userName(),
+    repoOwner: faker.internet.userName(),
+    defaultBranch: 'main',
+    description: faker.lorem.paragraph(),
+    followers: new Array(faker.number.int({min: 1, max: 10}))
+        .fill({})
+        .map(() => faker.internet.userName()),
+    stars: new Array(faker.number.int({min: 1, max: 10}))
+        .fill({})
+        .map(() => faker.internet.userName()),
+    topics: new Array(faker.number.int({min: 1, max: 3})).fill({}).map(() => faker.hacker.adjective()),
+    license: faker.helpers.arrayElement(licenses),
+    repoName: `${faker.hacker.verb()}${faker.hacker.noun()}`,
+    isPrivate: faker.helpers.arrayElement([true, false]),
+    ...overrides
+  };
+}

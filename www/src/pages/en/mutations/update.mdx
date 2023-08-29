@@ -347,7 +347,7 @@ await StoreLocations
     .update({cityId, mallId, storeId, buildingId})
     .append({
       rentalAgreement: [{
-        type: "ammendment",
+        type: "amendment",
         detail: "no soup for you"
       }]
     })
@@ -377,7 +377,7 @@ await StoreLocations
     ":category0": "food/coffee",
     ":rentalAgreement0": [
       {
-        "type": "ammendment",
+        "type": "amendment",
         "detail": "no soup for you"
       }
     ]
@@ -477,7 +477,7 @@ await StoreLocations
         o.subtract(a.deposit, 200);       // electrodb "number" -> dynamodb "number"
         o.remove(a.discount);          // electrodb "number" -> dynamodb "number"
         o.append(a.rentalAgreement, [{    // electrodb "list"   -> dynamodb "list"
-            type: "ammendment",           // electrodb "map"    -> dynamodb "map"
+            type: "amendment",           // electrodb "map"    -> dynamodb "map"
             detail: "no soup for you"
         }]);
         o.delete(a.tags, ['coffee']);
@@ -530,7 +530,7 @@ await StoreLocations
         ":deposit_u0": 200,
         ":rentalAgreement_u0": [
             {
-                "type": "ammendment",
+                "type": "amendment",
                 "detail": "no soup for you"
             }
         ],

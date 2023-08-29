@@ -1,17 +1,17 @@
 /* istanbul ignore file */
 import moment from "moment";
 import { v4 as uuid } from "uuid";
-import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../../";
-import { table, client } from '../config';
+import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../";
+import { table, client } from '../../common';
 
-export const task = new Entity({
+export const Task = new Entity({
 	"model": {
 		"entity": "task",
 		"version": "1",
-		"service": "taskmanager"
+		"service": "task-manager"
 	},
 	"attributes": {
-		task: {
+		taskName: {
 			type: "string",
 			required: true
 		},
@@ -42,7 +42,7 @@ export const task = new Entity({
 		"task": {
 			"pk": {
 				"field": "pk",
-				"composite": ["task"]
+				"composite": ["taskName"]
 			},
 			"sk": {
 				"field": "sk",
@@ -86,6 +86,6 @@ export const task = new Entity({
 	}
 }, { table, client });
 
-export type TaskItem = EntityItem<typeof task>;
-export type CreateTaskItem = CreateEntityItem<typeof task>;
-export type TaskQueryResponse = QueryResponse<typeof task>;
+export type TaskItem = EntityItem<typeof Task>;
+export type CreateTaskItem = CreateEntityItem<typeof Task>;
+export type TaskQueryResponse = QueryResponse<typeof Task>;

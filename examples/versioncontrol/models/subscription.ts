@@ -1,14 +1,16 @@
 /* istanbul ignore file */
-import {Entity} from "../../../";
 import moment from "moment";
+import { faker } from '@faker-js/faker';
+import { Entity, CreateEntityItem, EntityItem } from '../../../';
 import {TicketTypes, IsNotTicket} from "./types";
+import { table, client } from '../../common';
 
 const RepositorySubscription = "#";
 
-export const subscriptions = new Entity({
+export const Subscription = new Entity({
     model: {
         entity: "subscription",
-        service: "versioncontrol",
+        service: "version-control",
         version: "1"
     },
     attributes: {
@@ -63,6 +65,7 @@ export const subscriptions = new Entity({
         createdAt: {
             type: "string",
             set: () => moment.utc().format(),
+            default: () => moment.utc().format(),
             readOnly: true,
         },
         updatedAt: {
@@ -108,4 +111,19 @@ export const subscriptions = new Entity({
             }
         }
     }
-})
+}, { table, client });
+
+export type CreateSubscriptionItem = CreateEntityItem<typeof Subscription>;
+
+export type SubscriptionItem = EntityItem<typeof Subscription>;
+
+export function createMockSubscription(overrides?: Partial<CreateSubscriptionItem>): CreateSubscriptionItem {
+    return {
+        repoName: `${faker.hacker.verb()}${faker.hacker.noun()}`,
+        repoOwner: faker.internet.userName(),
+        ticketType: faker.helpers.arrayElement(['Issue', 'PullRequest']),
+        username: faker.internet.userName(),
+        ticketNumber: faker.number.int({min: 1, max: 9000}).toString().padStart(4, '0'),
+        ...overrides
+    };
+}

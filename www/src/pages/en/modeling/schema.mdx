@@ -17,7 +17,7 @@ In ElectroDB, your Schema is the format in which you define your data model and 
 
 Schemas define entity's name and version, the attributes your entity's items will have, and important mappings to your DynamoDB table. Because DynamoDB is a schemaless database, the onus of enforcing constraints, building indexes, and validation falls onto the user to implement. This can be challenging to implement, even more so when prototyping and quick iteration is required. ElectroDB seeks to provide an interface for fast, intuitive modeling, readable query code, and sane defaults.
 
-> ElectroDB is a strongly typed library, and makes use of TypeScript's more advanced type inference functionality. For this reason, Schemas are typically defined directly in the Entity's constructor. If you do need to define a schema outside of a constructor, it is recommended to define your schema variable with an `as const` assertion ([read more here](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions)) to ensure TypeScript is able to infer the your schema correctly.
+> ElectroDB is a strongly typed library, and makes use of TypeScript's more advanced type inference functionality. For this reason, Schemas are typically defined directly in the Entity's constructor. If you do need to define a schema outside a constructor, it is recommended to define your schema variable with an `as const` assertion ([read more here](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions)) to ensure TypeScript is able to infer your schema correctly.
 
 ## Entity Definition (Schema)
 Property       | Description

@@ -160,7 +160,7 @@ The filter functions available above all come from the list of functions support
 > Note: If ElectroDB ever lags behind in implementing FilterExpression functions, you can use `value()` and `name()` to simply template out the implementation!
 
 #### Name
-The `name()` function allows you create a reference to an attribute's name, which can be useful to create filters referencing an attribute as it is currently stored. The function will add a `ExpressionAttributeNames` property for this record and return the partial expression for use in your filter.
+The `name()` function allows you to create a reference to an attribute's name, which can be useful to create filters referencing an attribute as it is currently stored. The function will add a `ExpressionAttributeNames` property for this record and return the partial expression for use in your filter.
 
 This example demonstrates how you might find animals that were last fed by someone other than their "keeper".
 

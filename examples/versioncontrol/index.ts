@@ -1,10 +1,10 @@
 /* istanbul ignore file */
 // VersionControl (git) Service
 // This example demonstrates more advanced modeling techniques using ElectroDB
-
 import moment from "moment";
+
 import {
-    store,
+    VersionControl,
     IssueIds,
     IssueCommentIds,
     PullRequestIds,
@@ -15,26 +15,25 @@ import {
     OwnedItems,
     isIssueCommentIds,
     isPullRequestCommentIds
-} from "./database";
-
+} from "./models";
 
 // Get Public Repositories By Username
 export async function getPublicRepository(username: string) {
-    return store.entities.repositories
+    return VersionControl.entities.repository
         .query.created({username, isPrivate: false});
 }
 
 // Get PullRequest and Associated Comments -- newest comments first
 export async function reviewPullRequest(options: { pr: PullRequestIds, cursor?: string }) {
     const { pr, cursor } = options;
-    return store.collections.PRReview(pr)
+    return VersionControl.collections.PRReview(pr)
         .go({ cursor, params: {ScanIndexForward: false} });
 }
 
 // Get Issue and Associated Comments -- newest comments first
 export async function reviewIssue(options: {issue: IssueIds, cursor?: string}) {
     const { issue, cursor } = options;
-    return store.collections.issueReview(issue)
+    return VersionControl.collections.issueReview(issue)
         .go({cursor, params: {ScanIndexForward: false}});
 }
 
@@ -45,14 +44,14 @@ export async function getUserPullRequests(options: {
     cursor?: string;
 }) {
     const { username, status, cursor } = options;
-    return store.entities.pullRequests
+    return VersionControl.entities.pullRequest
         .query.created({username, status})
         .go({cursor, params: {ScanIndexForward: false}});
 }
 
 // Close pull request -- guards: can only be performed by user who opened PR or the repo owner
 export async function closePullRequest(user: string, pr: PullRequestIds) {
-    return store.entities.pullRequests
+    return VersionControl.entities.pullRequest
         .update(pr)
         .set({status: "Closed"})
         .where(({username, repoOwner}, {eq}) => `
@@ -64,20 +63,20 @@ export async function closePullRequest(user: string, pr: PullRequestIds) {
 // Get all user info, repos, pull requests, and issues in one query
 export async function getFirstPageLoad(username: string) {
     const results: OwnedItems = {
-        issues: [],
-        pullRequests: [],
-        repositories: [],
-        users: [],
+        issue: [],
+        pullRequest: [],
+        repository: [],
+        user: [],
     };
     
     let next = null;
 
     do {
-        const {cursor, data} = await store.collections.owned({username}).go();
-        results.issues = results.issues.concat(data.issues);
-        results.pullRequests = results.pullRequests.concat(data.pullRequests);
-        results.repositories = results.repositories.concat(data.repositories);
-        results.users = results.users.concat(data.users);
+        const { cursor, data} = await VersionControl.collections.owned({username}).go();
+        results.issue = results.issue.concat(data.issue);
+        results.pullRequest = results.pullRequest.concat(data.pullRequest);
+        results.repository = results.repository.concat(data.repository);
+        results.user = results.user.concat(data.user);
         next = cursor;
     } while (next !== null);
 
@@ -86,7 +85,7 @@ export async function getFirstPageLoad(username: string) {
 
 // Get Subscriptions for a given Repository, PullRequest, or Issue.
 export async function getSubscribed(repoOwner: string, repoName: string, ticketNumber: string = IsNotTicket) {
-    return store.collections
+    return VersionControl.collections
         .subscribers({repoOwner, repoName, ticketNumber})
         .go();
 }
@@ -105,14 +104,14 @@ export async function getUnreadComments(user: string) {
         replyViewed: NotYetViewed
     };
     let [issues, pullRequests] = await Promise.all([
-        store.entities
-            .issueComments.query
+        VersionControl.entities
+            .issueComment.query
             .replies({replyTo: user})
             .between(start, end)
             .go(),
 
-        store.entities
-            .pullRequestComments.query
+        VersionControl.entities
+            .pullRequestComment.query
             .replies({replyTo: user})
             .between(start, end)
             .go()
@@ -130,7 +129,7 @@ export async function readReply(user: string, comment: PullRequestCommentIds): P
 export async function readReply(user: string, comment: any): Promise<boolean> {
     const replyViewed = moment.utc().format();
     if (isIssueCommentIds(comment)) {
-        return await store.entities.issueComments
+        return await VersionControl.entities.issueComment
             .patch(comment)
             .set({replyViewed})
             .where(({replyTo}, {eq}) => eq(replyTo, user))
@@ -138,7 +137,7 @@ export async function readReply(user: string, comment: any): Promise<boolean> {
             .then(() => true)
             .catch(() => false);
     } else if (isPullRequestCommentIds(comment)) {
-        return await store.entities.pullRequestComments
+        return await VersionControl.entities.pullRequestComment
             .patch(comment)
             .set({replyViewed})
             .where(({replyTo}, {eq}) => eq(replyTo, user))
@@ -151,7 +150,7 @@ export async function readReply(user: string, comment: any): Promise<boolean> {
 }
 
 export async function approvePullRequest(repoOwner: string, repoName: string, pullRequestNumber: string, username: string) {
-    const pullRequest = await store.entities.pullRequests
+    const pullRequest = await VersionControl.entities.pullRequest
         .get({repoOwner, repoName, pullRequestNumber})
         .go();
 
@@ -172,7 +171,7 @@ export async function approvePullRequest(repoOwner: string, repoName: string, pu
         return false;
     }
 
-    return store.entities.pullRequests
+    return VersionControl.entities.pullRequest
         .update({repoOwner, repoName, pullRequestNumber})
         .data(({reviewers}, {set}) => {
             set(reviewers[index].approved, true);
@@ -186,8 +185,8 @@ export async function approvePullRequest(repoOwner: string, repoName: string, pu
 }
 
 export async function followRepository(repoOwner: string, repoName: string, follower: string) {
-    await store.entities
-        .repositories.update({repoOwner, repoName})
+    await VersionControl.entities.repository
+        .update({repoOwner, repoName})
         .add({followers: [follower]})
         .go();
 }

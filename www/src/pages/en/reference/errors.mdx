@@ -17,7 +17,7 @@ This section contains formation and guidance related to Errors thrown by Electro
 
 ## ElectroError
 
-ElectroDB wraps errors with an class `ElectroError`. This class extends error and adds additional metadata/properties for additional context.
+ElectroDB wraps errors with an `ElectroError` class exception. This class extends error and adds additional metadata/properties for additional context.
 
 ```typescript
 export class ElectroError extends Error {
@@ -153,7 +153,7 @@ If your index _does_ have a Sort Key, but you are unsure of how to inform electr
     }
   }
 }
-// ElectroDB interprets as index *having* SK, but this model doesnt attach any composite attributes to it.
+// ElectroDB interprets as index *having* SK, but this model does not attach any composite attributes to it.
 {
   indexes: {
     myIndex: {
@@ -209,11 +209,11 @@ Identify the index you're using as the Primary Index and ensure it _does not_ ha
     myIndex: {
       index: "gsi1"
       pk: {
-        field: "gsipk1",
+        field: "gsi1pk",
         composite: ["org"]
       },
       sk: {
-        field: "gsisk1",
+        field: "gsi1sk",
         composite: ["id"]
       }
     }
@@ -311,13 +311,13 @@ The error should describe the missing composite attributes, ensure those composi
 You never specified a Table for DynamoDB to use.
 
 **What to do about it:**
-Tables can be defined on the [Service Options](/en/modeling/service#options) object when you create an Entity or Service, or if that is not known at the time of creation, it can be supplied as a [Execution Options](/en/core-concepts/executing-queries) and supplied on each query individually. If can be supplied on both, in that case the Query Option will override the Service Option.
+Tables can be defined on the [Service Options](/en/modeling/service#options) object when you create an Entity or Service, or if that is not known at the time of creation, it can be supplied as an [Execution Option](/en/core-concepts/executing-queries) and supplied on each query individually. If are supplied to both, in that case the Query Option will override the Service Option.
 
 ### Invalid Concurrency Option
 **Code: 2004**
 
 **Why this occurred:**
-When performing a bulk operation ([Batch Get](/en/queries/batch-get), [Batch Delete Records](/en/mutations/batch-delete), [Batch Put Records](/en/mutations/batch-put)) you can pass a [Execution Options](/en/core-concepts/executing-queries) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+When performing a bulk operation ([Batch Get](/en/queries/batch-get), [Batch Delete Records](/en/mutations/batch-delete), [Batch Put Records](/en/mutations/batch-put)) you can pass an [Execution Option](/en/core-concepts/executing-queries) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 **What to do about it:*   *
 Expect this error only if you're providing a `concurrency` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
@@ -326,7 +326,7 @@ Expect this error only if you're providing a `concurrency` option. Double-check 
 **Code: 2005**
 
 **Why this occurred:**
-When performing a query [Query](#building-queries) you can pass a [Execution Options](/en/core-concepts/executing-queries) called `pages`, which impacts how many DynamoDB pages a query should iterate through. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+When performing a [Query](#building-queries) you can pass an [Execution Option](/en/core-concepts/executing-queries) called `pages`, which impacts how many DynamoDB pages a query should iterate through. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 **What to do about it:**
 Expect this error only if you're providing a `pages` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
@@ -335,7 +335,7 @@ Expect this error only if you're providing a `pages` option. Double-check the va
 **Code: 2006**
 
 **Why this occurred:**
-When performing a query [Query](#building-queries) you can pass a [Execution Options](/en/core-concepts/executing-queries) called `limit`, which impacts how many DynamoDB items a query should return. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
+When performing a [Query](#building-queries) you can pass an [Execution Option](/en/core-concepts/executing-queries) called `limit`, which impacts how many DynamoDB items a query should return. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 **What to do about it:**
 Expect this error only if you're providing a `limit` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.

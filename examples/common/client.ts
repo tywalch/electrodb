@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 import DynamoDB from "aws-sdk/clients/dynamodb";
+
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 
 /**

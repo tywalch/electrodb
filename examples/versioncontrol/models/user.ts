@@ -1,11 +1,13 @@
 /* istanbul ignore file */
-import {Entity} from "../../..";
 import moment from "moment";
+import { faker } from '@faker-js/faker';
+import { Entity, CreateEntityItem, EntityItem } from '../../../';
+import { table, client } from '../../common';
 
-export const users = new Entity({
+export const User = new Entity({
   model: {
     entity: "user",
-    service: "versioncontrol",
+    service: "version-control",
     version: "1"
   },
   attributes: {
@@ -24,9 +26,6 @@ export const users = new Entity({
     location: {
       type: "string"
     },
-    pinned: {
-      type: "any"
-    },
     following: {
       type: "set",
       items: "string"
@@ -38,6 +37,7 @@ export const users = new Entity({
     createdAt: {
       type: "string",
       set: () => moment.utc().format(),
+      default: () => moment.utc().format(),
       readOnly: true,
     },
     updatedAt: {
@@ -84,4 +84,24 @@ export const users = new Entity({
       }
     }
   }
-});
+}, { table, client });
+
+export type CreateUserItem = CreateEntityItem<typeof User>;
+
+export type UserItem = EntityItem<typeof User>;
+
+export function createMockUser(overrides?: Partial<CreateUserItem>): CreateUserItem {
+  return {
+    username: faker.internet.userName(),
+    bio: faker.lorem.paragraph(),
+    followers: new Array(faker.number.int({min: 1, max: 10}))
+        .fill({})
+        .map(() => faker.internet.userName()),
+    following: new Array(faker.number.int({min: 1, max: 10}))
+        .fill({})
+        .map(() => faker.internet.userName()),
+    fullName: faker.person.fullName(),
+    photo: `${faker.internet.url()}/${faker.string.alphanumeric({length: 10})}.jpg`,
+    ...overrides
+  };
+}

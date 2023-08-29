@@ -1,15 +1,15 @@
 /* istanbul ignore file */
-import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../../";
-import { table, client } from '../config';
+import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../";
+import { table, client } from '../../common';
 
-export const office = new Entity({
+export const Office = new Entity({
 	"model": {
-		"entity": "office",
+		"entity": "Office",
 		"version": "1",
-		"service": "taskmanager"
+		"service": "task-manager"
 	},
 	"attributes": {
-		"office": {
+		"officeName": {
 			"type": "string"
 		},
 		"country": {
@@ -36,7 +36,7 @@ export const office = new Entity({
 			},
 			"sk": {
 				"field": "sk",
-				"composite": ["city", "zip", "office"]
+				"composite": ["city", "zip", "officeName"]
 			}
 		},
 		"office": {
@@ -44,7 +44,7 @@ export const office = new Entity({
 			"collection": "workplaces",
 			"pk": {
 				"field": "gsi1pk",
-				"composite": ["office"]
+				"composite": ["officeName"]
 			},
 			"sk": {
 				"field": "gsi1sk",
@@ -54,6 +54,6 @@ export const office = new Entity({
 	}
 }, { table, client });
 
-export type OfficeItem = EntityItem<typeof office>;
-export type CreateOfficeItem = CreateEntityItem<typeof office>;
-export type OfficeQueryResponse = QueryResponse<typeof office>;
+export type OfficeItem = EntityItem<typeof Office>;
+export type CreateOfficeItem = CreateEntityItem<typeof Office>;
+export type OfficeQueryResponse = QueryResponse<typeof Office>;

@@ -1,14 +1,14 @@
 /* istanbul ignore file */
 import moment from "moment";
 import { v4 as uuid } from "uuid";
-import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../../";
-import { table, client } from '../config';
+import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../";
+import { table, client } from '../../common';
 
-export const employee = new Entity({
+export const Employee = new Entity({
 	model: {
 		entity: "employee",
 		version: "1",
-		service: "taskmanager",
+		service: "task-manager",
 	},
 	attributes: {
 		employee: {
@@ -23,7 +23,7 @@ export const employee = new Entity({
 			type: "string",
 			required: true,
 		},
-		office: {
+		officeName: {
 			type: "string",
 			required: true,
 		},
@@ -75,7 +75,7 @@ export const employee = new Entity({
 			collection: "workplaces",
 			pk: {
 				field: "gsi1pk",
-				composite: ["office"],
+				composite: ["officeName"],
 			},
 			sk: {
 				field: "gsi1sk",
@@ -124,12 +124,12 @@ export const employee = new Entity({
 			},
 			sk: {
 				field: "gsi5sk",
-				composite: ["team", "office"],
+				composite: ["team", "officeName"],
 			},
 		},
 	}
 }, { table, client });
 
-export type EmployeeItem = EntityItem<typeof employee>;
-export type CreateEmployeeItem = CreateEntityItem<typeof employee>;
-export type EmployeeQueryResponse = QueryResponse<typeof employee>;
+export type EmployeeItem = EntityItem<typeof Employee>;
+export type CreateEmployeeItem = CreateEntityItem<typeof Employee>;
+export type EmployeeQueryResponse = QueryResponse<typeof Employee>;

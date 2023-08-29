@@ -1,6 +1,6 @@
 ---
 title: Collections
-description: Creating entity entity relationships through collections
+description: Creating entity relationships through collections
 keywords:
   - electrodb
   - docs
@@ -725,7 +725,7 @@ projects: {
 
 In the case of the entities above, we see an example of a [sub-collection](#sub-collections). ElectroDB will use the above definitions to generate two collections: `contributions`, `assignments`.
 
-The considerations for naming a collection are nearly identical to the considerations for [naming an index](#index-naming-conventions): What do the query results from supplying just the Partition Key represent? In the case of collections you must also consider what the results represent across _all_ of the involved entities, and the entities that may be added in the future.
+The considerations for naming a collection are nearly identical to the considerations for [naming an index](#index-naming-conventions): What do the query results from supplying just the Partition Key represent? In the case of collections you must also consider what the results represent across _all_ the involved entities, and the entities that may be added in the future.
 
 For example, the `contributions` collection is named such because when given an `employeeId` we receive the employee's details, the tasks the that employee, and the projects where they are currently a member.
 

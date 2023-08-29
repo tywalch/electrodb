@@ -1,12 +1,15 @@
 /* istanbul ignore file */
-import {Entity} from "../../../";
 import moment from "moment";
+import { v4 as uuid } from 'uuid';
+import { faker } from '@faker-js/faker';
+import { Entity, CreateEntityItem, EntityItem } from '../../../';
 import {NotYetViewed, TicketTypes, PullRequestTicket, StatusTypes, toStatusString, toStatusCode} from "./types";
+import { table, client } from '../../common';
 
-export const pullRequests = new Entity({
+export const PullRequest = new Entity({
   model: {
-    entity: "pullRequest",
-    service: "versioncontrol",
+    entity: "pull-request",
+    service: "version-control",
     version: "1"
   },
   attributes: {
@@ -36,7 +39,7 @@ export const pullRequests = new Entity({
       type: "string",
       readOnly: true,
       watch: ["pullRequestNumber"],
-      set: (_, {issueNumber}) => issueNumber
+      set: (_, { pullRequestNumber }) => pullRequestNumber
     },
     status: {
       type: StatusTypes,
@@ -68,6 +71,7 @@ export const pullRequests = new Entity({
     createdAt: {
       type: "string",
       set: () => moment.utc().format(),
+      default: () => moment.utc().format(),
       readOnly: true,
     },
     updatedAt: {
@@ -127,12 +131,12 @@ export const pullRequests = new Entity({
       }
     }
   }
-});
+}, { table, client });
 
-export const pullRequestComments = new Entity({
+export const PullRequestComment = new Entity({
   model: {
-    entity: "pullRequestComment",
-    service: "versioncontrol",
+    entity: "pull-request-comment",
+    service: "version-control",
     version: "1"
   },
   attributes: {
@@ -154,6 +158,9 @@ export const pullRequestComments = new Entity({
     replyTo: {
       type: "string"
     },
+    body: {
+      type: "string"
+    },
     replyViewed: {
       type: "string",
       default: NotYetViewed,
@@ -172,6 +179,7 @@ export const pullRequestComments = new Entity({
     createdAt: {
       type: "string",
       set: () => moment.utc().format(),
+      default: () => moment.utc().format(),
       readOnly: true,
     },
     updatedAt: {
@@ -218,4 +226,42 @@ export const pullRequestComments = new Entity({
       }
     },
   }
-});
+}, { table, client });
+
+export type CreatePullRequestItem = CreateEntityItem<typeof PullRequest>;
+
+export type PullRequestItem = EntityItem<typeof PullRequest>;
+
+export function createMockPullRequest(overrides?: Partial<CreatePullRequestItem>): CreatePullRequestItem {
+  return {
+    pullRequestNumber: faker.number.int({min: 1, max: 9000}).toString().padStart(4, '0'),
+    repoName: `${faker.hacker.verb()}${faker.hacker.noun()}`,
+    repoOwner: faker.internet.userName(),
+    status: faker.helpers.arrayElement(['Open', 'Closed']),
+    ticketType: faker.helpers.arrayElement(['Issue', 'PullRequest']),
+    username: faker.internet.userName(),
+    reviewers: [{
+      username: faker.internet.userName(),
+      createdAt: faker.date.recent().toDateString(),
+      approved: faker.helpers.arrayElement([true, false]),
+    }],
+    ...overrides
+  };
+}
+
+export type CreatePullRequestCommentItem = CreateEntityItem<typeof PullRequestComment>;
+
+export type PullRequestCommentItem = EntityItem<typeof PullRequestComment>;
+
+export function createMockPullRequestComment(overrides?: Partial<CreatePullRequestCommentItem>): CreatePullRequestCommentItem {
+  return {
+    commentId: uuid(),
+    replyTo: faker.internet.userName(),
+    username: faker.internet.userName(),
+    repoOwner: faker.internet.userName(),
+    repoName: `${faker.hacker.verb()}${faker.hacker.noun()}`,
+    body: faker.lorem.sentences({min: 1, max: 3}),
+    pullRequestNumber: faker.number.int({min: 1, max: 9000}).toString().padStart(4, '0'),
+    ...overrides
+  };
+}

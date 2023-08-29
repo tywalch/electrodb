@@ -1,24 +1,11 @@
 /* istanbul ignore file */
 import path from "path";
 import moment from "moment";
-import load from './data/load.json'
-import { createTableManager, table } from './config';
+
 import {
   taskManager,
   CreateTaskItem,
-  OfficeItem,
-  EmployeeItem,
-  TaskItem,
-  task,
-  employee,
-  office,
-} from "./database";
-
-const mockData = load as {
-  tasks: TaskItem[];
-  offices: OfficeItem[];
-  employees: EmployeeItem[];
-};
+} from "./models";
 
 /**
  * ATTENTION READ FIRST:
@@ -26,35 +13,9 @@ const mockData = load as {
  * download visit: https://hub.docker.com/r/amazon/dynamodb-local
  *
  * If you intend on running this example against your own aws account, modify the config in the
- * file `/examples/taskmanager/src/client/index.ts` to match your account. This includes *removing* the `endpoint` property
+ * file `/examples/common/client.ts` to match your account. This includes *removing* the `endpoint` property
  * which is used when connecting to the local docker dynamo instance described above.
-**/
-
-async function loadTable() {
-  await task.put(mockData.tasks).go({concurrency: 3});
-  await office.put(mockData.offices).go({concurrency: 3});
-  await employee.put(mockData.employees).go({concurrency: 3});
-}
-
-async function initializeTable() {
-  const tableManager = createTableManager();
-  const exists = await tableManager.exists();
-  if (!exists) {
-    console.log(`table ${table} does not exist, creating...`);
-    await tableManager.create();
-    console.log(`created table ${table}!`);
-    console.log('loading mock data...');
-    await loadTable();
-    console.log('mock data loaded!');
-  }
-  console.log(`table ${table} already exists!`);
-  console.log(`using ${table}...`);
-}
-
-async function execute() {
-  await initializeTable();
-  await query();
-}
+ **/
 
 async function query() {
   let records = await taskManager.entities.employee.scan.go();
@@ -64,10 +25,10 @@ async function query() {
     `);
     process.exit(1);
   }
-  const office = records.data[0].office;
+  const officeName = records.data[0].officeName;
   // Use Collections to query across entities.
   // Find office and staff information an office
-  let workplace = await taskManager.collections.workplaces({office}).go();
+  let workplace = await taskManager.collections.workplaces({ officeName }).go();
   console.log("Workplace Collection:", workplace.data, "\r\n");
 
   // Get employee details and all assigned
@@ -109,4 +70,8 @@ async function query() {
   }
 }
 
-execute().catch(console.error);
+async function main() {
+  await query();
+}
+
+main().catch(console.error);

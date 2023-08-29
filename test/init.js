@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 const DynamoDB = require("aws-sdk/clients/dynamodb");
-const definition = require("../examples/taskmanager/src/config/definition.json");
+const definition = require("../examples/common/definition.json");
 const customKeys = require("./definitions/customkeys.json");
 const noSortKeys = require("./definitions/nosortkey.json");
 const noStringKeys = require("./definitions/nostringkeys.json");

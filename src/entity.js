@@ -2397,7 +2397,7 @@ class Entity {
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
 		let completeFacets = this._expectIndexFacets(
-			{ ...set },
+			{ ...setAttributes },
 			{ ...keyAttributes },
 		);
 
