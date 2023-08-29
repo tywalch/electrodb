@@ -66,9 +66,7 @@ Using `get` and `set` on an attribute can allow you to apply logic before and ju
 
 The first argument in an attribute's `get` or `set` callback is the value received in the query. The second argument, called `"item"`, in an attribute's is an object containing the values of other attributes on the item as it was given or retrieved. If your attribute uses `watch`, the getter or setter of attribute being watched will be invoked _before_ your getter or setter and the updated value will be on the `"item"` argument instead of the original.
 
-:::caution Warning
-Using getters/setters on Composite Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.
-:::
+> Using getters/setters on Composite Attributes is **not recommended** without considering the consequences of how that will impact your keys. When a Composite Attribute is supplied for a new record via a `put` or `create` operation, or is changed via a `patch` or `updated` operation, the Attribute's `set` callback will be invoked prior to formatting/building your record's keys on when creating or updating a record.
 
 ElectroDB invokes an Attribute's `get` method in the following circumstances:
 1. If a field exists on an item after retrieval from DynamoDB, the attribute associated with that field will have its getter method invoked.
