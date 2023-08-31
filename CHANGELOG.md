@@ -378,3 +378,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.9.1]
 ### Fixed
 - Version `2.9.0` was accidentally published without the dependency `@aws-sdk/lib-dynamodb`
+
+## [2.9.2]
+### Changed
+- The `composite()` method for `update` and `patch` now adds a condition expression that allows for cases where the composite attribute doesn't exist. Prior to this change the condition used a strict equals check on the attribute value (e.g. `#prop1 = :prop1`). This change now revises that expression to `(#prop1 = :prop1 OR attribute_not_exists(#prop1))`.    
