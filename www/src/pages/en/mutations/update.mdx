@@ -628,9 +628,8 @@ await StoreLocations
 
 The `composite` chain method helps build keys during an update using attributes that are not being modified. For example, some cases where this is helpful are the following:
 
-1. Using the `update` method to create new items when multiple mutations are present (In the future, this use case will be solved using the `upsert` method)
-2. Migrating existing entities in place to use a new secondary index (best used with `patch`).
-3. Updating attributes that appear in an index composite, when one ore more of the other composite attributes are readOnly.
+- Migrating existing entities in place to use a new secondary index (best used with `patch`).
+- Updating attributes that appear in an index composite, when one ore more of the other composite attributes are readOnly.
 
 When updating attributes that appear in an index composite, there is an opportunity for data consistency issues to appear. If a secondary index key is a composite of two or more attributes, it is critical those values stay in sync with their attribute values. ElectroDB prevents data inconsistencies between attributes and keys by adding a constraint to updates to prevent partial key updates, and requires you provide all attributes associated with an index key.
 

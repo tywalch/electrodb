@@ -2707,7 +2707,7 @@ describe("Update Item", () => {
                     "pk": "$app#id_2tz0fhi80ce3dqa6bmiehsvtryv",
                     "sk": "$organization_1"
                 },
-                "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND (#createdAt = :createdAt0 OR attribute_not_exists(#createdAt))"
+                "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #createdAt = :createdAt0"
             });
         });
 
@@ -2801,7 +2801,7 @@ describe("Update Item", () => {
                     "pk": "$app#id_2tz0fhi80ce3dqa6bmiehsvtryv",
                     "sk": "$organization_1"
                 },
-                "ConditionExpression": "(#createdAt = :createdAt0 OR attribute_not_exists(#createdAt))"
+                "ConditionExpression": "#createdAt = :createdAt0"
             });
         });
 
@@ -4279,108 +4279,4 @@ describe("Update Item", () => {
             expect(record.data).to.deep.equal(item);
         });
     });
-
-    it('when using composite, the update method should be able able to fully create new items', async () => {
-        const entity = new Entity({
-            model: {
-                service: uuid(),
-                version: '1',
-                entity: 'entity',
-            },
-            attributes: {
-                dim1: { type: 'string' },
-                dim2: { type: 'string' },
-                dim3: { type: 'string' },
-                aggregate: { type: 'string', required: true },
-                period: { type: 'string', required: true },
-                sum: { type: 'number', default: 0, required: true },
-                count: { type: 'number', default: 0, required: true },
-            },
-            indexes: {
-                byAggregate: {
-                    pk: {
-                        field: 'pk',
-                        composite: ['dim1', 'dim2', 'dim3', 'aggregate'],
-                    },
-                    sk: {
-                        field: 'sk',
-                        composite: ['period'],
-                    },
-                },
-
-                byDim1: {
-                    index: "gsi1pk-gsi1sk-index",
-                    pk: {
-                        field: 'gsi1pk',
-                        composite: ['dim1'],
-                    },
-                    sk: {
-                        field: 'gsi1sk',
-                        composite: ['period', 'dim2', 'dim3', 'aggregate'],
-                    },
-                },
-
-                byDim2: {
-                    index: "gsi2pk-gsi2sk-index",
-                    pk: {
-                        field: 'gsi2pk',
-                        composite: ['dim2'],
-                    },
-                    sk: {
-                        field: 'gsi2sk',
-                        composite: ['period', 'dim1', 'dim3', 'aggregate'],
-                    },
-                },
-
-                byDim3: {
-                    index: "gsi3pk-gsi3sk-index",
-                    pk: {
-                        field: 'gsi3pk',
-                        composite: ['dim3'],
-                    },
-                    sk: {
-                        field: 'gsi3sk',
-                        composite: ['period', 'dim1', 'dim2','aggregate'],
-                    },
-                },
-            },
-        }, { table, client });
-
-        const dim1 = uuid();
-        const dim2 = uuid();
-        const dim3 = uuid();
-        const aggregate = uuid();
-        const period = uuid();
-
-        const identifiers = {
-            dim1,
-            dim2,
-            dim3,
-            aggregate,
-            period,
-        }
-
-        async function runUpdate() {
-            await entity.update(identifiers).composite(identifiers).add({ count: 1, sum: 50 }).go();
-
-            return await Promise.all([
-                entity.query.byAggregate(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim1(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim2(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim3(identifiers).go().then(resp => resp.data[0]),
-            ]);
-        }
-
-        const initialUpdate = await runUpdate();
-        initialUpdate.forEach(item => {
-            expect(item.count).to.equal(1);
-            expect(item.sum).to.equal(50);
-        });
-
-        const secondUpdate = await runUpdate();
-        secondUpdate.forEach(item => {
-            expect(item.count).to.equal(2);
-            expect(item.sum).to.equal(100);
-        });
-    })
 });
