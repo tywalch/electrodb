@@ -265,7 +265,7 @@ const FilterOperations = {
     },
     eqOrNotExists: {
         template: function eq(options, attr, name, value) {
-            return `(${name} = ${value} or attribute_not_exists(${name})`;
+            return `(${name} = ${value} OR attribute_not_exists(${name}))`;
         },
         strict: false,
     }

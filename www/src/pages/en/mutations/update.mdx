@@ -626,6 +626,12 @@ await StoreLocations
 
 ### Composite
 
+The `composite` chain method helps build keys during an update using attributes that are not being modified. For example, some cases where this is helpful are the following:
+
+1. Using the `update` method to create new items when multiple mutations are present (In the future, this use case will be solved using the `upsert` method)
+2. Migrating existing entities in place to use a new secondary index (best used with `patch`).
+3. Updating attributes that appear in an index composite, when one ore more of the other composite attributes are readOnly.
+
 When updating attributes that appear in an index composite, there is an opportunity for data consistency issues to appear. If a secondary index key is a composite of two or more attributes, it is critical those values stay in sync with their attribute values. ElectroDB prevents data inconsistencies between attributes and keys by adding a constraint to updates to prevent partial key updates, and requires you provide all attributes associated with an index key.
 
 > [Read more](/en/reference/errors#missing-composite-attributes) about "Missing Composite Attribute" errors
@@ -636,66 +642,68 @@ One edge case arises when requiring all composite attributes for a key are provi
 
 <details>
     <summary>Example Entity</summary>
-    ```typescript
-    import { Entity } from 'electrodb';
 
-    const table = 'electro';
+  ```typescript
+import { Entity } from 'electrodb';
 
-    const Organization = new Entity({
-    model: {
+const table = 'electro';
+
+const Organization = new Entity({
+  model: {
     entity: "organization",
     service: "app",
     version: "1"
-},
-    attributes: {
+  },
+  attributes: {
     id: {
-    type: "string",
-},
+      type: "string",
+    },
     name: {
-    type: "string",
-    required: true,
-},
+      type: "string",
+      required: true,
+    },
     description: {
-    type: "string",
-},
+      type: "string",
+    },
     deleted: {
-    type: "boolean",
-    required: true,
-    default: false,
-},
+      type: "boolean",
+      required: true,
+      default: false,
+    },
     createdAt: {
-    type: "string",
-    readOnly: true,
-    required: true,
-    set: () => new Date().toISOString(),
-    default: () => new Date().toISOString(),
-},
-},
-    indexes: {
+      type: "string",
+      readOnly: true,
+      required: true,
+      set: () => new Date().toISOString(),
+      default: () => new Date().toISOString(),
+    },
+  },
+  indexes: {
     record: {
-    pk: {
-    field: "pk",
-    composite: ["id"]
-},
-    sk: {
-    field: "sk",
-    composite: []
-}
-},
+      pk: {
+        field: "pk",
+        composite: ["id"]
+      },
+      sk: {
+        field: "sk",
+        composite: []
+      }
+    },
     all: {
-    index: "gsi1pk-gsi1sk-index",
-    pk: {
-    field: "gsi1pk",
-    composite: []
-},
-    sk: {
-    field: "gsi1sk",
-    composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
-}
-},
-},
+      index: "gsi1pk-gsi1sk-index",
+      pk: {
+        field: "gsi1pk",
+        composite: []
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
+      } 
+    },
+  },
 }, { table });
-    ```
+```
+
 </details>
 
 
@@ -704,10 +712,10 @@ const id = "00001";
 const existing = await Organization.get({id}).go();
 
 if (existing.data?.deleted) {
-    await Organization.update({id: '00001'})
-        .set({ deleted: false })
-        .composite({ createdAt: existing.data.createdAt })
-        .go();
+  await Organization.update({id: '00001'})
+      .set({ deleted: false })
+      .composite({ createdAt: existing.data.createdAt })
+      .go();
 }
 ```
 
