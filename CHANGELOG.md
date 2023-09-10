@@ -382,3 +382,4 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.9.2]
 ### Fixed
 - Composite attributes that used the attribute option `watch`, and were not provided to the `create` or `put` methods, were not property applied to their composite keys. This addresses the issue brough forward in [discussion #292](https://github.com/tywalch/electrodb/discussions/292).       
+
