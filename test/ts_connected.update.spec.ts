@@ -2707,7 +2707,7 @@ describe("Update Item", () => {
                     "pk": "$app#id_2tz0fhi80ce3dqa6bmiehsvtryv",
                     "sk": "$organization_1"
                 },
-                "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND (#createdAt = :createdAt0 OR attribute_not_exists(#createdAt))"
+                "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk) AND #createdAt = :createdAt0"
             });
         });
 
@@ -2801,7 +2801,7 @@ describe("Update Item", () => {
                     "pk": "$app#id_2tz0fhi80ce3dqa6bmiehsvtryv",
                     "sk": "$organization_1"
                 },
-                "ConditionExpression": "(#createdAt = :createdAt0 OR attribute_not_exists(#createdAt))"
+                "ConditionExpression": "#createdAt = :createdAt0"
             });
         });
 

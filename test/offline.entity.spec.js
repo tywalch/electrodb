@@ -8176,4 +8176,109 @@ describe("Entity", () => {
 			});
 		}
 	});
+
+	describe('when watch "*" is used', () => {
+		it('should create keys using the result of the attributes setter regardless if the attribute was supplied', () => {
+			const UrlEntity = new Entity(
+				{
+					model: {
+						entity: "url",
+						version: "1",
+						service: "app",
+					},
+					attributes: {
+						url: {
+							type: "string",
+							required: true,
+						},
+						citation: {
+							type: "string",
+							required: true,
+						},
+						description: {
+							type: "string",
+							required: false,
+						},
+						createdAt: {
+							type: "number",
+							default: () => 123,
+							// cannot be modified after created
+							readOnly: true,
+						},
+						updatedAt: {
+							type: "number",
+							// watch for changes to any attribute
+							watch: "*",
+							// set current timestamp when updated
+							set: () => 456,
+							readOnly: true,
+						},
+					},
+					indexes: {
+						urls: {
+							pk: {
+								field: "pk",
+								composite: ["url"],
+							},
+						},
+						byUpdated: {
+							index: "gsi1pk-gsi1sk-index",
+							pk: {
+								// map to your GSI Hash/Partition key
+								field: "gsi1pk",
+								composite: [],
+							},
+							sk: {
+								// map to your GSI Range/Sort key
+								field: "gsi1sk",
+								composite: ["updatedAt"],
+							},
+						},
+					},
+				},
+				{ table }
+			);
+
+			const createParams = UrlEntity
+				.create({ url:"https://www.test.com", citation: "test"})
+				.params();
+
+			expect(createParams).to.deep.equal({
+				"Item": {
+					"url": "https://www.test.com",
+					"citation": "test",
+					"createdAt": 123,
+					"updatedAt": 456,
+					"pk": "$app$url_1#url_https://www.test.com",
+					"gsi1pk": "$app",
+					"gsi1sk": "$url_1#updatedat_456",
+					"__edb_e__": "url",
+					"__edb_v__": "1"
+				},
+				"TableName": "electro",
+				"ConditionExpression": "attribute_not_exists(#pk)",
+				"ExpressionAttributeNames": {
+					"#pk": "pk"
+				}
+			});
+
+			const queryParams = UrlEntity.query
+				.byUpdated({ })
+				.params();
+
+			expect(queryParams).to.deep.equal({
+				"KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+				"TableName": "electro",
+				"ExpressionAttributeNames": {
+					"#pk": "gsi1pk",
+					"#sk1": "gsi1sk"
+				},
+				"ExpressionAttributeValues": {
+					":pk": "$app",
+					":sk1": "$url_1#updatedat_"
+				},
+				"IndexName": "gsi1pk-gsi1sk-index"
+			});
+		});
+	});
 });

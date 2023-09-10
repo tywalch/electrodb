@@ -381,4 +381,11 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.9.2]
 ### Changed
-- The `composite()` method for `update` and `patch` now adds a condition expression that allows for cases where the composite attribute doesn't exist. Prior to this change the condition used a strict equals check on the attribute value (e.g. `#prop1 = :prop1`). This change now revises that expression to `(#prop1 = :prop1 OR attribute_not_exists(#prop1))`.    
+- The `composite()` method for `update` and `patch` now adds a condition expression that allows for cases where the composite attribute doesn't exist. Prior to this change the condition used a strict equals check on the attribute value (e.g. `#prop1 = :prop1`). This change now revises that expression to `(#prop1 = :prop1 OR attribute_not_exists(#prop1))`.
+
+## [2.9.3]
+### Revert
+- Reverts change in `2.9.2`. The `composite()` method no longer allows for `attribute_not_exists()`.
+### Fixed
+- Composite attributes that used the attribute option `watch`, and were not provided to the `create` or `put` methods, were not property applied to their composite keys. This addresses the issue brough forward in [discussion #292](https://github.com/tywalch/electrodb/discussions/292).       
+
