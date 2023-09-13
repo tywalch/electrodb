@@ -18,9 +18,17 @@
     "ddb:start": "docker compose up -d",
     "ddb:load": "docker compose exec electro npm run test:init",
     "ddb:stop": "docker compose stop",
-    "examples:load:library": "npm run ddb:start && ts-node ./examples/library/load.ts",
-    "examples:load:taskmanager": "npm run ddb:start && ts-node ./examples/taskmanager/load.ts",
-    "examples:load:versioncontrol": "npm run ddb:start && ts-node ./examples/versioncontrol/load.ts"
+    "examples:load:library": "npm run ddb:init && ts-node ./examples/library/load.ts",
+    "examples:query:library": "npm run ddb:init && ts-node ./examples/library/query.ts",
+    "examples:load:taskmanager": "npm run ddb:init && ts-node ./examples/taskmanager/load.ts",
+    "examples:query:taskmanager": "npm run ddb:init && ts-node ./examples/taskmanager/query.ts",
+    "examples:load:versioncontrol": "npm run ddb:init && ts-node ./examples/versioncontrol/load.ts",
+    "examples:query:versioncontrol": "npm run ddb:init && ts-node ./examples/versioncontrol/query.ts",
+    "local:init": "LOCAL_DYNAMO_ENDPOINT='http://localhost:8000' npm run test:init",
+    "local:start": "npm run ddb:start && npm run local:init",
+    "local:stop": "npm run ddb:stop",
+    "local:exec": "LOCAL_DYNAMO_ENDPOINT='http://localhost:8000' ts-node ./test/debug.ts",
+    "local:debug": "npm run local:start && npm run local:exec"
   },
   "repository": {
     "type": "git",
@@ -53,7 +61,7 @@
     "source-map-support": "^0.5.19",
     "ts-node": "^10.9.1",
     "tsd": "^0.28.1",
-    "typescript": "^5.1.6",
+    "typescript": "^5.2.2",
     "uuid": "7.0.1"
   },
   "keywords": [

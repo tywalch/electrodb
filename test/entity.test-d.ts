@@ -1,6 +1,5 @@
-import {Entity, Resolve} from '../';
+import { Entity, Resolve } from '../';
 import { expectType } from 'tsd';
-import {Return} from "aws-sdk/clients/cloudsearchdomain";
 
 const troubleshoot = <Params extends any[], Response>(fn: (...params: Params) => Response, response: Response) => {};
 const magnify = <T>(value: T): Resolve<T> => { return {} as Resolve<T> };
@@ -155,19 +154,19 @@ entityWithSK.update({
 type CreateOptions = Parameters<typeof entityWithSK.create>[0];
 type UpsertOptions = Parameters<typeof entityWithSK.upsert>[0];
 
-const createOptions = {} as CreateOptions;
+const createOptions = {} as Partial<CreateOptions>;
 const upsertOptions = {} as UpsertOptions;
 
 expectType<UpsertOptions>(createOptions);
 expectType<{
     attr1?: string | undefined;
-    attr2: string;
+    attr2?: string | undefined;
     attr3?: "123" | "def" | "ghi" | undefined;
-    attr4: 'abc' | 'ghi';
+    attr4?: 'abc' | 'ghi' | undefined;
     attr5?: string | undefined;
     attr6?: number | undefined;
     attr7?: any;
-    attr8: boolean;
+    attr8?: boolean | undefined;
     attr9?: number | undefined;
     attr10?: boolean | undefined;
     attr11?: string[] | undefined;

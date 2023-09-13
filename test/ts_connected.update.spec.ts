@@ -11,6 +11,16 @@ const client = new DynamoDB.DocumentClient({
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 
+function print(label: string, val: any): void
+function print(val: any): void
+function print(maybeLabel: any, val = maybeLabel) {
+    if (typeof maybeLabel === 'string') {
+        console.log(maybeLabel, JSON.stringify(val, null, 4));
+    } else {
+        console.log(JSON.stringify(val, null, 4));
+    }
+}
+
 const table = "electro";
 
 const users = new Entity({
@@ -1857,7 +1867,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(subtractParameters).to.deep.equal({
-                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #deposit = (if_not_exists(#deposit, :deposit_default_value_u0) - :deposit_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#deposit": "deposit",
@@ -1868,6 +1878,7 @@ describe("Update Item", () => {
                     "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
+                    ":deposit_default_value_u0": 0,
                     ":category0": "food/coffee",
                     ":deposit_u0": 500,
                     ":buildingId_u0": "A34",
@@ -1980,7 +1991,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #deposit = (if_not_exists(#deposit, :deposit_default_value_u0) - :deposit_u0), #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
@@ -2000,6 +2011,7 @@ describe("Update Item", () => {
                     "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
+                    ":deposit_default_value_u0": 0,
                     ":category0": "food/coffee",
                     ":category_u0": "food/meal",
                     ":rent_u0": 100,
@@ -2101,7 +2113,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -2120,6 +2132,7 @@ describe("Update Item", () => {
                 "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
             },
             "ExpressionAttributeValues": {
+                ":stars_default_value_u0": 0,
                 ":followers_u0": params.ExpressionAttributeValues[":followers_u0"],
                 ":stars_u0": 8,
                 ":files_u0": [
@@ -4280,107 +4293,439 @@ describe("Update Item", () => {
         });
     });
 
-    it('when using composite, the update method should be able able to fully create new items', async () => {
-        const entity = new Entity({
-            model: {
-                service: uuid(),
-                version: '1',
-                entity: 'entity',
-            },
-            attributes: {
-                dim1: { type: 'string' },
-                dim2: { type: 'string' },
-                dim3: { type: 'string' },
-                aggregate: { type: 'string', required: true },
-                period: { type: 'string', required: true },
-                sum: { type: 'number', default: 0, required: true },
-                count: { type: 'number', default: 0, required: true },
-            },
-            indexes: {
-                byAggregate: {
-                    pk: {
-                        field: 'pk',
-                        composite: ['dim1', 'dim2', 'dim3', 'aggregate'],
-                    },
-                    sk: {
-                        field: 'sk',
-                        composite: ['period'],
-                    },
-                },
-
-                byDim1: {
-                    index: "gsi1pk-gsi1sk-index",
-                    pk: {
-                        field: 'gsi1pk',
-                        composite: ['dim1'],
-                    },
-                    sk: {
-                        field: 'gsi1sk',
-                        composite: ['period', 'dim2', 'dim3', 'aggregate'],
-                    },
-                },
-
-                byDim2: {
-                    index: "gsi2pk-gsi2sk-index",
-                    pk: {
-                        field: 'gsi2pk',
-                        composite: ['dim2'],
-                    },
-                    sk: {
-                        field: 'gsi2sk',
-                        composite: ['period', 'dim1', 'dim3', 'aggregate'],
-                    },
-                },
-
-                byDim3: {
-                    index: "gsi3pk-gsi3sk-index",
-                    pk: {
-                        field: 'gsi3pk',
-                        composite: ['dim3'],
-                    },
-                    sk: {
-                        field: 'gsi3sk',
-                        composite: ['period', 'dim1', 'dim2','aggregate'],
-                    },
-                },
-            },
-        }, { table, client });
-
-        const dim1 = uuid();
-        const dim2 = uuid();
-        const dim3 = uuid();
-        const aggregate = uuid();
-        const period = uuid();
-
-        const identifiers = {
-            dim1,
-            dim2,
-            dim3,
-            aggregate,
-            period,
-        }
-
-        async function runUpdate() {
-            await entity.update(identifiers).composite(identifiers).add({ count: 1, sum: 50 }).go();
-
-            return await Promise.all([
-                entity.query.byAggregate(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim1(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim2(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim3(identifiers).go().then(resp => resp.data[0]),
-            ]);
-        }
-
-        const initialUpdate = await runUpdate();
-        initialUpdate.forEach(item => {
-            expect(item.count).to.equal(1);
-            expect(item.sum).to.equal(50);
+    describe('applying add and subtract defaults', () => {
+        it('should utilize default attribute value in calculations for non-existent attributes with update and patch', async () => {
+            throw new Error('incomplete');
         });
 
-        const secondUpdate = await runUpdate();
-        secondUpdate.forEach(item => {
-            expect(item.count).to.equal(2);
-            expect(item.sum).to.equal(100);
+        it('should utilize default attribute value in calculations for non-existent attributes with upsert', async () => {
+            throw new Error('incomplete');
+        });
+
+        it('should not utilize default attribute value in calculations for existing attributes with update and patch', async () => {
+            throw new Error('incomplete');
         });
     })
+
+    describe('updating on upsert', () => {
+        const createdAt = Date.now();
+        const updatedAt = Date.now();
+        it('should accept table index composites attributes anywhere in the upsert chain', () => {
+            const serviceName = uuid();
+            const UrlEntity = new Entity(
+                {
+                    model: {
+                        entity: "url",
+                        version: "1",
+                        service: serviceName,
+                    },
+                    attributes: {
+                        id: {
+                            type: 'string',
+                        },
+                        url: {
+                            type: "string",
+                            required: true,
+                        },
+                        citation: {
+                            type: "string",
+                            required: true,
+                        },
+                        description: {
+                            type: "string",
+                            required: false,
+                        },
+                        count: {
+                            type: "number"
+                        },
+                        hits: {
+                            type: "number",
+                            required: true,
+                        },
+                        minimum: {
+                            type: "number",
+                        },
+                        maximum: {
+                            type: 'number',
+                            readOnly: true,
+                        },
+                        secure: {
+                            type: 'boolean',
+                            readOnly: true,
+                            required: true,
+                            default: () => false,
+                            watch: ['protocol'],
+                            set: (_, { protocol }) => {
+                                return protocol === 'https';
+                            }
+                        },
+                        protocol: {
+                            type: 'string',
+                            readOnly: true,
+                            required: true,
+                        },
+                        createdAt: {
+                            type: "number",
+                            default: () => createdAt,
+                            // cannot be modified after created
+                            readOnly: true,
+                        },
+                        updatedAt: {
+                            type: "number",
+                            // watch for changes to any attribute
+                            watch: "*",
+                            // set current timestamp when updated
+                            set: () => updatedAt,
+                            readOnly: true,
+                        },
+                    },
+                    indexes: {
+                        urls: {
+                            pk: {
+                                field: "pk",
+                                composite: ['id'],
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: ["url"],
+                            }
+                        },
+                        byUpdated: {
+                            index: "gsi1pk-gsi1sk-index",
+                            pk: {
+                                // map to your GSI Hash/Partition key
+                                field: "gsi1pk",
+                                composite: [],
+                            },
+                            sk: {
+                                // map to your GSI Range/Sort key
+                                field: "gsi1sk",
+                                composite: ["updatedAt"],
+                            },
+                        },
+                    },
+                },
+                { table, client }
+            );
+
+            const id = uuid();
+            const url = 'www.cool.com';
+            const citation = 'my_citation';
+            const description = 'my_description';
+            const count = 2;
+            const hits = 3;
+            const minimum = 1;
+            const maximum = 20;
+            const protocol = 'https';
+            const params = UrlEntity.upsert({
+                // this object contains no composite attributes
+                    citation,
+                    protocol,
+                    description,
+                })
+                .set({ id })
+                .add({ count, maximum })
+                .subtract({ hits, minimum })
+                .set({ url })
+                .params();
+
+            expect(params).to.deep.equal({
+                TableName: 'electro',
+                UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #id = :id_u0, #url = :url_u0, #citation = :citation_u0, #description = :description_u0, #secure = if_not_exists(#secure, :secure_u0), #protocol = if_not_exists(#protocol, :protocol_u0), #createdAt = if_not_exists(#createdAt, :createdAt_u0), #updatedAt = :updatedAt_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #hits = (if_not_exists(#hits, :hits_default_value_u0) - :hits_u0), #minimum = (if_not_exists(#minimum, :minimum_default_value_u0) - :minimum_u0) ADD #count :count_u0, #maximum :maximum_u0',
+                ExpressionAttributeNames: {
+                    '#__edb_e__': '__edb_e__',
+                    '#__edb_v__': '__edb_v__',
+                    '#id': 'id',
+                    '#url': 'url',
+                    '#citation': 'citation',
+                    '#description': 'description',
+                    '#secure': 'secure',
+                    '#protocol': 'protocol',
+                    '#createdAt': 'createdAt',
+                    '#updatedAt': 'updatedAt',
+                    '#gsi1pk': 'gsi1pk',
+                    '#gsi1sk': 'gsi1sk',
+                    '#count': 'count',
+                    '#maximum': 'maximum',
+                    '#hits': 'hits',
+                    '#minimum': 'minimum'
+                },
+                ExpressionAttributeValues: {
+                    ':__edb_e___u0': 'url',
+                    ':__edb_v___u0': '1',
+                    ':id_u0': id,
+                    ':url_u0': 'www.cool.com',
+                    ':citation_u0': 'my_citation',
+                    ':description_u0': 'my_description',
+                    ':secure_u0': true,
+                    ':protocol_u0': 'https',
+                    ':createdAt_u0': createdAt,
+                    ':updatedAt_u0': updatedAt,
+                    ':gsi1pk_u0': serviceName,
+                    ':gsi1sk_u0': `$url_1#updatedat_${updatedAt}`,
+                    ':count_u0': count,
+                    ':maximum_u0': maximum,
+                    ':hits_u0': hits,
+                    ':hits_default_value_u0': 0,
+                    ':minimum_u0': minimum,
+                    ':minimum_default_value_u0': 0,
+                },
+                Key: {
+                    pk: `$${serviceName}#id_${id}`,
+                    sk: '$url_1#url_www.cool.com'
+                }
+            });
+        });
+
+        it('should perform add, subtract, and append while performing an upsert', async () => {
+            const serviceName = uuid();
+            const UrlEntity = new Entity(
+                {
+                    model: {
+                        entity: "url",
+                        version: "1",
+                        service: serviceName,
+                    },
+                    attributes: {
+                        id: {
+                            type: 'string',
+                        },
+                        url: {
+                            type: "string",
+                            required: true,
+                        },
+                        citation: {
+                            type: "string",
+                            required: true,
+                        },
+                        description: {
+                            type: "string",
+                            required: false,
+                        },
+                        count: {
+                            type: "number"
+                        },
+                        hits: {
+                            type: "number",
+                            required: true,
+                        },
+                        minimum: {
+                            type: "number",
+                        },
+                        maximum: {
+                            type: 'number',
+                        },
+                        secure: {
+                            type: 'boolean',
+                            readOnly: true,
+                            required: true,
+                            default: () => false,
+                            watch: ['protocol'],
+                            set: (_, { protocol }) => {
+                                return protocol === 'https';
+                            }
+                        },
+                        protocol: {
+                            type: 'string',
+                            readOnly: true,
+                            required: true,
+                        },
+                        createdAt: {
+                            type: "number",
+                            default: () => createdAt,
+                            // cannot be modified after created
+                            readOnly: true,
+                        },
+                        updatedAt: {
+                            type: "number",
+                            // watch for changes to any attribute
+                            watch: "*",
+                            // set current timestamp when updated
+                            set: () => updatedAt,
+                            readOnly: true,
+                        },
+                    },
+                    indexes: {
+                        urls: {
+                            pk: {
+                                field: "pk",
+                                composite: ['id'],
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: ["url"],
+                            }
+                        },
+                        byUpdated: {
+                            index: "gsi1pk-gsi1sk-index",
+                            pk: {
+                                // map to your GSI Hash/Partition key
+                                field: "gsi1pk",
+                                composite: [],
+                            },
+                            sk: {
+                                // map to your GSI Range/Sort key
+                                field: "gsi1sk",
+                                composite: ["updatedAt"],
+                            },
+                        },
+                    },
+                },
+                { table, client }
+            );
+
+            const id = uuid();
+            const url = 'www.cool.com';
+            const citation = 'my_citation';
+            const description = 'my_description';
+            const count = 2;
+            const hits = 3;
+            const minimum = 1;
+            const maximum = 20;
+            const protocol = 'https';
+            const params = UrlEntity.upsert({
+                url,
+                citation,
+                protocol,
+                description,
+            })
+                .set({ id })
+                .add({ count, maximum })
+                .subtract({ hits, minimum }).params();
+
+            print({params});
+
+            await UrlEntity.upsert({
+                url,
+                citation,
+                protocol,
+                description,
+            })
+                .set({ id })
+                .add({ count, maximum })
+                .subtract({ hits, minimum }).go();
+
+        });
+
+        it('should utilize default values while performing upsert and result in the same outcomes as create', async () => {
+           const serviceName = uuid();
+           const UrlEntity = new Entity(
+               {
+                   model: {
+                       entity: "url",
+                       version: "1",
+                       service: serviceName,
+                   },
+                   attributes: {
+                       id: {
+                           type: 'string',
+                       },
+                       url: {
+                           type: "string",
+                           required: true,
+                       },
+                       citation: {
+                           type: "string",
+                           required: true,
+                       },
+                       description: {
+                           type: "string",
+                           required: false,
+                       },
+                       count: {
+                           type: "number"
+                       },
+                       hits: {
+                           type: "number",
+                           required: true,
+                       },
+                       minimum: {
+                           type: "number",
+                           default: 4,
+                       },
+                       maximum: {
+                           type: 'number',
+                           default: 12
+                       },
+                       secure: {
+                           type: 'boolean',
+                           readOnly: true,
+                           required: true,
+                           default: () => false,
+                           watch: ['protocol'],
+                           set: (_, { protocol }) => {
+                               return protocol === 'https';
+                           }
+                       },
+                       protocol: {
+                           type: 'string',
+                           readOnly: true,
+                           required: true,
+                       },
+                       createdAt: {
+                           type: "number",
+                           default: () => createdAt,
+                           // cannot be modified after created
+                           readOnly: true,
+                       },
+                       updatedAt: {
+                           type: "number",
+                           // watch for changes to any attribute
+                           watch: "*",
+                           // set current timestamp when updated
+                           set: () => updatedAt,
+                           readOnly: true,
+                       },
+                   },
+                   indexes: {
+                       urls: {
+                           pk: {
+                               field: "pk",
+                               composite: ['id'],
+                           },
+                           sk: {
+                               field: 'sk',
+                               composite: ["url"],
+                           }
+                       },
+                       byUpdated: {
+                           index: "gsi1pk-gsi1sk-index",
+                           pk: {
+                               // map to your GSI Hash/Partition key
+                               field: "gsi1pk",
+                               composite: [],
+                           },
+                           sk: {
+                               // map to your GSI Range/Sort key
+                               field: "gsi1sk",
+                               composite: ["updatedAt"],
+                           },
+                       },
+                   },
+               },
+               { table, client }
+           );
+
+           const id = uuid();
+           const url = 'www.cool.com';
+           const citation = 'my_citation';
+           const description = 'my_description';
+           const count = 2;
+           const hits = 3;
+           const minimum = 1;
+           const maximum = 20;
+           const protocol = 'https';
+           const params = UrlEntity.upsert({
+                   url,
+                   citation,
+                   protocol,
+                   description,
+               })
+               .set({ id })
+               .add({ count, maximum })
+               .subtract({ hits, minimum }).params();
+
+
+       });
+    });
 });

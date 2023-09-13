@@ -834,11 +834,51 @@ export interface PutRecordOperationOptions<A extends string, F extends string, C
     where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, PutRecordOperationOptions<A, F, C, S, ResponseType>>;
 }
 
-export interface UpsertRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: UpsertRecordGo<ResponseType, AllTableIndexCompositeAttributes<A,F,C,S>>;
-    params: ParamRecord<UpdateQueryParams>;
-    where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A, F, C, S, ResponseType>>;
+type RequiredKeys<T> = Exclude<{ [K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T], symbol>;
+
+type OverlappingProperties<T1, T2> = {
+    [Key in keyof T1 as Key extends keyof T2 ? Key : never]: Key extends keyof T2 ? T2[Key] : never;
 }
+
+type NonOverlappingProperties<T1, T2> = {
+    [Key in keyof T1 as Key extends keyof T2 ? never : Key]: T1[Key];
+}
+
+// RequiredPutItems
+export type UpsertRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType, FullExpectedItem, RemainingExpectedItem, ProvidedItem> =
+    // keyof Omit<ProvidedItem, RequiredKeys<RemainingExpectedItem>> extends RequiredKeys<RemainingExpectedItem>
+    [RequiredKeys<RemainingExpectedItem>] extends [never]
+        ? {
+            go: UpsertRecordGo<ResponseType, AllTableIndexCompositeAttributes<A,F,C,S>>;
+            params: ParamRecord<UpdateQueryParams>;
+
+            where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem,RemainingExpectedItem,ProvidedItem>>;
+
+            set: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, PutItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            add: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, AddItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            subtract: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, SubtractItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            append: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, AppendItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+        }
+        : {
+            // these are strings to give context to the user this is a builder pattern
+            go: `Missing required attributes to perform upsert` | `Required: ${RequiredKeys<RemainingExpectedItem>}`;
+            params: `Missing required attributes to perform upsert` | `Required: ${RequiredKeys<RemainingExpectedItem>}`;
+
+            where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem,RemainingExpectedItem,ProvidedItem>>;
+
+            set: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, PutItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            add: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, AddItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            subtract: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, SubtractItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            append: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, AppendItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+        }
 
 export interface DeleteRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
     go: DeleteRecordOperationGo<ResponseType, AllTableIndexCompositeAttributes<A,F,C,S>>;
@@ -2343,7 +2383,10 @@ export type RequiredPutItems<A extends string, F extends string, C extends strin
 
 export type PutItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     Pick<CreatedItem<A,F,C,S,S["attributes"]>, ExtractKeysOfValueType<RequiredPutItems<A,F,C,S>,true>>
-    & Partial<CreatedItem<A,F,C,S,S["attributes"]>>
+    & Partial<CreatedItem<A,F,C,S,S["attributes"]>>;
+
+export type UpsertItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
+    Partial<PutItem<A,F,C,S>>;
 
 export type UpdateData<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     Omit<{
@@ -2524,6 +2567,7 @@ export type EntityConfiguration = {
     },
 };
 
+
 export class Entity<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> {
     readonly schema: S;
     private config?: EntityConfiguration;
@@ -2536,10 +2580,17 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
-    upsert(record: PutItem<A,F,C,S>): UpsertRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
+
+    upsert<InitialItem extends UpsertItem<A,F,C,S>>(record: InitialItem): UpsertRecordOperationOptions<
+        A,F,C,S,
+        ResponseItem<A,F,C,S>,
+        PutItem<A,F,C,S>,
+        [keyof InitialItem] extends [never] ? PutItem<A,F,C,S> : Omit<PutItem<A,F,C,S>, keyof InitialItem>,
+        InitialItem
+    >;
 
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
