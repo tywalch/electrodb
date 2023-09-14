@@ -1978,15 +1978,20 @@ class Entity {
 			if (name) {
 				const attribute = this.model.schema.attributes[name];
 				if (this.model.schema.readOnlyAttributes.has(name) && (!attribute || !attribute.indexes || attribute.indexes.length === 0)) {
-					// damn this is SOME edge case, yikes :(
-					const defaultValue = attribute.default();
-					const valueIsNumber = typeof value === 'number';
-					const resolvedDefaultValue  = typeof defaultValue === 'number' ? defaultValue : 0;
-					if (operation === UpsertOperations.subtract && valueIsNumber) {
-						value = resolvedDefaultValue - value;
-					} else if (operation === UpsertOperations.add && valueIsNumber) {
-						value = resolvedDefaultValue + value;
-					}
+					/*
+						// this should be considered but is likely overkill at best and unexpected at worst. 
+						// It also is likely symbolic of a deeper issue. That said maybe it could be helpful
+						// in the future? 
+
+						const defaultValue = attribute.default();
+						const valueIsNumber = typeof value === 'number';
+						const resolvedDefaultValue  = typeof defaultValue === 'number' ? defaultValue : 0;
+						if (operation === UpsertOperations.subtract && valueIsNumber) {
+							value = resolvedDefaultValue - value;
+						} else if (operation === UpsertOperations.add && valueIsNumber) {
+							value = resolvedDefaultValue + value;
+					// }
+					*/
 					update.set(field, value, ItemOperations.ifNotExists);
 				} else {
 					updateProxy.performOperation({

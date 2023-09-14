@@ -4293,24 +4293,10 @@ describe("Update Item", () => {
         });
     });
 
-    describe('applying add and subtract defaults', () => {
-        it('should utilize default attribute value in calculations for non-existent attributes with update and patch', async () => {
-            throw new Error('incomplete');
-        });
-
-        it('should utilize default attribute value in calculations for non-existent attributes with upsert', async () => {
-            throw new Error('incomplete');
-        });
-
-        it('should not utilize default attribute value in calculations for existing attributes with update and patch', async () => {
-            throw new Error('incomplete');
-        });
-    })
-
     describe('updating on upsert', () => {
         const createdAt = Date.now();
         const updatedAt = Date.now();
-        it('should accept table index composites attributes anywhere in the upsert chain', () => {
+        it('should accept table index composites attributes anywhere in the upsert chain', async () => {
             const serviceName = uuid();
             const UrlEntity = new Entity(
                 {
@@ -4423,15 +4409,15 @@ describe("Update Item", () => {
                     protocol,
                     description,
                 })
-                .set({ id })
-                .add({ count, maximum })
+                .set({ id, maximum })
+                .add({ count })
                 .subtract({ hits, minimum })
                 .set({ url })
                 .params();
 
             expect(params).to.deep.equal({
                 TableName: 'electro',
-                UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #id = :id_u0, #url = :url_u0, #citation = :citation_u0, #description = :description_u0, #secure = if_not_exists(#secure, :secure_u0), #protocol = if_not_exists(#protocol, :protocol_u0), #createdAt = if_not_exists(#createdAt, :createdAt_u0), #updatedAt = :updatedAt_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #hits = (if_not_exists(#hits, :hits_default_value_u0) - :hits_u0), #minimum = (if_not_exists(#minimum, :minimum_default_value_u0) - :minimum_u0) ADD #count :count_u0, #maximum :maximum_u0',
+                UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #id = :id_u0, #url = :url_u0, #citation = :citation_u0, #description = :description_u0, #maximum = if_not_exists(#maximum, :maximum_u0), #secure = if_not_exists(#secure, :secure_u0), #protocol = if_not_exists(#protocol, :protocol_u0), #createdAt = if_not_exists(#createdAt, :createdAt_u0), #updatedAt = :updatedAt_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #hits = (if_not_exists(#hits, :hits_default_value_u0) - :hits_u0), #minimum = (if_not_exists(#minimum, :minimum_default_value_u0) - :minimum_u0) ADD #count :count_u0',
                 ExpressionAttributeNames: {
                     '#__edb_e__': '__edb_e__',
                     '#__edb_v__': '__edb_v__',
@@ -4461,7 +4447,7 @@ describe("Update Item", () => {
                     ':protocol_u0': 'https',
                     ':createdAt_u0': createdAt,
                     ':updatedAt_u0': updatedAt,
-                    ':gsi1pk_u0': serviceName,
+                    ':gsi1pk_u0': `$${serviceName}`,
                     ':gsi1sk_u0': `$url_1#updatedat_${updatedAt}`,
                     ':count_u0': count,
                     ':maximum_u0': maximum,
@@ -4514,10 +4500,10 @@ describe("Update Item", () => {
                         },
                         maximum: {
                             type: 'number',
+                            readOnly: true,
                         },
                         secure: {
                             type: 'boolean',
-                            readOnly: true,
                             required: true,
                             default: () => false,
                             watch: ['protocol'],
@@ -4527,7 +4513,6 @@ describe("Update Item", () => {
                         },
                         protocol: {
                             type: 'string',
-                            readOnly: true,
                             required: true,
                         },
                         createdAt: {
@@ -4583,32 +4568,81 @@ describe("Update Item", () => {
             const minimum = 1;
             const maximum = 20;
             const protocol = 'https';
-            const params = UrlEntity.upsert({
+            
+            await UrlEntity.upsert({
+                // this object contains no composite attributes
+                    citation,
+                    protocol,
+                    description,
+                })
+                .set({ id, maximum })
+                .add({ count })
+                .subtract({ hits, minimum })
+                .set({ url })
+                .go();
+
+            const afterFirstUpsert = await UrlEntity.get({id, url}).go();
+
+            const afterFirstUpsertExpected = {
+                id,
                 url,
                 citation,
+                updatedAt,
+                createdAt,
                 protocol,
+                count,
+                maximum,
                 description,
-            })
-                .set({ id })
-                .add({ count, maximum })
-                .subtract({ hits, minimum }).params();
-
-            print({params});
+                secure: true,
+                hits: 0 - hits,
+                minimum: 0 - minimum,
+            }
+            
+            expect(afterFirstUpsert.data).to.deep.equal(afterFirstUpsertExpected);
 
             await UrlEntity.upsert({
-                url,
-                citation,
-                protocol,
-                description,
-            })
-                .set({ id })
-                .add({ count, maximum })
-                .subtract({ hits, minimum }).go();
+                    citation,
+                    description,
+                    // protocol changes, so should watcher "secure"
+                    protocol: 'http',
+                })
+                .set({ 
+                    id, 
+                    // different value for readonly maximum
+                    maximum: maximum * 2
+                })
+                .add({ count })
+                .subtract({ hits, minimum })
+                .set({ url })
+                .go();
 
+            const afterSecondUpsert = await UrlEntity.get({ id, url }).go();
+
+            expect(afterSecondUpsert.data).to.deep.equal({
+                ...afterFirstUpsertExpected,
+                updatedAt,
+                createdAt,
+                
+                // protocol changed so should watcher attribute
+                protocol: 'http',
+                secure: false,
+                
+                // maximum was readOnly so should not have been altered
+                maximum: maximum,
+
+                // count was added to count again 
+                count: afterFirstUpsertExpected.count * count,
+
+                // hits/minimum was subtracted again
+                hits: afterFirstUpsertExpected.hits - hits,
+                minimum: afterFirstUpsertExpected.minimum - minimum
+            });
         });
 
-        it('should utilize default values while performing upsert and result in the same outcomes as create', async () => {
+        it('should utiltize default values while performing upsert and result in the same outcomes as create', async () => {
            const serviceName = uuid();
+           const minimumDefault = 4;
+           const maximumDefault = 8;
            const UrlEntity = new Entity(
                {
                    model: {
@@ -4633,7 +4667,7 @@ describe("Update Item", () => {
                            required: false,
                        },
                        count: {
-                           type: "number"
+                           type: "number",
                        },
                        hits: {
                            type: "number",
@@ -4641,11 +4675,11 @@ describe("Update Item", () => {
                        },
                        minimum: {
                            type: "number",
-                           default: 4,
+                           default: minimumDefault,
                        },
                        maximum: {
                            type: 'number',
-                           default: 12
+                           default: maximumDefault
                        },
                        secure: {
                            type: 'boolean',
@@ -4706,26 +4740,126 @@ describe("Update Item", () => {
                { table, client }
            );
 
-           const id = uuid();
            const url = 'www.cool.com';
            const citation = 'my_citation';
            const description = 'my_description';
            const count = 2;
            const hits = 3;
-           const minimum = 1;
-           const maximum = 20;
            const protocol = 'https';
-           const params = UrlEntity.upsert({
-                   url,
-                   citation,
-                   protocol,
-                   description,
-               })
-               .set({ id })
-               .add({ count, maximum })
-               .subtract({ hits, minimum }).params();
 
+           // item1 (and the objects that use it's value as a base)
+           // purposely avoid defaulted attributes: "minimum" and "maximum".
+           // They should be set with the defaults set in the model 
+           const item1 = {
+                id: uuid(),
+                url,
+                hits,
+                count,
+                protocol,
+                citation,
+                description,
+           };
 
+            const item2 = {
+                ...item1,
+                id: uuid(),
+            };
+
+            const item3 = {
+                ...item1,
+                id: uuid()
+            };
+
+            const item4 = {
+                ...item1,
+                id: uuid()
+            };
+
+           // normal create
+           const createdItem1 = await UrlEntity.create(item1).go();
+
+           // normal upsert
+           const upsertedItem2 = await UrlEntity.upsert(item2).go({ response: 'all_new' });
+
+           // upsert with add and subtract
+           await UrlEntity.upsert(item3).add({ minimum: 2 }).subtract({ maximum: 1 }).go();
+
+           // create and patch (equivelent of upsert with add and subtract)
+           await UrlEntity.create(item4).go();
+           await UrlEntity.patch(item4).add({minimum: 2}).subtract({ maximum: 1 }).go();
+
+           const storedItem1 = await UrlEntity.get(item1).go();
+           const storedItem2 = await UrlEntity.get(item2).go();
+           
+           // defaults should have been used
+           expect(storedItem1.data?.minimum).to.equal(minimumDefault);
+           expect(storedItem1.data?.maximum).to.equal(maximumDefault);
+
+           // defaults should have been used
+           expect(storedItem2.data?.minimum).to.equal(minimumDefault);
+           expect(storedItem2.data?.maximum).to.equal(maximumDefault);
+
+           // items should be identical except their id
+            expect({ 
+                ...storedItem1.data,
+                id: null,
+                updatedAt,
+                createdAt,
+            }).to.deep.equal({
+                ...storedItem2.data,
+                id: null,
+                updatedAt,
+                createdAt,
+            });
+
+            // upsert results should equal the item inserted (all_new was used)
+            expect({
+                ...storedItem1.data,
+                id: null,
+                updatedAt,
+                createdAt,
+            }).to.deep.equal({
+                ...upsertedItem2.data,
+                updatedAt,
+                createdAt,
+                id: null,
+            });
+
+            // upsert results should equal the same as create results (all_new was used)
+            expect({
+                ...createdItem1.data,
+                id: null,
+                updatedAt,
+                createdAt,
+            }).to.deep.equal({
+                ...upsertedItem2.data,
+                updatedAt,
+                createdAt,
+                id: null,
+            });
+
+            const storedItem3 = await UrlEntity.get(item3).go();
+            const storedItem4 = await UrlEntity.get(item4).go();
+
+           // defaults should have been used and then updated
+           expect(storedItem3.data?.minimum).to.equal(minimumDefault + 2);
+           expect(storedItem3.data?.maximum).to.equal(maximumDefault - 1);
+
+           // defaults should have been used and then updated
+           expect(storedItem4.data?.minimum).to.equal(minimumDefault + 2);
+           expect(storedItem4.data?.maximum).to.equal(maximumDefault - 1);
+
+           expect({ 
+                ...storedItem3.data,
+                id: null,
+                updatedAt,
+                createdAt,
+            }).to.deep.equal({
+                ...storedItem4.data,
+                id: null,
+                updatedAt,
+                createdAt,
+            });
        });
     });
 });
