@@ -3,7 +3,7 @@ const FilterOperations = {
         template: function escape(options, attr) {
             return `${attr}`;
         },
-        noAttribute: true,
+        rawValue: true,
     },
     size: {
         template: function size(options, attr, name) {
@@ -108,6 +108,16 @@ const FilterOperations = {
             return `(${name} = ${value} OR attribute_not_exists(${name}))`;
         },
         strict: false,
+    },
+    field: {
+        template: function(options, _, fieldName) {
+            return fieldName !== undefined
+                ? `${fieldName}`
+                : '';
+        },
+        strict: false,
+        canNest: true,
+        rawField: true,
     }
 };
 

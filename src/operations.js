@@ -145,7 +145,7 @@ class AttributeOperationProxy {
         let ops = {};
         let seen = new Map();
         for (let operation of Object.keys(operations)) {
-            let {template, canNest, noAttribute} = operations[operation];
+            let {template, canNest, rawValue, rawField} = operations[operation];
             Object.defineProperty(ops, operation, {
                 get: () => {
                     return (property, ...values) => {
@@ -219,7 +219,7 @@ class AttributeOperationProxy {
                             }
 
                             return formatted;
-                        } else if (noAttribute) {
+                        } else if (rawValue) {
                             // const {json, expression} = builder.setName({}, property, property);
                             let attributeValueName = builder.setValue(property, property);
                             builder.setPath(property, {
@@ -228,6 +228,12 @@ class AttributeOperationProxy {
                             });
                             const formatted = template({}, attributeValueName);
                             seen.set(attributeValueName, [property]);
+                            seen.set(formatted, [property]);
+                            return formatted;
+                        } else if (rawField) {
+                            const { prop, expression } = builder.setName({}, property, property);
+                            const formatted = template({}, null, prop);
+                            seen.set(expression, [property]);
                             seen.set(formatted, [property]);
                             return formatted;
                         } else {

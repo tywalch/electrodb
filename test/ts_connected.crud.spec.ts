@@ -442,7 +442,6 @@ describe("Entity", () => {
                             required: true,
                             default: () => 1,
                             set: () => {
-                                console.log('inside set');
                                 return createdAt++
                             }
                         },
@@ -2984,10 +2983,11 @@ describe("Entity", () => {
                 .set({createdAt})
                 .add({incrementId: 1})
                 .params();
+
             expect(newUpdateParameters).to.deep.equal({
-                UpdateExpression: "SET #createdAt = :createdAt_u0, #incrementId = (if_not_exists(#incrementId, :incrementId_default_value_u0) + :incrementId_u0), #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                UpdateExpression: "SET #createdAt = :createdAt_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #incrementId :incrementId_u0",
                 ExpressionAttributeNames: { '#createdAt': 'createdAt', '#incrementId': 'incrementId', "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__" },
-                ExpressionAttributeValues: { ':createdAt_u0': `pre#${createdAt}#post`, ':incrementId_u0': 1, ":__edb_e___u0": "accounts", ":__edb_v___u0": "1", ":incrementId_default_value_u0": 0 },
+                ExpressionAttributeValues: { ':createdAt_u0': `pre#${createdAt}#post`, ':incrementId_u0': 1, ":__edb_e___u0": "accounts", ":__edb_v___u0": "1" },
                 TableName: 'electro_keynamesattributenames',
                 Key: {
                     accountId: `PREFIX_${newRecord.accountId.toUpperCase()}_POSTFIX`,

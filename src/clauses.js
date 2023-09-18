@@ -8,6 +8,13 @@ const v = require("./validations");
 const e = require("./errors");
 const u = require("./util");
 
+const methodChildren = {
+	upsert: ["upsertSet", "upsertAppend", "upsertAdd", "go", "params", "upsertSubtract", "commit", "upsertIfNotExists", "where"],
+	update: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite", "ifNotExists", "where"],
+	put: ["where", "params", "go", "commit"],
+	del: ["where", "params", "go", "commit"],
+}
+
 function batchAction(action, type, entity, state, payload) {
 	if (state.getError() !== null) {
 		return state;
@@ -238,7 +245,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["where", "params", "go", "commit"],
+		children: methodChildren.del,
 	},
 	upsert: {
 		name: 'upsert',
@@ -355,7 +362,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["upsertSet", "upsertAppend", "upsertAdd", "go", "params", "upsertSubtract", "commit", "where"],
+		children: methodChildren.upsert,
 	},
 	put: {
 		name: "put",
@@ -381,7 +388,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go", "commit"],
+		children: methodChildren.put,
 	},
 	batchPut: {
 		name: "batchPut",
@@ -417,7 +424,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go", "commit"],
+		children: methodChildren.put,
 	},
 	patch: {
 		name: "patch",
@@ -450,7 +457,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["set", "append","updateRemove", "updateDelete", "add", "subtract", "data", "composite", "commit"],
+		children: methodChildren.update,
 	},
 	update: {
 		name: "update",
@@ -477,7 +484,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
 	},
 	data: {
 		name: "data",
@@ -507,7 +514,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
 	},
 	set: {
 		name: "set",
@@ -524,7 +531,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
 	},
 	upsertSet: {
 		name: "set",
@@ -541,7 +548,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["upsertSet", "upsertAppend", "upsertAdd", "go", "params", "upsertSubtract", "commit", "where"],
+		children: methodChildren.upsert,
 	},
 	composite: {
 		name: "composite",
@@ -566,7 +573,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
 	},
 	append: {
 		name: "append",
@@ -577,14 +584,39 @@ let clauses = {
 			try {
 				entity.model.schema.checkUpdate(data);
 				state.query.updateProxy.fromObject(ItemOperations.append, data);
-				state.query.upsert.addData(UpsertOperations.append, data);
 				return state;
 			} catch(err) {
 				state.setError(err);
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
+	},
+	ifNotExists: {
+		name: 'ifNotExists',
+		action(entity, state, data = {}) {
+			entity.model.schema.checkUpdate(data);
+			state.query.updateProxy.fromObject(ItemOperations.ifNotExists, data);
+			return state;
+		},
+		children: methodChildren.update,
+	},
+	upsertIfNotExists: {
+		name: 'ifNotExists',
+		action(entity, state, data = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				entity.model.schema.checkUpdate(data, { allowReadOnly: true });
+				state.query.upsert.addData(UpsertOperations.ifNotExists, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: methodChildren.upsert,
 	},
 	upsertAppend: {
 		name: "append",
@@ -601,7 +633,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["upsertSet", "upsertAppend", "upsertAdd", "go", "params", "upsertSubtract", "commit"],
+		children: methodChildren.upsert,
 	},
 	updateRemove: {
 		name: "remove",
@@ -621,7 +653,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update
 	},
 	updateDelete: {
 		name: "delete",
@@ -638,7 +670,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update
 	},
 	add: {
 		name: "add",
@@ -655,7 +687,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update
 	},
 	upsertAdd: {
 		name: "add",
@@ -672,7 +704,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["upsertSet", "upsertAppend", "upsertAdd", "go", "params", "upsertSubtract", "commit"],
+		children: methodChildren.upsert
 	},
 	upsertSubtract: {
 		name: "subtract",
@@ -689,7 +721,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["upsertSet", "upsertAppend", "upsertAdd", "go", "params", "upsertSubtract", "commit"],
+		children: methodChildren.upsert
 	},
 	subtract: {
 		name: "subtract",
@@ -706,7 +738,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update
 	},
 	query: {
 		name: "query",

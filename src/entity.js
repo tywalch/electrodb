@@ -1981,7 +1981,10 @@ class Entity {
 					/*
 						// this should be considered but is likely overkill at best and unexpected at worst. 
 						// It also is likely symbolic of a deeper issue. That said maybe it could be helpful
-						// in the future? 
+						// in the future? It is unclear, if this were added, whether this should get the
+						// default value and then call the setter on the defaultValue. That would at least
+						// make parity between upsert and a create (without including the attribute) and then
+						// an "update"
 
 						const defaultValue = attribute.default();
 						const valueIsNumber = typeof value === 'number';

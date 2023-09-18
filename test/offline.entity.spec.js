@@ -1594,9 +1594,9 @@ describe("Entity", () => {
 			let del = MallStores.delete({ id });
 			expect(del).to.have.keys("commit", "go", "params", "where", "filter", "rentsLeaseEndFilter");
 			let update = MallStores.update({ id }).set({ rent, category });
-			expect(update).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove", "composite");
+			expect(update).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove", "composite", "ifNotExists");
 			let patch = MallStores.patch({ id }).set({ rent, category });
-			expect(patch).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove", "composite");
+			expect(patch).to.have.keys("commit", "go", "params", "set", "filter", "where", "rentsLeaseEndFilter", "add", "append", "data", "subtract", "delete", "remove", "composite", "ifNotExists");
 			let put = MallStores.put({
 				store,
 				mall,

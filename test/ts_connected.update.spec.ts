@@ -4463,6 +4463,173 @@ describe("Update Item", () => {
             });
         });
 
+        it('should perform ifNotExists while performing an upsert', async () => {
+            const serviceName = uuid();
+            const UrlEntity = new Entity(
+                {
+                    model: {
+                        entity: "url",
+                        version: "1",
+                        service: serviceName,
+                    },
+                    attributes: {
+                        id: {
+                            type: 'string',
+                        },
+                        url: {
+                            type: "string",
+                            required: true,
+                        },
+                        citation: {
+                            type: "string",
+                            required: true,
+                        },
+                        description: {
+                            type: "string",
+                            required: false,
+                        },
+                        count: {
+                            type: "number"
+                        },
+                        hits: {
+                            type: "number",
+                            required: true,
+                        },
+                        minimum: {
+                            type: "number",
+                        },
+                        maximum: {
+                            type: 'number',
+                            readOnly: true,
+                        },
+                        secure: {
+                            type: 'boolean',
+                            required: true,
+                            default: () => false,
+                            watch: ['protocol'],
+                            set: (_, { protocol }) => {
+                                return protocol === 'https';
+                            }
+                        },
+                        protocol: {
+                            type: 'string',
+                            required: true,
+                        },
+                        createdAt: {
+                            type: "number",
+                            default: () => createdAt,
+                            // cannot be modified after created
+                            readOnly: true,
+                        },
+                        updatedAt: {
+                            type: "number",
+                            // watch for changes to any attribute
+                            watch: "*",
+                            // set current timestamp when updated
+                            set: () => updatedAt,
+                            readOnly: true,
+                        },
+                    },
+                    indexes: {
+                        urls: {
+                            pk: {
+                                field: "pk",
+                                composite: ['id'],
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: ["url"],
+                            }
+                        },
+                        byUpdated: {
+                            index: "gsi1pk-gsi1sk-index",
+                            pk: {
+                                // map to your GSI Hash/Partition key
+                                field: "gsi1pk",
+                                composite: [],
+                            },
+                            sk: {
+                                // map to your GSI Range/Sort key
+                                field: "gsi1sk",
+                                composite: ["updatedAt"],
+                            },
+                        },
+                    },
+                },
+                { table, client }
+            );
+
+            const id = uuid();
+            const url = 'www.cool.com';
+            const citation = 'my_citation';
+            const description = 'my_description';
+            const count = 2;
+            const hits = 3;
+            const minimum = 1;
+            const maximum = 20;
+            const protocol = 'https';
+
+            await UrlEntity.upsert({
+                id,
+                url,
+                citation,
+                description,
+                count,
+                hits,
+                minimum,
+                maximum,
+                protocol,
+            }).go();
+
+            const firstUpsert = await UrlEntity.get({id, url}).go();
+
+            expect(firstUpsert.data).to.deep.equal({
+                updatedAt,
+                createdAt,
+                id,
+                url,
+                citation,
+                description,
+                count,
+                hits,
+                minimum,
+                maximum,
+                protocol,
+                secure: true,
+            });
+
+            await UrlEntity.upsert({
+                id,
+                url,
+                citation,
+                description,
+                protocol,
+            }).ifNotExists({
+                minimum: minimum + 50,
+                maximum: maximum + 50,
+            }).add({
+                count,
+                hits,
+            }).go();
+
+            const secondUpsert = await UrlEntity.get({id, url}).go();
+
+            expect(secondUpsert.data).to.deep.equal({
+                secure: true,
+                updatedAt,
+                createdAt,
+                id,
+                url,
+                citation,
+                description,
+                minimum,
+                maximum,
+                protocol,
+                count: count * 2,
+                hits: hits * 2,
+            });
+        });
+
         it('should perform add, subtract, and append while performing an upsert', async () => {
             const serviceName = uuid();
             const UrlEntity = new Entity(
@@ -4622,15 +4789,15 @@ describe("Update Item", () => {
                 ...afterFirstUpsertExpected,
                 updatedAt,
                 createdAt,
-                
+
                 // protocol changed so should watcher attribute
                 protocol: 'http',
                 secure: false,
-                
+
                 // maximum was readOnly so should not have been altered
                 maximum: maximum,
 
-                // count was added to count again 
+                // count was added to count again
                 count: afterFirstUpsertExpected.count * count,
 
                 // hits/minimum was subtracted again
@@ -4639,227 +4806,230 @@ describe("Update Item", () => {
             });
         });
 
-        it('should utiltize default values while performing upsert and result in the same outcomes as create', async () => {
-           const serviceName = uuid();
-           const minimumDefault = 4;
-           const maximumDefault = 8;
-           const UrlEntity = new Entity(
-               {
-                   model: {
-                       entity: "url",
-                       version: "1",
-                       service: serviceName,
-                   },
-                   attributes: {
-                       id: {
-                           type: 'string',
-                       },
-                       url: {
-                           type: "string",
-                           required: true,
-                       },
-                       citation: {
-                           type: "string",
-                           required: true,
-                       },
-                       description: {
-                           type: "string",
-                           required: false,
-                       },
-                       count: {
-                           type: "number",
-                       },
-                       hits: {
-                           type: "number",
-                           required: true,
-                       },
-                       minimum: {
-                           type: "number",
-                           default: minimumDefault,
-                       },
-                       maximum: {
-                           type: 'number',
-                           default: maximumDefault
-                       },
-                       secure: {
-                           type: 'boolean',
-                           readOnly: true,
-                           required: true,
-                           default: () => false,
-                           watch: ['protocol'],
-                           set: (_, { protocol }) => {
-                               return protocol === 'https';
-                           }
-                       },
-                       protocol: {
-                           type: 'string',
-                           readOnly: true,
-                           required: true,
-                       },
-                       createdAt: {
-                           type: "number",
-                           default: () => createdAt,
-                           // cannot be modified after created
-                           readOnly: true,
-                       },
-                       updatedAt: {
-                           type: "number",
-                           // watch for changes to any attribute
-                           watch: "*",
-                           // set current timestamp when updated
-                           set: () => updatedAt,
-                           readOnly: true,
-                       },
-                   },
-                   indexes: {
-                       urls: {
-                           pk: {
-                               field: "pk",
-                               composite: ['id'],
-                           },
-                           sk: {
-                               field: 'sk',
-                               composite: ["url"],
-                           }
-                       },
-                       byUpdated: {
-                           index: "gsi1pk-gsi1sk-index",
-                           pk: {
-                               // map to your GSI Hash/Partition key
-                               field: "gsi1pk",
-                               composite: [],
-                           },
-                           sk: {
-                               // map to your GSI Range/Sort key
-                               field: "gsi1sk",
-                               composite: ["updatedAt"],
-                           },
-                       },
-                   },
-               },
-               { table, client }
-           );
-
-           const url = 'www.cool.com';
-           const citation = 'my_citation';
-           const description = 'my_description';
-           const count = 2;
-           const hits = 3;
-           const protocol = 'https';
-
-           // item1 (and the objects that use it's value as a base)
-           // purposely avoid defaulted attributes: "minimum" and "maximum".
-           // They should be set with the defaults set in the model 
-           const item1 = {
-                id: uuid(),
-                url,
-                hits,
-                count,
-                protocol,
-                citation,
-                description,
-           };
-
-            const item2 = {
-                ...item1,
-                id: uuid(),
-            };
-
-            const item3 = {
-                ...item1,
-                id: uuid()
-            };
-
-            const item4 = {
-                ...item1,
-                id: uuid()
-            };
-
-           // normal create
-           const createdItem1 = await UrlEntity.create(item1).go();
-
-           // normal upsert
-           const upsertedItem2 = await UrlEntity.upsert(item2).go({ response: 'all_new' });
-
-           // upsert with add and subtract
-           await UrlEntity.upsert(item3).add({ minimum: 2 }).subtract({ maximum: 1 }).go();
-
-           // create and patch (equivelent of upsert with add and subtract)
-           await UrlEntity.create(item4).go();
-           await UrlEntity.patch(item4).add({minimum: 2}).subtract({ maximum: 1 }).go();
-
-           const storedItem1 = await UrlEntity.get(item1).go();
-           const storedItem2 = await UrlEntity.get(item2).go();
-           
-           // defaults should have been used
-           expect(storedItem1.data?.minimum).to.equal(minimumDefault);
-           expect(storedItem1.data?.maximum).to.equal(maximumDefault);
-
-           // defaults should have been used
-           expect(storedItem2.data?.minimum).to.equal(minimumDefault);
-           expect(storedItem2.data?.maximum).to.equal(maximumDefault);
-
-           // items should be identical except their id
-            expect({ 
-                ...storedItem1.data,
-                id: null,
-                updatedAt,
-                createdAt,
-            }).to.deep.equal({
-                ...storedItem2.data,
-                id: null,
-                updatedAt,
-                createdAt,
-            });
-
-            // upsert results should equal the item inserted (all_new was used)
-            expect({
-                ...storedItem1.data,
-                id: null,
-                updatedAt,
-                createdAt,
-            }).to.deep.equal({
-                ...upsertedItem2.data,
-                updatedAt,
-                createdAt,
-                id: null,
-            });
-
-            // upsert results should equal the same as create results (all_new was used)
-            expect({
-                ...createdItem1.data,
-                id: null,
-                updatedAt,
-                createdAt,
-            }).to.deep.equal({
-                ...upsertedItem2.data,
-                updatedAt,
-                createdAt,
-                id: null,
-            });
-
-            const storedItem3 = await UrlEntity.get(item3).go();
-            const storedItem4 = await UrlEntity.get(item4).go();
-
-           // defaults should have been used and then updated
-           expect(storedItem3.data?.minimum).to.equal(minimumDefault + 2);
-           expect(storedItem3.data?.maximum).to.equal(maximumDefault - 1);
-
-           // defaults should have been used and then updated
-           expect(storedItem4.data?.minimum).to.equal(minimumDefault + 2);
-           expect(storedItem4.data?.maximum).to.equal(maximumDefault - 1);
-
-           expect({ 
-                ...storedItem3.data,
-                id: null,
-                updatedAt,
-                createdAt,
-            }).to.deep.equal({
-                ...storedItem4.data,
-                id: null,
-                updatedAt,
-                createdAt,
-            });
-       });
+        // Removing this test, but keeping the event it becomes relevant again -- I think it makes things much more
+        // complicated (therefore harder for a user to understand/reason about) to use default values in this way.
+       //  it('should utilize default values while performing upsert and result in the same outcomes as create', async () => {
+       //     const serviceName = uuid();
+       //     const minimumDefault = 4;
+       //     const maximumDefault = 8;
+       //     const UrlEntity = new Entity(
+       //         {
+       //             model: {
+       //                 entity: "url",
+       //                 version: "1",
+       //                 service: serviceName,
+       //             },
+       //             attributes: {
+       //                 id: {
+       //                     type: 'string',
+       //                 },
+       //                 url: {
+       //                     type: "string",
+       //                     required: true,
+       //                 },
+       //                 citation: {
+       //                     type: "string",
+       //                     required: true,
+       //                 },
+       //                 description: {
+       //                     type: "string",
+       //                     required: false,
+       //                 },
+       //                 count: {
+       //                     type: "number",
+       //                 },
+       //                 hits: {
+       //                     type: "number",
+       //                     required: true,
+       //                 },
+       //                 minimum: {
+       //                     type: "number",
+       //                     default: minimumDefault,
+       //                 },
+       //                 maximum: {
+       //                     type: 'number',
+       //                     default: maximumDefault
+       //                 },
+       //                 secure: {
+       //                     type: 'boolean',
+       //                     readOnly: true,
+       //                     required: true,
+       //                     default: () => false,
+       //                     watch: ['protocol'],
+       //                     set: (_, { protocol }) => {
+       //                         return protocol === 'https';
+       //                     }
+       //                 },
+       //                 protocol: {
+       //                     type: 'string',
+       //                     readOnly: true,
+       //                     required: true,
+       //                 },
+       //                 createdAt: {
+       //                     type: "number",
+       //                     default: () => createdAt,
+       //                     // cannot be modified after created
+       //                     readOnly: true,
+       //                 },
+       //                 updatedAt: {
+       //                     type: "number",
+       //                     // watch for changes to any attribute
+       //                     watch: "*",
+       //                     // set current timestamp when updated
+       //                     set: () => updatedAt,
+       //                     readOnly: true,
+       //                 },
+       //             },
+       //             indexes: {
+       //                 urls: {
+       //                     pk: {
+       //                         field: "pk",
+       //                         composite: ['id'],
+       //                     },
+       //                     sk: {
+       //                         field: 'sk',
+       //                         composite: ["url"],
+       //                     }
+       //                 },
+       //                 byUpdated: {
+       //                     index: "gsi1pk-gsi1sk-index",
+       //                     pk: {
+       //                         // map to your GSI Hash/Partition key
+       //                         field: "gsi1pk",
+       //                         composite: [],
+       //                     },
+       //                     sk: {
+       //                         // map to your GSI Range/Sort key
+       //                         field: "gsi1sk",
+       //                         composite: ["updatedAt"],
+       //                     },
+       //                 },
+       //             },
+       //         },
+       //         { table, client }
+       //     );
+       //
+       //     const url = 'www.cool.com';
+       //     const citation = 'my_citation';
+       //     const description = 'my_description';
+       //     const count = 2;
+       //     const hits = 3;
+       //     const protocol = 'https';
+       //
+       //     // item1 (and the objects that use it's value as a base)
+       //     // purposely avoid defaulted attributes: "minimum" and "maximum".
+       //     // They should be set with the defaults set in the model
+       //     const item1 = {
+       //          id: uuid(),
+       //          url,
+       //          hits,
+       //          count,
+       //          protocol,
+       //          citation,
+       //          description,
+       //     };
+       //
+       //      const item2 = {
+       //          ...item1,
+       //          id: uuid(),
+       //      };
+       //
+       //      const item3 = {
+       //          ...item1,
+       //          id: uuid()
+       //      };
+       //
+       //      const item4 = {
+       //          ...item1,
+       //          id: uuid()
+       //      };
+       //
+       //     // normal create
+       //     const createdItem1 = await UrlEntity.create(item1).go();
+       //
+       //     // normal upsert
+       //     const upsertedItem2 = await UrlEntity.upsert(item2).go({ response: 'all_new' });
+       //
+       //     // upsert with add and subtract
+       //     await UrlEntity.upsert(item3)
+       //         .add({ minimum: 2 }).subtract({ maximum: 1 }).go();
+       //
+       //     // create and patch (equivelent of upsert with add and subtract)
+       //     await UrlEntity.create(item4).go();
+       //     await UrlEntity.patch(item4).add({minimum: 2}).subtract({ maximum: 1 }).go();
+       //
+       //     const storedItem1 = await UrlEntity.get(item1).go();
+       //     const storedItem2 = await UrlEntity.get(item2).go();
+       //
+       //     // defaults should have been used
+       //     expect(storedItem1.data?.minimum).to.equal(minimumDefault);
+       //     expect(storedItem1.data?.maximum).to.equal(maximumDefault);
+       //
+       //     // defaults should have been used
+       //     expect(storedItem2.data?.minimum).to.equal(minimumDefault);
+       //     expect(storedItem2.data?.maximum).to.equal(maximumDefault);
+       //
+       //     // items should be identical except their id
+       //      expect({
+       //          ...storedItem1.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      }).to.deep.equal({
+       //          ...storedItem2.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      });
+       //
+       //      // upsert results should equal the item inserted (all_new was used)
+       //      expect({
+       //          ...storedItem1.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      }).to.deep.equal({
+       //          ...upsertedItem2.data,
+       //          updatedAt,
+       //          createdAt,
+       //          id: null,
+       //      });
+       //
+       //      // upsert results should equal the same as create results (all_new was used)
+       //      expect({
+       //          ...createdItem1.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      }).to.deep.equal({
+       //          ...upsertedItem2.data,
+       //          updatedAt,
+       //          createdAt,
+       //          id: null,
+       //      });
+       //
+       //      const storedItem3 = await UrlEntity.get(item3).go();
+       //      const storedItem4 = await UrlEntity.get(item4).go();
+       //
+       //     // defaults should have been used and then updated
+       //     expect(storedItem3.data?.minimum).to.equal(minimumDefault + 2);
+       //     expect(storedItem3.data?.maximum).to.equal(maximumDefault - 1);
+       //
+       //     // defaults should have been used and then updated
+       //     expect(storedItem4.data?.minimum).to.equal(minimumDefault + 2);
+       //     expect(storedItem4.data?.maximum).to.equal(maximumDefault - 1);
+       //
+       //     expect({
+       //          ...storedItem3.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      }).to.deep.equal({
+       //          ...storedItem4.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      });
+       // });
     });
 });

@@ -57,7 +57,7 @@ const UpdateOperations = {
     },
     add: {
         canNest: false,
-        template: function add(options, attr, path, value) {
+        template: function add(options, attr, path, value, defaultValue) {
             let operation = "";
             let expression = "";
             let type = attr.type;
@@ -74,7 +74,6 @@ const UpdateOperations = {
                     break;
                 }
                 case AttributeTypes.number: {
-                    const defaultValue = attr.default();
                     if (options.nestedValue) {
                         operation = ItemOperations.set;
                         expression = `${path} = ${path} + ${value}`;
@@ -96,13 +95,12 @@ const UpdateOperations = {
     },
     subtract: {
         canNest: false,
-        template: function subtract(options, attr, path, value) {
+        template: function subtract(options, attr, path, value, defaultValue = 0) {
             let operation = "";
             let expression = "";
             switch(attr.type) {
                 case AttributeTypes.any:
                 case AttributeTypes.number: {
-                    const defaultValue = attr.default();
                     const resolvedDefaultValue = defaultValue !== undefined
                         ? defaultValue
                         : 0;
