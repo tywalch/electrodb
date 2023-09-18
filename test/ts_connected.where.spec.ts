@@ -127,7 +127,7 @@ describe("Where Clause Queries", () => {
             // "animal" attribute is actually stored under the field name "a"
             return `${field("a")} = ${escape('Cow')}`
         }).go();
-        expect(knownFieldFiltered.data).to.be.an('array').and.have.length(0);
+        expect(knownFieldFiltered.data).to.be.an('array').and.have.length(1);
         expect(knownFieldFiltered.data.map(pen => pen.animal)).to.have.members(["Cow"]);
     });
 
