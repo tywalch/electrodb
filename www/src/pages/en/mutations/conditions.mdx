@@ -82,7 +82,6 @@ animals.update({
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=96&ssc=50&pln=96&pc=3#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MDVCc5G1MAEqSwCgAYtA5MEwAuklecFAEAI4ZwHPcFlwZBNMJW94oZKwQYhlz5TNwVTXMElCDAObx1omhgSBypzMXjtd3D15zi8sCKtzlANjsnl4UJIQJd8h9MNUvmkUPdQhDrNxpLciBAMrlLGdPsxeK52NJfnB0YZgGIAApzW5QtDvLxEpgkiBklCCLxUuAlWAFTH+AnwxFXZGo3k7bjAAgwFnWNm2cY7anZED4pjfFE8x47CA0GhiMA3FGKyoIy5MVg01UVOAYAiai1Kq2OV5gCleU0QaqwOX4uFnQxQmGuwnuiVmqUh7YOrwCmBCyQi4Nx85R7WSvVxvlnFAQbIRsXWnWxvMJykOyhonasSQSIZA13KnN10INptAgBCaYdbZjucp9cbMCQxDkGRSURQraz5eHfK748nrGn6FEffn4uzQ7RVnRg1MAA8coqTRxQD5XWAANYlww0OWsYFMe-emYicCHJ11JgvHIkxqiODpiA+opxs+bBvuBn5eN+kCRMWcD1GGBCTDWHZeAQJ4FOkGCuseuGOLckQxPeAC0ZHADE4GUcRJ6fvej60C+b40RRd7wdYiG-ih9RFCUMApMBNYgeBrHQa+pHkXBIEIQwSF-qhLB7AcRxzD0K7NtwmFnLW0qHh4iSICJvDsI4LgQAA+q8Mg0GMTCUAAlAA3EIgHyAAdBkYCYtkejPDIrysI4FmSGQd68AQkhQBS6GOAAkmIxRsOwequVYAD02UqBAcAHCiRBwKaBCMtI8AxWQkh4gQmhQKoEgFWojb8tAKAAIRWN5Kp6HAoQ0vS5VMgqtByLYo4SBOU4ztEzAAEwAAwLTElFLQAnJRMQLRSK4zeuc0oNuEoEGARQyAQ3mSNw7DxYeLk5XlahsN+9UwAVyb1Wo0Cvg1TUfd1hjXWA1QoNw-WhIaxqmncdTpqG0LWkgjVjG4IFJimIpMMtq3rVtO2foWKFMAUsWsMmmD8ssya4CAwB-ZArDsCgcByHdtyYEuEwPU9cB4nc5xk3Aahk3McD7LVtgS9IcC3NOUDcGztwDOI8CvHedx835AU5MrqsSHAEhyPVAWSD1otEAQOh6ENDKjbg+1rhus6mQgFO4AsrlKAAfHAAAGoQACQIAsOh2yNlW4OsBAudQDQAHIACJwCHFM6E7s2biguA4yta2bdtu1x1Y-uPcDtwQDo7kCEAA)
 
-
 ## Where Clause
 
 The `where()` method allow you to write a `FilterExpression` or `ConditionExpression` without having to worry about the complexities of expression attributes. To accomplish this, ElectroDB injects an object `attributes` as the first parameter to all Filter Functions, and an object `operations`, as the second parameter. Pass the properties from the `attributes` object to the methods found on the `operations` object, along with inline values to set filters and conditions.
@@ -184,6 +183,66 @@ operator      | example                           | result
 `between`     | `between(rent, minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
 `name`        | `name(rent)`                      | `#rent`
 `value`       | `value(rent, maxRent)`            | `:rent1`
+`escape`      | `escape(123)`, `escape('abc')`    | `#123`, `#abc`
+`field`       | `field('field_name')`             | `:field_name`
+
+### ElectroDB Functions
+The filter functions available above all come from the list of functions supported by DynamoDB directly. ElectroDB offers a few functions that offer some additional convenience when creating Filter Expressions.
+
+> Note: If ElectroDB ever lags behind in implementing FilterExpression functions, you can use `value()`, `name()`, `escape()`, and/or `field()` to simply template out the implementation!
+
+#### Name
+The `name()` function allows you to create a reference to an attribute's name, which can be useful to create filters referencing an attribute as it is currently stored. The function will add a `ExpressionAttributeNames` property for this record and return the partial expression for use in your filter.
+
+This example demonstrates how you might find animals that were last fed by someone other than their "keeper".
+
+```typescript
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where(({ lastFedBy, keeper }, { name }) => `
+    ${name(lastFedBy)} != ${name(keeper)}
+  `)
+  .go();
+```
+
+#### Value
+The `value()` function can be paired with `name()` as convenience when building unique filters. The `value()` method is passed an attribute (used to enforce type), and a value for that attribute. ElectroDB will add a `ExpressionAttributeValues` property for this value, and return a reference to that value that can be used in your `FilterExpression`.ExpressionAttributeValues
+
+This example shows how you can implement the `eq` operation without using the ElectroDB `eq` function
+
+```typescript
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where(({ keeper }, { name, value, eq }) => `
+    ${name(keeper)} = ${value(keeper, 'Tiger King')}
+  `)
+  .go();
+```
+
+#### Escape
+The `escape()` method allows you to provide any primitive to an expression without the need for a specific attribute. In many ways, this function is like a less restrictive version of `value()`. This can be useful when using static values and/or when creating custom FilterExpressions
+
+This example shows how you might use escape to apply a filter against the `size()` of an attribute.
+
+```typescript
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where(({ diet }, { size, escape }) => `
+    ${size(diet)} > ${escape(2)}
+  `)
+  .go();
+```
+
+#### Field
+
+The `field()` method allows you to provide and reference a field value that is not present in your model. This method is similar to `escape()` but is used for field names.
+
+You can use both `escape()` and `field()` to template _any_ filter that DynamoDB supports.
+
+```typescript
+animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+  .where((_, { field, escape }) => `
+    contains(${field('gsi1sk')}, ${escape('value')})
+  `)
+  .go();
+```
 
 ## Advanced Usage
 
@@ -214,7 +273,6 @@ animals.update({animal: "tiger", name: "janet"})
 ```
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=106&ssc=8&pln=103&pc=1#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MACoZKNxQrbhMAEqSwCgAYtA5MEwAuklecFAEAI4ZwIvcFlwZBHMJu94oZKwQYhmL5fNwVTXMElAjAObx1omhgSByF-PXjnePz15Fis1gQNlcoNt9q8vChJCAbvlvphqr80ignqFodZuNIHkQIBlcpZLj9mLxXOxpAC4FjDMAxAAFRYPWFoL5eUlMckQSkoQReWlwEqwAo4-zEpEo25ojEC-bcYAEGDs6yc2xTfZ07IgIlMP7o-kvfYQGg0MRge7olWVZE3JisekaipwDAEHXW1W2xwfMDUrwWiDVWCKomIy6GWHwj0kr3Sy2y8N7Z1eYUwUWScVhxNXWN6mWGxOCy4oCDZaOSu36hOF5M052UTH7cLZS2Se7SD2cn1+uABoPoHLlyMI2s2qV5+MF+ZFmzVMjAORYctjyv52sNy4bo2hViSCSjUGd3NVqeC3f70EAIUzzrVa7lO73MCQxDkGRSURQR-HJ8bj4kL5vh+ojXt+q6TpiVhYiMpgAB6DhKhjmhwoA+B6YAANbLrQiqsGCTCYT2XgiOAJyunUTDvHIMyajStFiFhiHhjQuH4QxRHWCRkCRGWcD1MOMz1n+XgELBBTpBgHowaJjgPJEMSYQAtHJwAxAxinSbBPaYdhLFsPhKkKRhHGGFxZG8fURQlDAKQ0fW9GMVmlx6XhsnyextHEQw3HkXxLCHMcpyLG09pPge3CCZuwl0QIiSIDZvDsI4LgQAA+h8Mg0JMTCUAAlAA3EIVHyAAdCsRCYFYJWieJ1l6FZpTKh0XQ9K0eVVWoBREAQOh6CaZoWo8cUIMseVKAAfN4Sw6P15rxrUAAM0wlcO-SXg6MBOD4TC5blVUPBAOi5UAA)
-
 
 ### Multiple Where Clauses
 It is possible to include chain multiple where clauses. The resulting FilterExpressions (or ConditionExpressions) are concatenated with an implicit `AND` operator.

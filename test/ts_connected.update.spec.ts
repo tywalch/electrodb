@@ -683,6 +683,189 @@ describe("Update Item", () => {
             });
         });
 
+        it('should allow non-existent lists to be appended to', async () => {
+            const StoreLocations = new Entity({
+                model: {
+                    service: "MallStoreDirectory",
+                    entity: "MallStore",
+                    version: "1",
+                },
+                attributes: {
+                    cityId: {
+                        type: "string",
+                        required: true,
+                    },
+                    mallId: {
+                        type: "string",
+                        required: true,
+                    },
+                    storeId: {
+                        type: "string",
+                        required: true,
+                    },
+                    buildingId: {
+                        type: "string",
+                        required: true,
+                    },
+                    unitId: {
+                        type: "string",
+                        required: true,
+                    },
+                    category: {
+                        type: [
+                            "spite store",
+                            "food/coffee",
+                            "food/meal",
+                            "clothing",
+                            "electronics",
+                            "department",
+                            "misc"
+                        ],
+                        required: true
+                    },
+                    leaseEndDate: {
+                        type: "string",
+                        required: true
+                    },
+                    rent: {
+                        type: "string",
+                        required: true,
+                        validate: /^(\d+\.\d{2})$/
+                    },
+                    discount: {
+                        type: "string",
+                        required: false,
+                        default: "0.00",
+                        validate: /^(\d+\.\d{2})$/
+                    },
+                    tenants: {
+                        type: "set",
+                        items: "string",
+                    },
+                    warnings: {
+                        type: "number",
+                        default: 0,
+                    },
+                    deposit: {
+                        type: "number",
+                    },
+                    contact: {
+                        type: "set",
+                        items: "string",
+                    },
+                    rentalAgreement: {
+                        type: "list",
+                        items: {
+                            type: "map",
+                            properties: {
+                                type: {
+                                    type: "string"
+                                },
+                                detail: {
+                                    type: "string",
+                                }
+                            }
+                        }
+                    },
+                    petFee: {
+                        type: "number"
+                    },
+                    fees: {
+                        type: "number"
+                    },
+                    tags: {
+                        type: "set",
+                        items: "string",
+                    }
+                },
+                indexes: {
+                    stores: {
+                        pk: {
+                            field: "pk",
+                            composite: ["cityId", "mallId"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["buildingId", "storeId"]
+                        }
+                    },
+                    units: {
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            field: "gsi1pk",
+                            composite: ["mallId"]
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["buildingId", "unitId"]
+                        }
+                    },
+                    leases: {
+                        index: "gsi2pk-gsi2sk-index",
+                        pk: {
+                            field: "gsi2pk",
+                            composite: ["storeId"]
+                        },
+                        sk: {
+                            field: "gsi2sk",
+                            composite: ["leaseEndDate"]
+                        }
+                    }
+                }
+            }, {table, client});
+
+            const cityId = uuid();
+            const storeId = "LatteLarrys";
+            const mallId = "EastPointe";
+            const buildingId = "BuildingA1";
+            const unitId = "B47";
+            const category = "food/coffee";
+            const leaseEndDate = "2020-03-22";
+            const rent = "4500.00";
+            const deposit = 100;
+            const tenants = ['Larry David'];
+            const warnings = 0;
+            const petFee = 250;
+            const rentalAgreement = [{
+                type: 'amendment',
+                detail: 'Larry David accepts coffee liability'
+            }];
+
+            const { data } = await StoreLocations
+                .upsert({
+                    cityId,
+                    storeId,
+                    mallId,
+                    buildingId,
+                    unitId,
+                    category,
+                    leaseEndDate,
+                    rent,
+                })
+                .add({ deposit, tenants })
+                .ifNotExists({ warnings })
+                .subtract({ petFee })
+                .append({ rentalAgreement })
+                .go({response: 'all_new'})
+
+            expect(data).to.deep.equal({
+                cityId,
+                storeId,
+                mallId,
+                buildingId,
+                unitId,
+                category,
+                leaseEndDate,
+                rent,
+                deposit,
+                tenants,
+                warnings,
+                rentalAgreement,
+                discount: '0.00',
+                petFee: 0 - petFee,
+            })
+        });
+
         it('should allow non-existent numbers to be added', async () => {
             const {entity} = createNumberEntity({client, table});
             const name = uuid();
@@ -697,6 +880,54 @@ describe("Update Item", () => {
             const after = await entity.get({name, type}).go();
             expect(before.data.prop).to.be.undefined;
             expect(after.data?.prop).to.equal(num);
+        });
+
+        it('should allow non-existent numbers to be subtracted', async () => {
+            const {entity} = createNumberEntity({client, table});
+            const name = uuid();
+            const type = uuid();
+            await entity.create({name, type}).go();
+            const num = 2;
+            const before = await entity.patch({name, type})
+                .data(({ prop }, { subtract }) => {
+                    subtract(prop, num)
+                })
+                .go({response: 'all_old'});
+            const after = await entity.get({name, type}).go();
+            expect(before.data.prop).to.be.undefined;
+            expect(after.data?.prop).to.equal(0 - num);
+        });
+
+        it('should allow default numbers to be provided to subtract', async () => {
+            const {entity} = createNumberEntity({client, table});
+            const name = uuid();
+            const type = uuid();
+            await entity.create({name, type}).go();
+            const num = 2;
+            const before = await entity.patch({name, type})
+                .data(({ prop }, { subtract }) => {
+                    subtract(prop, num, 5);
+                })
+                .go({response: 'all_old'});
+            const after = await entity.get({name, type}).go();
+            expect(before.data.prop).to.be.undefined;
+            expect(after.data?.prop).to.equal(5 - num);
+        });
+
+        it('should allow default numbers to be provided to add', async () => {
+            const {entity} = createNumberEntity({client, table});
+            const name = uuid();
+            const type = uuid();
+            await entity.create({name, type}).go();
+            const num = 2;
+            const before = await entity.patch({name, type})
+                .data(({ prop }, { add }) => {
+                    add(prop, num, 5)
+                })
+                .go({response: 'all_old'});
+            const after = await entity.get({name, type}).go();
+            expect(before.data.prop).to.be.undefined;
+            expect(after.data?.prop).to.equal(5 + num);
         });
 
         describe('undefined values when using data method', () => {
@@ -1907,7 +2138,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(appendParameters).to.deep.equal({
-                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #rentalAgreement = list_append(if_not_exists(#rentalAgreement, :rentalAgreement_default_value_u0), :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#rentalAgreement": "rentalAgreement",
@@ -1919,6 +2150,7 @@ describe("Update Item", () => {
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
+                    ":rentalAgreement_default_value_u0": [],
                     ":rentalAgreement_u0": [{
                         "type": "ammendment",
                         "detail": "no soup for you"
@@ -1991,7 +2223,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #deposit = (if_not_exists(#deposit, :deposit_default_value_u0) - :deposit_u0), #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #deposit = (if_not_exists(#deposit, :deposit_default_value_u0) - :deposit_u0), #rentalAgreement = list_append(if_not_exists(#rentalAgreement, :rentalAgreement_default_value_u0), :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
@@ -2011,6 +2243,7 @@ describe("Update Item", () => {
                     "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
+                    ":rentalAgreement_default_value_u0": [],
                     ":deposit_default_value_u0": 0,
                     ":category0": "food/coffee",
                     ":category_u0": "food/meal",
@@ -2113,7 +2346,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(if_not_exists(#files, :files_default_value_u0), :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -2132,6 +2365,7 @@ describe("Update Item", () => {
                 "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
             },
             "ExpressionAttributeValues": {
+                ":files_default_value_u0": [],
                 ":stars_default_value_u0": 0,
                 ":followers_u0": params.ExpressionAttributeValues[":followers_u0"],
                 ":stars_u0": 8,

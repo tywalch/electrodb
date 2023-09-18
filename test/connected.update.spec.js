@@ -1061,7 +1061,7 @@ describe("Update Item", () => {
                 .params();
 
             expect(appendParameters).to.deep.equal({
-                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #rentalAgreement = list_append(if_not_exists(#rentalAgreement, :rentalAgreement_default_value_u0), :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#buildingId": "buildingId",
                     "#category": "category",
@@ -1072,6 +1072,7 @@ describe("Update Item", () => {
                     "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
+                    ":rentalAgreement_default_value_u0": [],
                     ":buildingId_u0": "A34",
                     ":mallId_u0": "EastPointe",
                     ":category0": "food/coffee",
@@ -1166,7 +1167,7 @@ describe("Update Item", () => {
                 .params();
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #deposit = (if_not_exists(#deposit, :deposit_default_value_u0) - :deposit_u0), #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #deposit = (if_not_exists(#deposit, :deposit_default_value_u0) - :deposit_u0), #rentalAgreement = list_append(if_not_exists(#rentalAgreement, :rentalAgreement_default_value_u0), :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
@@ -1186,6 +1187,7 @@ describe("Update Item", () => {
                     "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__",
                 },
                 "ExpressionAttributeValues": {
+                    ":rentalAgreement_default_value_u0": [],
                     ":deposit_default_value_u0": 0,
                     ":buildingId_u0": "A34",
                     ":cityId_u0": cityId,
@@ -1305,7 +1307,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #license = #files[0], #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #views :views_u0, #recentCommits[0].#views :views_u1 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(if_not_exists(#files, :files_default_value_u0), :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #license = #files[0], #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #views :views_u0, #recentCommits[0].#views :views_u1 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -1325,6 +1327,7 @@ describe("Update Item", () => {
                 "#__edb_v__": "__edb_v__",
             },
             "ExpressionAttributeValues": {
+                ":files_default_value_u0": [],
                 ":stars_default_value_u0": 0,
                 ":followers_u0": params.ExpressionAttributeValues[":followers_u0"],
                 ":stars_u0": 8,

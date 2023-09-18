@@ -46,8 +46,9 @@ const UpdateOperations = {
             switch(attr.type) {
                 case AttributeTypes.any:
                 case AttributeTypes.list:
+                    const defaultValue = options.createValue('default_value', []);
+                    expression = `${path} = list_append(if_not_exists(${path}, ${defaultValue}), ${value})`;
                     operation = ItemOperations.set;
-                    expression = `${path} = list_append(${path}, ${value})`;
                     break;
                 default:
                     throw new Error(`Invalid Update Attribute Operation: "APPEND" Operation can only be performed on attributes with type "list" or "any".`);
@@ -78,9 +79,9 @@ const UpdateOperations = {
                         operation = ItemOperations.set;
                         expression = `${path} = ${path} + ${value}`;
                     } else if (defaultValue !== undefined) {
-                        const defaultValueName = options.createValue(`default_value`, defaultValue)
+                        // const defaultValueName = options.createValue(`default_value`, defaultValue)
                         operation = ItemOperations.set;
-                        expression = `${path} = (if_not_exists(${path}, ${defaultValueName}) + ${value})`
+                        expression = `${path} = (if_not_exists(${path}, ${defaultValue}) + ${value})`
                     } else {
                         operation = ItemOperations.add;
                         expression = `${path} ${value}`;
@@ -101,12 +102,17 @@ const UpdateOperations = {
             switch(attr.type) {
                 case AttributeTypes.any:
                 case AttributeTypes.number: {
-                    const resolvedDefaultValue = defaultValue !== undefined
-                        ? defaultValue
-                        : 0;
-                    const defaultValuePath = options.createValue('default_value', resolvedDefaultValue);
+                    let resolvedDefaultValue;
+                    if (typeof defaultValue === 'string' && defaultValue.startsWith(':')) {
+                        resolvedDefaultValue = defaultValue;
+                    } else if (defaultValue !== undefined) {
+                        resolvedDefaultValue = options.createValue('default_value', defaultValue);
+                    } else {
+                        resolvedDefaultValue = options.createValue('default_value', 0);
+                    }
+                    // const defaultValuePath = options.createValue('default_value', resolvedDefaultValue);
                     operation = ItemOperations.set;
-                    expression = `${path} = (if_not_exists(${path}, ${defaultValuePath}) - ${value})`;
+                    expression = `${path} = (if_not_exists(${path}, ${resolvedDefaultValue}) - ${value})`;
                     break;
                 }
                 default:

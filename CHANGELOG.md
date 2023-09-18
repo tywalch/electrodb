@@ -311,7 +311,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.4.2] - 2023-03-03
 ### Fixed
-- Restores `ignoreOwnership` execution option. Addresses [issue #194](https://github.com/tywalch/electrodb/issues/194) which calls out regression with `ignoreOwnership`. This flag is now appropriately applied to "query", "get", and "scan" operations.
+- Restores `ignoreOwnership` execution option. Addresses [Issue #194](https://github.com/tywalch/electrodb/issues/194) which calls out regression with `ignoreOwnership`. This flag is now appropriately applied to "query", "get", and "scan" operations.
 
 ## [2.5.0] - 2023-03-19
 ### Added
@@ -350,7 +350,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.7.2] - 2023-07-03
 ### Fixed
-- Fixed bug reported via [Issue#271](https://github.com/tywalch/electrodb/issues/271): Root map object with required flag would not set empty object even when it was provided.
+- Fixed bug reported via [Issue #271](https://github.com/tywalch/electrodb/issues/271): Root map object with required flag would not set empty object even when it was provided.
 
 ## [2.8.0] - 2023-08-06
 ### Adds
@@ -365,14 +365,14 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.8.2] - 2023-08-19
 ### Fixed
-- Fixes bug reported via [Issue#281](https://github.com/tywalch/electrodb/issues/281): ElectroDB failed to use an attribute's `field` name when it was updated via `watch`.
-- Fixes bug reported via [Issue#229](https://github.com/tywalch/electrodb/issues/229): ElectroDB would generate empty string keys on item creating. This would occur only in cases where a key's field name matched an attribute's field name.
+- Fixes bug reported via [Issue #281](https://github.com/tywalch/electrodb/issues/281): ElectroDB failed to use an attribute's `field` name when it was updated via `watch`.
+- Fixes bug reported via [Issue #229](https://github.com/tywalch/electrodb/issues/229): ElectroDB would generate empty string keys on item creating. This would occur only in cases where a key's field name matched an attribute's field name.
 ### Changed
 - Relaxes validation surrounding the use of composite attributes appearing as composite attributes in both the partition and sort key for the same index. Reported in [Issue#265](https://github.com/tywalch/electrodb/issues/265), validation surrounding this pattern have been relaxed to only throw when a composite attribute in both the pk and sk AND the sk contains greater than one composite attribute. This constraint is critical for ElectroDB to reliably generate/format sort key values.    
 
 ## [2.9.0]
-### Adds
-- Addresses [Issue#277](https://github.com/tywalch/electrodb/issues/277) Introduces new `composite()` method for `update` and `patch` operations. The `composite` method is used to help electrodb complete and format keys when updating a subset of the key's composite attributes. Prior to this update, updating a key partially resulted in an [invalid query error](https://electrodb.dev/en/reference/errors/#missing-composite-attributes), which [caused difficulties](https://github.com/tywalch/electrodb/issues/277) when some composite attributes were flagged as readOnly. [[read more](https://electrodb.dev/en/mutations/patch#composite)]
+### Added
+- Addresses [Issue #277](https://github.com/tywalch/electrodb/issues/277) Introduces new `composite()` method for `update` and `patch` operations. The `composite` method is used to help electrodb complete and format keys when updating a subset of the key's composite attributes. Prior to this update, updating a key partially resulted in an [invalid query error](https://electrodb.dev/en/reference/errors/#missing-composite-attributes), which [caused difficulties](https://github.com/tywalch/electrodb/issues/277) when some composite attributes were flagged as readOnly. [[read more](https://electrodb.dev/en/mutations/patch#composite)]
 - Adds more deliberate collection validation to ensure entity compatibility. This will allow for indexes defined with "template" be used with collections. This also might cause some existing implementations to now throw on service instantiation, however that would mean these services were never valid to begin with.
 
 ## [2.9.1]
@@ -389,3 +389,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Composite attributes that used the attribute option `watch`, and were not provided to the `create` or `put` methods, were not property applied to their composite keys. This addresses the issue brough forward in [discussion #292](https://github.com/tywalch/electrodb/discussions/292).       
 
+## [2.10.0]
+### Added
+- The `upsert` method now supports `add`, `subtract`, `append`, `set`, and `ifNotExists` operations. Addresses [Issue #286](https://github.com/tywalch/electrodb/issues/286).
+- The `add` and `subtract` operations provided to the `data` callback operation with `update` and `patch` methods now supports a third parameter for supply a defaultValue. Addresses [Issue #297](https://github.com/tywalch/electrodb/issues/297).
+- A condition expression operation called `field` that allows for references to raw field names as they exist in the table. This can be used with `escape` and `value` to create custom filter expressions.
