@@ -1,10 +1,19 @@
-const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TransactionCommitSymbol, TransactionOperations, TerminalOperation, KeyTypes, IndexTypes } = require("./types");
+const { QueryTypes, MethodTypes, ItemOperations, ExpressionTypes, TransactionCommitSymbol, TransactionOperations, TerminalOperation, KeyTypes, IndexTypes,
+	UpsertOperations
+} = require("./types");
 const {AttributeOperationProxy, UpdateOperations, FilterOperationNames, UpdateOperationNames} = require("./operations");
 const {UpdateExpression} = require("./update");
 const {FilterExpression} = require("./where");
 const v = require("./validations");
 const e = require("./errors");
 const u = require("./util");
+
+const methodChildren = {
+	upsert: ["upsertSet", "upsertAppend", "upsertAdd", "go", "params", "upsertSubtract", "commit", "upsertIfNotExists", "where"],
+	update: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite", "ifNotExists", "where"],
+	put: ["where", "params", "go", "commit"],
+	del: ["where", "params", "go", "commit"],
+}
 
 function batchAction(action, type, entity, state, payload) {
 	if (state.getError() !== null) {
@@ -236,7 +245,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["where", "params", "go", "commit"],
+		children: methodChildren.del,
 	},
 	upsert: {
 		name: 'upsert',
@@ -245,33 +254,115 @@ let clauses = {
 				return state;
 			}
 			try {
-				let record = entity.model.schema.checkCreate({...payload});
-				const attributes = state.getCompositeAttributes();
-				const pkComposite = entity._expectFacets(record, attributes.pk);
-				state.addOption('_includeOnResponseItem', pkComposite);
+
 				return state
 					.setMethod(MethodTypes.upsert)
 					.setType(QueryTypes.eq)
-					.applyUpsert(record)
-					.setPK(pkComposite)
-					.ifSK(() => {
-						entity._expectFacets(record, attributes.sk);
-						const skComposite = entity._buildQueryFacets(record, attributes.sk);
-						state.setSK(skComposite);
-						state.addOption('_includeOnResponseItem', {...skComposite, ...pkComposite});
-					})
-					.whenOptions(({ state, options }) => {
-						if (!state.getParams()) {
-							state.query.update.set(entity.identifiers.entity, entity.getName());
-							state.query.update.set(entity.identifiers.version, entity.getVersion());
+					.applyUpsert(UpsertOperations.set, payload)
+					.beforeBuildParams(({ state }) => {
+						const { upsert, update, updateProxy } = state.query;
+
+						state.query.update.set(entity.identifiers.entity, entity.getName());
+						state.query.update.set(entity.identifiers.version, entity.getVersion());
+
+						// only "set" data is used to make keys
+						const setData = {};
+						const nonSetData = {};
+						let allData = {};
+
+						for (const name in upsert.data) {
+							const { operation, value } = upsert.data[name];
+							allData[name] = value;
+							if (operation === UpsertOperations.set) {
+								setData[name] = value;
+							} else {
+								nonSetData[name] = value;
+							}
 						}
+
+						const upsertData = entity.model.schema.checkCreate({ ...allData });
+						const attributes = state.getCompositeAttributes();
+						const pkComposite = entity._expectFacets(upsertData, attributes.pk);
+
+						state
+							.addOption('_includeOnResponseItem', pkComposite)
+							.setPK(pkComposite)
+							.ifSK(() => {
+								entity._expectFacets(upsertData, attributes.sk);
+								const skComposite = entity._buildQueryFacets(upsertData, attributes.sk);
+								state.setSK(skComposite);
+								state.addOption('_includeOnResponseItem', {...skComposite, ...pkComposite});
+							});
+
+						const appliedData = entity.model.schema.applyAttributeSetters({...upsertData});
+
+						const onlySetAppliedData = {};
+						const nonSetAppliedData = {};
+						for (const name in appliedData) {
+							const value = appliedData[name];
+							const isSetOperation = setData[name] !== undefined;
+							const cameFromApplyingSetters = allData[name] === undefined;
+							const isNotUndefined = appliedData[name] !== undefined;
+							const applyAsSet = isSetOperation || cameFromApplyingSetters;
+							if (applyAsSet && isNotUndefined) {
+								onlySetAppliedData[name] = value;
+							} else {
+								nonSetAppliedData[name] = value;
+							}
+						}
+
+						// we build this above, and set them to state, but use it here, not ideal but
+						// the way it worked out so that this could be wrapped in beforeBuildParams
+						const { pk } = state.query.keys;
+						const sk = state.query.keys.sk[0];
+
+						const { updatedKeys, setAttributes, indexKey } = entity._getPutKeys(pk, sk && sk.facets, onlySetAppliedData);
+
+						// calculated here but needs to be used when building the params
+						upsert.indexKey = indexKey;
+
+						// only "set" data is used to make keys
+						const setFields = Object.entries(entity.model.schema.translateToFields(setAttributes));
+
+						// add the keys impacted except for the table index keys; they are upserted
+						// automatically by dynamo
+						for (const key in updatedKeys) {
+							const value = updatedKeys[key];
+							if (indexKey[key] === undefined) {
+								setFields.push([key, value]);
+							}
+						}
+
+						entity._maybeApplyUpsertUpdate({
+							fields: setFields,
+							operation: UpsertOperations.set,
+							updateProxy,
+							update,
+						});
+
+						for (const name in nonSetData) {
+							const value = appliedData[name];
+							if (value === undefined || upsert.data[name] === undefined) {
+								continue;
+							}
+
+							const { operation } = upsert.data[name];
+							const fields = entity.model.schema.translateToFields({ [name]: value });
+							entity._maybeApplyUpsertUpdate({
+								fields: Object.entries(fields),
+								updateProxy,
+								operation,
+								update,
+							});
+						}
+
 					});
 			} catch(err) {
 				state.setError(err);
 				return state;
 			}
 		},
-		children: ["params", "go", "where", "commit"],
+		children: methodChildren.upsert,
 	},
 	put: {
 		name: "put",
@@ -297,7 +388,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go", "commit"],
+		children: methodChildren.put,
 	},
 	batchPut: {
 		name: "batchPut",
@@ -333,7 +424,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["params", "go", "commit"],
+		children: methodChildren.put,
 	},
 	patch: {
 		name: "patch",
@@ -366,7 +457,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["set", "append","updateRemove", "updateDelete", "add", "subtract", "data", "composite", "commit"],
+		children: methodChildren.update,
 	},
 	update: {
 		name: "update",
@@ -393,7 +484,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
 	},
 	data: {
 		name: "data",
@@ -423,7 +514,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
 	},
 	set: {
 		name: "set",
@@ -440,7 +531,24 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
+	},
+	upsertSet: {
+		name: "set",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				entity.model.schema.checkUpdate(data, { allowReadOnly: true });
+				state.query.upsert.addData(UpsertOperations.set, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: methodChildren.upsert,
 	},
 	composite: {
 		name: "composite",
@@ -465,7 +573,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
 	},
 	append: {
 		name: "append",
@@ -482,7 +590,50 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update,
+	},
+	ifNotExists: {
+		name: 'ifNotExists',
+		action(entity, state, data = {}) {
+			entity.model.schema.checkUpdate(data);
+			state.query.updateProxy.fromObject(ItemOperations.ifNotExists, data);
+			return state;
+		},
+		children: methodChildren.update,
+	},
+	upsertIfNotExists: {
+		name: 'ifNotExists',
+		action(entity, state, data = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				entity.model.schema.checkUpdate(data, { allowReadOnly: true });
+				state.query.upsert.addData(UpsertOperations.ifNotExists, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: methodChildren.upsert,
+	},
+	upsertAppend: {
+		name: "append",
+		action(entity, state, data = {}) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				entity.model.schema.checkUpdate(data, { allowReadOnly: true });
+				state.query.upsert.addData(UpsertOperations.append, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: methodChildren.upsert,
 	},
 	updateRemove: {
 		name: "remove",
@@ -502,7 +653,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update
 	},
 	updateDelete: {
 		name: "delete",
@@ -519,7 +670,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update
 	},
 	add: {
 		name: "add",
@@ -536,7 +687,41 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update
+	},
+	upsertAdd: {
+		name: "add",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				entity.model.schema.checkUpdate(data, { allowReadOnly: true });
+				state.query.upsert.addData(UpsertOperations.add, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: methodChildren.upsert
+	},
+	upsertSubtract: {
+		name: "subtract",
+		action(entity, state, data) {
+			if (state.getError() !== null) {
+				return state;
+			}
+			try {
+				entity.model.schema.checkUpdate(data, { allowReadOnly: true });
+				state.query.upsert.addData(UpsertOperations.subtract, data);
+				return state;
+			} catch(err) {
+				state.setError(err);
+				return state;
+			}
+		},
+		children: methodChildren.upsert
 	},
 	subtract: {
 		name: "subtract",
@@ -553,7 +738,7 @@ let clauses = {
 				return state;
 			}
 		},
-		children: ["data", "set", "append", "add", "updateRemove", "updateDelete", "go", "params", "subtract", "commit", "composite"],
+		children: methodChildren.update
 	},
 	query: {
 		name: "query",
@@ -767,6 +952,7 @@ let clauses = {
 				});
 
 				state.applyWithOptions(normalizedOptions);
+				state.applyBeforeBuildParams(normalizedOptions);
 
 				let results;
 				switch (method) {
@@ -794,14 +980,14 @@ let clauses = {
 					delete results.ExpressionAttributeValues;
 				}
 
-				state.setParams(results);
-
 				if (options._returnOptions) {
-					return {
+					results = {
 						params: results,
 						options: normalizedOptions,
 					}
 				}
+
+				state.setParams(results);
 
 				return results;
 			} catch(err) {
@@ -854,7 +1040,27 @@ class ChainState {
 			},
 			upsert: {
 				data: {},
-				ifNotExists: {},
+				indexKey: null,
+				addData(operation = UpsertOperations.set, data = {}) {
+					for (const name of Object.keys(data)) {
+						const value = data[name];
+						this.data[name] = {
+							operation,
+							value,
+						}
+					}
+				},
+				getData(operationFilter) {
+					const results = {};
+					for (const name in this.data) {
+						const { operation, value } = this.data[name];
+						if (!operationFilter || operationFilter === operation) {
+							results[name] = value;
+						}
+					}
+
+					return results;
+				}
 			},
 			keys: {
 				provided: [],
@@ -868,11 +1074,13 @@ class ChainState {
 			options,
 		};
 		this.subStates = [];
-		this.applyAfterOptions = [];
 		this.hasSortKey = hasSortKey;
 		this.prev = null;
 		this.self = null;
 		this.params = null;
+		this.applyAfterOptions = [];
+		this.beforeBuildParamsOperations = [];
+		this.beforeBuildParamsHasRan = false;
 	}
 
 	getParams() {
@@ -913,6 +1121,7 @@ class ChainState {
 
 	addOption(key, value) {
 		this.query.options[key] = value;
+		return this;
 	}
 
 	_appendProvided(type, attributes) {
@@ -1075,12 +1284,8 @@ class ChainState {
 		}
 	}
 
-	applyUpsert(data = {}, { ifNotExists } = {}) {
-		if (ifNotExists) {
-			this.query.upsert.ifNotExists = {...this.query.upsert.ifNotExists, ...data};
-		} else {
-			this.query.upsert.data = {...this.query.upsert.data, ...data};
-		}
+	applyUpsert(operation = UpsertOperations.set, data = {}) {
+		this.query.upsert.addData(operation, data);
 		return this;
 	}
 
@@ -1099,6 +1304,21 @@ class ChainState {
 
 	applyWithOptions(options = {}) {
 		this.applyAfterOptions.forEach((fn) => fn(options));
+	}
+
+	beforeBuildParams(fn) {
+		if (v.isFunction(fn)) {
+			this.beforeBuildParamsOperations.push((options) => {
+				fn({ options, state: this });
+			});
+		}
+	}
+
+	applyBeforeBuildParams(options = {}) {
+		if (!this.beforeBuildParamsHasRan) {
+			this.beforeBuildParamsHasRan = true;
+			this.beforeBuildParamsOperations.forEach((fn) => fn(options));
+		}
 	}
 }
 

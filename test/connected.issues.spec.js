@@ -232,7 +232,7 @@ describe("Issue #85", () => {
             .params();
 
         expect(JSON.parse(JSON.stringify(params))).to.deep.equal({
-            "UpdateExpression": "SET #status = :status_u0, #comments = list_append(#comments, :comments_u0), #closed = :closed_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2sk = :gsi2sk_u0, #team = :team_u0, #project = :project_u0, #task = :task_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #tags :tags_u0",
+            "UpdateExpression": "SET #status = :status_u0, #comments = list_append(if_not_exists(#comments, :comments_default_value_u0), :comments_u0), #closed = :closed_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2sk = :gsi2sk_u0, #team = :team_u0, #project = :project_u0, #task = :task_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#status": "status",
                 "#tags": "tags",
@@ -248,6 +248,7 @@ describe("Issue #85", () => {
                 "#__edb_v__": "__edb_v__"
             },
             "ExpressionAttributeValues": {
+                ":comments_default_value_u0": [],
                 ":status0": "in-progress",
                 ":status_u0": "on-hold",
                 ":tags_u0": [

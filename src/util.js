@@ -8,7 +8,7 @@ function parseJSONPath(path = "") {
   }
   path = path.replace(/\[/g, ".");
   path = path.replace(/\]/g, "");
-  return path.split(".");
+  return path.split(".").filter(part => part !== '');
 }
 
 function genericizeJSONPath(path = "") {

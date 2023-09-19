@@ -1,3 +1,4 @@
+const { UpdateOperations } = require('./updateOperations');
 const {AttributeOperationProxy, ExpressionState} = require("./operations");
 const {ItemOperations, BuilderTypes} = require("./types");
 
@@ -33,7 +34,7 @@ class UpdateExpression extends ExpressionState {
         this.operations[type].delete(expression);
     }
 
-    set(name, value, operation = ItemOperations.set) {
+    set(name, value, operation = ItemOperations.set, attribute) {
         let operationToApply = operation;
         if (operation === ItemOperations.ifNotExists) {
             operationToApply = ItemOperations.set;
@@ -87,7 +88,7 @@ class UpdateEntity {
 
     buildCallbackHandler(entity, state) {
         const proxy = new AttributeOperationProxy({
-            builder: state.query.updates,
+            builder: state.query.update,
             attributes: this.attributes,
             operations: this.operations,
         });

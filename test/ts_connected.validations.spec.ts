@@ -999,7 +999,7 @@ describe("user attribute validation", () => {
             ]);
         });
 
-        it("tez should interpret a true response value as an invalid attribute value on individual item values", async () => {
+        it("should interpret a true response value as an invalid attribute value on individual item values", async () => {
             const prop1 = uuid();
             const prop2 = ["value1", "value2"];
             const invalidProp2 = ["value3", "value4", "value5"];

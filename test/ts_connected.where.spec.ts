@@ -111,7 +111,26 @@ describe("Where Clause Queries", () => {
                 return WhereTests.put({pen, row, animal, tags, codes}).go().then(res => res.data)
             }
         }));
-    })
+    });
+
+    it("should filter 'field' with 'where'", async () => {
+        //
+        const unfiltered = await WhereTests.query.farm({ pen }).go();
+        expect(unfiltered.data).to.be.an('array').and.have.length(animals.length);
+
+        const unknownFieldFiltered = await WhereTests.query.farm({ pen }).where((_, {field, escape}) => `
+            ${field('unknown_field')} = ${escape('value')}
+        `).go();
+        expect(unknownFieldFiltered.data).to.be.an('array').and.have.length(0);
+
+        const knownFieldFiltered = await WhereTests.query.farm({ pen }).where((_, {field, escape}) => {
+            // "animal" attribute is actually stored under the field name "a"
+            return `${field("a")} = ${escape('Cow')}`
+        }).go();
+        expect(knownFieldFiltered.data).to.be.an('array').and.have.length(1);
+        expect(knownFieldFiltered.data.map(pen => pen.animal)).to.have.members(["Cow"]);
+    });
+
     it("Should filter 'eq' with 'where'", async () => {
         let animals = await WhereTests.query
             .farm({pen})

@@ -220,6 +220,14 @@ const ItemOperations = {
 	"ifNotExists": "ifNotExists"
 };
 
+const UpsertOperations = {
+	"set": "set",
+	"add": "add",
+	"subtract": "subtract",
+	"append": "append",
+	"ifNotExists": "ifNotExists"
+};
+
 const AttributeProxySymbol = Symbol("attribute_proxy");
 const TransactionCommitSymbol = Symbol('transaction_commit');
 
@@ -358,4 +366,5 @@ module.exports = {
 	TransactionCommitSymbol,
 	TransactionOperations,
 	TransactionMethods,
+	UpsertOperations,
 };

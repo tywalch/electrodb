@@ -11,6 +11,16 @@ const client = new DynamoDB.DocumentClient({
     endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
 });
 
+function print(label: string, val: any): void
+function print(val: any): void
+function print(maybeLabel: any, val = maybeLabel) {
+    if (typeof maybeLabel === 'string') {
+        console.log(maybeLabel, JSON.stringify(val, null, 4));
+    } else {
+        console.log(JSON.stringify(val, null, 4));
+    }
+}
+
 const table = "electro";
 
 const users = new Entity({
@@ -673,6 +683,189 @@ describe("Update Item", () => {
             });
         });
 
+        it('should allow non-existent lists to be appended to', async () => {
+            const StoreLocations = new Entity({
+                model: {
+                    service: "MallStoreDirectory",
+                    entity: "MallStore",
+                    version: "1",
+                },
+                attributes: {
+                    cityId: {
+                        type: "string",
+                        required: true,
+                    },
+                    mallId: {
+                        type: "string",
+                        required: true,
+                    },
+                    storeId: {
+                        type: "string",
+                        required: true,
+                    },
+                    buildingId: {
+                        type: "string",
+                        required: true,
+                    },
+                    unitId: {
+                        type: "string",
+                        required: true,
+                    },
+                    category: {
+                        type: [
+                            "spite store",
+                            "food/coffee",
+                            "food/meal",
+                            "clothing",
+                            "electronics",
+                            "department",
+                            "misc"
+                        ],
+                        required: true
+                    },
+                    leaseEndDate: {
+                        type: "string",
+                        required: true
+                    },
+                    rent: {
+                        type: "string",
+                        required: true,
+                        validate: /^(\d+\.\d{2})$/
+                    },
+                    discount: {
+                        type: "string",
+                        required: false,
+                        default: "0.00",
+                        validate: /^(\d+\.\d{2})$/
+                    },
+                    tenants: {
+                        type: "set",
+                        items: "string",
+                    },
+                    warnings: {
+                        type: "number",
+                        default: 0,
+                    },
+                    deposit: {
+                        type: "number",
+                    },
+                    contact: {
+                        type: "set",
+                        items: "string",
+                    },
+                    rentalAgreement: {
+                        type: "list",
+                        items: {
+                            type: "map",
+                            properties: {
+                                type: {
+                                    type: "string"
+                                },
+                                detail: {
+                                    type: "string",
+                                }
+                            }
+                        }
+                    },
+                    petFee: {
+                        type: "number"
+                    },
+                    fees: {
+                        type: "number"
+                    },
+                    tags: {
+                        type: "set",
+                        items: "string",
+                    }
+                },
+                indexes: {
+                    stores: {
+                        pk: {
+                            field: "pk",
+                            composite: ["cityId", "mallId"]
+                        },
+                        sk: {
+                            field: "sk",
+                            composite: ["buildingId", "storeId"]
+                        }
+                    },
+                    units: {
+                        index: "gsi1pk-gsi1sk-index",
+                        pk: {
+                            field: "gsi1pk",
+                            composite: ["mallId"]
+                        },
+                        sk: {
+                            field: "gsi1sk",
+                            composite: ["buildingId", "unitId"]
+                        }
+                    },
+                    leases: {
+                        index: "gsi2pk-gsi2sk-index",
+                        pk: {
+                            field: "gsi2pk",
+                            composite: ["storeId"]
+                        },
+                        sk: {
+                            field: "gsi2sk",
+                            composite: ["leaseEndDate"]
+                        }
+                    }
+                }
+            }, {table, client});
+
+            const cityId = uuid();
+            const storeId = "LatteLarrys";
+            const mallId = "EastPointe";
+            const buildingId = "BuildingA1";
+            const unitId = "B47";
+            const category = "food/coffee";
+            const leaseEndDate = "2020-03-22";
+            const rent = "4500.00";
+            const deposit = 100;
+            const tenants = ['Larry David'];
+            const warnings = 0;
+            const petFee = 250;
+            const rentalAgreement = [{
+                type: 'amendment',
+                detail: 'Larry David accepts coffee liability'
+            }];
+
+            const { data } = await StoreLocations
+                .upsert({
+                    cityId,
+                    storeId,
+                    mallId,
+                    buildingId,
+                    unitId,
+                    category,
+                    leaseEndDate,
+                    rent,
+                })
+                .add({ deposit, tenants })
+                .ifNotExists({ warnings })
+                .subtract({ petFee })
+                .append({ rentalAgreement })
+                .go({response: 'all_new'})
+
+            expect(data).to.deep.equal({
+                cityId,
+                storeId,
+                mallId,
+                buildingId,
+                unitId,
+                category,
+                leaseEndDate,
+                rent,
+                deposit,
+                tenants,
+                warnings,
+                rentalAgreement,
+                discount: '0.00',
+                petFee: 0 - petFee,
+            })
+        });
+
         it('should allow non-existent numbers to be added', async () => {
             const {entity} = createNumberEntity({client, table});
             const name = uuid();
@@ -687,6 +880,54 @@ describe("Update Item", () => {
             const after = await entity.get({name, type}).go();
             expect(before.data.prop).to.be.undefined;
             expect(after.data?.prop).to.equal(num);
+        });
+
+        it('should allow non-existent numbers to be subtracted', async () => {
+            const {entity} = createNumberEntity({client, table});
+            const name = uuid();
+            const type = uuid();
+            await entity.create({name, type}).go();
+            const num = 2;
+            const before = await entity.patch({name, type})
+                .data(({ prop }, { subtract }) => {
+                    subtract(prop, num)
+                })
+                .go({response: 'all_old'});
+            const after = await entity.get({name, type}).go();
+            expect(before.data.prop).to.be.undefined;
+            expect(after.data?.prop).to.equal(0 - num);
+        });
+
+        it('should allow default numbers to be provided to subtract', async () => {
+            const {entity} = createNumberEntity({client, table});
+            const name = uuid();
+            const type = uuid();
+            await entity.create({name, type}).go();
+            const num = 2;
+            const before = await entity.patch({name, type})
+                .data(({ prop }, { subtract }) => {
+                    subtract(prop, num, 5);
+                })
+                .go({response: 'all_old'});
+            const after = await entity.get({name, type}).go();
+            expect(before.data.prop).to.be.undefined;
+            expect(after.data?.prop).to.equal(5 - num);
+        });
+
+        it('should allow default numbers to be provided to add', async () => {
+            const {entity} = createNumberEntity({client, table});
+            const name = uuid();
+            const type = uuid();
+            await entity.create({name, type}).go();
+            const num = 2;
+            const before = await entity.patch({name, type})
+                .data(({ prop }, { add }) => {
+                    add(prop, num, 5)
+                })
+                .go({response: 'all_old'});
+            const after = await entity.get({name, type}).go();
+            expect(before.data.prop).to.be.undefined;
+            expect(after.data?.prop).to.equal(5 + num);
         });
 
         describe('undefined values when using data method', () => {
@@ -1857,7 +2098,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(subtractParameters).to.deep.equal({
-                "UpdateExpression": "SET #deposit = #deposit - :deposit_u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #deposit = (if_not_exists(#deposit, :deposit_default_value_u0) - :deposit_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#deposit": "deposit",
@@ -1868,6 +2109,7 @@ describe("Update Item", () => {
                     "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
+                    ":deposit_default_value_u0": 0,
                     ":category0": "food/coffee",
                     ":deposit_u0": 500,
                     ":buildingId_u0": "A34",
@@ -1896,7 +2138,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(appendParameters).to.deep.equal({
-                "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+                "UpdateExpression": "SET #rentalAgreement = list_append(if_not_exists(#rentalAgreement, :rentalAgreement_default_value_u0), :rentalAgreement_u0), #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#rentalAgreement": "rentalAgreement",
@@ -1908,6 +2150,7 @@ describe("Update Item", () => {
                 },
                 "ExpressionAttributeValues": {
                     ":category0": "food/coffee",
+                    ":rentalAgreement_default_value_u0": [],
                     ":rentalAgreement_u0": [{
                         "type": "ammendment",
                         "detail": "no soup for you"
@@ -1980,7 +2223,7 @@ describe("Update Item", () => {
                 .params()
 
             expect(JSON.parse(JSON.stringify(allParameters))).to.deep.equal({
-                "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+                "UpdateExpression": "SET #category = :category_u0, #deposit = (if_not_exists(#deposit, :deposit_default_value_u0) - :deposit_u0), #rentalAgreement = list_append(if_not_exists(#rentalAgreement, :rentalAgreement_default_value_u0), :rentalAgreement_u0), #totalFees = #totalFees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenant :tenant_u0, #rent :rent_u0, #leaseHolders :tenant_u0 DELETE #tags :tags_u0, #contact :contact_u0",
                 "ExpressionAttributeNames": {
                     "#category": "category",
                     "#tenant": "tenant",
@@ -2000,6 +2243,8 @@ describe("Update Item", () => {
                     "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
                 },
                 "ExpressionAttributeValues": {
+                    ":rentalAgreement_default_value_u0": [],
+                    ":deposit_default_value_u0": 0,
                     ":category0": "food/coffee",
                     ":category_u0": "food/meal",
                     ":rent_u0": 100,
@@ -2101,7 +2346,7 @@ describe("Update Item", () => {
             .params();
 
         expect(params).to.deep.equal({
-            "UpdateExpression": "SET #stars = #stars - :stars_u0, #files = list_append(#files, :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
+            "UpdateExpression": "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(if_not_exists(#files, :files_default_value_u0), :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
             "ExpressionAttributeNames": {
                 "#followers": "followers",
                 "#stars": "stars",
@@ -2120,6 +2365,8 @@ describe("Update Item", () => {
                 "#__edb_e__": "__edb_e__", "#__edb_v__": "__edb_v__"
             },
             "ExpressionAttributeValues": {
+                ":files_default_value_u0": [],
+                ":stars_default_value_u0": 0,
                 ":followers_u0": params.ExpressionAttributeValues[":followers_u0"],
                 ":stars_u0": 8,
                 ":files_u0": [
@@ -4280,107 +4527,743 @@ describe("Update Item", () => {
         });
     });
 
-    it('when using composite, the update method should be able able to fully create new items', async () => {
-        const entity = new Entity({
-            model: {
-                service: uuid(),
-                version: '1',
-                entity: 'entity',
-            },
-            attributes: {
-                dim1: { type: 'string' },
-                dim2: { type: 'string' },
-                dim3: { type: 'string' },
-                aggregate: { type: 'string', required: true },
-                period: { type: 'string', required: true },
-                sum: { type: 'number', default: 0, required: true },
-                count: { type: 'number', default: 0, required: true },
-            },
-            indexes: {
-                byAggregate: {
-                    pk: {
-                        field: 'pk',
-                        composite: ['dim1', 'dim2', 'dim3', 'aggregate'],
+    describe('updating on upsert', () => {
+        const createdAt = Date.now();
+        const updatedAt = Date.now();
+        it('should accept table index composites attributes anywhere in the upsert chain', async () => {
+            const serviceName = uuid();
+            const UrlEntity = new Entity(
+                {
+                    model: {
+                        entity: "url",
+                        version: "1",
+                        service: serviceName,
                     },
-                    sk: {
-                        field: 'sk',
-                        composite: ['period'],
+                    attributes: {
+                        id: {
+                            type: 'string',
+                        },
+                        url: {
+                            type: "string",
+                            required: true,
+                        },
+                        citation: {
+                            type: "string",
+                            required: true,
+                        },
+                        description: {
+                            type: "string",
+                            required: false,
+                        },
+                        count: {
+                            type: "number"
+                        },
+                        hits: {
+                            type: "number",
+                            required: true,
+                        },
+                        minimum: {
+                            type: "number",
+                        },
+                        maximum: {
+                            type: 'number',
+                            readOnly: true,
+                        },
+                        secure: {
+                            type: 'boolean',
+                            readOnly: true,
+                            required: true,
+                            default: () => false,
+                            watch: ['protocol'],
+                            set: (_, { protocol }) => {
+                                return protocol === 'https';
+                            }
+                        },
+                        protocol: {
+                            type: 'string',
+                            readOnly: true,
+                            required: true,
+                        },
+                        createdAt: {
+                            type: "number",
+                            default: () => createdAt,
+                            // cannot be modified after created
+                            readOnly: true,
+                        },
+                        updatedAt: {
+                            type: "number",
+                            // watch for changes to any attribute
+                            watch: "*",
+                            // set current timestamp when updated
+                            set: () => updatedAt,
+                            readOnly: true,
+                        },
+                    },
+                    indexes: {
+                        urls: {
+                            pk: {
+                                field: "pk",
+                                composite: ['id'],
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: ["url"],
+                            }
+                        },
+                        byUpdated: {
+                            index: "gsi1pk-gsi1sk-index",
+                            pk: {
+                                // map to your GSI Hash/Partition key
+                                field: "gsi1pk",
+                                composite: [],
+                            },
+                            sk: {
+                                // map to your GSI Range/Sort key
+                                field: "gsi1sk",
+                                composite: ["updatedAt"],
+                            },
+                        },
                     },
                 },
+                { table, client }
+            );
 
-                byDim1: {
-                    index: "gsi1pk-gsi1sk-index",
-                    pk: {
-                        field: 'gsi1pk',
-                        composite: ['dim1'],
-                    },
-                    sk: {
-                        field: 'gsi1sk',
-                        composite: ['period', 'dim2', 'dim3', 'aggregate'],
-                    },
+            const id = uuid();
+            const url = 'www.cool.com';
+            const citation = 'my_citation';
+            const description = 'my_description';
+            const count = 2;
+            const hits = 3;
+            const minimum = 1;
+            const maximum = 20;
+            const protocol = 'https';
+            const params = UrlEntity.upsert({
+                // this object contains no composite attributes
+                    citation,
+                    protocol,
+                    description,
+                })
+                .set({ id, maximum })
+                .add({ count })
+                .subtract({ hits, minimum })
+                .set({ url })
+                .params();
+
+            expect(params).to.deep.equal({
+                TableName: 'electro',
+                UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #id = :id_u0, #url = :url_u0, #citation = :citation_u0, #description = :description_u0, #maximum = if_not_exists(#maximum, :maximum_u0), #secure = if_not_exists(#secure, :secure_u0), #protocol = if_not_exists(#protocol, :protocol_u0), #createdAt = if_not_exists(#createdAt, :createdAt_u0), #updatedAt = :updatedAt_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #hits = (if_not_exists(#hits, :hits_default_value_u0) - :hits_u0), #minimum = (if_not_exists(#minimum, :minimum_default_value_u0) - :minimum_u0) ADD #count :count_u0',
+                ExpressionAttributeNames: {
+                    '#__edb_e__': '__edb_e__',
+                    '#__edb_v__': '__edb_v__',
+                    '#id': 'id',
+                    '#url': 'url',
+                    '#citation': 'citation',
+                    '#description': 'description',
+                    '#secure': 'secure',
+                    '#protocol': 'protocol',
+                    '#createdAt': 'createdAt',
+                    '#updatedAt': 'updatedAt',
+                    '#gsi1pk': 'gsi1pk',
+                    '#gsi1sk': 'gsi1sk',
+                    '#count': 'count',
+                    '#maximum': 'maximum',
+                    '#hits': 'hits',
+                    '#minimum': 'minimum'
                 },
-
-                byDim2: {
-                    index: "gsi2pk-gsi2sk-index",
-                    pk: {
-                        field: 'gsi2pk',
-                        composite: ['dim2'],
-                    },
-                    sk: {
-                        field: 'gsi2sk',
-                        composite: ['period', 'dim1', 'dim3', 'aggregate'],
-                    },
+                ExpressionAttributeValues: {
+                    ':__edb_e___u0': 'url',
+                    ':__edb_v___u0': '1',
+                    ':id_u0': id,
+                    ':url_u0': 'www.cool.com',
+                    ':citation_u0': 'my_citation',
+                    ':description_u0': 'my_description',
+                    ':secure_u0': true,
+                    ':protocol_u0': 'https',
+                    ':createdAt_u0': createdAt,
+                    ':updatedAt_u0': updatedAt,
+                    ':gsi1pk_u0': `$${serviceName}`,
+                    ':gsi1sk_u0': `$url_1#updatedat_${updatedAt}`,
+                    ':count_u0': count,
+                    ':maximum_u0': maximum,
+                    ':hits_u0': hits,
+                    ':hits_default_value_u0': 0,
+                    ':minimum_u0': minimum,
+                    ':minimum_default_value_u0': 0,
                 },
-
-                byDim3: {
-                    index: "gsi3pk-gsi3sk-index",
-                    pk: {
-                        field: 'gsi3pk',
-                        composite: ['dim3'],
-                    },
-                    sk: {
-                        field: 'gsi3sk',
-                        composite: ['period', 'dim1', 'dim2','aggregate'],
-                    },
-                },
-            },
-        }, { table, client });
-
-        const dim1 = uuid();
-        const dim2 = uuid();
-        const dim3 = uuid();
-        const aggregate = uuid();
-        const period = uuid();
-
-        const identifiers = {
-            dim1,
-            dim2,
-            dim3,
-            aggregate,
-            period,
-        }
-
-        async function runUpdate() {
-            await entity.update(identifiers).composite(identifiers).add({ count: 1, sum: 50 }).go();
-
-            return await Promise.all([
-                entity.query.byAggregate(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim1(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim2(identifiers).go().then(resp => resp.data[0]),
-                entity.query.byDim3(identifiers).go().then(resp => resp.data[0]),
-            ]);
-        }
-
-        const initialUpdate = await runUpdate();
-        initialUpdate.forEach(item => {
-            expect(item.count).to.equal(1);
-            expect(item.sum).to.equal(50);
+                Key: {
+                    pk: `$${serviceName}#id_${id}`,
+                    sk: '$url_1#url_www.cool.com'
+                }
+            });
         });
 
-        const secondUpdate = await runUpdate();
-        secondUpdate.forEach(item => {
-            expect(item.count).to.equal(2);
-            expect(item.sum).to.equal(100);
+        it('should perform ifNotExists while performing an upsert', async () => {
+            const serviceName = uuid();
+            const UrlEntity = new Entity(
+                {
+                    model: {
+                        entity: "url",
+                        version: "1",
+                        service: serviceName,
+                    },
+                    attributes: {
+                        id: {
+                            type: 'string',
+                        },
+                        url: {
+                            type: "string",
+                            required: true,
+                        },
+                        citation: {
+                            type: "string",
+                            required: true,
+                        },
+                        description: {
+                            type: "string",
+                            required: false,
+                        },
+                        count: {
+                            type: "number"
+                        },
+                        hits: {
+                            type: "number",
+                            required: true,
+                        },
+                        minimum: {
+                            type: "number",
+                        },
+                        maximum: {
+                            type: 'number',
+                            readOnly: true,
+                        },
+                        secure: {
+                            type: 'boolean',
+                            required: true,
+                            default: () => false,
+                            watch: ['protocol'],
+                            set: (_, { protocol }) => {
+                                return protocol === 'https';
+                            }
+                        },
+                        protocol: {
+                            type: 'string',
+                            required: true,
+                        },
+                        createdAt: {
+                            type: "number",
+                            default: () => createdAt,
+                            // cannot be modified after created
+                            readOnly: true,
+                        },
+                        updatedAt: {
+                            type: "number",
+                            // watch for changes to any attribute
+                            watch: "*",
+                            // set current timestamp when updated
+                            set: () => updatedAt,
+                            readOnly: true,
+                        },
+                    },
+                    indexes: {
+                        urls: {
+                            pk: {
+                                field: "pk",
+                                composite: ['id'],
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: ["url"],
+                            }
+                        },
+                        byUpdated: {
+                            index: "gsi1pk-gsi1sk-index",
+                            pk: {
+                                // map to your GSI Hash/Partition key
+                                field: "gsi1pk",
+                                composite: [],
+                            },
+                            sk: {
+                                // map to your GSI Range/Sort key
+                                field: "gsi1sk",
+                                composite: ["updatedAt"],
+                            },
+                        },
+                    },
+                },
+                { table, client }
+            );
+
+            const id = uuid();
+            const url = 'www.cool.com';
+            const citation = 'my_citation';
+            const description = 'my_description';
+            const count = 2;
+            const hits = 3;
+            const minimum = 1;
+            const maximum = 20;
+            const protocol = 'https';
+
+            await UrlEntity.upsert({
+                id,
+                url,
+                citation,
+                description,
+                count,
+                hits,
+                minimum,
+                maximum,
+                protocol,
+            }).go();
+
+            const firstUpsert = await UrlEntity.get({id, url}).go();
+
+            expect(firstUpsert.data).to.deep.equal({
+                updatedAt,
+                createdAt,
+                id,
+                url,
+                citation,
+                description,
+                count,
+                hits,
+                minimum,
+                maximum,
+                protocol,
+                secure: true,
+            });
+
+            await UrlEntity.upsert({
+                id,
+                url,
+                citation,
+                description,
+                protocol,
+            }).ifNotExists({
+                minimum: minimum + 50,
+                maximum: maximum + 50,
+            }).add({
+                count,
+                hits,
+            }).go();
+
+            const secondUpsert = await UrlEntity.get({id, url}).go();
+
+            expect(secondUpsert.data).to.deep.equal({
+                secure: true,
+                updatedAt,
+                createdAt,
+                id,
+                url,
+                citation,
+                description,
+                minimum,
+                maximum,
+                protocol,
+                count: count * 2,
+                hits: hits * 2,
+            });
         });
-    })
+
+        it('should perform add, subtract, and append while performing an upsert', async () => {
+            const serviceName = uuid();
+            const UrlEntity = new Entity(
+                {
+                    model: {
+                        entity: "url",
+                        version: "1",
+                        service: serviceName,
+                    },
+                    attributes: {
+                        id: {
+                            type: 'string',
+                        },
+                        url: {
+                            type: "string",
+                            required: true,
+                        },
+                        citation: {
+                            type: "string",
+                            required: true,
+                        },
+                        description: {
+                            type: "string",
+                            required: false,
+                        },
+                        count: {
+                            type: "number"
+                        },
+                        hits: {
+                            type: "number",
+                            required: true,
+                        },
+                        minimum: {
+                            type: "number",
+                        },
+                        maximum: {
+                            type: 'number',
+                            readOnly: true,
+                        },
+                        secure: {
+                            type: 'boolean',
+                            required: true,
+                            default: () => false,
+                            watch: ['protocol'],
+                            set: (_, { protocol }) => {
+                                return protocol === 'https';
+                            }
+                        },
+                        protocol: {
+                            type: 'string',
+                            required: true,
+                        },
+                        createdAt: {
+                            type: "number",
+                            default: () => createdAt,
+                            // cannot be modified after created
+                            readOnly: true,
+                        },
+                        updatedAt: {
+                            type: "number",
+                            // watch for changes to any attribute
+                            watch: "*",
+                            // set current timestamp when updated
+                            set: () => updatedAt,
+                            readOnly: true,
+                        },
+                    },
+                    indexes: {
+                        urls: {
+                            pk: {
+                                field: "pk",
+                                composite: ['id'],
+                            },
+                            sk: {
+                                field: 'sk',
+                                composite: ["url"],
+                            }
+                        },
+                        byUpdated: {
+                            index: "gsi1pk-gsi1sk-index",
+                            pk: {
+                                // map to your GSI Hash/Partition key
+                                field: "gsi1pk",
+                                composite: [],
+                            },
+                            sk: {
+                                // map to your GSI Range/Sort key
+                                field: "gsi1sk",
+                                composite: ["updatedAt"],
+                            },
+                        },
+                    },
+                },
+                { table, client }
+            );
+
+            const id = uuid();
+            const url = 'www.cool.com';
+            const citation = 'my_citation';
+            const description = 'my_description';
+            const count = 2;
+            const hits = 3;
+            const minimum = 1;
+            const maximum = 20;
+            const protocol = 'https';
+            
+            await UrlEntity.upsert({
+                // this object contains no composite attributes
+                    citation,
+                    protocol,
+                    description,
+                })
+                .set({ id, maximum })
+                .add({ count })
+                .subtract({ hits, minimum })
+                .set({ url })
+                .go();
+
+            const afterFirstUpsert = await UrlEntity.get({id, url}).go();
+
+            const afterFirstUpsertExpected = {
+                id,
+                url,
+                citation,
+                updatedAt,
+                createdAt,
+                protocol,
+                count,
+                maximum,
+                description,
+                secure: true,
+                hits: 0 - hits,
+                minimum: 0 - minimum,
+            }
+            
+            expect(afterFirstUpsert.data).to.deep.equal(afterFirstUpsertExpected);
+
+            await UrlEntity.upsert({
+                    citation,
+                    description,
+                    // protocol changes, so should watcher "secure"
+                    protocol: 'http',
+                })
+                .set({ 
+                    id, 
+                    // different value for readonly maximum
+                    maximum: maximum * 2
+                })
+                .add({ count })
+                .subtract({ hits, minimum })
+                .set({ url })
+                .go();
+
+            const afterSecondUpsert = await UrlEntity.get({ id, url }).go();
+
+            expect(afterSecondUpsert.data).to.deep.equal({
+                ...afterFirstUpsertExpected,
+                updatedAt,
+                createdAt,
+
+                // protocol changed so should watcher attribute
+                protocol: 'http',
+                secure: false,
+
+                // maximum was readOnly so should not have been altered
+                maximum: maximum,
+
+                // count was added to count again
+                count: afterFirstUpsertExpected.count * count,
+
+                // hits/minimum was subtracted again
+                hits: afterFirstUpsertExpected.hits - hits,
+                minimum: afterFirstUpsertExpected.minimum - minimum
+            });
+        });
+
+        // Removing this test, but keeping the event it becomes relevant again -- I think it makes things much more
+        // complicated (therefore harder for a user to understand/reason about) to use default values in this way.
+       //  it('should utilize default values while performing upsert and result in the same outcomes as create', async () => {
+       //     const serviceName = uuid();
+       //     const minimumDefault = 4;
+       //     const maximumDefault = 8;
+       //     const UrlEntity = new Entity(
+       //         {
+       //             model: {
+       //                 entity: "url",
+       //                 version: "1",
+       //                 service: serviceName,
+       //             },
+       //             attributes: {
+       //                 id: {
+       //                     type: 'string',
+       //                 },
+       //                 url: {
+       //                     type: "string",
+       //                     required: true,
+       //                 },
+       //                 citation: {
+       //                     type: "string",
+       //                     required: true,
+       //                 },
+       //                 description: {
+       //                     type: "string",
+       //                     required: false,
+       //                 },
+       //                 count: {
+       //                     type: "number",
+       //                 },
+       //                 hits: {
+       //                     type: "number",
+       //                     required: true,
+       //                 },
+       //                 minimum: {
+       //                     type: "number",
+       //                     default: minimumDefault,
+       //                 },
+       //                 maximum: {
+       //                     type: 'number',
+       //                     default: maximumDefault
+       //                 },
+       //                 secure: {
+       //                     type: 'boolean',
+       //                     readOnly: true,
+       //                     required: true,
+       //                     default: () => false,
+       //                     watch: ['protocol'],
+       //                     set: (_, { protocol }) => {
+       //                         return protocol === 'https';
+       //                     }
+       //                 },
+       //                 protocol: {
+       //                     type: 'string',
+       //                     readOnly: true,
+       //                     required: true,
+       //                 },
+       //                 createdAt: {
+       //                     type: "number",
+       //                     default: () => createdAt,
+       //                     // cannot be modified after created
+       //                     readOnly: true,
+       //                 },
+       //                 updatedAt: {
+       //                     type: "number",
+       //                     // watch for changes to any attribute
+       //                     watch: "*",
+       //                     // set current timestamp when updated
+       //                     set: () => updatedAt,
+       //                     readOnly: true,
+       //                 },
+       //             },
+       //             indexes: {
+       //                 urls: {
+       //                     pk: {
+       //                         field: "pk",
+       //                         composite: ['id'],
+       //                     },
+       //                     sk: {
+       //                         field: 'sk',
+       //                         composite: ["url"],
+       //                     }
+       //                 },
+       //                 byUpdated: {
+       //                     index: "gsi1pk-gsi1sk-index",
+       //                     pk: {
+       //                         // map to your GSI Hash/Partition key
+       //                         field: "gsi1pk",
+       //                         composite: [],
+       //                     },
+       //                     sk: {
+       //                         // map to your GSI Range/Sort key
+       //                         field: "gsi1sk",
+       //                         composite: ["updatedAt"],
+       //                     },
+       //                 },
+       //             },
+       //         },
+       //         { table, client }
+       //     );
+       //
+       //     const url = 'www.cool.com';
+       //     const citation = 'my_citation';
+       //     const description = 'my_description';
+       //     const count = 2;
+       //     const hits = 3;
+       //     const protocol = 'https';
+       //
+       //     // item1 (and the objects that use it's value as a base)
+       //     // purposely avoid defaulted attributes: "minimum" and "maximum".
+       //     // They should be set with the defaults set in the model
+       //     const item1 = {
+       //          id: uuid(),
+       //          url,
+       //          hits,
+       //          count,
+       //          protocol,
+       //          citation,
+       //          description,
+       //     };
+       //
+       //      const item2 = {
+       //          ...item1,
+       //          id: uuid(),
+       //      };
+       //
+       //      const item3 = {
+       //          ...item1,
+       //          id: uuid()
+       //      };
+       //
+       //      const item4 = {
+       //          ...item1,
+       //          id: uuid()
+       //      };
+       //
+       //     // normal create
+       //     const createdItem1 = await UrlEntity.create(item1).go();
+       //
+       //     // normal upsert
+       //     const upsertedItem2 = await UrlEntity.upsert(item2).go({ response: 'all_new' });
+       //
+       //     // upsert with add and subtract
+       //     await UrlEntity.upsert(item3)
+       //         .add({ minimum: 2 }).subtract({ maximum: 1 }).go();
+       //
+       //     // create and patch (equivelent of upsert with add and subtract)
+       //     await UrlEntity.create(item4).go();
+       //     await UrlEntity.patch(item4).add({minimum: 2}).subtract({ maximum: 1 }).go();
+       //
+       //     const storedItem1 = await UrlEntity.get(item1).go();
+       //     const storedItem2 = await UrlEntity.get(item2).go();
+       //
+       //     // defaults should have been used
+       //     expect(storedItem1.data?.minimum).to.equal(minimumDefault);
+       //     expect(storedItem1.data?.maximum).to.equal(maximumDefault);
+       //
+       //     // defaults should have been used
+       //     expect(storedItem2.data?.minimum).to.equal(minimumDefault);
+       //     expect(storedItem2.data?.maximum).to.equal(maximumDefault);
+       //
+       //     // items should be identical except their id
+       //      expect({
+       //          ...storedItem1.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      }).to.deep.equal({
+       //          ...storedItem2.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      });
+       //
+       //      // upsert results should equal the item inserted (all_new was used)
+       //      expect({
+       //          ...storedItem1.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      }).to.deep.equal({
+       //          ...upsertedItem2.data,
+       //          updatedAt,
+       //          createdAt,
+       //          id: null,
+       //      });
+       //
+       //      // upsert results should equal the same as create results (all_new was used)
+       //      expect({
+       //          ...createdItem1.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      }).to.deep.equal({
+       //          ...upsertedItem2.data,
+       //          updatedAt,
+       //          createdAt,
+       //          id: null,
+       //      });
+       //
+       //      const storedItem3 = await UrlEntity.get(item3).go();
+       //      const storedItem4 = await UrlEntity.get(item4).go();
+       //
+       //     // defaults should have been used and then updated
+       //     expect(storedItem3.data?.minimum).to.equal(minimumDefault + 2);
+       //     expect(storedItem3.data?.maximum).to.equal(maximumDefault - 1);
+       //
+       //     // defaults should have been used and then updated
+       //     expect(storedItem4.data?.minimum).to.equal(minimumDefault + 2);
+       //     expect(storedItem4.data?.maximum).to.equal(maximumDefault - 1);
+       //
+       //     expect({
+       //          ...storedItem3.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      }).to.deep.equal({
+       //          ...storedItem4.data,
+       //          id: null,
+       //          updatedAt,
+       //          createdAt,
+       //      });
+       // });
+    });
 });

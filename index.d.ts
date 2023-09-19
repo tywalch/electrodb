@@ -158,8 +158,9 @@ export interface CollectionWhereOperations {
     notExists: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
     contains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends Array<infer I> ? I : V : never) => string;
     notContains: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: A extends WhereAttributeSymbol<infer V> ? V extends Array<infer I> ? I : V : never) => string;
-    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
+    field: (name: string) => string;
     name: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
+    value: <T, A extends WhereAttributeSymbol<T>>(attr: A, value: T) => string;
     size: <T, A extends WhereAttributeSymbol<T>>(attr: A) => string;
     type: <T, A extends WhereAttributeSymbol<T>>(attr: A, type: DynamoDBAttributeType) => string;
     escape: <T extends string | number | boolean>(value: T) => T extends string ? string
@@ -834,11 +835,55 @@ export interface PutRecordOperationOptions<A extends string, F extends string, C
     where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, PutRecordOperationOptions<A, F, C, S, ResponseType>>;
 }
 
-export interface UpsertRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
-    go: UpsertRecordGo<ResponseType, AllTableIndexCompositeAttributes<A,F,C,S>>;
-    params: ParamRecord<UpdateQueryParams>;
-    where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A, F, C, S, ResponseType>>;
+type RequiredKeys<T> = Exclude<{ [K in keyof T]-?: {} extends Pick<T, K> ? never : K }[keyof T], symbol>;
+
+type OverlappingProperties<T1, T2> = {
+    [Key in keyof T1 as Key extends keyof T2 ? Key : never]: Key extends keyof T2 ? T2[Key] : never;
 }
+
+type NonOverlappingProperties<T1, T2> = {
+    [Key in keyof T1 as Key extends keyof T2 ? never : Key]: T1[Key];
+}
+
+// RequiredPutItems
+export type UpsertRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType, FullExpectedItem, RemainingExpectedItem, ProvidedItem> =
+    // keyof Omit<ProvidedItem, RequiredKeys<RemainingExpectedItem>> extends RequiredKeys<RemainingExpectedItem>
+    [RequiredKeys<RemainingExpectedItem>] extends [never]
+        ? {
+            go: UpsertRecordGo<ResponseType, AllTableIndexCompositeAttributes<A,F,C,S>>;
+            params: ParamRecord<UpdateQueryParams>;
+
+            where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A,F,C,S, ResponseType, FullExpectedItem, RemainingExpectedItem, ProvidedItem>>;
+
+            set: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, PutItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            ifNotExists: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, PutItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            add: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, AddItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            subtract: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, SubtractItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            append: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, AppendItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+        }
+        : {
+            // these are strings to give context to the user this is a builder pattern
+            go: `Missing required attributes to perform upsert` | `Required: ${RequiredKeys<RemainingExpectedItem>}`;
+            params: `Missing required attributes to perform upsert` | `Required: ${RequiredKeys<RemainingExpectedItem>}`;
+
+            where: WhereClause<A, F, C, S, Item<A, F, C, S, S["attributes"]>, UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem,RemainingExpectedItem,ProvidedItem>>;
+
+            set: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, PutItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            ifNotExists: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, PutItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            add: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, AddItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            subtract: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, SubtractItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+            append: <ReceivedItem extends Partial<OverlappingProperties<RemainingExpectedItem, AppendItem<A,F,C,S>>>>(item: ReceivedItem) =>
+                UpsertRecordOperationOptions<A,F,C,S,ResponseType,FullExpectedItem, NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>, NonOverlappingProperties<ProvidedItem, ReceivedItem>>
+        }
 
 export interface DeleteRecordOperationOptions<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, ResponseType> {
     go: DeleteRecordOperationGo<ResponseType, AllTableIndexCompositeAttributes<A,F,C,S>>;
@@ -2343,7 +2388,10 @@ export type RequiredPutItems<A extends string, F extends string, C extends strin
 
 export type PutItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     Pick<CreatedItem<A,F,C,S,S["attributes"]>, ExtractKeysOfValueType<RequiredPutItems<A,F,C,S>,true>>
-    & Partial<CreatedItem<A,F,C,S,S["attributes"]>>
+    & Partial<CreatedItem<A,F,C,S,S["attributes"]>>;
+
+export type UpsertItem<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
+    Partial<PutItem<A,F,C,S>>;
 
 export type UpdateData<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> =
     Omit<{
@@ -2480,6 +2528,7 @@ export interface WhereOperations<A extends string, F extends string, C extends s
     name: <A extends WhereAttributeSymbol<any>>(attr: A) => string;
     size: <T, A extends WhereAttributeSymbol<T>>(attr: A) => number;
     type: <T, A extends WhereAttributeSymbol<T>>(attr: A, type: DynamoDBAttributeType) => string;
+    field: (name: string) => string;
     escape: <T extends string | number | boolean>(value: T) =>
         T extends string ? string
         : T extends number ? number
@@ -2491,12 +2540,20 @@ export interface DataUpdateOperations<A extends string, F extends string, C exte
     set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
     remove: <T, A extends DataUpdateAttributeSymbol<T>>(attr: [T] extends [never] ? never : A) => any;
     append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A> extends Array<any> ? DataUpdateAttributeValues<A> : never) => any;
-    add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | Array<any> ? V : [V] extends [any] ? V : never : never ) => any;
-    subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never ) => any;
+    add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | Array<any> ? V : [V] extends [any] ? V : never : never, defaultValue?: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : never : never) => any;
+    subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never, defaultValue?: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : never : never) => any;
     delete: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : [V] extends [any] ? V : never : never ) => any;
     del:    <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends Array<any> ? V : never : never ) => any;
     value: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => Required<DataUpdateAttributeValues<A>>;
     name: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A) => any;
+    ifNotExists: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
+}
+
+export interface UpsertDataUpdateOperations<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> {
+    set: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
+    append: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A> extends Array<any> ? DataUpdateAttributeValues<A> : never) => any;
+    add: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number | Array<any> ? V : [V] extends [any] ? V : never : never, defaultValue?: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : never : never) => any;
+    subtract: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : [V] extends [any] ? V : never : never, defaultValue?: A extends DataUpdateAttributeSymbol<infer V> ? V extends number ? V : never : never) => any;
     ifNotExists: <T, A extends DataUpdateAttributeSymbol<T>>(attr: A, value: DataUpdateAttributeValues<A>) => any;
 }
 
@@ -2506,9 +2563,14 @@ export type WhereCallback<A extends string, F extends string, C extends string, 
 export type DataUpdateCallback<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> =
     <W extends DataUpdateAttributes<A,F,C,S,I>>(attributes: W, operations: DataUpdateOperations<A,F,C,S,I>) => any;
 
+export type UpsertDataUpdateCallback<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>> =
+    <W extends DataUpdateAttributes<A,F,C,S,I>>(attributes: W, operations: UpsertDataUpdateOperations<A,F,C,S,I>) => any;
+
 export type WhereClause<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends Item<A,F,C,S,S["attributes"]>, T> = (where: WhereCallback<A,F,C,S,I>) => T;
 
 export type DataUpdateMethod<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>, T> = (update: DataUpdateCallback<A,F,C,S,I>) => T;
+
+export type UpsertDataUpdateMethod<A extends string, F extends string, C extends string, S extends Schema<A,F,C>, I extends UpdateData<A,F,C,S>, T> = (update: UpsertDataUpdateCallback<A,F,C,S,I>) => T;
 
 type Resolve<T> = T extends Function | string | number | boolean
     ? T : {[Key in keyof T]: Resolve<T[Key]>}
@@ -2524,6 +2586,7 @@ export type EntityConfiguration = {
     },
 };
 
+
 export class Entity<A extends string, F extends string, C extends string, S extends Schema<A,F,C>> {
     readonly schema: S;
     private config?: EntityConfiguration;
@@ -2536,13 +2599,21 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     delete(key: AllTableIndexCompositeAttributes<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     remove(key: AllTableIndexCompositeAttributes<A,F,C,S>): DeleteRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
-    upsert(record: PutItem<A,F,C,S>): UpsertRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>;
     put(record: PutItem<A,F,C,S>[]): BatchWriteOperationOptions<A,F,C,S, AllTableIndexCompositeAttributes<A,F,C,S>[]>;
     create(record: PutItem<A,F,C,S>): PutRecordOperationOptions<A,F,C,S, ResponseItem<A,F,C,S>>
 
+    upsert<InitialItem extends UpsertItem<A,F,C,S>>(record: InitialItem): UpsertRecordOperationOptions<
+        A,F,C,S,
+        ResponseItem<A,F,C,S>,
+        PutItem<A,F,C,S>,
+        [keyof InitialItem] extends [never] ? PutItem<A,F,C,S> : Omit<PutItem<A,F,C,S>, keyof InitialItem>,
+        InitialItem
+    >;
+
     update(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
+        ifNotExists: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
         remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
         add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
         subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
@@ -2554,6 +2625,7 @@ export class Entity<A extends string, F extends string, C extends string, S exte
     patch(key: AllTableIndexCompositeAttributes<A,F,C,S>): {
         set: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         remove: RemoveRecord<A,F,C,S, RemoveItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
+        ifNotExists: SetRecord<A,F,C,S, SetItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, Partial<ResponseItem<A,F,C,S>>>;
         add: SetRecord<A,F,C,S, AddItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         subtract: SetRecord<A,F,C,S, SubtractItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;
         append: SetRecord<A,F,C,S, AppendItem<A,F,C,S>, TableIndexCompositeAttributes<A,F,C,S>, ResponseItem<A,F,C,S>>;

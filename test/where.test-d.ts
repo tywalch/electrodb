@@ -1806,6 +1806,7 @@ entityWithSK.getWhereCallback((a, o) => {
     | 'escape'
     | 'size'
     | 'type'
+    | 'field'
   >(keys(op));
 
   expectType<string>(o.eq(a.attr1, ''));

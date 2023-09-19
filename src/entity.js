@@ -27,6 +27,7 @@ const {
 	MethodTypeTranslation,
 	TransactionCommitSymbol,
 	CastKeyOptions,
+	UpsertOperations,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -1581,7 +1582,7 @@ class Entity {
 	}
 	/* istanbul ignore next */
 	_params(state, config = {}) {
-		const { keys = {}, method = "", put = {}, update = {}, filter = {}, upsert } = state.query;
+		const { keys = {}, method = "", put = {}, update = {}, filter = {}, upsert, updateProxy } = state.query;
 		let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
 		let params = {};
 		switch (method) {
@@ -1592,7 +1593,7 @@ class Entity {
 				params = this._makeSimpleIndexParams(keys.pk, ...consolidatedQueryFacets);
 				break;
 			case MethodTypes.upsert:
-				params = this._makeUpsertParams({update, upsert}, keys.pk, ...keys.sk)
+				params = this._makeUpsertParams({update, upsert, updateProxy}, keys.pk, ...keys.sk)
 				break;
 			case MethodTypes.put:
 			case MethodTypes.create:
@@ -1957,7 +1958,8 @@ class Entity {
 
 	/* istanbul ignore next */
 	_makePutParams({ data } = {}, pk, sk) {
-		let { updatedKeys, setAttributes } = this._getPutKeys(pk, sk && sk.facets, data);
+		let appliedData = this.model.schema.applyAttributeSetters(data);
+		let { updatedKeys, setAttributes } = this._getPutKeys(pk, sk && sk.facets, appliedData);
 		let translatedFields = this.model.schema.translateToFields(setAttributes);
 		return {
 			Item: {
@@ -1970,31 +1972,52 @@ class Entity {
 		};
 	}
 
-	_makeUpsertParams({ update, upsert } = {}, pk, sk) {
-		const { updatedKeys, setAttributes, indexKey } = this._getPutKeys(pk, sk && sk.facets, upsert.data);
-		const upsertAttributes = this.model.schema.translateToFields(setAttributes);
-		const keyNames = Object.keys(indexKey);
-		for (const field of [...Object.keys(upsertAttributes), ...Object.keys(updatedKeys)]) {
-			const value = u.getFirstDefined(upsertAttributes[field], updatedKeys[field]);
-			if (!keyNames.includes(field)) {
-				let operation = ItemOperations.set;
-				const name = this.model.schema.translationForRetrieval[field];
-				if (name) {
-					const attribute = this.model.schema.attributes[name];
-					if (this.model.schema.readOnlyAttributes.has(name) && (!attribute || !attribute.indexes || attribute.indexes.length === 0)) {
-						operation = ItemOperations.ifNotExists;
-					}
+	_maybeApplyUpsertUpdate({fields = [], operation, updateProxy, update}) {
+		for (let [field, value] of fields) {
+			const name = this.model.schema.translationForRetrieval[field];
+			if (name) {
+				const attribute = this.model.schema.attributes[name];
+				if (this.model.schema.readOnlyAttributes.has(name) && (!attribute || !attribute.indexes || attribute.indexes.length === 0)) {
+					/*
+						// this should be considered but is likely overkill at best and unexpected at worst. 
+						// It also is likely symbolic of a deeper issue. That said maybe it could be helpful
+						// in the future? It is unclear, if this were added, whether this should get the
+						// default value and then call the setter on the defaultValue. That would at least
+						// make parity between upsert and a create (without including the attribute) and then
+						// an "update"
+
+						const defaultValue = attribute.default();
+						const valueIsNumber = typeof value === 'number';
+						const resolvedDefaultValue  = typeof defaultValue === 'number' ? defaultValue : 0;
+						if (operation === UpsertOperations.subtract && valueIsNumber) {
+							value = resolvedDefaultValue - value;
+						} else if (operation === UpsertOperations.add && valueIsNumber) {
+							value = resolvedDefaultValue + value;
+					// }
+					*/
+					update.set(field, value, ItemOperations.ifNotExists);
+				} else {
+					updateProxy.performOperation({
+						value,
+						operation,
+						path: name,
+						force: true
+					});
 				}
+			} else {
+				// I think this is for keys
 				update.set(field, value, operation);
 			}
 		}
+	}
 
+	_makeUpsertParams({ update, upsert } = {}) {
 		return {
 			TableName: this.getTableName(),
 			UpdateExpression: update.build(),
 			ExpressionAttributeNames: update.getNames(),
 			ExpressionAttributeValues: update.getValues(),
-			Key: indexKey,
+			Key: upsert.indexKey,
 		};
 	}
 
@@ -2391,13 +2414,13 @@ class Entity {
 		return indexKeys;
 	}
 
-	_getPutKeys(pk, sk, set) {
-		let setAttributes = this.model.schema.applyAttributeSetters(set);
+	_getPutKeys(pk, sk, set, validationAssistance) {
+		let setAttributes = set;
 		let updateIndex = TableIndex;
 		let keyTranslations = this.model.translations.keys;
 		let keyAttributes = { ...sk, ...pk };
 		let completeFacets = this._expectIndexFacets(
-			{ ...setAttributes },
+			{ ...setAttributes, ...validationAssistance },
 			{ ...keyAttributes },
 		);
 
