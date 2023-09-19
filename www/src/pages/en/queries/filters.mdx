@@ -13,7 +13,6 @@ layout: ../../../layouts/MainLayout.astro
 
 Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/upsert/put/create/delete/remove action.
 
-
 ## FilterExpressions
 
 Below is the traditional way you would add a `FilterExpression` to Dynamo's DocumentClient directly alongside how you would accomplish the same using the `where` method.
@@ -22,11 +21,13 @@ Below is the traditional way you would add a `FilterExpression` to Dynamo's Docu
 
 ```typescript
 animals.query
-  .exhibit({habitat: "Africa"})
-  .where(({isPregnant, offspring}, {exists, eq}) => `
+  .exhibit({ habitat: "Africa" })
+  .where(
+    ({ isPregnant, offspring }, { exists, eq }) => `
     ${eq(isPregnant, true)} OR ${exists(offspring)}
-  `)
-  .go()
+  `,
+  )
+  .go();
 ```
 
 ### Equivalent Parameters
@@ -64,7 +65,8 @@ The `where()` method allow you to write a `FilterExpression` or `ConditionExpres
 #### A single filter expression
 
 ```typescript
-animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
+animals.query
+  .exhibit({ habitat: "Africa", enclosure: "5b" })
   .where((attr, op) => op.eq(attr.dangerous, true))
   .go();
 ```
@@ -72,28 +74,36 @@ animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
 #### A single filter expression with destructuring
 
 ```typescript
-animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
-  .where(({dangerous}, {eq}) => eq(dangerous, true))
+animals.query
+  .exhibit({ habitat: "Africa", enclosure: "5b" })
+  .where(({ dangerous }, { eq }) => eq(dangerous, true))
   .go();
 ```
 
 #### Multiple filter expressions
+
 ```typescript
-animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
-  .where((attr, op) => `
+animals.query
+  .exhibit({ habitat: "Africa", enclosure: "5b" })
+  .where(
+    (attr, op) => `
     ${op.eq(attr.dangerous, true)} AND ${op.notExists(attr.lastFed)}
-  `)
+  `,
+  )
   .go();
 ```
 
 #### Chained usage (implicit AND)
 
 ```typescript
-animals.query.habitats({habitat: "Africa", enclosure: "5b"})
-  .where((attr, op) => `
+animals.query
+  .habitats({ habitat: "Africa", enclosure: "5b" })
+  .where(
+    (attr, op) => `
     ${op.eq(attr.dangerous, true)} OR ${op.notExists(attr.lastFed)}
-  `)
-  .where(({birthday}, {between}) => {
+  `,
+  )
+  .where(({ birthday }, { between }) => {
     const today = Date.now();
     const lastMonth = today - 1000 * 60 * 60 * 24 * 30;
     return between(birthday, lastMonth, today);
@@ -107,13 +117,13 @@ animals.query.habitats({habitat: "Africa", enclosure: "5b"})
 type GetAnimalOptions = {
   habitat: string;
   keepers: string[];
-}
+};
 function getAnimals(options: GetAnimalOptions) {
   const { habitat, keepers } = options;
-  const query = animals.query.exhibit({habitat});
+  const query = animals.query.exhibit({ habitat });
 
   for (const name of keepers) {
-    query.where(({keeper}, {eq}) => eq(keeper, name));
+    query.where(({ keeper }, { eq }) => eq(keeper, name));
   }
 
   return query.go();
@@ -121,10 +131,7 @@ function getAnimals(options: GetAnimalOptions) {
 
 const { data, cursor } = await getAnimals({
   habitat: "RainForest",
-  keepers: [
-    "Joe Exotic",
-    "Carol Baskin"
-  ]
+  keepers: ["Joe Exotic", "Carol Baskin"],
 });
 ```
 
@@ -134,68 +141,81 @@ const { data, cursor } = await getAnimals({
 
 The `attributes` object contains every Attribute defined in the Entity's Model. The `operations` object contains the following methods:
 
-operator      | example                           | result
-------------- | --------------------------------- | -----------------------------------
-`eq`          | `eq(rent, maxRent)`               | `#rent = :rent1`
-`ne`          | `ne(rent, maxRent)`               | `#rent <> :rent1`
-`gte`         | `gte(rent, value)`                | `#rent >= :rent1`
-`gt`          | `gt(rent, maxRent)`               | `#rent > :rent1`
-`lte`         | `lte(rent, maxRent)`              | `#rent <= :rent1`
-`lt`          | `lt(rent, maxRent)`               | `#rent < :rent1`
-`begins`      | `begins(rent, maxRent)`           | `begins_with(#rent, :rent1)`
-`exists`      | `exists(rent)`                    | `attribute_exists(#rent)`
-`notExists`   | `notExists(rent)`                 | `attribute_not_exists(#rent)`
-`contains`    | `contains(rent, maxRent)`         | `contains(#rent = :rent1)`
-`notContains` | `notContains(rent, maxRent)`      | `not contains(#rent = :rent1)`
-`between`     | `between(rent, minRent, maxRent)` | `(#rent between :rent1 and :rent2)`
-`size`        | `size(rent)`                      | `size(#rent)`
-`type`        | `type(rent, 'N')`                 | `attribute_type(#rent, 'N')`
-`name`        | `name(rent)`                      | `#rent`
-`value`       | `value(rent, maxRent)`            | `:rent1`
-`escape`      | `escape(123)`, `escape('abc')`    | `#123`, `#abc`
-`field`       | `field('field_name')`             | `:field_name`
+| operator      | example                           | result                              |
+| ------------- | --------------------------------- | ----------------------------------- |
+| `eq`          | `eq(rent, maxRent)`               | `#rent = :rent1`                    |
+| `ne`          | `ne(rent, maxRent)`               | `#rent <> :rent1`                   |
+| `gte`         | `gte(rent, value)`                | `#rent >= :rent1`                   |
+| `gt`          | `gt(rent, maxRent)`               | `#rent > :rent1`                    |
+| `lte`         | `lte(rent, maxRent)`              | `#rent <= :rent1`                   |
+| `lt`          | `lt(rent, maxRent)`               | `#rent < :rent1`                    |
+| `begins`      | `begins(rent, maxRent)`           | `begins_with(#rent, :rent1)`        |
+| `exists`      | `exists(rent)`                    | `attribute_exists(#rent)`           |
+| `notExists`   | `notExists(rent)`                 | `attribute_not_exists(#rent)`       |
+| `contains`    | `contains(rent, maxRent)`         | `contains(#rent = :rent1)`          |
+| `notContains` | `notContains(rent, maxRent)`      | `not contains(#rent = :rent1)`      |
+| `between`     | `between(rent, minRent, maxRent)` | `(#rent between :rent1 and :rent2)` |
+| `size`        | `size(rent)`                      | `size(#rent)`                       |
+| `type`        | `type(rent, 'N')`                 | `attribute_type(#rent, 'N')`        |
+| `name`        | `name(rent)`                      | `#rent`                             |
+| `value`       | `value(rent, maxRent)`            | `:rent1`                            |
+| `escape`      | `escape(123)`, `escape('abc')`    | `#123`, `#abc`                      |
+| `field`       | `field('field_name')`             | `:field_name`                       |
 
 ### ElectroDB Functions
+
 The filter functions available above all come from the list of functions supported by DynamoDB directly. ElectroDB offers a few functions that offer some additional convenience when creating Filter Expressions.
 
 > Note: If ElectroDB ever lags behind in implementing FilterExpression functions, you can use `value()`, `name()`, `escape()`, and/or `field()` to simply template out the implementation!
 
 #### Name
+
 The `name()` function allows you to create a reference to an attribute's name, which can be useful to create filters referencing an attribute as it is currently stored. The function will add a `ExpressionAttributeNames` property for this record and return the partial expression for use in your filter.
 
 This example demonstrates how you might find animals that were last fed by someone other than their "keeper".
 
 ```typescript
-animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
-  .where(({ lastFedBy, keeper }, { name }) => `
+animals.query
+  .exhibit({ habitat: "Africa", enclosure: "5b" })
+  .where(
+    ({ lastFedBy, keeper }, { name }) => `
     ${name(lastFedBy)} != ${name(keeper)}
-  `)
+  `,
+  )
   .go();
 ```
 
 #### Value
+
 The `value()` function can be paired with `name()` as convenience when building unique filters. The `value()` method is passed an attribute (used to enforce type), and a value for that attribute. ElectroDB will add a `ExpressionAttributeValues` property for this value, and return a reference to that value that can be used in your `FilterExpression`.ExpressionAttributeValues
 
 This example shows how you can implement the `eq` operation without using the ElectroDB `eq` function
 
 ```typescript
-animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
-  .where(({ keeper }, { name, value, eq }) => `
-    ${name(keeper)} = ${value(keeper, 'Tiger King')}
-  `)
+animals.query
+  .exhibit({ habitat: "Africa", enclosure: "5b" })
+  .where(
+    ({ keeper }, { name, value, eq }) => `
+    ${name(keeper)} = ${value(keeper, "Tiger King")}
+  `,
+  )
   .go();
 ```
 
 #### Escape
+
 The `escape()` method allows you to provide any primitive to an expression without the need for a specific attribute. In many ways, this function is like a less restrictive version of `value()`. This can be useful when using static values and/or when creating custom FilterExpressions
 
 This example shows how you might use escape to apply a filter against the `size()` of an attribute.
 
 ```typescript
-animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
-  .where(({ diet }, { size, escape }) => `
+animals.query
+  .exhibit({ habitat: "Africa", enclosure: "5b" })
+  .where(
+    ({ diet }, { size, escape }) => `
     ${size(diet)} > ${escape(2)}
-  `)
+  `,
+  )
   .go();
 ```
 
@@ -206,10 +226,13 @@ The `field()` method allows you to provide and reference a field value that is n
 You can use both `escape()` and `field()` to template _any_ filter that DynamoDB supports.
 
 ```typescript
-animals.query.exhibit({habitat: "Africa", enclosure: "5b"})
-  .where((_, { field, escape }) => `
-    contains(${field('gsi1sk')}, ${escape('value')})
-  `)
+animals.query
+  .exhibit({ habitat: "Africa", enclosure: "5b" })
+  .where(
+    (_, { field, escape }) => `
+    contains(${field("gsi1sk")}, ${escape("value")})
+  `,
+  )
   .go();
 ```
 
@@ -225,9 +248,9 @@ The following are examples on how to filter on complex attributes:
 
 ```typescript
 animals.query
-	.farm({habitat: "Africa"})
-	.where(({veterinarian}, {eq}) => eq(veterinarian.name, "Herb Peterson"))
-	.go()
+  .farm({ habitat: "Africa" })
+  .where(({ veterinarian }, { eq }) => eq(veterinarian.name, "Herb Peterson"))
+  .go();
 ```
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MDVCc5G1MAEqSwCgAYtA5MEwAuklecFAEAI4ZwHPcFlwZBNMJW94oZKwQYhlz5TNwVTXMElCDAObx1omhgSBypzMXjtd3D15zi8sCKtzlANjsnl4UJIQJd8h9MNUvmkUPdQhDrNxpLciBAMrlLGdPsxeK52NJfnB0YZgGIAApzW5QtDvLxEpgkiBklCCLxUuAlWAFTH+AnwxFXZGo3k7bjAAgwFnWNm2cY7anZED4pjfFE8x47CA0GhiMA3FGKyoIy5MVg01UVOAYAiai1Kq2OV5gCleU0QaqwOX4uFnQxQmGuwnuiVmqUh7YOrwCmBCyQi4Nx85R7WSvVxvlnFAQbIRsXWnWxvMJykOyhonbhbJmyQ3aSutme71wX3+9A5Eth2FVy3i7Mx3MzfM2apkYByLAl4dlnNV2tnVf60KsSQSIZAttZ8vjvlbndAgBCaYdyuX0s325gSGIcgyKSiKH3I8PdbvEkfz9fogXh+S5jmiVjooMpgAB59qKhgmhwoA+K6YAANYLrQcqsMCTBoZ2XgiOAhxOnUTAvHIkxqpSVFiOhcEhjQWE4bR+HWIRkCRMWcD1AOkw1t+XgEFBBTpBgrqQUJji3JEMRoQAtNJwAxLRckSVBnZoRhjFsDhimyahrGGOxxFcfURQlDAKSUTWNF0emZzadhUkySxVEEQwHEkdxLB7AcRxzD0J4wLu3B8WuAnUQIiSIJZvDsI4LgQAA+q8Mg0GMTCUAAlAA3EI5HyAAdIsRCYFYhVCSJFl6OZpQKu0zRkK02XlWoBREAQOh6A2RCDM2s4oNFCALNlSgAHzePMOg9U2LYoIVA64EwAASRC8HAtLyhEohMFlWXlbcEA6PtAhAA)
@@ -236,28 +259,33 @@ animals.query
 
 ```typescript
 animals.query
-  .exhibit({habitat: "Tundra"})
-  .where(({offspring}, {eq}) => eq(offspring[0].name, "Blitzen"))
-  .go()
+  .exhibit({ habitat: "Tundra" })
+  .where(({ offspring }, { eq }) => eq(offspring[0].name, "Blitzen"))
+  .go();
 ```
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=106&ssc=8&pln=103&pc=1#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvACGKUJNZi4AXjgoCAdzip0WABQIBcOCAjc2ALkQHD1sUVIULTAF4QITbFetwCaDJkfSsvLuntbERGLAoo4AjCGGlB6GkjBcwLwArjAEYhb6XgAWkrwYKXmhhlhgBBYA2kwAgnTkku7MACoZKNxQrbhMAEqSwCgAYtA5MEwAuklecFAEAI4ZwIvcFlwZBHMJu94oZKwQYhmL5fNwVTXMElAjAObx1omhgSByF-PXjnePz15Fis1gQNlcoNt9q8vChJCAbvlvphqr80ignqFodZuNIHkQIBlcpZLj9mLxXOxpAC4FjDMAxAAFRYPWFoL5eUlMckQSkoQReWlwEqwAo4-zEpEo25ojEC-bcYAEGDs6yc2xTfZ07IgIlMP7o-kvfYQGg0MRge7olWVZE3JisekaipwDAEHXW1W2xwfMDUrwWiDVWCKomIy6GWHwj0kr3Sy2y8N7Z1eYUwUWScVhxNXWN6mWGxOCy4oCDZaOSu36hOF5M052UTH7cLZS2Se7SD2cn1+uABoPoHLlyMI2s2qV5+MF+ZFmzVMjAORYctjyv52sNy4bo2hViSCSjUGd3NVqeC3f70EAIUzzrVa7lO73MCQxDkGRSURQR-HJ8bj4kL5vh+ojXt+q6TpiVhYiMpgAB6DhKhjmhwoA+B6YAANbLrQiqsGCTCYT2XgiOAJyunUTDvHIMyajStFiFhiHhjQuH4QxRHWCRkCRGWcD1MOMz1n+XgELBBTpBgHowaJjgPJEMSYQAtHJwAxAxinSbBPaYdhLFsPhKkKRhHGGFxZG8fURQlDAKQ0fW9GMVmlx6XhsnyextHEQw3HkXxLCHMcpyLG09pPge3CCZuwl0QIiSIDZvDsI4LgQAA+h8Mg0JMTCUAAlAA3EIVHyAAdCsRCYFYJWieJ1l6FZpTKh0XQ9K0eVVWoBREAQOh6CaZoWo8cUIMseVKAAfN4Sw6P15rxrUAAM0wlcO-SXg6MBOD4TC5blVUPBAOi5UAA)
 
 ### Multiple Where Clauses
+
 It is possible to include chain multiple where clauses. The resulting FilterExpressions (or ConditionExpressions) are concatenated with an implicit `AND` operator.
 
 ```typescript
-let MallStores = new Entity(model, {table: "StoreDirectory"});
+let MallStores = new Entity(model, { table: "StoreDirectory" });
 let stores = await MallStores.query
-	.leases({ mallId: "EastPointe" })
-	.between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
-	.where(({ rent, discount }, {between, eq}) => `
+  .leases({ mallId: "EastPointe" })
+  .between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
+  .where(
+    ({ rent, discount }, { between, eq }) => `
 		${between(rent, "2000.00", "5000.00")} AND ${eq(discount, "1000.00")}
-	`)
-	.where(({ category }, {eq}) => `
+	`,
+  )
+  .where(
+    ({ category }, { eq }) => `
 		${eq(category, "food/coffee")}
-	`)
-	.go();
+	`,
+  )
+  .go();
 ```
 
 ```json

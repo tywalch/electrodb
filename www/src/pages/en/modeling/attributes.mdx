@@ -18,7 +18,9 @@ layout: ../../../layouts/MainLayout.astro
 > By default, attributes values will be saved to DynamoDB with the same name as your attribute's key. Using the attribute `field` property, you can map a different field name in your table. This can be useful to utilize existing tables, existing models, or even to reduce record sizes via shorter field names. For example, you may refer to an attribute as `organization` but want to save the attribute with a field name of `org` in DynamoDB.
 
 ## Attribute Definition
+
 Use the expanded syntax build out more robust attribute options.
+
 ```typescript
 {
   type: "string" | "number" | "boolean" | "list" | "map" | "set" | "any" | ReadonlyArray<string>;
@@ -30,7 +32,7 @@ Use the expanded syntax build out more robust attribute options.
   label?: string;
       cast?: "number"|"string"|"boolean";
   get?: (attribute: <type>, schema: any) => <type> | void | undefined;
-  set?: (attribute?: <type>, schema?: any) => <type> | void | undefined; 
+  set?: (attribute?: <type>, schema?: any) => <type> | void | undefined;
   watch?: "*" | string[];
   padding?: {
       length: number;
@@ -43,25 +45,26 @@ Use the expanded syntax build out more robust attribute options.
 
 ## Attribute Options
 
-Property      | Type                                                       | Required | Types          | Description
- ------------ | :--------------------------------------------------------: | :------: | :------------: | -----------
-`type`        | `string`, `ReadonlyArray<string>`, `string[]`              | yes      | all            | Accepts the values: `"string"`, `"number"` `"boolean"`, `"map"`, `"list"`, `"set"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"` which disables value type checking on that attribute.
-`required`    | `boolean`                                                  | no       | all            | Flag an attribute as required to be present when creating a record. This attribute also acts as a type of `NOT NULL` flag, preventing it from being removed directly. When applied to nested properties, be mindful that default map values can cause required child attributes to fail validation.
-`hidden`      | `boolean`                                                  | no       | all            | Flag an attribute as hidden to remove the property from results before they are returned.
-`default`     | `value`, `() => value`                                     | no       | all            | Either the default value itself or a synchronous function that returns the desired value. Applied before `set` and before `required` check. In the case of nested attributes, default values will apply defaults to children attributes until an undefined value is reached
-`validate`    | `RegExp`, `(value: any) => void`, `(value: any) => string` | no       | all            | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error.
-`field`       | `string`                                                   | no       | all            | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.
-`readOnly`    | `boolean`                                                  | no       | all            | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail.
-`label`       | `string`                                                   | no       | all            | Used in index key composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.
-`padding`     | `{ length: number; char: string; }`                        | no       | string, number | Similar to `label`, this property only impacts the attribute's value during index key composition. Padding allows you to define a string pattern to left pad your attribute when ElectroDB builds your partition or sort key. This can be helpful to implementing zero-padding patterns with numbers and strings in sort keys. Note, this will _not_ impact your attribute's stored value, if you want to transform the attribute's field value, use the `set` callback described below.
-`set`         | `(attribute, schema) => value`                             | no       | all            | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put
-`get`         | `(attribute, schema) => value`                             | no       | all            | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.
-`watch`       | `Attribute[], "*"`                                         | no       | root-only      | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed. Only available on root level attributes.
-`properties`  | `{[key: string]: Attribute}`                               | yes*     | map            | Define the properties available on a `"map"` attribute, required if your attribute is a map. Syntax for map properties is the same as root level attributes.
-`items`       | `Attribute`                                                | yes*     | list           | Define the attribute type your list attribute will contain, required if your attribute is a list. Syntax for list items is the same as a single attribute.
-`items`       | "string" | "number"                                        | yes*     | set            | Define the primitive type your set attribute will contain, required if your attribute is a set. Unlike lists, a set defines it's items with a string of either "string" or "number".
+| Property     |                            Type                            | Required |     Types      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------ | :--------------------------------------------------------: | :------: | :------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `type`       |       `string`, `ReadonlyArray<string>`, `string[]`        |   yes    |      all       | Accepts the values: `"string"`, `"number"` `"boolean"`, `"map"`, `"list"`, `"set"`, an array of strings representing a finite list of acceptable values: `["option1", "option2", "option3"]`, or `"any"` which disables value type checking on that attribute.                                                                                                                                                                                                                           |
+| `required`   |                         `boolean`                          |    no    |      all       | Flag an attribute as required to be present when creating a record. This attribute also acts as a type of `NOT NULL` flag, preventing it from being removed directly. When applied to nested properties, be mindful that default map values can cause required child attributes to fail validation.                                                                                                                                                                                      |
+| `hidden`     |                         `boolean`                          |    no    |      all       | Flag an attribute as hidden to remove the property from results before they are returned.                                                                                                                                                                                                                                                                                                                                                                                                |
+| `default`    |                   `value`, `() => value`                   |    no    |      all       | Either the default value itself or a synchronous function that returns the desired value. Applied before `set` and before `required` check. In the case of nested attributes, default values will apply defaults to children attributes until an undefined value is reached                                                                                                                                                                                                              |
+| `validate`   | `RegExp`, `(value: any) => void`, `(value: any) => string` |    no    |      all       | Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error.                                                                                                                                                                                                                                                                                                       |
+| `field`      |                          `string`                          |    no    |      all       | The name of the attribute as it exists in DynamoDB, if named differently in the schema attributes. Defaults to the `AttributeName` as defined in the schema.                                                                                                                                                                                                                                                                                                                             |
+| `readOnly`   |                         `boolean`                          |    no    |      all       | Prevents an attribute from being updated after the record has been created. Attributes used in the composition of the table's primary Partition Key and Sort Key are read-only by default. The one exception to `readOnly` is for properties that also use the `watch` property, read [attribute watching](#attribute-watching) for more detail.                                                                                                                                         |
+| `label`      |                          `string`                          |    no    |      all       | Used in index key composition to prefix key composite attributes. By default, the `AttributeName` is used as the label.                                                                                                                                                                                                                                                                                                                                                                  |
+| `padding`    |            `{ length: number; char: string; }`             |    no    | string, number | Similar to `label`, this property only impacts the attribute's value during index key composition. Padding allows you to define a string pattern to left pad your attribute when ElectroDB builds your partition or sort key. This can be helpful to implementing zero-padding patterns with numbers and strings in sort keys. Note, this will _not_ impact your attribute's stored value, if you want to transform the attribute's field value, use the `set` callback described below. |
+| `set`        |               `(attribute, schema) => value`               |    no    |      all       | A synchronous callback allowing you to apply changes to a value before it is set in params or applied to the database. First value represents the value passed to ElectroDB, second value are the attributes passed on that update/put                                                                                                                                                                                                                                                   |
+| `get`        |               `(attribute, schema) => value`               |    no    |      all       | A synchronous callback allowing you to apply changes to a value after it is retrieved from the database. First value represents the value passed to ElectroDB, second value are the attributes retrieved from the database.                                                                                                                                                                                                                                                              |
+| `watch`      |                     `Attribute[], "*"`                     |    no    |   root-only    | Define other attributes that will always trigger your attribute's getter and setter callback after their getter/setter callbacks are executed. Only available on root level attributes.                                                                                                                                                                                                                                                                                                  |
+| `properties` |                `{[key: string]: Attribute}`                |  yes\*   |      map       | Define the properties available on a `"map"` attribute, required if your attribute is a map. Syntax for map properties is the same as root level attributes.                                                                                                                                                                                                                                                                                                                             |
+| `items`      |                        `Attribute`                         |  yes\*   |      list      | Define the attribute type your list attribute will contain, required if your attribute is a list. Syntax for list items is the same as a single attribute.                                                                                                                                                                                                                                                                                                                               |
+| `items`      |                          "string"                          | "number" |     yes\*      | set                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Define the primitive type your set attribute will contain, required if your attribute is a set. Unlike lists, a set defines it's items with a string of either "string" or "number". |
 
 ### Attribute Getters and Setters
+
 Using `get` and `set` on an attribute can allow you to apply logic before and just after modifying or retrieving a field from DynamoDB. Both callbacks should be pure synchronous functions and may be invoked multiple times during one query.
 
 The first argument in an attribute's `get` or `set` callback is the value received in the query. The second argument, called `"item"`, in an attribute's is an object containing the values of other attributes on the item as it was given or retrieved. If your attribute uses `watch`, the getter or setter of attribute being watched will be invoked _before_ your getter or setter and the updated value will be on the `"item"` argument instead of the original.
@@ -71,11 +74,13 @@ Using getters/setters on Composite Attributes is **not recommended** without con
 :::
 
 ElectroDB invokes an Attribute's `get` method in the following circumstances:
+
 1. If a field exists on an item after retrieval from DynamoDB, the attribute associated with that field will have its getter method invoked.
 2. After a `put` or `create` operation is performed, attribute getters are applied against the object originally received and returned.
 3. When using ElectroDB's [attribute watching](#attribute-watching) functionality, an attribute will have its getter callback invoked whenever the getter callback of any "watched" attributes are invoked. Note: The getter of an Attribute Watcher will always be applied _after_ the getters for the attributes it watches.
 
 ElectroDB invokes an Attribute's `set` callback in the following circumstances:
+
 1. Setters for all Attributes will always be invoked when performing a `create` or `put` operation.
 2. Setters will only be invoked when an Attribute is modified when performing a `patch`,`update`, or `upsert` operation.
 3. When using ElectroDB's [attribute watching](#attribute-watching) functionality, an attribute will have its setter callback invoked whenever the setter callback of any "watched" attributes are invoked. Note: The setter of an Attribute Watcher will always be applied _after_ the setters for the attributes it watches.
@@ -83,59 +88,62 @@ ElectroDB invokes an Attribute's `set` callback in the following circumstances:
 > As of ElectroDB `1.3.0`, the `watch` property is only possible for root level attributes. Watch is currently not supported for nested attributes like properties on a "map" or items of a "list".
 
 ### Attribute Watching
+
 Attribute watching is a powerful feature in ElectroDB that can be used to solve many unique challenges with DynamoDB. In short, you can define a column to have its getter/setter callbacks called whenever another attribute's getter or setter callbacks are called. If you haven't read the section on [Attribute Getters and Setters](#attribute-getters-and-setters), it will provide you with more context about when an attribute's mutation callbacks are called.
 
-Because DynamoDB allows for a flexible schema, and ElectroDB allows for optional attributes, it is possible for items belonging to an entity to not have all attributes when setting or getting records. Sometimes values or changes to other attributes will require corresponding changes to another attribute. Sometimes, to fully leverage some advanced model denormalization or query access patterns,  it is necessary to duplicate some attribute values with similar or identical values. This functionality has many uses; below are just a few examples of how you can use `watch`:
+Because DynamoDB allows for a flexible schema, and ElectroDB allows for optional attributes, it is possible for items belonging to an entity to not have all attributes when setting or getting records. Sometimes values or changes to other attributes will require corresponding changes to another attribute. Sometimes, to fully leverage some advanced model denormalization or query access patterns, it is necessary to duplicate some attribute values with similar or identical values. This functionality has many uses; below are just a few examples of how you can use `watch`:
 
 > Using the `watch` property impacts the order of which getters and setters are called. You cannot `watch` another attribute that also uses `watch`, so ElectroDB first invokes the getters or setters of attributes without the `watch` property, then subsequently invokes the getters or setters of attributes who use `watch`.
 
 ```typescript
-myAttr: { 
+myAttr: {
   type: "string",
   watch: ["otherAttr"],
   set: (myAttr, {otherAttr}) => {
-    // Whenever "myAttr" or "otherAttr" are updated from an `update` or `patch` operation, this callback will be fired. 
+    // Whenever "myAttr" or "otherAttr" are updated from an `update` or `patch` operation, this callback will be fired.
     // Note: myAttr or otherAttr could be independently undefined because either attribute could have triggered this callback
   },
   get: (myAttr, {otherAttr}) => {
-    // Whenever "myAttr" or "otherAttr" are retrieved from a `query` or `get` operation, this callback will be fired. 
+    // Whenever "myAttr" or "otherAttr" are retrieved from a `query` or `get` operation, this callback will be fired.
     // Note: myAttr or otherAttr could be independently undefined because either attribute could have triggered this callback.
-  } 
+  }
 }
 ```
 
 ### Attribute Watching: Watch All
 
 If your attributes need to watch for any changes to an item, you can model this by supplying the watch property a string value of `"*"`
+
 ```typescript
-myAttr: { 
+myAttr: {
   type: "string",
   watch: "*", // <- "watch all"
   set: (myAttr, allAttributes) => {
-    // Whenever an `update` or `patch` operation is performed, this callback will be fired. 
+    // Whenever an `update` or `patch` operation is performed, this callback will be fired.
     // Note: myAttr or the attributes under `allAttributes` could be independently undefined because either attribute could have triggered this callback
   },
   get: (myAttr, allAttributes) => {
-    // Whenever a `query` or `get` operation is performed, this callback will be fired. 
+    // Whenever a `query` or `get` operation is performed, this callback will be fired.
     // Note: myAttr or the attributes under `allAttributes` could be independently undefined because either attribute could have triggered this callback
-  } 
+  }
 }
 ```
 
 ### Attribute Validation
 
-The `validation` property allows for multiple function/type signatures. Here the different combinations *ElectroDB* supports:
+The `validation` property allows for multiple function/type signatures. Here the different combinations _ElectroDB_ supports:
 
-| signature               | behavior
-| ----------------------- | --------
-| `Regexp`                | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute
-| `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message.
-| `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid.
-| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query
+| signature               | behavior                                                                                                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Regexp`                | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute                                                                       |
+| `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. |
+| `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid.                       |
+| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query                      |
 
 ## Attribute Types
 
 ### Primitive Attributes
+
 ElectroDB supports the following primitive attribute types:
 
 - `string`
@@ -146,7 +154,7 @@ Primitive attributes are the only type that can be used as composite attributes.
 
 ### Enum Attributes
 
-When using TypeScript, if you wish to also enforce this type make sure to us the `as const` syntax. If TypeScript is not told this array is Readonly, even when your model is passed directly to the Entity constructor, it will not resolve the unique values within that array. 
+When using TypeScript, if you wish to also enforce this type make sure to us the `as const` syntax. If TypeScript is not told this array is Readonly, even when your model is passed directly to the Entity constructor, it will not resolve the unique values within that array.
 
 This may be desirable, however, as enforcing the type value can require consumers of your model to do more work to resolve the type beyond just the type `string`.
 
@@ -195,7 +203,7 @@ List attributes model array-like structures with DynamoDB's List type. The eleme
 
 ```typescript
 attributes: {
-  myStringList: { 
+  myStringList: {
     type: "list",
     items: {
       type: "string"
@@ -224,7 +232,7 @@ The Set attribute is arguably DynamoDB's most powerful type. ElectroDB supports 
 In addition to having the same modeling benefits you get with other attributes, ElectroDB also simplifies the use of Sets by removing the need to use DynamoDB's special `createSet` class to work with Sets. ElectroDB Set Attributes accept Arrays, JavaScript native Sets, and objects from `createSet` as values. ElectroDB will manage the casting of values to a DynamoDB Set value prior to saving and ElectroDB will also convert Sets back to JavaScript arrays on retrieval.
 
 > If you are using TypeScript, Sets are currently typed as Arrays to simplify the type system. Again, ElectroDB will handle the conversion of these Arrays without the need to use `client.createSet()`.
- 
+
 ```typescript
 attributes: {
   myStringSet: {
@@ -247,12 +255,15 @@ attributes: {
 ```
 
 ### Any Attributes
+
 If you have the need to avoid ElectroDB's type validation, you can use the `any` type. This attribute type is an escape hatch for edge-case scenarios. The `any` attribute can only be used as a root attribute (i.e. `any` cannot be nested below `map` and `list` attribute types).
 
 ### Custom Attributes
+
 If you have a need for a custom attribute type (beyond those supported by ElectroDB) you can use the export function `CustomAttributeType` or `OpaquePrimitiveType`. These functions can be passed a generic and that allow you to specify a custom attribute with ElectroDB:
 
 #### CustomAttributeType
+
 This function allows for a narrowing of ElectroDB's `any`, `string`, and `number` types. This can be useful for expressing complex attribute types.
 
 > Custom Attributes do not not enforce runtime type checks. Use [attribute validation](#attribute-validation) to ensure values undergo validation.
@@ -262,48 +273,53 @@ The function `CustomAttributeType` takes one argument, which is the "base" type 
 In this example we accomplish a complex union type:
 
 ```typescript
-import { Entity, CustomAttributeType } from 'electrodb';
+import { Entity, CustomAttributeType } from "electrodb";
 
-const table = 'workplace_table';
+const table = "workplace_table";
 
-type PersonnelRole = {
-    type: 'employee';
-    startDate: number;
-    endDate?: number;
-} | {
-    type: 'contractor';
-    contractStartDate: number;
-    contractEndDate: number;
-};
+type PersonnelRole =
+  | {
+      type: "employee";
+      startDate: number;
+      endDate?: number;
+    }
+  | {
+      type: "contractor";
+      contractStartDate: number;
+      contractEndDate: number;
+    };
 
-const person = new Entity({
+const person = new Entity(
+  {
     model: {
-        entity: 'personnel',
-        service: 'workplace',
-        version: '1'
+      entity: "personnel",
+      service: "workplace",
+      version: "1",
     },
     attributes: {
-        id: {
-            type: 'string'
-        },
-        role: {
-            type: CustomAttributeType<PersonnelRole>('any'),
-            required: true,
-        },
+      id: {
+        type: "string",
+      },
+      role: {
+        type: CustomAttributeType<PersonnelRole>("any"),
+        required: true,
+      },
     },
     indexes: {
-        record: {
-            pk: {
-                field: 'pk',
-                composite: ['id']
-            },
-            sk: {
-                field: 'sk',
-                composite: [],
-            }
-        }
-    }
-}, { table });
+      record: {
+        pk: {
+          field: "pk",
+          composite: ["id"],
+        },
+        sk: {
+          field: "sk",
+          composite: [],
+        },
+      },
+    },
+  },
+  { table },
+);
 ```
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=3&ssc=29&pln=37&pc=2#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgYQFcBnGCEAQRhimACNCYBTAFSzCbgF84AzKcnADkTADZMAxjQgATOkIDcAKCUSIqUnACqqYAEdCTANJMsAZSwg6EUQC44hXQc7FL10XAC8cC1ZsAKAEplbA4UcFEILCYmAEkAES84UlpUAHM4ADJEAG0dfUMTczcbAF17AENULC5lVXVNfOcKNKZfd3tHApcSj292gOClUM4AWXUYAAsk1EIrJigs3KbDFrbe8rgqmrqRuAAFBeJ1VDEAJRtObwQlODu4EfsRCKiYxVv70grYeIrmexSwHSynucCYqBkv2YAH4ATQgWllDwAD6ID53R7CNToKAVKTQd6g7E0PEwMwwb4wKFMOGpRHouDE3FSNCQv405Lw4FKWoqbGaCl0cRJIQAd2gAGswKI8UwAPqC8TveoaeAcKDHVAzJiilDoTBYfw3UEgWRiezG0H3cEYbBPdWa06iIQ4Bmg4gLABuwAkHLFkulspdbvunqOwHUTwAjEIGVxXaC-vCGMxiBaQ3cmC9onEZOmrQWHuwOURSOQqMnGKxiwAeZDZmIJAB8-iEgPSQkCGe4CcLWelrwW+cLoMxba5aVjI-j3d4wA1MAAchUQBzLSOMcWnu3J72N3AoEwDPOmHmHlBDHurTORzLSMvV8P92Od8H93dD8fD2eaJfuzfCwqVonw3MdZnmKAp0LACCyAuJUHGdBJjTNF3zgUU-gkSZ7ByIQ4KEUorxHTFSzIShqFoFNqw4GtEKmFshHAugFk7IjCw9GB7CCLwm0QGCNxkJheAqQhRE4uBuM8XiEH4kdWnE-w5XsOjJjwBA4K4C04PsJiFi4QIeNQtD7kPGBCCgLVRj+SYADpeEiaB-DguAAHo4CjAAmIY0K4f82I-S4QOIrcCBIMiK0oqs2Bow4NROc5LgY7ZWP-OMryBQSAA8mBQ9crUPNQoDPPKRzACUgvfOcxDPIQyrfYy7jUcAIGITAOVw-tIhzSDSm7UFZPY8qjIaqrRBq4gJXqhqmsgVr-jgDqG1zAj-OvVL+p5NSHgqIVOH0up+XgCRD3ZWIZCSIJ7HrAccwSQy8tM8ytQAAwAEgQakbNQCBRSCLhnq2Yhwhuxt4iRFQHXUBkbOOph2SNbsXLc4gOAkYAKg8CAwAqZw4GAc6Rm7TrBzO+xYdOmQglW4nuqefYqkICQ0aB-ZgAALzZiopqtOcFwfP19kmYBRGAMBudBO8lxXP0ADEoCwcX7m0uAPIAVlWgRxAqgsxxpt5VvdCkfnZaMAE5TYAdgAWgABg8q2PNNxWC3BNl5qEKNzdNq3PKtgBmGNVt8-qu1BGy0ggIJoamcF-EPYhRPgKThqtJGDyYMyLKLDggYx448fAUlT27ePE5smQ-gqGy4NiBCJmQuNAiAA)

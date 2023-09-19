@@ -14,7 +14,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
@@ -34,14 +34,14 @@ Retrieving data from DynamoDB is accomplished by using one of the four query met
 
 Additionally, ElectroDB offers a few additional methods built on top of DynamoDB's offerings: `find` and `match`. These methods will perform a `query` or `scan` depending on the provided arguments. Below is a table that explains each ElectroDB method, which DynamoDB operation the method maps to, and a short description of the method's purpose.
 
-ElectroDB Method                    | DynamoDB Method        | Purpose
------------------------------------ | ---------------------- | -------------------
-[get](/en/queries/get)              | `get`                  | Returns a single item, specified by its primary key. 
-[batchGet](/en/queries/batch-get)   | `batchGet`             | Returns a set of attributes for multiple items from one or more tables. 
-[query](/en/queries/query)          | `query`                | Queries a table or index for items that match the specified primary key value. 
-[scan](/en/queries/scan)            | `scan`                 | Scans the table and returns all matching items. 
-[match](/en/queries/match)          | `query` or `scan`      | The `match` method will attempt to build the most performant index keys with the attributes provided. ElectroDB identifies which index it can be "most" fulfilled with the index provided, and will fallback to a `scan` if no index can be built.
-[find](/en/queries/find)            | `query` or `scan`      | the `find` method performs the same index seeking behavior but will also apply all provided values as filters instead of only using provided attributes to build index keys.
+| ElectroDB Method                  | DynamoDB Method   | Purpose                                                                                                                                                                                                                                            |
+| --------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [get](/en/queries/get)            | `get`             | Returns a single item, specified by its primary key.                                                                                                                                                                                               |
+| [batchGet](/en/queries/batch-get) | `batchGet`        | Returns a set of attributes for multiple items from one or more tables.                                                                                                                                                                            |
+| [query](/en/queries/query)        | `query`           | Queries a table or index for items that match the specified primary key value.                                                                                                                                                                     |
+| [scan](/en/queries/scan)          | `scan`            | Scans the table and returns all matching items.                                                                                                                                                                                                    |
+| [match](/en/queries/match)        | `query` or `scan` | The `match` method will attempt to build the most performant index keys with the attributes provided. ElectroDB identifies which index it can be "most" fulfilled with the index provided, and will fallback to a `scan` if no index can be built. |
+| [find](/en/queries/find)          | `query` or `scan` | the `find` method performs the same index seeking behavior but will also apply all provided values as filters instead of only using provided attributes to build index keys.                                                                       |
 
 ## Mutation Methods
 
@@ -49,16 +49,16 @@ DynamoDB offers three methods for updating and creating records: `put`, `update`
 
 Additionally, ElectroDB offers a few mutation methods beyond `put`, `update`, and `delete` to more ergonomically fit your use case. Below is a table that explains each ElectroDB method, which DynamoDB operation the method maps to, and a short description of the method's purpose.
 
-ElectroDB Method                    | DynamoDB Method        | Purpose
------------------------------------ | ---------------------- | -------------------
-[put](/en/mutations/put)            | `put`, `batchWrite`    | Creates or overwrites an existing item with the values provided
-[batchPut](/en/mutations/batch-put) | `batchWrite`       | Creates or overwrites multiple items with the values provided
-[create](/en/mutations/create)      | `put`                  | Creates an item if the item does not currently exist, or throws if the item exists
-[upsert](/en/mutations/upsert)      | `update`               | Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.
-[update](/en/mutations/update)      | `update`               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html))
-[patch](/en/mutations/patch)        | `update`               | Performs an update on existing item or throws if that item does not already exist.
-[delete](/en/mutations/delete)      | `delete`, `batchWrite` | Deletes an item regardless of whether or not the specified item exists
-[remove](/en/mutations/remove)      | `delete`               | Deletes an item or throws if the item does not currently exist
+| ElectroDB Method                    | DynamoDB Method        | Purpose                                                                                                                                                                               |
+| ----------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [put](/en/mutations/put)            | `put`, `batchWrite`    | Creates or overwrites an existing item with the values provided                                                                                                                       |
+| [batchPut](/en/mutations/batch-put) | `batchWrite`           | Creates or overwrites multiple items with the values provided                                                                                                                         |
+| [create](/en/mutations/create)      | `put`                  | Creates an item if the item does not currently exist, or throws if the item exists                                                                                                    |
+| [upsert](/en/mutations/upsert)      | `update`               | Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.                                    |
+| [update](/en/mutations/update)      | `update`               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html)) |
+| [patch](/en/mutations/patch)        | `update`               | Performs an update on existing item or throws if that item does not already exist.                                                                                                    |
+| [delete](/en/mutations/delete)      | `delete`, `batchWrite` | Deletes an item regardless of whether or not the specified item exists                                                                                                                |
+| [remove](/en/mutations/remove)      | `delete`               | Deletes an item or throws if the item does not currently exist                                                                                                                        |
 
 ## Execution Methods
 
@@ -67,8 +67,8 @@ All query chains end with either a `.go()`, `.params()` method invocation. These
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Execution Options](/en/core-concepts/executing-queries).
 
 ### Params
-The `params` method _ends_ a query chain, and synchronously formats your query into an object ready for the DynamoDB docClient.
 
+The `params` method _ends_ a query chain, and synchronously formats your query into an object ready for the DynamoDB docClient.
 
 > For more information on the options available in the `config` object, checkout the section [Execution Options](/en/core-concepts/executing-queries)
 
@@ -76,20 +76,23 @@ The `params` method _ends_ a query chain, and synchronously formats your query i
 
 ```typescript
 const params = MallStores.query
-    .leases({ mallId })
-    .between(
-      { leaseEndDate:  "2020-06-01" }, 
-      { leaseEndDate:  "2020-07-31" })
-    .where(({ rent }, { lte }) => lte(rent, "5000.00"))
-    .params();
+  .leases({ mallId })
+  .between({ leaseEndDate: "2020-06-01" }, { leaseEndDate: "2020-07-31" })
+  .where(({ rent }, { lte }) => lte(rent, "5000.00"))
+  .params();
 ```
 
 #### Output
+
 ```json
 {
   "IndexName": "idx2",
   "TableName": "electro",
-  "ExpressionAttributeNames": { "#rent": "rent", "#pk": "idx2pk", "#sk1": "idx2sk" },
+  "ExpressionAttributeNames": {
+    "#rent": "rent",
+    "#pk": "idx2pk",
+    "#sk1": "idx2sk"
+  },
   "ExpressionAttributeValues": {
     ":rent1": "5000.00",
     ":pk": "$mallstoredirectory_1#mallid_eastpointe",
@@ -102,22 +105,23 @@ const params = MallStores.query
 ```
 
 ### Go
+
 The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model.
 
 > For more information on the options available in the `config` object, check out the section [Execution Options](/en/core-concepts/executing-queries)
 
 #### Example
+
 ```typescript
 const results = await MallStores.query
-	.leases({ mallId })
-	.between(
-		{ leaseEndDate:  "2020-06-01" }, 
-		{ leaseEndDate:  "2020-07-31" })
-	.where(({ rent }, { lte }) => lte(rent, "5000.00"))
-	.go();
+  .leases({ mallId })
+  .between({ leaseEndDate: "2020-06-01" }, { leaseEndDate: "2020-07-31" })
+  .where(({ rent }, { lte }) => lte(rent, "5000.00"))
+  .go();
 ```
 
 #### Output
+
 ```typescript
 {
   data: Array<YOUR_SCHEMA>,
@@ -152,21 +156,21 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 };
 ```
 
-Option             | Default              | Description
------------------- | :------------------: | -----------
-params             | `{}`                 | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.
-table              | _(from constructor)_ | Use a different table than the one defined in the [Service Options](/en/modeling/services#options)
-attributes         | _(all attributes)_   | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.
-data               | `"attributes"`       | Accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`. Use `'raw'` to return query results as they were returned by the docClient. Use `'includeKeys'` to include item partition and sort key values in your return object. By default, **ElectroDB** does not return partition, sort, or global keys in its response.
-pager              | `cursor`             | Used in with pagination calls to override ElectroDBs default behaviour to return a serialized string cursor. See more detail about this in the sections for [Pager Query Options](/en/queries/pagination#pager).
-originalErr        | `false`              | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.
-concurrent         | `1`                  | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations.
-unprocessed        | `"item"`             | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](/en/queries/batch-get), [BatchDelete](/en/mutations/batch-delete), and [BatchPut](/en/mutations/batch-put).
-response           | `"default"`          | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.
-ignoreOwnership    | `false`              | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.
-limit              | _none_               | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.
-pages              | 1                    | How many DynamoDB pages should a query iterate through before stopping. To have ElectroDB automatically paginate through all results, pass the string value `'all'`.
-order              | 'asc'                | Convenience option for `ScanIndexForward`, to the change the order of queries based on your index's Sort Key -- valid options include 'asc' and 'desc'. [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html)]
-listeners          | `[]`                 | An array of callbacks that are invoked when [internal ElectroDB events](/en/reference/events-logging) occur.
-logger             | _none_               | A convenience option for a single event listener that semantically can be used for logging.
-preserveBatchOrder | `false`              | When used with a [batchGet](/en/queries/batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index.
+| Option             |       Default        | Description                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------ | :------------------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| params             |         `{}`         | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.                                                                                                                                                                                                                            |
+| table              | _(from constructor)_ | Use a different table than the one defined in the [Service Options](/en/modeling/services#options)                                                                                                                                                                                                                                                                                            |
+| attributes         |  _(all attributes)_  | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.                                                                                                                                                                                                     |
+| data               |    `"attributes"`    | Accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`. Use `'raw'` to return query results as they were returned by the docClient. Use `'includeKeys'` to include item partition and sort key values in your return object. By default, **ElectroDB** does not return partition, sort, or global keys in its response.                                                   |
+| pager              |       `cursor`       | Used in with pagination calls to override ElectroDBs default behaviour to return a serialized string cursor. See more detail about this in the sections for [Pager Query Options](/en/queries/pagination#pager).                                                                                                                                                                              |
+| originalErr        |       `false`        | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.                                                                                                                                                     |
+| concurrent         |         `1`          | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations.                                                                                                                                                                                                    |
+| unprocessed        |       `"item"`       | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](/en/queries/batch-get), [BatchDelete](/en/mutations/batch-delete), and [BatchPut](/en/mutations/batch-put).                                                                             |
+| response           |     `"default"`      | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.                                                           |
+| ignoreOwnership    |       `false`        | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.                                        |
+| limit              |        _none_        | A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities and through collections will paginate DynamoDB until this limit is reached or all items for that query have been returned.                                                                                                                                                            |
+| pages              |          1           | How many DynamoDB pages should a query iterate through before stopping. To have ElectroDB automatically paginate through all results, pass the string value `'all'`.                                                                                                                                                                                                                          |
+| order              |        'asc'         | Convenience option for `ScanIndexForward`, to the change the order of queries based on your index's Sort Key -- valid options include 'asc' and 'desc'. [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html)]                                                                                                                                          |
+| listeners          |         `[]`         | An array of callbacks that are invoked when [internal ElectroDB events](/en/reference/events-logging) occur.                                                                                                                                                                                                                                                                                  |
+| logger             |        _none_        | A convenience option for a single event listener that semantically can be used for logging.                                                                                                                                                                                                                                                                                                   |
+| preserveBatchOrder |       `false`        | When used with a [batchGet](/en/queries/batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index. |

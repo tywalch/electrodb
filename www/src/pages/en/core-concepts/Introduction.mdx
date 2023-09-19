@@ -9,33 +9,40 @@ keywords:
 layout: ../../../layouts/IntroductionLayout.astro
 ---
 
-import { CenteredRow } from '../../../components/Display/Row';
-import { Spacer } from '../../../components/Display/Space';
+import { CenteredRow } from "../../../components/Display/Row";
+import { Spacer } from "../../../components/Display/Space";
 
 <CenteredRow>
-[![Download Count](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
-[![Coverage Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
-![NPM Bundle Size](https://img.shields.io/bundlephobia/min/electrodb)
-[![Runkit Demo](https://img.shields.io/badge/runkit-electrodb-db4792)](https://runkit.com/tywalch/electrodb-building-queries)
-[![Last Commit](https://img.shields.io/github/last-commit/tywalch/electrodb)](https://github.com/tywalch/electrodb/commits/master)
-[![Issues](https://img.shields.io/github/issues/tywalch/electrodb)](https://github.com/tywalch/electrodb/issues)
-[![Sponsors](https://img.shields.io/github/sponsors/tywalch)](https://github.com/tywalch)
-[![Github Stars](https://img.shields.io/github/stars/tywalch/electrodb?style=social)](https://github.com/tywalch/electrodb/stargazers)
+  [![Download
+  Count](https://img.shields.io/npm/dt/electrodb.svg)](https://www.npmjs.com/package/electrodb)
+  [![Coverage
+  Status](https://coveralls.io/repos/github/tywalch/electrodb/badge.svg?branch=master)](https://coveralls.io/github/tywalch/electrodb?branch=master&kill_cache=please)
+  ![NPM Bundle Size](https://img.shields.io/bundlephobia/min/electrodb)
+  [![Runkit
+  Demo](https://img.shields.io/badge/runkit-electrodb-db4792)](https://runkit.com/tywalch/electrodb-building-queries)
+  [![Last
+  Commit](https://img.shields.io/github/last-commit/tywalch/electrodb)](https://github.com/tywalch/electrodb/commits/master)
+  [![Issues](https://img.shields.io/github/issues/tywalch/electrodb)](https://github.com/tywalch/electrodb/issues)
+  [![Sponsors](https://img.shields.io/github/sponsors/tywalch)](https://github.com/tywalch)
+  [![Github
+  Stars](https://img.shields.io/github/stars/tywalch/electrodb?style=social)](https://github.com/tywalch/electrodb/stargazers)
 </CenteredRow>
 
 ElectroDB is a DynamoDB library to ease the use of having multiple entities and complex hierarchical relationships in a single DynamoDB table. ElectroDB is the only truly Single-Table Design oriented TypeScript library for DynamoDB.
 
-import QuickLook from '../../../components/PageContent/QuickLook';
-import LinkButton from '../../../components/PageContent/LinkButton';
+import QuickLook from "../../../components/PageContent/QuickLook";
+import LinkButton from "../../../components/PageContent/LinkButton";
 
 <CenteredRow>
-  <LinkButton href="/en/core-concepts/quick-start" text="Quick Start Guide"/>
+  <LinkButton href="/en/core-concepts/quick-start" text="Quick Start Guide" />
   <Spacer width={2} />
-  <LinkButton href="https://electrodb.fun" text="ElectroDB Playground" alt/>
+  <LinkButton href="https://electrodb.fun" text="ElectroDB Playground" alt />
 </CenteredRow>
 
 <div style="margin: 2em;">
-  <h3 align="center">Create complex DynamoDB parameters with a simple and easy to read syntax!</h3>
+  <h3 align="center">
+    Create complex DynamoDB parameters with a simple and easy to read syntax!
+  </h3>
 </div>
 
 <QuickLook>
@@ -45,15 +52,17 @@ const { data } = await tasks
   .patch({
     team: "core",
     task: "45-662",
-    project: "backend"
+    project: "backend",
   })
   .set({ status: "open" })
   .add({ points: 5 })
   .append({
-    comments: [{
-      user: "janet",
-      body: "This seems half-baked."
-    }]
+    comments: [
+      {
+        user: "janet",
+        body: "This seems half-baked.",
+      },
+    ],
   })
   .where(({ status }, { eq }) => eq(status, "in-progress"))
   .go();
@@ -61,33 +70,33 @@ const { data } = await tasks
 
 ```json
 {
-    "UpdateExpression": "SET #status = :status_u0, #points = #points + :points_u0, #comments = list_append(#comments, :comments_u0), #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0",
-    "ExpressionAttributeNames": {
-        "#status": "status",
-        "#points": "points",
-        "#comments": "comments",
-        "#updatedAt": "updatedAt",
-        "#gsi1sk": "gsi1sk"
-    },
-    "ExpressionAttributeValues": {
-        ":status0": "in-progress",
-        ":status_u0": "open",
-        ":points_u0": 5,
-        ":comments_u0": [
-            {
-                "user": "janet",
-                "body": "This seems half-baked."
-            }
-        ],
-        ":updatedAt_u0": 1630977029015,
-        ":gsi1sk_u0": "$assignments#tasks_1#status_open"
-    },
-    "TableName": "your_table_name",
-    "Key": {
-        "pk": "$taskapp#team_core",
-        "sk": "$tasks_1#project_backend#task_45-662"
-    },
-    "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk) AND #status = :status0"
+  "UpdateExpression": "SET #status = :status_u0, #points = #points + :points_u0, #comments = list_append(#comments, :comments_u0), #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0",
+  "ExpressionAttributeNames": {
+    "#status": "status",
+    "#points": "points",
+    "#comments": "comments",
+    "#updatedAt": "updatedAt",
+    "#gsi1sk": "gsi1sk"
+  },
+  "ExpressionAttributeValues": {
+    ":status0": "in-progress",
+    ":status_u0": "open",
+    ":points_u0": 5,
+    ":comments_u0": [
+      {
+        "user": "janet",
+        "body": "This seems half-baked."
+      }
+    ],
+    ":updatedAt_u0": 1630977029015,
+    ":gsi1sk_u0": "$assignments#tasks_1#status_open"
+  },
+  "TableName": "your_table_name",
+  "Key": {
+    "pk": "$taskapp#team_core",
+    "sk": "$tasks_1#project_backend#task_45-662"
+  },
+  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk) AND #status = :status0"
 }
 ```
 

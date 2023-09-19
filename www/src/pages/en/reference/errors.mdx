@@ -13,7 +13,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-This section contains formation and guidance related to Errors thrown by ElectroDB. 
+This section contains formation and guidance related to Errors thrown by ElectroDB.
 
 ## ElectroError
 
@@ -21,42 +21,44 @@ ElectroDB wraps errors with an `ElectroError` class exception. This class extend
 
 ```typescript
 export class ElectroError extends Error {
-    readonly name: 'ElectroError';
+  readonly name: "ElectroError";
+  readonly code: number;
+  readonly date: number;
+  readonly isElectroError: boolean;
+  ref: {
     readonly code: number;
-    readonly date: number;
-    readonly isElectroError: boolean;
-    ref: {
-        readonly code: number;
-        readonly section: string;
-        readonly name: string;
-        readonly sym: unique symbol;
-    }
+    readonly section: string;
+    readonly name: string;
+    readonly sym: unique symbol;
+  };
 }
 
 export interface ElectroValidationErrorFieldReference<T extends Error = Error> {
-    /**
-     * The json path to the attribute that had a validation error
-     */
-    readonly field: string;
+  /**
+   * The json path to the attribute that had a validation error
+   */
+  readonly field: string;
 
-    /**
-     * A description of the validation error for that attribute
-     */
-    readonly reason: string;
+  /**
+   * A description of the validation error for that attribute
+   */
+  readonly reason: string;
 
-    /**
-     * Index of the value passed (present only in List attribute validation errors)
-     */
-    readonly index: number | undefined;
+  /**
+   * Index of the value passed (present only in List attribute validation errors)
+   */
+  readonly index: number | undefined;
 
-    /**
-     * The error thrown from the attribute's validate callback (if applicable)
-     */
-    readonly cause: T | undefined;
+  /**
+   * The error thrown from the attribute's validate callback (if applicable)
+   */
+  readonly cause: T | undefined;
 }
 
-export class ElectroValidationError<T extends Error = Error> extends ElectroError {
-    readonly fields: ReadonlyArray<ElectroValidationErrorFieldReference<T>>;
+export class ElectroValidationError<
+  T extends Error = Error,
+> extends ElectroError {
+  readonly fields: ReadonlyArray<ElectroValidationErrorFieldReference<T>>;
 }
 ```
 
@@ -64,17 +66,18 @@ export class ElectroValidationError<T extends Error = Error> extends ElectroErro
 
 Errors are coded based on the type of error that has occurred.
 
-Error Code | Description
-:--------: | -------------------- 
-1000s      | Configuration Errors
-2000s      | Invalid Query Errors     
-3000s      | User Defined Validation
-4000s      | DynamoDB Errors     
-5000s      | Unexpected Errors   
+| Error Code | Description             |
+| :--------: | ----------------------- |
+|   1000s    | Configuration Errors    |
+|   2000s    | Invalid Query Errors    |
+|   3000s    | User Defined Validation |
+|   4000s    | DynamoDB Errors         |
+|   5000s    | Unexpected Errors       |
 
 ## Configuration Errors
 
 ### No Client Defined On Model
+
 **Code: 1001**
 
 **Why this occurred:**
@@ -82,15 +85,19 @@ If a DynamoDB DocClient is not passed to the constructor of an Entity or Service
 
 **What to do about it:**
 For an Entity be sure to pass the DocClient as the second param to the constructor:
+
 ```javascript
-new Entity(schema, {client})
+new Entity(schema, { client });
 ```
+
 For a Service, the client is passed the same way, as the second param to the constructor:
+
 ```javascript
-new Service("", {client});
+new Service("", { client });
 ```
 
 ### Invalid Identifier
+
 **Code: 1002**
 
 **Why this occurred:**
@@ -100,6 +107,7 @@ You tried to modify the entity identifier on an Entity.
 Make sure you have spelled the identifier correctly or that you actually passed a replacement.
 
 ### Invalid Key Composite Attribute Template
+
 **Code: 1003**
 
 **Why this occurred:**
@@ -109,6 +117,7 @@ You are trying to use the custom Key Composite Attribute Template, and the forma
 Checkout the section on [Composite Attribute Templates](/en/modeling/indexes#composite attribute-templates) and verify your template conforms to the rules detailed there.
 
 ### Duplicate Indexes
+
 **Code: 1004**
 
 **Why this occurred:**
@@ -116,6 +125,7 @@ Your model contains duplicate indexes. This could be because you accidentally in
 
 **What to do about it:**
 Double-check the index names on your model for duplicate indexes. The error should specify which index has been duplicated. It is also possible that you have forgotten to include an index name. Each table must have at least one Table Index (which does not include an `index` property in ElectroDB), but all Secondary and Local indexes must include an `index` property with the name of that index as defined on the table.
+
 ```javascript
 {
   indexes: {
@@ -134,6 +144,7 @@ Double-check the index names on your model for duplicate indexes. The error shou
 ```
 
 ### Collection Without An SK
+
 **Code: 1005**
 
 **Why this occurred:**
@@ -141,6 +152,7 @@ You have added a `collection` to an index that does not have an SK. Because Coll
 
 **What to do about it:**
 If your index _does_ have a Sort Key, but you are unsure of how to inform electro without setting composite attributes to the SK, add the SK object to the index and use an empty array for Composite Attributes:
+
 ```javascript
 // ElectroDB interprets as index *not having* an SK.
 {
@@ -168,9 +180,10 @@ If your index _does_ have a Sort Key, but you are unsure of how to inform electr
     }
   }
 }
-```  
+```
 
 ### Duplicate Collections
+
 **Code: 1006**
 
 **Why this occurred:**
@@ -180,6 +193,7 @@ You have assigned the same collection name to multiple indexes. This is not allo
 Determine a new naming scheme
 
 ### Missing Primary Index
+
 **Code: 1007**
 
 **Why this occurred:**
@@ -187,6 +201,7 @@ DynamoDB requires the definition of at least one Primary Index on the table. In 
 
 **What to do about it:**
 Identify the index you're using as the Primary Index and ensure it _does not_ have an index property on its definition.
+
 ```javascript
 // ElectroDB interprets as the Primary Index because it lacks an `index` property.
 {
@@ -219,9 +234,10 @@ Identify the index you're using as the Primary Index and ensure it _does not_ ha
     }
   }
 }
-``` 
+```
 
 ### Invalid Attribute Definition
+
 **Code: 1008**
 
 **Why this occurred:**
@@ -231,6 +247,7 @@ Some attribute on your model has an invalid configuration.
 Use the error to identify which column needs to examined, double-check the properties on that attribute. Checkout the section on [Attributes](/en/modeling/attributes) for more information on how they are structured.
 
 ### Invalid Model
+
 **Code: 1009**
 
 **Why this occurred:**
@@ -240,6 +257,7 @@ Some properties on your model are missing or invalid.
 Checkout the section on [Schemas](/en/modeling/schema) to verify your model against what is expected.
 
 ### Invalid Options
+
 **Code: 1010**
 
 **Why this occurred:**
@@ -249,6 +267,7 @@ Some properties on your options object are missing or invalid.
 Checkout the section on [Model/Service Options](/en/modeling/service#options) to verify your model against what is expected.
 
 ### Duplicate Index Fields
+
 **Code: 1014**
 
 **Why this occurred:**
@@ -258,6 +277,7 @@ An Index in your model references the same field twice across indexes. The `fiel
 This is likely a typo, if not double-check the names of the fields you assigned to be the PK and SK of your index, these field names must be unique.
 
 ### Duplicate Index Composite Attributes
+
 **Code: 1015**
 
 **Why this occurred:**
@@ -267,6 +287,7 @@ Within one index you tried to use the same composite attribute in both the PK an
 Determine how you can change your access pattern to not duplicate the composite attribute. Remember that an empty array for an SK is valid.
 
 ### Incompatible Key Composite Attribute Template
+
 **Code: 1017**
 
 **Why this occurred:**
@@ -276,19 +297,21 @@ You are trying to use the custom Key Composite Attribute Template, and a Composi
 Checkout the section on [Composite Attribute Templates](/en/modeling/indexes#composite attribute-templates) and verify your template conforms to the rules detailed there. Both properties must contain the same attributes and be provided in the same order.
 
 ### Invalid Index With Attribute Name
+
 **Code: 1018**
 
 **Why this occurred:**
-ElectroDB's design revolves around best practices related to modeling in single table design. This includes giving indexed fields generic names. If the PK and SK fields on your table indexes also match the names of attributes on your Entity you will need to make special considerations to make sure ElectroDB can accurately map your data.  
+ElectroDB's design revolves around best practices related to modeling in single table design. This includes giving indexed fields generic names. If the PK and SK fields on your table indexes also match the names of attributes on your Entity you will need to make special considerations to make sure ElectroDB can accurately map your data.
 
 **What to do about it:**
 Checkout the section [Using ElectroDB with existing data](/en/core-concepts/use-electrodb-with-existing-table) to learn more about considerations to make when using attributes as index fields.
 
 ### Invalid Collection on Index With Attribute Field Names
+
 **Code: 1019**
 
 **Why this occurred:**
-Collections allow for unique access patterns to be modeled between entities. It does this by appending prefixes to your key composites. If an Entity leverages an attribute field as an index key, ElectroDB will be unable to prefix your value because that would result in modifying the value itself.   
+Collections allow for unique access patterns to be modeled between entities. It does this by appending prefixes to your key composites. If an Entity leverages an attribute field as an index key, ElectroDB will be unable to prefix your value because that would result in modifying the value itself.
 
 **What to do about it:**
 Checkout the section [Collections](/en/modeling/collections) to learn more about collections, as well as the section [Using ElectroDB with existing data](/en/core-concepts/use-electrodb-with-existing-table) to learn more about considerations to make when using attributes as index fields.
@@ -296,6 +319,7 @@ Checkout the section [Collections](/en/modeling/collections) to learn more about
 ## Invalid Query Errors
 
 ### Missing Composite Attributes
+
 **Code: 2002**
 
 **Why this occurred:**
@@ -305,6 +329,7 @@ The current request is missing some composite attributes to complete the query b
 The error should describe the missing composite attributes, ensure those composite attributes are included in the query or update the model to reflect the needs of the access pattern.
 
 ### Missing Table
+
 **Code: 2003**
 
 **Why this occurred:**
@@ -314,15 +339,17 @@ You never specified a Table for DynamoDB to use.
 Tables can be defined on the [Service Options](/en/modeling/service#options) object when you create an Entity or Service, or if that is not known at the time of creation, it can be supplied as an [Execution Option](/en/core-concepts/executing-queries) and supplied on each query individually. If are supplied to both, in that case the Query Option will override the Service Option.
 
 ### Invalid Concurrency Option
+
 **Code: 2004**
 
 **Why this occurred:**
 When performing a bulk operation ([Batch Get](/en/queries/batch-get), [Batch Delete Records](/en/mutations/batch-delete), [Batch Put Records](/en/mutations/batch-put)) you can pass an [Execution Option](/en/core-concepts/executing-queries) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
-**What to do about it:*   *
+\*_What to do about it:_ \*
 Expect this error only if you're providing a `concurrency` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### Invalid Pages Option
+
 **Code: 2005**
 
 **Why this occurred:**
@@ -332,6 +359,7 @@ When performing a [Query](#building-queries) you can pass an [Execution Option](
 Expect this error only if you're providing a `pages` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### Invalid Limit Option
+
 **Code: 2006**
 
 **Why this occurred:**
@@ -343,6 +371,7 @@ Expect this error only if you're providing a `limit` option. Double-check the va
 ## User Defined Validation
 
 ### Invalid Attribute
+
 **Code: 3001**
 
 **Why this occurred:**
@@ -389,6 +418,7 @@ ElectroValidationError<T extends Error = Error> extends ElectroError {
 ## DynamoDB Errors
 
 ### AWS Error
+
 **Code: 4001**
 
 **Why this occurred:**
@@ -400,6 +430,7 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 ## Unexpected Errors
 
 ### No Owner For Pager
+
 **Code: 5004**
 
 **Why this occurred:**

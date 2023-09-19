@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
@@ -20,10 +20,10 @@ Provide all Table Index composite attributes in an object to the `delete` method
 
 ```javascript
 await StoreLocations.delete({
-	storeId: "LatteLarrys",
-	mallId: "EastPointe",
-	buildingId: "F34",
-	cityId: "Atlanta1"
+  storeId: "LatteLarrys",
+  mallId: "EastPointe",
+  buildingId: "F34",
+  cityId: "Atlanta1",
 }).go();
 ```
 
@@ -33,11 +33,12 @@ await StoreLocations.delete({
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
 ## Equivalent Parameters
+
 ```json
 {
   "Key": {
@@ -50,6 +51,6 @@ await StoreLocations.delete({
 
 ## Execution Options
 
-import PartialExample from '../../../partials/mutation-query-options.mdx';
+import PartialExample from "../../../partials/mutation-query-options.mdx";
 
 <PartialExample name="Filters" />

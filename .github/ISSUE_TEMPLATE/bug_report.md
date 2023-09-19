@@ -1,10 +1,9 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
-
+title: ""
+labels: ""
+assignees: ""
 ---
 
 **Describe the bug**
@@ -19,6 +18,7 @@ Specify the version of ElectroDB you are using
 
 **Entity/Service Definitions**
 Include your entity model (or a model that sufficiently recreates your issue) to help troubleshoot.
+
 ```
 {
     model: {
@@ -45,14 +45,15 @@ Include your entity model (or a model that sufficiently recreates your issue) to
                 composite: ["prop2"],
             },
         }
-    } 
+    }
 }
-``` 
+```
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
 **Errors**
+
 ```
 If applicable, paste the errors you received
 ```

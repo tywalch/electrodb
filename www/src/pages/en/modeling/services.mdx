@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-In ***ElectroDB*** a `Service` represents a collection of related Entities. Services allow you to build queries that span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that "join" multiple Entities.
+In **_ElectroDB_** a `Service` represents a collection of related Entities. Services allow you to build queries that span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that "join" multiple Entities.
 
 ## Creation
 
@@ -21,19 +21,23 @@ The property name you assign the entity will then be "alias", or name, you can r
 ```typescript
 import { Service } from "electrodb";
 
-const TaskApp = new Service({
-	employee: Employee, // available at TaskApp.entities.personnel
-	task: Task,         // available at TaskApp.entities.directives
-}, {table, client});
+const TaskApp = new Service(
+  {
+    employee: Employee, // available at TaskApp.entities.personnel
+    task: Task, // available at TaskApp.entities.directives
+  },
+  { table, client },
+);
 ```
 
 Services take an _optional_ second parameter, similar to Entities, with a `client` and `table`. Using this constructor interface, the Service will utilize the values from those entities, if they were provided, or be passed values to override the `client` or `table` name on the individual entities.
 
 ## Options
-Property | Description
--------- | -----------
-table    | The name of the dynamodb table in aws.
-client   | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database.
+
+| Property | Description                                                                                                                                                                                                                              |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| table    | The name of the dynamodb table in aws.                                                                                                                                                                                                   |
+| client   | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database. |
 
 ## Validation
 

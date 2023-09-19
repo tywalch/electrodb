@@ -1,75 +1,75 @@
 {
-  "KeySchema":[
+  "KeySchema": [
     {
-      "AttributeName":"pk",
-      "KeyType":"HASH"
+      "AttributeName": "pk",
+      "KeyType": "HASH"
     },
     {
-      "AttributeName":"sk",
-      "KeyType":"RANGE"
+      "AttributeName": "sk",
+      "KeyType": "RANGE"
     }
   ],
-  "AttributeDefinitions":[
+  "AttributeDefinitions": [
     {
-      "AttributeName":"pk",
-      "AttributeType":"S"
+      "AttributeName": "pk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"sk",
-      "AttributeType":"S"
+      "AttributeName": "sk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"gsi1pk",
-      "AttributeType":"S"
+      "AttributeName": "gsi1pk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"gsi2pk",
-      "AttributeType":"S"
+      "AttributeName": "gsi2pk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"lsi1sk",
-      "AttributeType":"S"
+      "AttributeName": "lsi1sk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"lsi2sk",
-      "AttributeType":"S"
+      "AttributeName": "lsi2sk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"lsi3sk",
-      "AttributeType":"S"
+      "AttributeName": "lsi3sk",
+      "AttributeType": "S"
     }
   ],
-  "GlobalSecondaryIndexes":[
+  "GlobalSecondaryIndexes": [
     {
-      "IndexName":"gsi1pk-lsi1sk-index",
-      "KeySchema":[
+      "IndexName": "gsi1pk-lsi1sk-index",
+      "KeySchema": [
         {
-          "AttributeName":"gsi1pk",
-          "KeyType":"HASH"
+          "AttributeName": "gsi1pk",
+          "KeyType": "HASH"
         },
         {
-          "AttributeName":"lsi1sk",
-          "KeyType":"RANGE"
+          "AttributeName": "lsi1sk",
+          "KeyType": "RANGE"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     },
     {
-      "IndexName":"gsi2pk-gsi1pk-index",
-      "KeySchema":[
+      "IndexName": "gsi2pk-gsi1pk-index",
+      "KeySchema": [
         {
-          "AttributeName":"gsi2pk",
-          "KeyType":"HASH"
+          "AttributeName": "gsi2pk",
+          "KeyType": "HASH"
         },
         {
-          "AttributeName":"gsi1pk",
-          "KeyType":"RANGE"
+          "AttributeName": "gsi1pk",
+          "KeyType": "RANGE"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     }
   ],
@@ -86,8 +86,8 @@
           "KeyType": "RANGE"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     },
     {
@@ -102,10 +102,10 @@
           "KeyType": "RANGE"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     }
   ],
-  "BillingMode":"PAY_PER_REQUEST"
+  "BillingMode": "PAY_PER_REQUEST"
 }

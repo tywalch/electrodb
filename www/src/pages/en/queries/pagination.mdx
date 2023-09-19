@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
@@ -27,40 +27,40 @@ The terminal method `go()` accepts a `cursor` when executing a `query` or `scan`
 ### Entities
 
 ```typescript
-const results1 = await MallStores.query
-	.leases({ mallId })
-	.go(); // no "cursor" passed to `.go()`
+const results1 = await MallStores.query.leases({ mallId }).go(); // no "cursor" passed to `.go()`
 
 const results2 = await MallStores.query
-	.leases({ mallId })
-	.go({ cursor: results1.cursor }); // Paginate by querying with the "cursor" from your first query
+  .leases({ mallId })
+  .go({ cursor: results1.cursor }); // Paginate by querying with the "cursor" from your first query
 ```
 
 ```json results2
 {
   "cursor": "...",
-  "data": [{
-    "mall": "3010aa0d-5591-4664-8385-3503ece58b1c",
-    "leaseEnd": "2020-01-20",
-    "sector": "7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5",
-    "store": "MNO",
-    "unit": "B5",
-    "id": "e0705325-d735-4fe4-906e-74091a551a04",
-    "building": "BuildingE",
-    "category": "food/coffee",
-    "rent": "0.00"
-  },
-  {
-    "mall": "3010aa0d-5591-4664-8385-3503ece58b1c",
-    "leaseEnd": "2020-01-20",
-    "sector": "7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5",
-    "store": "ZYX",
-    "unit": "B9",
-    "id": "f201a1d3-2126-46a2-aec9-758ade8ab2ab",
-    "building": "BuildingI",
-    "category": "food/coffee",
-    "rent": "0.00"
-  }]
+  "data": [
+    {
+      "mall": "3010aa0d-5591-4664-8385-3503ece58b1c",
+      "leaseEnd": "2020-01-20",
+      "sector": "7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5",
+      "store": "MNO",
+      "unit": "B5",
+      "id": "e0705325-d735-4fe4-906e-74091a551a04",
+      "building": "BuildingE",
+      "category": "food/coffee",
+      "rent": "0.00"
+    },
+    {
+      "mall": "3010aa0d-5591-4664-8385-3503ece58b1c",
+      "leaseEnd": "2020-01-20",
+      "sector": "7d0f5c19-ec1d-4c1e-b613-a4cc07eb4db5",
+      "store": "ZYX",
+      "unit": "B9",
+      "id": "f201a1d3-2126-46a2-aec9-758ade8ab2ab",
+      "building": "BuildingI",
+      "category": "food/coffee",
+      "rent": "0.00"
+    }
+  ]
 }
 ```
 
@@ -70,14 +70,17 @@ Pagination with services is also possible. Similar to [Entity Pagination](#entit
 
 ```typescript
 type GoResults = {
-    cursor: string | null;
-    data: {
-        [entityName: string]: { /** EntityItem */ }[]
-    }
-}
+  cursor: string | null;
+  data: {
+    [entityName: string]: {
+      /** EntityItem */
+    }[];
+  };
+};
 ```
 
 ### Pager
+
 A notable Pagination Option is `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
 
 **"raw":** The `"raw"` option returns the LastEvaluatedKey as it was returned by the DynamoDB DocClient.
@@ -98,10 +101,10 @@ Simple pagination example:
 ```typescript
 // EntityItem is the type for a returned item
 // QueryResponse is the type for the full electrodb response to a query
-import { EntityItem, QueryResponse } from 'electrodb';
+import { EntityItem, QueryResponse } from "electrodb";
 
 // (your entity)
-import { users } from './entities';
+import { users } from "./entities";
 
 type UserItem = EntityItem<typeof users>;
 type UserQueryResponse = QueryResponse<typeof users>;
@@ -115,7 +118,7 @@ async function getTeamMembers(team: string) {
       .go({ cursor });
     members = [...members, ...results.data];
     cursor = results.cursor;
-  } while(cursor !== null);
+  } while (cursor !== null);
 
   return members;
 }

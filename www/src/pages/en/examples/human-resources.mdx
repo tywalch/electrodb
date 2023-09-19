@@ -18,7 +18,7 @@ Let's look at the needs of an application used to manage Employees. The applicat
 
 ## Table Definition
 
-import TableDefinition from '../../../partials/table-definition.mdx';
+import TableDefinition from "../../../partials/table-definition.mdx";
 
 <TableDefinition />
 
@@ -37,120 +37,120 @@ import TableDefinition from '../../../partials/table-definition.mdx';
 
 For this example we will create multiple entities and relate them together through a `Service`.
 
-### Employee 
+### Employee
 
 The `Employee` entity represents a single Employee at the company.
 
 ```typescript
-import { Entity } from 'electrodb';
+import { Entity } from "electrodb";
 
 const Employee = new Entity({
-	model: {
-	  entity: "employee",
-      version: "1",
-      service: "taskapp",  
-	},
-	attributes: {
-		employee: {
+  model: {
+    entity: "employee",
+    version: "1",
+    service: "taskapp",
+  },
+  attributes: {
+    employee: {
       type: "string",
     },
-		firstName: {
+    firstName: {
       type: "string",
     },
-		lastName: {
+    lastName: {
       type: "string",
     },
-		office: {
+    office: {
       type: "string",
     },
-		title: {
+    title: {
       type: "string",
     },
-		team: {
+    team: {
       type: ["development", "marketing", "finance", "product"] as const,
     },
-		salary: {
+    salary: {
       type: "string",
     },
-		manager: {
+    manager: {
       type: "string",
     },
-		dateHired: {
+    dateHired: {
       type: "string",
     },
-		birthday: {
+    birthday: {
       type: "string",
     },
-	},
-	indexes: {
-		employee: {
-			pk: {
-				field: "pk",
-				composite: ["employee"],
-			},
-			sk: {
-				field: "sk",
-				composite: [],
-			},
-		},
-		coworkers: {
-			index: "gsi1pk-gsi1sk-index",
-			collection: "workplaces",
-			pk: {
-				field: "gsi1pk",
-				composite: ["office"],
-			},
-			sk: {
-				field: "gsi1sk",
-				composite: ["team", "title", "employee"],
-			},
-		},
-		teams: {
-			index: "gsi2pk-gsi2sk-index",
-			pk: {
-				field: "gsi2pk",
-				composite: ["team"],
-			},
-			sk: {
-				field: "gsi2sk",
-				composite: ["title", "salary", "employee"],
-			},
-		},
-		employeeLookup: {
-			collection: "assignments",
-			index: "gsi3pk-gsi3sk-index",
-			pk: {
-				field: "gsi3pk",
-				composite: ["employee"],
-			},
-			sk: {
-				field: "gsi3sk",
-				composite: [],
-			},
-		},
-		roles: {
-			index: "gsi4pk-gsi4sk-index",
-			pk: {
-				field: "gsi4pk",
-				composite: ["title"],
-			},
-			sk: {
-				field: "gsi4sk",
-				composite: ["salary", "employee"],
-			},
-		},
-		directReports: {
-			index: "gsi5pk-gsi5sk-index",
-			pk: {
-				field: "gsi5pk",
-				composite: ["manager"],
-			},
-			sk: {
-				field: "gsi5sk",
-				composite: ["team", "office", "employee"],
-			},
-		},
-	}
+  },
+  indexes: {
+    employee: {
+      pk: {
+        field: "pk",
+        composite: ["employee"],
+      },
+      sk: {
+        field: "sk",
+        composite: [],
+      },
+    },
+    coworkers: {
+      index: "gsi1pk-gsi1sk-index",
+      collection: "workplaces",
+      pk: {
+        field: "gsi1pk",
+        composite: ["office"],
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["team", "title", "employee"],
+      },
+    },
+    teams: {
+      index: "gsi2pk-gsi2sk-index",
+      pk: {
+        field: "gsi2pk",
+        composite: ["team"],
+      },
+      sk: {
+        field: "gsi2sk",
+        composite: ["title", "salary", "employee"],
+      },
+    },
+    employeeLookup: {
+      collection: "assignments",
+      index: "gsi3pk-gsi3sk-index",
+      pk: {
+        field: "gsi3pk",
+        composite: ["employee"],
+      },
+      sk: {
+        field: "gsi3sk",
+        composite: [],
+      },
+    },
+    roles: {
+      index: "gsi4pk-gsi4sk-index",
+      pk: {
+        field: "gsi4pk",
+        composite: ["title"],
+      },
+      sk: {
+        field: "gsi4sk",
+        composite: ["salary", "employee"],
+      },
+    },
+    directReports: {
+      index: "gsi5pk-gsi5sk-index",
+      pk: {
+        field: "gsi5pk",
+        composite: ["manager"],
+      },
+      sk: {
+        field: "gsi5sk",
+        composite: ["team", "office", "employee"],
+      },
+    },
+  },
 });
 ```
 
@@ -159,55 +159,55 @@ const Employee = new Entity({
 The `Task` entity represents a single instance of a task, to be worked on by an `Employee`.
 
 ```typescript
-import { Entity } from 'electrodb';
+import { Entity } from "electrodb";
 
 const Task = new Entity({
-	model: {
-		entity: "task",
-    	version: "1",
-    	service: "taskapp",  
-	}, 
-	attributes: {
-		task: "string",
-		project: "string",
-		employee: "string",
-		description: "string",
-	},
-	indexes: {
-		task: {
-			pk: {
-				field: "pk",
-				composite: ["task"],
-			},
-			sk: {
-				field: "sk",
-				composite: ["project", "employee"],
-			},
-		},
-		project: {
-			index: "gsi1pk-gsi1sk-index",
-			pk: {
-				field: "gsi1pk",
-				composite: ["project"],
-			},
-			sk: {
-				field: "gsi1sk",
-				composite: ["employee", "task"],
-			},
-		},
-		assigned: {
-			collection: "assignments",
-			index: "gsi3pk-gsi3sk-index",
-			pk: {
-				field: "gsi3pk",
-				composite: ["employee"],
-			},
-			sk: {
-				field: "gsi3sk",
-				composite: ["project", "task"],
-			},
-		},
-	},
+  model: {
+    entity: "task",
+    version: "1",
+    service: "taskapp",
+  },
+  attributes: {
+    task: "string",
+    project: "string",
+    employee: "string",
+    description: "string",
+  },
+  indexes: {
+    task: {
+      pk: {
+        field: "pk",
+        composite: ["task"],
+      },
+      sk: {
+        field: "sk",
+        composite: ["project", "employee"],
+      },
+    },
+    project: {
+      index: "gsi1pk-gsi1sk-index",
+      pk: {
+        field: "gsi1pk",
+        composite: ["project"],
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["employee", "task"],
+      },
+    },
+    assigned: {
+      collection: "assignments",
+      index: "gsi3pk-gsi3sk-index",
+      pk: {
+        field: "gsi3pk",
+        composite: ["employee"],
+      },
+      sk: {
+        field: "gsi3sk",
+        composite: ["project", "task"],
+      },
+    },
+  },
 });
 ```
 
@@ -216,58 +216,58 @@ const Task = new Entity({
 The `Office` entity represents a location/building in which employees can work.
 
 ```typescript
-import { Entity } from 'electrodb';
+import { Entity } from "electrodb";
 
 const Office = new Entity({
-	model: {
+  model: {
     entity: "office",
     version: "1",
-    service: "taskapp",  
-  }, 
-	attributes: {
-		office: {
+    service: "taskapp",
+  },
+  attributes: {
+    office: {
       type: "string",
     },
-		country: {
+    country: {
       type: "string",
     },
-		state: {
+    state: {
       type: "string",
     },
-		city: {
+    city: {
       type: "string",
     },
-		zip: {
+    zip: {
       type: "string",
     },
-		address: {
+    address: {
       type: "string",
     },
-	},
-	indexes: {
-		locations: {
-			pk: {
-				field: "pk",
-				composite: ["country", "state"],
-			},
-			sk: {
-				field: "sk",
-				composite: ["city", "zip", "office"],
-			},
-		},
-		office: {
-			index: "gsi1pk-gsi1sk-index",
-			collection: "workplaces",
-			pk: {
-				field: "gsi1pk",
-				composite: ["office"],
-			},
-			sk: {
-				field: "gsi1sk",
-				composite: [],
-			},
-		},
-	},
+  },
+  indexes: {
+    locations: {
+      pk: {
+        field: "pk",
+        composite: ["country", "state"],
+      },
+      sk: {
+        field: "sk",
+        composite: ["city", "zip", "office"],
+      },
+    },
+    office: {
+      index: "gsi1pk-gsi1sk-index",
+      collection: "workplaces",
+      pk: {
+        field: "gsi1pk",
+        composite: ["office"],
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: [],
+      },
+    },
+  },
 });
 ```
 
@@ -277,17 +277,20 @@ Join models together in a new `Service` called `EmployeeApp`
 
 ```typescript
 const DynamoDB = require("aws-sdk/clients/dynamodb");
-const client = new DynamoDB.DocumentClient({region: "us-east-1"});
+const client = new DynamoDB.DocumentClient({ region: "us-east-1" });
 const { Service } = require("electrodb");
 const table = "projectmanagement";
 
-const EmployeeApp = new Service({
-  employees: Employee,
-  tasks: Task,
-  offices: Office,
-}, { client, table });
-
+const EmployeeApp = new Service(
+  {
+    employees: Employee,
+    tasks: Task,
+    offices: Office,
+  },
+  { client, table },
+);
 ```
+
 ## Access Patterns
 
 ### All tasks and employee information for a given employee
@@ -295,7 +298,7 @@ const EmployeeApp = new Service({
 Fulfilling [Requirement #1](#employee-app-requirements).
 
 ```typescript
-await EmployeeApp.collections.assignments({employee: "CBaskin"}).go();
+await EmployeeApp.collections.assignments({ employee: "CBaskin" }).go();
 ```
 
 Returns the following:
@@ -336,7 +339,7 @@ Returns the following:
 Fulfilling [Requirement #2](#employee-app-requirements).
 
 ```typescript
-await EmployeeApp.collections.workplaces({office: "big cat rescue"}).go();
+await EmployeeApp.collections.workplaces({ office: "big cat rescue" }).go();
 ```
 
 Returns the following:
@@ -375,10 +378,10 @@ Fulfilling [Requirement #3](#employee-app-requirements).
 
 ```typescript
 // on the service
-await EmployeeApp.entities.tasks.query.assigned({employee: "cbaskin"}).go();
+await EmployeeApp.entities.tasks.query.assigned({ employee: "cbaskin" }).go();
 
 // on the entity
-await tasks.query.assigned({employee: "cbaskin"}).go();
+await tasks.query.assigned({ employee: "cbaskin" }).go();
 ```
 
 Returns the following:
@@ -401,16 +404,19 @@ Returns the following:
   cursor: '...',
 }
 ```
+
 ### Tasks for a given project
 
 Fulfilling [Requirement #4](#employee-app-requirements).
 
 ```typescript
 // on the service
-await EmployeeApp.entities.tasks.query.project({project: "Murder Carol"}).go();
+await EmployeeApp.entities.tasks.query
+  .project({ project: "Murder Carol" })
+  .go();
 
 // on the entity
-await tasks.query.project({project: "Murder Carol"}).go();
+await tasks.query.project({ project: "Murder Carol" }).go();
 ```
 
 Returns the following:
@@ -435,10 +441,12 @@ Fulfilling [Requirement #5](#employee-app-requirements).
 
 ```typescript
 // on the service
-await EmployeeApp.entities.office.locations({country: "usa", state: "florida"}).go();
+await EmployeeApp.entities.office
+  .locations({ country: "usa", state: "florida" })
+  .go();
 
 // on the entity
-await office.locations({country: "usa", state: "florida"}).go();
+await office.locations({ country: "usa", state: "florida" }).go();
 ```
 
 Returns the following:
@@ -466,15 +474,15 @@ Fulfilling [Requirement #6](#employee-app-requirements).
 ```typescript
 // on the service
 await EmployeeApp.entities.employees
-	.roles({title: "animal wrangler"})
-	.lte({salary: "150.00"})
-	.go();
+  .roles({ title: "animal wrangler" })
+  .lte({ salary: "150.00" })
+  .go();
 
 // on the entity
 await employees
-    .roles({title: "animal wrangler"})
-    .lte({salary: "150.00"})
-    .go();
+  .roles({ title: "animal wrangler" })
+  .lte({ salary: "150.00" })
+  .go();
 ```
 
 Returns the following:
@@ -509,21 +517,25 @@ const endDate = "2020-06-01";
 
 // on the service
 await EmployeeApp.entities.employees
-    .workplaces({office: "gw zoo"})
-    .where(({ birthday, dateHired }, { between }) => `
+  .workplaces({ office: "gw zoo" })
+  .where(
+    ({ birthday, dateHired }, { between }) => `
         ${between(dateHired, startDate, endDate)} OR
         ${between(birthday, startDate, endDate)}
-    `)
-	.go();
+    `,
+  )
+  .go();
 
 // on the entity
 await employees
-    .workplaces({office: "gw zoo"})
-    .where(({ birthday, dateHired }, { between }) => `
+  .workplaces({ office: "gw zoo" })
+  .where(
+    ({ birthday, dateHired }, { between }) => `
         ${between(dateHired, startDate, endDate)} OR
         ${between(birthday, startDate, endDate)}
-    `)
-    .go();
+    `,
+  )
+  .go();
 ```
 
 Returns the following:
@@ -554,14 +566,10 @@ Fulfilling [Requirement #8](#employee-app-requirements).
 
 ```typescript
 // on the service
-await EmployeeApp.entities.employees
-	.reports({manager: "jlowe"})
-	.go();
+await EmployeeApp.entities.employees.reports({ manager: "jlowe" }).go();
 
 // on the entity
-await employees
-    .reports({manager: "jlowe"})
-    .go();
+await employees.reports({ manager: "jlowe" }).go();
 ```
 
 Returns the following:

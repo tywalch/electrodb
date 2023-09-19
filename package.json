@@ -8,10 +8,11 @@
     "build:browser": "browserify playground/browser.js -o playground/bundle.js",
     "test": "./test.sh",
     "test:ci": "npm install && npm test",
-    "test:run": "npm run test:types && npm run test:init && npm run test:unit",
+    "test:run": "npm run test:format && npm run test:types && npm run test:init && npm run test:unit",
     "test:init": "node ./test/init.js",
     "test:unit": "mocha -r ts-node/register ./test/**.spec.*",
     "test:types": "tsd",
+    "test:format": "prettier -c .",
     "coverage": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
     "coverage:local:coveralls": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
     "coverage:local:html": "npm run test:init && nyc npm run test:unit && nyc report --reporter=html",
@@ -28,7 +29,8 @@
     "local:start": "npm run ddb:start && npm run local:init",
     "local:stop": "npm run ddb:stop",
     "local:exec": "LOCAL_DYNAMO_ENDPOINT='http://localhost:8000' ts-node ./test/debug.ts",
-    "local:debug": "npm run local:start && npm run local:exec"
+    "local:debug": "npm run local:start && npm run local:exec",
+    "format": "prettier -w . --log-level=error"
   },
   "repository": {
     "type": "git",
@@ -58,6 +60,8 @@
     "mocha-lcov-reporter": "^1.3.0",
     "moment": "2.24.0",
     "nyc": "^15.1.0",
+    "prettier": "^3.0.3",
+    "prettier-plugin-astro": "^0.12.0",
     "source-map-support": "^0.5.19",
     "ts-node": "^10.9.1",
     "tsd": "^0.28.1",

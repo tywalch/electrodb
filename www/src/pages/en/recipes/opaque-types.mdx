@@ -19,51 +19,54 @@ layout: ../../../layouts/MainLayout.astro
 If you use Opaque Keys for identifiers or other primitive types, you can use the function `CustomAttributeType` and pass it the primitive base type of your key ('string', 'number', 'boolean'). This can be useful to gain more precise control over which properties can be used as entity identifiers, create unique unit types, etc.
 
 ```typescript
-import { Entity, CustomAttributeType } from 'electrodb';
+import { Entity, CustomAttributeType } from "electrodb";
 
 const UniqueKeySymbol: unique symbol = Symbol();
-type EmployeeID = string & {[UniqueKeySymbol]: any};
+type EmployeeID = string & { [UniqueKeySymbol]: any };
 
 const UniqueAgeSymbol: unique symbol = Symbol();
-type Month = number & {[UniqueAgeSymbol]: any};
+type Month = number & { [UniqueAgeSymbol]: any };
 
-const table = 'workplace_table';
+const table = "workplace_table";
 
-const person = new Entity({
+const person = new Entity(
+  {
     model: {
-        entity: 'personnel',
-        service: 'workplace',
-        version: '1'
+      entity: "personnel",
+      service: "workplace",
+      version: "1",
     },
     attributes: {
-        employeeId: {
-            type: CustomAttributeType<EmployeeID>('string')
-        },
-        firstName: {
-            type: 'string',
-            required: true,
-        },
-        lastName: {
-            type: 'string',
-            required: true,
-        },
-        ageInMonths: {
-            type: CustomAttributeType<Month>('number')
-        }
+      employeeId: {
+        type: CustomAttributeType<EmployeeID>("string"),
+      },
+      firstName: {
+        type: "string",
+        required: true,
+      },
+      lastName: {
+        type: "string",
+        required: true,
+      },
+      ageInMonths: {
+        type: CustomAttributeType<Month>("number"),
+      },
     },
     indexes: {
-        record: {
-            pk: {
-                field: 'pk',
-                composite: ['employeeId']
-            },
-            sk: {
-                field: 'sk',
-                composite: [],
-            }
-        }
-    }
-}, { table });
+      record: {
+        pk: {
+          field: "pk",
+          composite: ["employeeId"],
+        },
+        sk: {
+          field: "sk",
+          composite: [],
+        },
+      },
+    },
+  },
+  { table },
+);
 ```
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=3&ssc=29&pln=37&pc=2#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgYQFcBnGCEAQRhimACNCYBTAFSzCbgF84AzKcnADkTADZMAxjQgATOkIDcAKCUSIqUnACqqYAEdCTANJMsAZSwg6EUQC44hXQc7FL10XAC8cC1ZsAKAEplbA4UcFEILCYmAEkAES84UlpUAHM4ADJEAG0dfUMTczcbAF17AENULC5lVXVNfOcKNKZfd3tHApcSj292gOClUM4AWXUYAAsk1EIrJigs3KbDFrbe8rgqmrqRuAAFBeJ1VDEAJRtObwQlODu4EfsRCKiYxVv70grYeIrmexSwHSynucCYqBkv2YAH4ATQgWllDwAD6ID53R7CNToKAVKTQd6g7E0PEwMwwb4wKFMOGpRHouDE3FSNCQv405Lw4FKWoqbGaCl0cRJIQAd2gAGswKI8UwAPqC8TveoaeAcKDHVAzJiilDoTBYfw3UEgWRiezG0H3cEYbBPdWa06iIQ4Bmg4gLABuwAkHLFkulspdbvunqOwHUTwAjEIGVxXaC-vCGMxiBaQ3cmC9onEZOmrQWHuwOURSOQqMnGKxiwAeZDZmIJAB8-iEgPSQkCGe4CcLWelrwW+cLoMxba5aVjI-j3d4wA1MAAchUQBzLSOMcWnu3J72N3AoEwDPOmHmHlBDHurTORzLSMvV8P92Od8H93dD8fD2eaJfuzfCwqVonw3MdZnmKAp0LACCyAuJUHGdBJjTNF3zgUU-gkSZ7ByIQ4KEUorxHTFSzIShqFoFNqw4GtEKmFshHAugFk7IjCw9GB7CCLwm0QGCNxkJheAqQhRE4uBuM8XiEH4kdWnE-w5XsOjJjwBA4K4C04PsJiFi4QIeNQtD7kPGBCCgLVRj+SYADpeEiaB-DguAAHo4CjAAmIY0K4f82I-S4QOIrcCBIMiK0oqs2Bow4NROc5LgY7ZWP-OMryBQSAA8mBQ9crUPNQoDPPKRzACUgvfOcxDPIQyrfYy7jUcAIGITAOVw-tIhzSDSm7UFZPY8qjIaqrRBq4gJXqhqmsgVr-jgDqG1zAj-OvVL+p5NSHgqIVOH0up+XgCRD3ZWIZCSIJ7HrAccwSQy8tM8ytQAAwAEgQakbNQCBRSCLhnq2Yhwhuxt4iRFQHXUBkbOOph2SNbsXLc4gOAkYAKg8CAwAqZw4GAc6Rm7TrBzO+xYdOmQglW4nuqefYqkICQ0aB-ZgAALzZiopqtOcFwfP19kmYBRGAMBudBO8lxXP0ADEoCwcX7m0uAPIAVlWgRxAqgsxxpt5VvdCkfnZaMAE5TYAdgAWgABg8q2PNNxWC3BNl5qEKNzdNq3PKtgBmGNVt8-qu1BGy0ggIJoamcF-EPYhRPgKThqtJGDyYMyLKLDggYx448fAUlT27ePE5smQ-gqGy4NiBCJmQuNAiAA)

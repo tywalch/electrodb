@@ -1,42 +1,52 @@
 const e = require("./errors");
-const v = require('./validations');
+const v = require("./validations");
 
 class EventManager {
   static createSafeListener(listener) {
     if (listener === undefined) {
       return undefined;
-    } if (!v.isFunction(listener)) {
-      throw new e.ElectroError(e.ErrorCodes.InvalidListenerProvided, `Provided listener is not of type 'function'`);
+    }
+    if (!v.isFunction(listener)) {
+      throw new e.ElectroError(
+        e.ErrorCodes.InvalidListenerProvided,
+        `Provided listener is not of type 'function'`,
+      );
     } else {
       return (...params) => {
         try {
           listener(...params);
-        } catch(err) {
+        } catch (err) {
           console.error(`Error invoking user supplied listener`, err);
         }
-      }
+      };
     }
   }
 
   static normalizeListeners(listeners = []) {
     if (!Array.isArray(listeners)) {
-      throw new e.ElectroError(e.ErrorCodes.InvalidListenerProvided, `Listeners must be provided as an array of functions`);
+      throw new e.ElectroError(
+        e.ErrorCodes.InvalidListenerProvided,
+        `Listeners must be provided as an array of functions`,
+      );
     }
     return listeners
-      .map(listener => EventManager.createSafeListener(listener))
-      .filter(listener => {
+      .map((listener) => EventManager.createSafeListener(listener))
+      .filter((listener) => {
         switch (typeof listener) {
-          case 'function':
+          case "function":
             return true;
-          case 'undefined':
+          case "undefined":
             return false;
           default:
-            throw new e.ElectroError(e.ErrorCodes.InvalidListenerProvided, `Provided listener is not of type 'function`);
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidListenerProvided,
+              `Provided listener is not of type 'function`,
+            );
         }
       });
   }
 
-  constructor({listeners = []} = {}) {
+  constructor({ listeners = [] } = {}) {
     this.listeners = EventManager.normalizeListeners(listeners);
   }
 
@@ -46,14 +56,14 @@ class EventManager {
     }
 
     this.listeners = this.listeners.concat(
-      EventManager.normalizeListeners(listeners)
+      EventManager.normalizeListeners(listeners),
     );
   }
 
   trigger(event, adHocListeners = []) {
     const allListeners = [
       ...this.listeners,
-      ...EventManager.normalizeListeners(adHocListeners)
+      ...EventManager.normalizeListeners(adHocListeners),
     ];
 
     for (const listener of allListeners) {
@@ -63,5 +73,5 @@ class EventManager {
 }
 
 module.exports = {
-  EventManager
+  EventManager,
 };

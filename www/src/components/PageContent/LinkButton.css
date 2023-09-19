@@ -27,7 +27,8 @@
   cursor: pointer;
 }
 
-.link-button:hover, .link-button:focus {
+.link-button:hover,
+.link-button:focus {
   /* cursor */
   cursor: pointer;
   /* no underline */
@@ -38,6 +39,5 @@
   filter: brightness(105%);
 
   /* shadow */
-      box-shadow: 0em 0em 13px 0px var(--theme-button-text);
-;
+  box-shadow: 0em 0em 13px 0px var(--theme-button-text);
 }

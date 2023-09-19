@@ -8,7 +8,7 @@ function parseJSONPath(path = "") {
   }
   path = path.replace(/\[/g, ".");
   path = path.replace(/\]/g, "");
-  return path.split(".").filter(part => part !== '');
+  return path.split(".").filter((part) => part !== "");
 }
 
 function genericizeJSONPath(path = "") {
@@ -34,9 +34,10 @@ function getInstanceType(instance = {}) {
 
 function getModelVersion(model = {}) {
   let nameOnRoot = model && v.isStringHasLength(model.entity);
-  let nameInModelNamespace = model && model.model && v.isStringHasLength(model.model.entity);
+  let nameInModelNamespace =
+    model && model.model && v.isStringHasLength(model.model.entity);
   if (nameInModelNamespace) {
-    return t.ModelVersions.v1
+    return t.ModelVersions.v1;
   } else if (nameOnRoot) {
     return t.ModelVersions.beta;
   } else {
@@ -44,7 +45,10 @@ function getModelVersion(model = {}) {
   }
 }
 
-function applyBetaModelOverrides(model = {}, {service = "", version = "", table = ""} = {}) {
+function applyBetaModelOverrides(
+  model = {},
+  { service = "", version = "", table = "" } = {},
+) {
   let type = getModelVersion(model);
   if (type !== t.ModelVersions.beta) {
     throw new Error("Invalid model");
@@ -76,7 +80,7 @@ function batchItems(arr = [], size) {
 }
 
 function commaSeparatedString(array = [], prefix = '"', postfix = '"') {
-  return array.map(value => `${prefix}${value}${postfix}`).join(", ");
+  return array.map((value) => `${prefix}${value}${postfix}`).join(", ");
 }
 
 function formatStringCasing(str, casing, defaultCase) {
@@ -85,9 +89,8 @@ function formatStringCasing(str, casing, defaultCase) {
   }
   let strCase = defaultCase;
   if (v.isStringHasLength(casing) && typeof t.KeyCasing[casing] === "string") {
-    strCase = t.KeyCasing.default === casing
-        ? defaultCase
-        : t.KeyCasing[casing];
+    strCase =
+      t.KeyCasing.default === casing ? defaultCase : t.KeyCasing[casing];
   }
   switch (strCase) {
     case t.KeyCasing.upper:
@@ -144,7 +147,12 @@ class BatchGetOrderMaintainer {
     if (this.enabled) {
       for (let i = 0; i < parameters.length; i++) {
         const batchParams = parameters[i];
-        const recordKeys = (batchParams && batchParams.RequestItems && batchParams.RequestItems[this.table] && batchParams.RequestItems[this.table].Keys) || [];
+        const recordKeys =
+          (batchParams &&
+            batchParams.RequestItems &&
+            batchParams.RequestItems[this.table] &&
+            batchParams.RequestItems[this.table].Keys) ||
+          [];
         for (const recordKey of recordKeys) {
           const indexMapKey = this.keyFormatter(recordKey);
           this.batchIndexMap.set(indexMapKey, this.currentSlot++);
@@ -155,40 +163,45 @@ class BatchGetOrderMaintainer {
 }
 
 function getUnique(arr1, arr2) {
-  return Array.from(new Set([
-      ...arr1,
-      ...arr2
-  ]));
+  return Array.from(new Set([...arr1, ...arr2]));
 }
 
 const cursorFormatter = {
   serialize: (key) => {
     if (!key) {
       return null;
-    } else if (typeof val !== 'string') {
+    } else if (typeof val !== "string") {
       key = JSON.stringify(key);
     }
-    return Buffer.from(key).toString('base64url');
+    return Buffer.from(key).toString("base64url");
   },
   deserialize: (cursor) => {
     if (!cursor) {
       return undefined;
-    } else if (typeof cursor !== 'string') {
-      throw new Error(`Invalid cursor provided, expected type 'string' recieved: ${JSON.stringify(cursor)}`);
+    } else if (typeof cursor !== "string") {
+      throw new Error(
+        `Invalid cursor provided, expected type 'string' recieved: ${JSON.stringify(
+          cursor,
+        )}`,
+      );
     }
     try {
-      return JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
-    } catch(err) {
-      throw new Error('Unable to parse cursor');
+      return JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
+    } catch (err) {
+      throw new Error("Unable to parse cursor");
     }
-  }
-}
+  },
+};
 
-function removeFixings({prefix = '', postfix = '', value = ''} = {}) {
-  const start = value.toLowerCase().startsWith(prefix.toLowerCase()) ? prefix.length : 0;
-  const end = value.length - (value.toLowerCase().endsWith(postfix.toLowerCase()) ? postfix.length : 0);
+function removeFixings({ prefix = "", postfix = "", value = "" } = {}) {
+  const start = value.toLowerCase().startsWith(prefix.toLowerCase())
+    ? prefix.length
+    : 0;
+  const end =
+    value.length -
+    (value.toLowerCase().endsWith(postfix.toLowerCase()) ? postfix.length : 0);
 
-  let formatted = '';
+  let formatted = "";
   for (let i = start; i < end; i++) {
     formatted += value[i];
   }
@@ -196,16 +209,16 @@ function removeFixings({prefix = '', postfix = '', value = ''} = {}) {
   return formatted;
 }
 
-function addPadding({padding = {}, value = ''} = {}) {
+function addPadding({ padding = {}, value = "" } = {}) {
   return value.padStart(padding.length, padding.char);
 }
 
-function removePadding({padding = {}, value = ''} = {}) {
+function removePadding({ padding = {}, value = "" } = {}) {
   if (!padding.length || value.length >= padding.length) {
     return value;
   }
 
-  let formatted = '';
+  let formatted = "";
   let useRemaining = false;
   for (let i = 0; i < value.length; i++) {
     const char = value[i];
@@ -220,8 +233,8 @@ function removePadding({padding = {}, value = ''} = {}) {
   return formatted;
 }
 
-function shiftSortOrder(str = '', codePoint) {
-  let newString = '';
+function shiftSortOrder(str = "", codePoint) {
+  let newString = "";
   for (let i = 0; i < str.length; i++) {
     const isLast = i === str.length - 1;
     let char = str[i];
@@ -234,7 +247,7 @@ function shiftSortOrder(str = '', codePoint) {
 }
 
 function getFirstDefined(...params) {
-  return params.find(val => val !== undefined);
+  return params.find((val) => val !== undefined);
 }
 
 function regexpEscape(str) {

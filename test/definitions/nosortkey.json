@@ -1,129 +1,129 @@
 {
-  "KeySchema":[
+  "KeySchema": [
     {
-      "AttributeName":"partition_key",
-      "KeyType":"HASH"
+      "AttributeName": "partition_key",
+      "KeyType": "HASH"
     }
   ],
-  "AttributeDefinitions":[
+  "AttributeDefinitions": [
     {
-      "AttributeName":"partition_key",
-      "AttributeType":"S"
+      "AttributeName": "partition_key",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"partition_key_idx1",
-      "AttributeType":"S"
+      "AttributeName": "partition_key_idx1",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"sort_key_idx1",
-      "AttributeType":"S"
+      "AttributeName": "sort_key_idx1",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"partition_key_idx2",
-      "AttributeType":"S"
+      "AttributeName": "partition_key_idx2",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"gsi3pk",
-      "AttributeType":"S"
+      "AttributeName": "gsi3pk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"gsi3sk",
-      "AttributeType":"S"
+      "AttributeName": "gsi3sk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"gsi4pk",
-      "AttributeType":"S"
+      "AttributeName": "gsi4pk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"gsi4sk",
-      "AttributeType":"S"
+      "AttributeName": "gsi4sk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"gsi5pk",
-      "AttributeType":"S"
+      "AttributeName": "gsi5pk",
+      "AttributeType": "S"
     },
     {
-      "AttributeName":"gsi5sk",
-      "AttributeType":"S"
+      "AttributeName": "gsi5sk",
+      "AttributeType": "S"
     }
   ],
-  "GlobalSecondaryIndexes":[
+  "GlobalSecondaryIndexes": [
     {
-      "IndexName":"idx1",
-      "KeySchema":[
+      "IndexName": "idx1",
+      "KeySchema": [
         {
-          "AttributeName":"partition_key_idx1",
-          "KeyType":"HASH"
+          "AttributeName": "partition_key_idx1",
+          "KeyType": "HASH"
         },
         {
-          "AttributeName":"sort_key_idx1",
-          "KeyType":"RANGE"
+          "AttributeName": "sort_key_idx1",
+          "KeyType": "RANGE"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     },
     {
-      "IndexName":"idx2",
-      "KeySchema":[
+      "IndexName": "idx2",
+      "KeySchema": [
         {
-          "AttributeName":"partition_key_idx2",
-          "KeyType":"HASH"
+          "AttributeName": "partition_key_idx2",
+          "KeyType": "HASH"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     },
     {
-      "IndexName":"gsi3pk-gsi3sk-index",
-      "KeySchema":[
+      "IndexName": "gsi3pk-gsi3sk-index",
+      "KeySchema": [
         {
-          "AttributeName":"gsi3pk",
-          "KeyType":"HASH"
+          "AttributeName": "gsi3pk",
+          "KeyType": "HASH"
         },
         {
-          "AttributeName":"gsi3sk",
-          "KeyType":"RANGE"
+          "AttributeName": "gsi3sk",
+          "KeyType": "RANGE"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     },
     {
-      "IndexName":"gsi4pk-gsi4sk-index",
-      "KeySchema":[
+      "IndexName": "gsi4pk-gsi4sk-index",
+      "KeySchema": [
         {
-          "AttributeName":"gsi4pk",
-          "KeyType":"HASH"
+          "AttributeName": "gsi4pk",
+          "KeyType": "HASH"
         },
         {
-          "AttributeName":"gsi4sk",
-          "KeyType":"RANGE"
+          "AttributeName": "gsi4sk",
+          "KeyType": "RANGE"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     },
     {
-      "IndexName":"gsi5pk-gsi5sk-index",
-      "KeySchema":[
+      "IndexName": "gsi5pk-gsi5sk-index",
+      "KeySchema": [
         {
-          "AttributeName":"gsi5pk",
-          "KeyType":"HASH"
+          "AttributeName": "gsi5pk",
+          "KeyType": "HASH"
         },
         {
-          "AttributeName":"gsi5sk",
-          "KeyType":"RANGE"
+          "AttributeName": "gsi5sk",
+          "KeyType": "RANGE"
         }
       ],
-      "Projection":{
-        "ProjectionType":"ALL"
+      "Projection": {
+        "ProjectionType": "ALL"
       }
     }
   ],
-  "BillingMode":"PAY_PER_REQUEST"
+  "BillingMode": "PAY_PER_REQUEST"
 }

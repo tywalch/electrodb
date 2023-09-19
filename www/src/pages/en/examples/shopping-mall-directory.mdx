@@ -17,13 +17,14 @@ layout: ../../../layouts/MainLayout.astro
 Let's look at the needs of application used to manage Shopping Mall properties. The application assists employees in the day-to-day operations of multiple Shopping Malls.
 
 ## Requirements
+
 1. As a Maintenance Worker, I need to know which stores are currently in each Mall down to the Building they are located.
 2. As a Helpdesk Employee, I need to locate related stores in Mall locations by Store Category.
 3. As a Property Manager, I need to identify upcoming leases in need of renewal.
 
 ## Example Setup
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
@@ -33,13 +34,13 @@ import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
 
 ```typescript
 await StoreLocations.create({
-	mallId: "EastPointe",
-	storeId: "LatteLarrys",
-	buildingId: "BuildingA1",
-	unitId: "B47",
-	category: "spite store",
-	leaseEndDate: "2020-02-29",
-	rent: "5000.00",
+  mallId: "EastPointe",
+  storeId: "LatteLarrys",
+  buildingId: "BuildingA1",
+  unitId: "B47",
+  category: "spite store",
+  leaseEndDate: "2020-02-29",
+  rent: "5000.00",
 }).go();
 ```
 
@@ -64,7 +65,7 @@ Returns the following:
 
 ### Change the Stores Lease Date
 
-When updating a record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
+When updating a record, you must include all **Composite Attributes** associated with the table's _primary_ **PK** and **SK**.
 
 ```typescript
 let storeId = "LatteLarrys";
@@ -72,10 +73,9 @@ let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 let unitId = "B47";
 
-await StoreLocations
-    .patch({ storeId, mallId, buildingId, unitId })
-    .set({ leaseEndDate: "2021-02-28" })
-    .go();
+await StoreLocations.patch({ storeId, mallId, buildingId, unitId })
+  .set({ leaseEndDate: "2021-02-28" })
+  .go();
 ```
 
 Returns the following:
@@ -83,14 +83,14 @@ Returns the following:
 ```json
 {
   "data": {
-	  "leaseEndDate": "2021-02-28"
+    "leaseEndDate": "2021-02-28"
   }
 }
 ```
 
 ### Retrieve a specific Store in a Mall
 
-When retrieving a specific record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
+When retrieving a specific record, you must include all **Composite Attributes** associated with the table's _primary_ **PK** and **SK**.
 
 ```typescript
 let storeId = "LatteLarrys";
@@ -98,9 +98,7 @@ let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 let unitId = "B47";
 
-await StoreLocations
-    .get({ storeId, mallId, buildingId, unitId })
-    .go();
+await StoreLocations.get({ storeId, mallId, buildingId, unitId }).go();
 ```
 
 Returns the following:
@@ -122,7 +120,7 @@ Returns the following:
 
 #### Remove a Store location from the Mall
 
-When removing a specific record, you must include all **Composite Attributes** associated with the table's *primary* **PK** and **SK**.
+When removing a specific record, you must include all **Composite Attributes** associated with the table's _primary_ **PK** and **SK**.
 
 ```typescript
 let storeId = "LatteLarrys";
@@ -131,10 +129,9 @@ let buildingId = "BuildingA1";
 let unitId = "B47";
 let storeId = "LatteLarrys";
 
-await StoreLocations
-    .delete({ storeId, mallId, buildingId, unitId })
-    .go();
+await StoreLocations.delete({ storeId, mallId, buildingId, unitId }).go();
 ```
+
 Returns the following:
 
 ```json
@@ -143,16 +140,14 @@ Returns the following:
 
 ## Queries
 
-###  All Stores in a particular mall
+### All Stores in a particular mall
 
 Fulfilling [Requirement #1](#shopping-mall-requirements).
 
 ```typescript
 let mallId = "EastPointe";
 
-let stores = await StoreLocations.query
-    .units({ mallId })
-    .go();
+let stores = await StoreLocations.query.units({ mallId }).go();
 ```
 
 ### All Stores in a particular mall building
@@ -163,9 +158,7 @@ Fulfilling [Requirement #1](#shopping-mall-requirements).
 let mallId = "EastPointe";
 let buildingId = "BuildingA1";
 
-let stores = await StoreLocations.query
-    .units({ mallId, buildingId })
-    .go();
+let stores = await StoreLocations.query.units({ mallId, buildingId }).go();
 ```
 
 ### Find the store located in unit B47
@@ -178,8 +171,8 @@ let buildingId = "BuildingA1";
 let unitId = "B47";
 
 let stores = await StoreLocations.query
-    .units({ mallId, buildingId, unitId })
-    .go();
+  .units({ mallId, buildingId, unitId })
+  .go();
 ```
 
 ### Stores by Category at Mall
@@ -191,10 +184,11 @@ let mallId = "EastPointe";
 let category = "food/coffee";
 
 let stores = await StoreLocations.query
-    .units({ mallId })
-    .where((attr, op) => op.eq(attr.category, category))
-    .go();
+  .units({ mallId })
+  .where((attr, op) => op.eq(attr.category, category))
+  .go();
 ```
+
 ### Stores by upcoming lease
 
 Fulfilling [Requirement #3](#shopping-mall-requirements).
@@ -204,9 +198,9 @@ let storeId = "LatteLarrys";
 let q2StartDate = "2020-04-01";
 
 let stores = await StoreLocations.query
-    .leases({ storeId })
-    .lt({leaseEndDate: q2StartDate})
-    .go();
+  .leases({ storeId })
+  .lt({ leaseEndDate: q2StartDate })
+  .go();
 ```
 
 ### Stores will renewals for Q4
@@ -219,11 +213,9 @@ let q4StartDate = "2020-10-01";
 let q4EndDate = "2020-12-31";
 
 let stores = await StoreLocations.query
-    .leases({ storeId })
-    .between(
-        { leaseEndDate: q4StartDate },
-        { leaseEndDate: q4EndDate })
-    .go();
+  .leases({ storeId })
+  .between({ leaseEndDate: q4StartDate }, { leaseEndDate: q4EndDate })
+  .go();
 ```
 
 ### Spite-stores with release renewals this year
@@ -237,11 +229,10 @@ let yearEndDate = "2020-12-31";
 let storeId = "LatteLarrys";
 
 let stores = await StoreLocations.query
-    .leases({ storeId })    .between (
-      { leaseEndDate: yearStarDate },
-      { leaseEndDate: yearEndDate })
-    .where((attr, op) => op.eq(attr.category, "Spite Store"))
-    .go();
+  .leases({ storeId })
+  .between({ leaseEndDate: yearStarDate }, { leaseEndDate: yearEndDate })
+  .where((attr, op) => op.eq(attr.category, "Spite Store"))
+  .go();
 ```
 
 ### All Latte Larry's in a particular mall building
@@ -253,6 +244,6 @@ let unitId = "B47";
 let storeId = "LatteLarrys";
 
 let stores = await StoreLocations.query
-    .units({ mallId, buildingId, storeId })
-    .go();
+  .units({ mallId, buildingId, storeId })
+  .go();
 ```

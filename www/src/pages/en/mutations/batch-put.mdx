@@ -13,11 +13,11 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
-Provide all *required* Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
+Provide all _required_ Attributes as defined in the model to create records as an _array_ to `.put()`. **ElectroDB** will enforce any defined validations, defaults, casting, and field aliasing. Another convenience ElectroDB provides, is accepting BatchWrite arrays _larger_ than the 25 record limit. This is achieved making multiple, "parallel", requests to DynamoDB for batches of 25 records at a time. A failure with any of these requests will cause the query to throw, so be mindful of your table's configured throughput.
 
 > Performing a Batch Put will return an array of "unprocessed" records. An empty array signifies all records returned were processed. If you want the raw DynamoDB response you can always use the option `{raw: true}`, more detail found here: [Execution Options](#execution-options).
 > Additionally, when performing a BatchWrite the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchWrite queries larger than the docClient's limit of 25 records.
@@ -34,37 +34,39 @@ It is important to consider your Table's throughput considerations when setting 
 
 ```typescript
 const unprocessed = await StoreLocations.put([
-    {
-        cityId: "LosAngeles1",
-        storeId: "LatteLarrys",
-        mallId: "EastPointe",
-        buildingId: "F34",
-        unitId: "a1",
-        category: "food/coffee",
-        leaseEndDate: "2022-03-22",
-        rent: "4500.00"
-    },
-    {
-        cityId: "LosAngeles1",
-        storeId: "MochaJoes",
-        mallId: "EastPointe",
-        buildingId: "F35",
-        unitId: "a2",
-        category: "food/coffee",
-        leaseEndDate: "2021-01-22",
-        rent: "1500.00"
-    }
-]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
+  {
+    cityId: "LosAngeles1",
+    storeId: "LatteLarrys",
+    mallId: "EastPointe",
+    buildingId: "F34",
+    unitId: "a1",
+    category: "food/coffee",
+    leaseEndDate: "2022-03-22",
+    rent: "4500.00",
+  },
+  {
+    cityId: "LosAngeles1",
+    storeId: "MochaJoes",
+    mallId: "EastPointe",
+    buildingId: "F35",
+    unitId: "a2",
+    category: "food/coffee",
+    leaseEndDate: "2021-01-22",
+    rent: "1500.00",
+  },
+]).go({ concurrent: 1 }); // `concurrent` value is optional and default's to `1`
 ```
 
 ## Response Format
+
 ```typescript
 {
-  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
+  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>;
 }
 ```
 
 ## Equivalent Parameters
+
 ```json
 {
   "RequestItems": {
@@ -124,6 +126,6 @@ Elements of the `unprocessed` array are unlike results received from a query. In
 
 ## Execution Options
 
-import PartialExample from '../../../partials/batch-mutation-execution-options.mdx';
+import PartialExample from "../../../partials/batch-mutation-execution-options.mdx";
 
 <PartialExample name="Filters" />

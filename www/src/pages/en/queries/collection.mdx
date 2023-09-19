@@ -23,114 +23,122 @@ const DynamoDB = require("aws-sdk/clients/dynamodb");
 const table = "projectmanagement";
 const client = new DynamoDB.DocumentClient();
 
-const employees = new Entity({
-  model: {
-    entity: "employees",
-    version: "1",
-    service: "taskapp",
+const employees = new Entity(
+  {
+    model: {
+      entity: "employees",
+      version: "1",
+      service: "taskapp",
+    },
+    attributes: {
+      employeeId: {
+        type: "string",
+      },
+      organizationId: {
+        type: "string",
+      },
+      name: {
+        type: "string",
+      },
+      team: {
+        type: ["jupiter", "mercury", "saturn"],
+      },
+    },
+    indexes: {
+      staff: {
+        pk: {
+          field: "pk",
+          composite: ["organizationId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["employeeId"],
+        },
+      },
+      employee: {
+        collection: "assignments",
+        index: "gsi2",
+        pk: {
+          field: "gsi2pk",
+          composite: ["employeeId"],
+        },
+        sk: {
+          field: "gsi2sk",
+          composite: [],
+        },
+      },
+    },
   },
-  attributes: {
-    employeeId: {
-      type: "string"
-    },
-    organizationId: {
-      type: "string"
-    },
-    name: {
-      type: "string"
-    },
-    team: {
-      type: ["jupiter", "mercury", "saturn"]
-    }
-  },
-  indexes: {
-    staff: {
-      pk: {
-        field: "pk",
-        composite: ["organizationId"]
-      },
-      sk: {
-        field: "sk",
-        composite: ["employeeId"]
-      }
-    },
-    employee: {
-      collection: "assignments",
-      index: "gsi2",
-      pk: {
-        field: "gsi2pk",
-        composite: ["employeeId"],
-      },
-      sk: {
-        field: "gsi2sk",
-        composite: [],
-      },
-    }
-  }
-}, { client, table })
+  { client, table },
+);
 
-const tasks = new Entity({
-  model: {
-    entity: "tasks",
-    version: "1",
-    service: "taskapp",
+const tasks = new Entity(
+  {
+    model: {
+      entity: "tasks",
+      version: "1",
+      service: "taskapp",
+    },
+    attributes: {
+      taskId: {
+        type: "string",
+      },
+      employeeId: {
+        type: "string",
+      },
+      projectId: {
+        type: "string",
+      },
+      title: {
+        type: "string",
+      },
+      body: {
+        type: "string",
+      },
+    },
+    indexes: {
+      project: {
+        pk: {
+          field: "pk",
+          composite: ["projectId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["taskId"],
+        },
+      },
+      assigned: {
+        collection: "assignments",
+        index: "gsi2",
+        pk: {
+          field: "gsi2pk",
+          composite: ["employeeId"],
+        },
+        sk: {
+          field: "gsi2sk",
+          composite: [],
+        },
+      },
+    },
   },
-  attributes: {
-    taskId: {
-      type: "string"
-    },
-    employeeId: {
-      type: "string"
-    },
-    projectId: {
-      type: "string"
-    },
-    title: {
-      type: "string"
-    },
-    body: {
-      type: "string"
-    }
-  },
-  indexes: {
-    project: {
-      pk: {
-        field: "pk",
-        composite: ["projectId"]
-      },
-      sk: {
-        field: "sk",
-        composite: ["taskId"]
-      }
-    },
-    assigned: {
-      collection: "assignments",
-      index: "gsi2",
-      pk: {
-        field: "gsi2pk",
-        composite: ["employeeId"],
-      },
-      sk: {
-        field: "gsi2sk",
-        composite: [],
-      },
-    }
-  }
-}, { client, table });
+  { client, table },
+);
 
-const TaskApp = new Service({employees, tasks});
+const TaskApp = new Service({ employees, tasks });
 ```
-Available on your Service are two objects: `entites` and `collections`.  Entities available on `entities` have the same capabilities as they would if created individually. When a Model added to a Service with `join` however, its Collections are automatically added and validated with the other Models joined to that Service. These Collections are available on `collections`.
+
+Available on your Service are two objects: `entites` and `collections`. Entities available on `entities` have the same capabilities as they would if created individually. When a Model added to a Service with `join` however, its Collections are automatically added and validated with the other Models joined to that Service. These Collections are available on `collections`.
 
 ### Example
 
 ```javascript
 const results = await TaskApp.collections
-  .assignments({employeeId: "JExotic"})
+  .assignments({ employeeId: "JExotic" })
   .go();
 ```
 
 ### Equivalent Parameters
+
 ```
 {
   TableName: 'projectmanagement',
@@ -173,6 +181,6 @@ const results - await TaskApp.collections
 
 ## Execution Options
 
-import PartialExample from '../../../partials/query-options.mdx';
+import PartialExample from "../../../partials/query-options.mdx";
 
 <PartialExample />
