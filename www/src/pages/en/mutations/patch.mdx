@@ -13,6 +13,7 @@ layout: ../../../layouts/MainLayout.astro
 ---
 
 import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
+import ExampleEntityOrganization from "../../../partial/example-entity-organization.mdx";
 import TasksModel from "../../../partials/tasks-example.entity.mdx";
 
 <ExampleSetup />
@@ -693,69 +694,8 @@ One edge case arises when requiring all composite attributes for a key are provi
 #### Example
 
 <details>
-    <summary>Example Entity</summary>
-    ```typescript
-    import { Entity } from 'electrodb';
-
-    const table = 'electro';
-
-    const Organization = new Entity({
-    model: {
-    entity: "organization",
-    service: "app",
-    version: "1"
-
-},
-attributes: {
-id: {
-type: "string",
-},
-name: {
-type: "string",
-required: true,
-},
-description: {
-type: "string",
-},
-deleted: {
-type: "boolean",
-required: true,
-default: false,
-},
-createdAt: {
-type: "string",
-readOnly: true,
-required: true,
-set: () => new Date().toISOString(),
-default: () => new Date().toISOString(),
-},
-},
-indexes: {
-record: {
-pk: {
-field: "pk",
-composite: ["id"]
-},
-sk: {
-field: "sk",
-composite: []
-}
-},
-all: {
-index: "gsi1pk-gsi1sk-index",
-pk: {
-field: "gsi1pk",
-composite: []
-},
-sk: {
-field: "gsi1sk",
-composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
-}
-},
-},
-}, { table });
-```
-
+  <summary>Example Entity</summary>
+  <ExampleEntityOrganization />
 </details>
 
 ```javascript

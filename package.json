@@ -9,7 +9,6 @@
     "test": "./test.sh",
     "test:ci": "npm install && npm test",
     "test:run": "npm run test:format && npm run test:types && npm run test:init && npm run test:unit",
-    
     "test:init": "node ./test/init.js",
     "test:unit": "mocha -r ts-node/register ./test/**.spec.*",
     "test:types": "tsd",
@@ -62,6 +61,7 @@
     "moment": "2.24.0",
     "nyc": "^15.1.0",
     "prettier": "^3.0.3",
+    "prettier-plugin-astro": "^0.12.0",
     "source-map-support": "^0.5.19",
     "ts-node": "^10.9.1",
     "tsd": "^0.28.1",
