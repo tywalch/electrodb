@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
@@ -21,18 +21,16 @@ The `upsert` method is another ElectroDB exclusive method. Upsert is similar to 
 > _Note: `upsert` will apply a dynamodb `set` operation on all attributes provided. If an attribute is configured as `readOnly`, ElectroDB will apply a `if_not_exists` condition to prevent overwriting the existing value. The exception case is if the attribute is a composite of an index, in which case it will NOT be wrapped with `if_not_exists()`_
 
 ```typescript
-await StoreLocations
-  .upsert({
-      cityId: "Atlanta1",
-      storeId: "LatteLarrys",
-      mallId: "EastPointe",
-      buildingId: "BuildingA1",
-      unitId: "B47",
-      category: "food/coffee",
-      leaseEndDate: "2020-03-22",
-      rent: "4500.00"
-  })
-  .go()
+await StoreLocations.upsert({
+  cityId: "Atlanta1",
+  storeId: "LatteLarrys",
+  mallId: "EastPointe",
+  buildingId: "BuildingA1",
+  unitId: "B47",
+  category: "food/coffee",
+  leaseEndDate: "2020-03-22",
+  rent: "4500.00",
+}).go();
 ```
 
 ## Default Response Format
@@ -41,53 +39,54 @@ await StoreLocations
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
 ## Equivalent Parameters
+
 ```json
 {
-    "TableName": "StoreDirectory",
-    "UpdateExpression": "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #unitId = :unitId_u0, #category = :category_u0, #leaseEndDate = :leaseEndDate_u0, #rent = :rent_u0, #discount = :discount_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0",
-    "ExpressionAttributeNames": {
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__",
-        "#cityId": "cityId",
-        "#mallId": "mallId",
-        "#storeId": "storeId",
-        "#buildingId": "buildingId",
-        "#unitId": "unitId",
-        "#category": "category",
-        "#leaseEndDate": "leaseEndDate",
-        "#rent": "rent",
-        "#discount": "discount",
-        "#gsi1pk": "gsi1pk",
-        "#gsi1sk": "gsi1sk",
-        "#gsi2pk": "gsi2pk",
-        "#gsi2sk": "gsi2sk"
-    },
-    "ExpressionAttributeValues": {
-        ":__edb_e___u0": "MallStore",
-        ":__edb_v___u0": "1",
-        ":cityId_u0": "Atlanta1",
-        ":mallId_u0": "EastPointe",
-        ":storeId_u0": "LatteLarrys",
-        ":buildingId_u0": "BuildingA1",
-        ":unitId_u0": "B47",
-        ":category_u0": "food/coffee",
-        ":leaseEndDate_u0": "2020-03-22",
-        ":rent_u0": "4500.00",
-        ":discount_u0": "0.00",
-        ":gsi1pk_u0": "$mallstoredirectory#mallid_eastpointe",
-        ":gsi1sk_u0": "$mallstore_1#buildingid_buildinga1#unitid_b47",
-        ":gsi2pk_u0": "$mallstoredirectory#storeid_lattelarrys",
-        ":gsi2sk_u0": "$mallstore_1#leaseenddate_2020-03-22"
-    },
-    "Key": {
-        "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-        "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys"
-    }
+  "TableName": "StoreDirectory",
+  "UpdateExpression": "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #unitId = :unitId_u0, #category = :category_u0, #leaseEndDate = :leaseEndDate_u0, #rent = :rent_u0, #discount = :discount_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0",
+  "ExpressionAttributeNames": {
+    "#__edb_e__": "__edb_e__",
+    "#__edb_v__": "__edb_v__",
+    "#cityId": "cityId",
+    "#mallId": "mallId",
+    "#storeId": "storeId",
+    "#buildingId": "buildingId",
+    "#unitId": "unitId",
+    "#category": "category",
+    "#leaseEndDate": "leaseEndDate",
+    "#rent": "rent",
+    "#discount": "discount",
+    "#gsi1pk": "gsi1pk",
+    "#gsi1sk": "gsi1sk",
+    "#gsi2pk": "gsi2pk",
+    "#gsi2sk": "gsi2sk"
+  },
+  "ExpressionAttributeValues": {
+    ":__edb_e___u0": "MallStore",
+    ":__edb_v___u0": "1",
+    ":cityId_u0": "Atlanta1",
+    ":mallId_u0": "EastPointe",
+    ":storeId_u0": "LatteLarrys",
+    ":buildingId_u0": "BuildingA1",
+    ":unitId_u0": "B47",
+    ":category_u0": "food/coffee",
+    ":leaseEndDate_u0": "2020-03-22",
+    ":rent_u0": "4500.00",
+    ":discount_u0": "0.00",
+    ":gsi1pk_u0": "$mallstoredirectory#mallid_eastpointe",
+    ":gsi1sk_u0": "$mallstore_1#buildingid_buildinga1#unitid_b47",
+    ":gsi2pk_u0": "$mallstoredirectory#storeid_lattelarrys",
+    ":gsi2sk_u0": "$mallstore_1#leaseenddate_2020-03-22"
+  },
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys"
+  }
 }
 ```
 
@@ -98,97 +97,98 @@ With `upsert`, you can also perform `add`, `subtract`, `ifNotExists`, `set`, and
 > _Note: The typing for `upsert` will track provided values across multiple chain methods and only allow `.go()` and `.params()` to be called if all required values have been provided to at least one operation_
 
 ### Example
+
 ```typescript
-await StoreLocations
-    .upsert({
-        cityId: "Atlanta1",
-        storeId: "LatteLarrys",
-        mallId: "EastPointe",
-        buildingId: "BuildingA1",
-        unitId: "B47",
-        category: "food/coffee",
-        leaseEndDate: "2020-03-22",
-        rent: "4500.00"
-    })
-    .add({ deposit: 100, tenants: ['Larry David'] })
-    .ifNotExists({ warnings: 0 })
-    .subtract({ petFee: 250 })
-    .append({
-        rentalAgreement: [{
-            type: 'amendment',
-            detail: 'Larry David accepts coffee liability'
-        }]
-    })
-    .go()
+await StoreLocations.upsert({
+  cityId: "Atlanta1",
+  storeId: "LatteLarrys",
+  mallId: "EastPointe",
+  buildingId: "BuildingA1",
+  unitId: "B47",
+  category: "food/coffee",
+  leaseEndDate: "2020-03-22",
+  rent: "4500.00",
+})
+  .add({ deposit: 100, tenants: ["Larry David"] })
+  .ifNotExists({ warnings: 0 })
+  .subtract({ petFee: 250 })
+  .append({
+    rentalAgreement: [
+      {
+        type: "amendment",
+        detail: "Larry David accepts coffee liability",
+      },
+    ],
+  })
+  .go();
 ```
 
 ### Equivalent Parameters
+
 ```json
 {
-    "TableName": "electro",
-    "UpdateExpression": "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #unitId = :unitId_u0, #category = :category_u0, #leaseEndDate = :leaseEndDate_u0, #rent = :rent_u0, #discount = :discount_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #warnings = if_not_exists(#warnings, :warnings_u0), #petFee = (if_not_exists(#petFee, :petFee_default_value_u0) - :petFee_u0), #rentalAgreement = list_append(if_not_exists(#rentalAgreement, :rentalAgreement_default_value_u0), :rentalAgreement_u0) ADD #deposit :deposit_u0, #tenants :tenants_u0",
-    "ExpressionAttributeNames": {
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__",
-        "#cityId": "cityId",
-        "#mallId": "mallId",
-        "#storeId": "storeId",
-        "#buildingId": "buildingId",
-        "#unitId": "unitId",
-        "#category": "category",
-        "#leaseEndDate": "leaseEndDate",
-        "#rent": "rent",
-        "#discount": "discount",
-        "#gsi1pk": "gsi1pk",
-        "#gsi1sk": "gsi1sk",
-        "#gsi2pk": "gsi2pk",
-        "#gsi2sk": "gsi2sk",
-        "#deposit": "deposit",
-        "#tenants": "tenants",
-        "#warnings": "warnings",
-        "#petFee": "petFee",
-        "#rentalAgreement": "rentalAgreement"
-    },
-    "ExpressionAttributeValues": {
-        ":__edb_e___u0": "MallStore",
-        ":__edb_v___u0": "1",
-        ":cityId_u0": "Atlanta",
-        ":mallId_u0": "EastPointe",
-        ":storeId_u0": "LatteLarrys",
-        ":buildingId_u0": "BuildingA1",
-        ":unitId_u0": "B47",
-        ":category_u0": "food/coffee",
-        ":leaseEndDate_u0": "2020-03-22",
-        ":rent_u0": "4500.00",
-        ":discount_u0": "0.00",
-        ":gsi1pk_u0": "$mallstoredirectory#mallid_eastpointe",
-        ":gsi1sk_u0": "$mallstore_1#buildingid_buildinga1#unitid_b47",
-        ":gsi2pk_u0": "$mallstoredirectory#storeid_lattelarrys",
-        ":gsi2sk_u0": "$mallstore_1#leaseenddate_2020-03-22",
-        ":deposit_u0": 100,
-        ":tenants_u0": [
-            "Larry David"
-        ],
-        ":warnings_u0": 0,
-        ":petFee_u0": 250,
-        ":petFee_default_value_u0": 0,
-        ":rentalAgreement_u0": [
-            {
-                "type": "amendment",
-                "detail": "Larry David accepts coffee liability"
-            }
-        ],
-        ":rentalAgreement_default_value_u0": []
-    },
-    "Key": {
-        "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
-        "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys"
-    }
+  "TableName": "electro",
+  "UpdateExpression": "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #cityId = :cityId_u0, #mallId = :mallId_u0, #storeId = :storeId_u0, #buildingId = :buildingId_u0, #unitId = :unitId_u0, #category = :category_u0, #leaseEndDate = :leaseEndDate_u0, #rent = :rent_u0, #discount = :discount_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #warnings = if_not_exists(#warnings, :warnings_u0), #petFee = (if_not_exists(#petFee, :petFee_default_value_u0) - :petFee_u0), #rentalAgreement = list_append(if_not_exists(#rentalAgreement, :rentalAgreement_default_value_u0), :rentalAgreement_u0) ADD #deposit :deposit_u0, #tenants :tenants_u0",
+  "ExpressionAttributeNames": {
+    "#__edb_e__": "__edb_e__",
+    "#__edb_v__": "__edb_v__",
+    "#cityId": "cityId",
+    "#mallId": "mallId",
+    "#storeId": "storeId",
+    "#buildingId": "buildingId",
+    "#unitId": "unitId",
+    "#category": "category",
+    "#leaseEndDate": "leaseEndDate",
+    "#rent": "rent",
+    "#discount": "discount",
+    "#gsi1pk": "gsi1pk",
+    "#gsi1sk": "gsi1sk",
+    "#gsi2pk": "gsi2pk",
+    "#gsi2sk": "gsi2sk",
+    "#deposit": "deposit",
+    "#tenants": "tenants",
+    "#warnings": "warnings",
+    "#petFee": "petFee",
+    "#rentalAgreement": "rentalAgreement"
+  },
+  "ExpressionAttributeValues": {
+    ":__edb_e___u0": "MallStore",
+    ":__edb_v___u0": "1",
+    ":cityId_u0": "Atlanta",
+    ":mallId_u0": "EastPointe",
+    ":storeId_u0": "LatteLarrys",
+    ":buildingId_u0": "BuildingA1",
+    ":unitId_u0": "B47",
+    ":category_u0": "food/coffee",
+    ":leaseEndDate_u0": "2020-03-22",
+    ":rent_u0": "4500.00",
+    ":discount_u0": "0.00",
+    ":gsi1pk_u0": "$mallstoredirectory#mallid_eastpointe",
+    ":gsi1sk_u0": "$mallstore_1#buildingid_buildinga1#unitid_b47",
+    ":gsi2pk_u0": "$mallstoredirectory#storeid_lattelarrys",
+    ":gsi2sk_u0": "$mallstore_1#leaseenddate_2020-03-22",
+    ":deposit_u0": 100,
+    ":tenants_u0": ["Larry David"],
+    ":warnings_u0": 0,
+    ":petFee_u0": 250,
+    ":petFee_default_value_u0": 0,
+    ":rentalAgreement_u0": [
+      {
+        "type": "amendment",
+        "detail": "Larry David accepts coffee liability"
+      }
+    ],
+    ":rentalAgreement_default_value_u0": []
+  },
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_atlanta#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_buildinga1#storeid_lattelarrys"
+  }
 }
 ```
 
 ## Execution Options
 
-import PartialExample from '../../../partials/mutation-query-options.mdx';
+import PartialExample from "../../../partials/mutation-query-options.mdx";
 
 <PartialExample name="Filters" />

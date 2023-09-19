@@ -18,19 +18,23 @@ The `scan` method will be scoped to your Entity. This means your results will on
 
 > Fun Fact! Scanning DynamoDB is one of the least effective mechanisms for retrieving items from DynamoDB.
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
 ```typescript
 await StoreLocations.scan
-    .where(({category}, {eq}) => `
+  .where(
+    ({ category }, { eq }) => `
         ${eq(category, "food/coffee")} OR ${eq(category, "spite store")}
-    `)
-    .where(({leaseEndDate}, {between}) => `
+    `,
+  )
+  .where(
+    ({ leaseEndDate }, { between }) => `
         ${between(leaseEndDate, "2020-03", "2020-04")}
-    `)
-    .go()
+    `,
+  )
+  .go();
 ```
 
 ## Response Format
@@ -71,6 +75,6 @@ await StoreLocations.scan
 
 ## Execution Options
 
-import PartialExample from '../../../partials/query-options.mdx';
+import PartialExample from "../../../partials/query-options.mdx";
 
 <PartialExample />

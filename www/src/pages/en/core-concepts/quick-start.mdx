@@ -20,7 +20,10 @@ If you're looking to get started right away with ElectroDB, checkout code exampl
 
 <p>
   <a href="https://electrodb.fun">
-    <img src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true" width="400"/>
+    <img
+      src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true"
+      width="400"
+    />
   </a>
 </p>
 
@@ -60,7 +63,7 @@ const { Entity, Service } = require("electrodb");
 
 ## Basic Example
 
-ElectroDB focuses on simplifying the process of modeling, enforcing data constraints, querying across entities, and formatting complex DocumentClient parameters. 
+ElectroDB focuses on simplifying the process of modeling, enforcing data constraints, querying across entities, and formatting complex DocumentClient parameters.
 
 In this section you will model a simple entity: a Book inside a used book store.
 
@@ -90,63 +93,62 @@ With Single-Table Design, generic key and indexes names are preferred. The follo
 {
   // highlight-next-line
   "TableName": "electro",
-  "KeySchema":[
-      {
-        // highlight-next-line
-          "AttributeName":"pk",
-          "KeyType":"HASH"
-      },
-      {
-        // highlight-next-line
-          "AttributeName":"sk",
-          "KeyType":"RANGE"
-      }
+  "KeySchema": [
+    {
+      // highlight-next-line
+      "AttributeName": "pk",
+      "KeyType": "HASH"
+    },
+    {
+      // highlight-next-line
+      "AttributeName": "sk",
+      "KeyType": "RANGE"
+    }
   ],
-  "AttributeDefinitions":[
-      {
-        // highlight-next-line
-          "AttributeName":"pk",
-          "AttributeType":"S"
-      },
-      {
-        // highlight-next-line
-          "AttributeName":"sk",
-          "AttributeType":"S"
-      },
-      {
-        // highlight-next-line
-          "AttributeName":"gsi1pk",
-          "AttributeType":"S"
-      },
-      {
-        // highlight-next-line
-          "AttributeName":"gsi1sk",
-          "AttributeType":"S"
-      }
+  "AttributeDefinitions": [
+    {
+      // highlight-next-line
+      "AttributeName": "pk",
+      "AttributeType": "S"
+    },
+    {
+      // highlight-next-line
+      "AttributeName": "sk",
+      "AttributeType": "S"
+    },
+    {
+      // highlight-next-line
+      "AttributeName": "gsi1pk",
+      "AttributeType": "S"
+    },
+    {
+      // highlight-next-line
+      "AttributeName": "gsi1sk",
+      "AttributeType": "S"
+    }
   ],
-  "GlobalSecondaryIndexes":[
-
-      {
-        // highlight-next-line
-          "IndexName": "gsi1pk-gsi1sk-index",
-          "KeySchema":[
-              {
-                // highlight-next-line
-                  "AttributeName":"gsi1pk",
-                  "KeyType":"HASH"
-              },
-              {
-                // highlight-next-line
-                  "AttributeName":"gsi1sk",
-                  "KeyType":"RANGE"
-              }
-          ],
-          "Projection":{
-              "ProjectionType":"ALL"
-          }
+  "GlobalSecondaryIndexes": [
+    {
+      // highlight-next-line
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "KeySchema": [
+        {
+          // highlight-next-line
+          "AttributeName": "gsi1pk",
+          "KeyType": "HASH"
+        },
+        {
+          // highlight-next-line
+          "AttributeName": "gsi1sk",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
       }
+    }
   ],
-  "BillingMode":"PAY_PER_REQUEST"
+  "BillingMode": "PAY_PER_REQUEST"
 }
 ```
 
@@ -156,112 +158,118 @@ After creating the table defined above, we can begin modeling our Entity. Note a
 
 ```typescript
 import DynamoDB from "aws-sdk/clients/dynamodb";
-import { Entity } from 'electrodb';
+import { Entity } from "electrodb";
 
 const client = new DynamoDB.DocumentClient();
 
 // highlight-next-line
-const table = 'electro';
+const table = "electro";
 
-const Book = new Entity({
-  model: {
-    entity: 'book',
-    version: '1',
-    service: 'store'
-  },
-  attributes: {
-    storeId: {
-      type: 'string',
+const Book = new Entity(
+  {
+    model: {
+      entity: "book",
+      version: "1",
+      service: "store",
     },
-    bookId: {
-      type: 'string',
-    },
-    price: {
-      type: 'number',
-      required: true,
-    },
-    title: {
-      type: 'string',
-    },
-    author: {
-      type: 'string',
-    },
-    condition: {
-      type: ['EXCELLENT', 'GOOD', 'FAIR', 'POOR'] as const,
-      required: true,
-    },
-    genre: {
-      type: 'set',
-      items: 'string',
-    },
-    published: {
-      type: 'string',
-    }
-  },
-  indexes: {
-    byLocation: {
-      pk: {
-        // highlight-next-line
-        field: 'pk',
-        composite: ['storeId']
+    attributes: {
+      storeId: {
+        type: "string",
       },
-      sk: {
-        // highlight-next-line
-        field: 'sk',
-        composite: ['bookId']
-      }
-    },
-    byAuthor: {
-      // highlight-next-line
-      index: 'gsi1pk-gsi1sk-index',
-      pk: {
-        // highlight-next-line
-        field: 'gsi1pk',
-        composite: ['author']
+      bookId: {
+        type: "string",
       },
-      sk: {
+      price: {
+        type: "number",
+        required: true,
+      },
+      title: {
+        type: "string",
+      },
+      author: {
+        type: "string",
+      },
+      condition: {
+        type: ["EXCELLENT", "GOOD", "FAIR", "POOR"] as const,
+        required: true,
+      },
+      genre: {
+        type: "set",
+        items: "string",
+      },
+      published: {
+        type: "string",
+      },
+    },
+    indexes: {
+      byLocation: {
+        pk: {
+          // highlight-next-line
+          field: "pk",
+          composite: ["storeId"],
+        },
+        sk: {
+          // highlight-next-line
+          field: "sk",
+          composite: ["bookId"],
+        },
+      },
+      byAuthor: {
         // highlight-next-line
-        field: 'gsi1sk',
-        composite: ['title']
-      }
-    }
-  }
-  // add your DocumentClient and TableName as a second parameter
-}, {client, table});
+        index: "gsi1pk-gsi1sk-index",
+        pk: {
+          // highlight-next-line
+          field: "gsi1pk",
+          composite: ["author"],
+        },
+        sk: {
+          // highlight-next-line
+          field: "gsi1sk",
+          composite: ["title"],
+        },
+      },
+    },
+    // add your DocumentClient and TableName as a second parameter
+  },
+  { client, table },
+);
 ```
 
 ### Create Book
 
 ```typescript
 await Book.create({
-  bookId: 'beedabe8-e34e-4d41-9272-0755be9a2a9f',
-  storeId: 'pdx-45',
-  author: 'Stephen King',
-  title: 'IT',
-  condition: 'GOOD',
+  bookId: "beedabe8-e34e-4d41-9272-0755be9a2a9f",
+  storeId: "pdx-45",
+  author: "Stephen King",
+  title: "IT",
+  condition: "GOOD",
   price: 15,
-  genre: ['HORROR', 'THRILLER'],
-  published: '1986-09-15',
+  genre: ["HORROR", "THRILLER"],
+  published: "1986-09-15",
 }).go();
 ```
 
 ### Update Book
+
 ```typescript
 await Book.patch({
-  bookId: 'beedabe8-e34e-4d41-9272-0755be9a2a9f',
-  storeId: 'pdx-45',
-}).set({
-  price: 10,
-  condition: 'FAIR'
-}).go();
+  bookId: "beedabe8-e34e-4d41-9272-0755be9a2a9f",
+  storeId: "pdx-45",
+})
+  .set({
+    price: 10,
+    condition: "FAIR",
+  })
+  .go();
 ```
 
 ### Get Book
 
 ```typescript
 const book = await Book.get({
-  bookId: 'beedabe8-e34e-4d41-9272-0755be9a2a9f',
-  storeId: 'pdx-45',
+  bookId: "beedabe8-e34e-4d41-9272-0755be9a2a9f",
+  storeId: "pdx-45",
 }).go();
 ```
 
@@ -269,7 +277,7 @@ const book = await Book.get({
 
 ```typescript
 const { data, cursor } = await Book.query
-  .byAuthor({ author: 'Stephen King' })
+  .byAuthor({ author: "Stephen King" })
   .go();
 ```
 
@@ -277,7 +285,7 @@ const { data, cursor } = await Book.query
 
 ```typescript
 const { data, cursor } = await Book.query
-  .byLocation({ storeId: 'pdx-45' })
+  .byLocation({ storeId: "pdx-45" })
   .where(({ price }, { lte }) => lte(price, 10))
   .go();
 ```

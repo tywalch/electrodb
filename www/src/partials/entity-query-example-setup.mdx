@@ -6,71 +6,72 @@
 ```json
 {
   "TableName": "electro",
-  "KeySchema":[
-      {
-          "AttributeName":"pk",
-          "KeyType":"HASH"
-      },
-      {
-          "AttributeName":"sk",
-          "KeyType":"RANGE"
-      }
+  "KeySchema": [
+    {
+      "AttributeName": "pk",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "sk",
+      "KeyType": "RANGE"
+    }
   ],
-  "AttributeDefinitions":[
-      {
-          "AttributeName":"pk",
-          "AttributeType":"S"
-      },
-      {
-          "AttributeName":"sk",
-          "AttributeType":"S"
-      },
-      {
-          "AttributeName":"gsi1pk",
-          "AttributeType":"S"
-      },
-      {
-          "AttributeName":"gsi1sk",
-          "AttributeType":"S"
-      }
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "pk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "sk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "gsi1pk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "gsi1sk",
+      "AttributeType": "S"
+    }
   ],
-  "GlobalSecondaryIndexes":[
-      {
-          "IndexName":"gsi1pk-gsi1sk-index",
-          "KeySchema":[
-              {
-                  "AttributeName":"gsi1pk",
-                  "KeyType":"HASH"
-              },
-              {
-                  "AttributeName":"gsi1sk",
-                  "KeyType":"RANGE"
-              }
-          ],
-          "Projection":{
-              "ProjectionType":"ALL"
-          }
-      },
-      {
-          "IndexName":"gsi2pk-gsi2sk-index",
-          "KeySchema":[
-              {
-                  "AttributeName":"gsi2pk",
-                  "KeyType":"HASH"
-              },
-              {
-                  "AttributeName":"gsi2sk",
-                  "KeyType":"RANGE"
-              }
-          ],
-          "Projection":{
-              "ProjectionType":"ALL"
-          }
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "KeySchema": [
+        {
+          "AttributeName": "gsi1pk",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "gsi1sk",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
       }
+    },
+    {
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "KeySchema": [
+        {
+          "AttributeName": "gsi2pk",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "gsi2sk",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
   ],
-  "BillingMode":"PAY_PER_REQUEST"
+  "BillingMode": "PAY_PER_REQUEST"
 }
 ```
+
 </details>
 
 <details>
@@ -78,141 +79,144 @@
 
 ```typescript
 import DynamoDB from "aws-sdk/clients/dynamodb";
-import { Entity } from 'electrodb';
+import { Entity } from "electrodb";
 
 const client = new DynamoDB.DocumentClient();
 
-const table = 'electro';
+const table = "electro";
 
-const StoreLocations = new Entity({
+const StoreLocations = new Entity(
+  {
     model: {
       service: "MallStoreDirectory",
       entity: "MallStore",
       version: "1",
     },
     attributes: {
-        cityId: {
-            type: "string",
-            required: true,
+      cityId: {
+        type: "string",
+        required: true,
+      },
+      mallId: {
+        type: "string",
+        required: true,
+      },
+      storeId: {
+        type: "string",
+        required: true,
+      },
+      buildingId: {
+        type: "string",
+        required: true,
+      },
+      unitId: {
+        type: "string",
+        required: true,
+      },
+      category: {
+        type: [
+          "spite store",
+          "food/coffee",
+          "food/meal",
+          "clothing",
+          "electronics",
+          "department",
+          "misc",
+        ],
+        required: true,
+      },
+      leaseEndDate: {
+        type: "string",
+        required: true,
+      },
+      rent: {
+        type: "string",
+        required: true,
+        validate: /^(\d+\.\d{2})$/,
+      },
+      discount: {
+        type: "string",
+        required: false,
+        default: "0.00",
+        validate: /^(\d+\.\d{2})$/,
+      },
+      tenants: {
+        type: "set",
+        items: "string",
+      },
+      warnings: {
+        type: "number",
+        default: 0,
+      },
+      deposit: {
+        type: "number",
+      },
+      contact: {
+        type: "set",
+        items: "string",
+      },
+      rentalAgreement: {
+        type: "list",
+        items: {
+          type: "map",
+          properties: {
+            type: {
+              type: "string",
+            },
+            detail: {
+              type: "string",
+            },
+          },
         },
-        mallId: {
-            type: "string",
-            required: true,
-        },
-        storeId: {
-            type: "string",
-            required: true,
-        },
-        buildingId: {
-            type: "string",
-            required: true,
-        },
-        unitId: {
-            type: "string",
-            required: true,
-        },
-        category: {
-            type: [
-                "spite store",
-                "food/coffee",
-                "food/meal",
-                "clothing",
-                "electronics",
-                "department",
-                "misc"
-            ],
-            required: true
-        },
-        leaseEndDate: {
-            type: "string",
-            required: true
-        },
-        rent: {
-            type: "string",
-            required: true,
-            validate: /^(\d+\.\d{2})$/
-        },
-        discount: {
-            type: "string",
-            required: false,
-            default: "0.00",
-            validate: /^(\d+\.\d{2})$/
-        },
-        tenants: {
-            type: "set",
-            items: "string",
-        },
-        warnings: {
-            type: "number",
-            default: 0,
-        },
-        deposit: {
-            type: "number",
-        },
-        contact: {
-            type: "set",
-            items: "string",
-        },
-        rentalAgreement: {
-            type: "list",
-            items: {
-                type: "map",
-                properties: {
-                    type: {
-                        type: "string"
-                    },
-                    detail: {
-                        type: "string",
-                    }
-                }
-            }
-        },
-        petFee: {
-            type: "number"
-        },
-        fees: {
-            type: "number"
-        },
-        tags: {
-            type: "set",
-            items: "string",
-        }
+      },
+      petFee: {
+        type: "number",
+      },
+      fees: {
+        type: "number",
+      },
+      tags: {
+        type: "set",
+        items: "string",
+      },
     },
     indexes: {
-        stores: {
-            pk: {
-                field: "pk",
-                composite: ["cityId", "mallId"]
-            },
-            sk: {
-                field: "sk",
-                composite: ["buildingId", "storeId"]
-            }
+      stores: {
+        pk: {
+          field: "pk",
+          composite: ["cityId", "mallId"],
         },
-        units: {
-            index: "gsi1pk-gsi1sk-index",
-            pk: {
-                field: "gsi1pk",
-                composite: ["mallId"]
-            },
-            sk: {
-                field: "gsi1sk",
-                composite: ["buildingId", "unitId"]
-            }
+        sk: {
+          field: "sk",
+          composite: ["buildingId", "storeId"],
         },
-        leases: {
-            index: "gsi2pk-gsi2sk-index",
-            pk: {
-                field: "gsi2pk",
-                composite: ["storeId"]
-            },
-            sk: {
-                field: "gsi2sk",
-                composite: ["leaseEndDate"]
-            }
-        }
-    }
-}, {table, client});
+      },
+      units: {
+        index: "gsi1pk-gsi1sk-index",
+        pk: {
+          field: "gsi1pk",
+          composite: ["mallId"],
+        },
+        sk: {
+          field: "gsi1sk",
+          composite: ["buildingId", "unitId"],
+        },
+      },
+      leases: {
+        index: "gsi2pk-gsi2sk-index",
+        pk: {
+          field: "gsi2pk",
+          composite: ["storeId"],
+        },
+        sk: {
+          field: "gsi2sk",
+          composite: ["leaseEndDate"],
+        },
+      },
+    },
+  },
+  { table, client },
+);
 ```
 
 </details>

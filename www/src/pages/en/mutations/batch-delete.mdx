@@ -14,7 +14,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
@@ -35,29 +35,31 @@ It is important to consider your Table's throughput considerations when setting 
 
 ```typescript
 let unprocessed = await StoreLocations.delete([
-    {
-        storeId: "LatteLarrys",
-        mallId: "EastPointe",
-        buildingId: "F34",
-        cityId: "LosAngeles1"
-    },
-    {
-        storeId: "MochaJoes",
-        mallId: "EastPointe",
-        buildingId: "F35",
-        cityId: "LosAngeles1"
-    }
-]).go({concurrent: 1}); // `concurrent` value is optional and default's to `1`
+  {
+    storeId: "LatteLarrys",
+    mallId: "EastPointe",
+    buildingId: "F34",
+    cityId: "LosAngeles1",
+  },
+  {
+    storeId: "MochaJoes",
+    mallId: "EastPointe",
+    buildingId: "F35",
+    cityId: "LosAngeles1",
+  },
+]).go({ concurrent: 1 }); // `concurrent` value is optional and default's to `1`
 ```
 
 ## Response Format
+
 ```typescript
 {
-  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
+  unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>;
 }
 ```
 
 ## Equivalent Parameters
+
 ```json
 {
   "RequestItems": {
@@ -87,6 +89,6 @@ Elements of the `unprocessed` array are unlike results received from a query. In
 
 ## Execution Options
 
-import PartialExample from '../../../partials/batch-mutation-execution-options.mdx';
+import PartialExample from "../../../partials/batch-mutation-execution-options.mdx";
 
 <PartialExample name="Filters" />

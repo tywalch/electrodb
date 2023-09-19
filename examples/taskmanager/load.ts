@@ -1,13 +1,13 @@
 /* istanbul ignore file */
-import data from './data.json'
-import { initializeTable, table } from '../common';
+import data from "./data.json";
+import { initializeTable, table } from "../common";
 import {
-    OfficeItem,
-    EmployeeItem,
-    TaskItem,
-    Task,
-    Employee,
-    Office,
+  OfficeItem,
+  EmployeeItem,
+  TaskItem,
+  Task,
+  Employee,
+  Office,
 } from "./models";
 
 /**
@@ -21,21 +21,21 @@ import {
  **/
 
 type LoadTableOptions = {
-    tasks: TaskItem[];
-    offices: OfficeItem[];
-    employees: EmployeeItem[];
+  tasks: TaskItem[];
+  offices: OfficeItem[];
+  employees: EmployeeItem[];
 };
 
 async function loadTable(options: LoadTableOptions) {
-    const { tasks, offices, employees } = options;
-    await Task.put(tasks).go({ concurrency: 3 });
-    await Office.put(offices).go({ concurrency: 3 });
-    await Employee.put(employees).go({ concurrency: 3 });
+  const { tasks, offices, employees } = options;
+  await Task.put(tasks).go({ concurrency: 3 });
+  await Office.put(offices).go({ concurrency: 3 });
+  await Employee.put(employees).go({ concurrency: 3 });
 }
 
 async function main() {
-    await initializeTable({ tableName: table });
-    await loadTable(data as LoadTableOptions);
+  await initializeTable({ tableName: table });
+  await loadTable(data as LoadTableOptions);
 }
 
 main().catch(console.error);

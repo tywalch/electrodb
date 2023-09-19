@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import TableDefinition from '../../../partials/table-definition.mdx';
+import TableDefinition from "../../../partials/table-definition.mdx";
 
 <TableDefinition />
 
@@ -24,10 +24,11 @@ To perform `get` transactions with ElectroDB you will first need to create a [Se
 
 ```typescript
 await yourService.transaction
-    .get(({ entity1, entity2 }) => [
-        entity1.get({ prop1: 'value1', prop2: 'value2' }).commit(),
-        entity2.get({ prop1: 'value2', prop2: 'value3' }).commit(),
-    ]).go();
+  .get(({ entity1, entity2 }) => [
+    entity1.get({ prop1: "value1", prop2: "value2" }).commit(),
+    entity2.get({ prop1: "value2", prop2: "value3" }).commit(),
+  ])
+  .go();
 ```
 
 ### TransactionItem
@@ -36,22 +37,22 @@ For each operation provided in your transaction, you can expect the following in
 
 ```typescript
 type TransactionItem<T> = {
-    rejected: boolean;
-    code?: TransactionItemCode; // 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
-    message?: string | undefined;
-    item: null | T;
-}
+  rejected: boolean;
+  code?: TransactionItemCode; // 'None' | 'ConditionalCheckFailed' | 'ItemCollectionSizeLimitExceeded' | 'TransactionConflict' | 'ProvisionedThroughputExceeded' | 'ThrottlingError' | 'ValidationError';
+  message?: string | undefined;
+  item: null | T;
+};
 ```
 
-Property        | Type                   | Description
---------------- | :--------------------: | -----------
-item            | `EntityItem`, `null`   | The item if one existed at the time of query.
-code            | `TransactionItemCode`  | The `code` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.
-rejected        | `boolean`              | If your `get` was rejected, this value will be `true`. Because transactions are an all-or-nothing mutation, it only takes one rejection in a group to cancel the whole transaction.
-message         | `string`, `undefined`  | The `message` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.
-
+| Property |         Type          | Description                                                                                                                                                                                                            |
+| -------- | :-------------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| item     | `EntityItem`, `null`  | The item if one existed at the time of query.                                                                                                                                                                          |
+| code     | `TransactionItemCode` | The `code` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.    |
+| rejected |       `boolean`       | If your `get` was rejected, this value will be `true`. Because transactions are an all-or-nothing mutation, it only takes one rejection in a group to cancel the whole transaction.                                    |
+| message  | `string`, `undefined` | The `message` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more. |
 
 ## Response Format
+
 Unlike the DocumentClient, if your transaction fails to write, ElectroDB will resolve and signal failure through a top-level boolean `canceled`, and with additional detail for each operation provided in the transaction.
 
 ### Returned
@@ -60,8 +61,8 @@ Calling the async `.go()` method on a transaction returns the following interfac
 
 ```typescript
 {
-    data: TransactionItem<T>[];
-    canceled: boolean;
+  data: TransactionItem < T > [];
+  canceled: boolean;
 }
 ```
 
@@ -72,6 +73,7 @@ Execution options can be provided to the `.params()` and `.go()` terminal functi
 > This method does not currently have any execution options.
 
 The following are some links to help you understand the mechanics behind DynamoDB Transacts
+
 - [Alex DeBrie - DynamoDB Transactions: Use Cases and Examples](https://www.alexdebrie.com/posts/dynamodb-transactions/)
 - [AWS - Amazon DynamoDB Transactions: How it works](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html)
 - [AWS - TransactGetItems API](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactGetItems.html)

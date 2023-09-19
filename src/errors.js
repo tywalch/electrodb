@@ -65,31 +65,31 @@ const ErrorCodes = {
     code: 1009,
     section: "invalid-model",
     name: "InvalidModel",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   InvalidOptions: {
     code: 1010,
     section: "invalid-options",
     name: "InvalidOptions",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   InvalidFilter: {
     code: 1011,
     section: "filters",
     name: "InvalidFilter",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   InvalidWhere: {
     code: 1012,
     section: "where",
     name: "InvalidWhere",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   InvalidJoin: {
     code: 1013,
     section: "join",
     name: "InvalidJoin",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   DuplicateIndexFields: {
     code: 1014,
@@ -107,7 +107,7 @@ const ErrorCodes = {
     code: 1016,
     section: "invalid-attribute-watch-definition",
     name: "InvalidAttributeWatchDefinition",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   IncompatibleKeyCompositeAttributeTemplate: {
     code: 1017,
@@ -167,13 +167,13 @@ const ErrorCodes = {
     code: 2003,
     section: "missing-table",
     name: "MissingTable",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   InvalidConcurrencyOption: {
     code: 2004,
     section: "invalid-concurrency-option",
     name: "InvalidConcurrencyOption",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   InvalidPagesOption: {
     code: 2005,
@@ -215,7 +215,7 @@ const ErrorCodes = {
     code: 3001,
     section: "invalid-attribute",
     name: "InvalidAttribute",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   AWSError: {
     code: 4001,
@@ -233,7 +233,7 @@ const ErrorCodes = {
     code: 5002,
     section: "",
     name: "GeneralError",
-    sym: ErrorCode
+    sym: ErrorCode,
   },
   LastEvaluatedKey: {
     code: 5003,
@@ -258,11 +258,13 @@ const ErrorCodes = {
     section: "pager-not-unique",
     name: "NoOwnerForPager",
     sym: ErrorCode,
-  }
+  },
 };
 
 function makeMessage(message, section) {
-  return `${message} - For more detail on this error reference: ${getHelpLink(section)}`
+  return `${message} - For more detail on this error reference: ${getHelpLink(
+    section,
+  )}`;
 }
 
 class ElectroError extends Error {
@@ -270,7 +272,7 @@ class ElectroError extends Error {
     super(message);
     let detail = ErrorCodes.UnknownError;
     if (code && code.sym === ErrorCode) {
-      detail = code
+      detail = code;
     }
     this._message = message;
     // this.message = `${message} - For more detail on this error reference: ${getHelpLink(detail.section)}`;
@@ -279,7 +281,7 @@ class ElectroError extends Error {
       Error.captureStackTrace(this, ElectroError);
     }
 
-    this.name = 'ElectroError';
+    this.name = "ElectroError";
     this.ref = code;
     this.code = detail.code;
     this.date = Date.now();
@@ -293,7 +295,7 @@ class ElectroValidationError extends ElectroError {
     const messages = [];
     for (let i = 0; i < errors.length; i++) {
       const error = errors[i];
-      const message = error ? (error._message || error.message) : undefined;
+      const message = error ? error._message || error.message : undefined;
       messages.push(message);
       if (error instanceof ElectroUserValidationError) {
         fields.push({
@@ -301,7 +303,7 @@ class ElectroValidationError extends ElectroError {
           index: error.index,
           reason: message,
           cause: error.cause,
-          type: 'validation'
+          type: "validation",
         });
       } else if (error instanceof ElectroAttributeValidationError) {
         fields.push({
@@ -309,22 +311,23 @@ class ElectroValidationError extends ElectroError {
           index: error.index,
           reason: message,
           cause: error.cause || error, // error | undefined
-          type: 'validation'
+          type: "validation",
         });
       } else if (message) {
         fields.push({
-          field: '',
+          field: "",
           index: error.index,
           reason: message,
           cause: error !== undefined ? error.cause || error : undefined,
-          type: 'fatal'
+          type: "fatal",
         });
       }
     }
 
-    const message = messages
-        .filter(message => typeof message === "string" && message.length)
-        .join(', ') || `Invalid value(s) provided`;
+    const message =
+      messages
+        .filter((message) => typeof message === "string" && message.length)
+        .join(", ") || `Invalid value(s) provided`;
 
     super(ErrorCodes.InvalidAttribute, message);
     this.fields = fields;
@@ -338,14 +341,22 @@ class ElectroUserValidationError extends ElectroError {
     let hasCause = false;
     if (typeof cause === "string") {
       message = cause;
-    } else if (cause !== undefined && typeof cause._message === "string" && cause._message.length) {
+    } else if (
+      cause !== undefined &&
+      typeof cause._message === "string" &&
+      cause._message.length
+    ) {
       message = cause._message;
       hasCause = true;
-    } else if (cause !== undefined && typeof cause.message === "string" && cause.message.length) {
+    } else if (
+      cause !== undefined &&
+      typeof cause.message === "string" &&
+      cause.message.length
+    ) {
       message = cause.message;
       hasCause = true;
     } else {
-        message = "Invalid value provided";
+      message = "Invalid value provided";
     }
     super(ErrorCodes.InvalidAttribute, message);
     this.field = field;
@@ -368,5 +379,5 @@ module.exports = {
   ElectroError,
   ElectroValidationError,
   ElectroUserValidationError,
-  ElectroAttributeValidationError
+  ElectroAttributeValidationError,
 };

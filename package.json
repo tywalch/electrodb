@@ -28,7 +28,10 @@
     "local:start": "npm run ddb:start && npm run local:init",
     "local:stop": "npm run ddb:stop",
     "local:exec": "LOCAL_DYNAMO_ENDPOINT='http://localhost:8000' ts-node ./test/debug.ts",
-    "local:debug": "npm run local:start && npm run local:exec"
+    "local:debug": "npm run local:start && npm run local:exec",
+    "format": "npm run format:write",
+    "format:write": "prettier -w . --log-level=error",
+    "format:check": "prettier -c . --log-level=error"
   },
   "repository": {
     "type": "git",
@@ -58,6 +61,7 @@
     "mocha-lcov-reporter": "^1.3.0",
     "moment": "2.24.0",
     "nyc": "^15.1.0",
+    "prettier": "^3.0.3",
     "source-map-support": "^0.5.19",
     "ts-node": "^10.9.1",
     "tsd": "^0.28.1",

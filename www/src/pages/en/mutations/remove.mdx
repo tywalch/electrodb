@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
@@ -20,10 +20,10 @@ A convenience method for `delete` with ConditionExpression that the item being d
 
 ```typescript
 await StoreLocations.remove({
-	storeId: "LatteLarrys",
-	mallId: "EastPointe",
-	buildingId: "F34",
-	cityId: "Atlanta1"
+  storeId: "LatteLarrys",
+  mallId: "EastPointe",
+  buildingId: "F34",
+  cityId: "Atlanta1",
 }).go();
 ```
 
@@ -33,7 +33,7 @@ await StoreLocations.remove({
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
@@ -52,6 +52,6 @@ await StoreLocations.remove({
 
 ## Execution Options
 
-import PartialExample from '../../../partials/mutation-query-options.mdx';
+import PartialExample from "../../../partials/mutation-query-options.mdx";
 
 <PartialExample name="Filters" />

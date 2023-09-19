@@ -18,18 +18,19 @@ DynamoDB offers three methods to query records: `get`, `query`, and `scan`. In E
 
 The Find method is useful when the index chosen does not matter or is not known. If your secondary indexes do not contain all attributes then this method might not be right for you. The mechanism that picks the best index for a given payload is subject to improvement and change without triggering a breaking change release version.
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
 ```typescript
 await StoreLocations.find({
-    mallId: "EastPointe",
-    buildingId: "BuildingA1",
-}).go()
+  mallId: "EastPointe",
+  buildingId: "BuildingA1",
+}).go();
 ```
 
 ## Response Format
+
 ```typescript
 {
   data: Array<YOUR_SCHEMA>,
@@ -38,6 +39,7 @@ await StoreLocations.find({
 ```
 
 ## Equivalent Parameters
+
 ```json
 {
   "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
@@ -54,12 +56,12 @@ await StoreLocations.find({
     ":pk": "$mallstoredirectory#mallid_eastpointe",
     ":sk1": "$mallstore_1#buildingid_buildinga1#unitid_"
   },
-  "IndexName": "gsi1pk-gsi1sk-index",
+  "IndexName": "gsi1pk-gsi1sk-index"
 }
 ```
 
 ## Execution Options
 
-import PartialExample from '../../../partials/query-options.mdx';
+import PartialExample from "../../../partials/query-options.mdx";
 
 <PartialExample />

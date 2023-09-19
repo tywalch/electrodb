@@ -1,674 +1,721 @@
-import { Entity, EntityConfiguration, ElectroEventListener, ElectroEvent } from '../index';
+import {
+  Entity,
+  EntityConfiguration,
+  ElectroEventListener,
+  ElectroEvent,
+} from "../index";
 
 interface LogCollector {
-    get(): ElectroEvent[];
-    reset(): ElectroEvent[];
-    listener: ElectroEventListener;
+  get(): ElectroEvent[];
+  reset(): ElectroEvent[];
+  listener: ElectroEventListener;
 }
 
 function createLogCollector(): LogCollector {
-    let logs: ElectroEvent[] = [];
-    return {
-        listener: (event) => {
-            logs.push(event);
-        },
-        get: () => logs,
-        reset: () => {
-            const previous = [...logs];
-            logs = [];
-            return previous;
-        }
-    }
+  let logs: ElectroEvent[] = [];
+  return {
+    listener: (event) => {
+      logs.push(event);
+    },
+    get: () => logs,
+    reset: () => {
+      const previous = [...logs];
+      logs = [];
+      return previous;
+    },
+  };
 }
 
 export function createStringEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'string'
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+        prop: {
+          type: "string",
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createNumberEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'number'
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+        prop: {
+          type: "number",
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createBooleanEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'boolean'
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+        prop: {
+          type: "boolean",
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createStringListEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'list',
-                items: {
-                    type: 'string'
-                }
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+        prop: {
+          type: "list",
+          items: {
+            type: "string",
+          },
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createNumberListEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'list',
-                items: {
-                    type: 'number'
-                }
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+        prop: {
+          type: "list",
+          items: {
+            type: "number",
+          },
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createMapListEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
+        type: {
+          type: "string",
+        },
+        prop: {
+          type: "list",
+          items: {
+            type: "map",
+            properties: {
+              val: {
                 type: "string",
+              },
             },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'list',
-                items: {
-                    type: 'map',
-                    properties: {
-                        val: {
-                            type: 'string'
-                        }
-                    }
-                }
-            }
+          },
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createStringMapEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'map',
-                properties: {
-                    val: {
-                        type: 'string'
-                    }
-                }
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
+        prop: {
+          type: "map",
+          properties: {
+            val: {
+              type: "string",
             },
+          },
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createNumberMapEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'map',
-                properties: {
-                    val: {
-                        type: 'number'
-                    }
-                }
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
+        prop: {
+          type: "map",
+          properties: {
+            val: {
+              type: "number",
             },
+          },
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createBooleanMapEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'map',
-                properties: {
-                    val: {
-                        type: 'boolean'
-                    }
-                }
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
+        prop: {
+          type: "map",
+          properties: {
+            val: {
+              type: "boolean",
             },
+          },
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createListMapEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
+        type: {
+          type: "string",
+        },
+        prop: {
+          type: "map",
+          properties: {
+            val: {
+              type: "list",
+              items: {
                 type: "string",
+              },
             },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'map',
-                properties: {
-                    val: {
-                        type: 'list',
-                        items: {
-                            type: 'string'
-                        }
-                    }
-                }
-            }
+          },
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createSetMapEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'map',
-                properties: {
-                    val: {
-                        type: 'set',
-                        items: 'string'
-                    }
-                }
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
+        prop: {
+          type: "map",
+          properties: {
+            val: {
+              type: "set",
+              items: "string",
             },
+          },
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createStringSetEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'set',
-                items: 'string'
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+        prop: {
+          type: "set",
+          items: "string",
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createNumberSetEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'set',
-                items: 'number'
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+        prop: {
+          type: "set",
+          items: "number",
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createAnyEntity(config: EntityConfiguration) {
-    const logCollector = createLogCollector();
-    const entity = new Entity({
-        model: {
-            entity: "tasks",
-            version: "1",
-            service: "taskapp",
+  const logCollector = createLogCollector();
+  const entity = new Entity(
+    {
+      model: {
+        entity: "tasks",
+        version: "1",
+        service: "taskapp",
+      },
+      attributes: {
+        name: {
+          type: "string",
         },
-        attributes: {
-            name: {
-                type: "string",
-            },
-            type: {
-                type: 'string'
-            },
-            prop: {
-                type: 'any',
-            }
+        type: {
+          type: "string",
         },
-        indexes: {
-            records: {
-                pk: {
-                    field: "pk",
-                    composite: ["type"],
-                },
-                sk: {
-                    field: "sk",
-                    composite: ["name"],
-                },
-            },
+        prop: {
+          type: "any",
         },
-    }, {
-        ...config,
-        listeners: [...(config?.listeners ?? []), logCollector.listener]
-    });
+      },
+      indexes: {
+        records: {
+          pk: {
+            field: "pk",
+            composite: ["type"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["name"],
+          },
+        },
+      },
+    },
+    {
+      ...config,
+      listeners: [...(config?.listeners ?? []), logCollector.listener],
+    },
+  );
 
-    return {
-        entity,
-        logCollector,
-    }
+  return {
+    entity,
+    logCollector,
+  };
 }
 
 export function createAttributeEntities(config: EntityConfiguration) {
-    return {
-        stringEntity: createStringEntity(config),
-        numberEntity: createNumberEntity(config),
-        booleanEntity: createBooleanEntity(config),
-        stringListEntity: createStringListEntity(config),
-        numberListEntity: createNumberListEntity(config),
-        mapListEntity: createMapListEntity(config),
-        stringMapEntity: createStringMapEntity(config),
-        numberMapEntity: createNumberMapEntity(config),
-        booleanMapEntity: createBooleanMapEntity(config),
-        listMapEntity: createListMapEntity(config),
-        setMapEntity: createSetMapEntity(config),
-        stringSetEntity: createStringSetEntity(config),
-        numberSetEntity: createNumberSetEntity(config),
-        anyEntity: createAnyEntity(config)
-    }
+  return {
+    stringEntity: createStringEntity(config),
+    numberEntity: createNumberEntity(config),
+    booleanEntity: createBooleanEntity(config),
+    stringListEntity: createStringListEntity(config),
+    numberListEntity: createNumberListEntity(config),
+    mapListEntity: createMapListEntity(config),
+    stringMapEntity: createStringMapEntity(config),
+    numberMapEntity: createNumberMapEntity(config),
+    booleanMapEntity: createBooleanMapEntity(config),
+    listMapEntity: createListMapEntity(config),
+    setMapEntity: createSetMapEntity(config),
+    stringSetEntity: createStringSetEntity(config),
+    numberSetEntity: createNumberSetEntity(config),
+    anyEntity: createAnyEntity(config),
+  };
 }

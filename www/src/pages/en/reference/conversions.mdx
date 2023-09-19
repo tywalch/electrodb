@@ -23,52 +23,56 @@ All conversion functions can be found on your entity under the `conversions` nam
 ### Example Entity
 
 ```typescript
-import { Entity } from 'electrodb';
+import { Entity } from "electrodb";
 
-const thing = new Entity({
+const thing = new Entity(
+  {
     model: {
-        entity: 'thing',
-        version: '1',
-        service: 'thingstore'
+      entity: "thing",
+      version: "1",
+      service: "thingstore",
     },
     attributes: {
-        organizationId: {
-            type: 'string'
-        },
-        accountId: {
-            type: 'string'
-        },
-        name: {
-            type: 'string'
-        },
-        description: {
-            type: 'string'
-        },
+      organizationId: {
+        type: "string",
+      },
+      accountId: {
+        type: "string",
+      },
+      name: {
+        type: "string",
+      },
+      description: {
+        type: "string",
+      },
     },
     indexes: {
-        records: {
-            pk: {
-                field: 'pk',
-                composite: ['organizationId']
-            },
-            sk: {
-                field: 'sk',
-                composite: ['accountId']
-            }
+      records: {
+        pk: {
+          field: "pk",
+          composite: ["organizationId"],
         },
-    }
-}, { table: 'my_table' });
+        sk: {
+          field: "sk",
+          composite: ["accountId"],
+        },
+      },
+    },
+  },
+  { table: "my_table" },
+);
 ```
 
 ---
 
 ### Composite
+
 With `conversions`, you can convert the attributes that construct a key to `keys` directly or to a `cursor`. Provide the attributes that define your keys, and ElectroDB will output
 
 ```typescript
 const composite = {
-    accountId: "be0c1696-50e5-47b2-8e7b-ec14d842a3f0",
-    organizationId: "a13417bc-0105-4ca1-98ed-dc83204d9c08",
+  accountId: "be0c1696-50e5-47b2-8e7b-ec14d842a3f0",
+  organizationId: "a13417bc-0105-4ca1-98ed-dc83204d9c08",
 };
 ```
 
@@ -93,15 +97,19 @@ When converting `composite` items to `keys`, you may also specify a `strict` mod
 
 ```typescript
 // from Composite to all possible index Keys
-thing.conversions.fromComposite.toKeys(item, {strict: 'all'});
+thing.conversions.fromComposite.toKeys(item, { strict: "all" });
 
 // from Composite to Cursor
-thing.conversions.fromComposite.toCursor(item, {strict: 'all'});
+thing.conversions.fromComposite.toCursor(item, { strict: "all" });
 
 // from Composite to Keys for a specific access pattern
-thing.conversions.byAccessPattern.records.fromComposite.toKeys(item, {strict: 'all'});
+thing.conversions.byAccessPattern.records.fromComposite.toKeys(item, {
+  strict: "all",
+});
 // from Composite to Cursor for a specific access pattern
-thing.conversions.byAccessPattern.records.fromComposite.toCursor(item, {strict: 'all'});
+thing.conversions.byAccessPattern.records.fromComposite.toCursor(item, {
+  strict: "all",
+});
 ```
 
 > Note: By default, all `toKeys` conversions use `{strict: 'none'}` which instruct ElectroDB to format all possible keys regardless of whether they are partial provided or not.
@@ -109,20 +117,20 @@ thing.conversions.byAccessPattern.records.fromComposite.toCursor(item, {strict: 
 The following is a table explaining how the `strict` option impacts key creation. the `at root` option below refers to usage directly on the `conversions` namespace. For example:
 
 ```typescript
-thing.conversions.fromComposite.toKeys(item, {strict: 'all'});
+thing.conversions.fromComposite.toKeys(item, { strict: "all" });
 ```
 
-| strict  | variation       | access pattern type | description
-| :-----: | :-------------: | :-----------------: | ----------
-| 'all'   | at root         | _any_               | Requires all primary index composite attributes to be present and defined, and at least all `pk` composite attributes for secondary indexes to be defined
-| 'pk'    | at root         | _any_               | Requires all partition key composites to be present but allows for partial sort key composites
-| 'none'  | at root         | _any_               | Formats all keys as completely as possible with the values provided
-| 'all'   | byAccessPattern | primary index       | Requires all primary index composite attributes to be present and defined
-| 'pk'    | byAccessPattern | primary index       | Requires all primary index partition key composites to be present but allows for partial sort key composites
-| 'none'  | byAccessPattern | primary index       | Formats all primary index keys as completely as possible with the values provided
-| 'all'   | byAccessPattern | secondary index     | Requires all primary _and_ secondary index composite attributes to be present and defined
-| 'pk'    | byAccessPattern | secondary index     | Requires all primary _and_ index partition key composites to be present but allows for partial sort key composites
-| 'none'  | byAccessPattern | secondary index     | Formats all primary _and_ index keys as completely as possible with the values provided
+| strict |    variation    | access pattern type | description                                                                                                                                               |
+| :----: | :-------------: | :-----------------: | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 'all'  |     at root     |        _any_        | Requires all primary index composite attributes to be present and defined, and at least all `pk` composite attributes for secondary indexes to be defined |
+|  'pk'  |     at root     |        _any_        | Requires all partition key composites to be present but allows for partial sort key composites                                                            |
+| 'none' |     at root     |        _any_        | Formats all keys as completely as possible with the values provided                                                                                       |
+| 'all'  | byAccessPattern |    primary index    | Requires all primary index composite attributes to be present and defined                                                                                 |
+|  'pk'  | byAccessPattern |    primary index    | Requires all primary index partition key composites to be present but allows for partial sort key composites                                              |
+| 'none' | byAccessPattern |    primary index    | Formats all primary index keys as completely as possible with the values provided                                                                         |
+| 'all'  | byAccessPattern |   secondary index   | Requires all primary _and_ secondary index composite attributes to be present and defined                                                                 |
+|  'pk'  | byAccessPattern |   secondary index   | Requires all primary _and_ index partition key composites to be present but allows for partial sort key composites                                        |
+| 'none' | byAccessPattern |   secondary index   | Formats all primary _and_ index keys as completely as possible with the values provided                                                                   |
 
 ---
 
@@ -132,8 +140,8 @@ DynamoDB Keys are not typically exposed by ElectroDB. These conversions can help
 
 ```typescript
 const keys = {
-    pk: "$thingstore#organizationid_a13417bc-0105-4ca1-98ed-dc83204d9c08",
-    sk: "$thing_1#accountid_be0c1696-50e5-47b2-8e7b-ec14d842a3f0"
+  pk: "$thingstore#organizationid_a13417bc-0105-4ca1-98ed-dc83204d9c08",
+  sk: "$thing_1#accountid_be0c1696-50e5-47b2-8e7b-ec14d842a3f0",
 };
 ```
 
@@ -159,7 +167,8 @@ thing.conversions.byAccessPattern.records.fromKeys.toCursor(keys);
 ### Cursor
 
 ```typescript
-const cursor = "eyJwayI6IiR0aGluZ3N0b3JlI29yZ2FuaXphdGlvbmlkX2ExMzQxN2JjLTAxMDUtNGNhMS05OGVkLWRjODMyMDRkOWMwOCIsInNrIjoiJHRoaW5nXzEjYWNjb3VudGlkX2JlMGMxNjk2LTUwZTUtNDdiMi04ZTdiLWVjMTRkODQyYTNmMCJ9";
+const cursor =
+  "eyJwayI6IiR0aGluZ3N0b3JlI29yZ2FuaXphdGlvbmlkX2ExMzQxN2JjLTAxMDUtNGNhMS05OGVkLWRjODMyMDRkOWMwOCIsInNrIjoiJHRoaW5nXzEjYWNjb3VudGlkX2JlMGMxNjk2LTUwZTUtNDdiMi04ZTdiLWVjMTRkODQyYTNmMCJ9";
 ```
 
 #### From Cursor

@@ -7,7 +7,7 @@ const ENTITY = "TEST_ENTITY";
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({
   region: "us-east-1",
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT,
 });
 let schema = {
   model: {
@@ -20,7 +20,7 @@ let schema = {
     id: {
       type: "string",
       default: () => {
-        return uuid()
+        return uuid();
       },
       field: "storeLocationId",
     },
@@ -129,10 +129,10 @@ let schema = {
         facets: ["mall", "building", "unit"],
       },
     },
-  }
+  },
 };
 
-let MallStores = new Entity(schema, {client});
+let MallStores = new Entity(schema, { client });
 
 let record1 = {
   id: uuid(),
@@ -170,7 +170,6 @@ let record3 = {
   unit: "G1",
 };
 
-
 function generateRecords(size) {
   return new Array(size).fill(0).map(() => {
     return {
@@ -183,7 +182,7 @@ function generateRecords(size) {
       rent: "0.00",
       building: "BuildingZ",
       unit: "G1",
-    }
+    };
   });
 }
 
@@ -194,46 +193,57 @@ async function sleep(ms) {
 }
 
 describe("BatchWrite", () => {
-
   it("should perform a batchPut via array to put method", async () => {
-    let unprocessed = await MallStores.put([record1, record2, record3]).go().then(res => res.unprocessed);
+    let unprocessed = await MallStores.put([record1, record2, record3])
+      .go()
+      .then((res) => res.unprocessed);
     // eventually consistent
     await sleep(500);
     // empty array is no unprocessed
     expect(unprocessed).to.be.an("array").that.is.empty;
     // verify existance
-    let item = await MallStores.get(record1).go().then(res => res.data);
+    let item = await MallStores.get(record1)
+      .go()
+      .then((res) => res.data);
     expect(item).to.be.deep.equal(record1);
   }).timeout(5000);
 
   it("should perform a batchDelete via array to delete method", async () => {
-    let unprocessed = await MallStores.put([record1, record2, record3]).go().then(res => res.unprocessed);
+    let unprocessed = await MallStores.put([record1, record2, record3])
+      .go()
+      .then((res) => res.unprocessed);
     // eventually consistent
     await sleep(500);
     // empty array is no unprocessed
     expect(unprocessed).to.be.an("array").that.is.empty;
     // verify existance
-    let item = await MallStores.get(record1).go().then(res => res.data);
+    let item = await MallStores.get(record1)
+      .go()
+      .then((res) => res.data);
     expect(item).to.be.deep.equal(record1);
-    
+
     // delete only record1, record2
-    let deleted = await MallStores.delete([record1, record3]).go().then(res => res.unprocessed);
-    
+    let deleted = await MallStores.delete([record1, record3])
+      .go()
+      .then((res) => res.unprocessed);
+
     // empty array is no unprocessed
     expect(deleted).to.be.an("array").that.is.empty;
 
     // eventually consistent
     await sleep(500);
-    
+
     // find to verify
-    let [
-      getRecord1,
-      getRecord2,
-      getRecord3
-    ] = await Promise.all([
-      MallStores.get(record1).go().then(res => res.data),
-      MallStores.get(record2).go().then(res => res.data),
-      MallStores.get(record3).go().then(res => res.data),
+    let [getRecord1, getRecord2, getRecord3] = await Promise.all([
+      MallStores.get(record1)
+        .go()
+        .then((res) => res.data),
+      MallStores.get(record2)
+        .go()
+        .then((res) => res.data),
+      MallStores.get(record3)
+        .go()
+        .then((res) => res.data),
     ]);
     expect(getRecord1).to.be.null;
     expect(getRecord2).to.be.deep.equal(record2);
@@ -251,13 +261,15 @@ describe("Batch Crud Large Arrays", () => {
     }
 
     // Create all 101
-    let batchPutResults = await MallStores.put(records).go().then(res => res.unprocessed);
+    let batchPutResults = await MallStores.put(records)
+      .go()
+      .then((res) => res.unprocessed);
     expect(batchPutResults).to.be.an("array").that.is.empty;
 
     // Do a batch get to find all the records, expect them to all be present
     let [batchGetResults, batchGetUnprocessed] = await MallStores.get(records)
-        .go({params: {ConsistentRead: true}})
-        .then(res => [res.data, res.unprocessed]);
+      .go({ params: { ConsistentRead: true } })
+      .then((res) => [res.data, res.unprocessed]);
     expect(batchGetUnprocessed).to.be.an("array").that.is.empty;
     expect(batchGetResults).to.be.an("array").that.has.length(101);
     for (let result of batchGetResults) {
@@ -265,25 +277,34 @@ describe("Batch Crud Large Arrays", () => {
     }
 
     // Do a batch delete of all records
-    let batchDeleteResults = await MallStores.delete(records).go().then(res => res.unprocessed);
+    let batchDeleteResults = await MallStores.delete(records)
+      .go()
+      .then((res) => res.unprocessed);
     expect(batchDeleteResults).to.be.an("array").that.is.empty;
 
     // Do a batch get to verify they were all deleted
-    let [batchGetRemovedResults, batchGetRemovedUnprocessed] = await MallStores.get(records)
-        .go({params: {ConsistentRead: true}})
-        .then(res => [res.data, res.unprocessed]);
+    let [batchGetRemovedResults, batchGetRemovedUnprocessed] =
+      await MallStores.get(records)
+        .go({ params: { ConsistentRead: true } })
+        .then((res) => [res.data, res.unprocessed]);
     expect(batchGetRemovedResults).to.be.an("array").that.is.empty;
     expect(batchGetRemovedUnprocessed).to.be.an("array").that.has.length(0);
   });
-})
+});
 
 describe("BatchGet", () => {
   it("Should consistently create then get a record in batch", async () => {
-    let created = await MallStores.put(record1).go({params: {ConsistentRead: true}}).then(res => res.data);
+    let created = await MallStores.put(record1)
+      .go({ params: { ConsistentRead: true } })
+      .then((res) => res.data);
     expect(created).to.deep.equal(record1);
-    let record = await MallStores.get(record1).go({params: {ConsistentRead: true}}).then(res => res.data);
+    let record = await MallStores.get(record1)
+      .go({ params: { ConsistentRead: true } })
+      .then((res) => res.data);
     expect(record).to.deep.equal(record1);
-    let records = await MallStores.get([record1]).go({params: {ConsistentRead: true}}).then(res => [res.data, res.unprocessed]);
+    let records = await MallStores.get([record1])
+      .go({ params: { ConsistentRead: true } })
+      .then((res) => [res.data, res.unprocessed]);
     expect(records).to.be.an("array").with.length(2);
     expect(records[0]).to.be.an("array").with.length(1);
     expect(records[1]).to.be.an("array").with.length(0);
@@ -291,48 +312,50 @@ describe("BatchGet", () => {
   });
   it("Should parse returned unprocessed keys", async () => {
     let response = {
-      "Responses": {
-        "electro": [
+      Responses: {
+        electro: [
           {
-            "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-            "mallId": "WashingtonSquare",
-            "leaseEnd": "2020-01-20",
-            "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
-            "__edb_e__": "TEST_ENTITY",
-            "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
-            "sector": "A1",
-            "storeId": "LatteLarrys",
-            "unitId": "G1",
-            "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-            "__edb_v__": "1",
-            "buildingId":"BuildingZ",
-            "category":"food/coffee",
-            "rent":"0.00",
-            "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-            "gsi3pk":"$bugbeater#mall_washingtonsquare",
-            "pk":"$bugbeater#sector_a1",
-            "gsi4pk":"$bugbeater#store_lattelarrys",
-            "gsi1pk":"mall_washingtonsquare",
-            "gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
-            "gsi2pk":"m_washingtonsquare"
-          }
-        ]
+            gsi2sk: "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+            mallId: "WashingtonSquare",
+            leaseEnd: "2020-01-20",
+            gsi3sk:
+              "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+            __edb_e__: "TEST_ENTITY",
+            gsi1sk: "b_buildingz#u_g1#s_lattelarrys",
+            sector: "A1",
+            storeId: "LatteLarrys",
+            unitId: "G1",
+            storeLocationId: "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            __edb_v__: "1",
+            buildingId: "BuildingZ",
+            category: "food/coffee",
+            rent: "0.00",
+            sk: "$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            gsi3pk: "$bugbeater#mall_washingtonsquare",
+            pk: "$bugbeater#sector_a1",
+            gsi4pk: "$bugbeater#store_lattelarrys",
+            gsi1pk: "mall_washingtonsquare",
+            gsi4sk:
+              "$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+            gsi2pk: "m_washingtonsquare",
+          },
+        ],
       },
-      "UnprocessedKeys": {
-        "electro": {
-          "Keys": [
+      UnprocessedKeys: {
+        electro: {
+          Keys: [
             {
-              "pk": "$bugbeater#sector_a1",
-              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
+              pk: "$bugbeater#sector_a1",
+              sk: "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5",
             },
             {
-              "pk": "$bugbeater#sector_b1",
-              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6"
-            }
-          ]
-        }
-      }
-    }
+              pk: "$bugbeater#sector_b1",
+              sk: "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6",
+            },
+          ],
+        },
+      },
+    };
 
     const options = {
       response,
@@ -340,252 +363,269 @@ describe("BatchGet", () => {
       unprocessedAll: [],
       config: {},
       orderMaintainer: {
-        getOrder: () => -1
-      }
+        getOrder: () => -1,
+      },
     };
     MallStores.applyBulkGetResponseFormatting(options);
 
     expect(options.resultsAll).to.be.an("array").with.length(1);
     expect(options.unprocessedAll).to.be.an("array").with.length(2);
     expect(options.resultsAll[0]).to.be.deep.equal({
-      "mall":"WashingtonSquare",
-      "leaseEnd":"2020-01-20",
-      "sector":"A1",
-      "store":"LatteLarrys",
-      "unit":"G1",
-      "id":"9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-      "building":"BuildingZ",
-      "category":"food/coffee",
-      "rent":"0.00"
+      mall: "WashingtonSquare",
+      leaseEnd: "2020-01-20",
+      sector: "A1",
+      store: "LatteLarrys",
+      unit: "G1",
+      id: "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+      building: "BuildingZ",
+      category: "food/coffee",
+      rent: "0.00",
     });
     expect(options.unprocessedAll).to.deep.equal([
       {
-        "id":"868f6d45-d78b-4f7a-94ff-a016c10574d5",
-        "sector":"a1"
+        id: "868f6d45-d78b-4f7a-94ff-a016c10574d5",
+        sector: "a1",
       },
       {
-        "id":"868f6d45-d78b-4f7a-94ff-a016c10574d6",
-        "sector":"b1"
-      }
+        id: "868f6d45-d78b-4f7a-94ff-a016c10574d6",
+        sector: "b1",
+      },
     ]);
   });
   it("Should allow for config unprocessed='raw' with UnprocessedKeys", () => {
     let response = {
-      "Responses": {
-        "electro": [
+      Responses: {
+        electro: [
           {
-            "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-            "mallId": "WashingtonSquare",
-            "leaseEnd": "2020-01-20",
-            "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
-            "__edb_e__": "TEST_ENTITY",
-            "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
-            "sector": "A1",
-            "storeId": "LatteLarrys",
-            "unitId": "G1",
-            "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-            "__edb_v__": "1",
-            "buildingId":"BuildingZ",
-            "category":"food/coffee",
-            "rent":"0.00",
-            "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-            "gsi3pk":"$bugbeater#mall_washingtonsquare",
-            "pk":"$bugbeater#sector_a1",
-            "gsi4pk":"$bugbeater#store_lattelarrys",
-            "gsi1pk":"mall_washingtonsquare",
-            "gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
-            "gsi2pk":"m_washingtonsquare"
-          }
-        ]
+            gsi2sk: "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+            mallId: "WashingtonSquare",
+            leaseEnd: "2020-01-20",
+            gsi3sk:
+              "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+            __edb_e__: "TEST_ENTITY",
+            gsi1sk: "b_buildingz#u_g1#s_lattelarrys",
+            sector: "A1",
+            storeId: "LatteLarrys",
+            unitId: "G1",
+            storeLocationId: "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            __edb_v__: "1",
+            buildingId: "BuildingZ",
+            category: "food/coffee",
+            rent: "0.00",
+            sk: "$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            gsi3pk: "$bugbeater#mall_washingtonsquare",
+            pk: "$bugbeater#sector_a1",
+            gsi4pk: "$bugbeater#store_lattelarrys",
+            gsi1pk: "mall_washingtonsquare",
+            gsi4sk:
+              "$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+            gsi2pk: "m_washingtonsquare",
+          },
+        ],
       },
-      "UnprocessedKeys": {
-        "electro": {
-          "Keys": [
+      UnprocessedKeys: {
+        electro: {
+          Keys: [
             {
-              "pk": "$bugbeater#sector_a1",
-              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
+              pk: "$bugbeater#sector_a1",
+              sk: "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5",
             },
             {
-              "pk": "$bugbeater#sector_b1",
-              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6"
-            }
-          ]
-        }
-      }
-    }
+              pk: "$bugbeater#sector_b1",
+              sk: "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6",
+            },
+          ],
+        },
+      },
+    };
     const options = {
       response,
       resultsAll: [],
       unprocessedAll: [],
-      config: {unprocessed: "raw"},
+      config: { unprocessed: "raw" },
       orderMaintainer: {
-        getOrder: () => -1
-      }
+        getOrder: () => -1,
+      },
     };
     MallStores.applyBulkGetResponseFormatting(options);
     expect(options.unprocessedAll).to.be.an("array").with.length(2);
     expect(options.unprocessedAll).to.deep.equal([
       {
-        "pk": "$bugbeater#sector_a1",
-        "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
+        pk: "$bugbeater#sector_a1",
+        sk: "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5",
       },
       {
-        "pk": "$bugbeater#sector_b1",
-        "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6"
-      }
+        pk: "$bugbeater#sector_b1",
+        sk: "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6",
+      },
     ]);
   });
   it("Should allow for includeKeys query option in results", () => {
     let response = {
-      "Responses": {
-        "electro": [
+      Responses: {
+        electro: [
           {
-            "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-            "mallId": "WashingtonSquare",
-            "leaseEnd": "2020-01-20",
-            "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
-            "__edb_e__": "TEST_ENTITY",
-            "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
-            "sector": "A1",
-            "storeId": "LatteLarrys",
-            "unitId": "G1",
-            "storeLocationId": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-            "__edb_v__": "1",
-            "buildingId":"BuildingZ",
-            "category":"food/coffee",
-            "rent":"0.00",
-            "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-            "gsi3pk":"$bugbeater#mall_washingtonsquare",
-            "pk":"$bugbeater#sector_a1",
-            "gsi4pk":"$bugbeater#store_lattelarrys",
-            "gsi1pk":"mall_washingtonsquare",
-            "gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
-            "gsi2pk":"m_washingtonsquare"
-          }
-        ]
+            gsi2sk: "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+            mallId: "WashingtonSquare",
+            leaseEnd: "2020-01-20",
+            gsi3sk:
+              "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+            __edb_e__: "TEST_ENTITY",
+            gsi1sk: "b_buildingz#u_g1#s_lattelarrys",
+            sector: "A1",
+            storeId: "LatteLarrys",
+            unitId: "G1",
+            storeLocationId: "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            __edb_v__: "1",
+            buildingId: "BuildingZ",
+            category: "food/coffee",
+            rent: "0.00",
+            sk: "$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+            gsi3pk: "$bugbeater#mall_washingtonsquare",
+            pk: "$bugbeater#sector_a1",
+            gsi4pk: "$bugbeater#store_lattelarrys",
+            gsi1pk: "mall_washingtonsquare",
+            gsi4sk:
+              "$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+            gsi2pk: "m_washingtonsquare",
+          },
+        ],
       },
-      "UnprocessedKeys": {
-        "electro": {
-          "Keys": [
+      UnprocessedKeys: {
+        electro: {
+          Keys: [
             {
-              "pk": "$bugbeater#sector_a1",
-              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5"
+              pk: "$bugbeater#sector_a1",
+              sk: "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d5",
             },
             {
-              "pk": "$bugbeater#sector_b1",
-              "sk": "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6"
-            }
-          ]
-        }
-      }
-    }
+              pk: "$bugbeater#sector_b1",
+              sk: "$test_entity_1#id_868f6d45-d78b-4f7a-94ff-a016c10574d6",
+            },
+          ],
+        },
+      },
+    };
     const options = {
       response,
       resultsAll: [],
       unprocessedAll: [],
-      config: {includeKeys: true},
+      config: { includeKeys: true },
       orderMaintainer: {
-        getOrder: () => -1
-      }
+        getOrder: () => -1,
+      },
     };
     MallStores.applyBulkGetResponseFormatting(options);
     expect(options.resultsAll).to.be.an("array").with.length(1);
     expect(options.resultsAll[0]).to.be.deep.equal({
-      "gsi2sk": "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
-      "mall": "WashingtonSquare",
-      "leaseEnd": "2020-01-20",
-      "gsi3sk": "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
-      "__edb_e__": "TEST_ENTITY",
-      "gsi1sk": "b_buildingz#u_g1#s_lattelarrys",
-      "sector": "A1",
-      "store": "LatteLarrys",
-      "unit": "G1",
-      "id": "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-      "__edb_v__": "1",
-      "building":"BuildingZ",
-      "category":"food/coffee",
-      "rent":"0.00",
-      "sk":"$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
-      "gsi3pk":"$bugbeater#mall_washingtonsquare",
-      "pk":"$bugbeater#sector_a1",
-      "gsi4pk":"$bugbeater#store_lattelarrys",
-      "gsi1pk":"mall_washingtonsquare",
-      "gsi4sk":"$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
-      "gsi2pk":"m_washingtonsquare"
+      gsi2sk: "l_2020-01-20#s_lattelarrys#b_buildingz#u_g1",
+      mall: "WashingtonSquare",
+      leaseEnd: "2020-01-20",
+      gsi3sk:
+        "$test_entity_1#category_food/coffee#building_buildingz#unit_g1#store_lattelarrys",
+      __edb_e__: "TEST_ENTITY",
+      gsi1sk: "b_buildingz#u_g1#s_lattelarrys",
+      sector: "A1",
+      store: "LatteLarrys",
+      unit: "G1",
+      id: "9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+      __edb_v__: "1",
+      building: "BuildingZ",
+      category: "food/coffee",
+      rent: "0.00",
+      sk: "$test_entity_1#id_9edc03f5-29e2-4a71-b288-8cb0fc389b95",
+      gsi3pk: "$bugbeater#mall_washingtonsquare",
+      pk: "$bugbeater#sector_a1",
+      gsi4pk: "$bugbeater#store_lattelarrys",
+      gsi1pk: "mall_washingtonsquare",
+      gsi4sk: "$test_entity_1#mall_washingtonsquare#building_buildingz#unit_g1",
+      gsi2pk: "m_washingtonsquare",
     });
   });
   it("Should throw on invalid get composite attributes", () => {
-    expect(() => MallStores.get([record1, record2, record3, {}]).params()).to.throw('Incomplete or invalid key composite attributes supplied. Missing properties: "sector" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes');
+    expect(() =>
+      MallStores.get([record1, record2, record3, {}]).params(),
+    ).to.throw(
+      'Incomplete or invalid key composite attributes supplied. Missing properties: "sector" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+    );
   });
   it("Should create params", () => {
     let params = MallStores.get([record1, record2, record3]).params();
-    expect(params).to.be.deep.equal([{
-      "RequestItems": {
-        "electro": {
-          "Keys": [
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record1.id}`
-            },
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record2.id}`
-            },
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record3.id}`
-            }
-          ]
-        }
-      }
-    }]);
+    expect(params).to.be.deep.equal([
+      {
+        RequestItems: {
+          electro: {
+            Keys: [
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record1.id}`,
+              },
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record2.id}`,
+              },
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record3.id}`,
+              },
+            ],
+          },
+        },
+      },
+    ]);
   });
   it("Should allow for additional parameters to be specified through the `params` query option", async () => {
-    let params = MallStores.get([record1, record2, record3]).params({params: {ConsistentRead: true}});
-    expect(params).to.be.deep.equal([{
-      "RequestItems": {
-        "electro": {
-          "ConsistentRead": true,
-          "Keys": [
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record1.id}`
-            },
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record2.id}`
-            },
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record3.id}`
-            }
-          ]
-        }
-      }
-    }]);
+    let params = MallStores.get([record1, record2, record3]).params({
+      params: { ConsistentRead: true },
+    });
+    expect(params).to.be.deep.equal([
+      {
+        RequestItems: {
+          electro: {
+            ConsistentRead: true,
+            Keys: [
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record1.id}`,
+              },
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record2.id}`,
+              },
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record3.id}`,
+              },
+            ],
+          },
+        },
+      },
+    ]);
   });
   it("Should allow for custom table name to be specified through the `table` query option", async () => {
     let table = "custom_table_name";
-    let params = MallStores.get([record1, record2, record3]).params({table});
-    expect(params).to.be.deep.equal([{
-      "RequestItems": {
-        [table]: {
-          "Keys": [
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record1.id}`
-            },
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record2.id}`
-            },
-            {
-              "pk":"$bugbeater#sector_a1",
-              "sk":`$test_entity_1#id_${record3.id}`
-            }
-          ]
-        }
-      }
-    }]);
+    let params = MallStores.get([record1, record2, record3]).params({ table });
+    expect(params).to.be.deep.equal([
+      {
+        RequestItems: {
+          [table]: {
+            Keys: [
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record1.id}`,
+              },
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record2.id}`,
+              },
+              {
+                pk: "$bugbeater#sector_a1",
+                sk: `$test_entity_1#id_${record3.id}`,
+              },
+            ],
+          },
+        },
+      },
+    ]);
   });
 });

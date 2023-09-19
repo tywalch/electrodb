@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from '../../../partials/entity-query-example-setup.mdx';
+import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 import TasksModel from "../../../partials/tasks-example.entity.mdx";
 
 <ExampleSetup />
@@ -32,17 +32,19 @@ tasks
   .update({
     team: "core",
     task: "45-662",
-    project: "backend"
+    project: "backend",
   })
   .set({ status: "open" })
   .add({ points: 5 })
   .append({
-    comments: [{
-      user: "janet",
-      body: "This seems half-baked."
-    }]
+    comments: [
+      {
+        user: "janet",
+        body: "This seems half-baked.",
+      },
+    ],
   })
-  .where(( {status}, {eq} ) => eq(status, "in-progress"))
+  .where(({ status }, { eq }) => eq(status, "in-progress"))
   .go();
 ```
 
@@ -52,40 +54,41 @@ tasks
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof tasks>
+  data: EntityIdentifiers<typeof tasks>;
 }
 ```
 
 ## Equivalent Parameters
+
 ```json
 {
-    "UpdateExpression": "SET #status = :status_u0, #points = #points + :points_u0, #comments = list_append(#comments, :comments_u0), #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0",
-    "ExpressionAttributeNames": {
-        "#status": "status",
-        "#points": "points",
-        "#comments": "comments",
-        "#updatedAt": "updatedAt",
-        "#gsi1sk": "gsi1sk"
-    },
-    "ExpressionAttributeValues": {
-        ":status0": "in-progress",
-        ":status_u0": "open",
-        ":points_u0": 5,
-        ":comments_u0": [
-            {
-                "user": "janet",
-                "body": "This seems half-baked."
-            }
-        ],
-        ":updatedAt_u0": 1630977029015,
-        ":gsi1sk_u0": "$assignments#tasks_1#status_open"
-    },
-    "TableName": "your_table_name",
-    "Key": {
-        "pk": "$taskapp#team_core",
-        "sk": "$tasks_1#project_backend#task_45-662"
-    },
-    "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk) AND #status = :status0"
+  "UpdateExpression": "SET #status = :status_u0, #points = #points + :points_u0, #comments = list_append(#comments, :comments_u0), #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0",
+  "ExpressionAttributeNames": {
+    "#status": "status",
+    "#points": "points",
+    "#comments": "comments",
+    "#updatedAt": "updatedAt",
+    "#gsi1sk": "gsi1sk"
+  },
+  "ExpressionAttributeValues": {
+    ":status0": "in-progress",
+    ":status_u0": "open",
+    ":points_u0": 5,
+    ":comments_u0": [
+      {
+        "user": "janet",
+        "body": "This seems half-baked."
+      }
+    ],
+    ":updatedAt_u0": 1630977029015,
+    ":gsi1sk_u0": "$assignments#tasks_1#status_open"
+  },
+  "TableName": "your_table_name",
+  "Key": {
+    "pk": "$taskapp#team_core",
+    "sk": "$tasks_1#project_backend#task_45-662"
+  },
+  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk) AND #status = :status0"
 }
 ```
 
@@ -97,15 +100,15 @@ Update Methods are available **_after_** the `update()` or `patch()` method is c
 
 > ElectroDB will validate an attribute's type when performing an operation (e.g. that the `subtract()` method can only be performed on numbers), but will defer checking the logical validity your update operation to the DocumentClient. For example, If your query performs multiple mutations on a single attribute, or perform other illogical operations given nature of an item/attribute, ElectroDB will not validate these edge cases and instead will simply pass back any error(s) thrown by the Document Client.
 
-Update/Patch Method                    | Attribute Types                                              | Parameter
--------------------------------------- | ------------------------------------------------------------ | ---------
-[set](#update-method-set)              | `number` `string` `boolean` `enum` `map` `list` `set` `any`  | `object`
-[remove](#update-method-remove)        | `number` `string` `boolean` `enum` `map` `list` `set` `any`  | `array`
-[add](#update-method-add)              | `number` `any` `set`                                         | `object`
-[subtract](#update-method-subtract)    | `number`                                                     | `object`
-[append](#update-method-append)        | `any` `list`                                                 | `object`
-[delete](#update-method-delete)        | `any` `set`                                                  | `object`
-[data](#update-method-data)            | `*`                                                          | `callback`
+| Update/Patch Method                 | Attribute Types                                             | Parameter  |
+| ----------------------------------- | ----------------------------------------------------------- | ---------- |
+| [set](#update-method-set)           | `number` `string` `boolean` `enum` `map` `list` `set` `any` | `object`   |
+| [remove](#update-method-remove)     | `number` `string` `boolean` `enum` `map` `list` `set` `any` | `array`    |
+| [add](#update-method-add)           | `number` `any` `set`                                        | `object`   |
+| [subtract](#update-method-subtract) | `number`                                                    | `object`   |
+| [append](#update-method-append)     | `any` `list`                                                | `object`   |
+| [delete](#update-method-delete)     | `any` `set`                                                 | `object`   |
+| [data](#update-method-data)         | `*`                                                         | `callback` |
 
 The methods above can be used (and reused) in a chain to form update parameters, when finished with `.params()` or `.go()` terminal. If your application requires the update method to return values related to the update (e.g. via the `ReturnValues` DocumentClient parameters), you can use the [Execution Option](#execution-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
 
@@ -118,11 +121,10 @@ The `set()` method will accept all attributes defined on the model. Provide a va
 <ExampleSetup />
 
 ```javascript
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .set({category: "food/meal"})
-    .where((attr, op) => op.eq(attr.category, "food/coffee"))
-    .go()
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .set({ category: "food/meal" })
+  .where((attr, op) => op.eq(attr.category, "food/coffee"))
+  .go();
 ```
 
 #### Default Response Format
@@ -131,7 +133,7 @@ await StoreLocations
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
@@ -167,11 +169,10 @@ The `remove()` method will accept all attributes defined on the model. Unlike mo
 <ExampleSetup />
 
 ```javascript
-await StoreLocations
-    .update({ cityId, mallId, storeId, buildingId })
-    .remove(["discount"])
-    .where((attr, op) => op.eq(attr.category, "food/coffee"))
-    .go()
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .remove(["discount"])
+  .where((attr, op) => op.eq(attr.category, "food/coffee"))
+  .go();
 ```
 
 #### Default Response Format
@@ -180,7 +181,7 @@ await StoreLocations
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
@@ -188,32 +189,32 @@ await StoreLocations
 
 ```json
 {
-    "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount",
-    "ExpressionAttributeNames": {
-        "#category": "category",
-        "#discount": "discount",
-        "#cityId": "cityId",
-        "#mallId": "mallId",
-        "#buildingId": "buildingId",
-        "#storeId": "storeId",
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__"
-    },
-    "ExpressionAttributeValues": {
-        ":category0": "food/coffee",
-        ":cityId_u0": "Portland",
-        ":mallId_u0": "EastPointe",
-        ":buildingId_u0": "A34",
-        ":storeId_u0": "LatteLarrys",
-        ":__edb_e___u0": "MallStore",
-        ":__edb_v___u0": "1"
-    },
-    "TableName": "electro",
-    "Key": {
-        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
-        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
-    },
-    "ConditionExpression": "#category = :category0"
+  "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#discount": "discount",
+    "#cityId": "cityId",
+    "#mallId": "mallId",
+    "#buildingId": "buildingId",
+    "#storeId": "storeId",
+    "#__edb_e__": "__edb_e__",
+    "#__edb_v__": "__edb_v__"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/coffee",
+    ":cityId_u0": "Portland",
+    ":mallId_u0": "EastPointe",
+    ":buildingId_u0": "A34",
+    ":storeId_u0": "LatteLarrys",
+    ":__edb_e___u0": "MallStore",
+    ":__edb_v___u0": "1"
+  },
+  "TableName": "electro",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
 }
 ```
 
@@ -228,14 +229,13 @@ If the attribute is defined as `any`, the syntax compatible with the attribute t
 <ExampleSetup />
 
 ```javascript
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .add({
-      warnings: 1,       // "number" attribute
-      tenants: ["larry"] // "set" attribute
-    })
-    .where((attr, op) => op.eq(attr.category, "food/coffee"))
-    .go()
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .add({
+    warnings: 1, // "number" attribute
+    tenants: ["larry"], // "set" attribute
+  })
+  .where((attr, op) => op.eq(attr.category, "food/coffee"))
+  .go();
 ```
 
 #### Default Response Format
@@ -244,7 +244,7 @@ await StoreLocations
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
@@ -252,37 +252,35 @@ await StoreLocations
 
 ```json
 {
-    "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #warnings :warnings_u0, #tenants :tenants_u0",
-    "ExpressionAttributeNames": {
-        "#category": "category",
-        "#warnings": "warnings",
-        "#tenants": "tenants",
-        "#cityId": "cityId",
-        "#mallId": "mallId",
-        "#buildingId": "buildingId",
-        "#storeId": "storeId",
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__"
-    },
-    "ExpressionAttributeValues": {
-        ":category0": "food/coffee",
-        ":warnings_u0": 1,
-        ":tenants_u0": [
-            "larry"
-        ],
-        ":cityId_u0": "Portland",
-        ":mallId_u0": "EastPointe",
-        ":buildingId_u0": "A34",
-        ":storeId_u0": "LatteLarrys",
-        ":__edb_e___u0": "MallStore",
-        ":__edb_v___u0": "1"
-    },
-    "TableName": "electro",
-    "Key": {
-        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
-        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
-    },
-    "ConditionExpression": "#category = :category0"
+  "UpdateExpression": "SET #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 ADD #warnings :warnings_u0, #tenants :tenants_u0",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#warnings": "warnings",
+    "#tenants": "tenants",
+    "#cityId": "cityId",
+    "#mallId": "mallId",
+    "#buildingId": "buildingId",
+    "#storeId": "storeId",
+    "#__edb_e__": "__edb_e__",
+    "#__edb_v__": "__edb_v__"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/coffee",
+    ":warnings_u0": 1,
+    ":tenants_u0": ["larry"],
+    ":cityId_u0": "Portland",
+    ":mallId_u0": "EastPointe",
+    ":buildingId_u0": "A34",
+    ":storeId_u0": "LatteLarrys",
+    ":__edb_e___u0": "MallStore",
+    ":__edb_v___u0": "1"
+  },
+  "TableName": "electro",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
 }
 ```
 
@@ -295,11 +293,10 @@ The `subtract()` method will accept attributes with type `number`. In the case o
 <ExampleSetup />
 
 ```javascript
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .subtract({deposit: 500})
-    .where((attr, op) => op.eq(attr.category, "food/coffee"))
-    .go()
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .subtract({ deposit: 500 })
+  .where((attr, op) => op.eq(attr.category, "food/coffee"))
+  .go();
 ```
 
 #### Default Response Format
@@ -308,7 +305,7 @@ await StoreLocations
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
@@ -343,16 +340,17 @@ The `append()` method will accept attributes with type `any`. This is a convenie
 <ExampleSetup />
 
 ```javascript
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .append({
-      rentalAgreement: [{
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .append({
+    rentalAgreement: [
+      {
         type: "amendment",
-        detail: "no soup for you"
-      }]
-    })
-    .where((attr, op) => op.eq(attr.category, "food/coffee"))
-    .go()
+        detail: "no soup for you",
+      },
+    ],
+  })
+  .where((attr, op) => op.eq(attr.category, "food/coffee"))
+  .go();
 ```
 
 #### Default Response Format
@@ -361,11 +359,12 @@ await StoreLocations
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
 #### Equivalent Parameters
+
 ```json
 {
   "UpdateExpression": "SET #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0)",
@@ -400,11 +399,10 @@ The `delete()` method will accept attributes with type `any` or `set` . This ope
 <ExampleSetup />
 
 ```javascript
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .delete({contact: ['555-345-2222']})
-    .where((attr, op) => op.eq(attr.category, "food/coffee"))
-    .go()
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .delete({ contact: ["555-345-2222"] })
+  .where((attr, op) => op.eq(attr.category, "food/coffee"))
+  .go();
 ```
 
 #### Default Response Format
@@ -413,11 +411,12 @@ await StoreLocations
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
 #### Equivalent Parameters
+
 ```json
 {
   "UpdateExpression": "DELETE #contact :contact0",
@@ -446,19 +445,19 @@ The callback provided to the `data` method is injected with an `attributes` obje
 
 As mentioned above, this method is functionally similar to the `where` clause with one exception: The callback provided to `data()` is not expected to return a value. When you invoke an injected `operation` method, the side effects are applied directly to update expression you are building.
 
-operation     | example                               | result                                                                | description
-------------- | ------------------------------------- | --------------------------------------------------------------------- | -----------
-`set`         | `set(category, value)`                | `#category = :category0`                                              | Add or overwrite existing value
-`add`         | `add(tenant, name)`                   | `#tenant :tenant1`                                                    | Add value to existing `set` attribute (used when provided attribute is of type `any` or `set`)
-`add`         | `add(rent, amount)`                   | `#rent = #rent + :rent0`                                              | Mathematically add given number to existing number on record
-`subtract`    | `subtract(deposit, amount)`           | `#deposit = #deposit - :deposit0`                                     | Mathematically subtract given number from existing number on record
-`remove`      | `remove(petFee)`                      | `#petFee`                                                             | Remove attribute/property from item
-`append`      | `append(rentalAgreement, amendment)`  | `#rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0)` | Add element to existing `list` attribute
-`delete`      | `delete(tenant, name)`                | `#tenant :tenant1`                                                    | Remove item from existing `set` attribute
-`del`         | `del(tenant, name)`                   | `#tenant :tenant1`                                                    | Alias for `delete` operation
-`name`        | `name(rent)`                          | `#rent`                                                               | Reference another attribute's name, can be passed to other operation that allows leveraging existing attribute values in calculating new values
-`value`       | `value(rent, amount)`                 | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values
-`ifNotExists` | `ifNotExists(rent, amount)`           | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record
+| operation     | example                              | result                                                                | description                                                                                                                                           |
+| ------------- | ------------------------------------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `set`         | `set(category, value)`               | `#category = :category0`                                              | Add or overwrite existing value                                                                                                                       |
+| `add`         | `add(tenant, name)`                  | `#tenant :tenant1`                                                    | Add value to existing `set` attribute (used when provided attribute is of type `any` or `set`)                                                        |
+| `add`         | `add(rent, amount)`                  | `#rent = #rent + :rent0`                                              | Mathematically add given number to existing number on record                                                                                          |
+| `subtract`    | `subtract(deposit, amount)`          | `#deposit = #deposit - :deposit0`                                     | Mathematically subtract given number from existing number on record                                                                                   |
+| `remove`      | `remove(petFee)`                     | `#petFee`                                                             | Remove attribute/property from item                                                                                                                   |
+| `append`      | `append(rentalAgreement, amendment)` | `#rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0)` | Add element to existing `list` attribute                                                                                                              |
+| `delete`      | `delete(tenant, name)`               | `#tenant :tenant1`                                                    | Remove item from existing `set` attribute                                                                                                             |
+| `del`         | `del(tenant, name)`                  | `#tenant :tenant1`                                                    | Alias for `delete` operation                                                                                                                          |
+| `name`        | `name(rent)`                         | `#rent`                                                               | Reference another attribute's name, can be passed to other operation that allows leveraging existing attribute values in calculating new values       |
+| `value`       | `value(rent, amount)`                | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values |
+| `ifNotExists` | `ifNotExists(rent, amount)`          | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record                                                                       |
 
 > Usage of `name` and `value` operations allow for some escape hatching in the case that a custom operation needs to be expressed. When used however, ElectroDB loses the context necessary to validate the expression created by the user. In practical terms, this means the `validation` function/regex on the impacted attribute will not be called.
 
@@ -467,25 +466,27 @@ operation     | example                               | result                  
 <ExampleSetup />
 
 ```javascript
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .data((a, o) => {
-        const newTenant = o.value(a.tenants, ["larry"]);
-        o.set(a.category, "food/meal");   // electrodb "enum"   -> dynamodb "string"
-        o.add(a.tenants, newTenant);       // electrodb "set"    -> dynamodb "set"
-        o.add(a.warnings, 1);               // electrodb "number" -> dynamodb "number"
-        o.subtract(a.deposit, 200);       // electrodb "number" -> dynamodb "number"
-        o.remove(a.discount);          // electrodb "number" -> dynamodb "number"
-        o.append(a.rentalAgreement, [{    // electrodb "list"   -> dynamodb "list"
-            type: "amendment",           // electrodb "map"    -> dynamodb "map"
-            detail: "no soup for you"
-        }]);
-        o.delete(a.tags, ['coffee']);
-        o.del(a.contact, ['555-345-2222']); // electrodb "set"    -> dynamodb "set"
-        o.add(a.fees, o.name(a.petFee)); // electrodb "number" -> dynamodb "number"
-    })
-    .where((attr, op) => op.eq(attr.category, "food/coffee"))
-    .go()
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .data((a, o) => {
+    const newTenant = o.value(a.tenants, ["larry"]);
+    o.set(a.category, "food/meal"); // electrodb "enum"   -> dynamodb "string"
+    o.add(a.tenants, newTenant); // electrodb "set"    -> dynamodb "set"
+    o.add(a.warnings, 1); // electrodb "number" -> dynamodb "number"
+    o.subtract(a.deposit, 200); // electrodb "number" -> dynamodb "number"
+    o.remove(a.discount); // electrodb "number" -> dynamodb "number"
+    o.append(a.rentalAgreement, [
+      {
+        // electrodb "list"   -> dynamodb "list"
+        type: "amendment", // electrodb "map"    -> dynamodb "map"
+        detail: "no soup for you",
+      },
+    ]);
+    o.delete(a.tags, ["coffee"]);
+    o.del(a.contact, ["555-345-2222"]); // electrodb "set"    -> dynamodb "set"
+    o.add(a.fees, o.name(a.petFee)); // electrodb "number" -> dynamodb "number"
+  })
+  .where((attr, op) => op.eq(attr.category, "food/coffee"))
+  .go();
 ```
 
 #### Default Response Format
@@ -494,65 +495,60 @@ await StoreLocations
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
 #### Equivalent Parameters
+
 ```json
 {
-    "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #fees = #fees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenants :tenants_u0, #warnings :warnings_u0 DELETE #tags :tags_u0, #contact :contact_u0",
-    "ExpressionAttributeNames": {
-        "#category": "category",
-        "#tenants": "tenants",
-        "#warnings": "warnings",
-        "#deposit": "deposit",
-        "#discount": "discount",
-        "#rentalAgreement": "rentalAgreement",
-        "#tags": "tags",
-        "#contact": "contact",
-        "#petFee": "petFee",
-        "#fees": "fees",
-        "#cityId": "cityId",
-        "#mallId": "mallId",
-        "#buildingId": "buildingId",
-        "#storeId": "storeId",
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__"
-    },
-    "ExpressionAttributeValues": {
-        ":category0": "food/coffee",
-        ":tenants_u0": [
-            "larry"
-        ],
-        ":category_u0": "food/meal",
-        ":warnings_u0": 1,
-        ":deposit_u0": 200,
-        ":rentalAgreement_u0": [
-            {
-                "type": "amendment",
-                "detail": "no soup for you"
-            }
-        ],
-        ":tags_u0": [
-            "coffee"
-        ],
-        ":contact_u0": [
-            "555-345-2222"
-        ],
-        ":cityId_u0": "Portland",
-        ":mallId_u0": "EastPointe",
-        ":buildingId_u0": "A34",
-        ":storeId_u0": "LatteLarrys",
-        ":__edb_e___u0": "MallStore",
-        ":__edb_v___u0": "1"
-    },
-    "TableName": "electro",
-    "Key": {
-        "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
-        "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
-    },
-    "ConditionExpression": "#category = :category0"
+  "UpdateExpression": "SET #category = :category_u0, #deposit = #deposit - :deposit_u0, #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement_u0), #fees = #fees + #petFee, #cityId = :cityId_u0, #mallId = :mallId_u0, #buildingId = :buildingId_u0, #storeId = :storeId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #discount ADD #tenants :tenants_u0, #warnings :warnings_u0 DELETE #tags :tags_u0, #contact :contact_u0",
+  "ExpressionAttributeNames": {
+    "#category": "category",
+    "#tenants": "tenants",
+    "#warnings": "warnings",
+    "#deposit": "deposit",
+    "#discount": "discount",
+    "#rentalAgreement": "rentalAgreement",
+    "#tags": "tags",
+    "#contact": "contact",
+    "#petFee": "petFee",
+    "#fees": "fees",
+    "#cityId": "cityId",
+    "#mallId": "mallId",
+    "#buildingId": "buildingId",
+    "#storeId": "storeId",
+    "#__edb_e__": "__edb_e__",
+    "#__edb_v__": "__edb_v__"
+  },
+  "ExpressionAttributeValues": {
+    ":category0": "food/coffee",
+    ":tenants_u0": ["larry"],
+    ":category_u0": "food/meal",
+    ":warnings_u0": 1,
+    ":deposit_u0": 200,
+    ":rentalAgreement_u0": [
+      {
+        "type": "amendment",
+        "detail": "no soup for you"
+      }
+    ],
+    ":tags_u0": ["coffee"],
+    ":contact_u0": ["555-345-2222"],
+    ":cityId_u0": "Portland",
+    ":mallId_u0": "EastPointe",
+    ":buildingId_u0": "A34",
+    ":storeId_u0": "LatteLarrys",
+    ":__edb_e___u0": "MallStore",
+    ":__edb_v___u0": "1"
+  },
+  "TableName": "electro",
+  "Key": {
+    "pk": "$mallstoredirectory#cityid_portland#mallid_eastpointe",
+    "sk": "$mallstore_1#buildingid_a34#storeid_lattelarrys"
+  },
+  "ConditionExpression": "#category = :category0"
 }
 ```
 
@@ -572,16 +568,14 @@ Specifying a property on a `map` attribute is expressed with dot notation.
 
 ```javascript
 // via Chain Method
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .set({'mapAttribute.mapProperty':  "value"})
-    .go();
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .set({ "mapAttribute.mapProperty": "value" })
+  .go();
 
 // via Data Method
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .data(({mapAttribute}, {set}) => set(mapAttribute.mapProperty, "value"))
-    .go()
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .data(({ mapAttribute }, { set }) => set(mapAttribute.mapProperty, "value"))
+  .go();
 ```
 
 #### Example 2: Removing an element from a `list` attribute
@@ -590,16 +584,14 @@ Specifying an index on a `list` attribute is expressed with square brackets cont
 
 ```javascript
 // via Chain Method
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .remove(['listAttribute[0]'])
-    .go();
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .remove(["listAttribute[0]"])
+  .go();
 
 // via Data Method
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .data(({listAttribute}, {remove}) => remove(listAttribute[0]))
-    .go();
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .data(({ listAttribute }, { remove }) => remove(listAttribute[0]))
+  .go();
 ```
 
 #### Example 3: Adding an item to a `set` attribute, on a `map` attribute, that is an element of a `list` attribute
@@ -611,17 +603,15 @@ All other complex structures are simply variations on the above two examples.
 const newSetValue = StoreLocations.client.createSet("setItemValue");
 
 // via Data Method
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .add({'listAttribute[1].setAttribute': newSetValue})
-    .go();
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .add({ "listAttribute[1].setAttribute": newSetValue })
+  .go();
 
-await StoreLocations
-    .update({cityId, mallId, storeId, buildingId})
-    .data(({listAttribute}, {add}) => {
-        add(listAttribute[1].setAttribute, newSetValue)
-    })
-    .go();
+await StoreLocations.update({ cityId, mallId, storeId, buildingId })
+  .data(({ listAttribute }, { add }) => {
+    add(listAttribute[1].setAttribute, newSetValue);
+  })
+  .go();
 ```
 
 ### Composite
@@ -642,108 +632,111 @@ One edge case arises when requiring all composite attributes for a key are provi
 <details>
     <summary>Example Entity</summary>
 
-  ```typescript
-import { Entity } from 'electrodb';
+```typescript
+import { Entity } from "electrodb";
 
-const table = 'electro';
+const table = "electro";
 
-const Organization = new Entity({
-  model: {
-    entity: "organization",
-    service: "app",
-    version: "1"
-  },
-  attributes: {
-    id: {
-      type: "string",
+const Organization = new Entity(
+  {
+    model: {
+      entity: "organization",
+      service: "app",
+      version: "1",
     },
-    name: {
-      type: "string",
-      required: true,
-    },
-    description: {
-      type: "string",
-    },
-    deleted: {
-      type: "boolean",
-      required: true,
-      default: false,
-    },
-    createdAt: {
-      type: "string",
-      readOnly: true,
-      required: true,
-      set: () => new Date().toISOString(),
-      default: () => new Date().toISOString(),
-    },
-  },
-  indexes: {
-    record: {
-      pk: {
-        field: "pk",
-        composite: ["id"]
+    attributes: {
+      id: {
+        type: "string",
       },
-      sk: {
-        field: "sk",
-        composite: []
-      }
-    },
-    all: {
-      index: "gsi1pk-gsi1sk-index",
-      pk: {
-        field: "gsi1pk",
-        composite: []
+      name: {
+        type: "string",
+        required: true,
       },
-      sk: {
-        field: "gsi1sk",
-        composite: ["deleted", "createdAt"] // SK has both readonly and mutable attributes
-      } 
+      description: {
+        type: "string",
+      },
+      deleted: {
+        type: "boolean",
+        required: true,
+        default: false,
+      },
+      createdAt: {
+        type: "string",
+        readOnly: true,
+        required: true,
+        set: () => new Date().toISOString(),
+        default: () => new Date().toISOString(),
+      },
+    },
+    indexes: {
+      record: {
+        pk: {
+          field: "pk",
+          composite: ["id"],
+        },
+        sk: {
+          field: "sk",
+          composite: [],
+        },
+      },
+      all: {
+        index: "gsi1pk-gsi1sk-index",
+        pk: {
+          field: "gsi1pk",
+          composite: [],
+        },
+        sk: {
+          field: "gsi1sk",
+          composite: ["deleted", "createdAt"], // SK has both readonly and mutable attributes
+        },
+      },
     },
   },
-}, { table });
+  { table },
+);
 ```
 
 </details>
 
-
 ```javascript
 const id = "00001";
-const existing = await Organization.get({id}).go();
+const existing = await Organization.get({ id }).go();
 
 if (existing.data?.deleted) {
-  await Organization.update({id: '00001'})
-      .set({ deleted: false })
-      .composite({ createdAt: existing.data.createdAt })
-      .go();
+  await Organization.update({ id: "00001" })
+    .set({ deleted: false })
+    .composite({ createdAt: existing.data.createdAt })
+    .go();
 }
 ```
 
 #### Equivalent Parameters
+
 ```json
 {
-    "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
-    "ExpressionAttributeNames": {
-        "#createdAt": "createdAt",
-        "#deleted": "deleted",
-        "#gsi1sk": "gsi1sk",
-        "#id": "id",
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__"
-    },
-    "ExpressionAttributeValues": {
-        ":createdAt0": "2023-08-22T16:37:45.700Z",
-        ":deleted_u0": false,
-        ":gsi1sk_u0": "$organization_1#deleted_false#createdat_2023-08-22t16:37:45.700z",
-        ":id_u0": "00001",
-        ":__edb_e___u0": "organization",
-        ":__edb_v___u0": "1"
-    },
-    "TableName": "electro",
-    "Key": {
-        "pk": "$app#id_00001",
-        "sk": "$organization_1"
-    },
-    "ConditionExpression": "#createdAt = :createdAt0"
+  "UpdateExpression": "SET #deleted = :deleted_u0, #gsi1sk = :gsi1sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+  "ExpressionAttributeNames": {
+    "#createdAt": "createdAt",
+    "#deleted": "deleted",
+    "#gsi1sk": "gsi1sk",
+    "#id": "id",
+    "#__edb_e__": "__edb_e__",
+    "#__edb_v__": "__edb_v__"
+  },
+  "ExpressionAttributeValues": {
+    ":createdAt0": "2023-08-22T16:37:45.700Z",
+    ":deleted_u0": false,
+    ":gsi1sk_u0": "$organization_1#deleted_false#createdat_2023-08-22t16:37:45.700z",
+    ":id_u0": "00001",
+    ":__edb_e___u0": "organization",
+    ":__edb_v___u0": "1"
+  },
+  "TableName": "electro",
+  "Key": {
+    "pk": "$app#id_00001",
+    "sk": "$organization_1"
+  },
+  "ConditionExpression": "#createdAt = :createdAt0"
 }
 ```
 
@@ -811,8 +804,10 @@ For the defined indexes:
 A user could update `attr4` alone because ElectroDB is able to leverage the value for `attr2` from values supplied to the `update()` method:
 
 #### Example
+
 ```typescript
-entity.update({ attr1: "value1", attr2: "value2" })
+entity
+  .update({ attr1: "value1", attr2: "value2" })
   .set({ attr4: "value4" })
   .go();
 ```
@@ -823,11 +818,12 @@ entity.update({ attr1: "value1", attr2: "value2" })
 
 ```typescript
 {
-  data: EntityIdentifiers<typeof StoreLocations>
+  data: EntityIdentifiers<typeof StoreLocations>;
 }
 ```
 
 #### Equivalent Parameters
+
 ```json
 {
   "UpdateExpression": "SET #attr4 = :attr4_u0, #gsi1sk = :gsi1sk_u0, #attr1 = :attr1_u0, #attr2 = :attr2_u0",
@@ -856,6 +852,6 @@ entity.update({ attr1: "value1", attr2: "value2" })
 
 ## Execution Options
 
-import PartialExample from '../../../partials/mutation-query-options.mdx';
+import PartialExample from "../../../partials/mutation-query-options.mdx";
 
 <PartialExample name="Filters" />

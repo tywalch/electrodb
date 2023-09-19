@@ -13,8 +13,8 @@ process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
  **/
 
 export const configuration = {
-    endpoint: "http://localhost:8000",
-    region: "us-east-1"
+  endpoint: "http://localhost:8000",
+  region: "us-east-1",
 };
 
 export const client = new DynamoDB.DocumentClient(configuration);

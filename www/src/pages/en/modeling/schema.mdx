@@ -20,13 +20,14 @@ Schemas define entity's name and version, the attributes your entity's items wil
 > ElectroDB is a strongly typed library, and makes use of TypeScript's more advanced type inference functionality. For this reason, Schemas are typically defined directly in the Entity's constructor. If you do need to define a schema outside a constructor, it is recommended to define your schema variable with an `as const` assertion ([read more here](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions)) to ensure TypeScript is able to infer your schema correctly.
 
 ## Entity Definition (Schema)
-Property       | Description
--------------- | -----------
-model.service  | Name of the application using the entity, used to namespace all entities
-model.entity   | Name of the entity that the schema represents
-model.version  | The version number of the schema, used to namespace keys
-attributes     | An object containing each attribute that makes up the schema
-indexes        | An object containing table indexes, including the values for the table's default Partition Key and Sort Key
+
+| Property      | Description                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------- |
+| model.service | Name of the application using the entity, used to namespace all entities                                    |
+| model.entity  | Name of the entity that the schema represents                                                               |
+| model.version | The version number of the schema, used to namespace keys                                                    |
+| attributes    | An object containing each attribute that makes up the schema                                                |
+| indexes       | An object containing table indexes, including the values for the table's default Partition Key and Sort Key |
 
 ### Overview
 
@@ -167,62 +168,62 @@ The following DynamoDB table definition creates a generic Pay-Per-Request table 
 {
   // highlight-next-line
   "TableName": "electro",
-  "KeySchema":[
-      {
-        // highlight-next-line
-          "AttributeName":"pk",
-          "KeyType":"HASH"
-      },
-      {
-        // highlight-next-line
-          "AttributeName":"sk",
-          "KeyType":"RANGE"
-      }
+  "KeySchema": [
+    {
+      // highlight-next-line
+      "AttributeName": "pk",
+      "KeyType": "HASH"
+    },
+    {
+      // highlight-next-line
+      "AttributeName": "sk",
+      "KeyType": "RANGE"
+    }
   ],
-  "AttributeDefinitions":[
-      {
-        // highlight-next-line
-          "AttributeName":"pk",
-          "AttributeType":"S"
-      },
-      {
-        // highlight-next-line
-          "AttributeName":"sk",
-          "AttributeType":"S"
-      },
-      {
-        // highlight-next-line
-          "AttributeName":"gsi1pk",
-          "AttributeType":"S"
-      },
-      {
-        // highlight-next-line
-          "AttributeName":"gsi1sk",
-          "AttributeType":"S"
-      }
+  "AttributeDefinitions": [
+    {
+      // highlight-next-line
+      "AttributeName": "pk",
+      "AttributeType": "S"
+    },
+    {
+      // highlight-next-line
+      "AttributeName": "sk",
+      "AttributeType": "S"
+    },
+    {
+      // highlight-next-line
+      "AttributeName": "gsi1pk",
+      "AttributeType": "S"
+    },
+    {
+      // highlight-next-line
+      "AttributeName": "gsi1sk",
+      "AttributeType": "S"
+    }
   ],
-  "GlobalSecondaryIndexes":[
-      {
-        // highlight-next-line
-          "IndexName":"gsi1pk-gsi1sk-index",
-          "KeySchema":[
-              {
-                // highlight-next-line
-                  "AttributeName":"gsi1pk",
-                  "KeyType":"HASH"
-              },
-              {
-                // highlight-next-line
-                  "AttributeName":"gsi1sk",
-                  "KeyType":"RANGE"
-              }
-          ],
-          "Projection":{
-              "ProjectionType":"ALL"
-          }
+  "GlobalSecondaryIndexes": [
+    {
+      // highlight-next-line
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "KeySchema": [
+        {
+          // highlight-next-line
+          "AttributeName": "gsi1pk",
+          "KeyType": "HASH"
+        },
+        {
+          // highlight-next-line
+          "AttributeName": "gsi1sk",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
       }
+    }
   ],
-  "BillingMode":"PAY_PER_REQUEST"
+  "BillingMode": "PAY_PER_REQUEST"
 }
 ```
 
@@ -277,4 +278,3 @@ indexes: {
     }
 }
 ```
-
