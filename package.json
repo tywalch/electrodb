@@ -8,10 +8,12 @@
     "build:browser": "browserify playground/browser.js -o playground/bundle.js",
     "test": "./test.sh",
     "test:ci": "npm install && npm test",
-    "test:run": "npm run test:types && npm run test:init && npm run test:unit",
+    "test:run": "npm run test:format && npm run test:types && npm run test:init && npm run test:unit",
+    
     "test:init": "node ./test/init.js",
     "test:unit": "mocha -r ts-node/register ./test/**.spec.*",
     "test:types": "tsd",
+    "test:format": "prettier -c .",
     "coverage": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
     "coverage:local:coveralls": "npm run test:init && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",
     "coverage:local:html": "npm run test:init && nyc npm run test:unit && nyc report --reporter=html",
@@ -29,9 +31,7 @@
     "local:stop": "npm run ddb:stop",
     "local:exec": "LOCAL_DYNAMO_ENDPOINT='http://localhost:8000' ts-node ./test/debug.ts",
     "local:debug": "npm run local:start && npm run local:exec",
-    "format": "npm run format:write",
-    "format:write": "prettier -w . --log-level=error",
-    "format:check": "prettier -c . --log-level=error"
+    "format": "prettier -w . --log-level=error"
   },
   "repository": {
     "type": "git",
