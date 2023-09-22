@@ -5081,6 +5081,9 @@ export class Entity<
         cursor: string | null;
       }
     : { data: Array<ResponseItem<A, F, C, S>>; cursor: string | null };
+
+  go();
+
   setIdentifier(type: "entity" | "version", value: string): void;
   setTableName(tableName: string): void;
   getTableName(): string | undefined;
