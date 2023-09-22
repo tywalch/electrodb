@@ -268,8 +268,8 @@ function makeMessage(message, section) {
 }
 
 class ElectroError extends Error {
-  constructor(code, message) {
-    super(message);
+  constructor(code, message, cause) {
+    super(message, { cause });
     let detail = ErrorCodes.UnknownError;
     if (code && code.sym === ErrorCode) {
       detail = code;

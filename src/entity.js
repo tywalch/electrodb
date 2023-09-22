@@ -27,7 +27,6 @@ const {
   MethodTypeTranslation,
   TransactionCommitSymbol,
   CastKeyOptions,
-  UpsertOperations,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -542,6 +541,7 @@ class Entity {
           stackTrace.message = new e.ElectroError(
             e.ErrorCodes.AWSError,
             `Error thrown by DynamoDB client: "${err.message}"`,
+            err,
           ).message;
           return Promise.reject(stackTrace);
         } else if (err.isElectroError) {
@@ -550,6 +550,7 @@ class Entity {
           stackTrace.message = new e.ElectroError(
             e.ErrorCodes.UnknownError,
             err.message,
+            err,
           ).message;
           return Promise.reject(stackTrace);
         }
