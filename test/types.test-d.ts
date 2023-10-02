@@ -11,7 +11,7 @@ const magnify = <T>(value: T): Resolve<T> => {
 const get = <T>() => {
   return {} as Resolve<T>;
 };
-const troubleshoot = <T>(value: T) => Text;
+const troubleshoot = <T>(value: T) => value;
 
 const entityWithSK = new Entity({
   model: {

@@ -5,6 +5,7 @@ import {
   Entity,
   EntityItem,
   QueryResponse,
+  Service,
 } from "../index";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
@@ -18,6 +19,7 @@ const client = new DynamoDB.DocumentClient({
 
 const sleep = async (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
 const SERVICE = "BugBeater";
 const ENTITY = "TEST_ENTITY";
 const table = "electro";
@@ -432,7 +434,7 @@ describe("Entity", () => {
       expect(secondCreatedAt - 1).to.equal(firstCreatedAt);
     });
 
-    it("providing update and create with the same data should result in the same item created", async () => {
+    it("providing upsert and create with the same data should result in the same item created", async () => {
       const updatedAt = Date.now();
       function createThing() {
         let createdAt = 1;
@@ -653,6 +655,242 @@ describe("Entity", () => {
           event.method === "upsert"
             ? event.params.ExpressionAttributeValues[":gsi1sk_u0"]
             : event.params.Item.gsi1sk;
+
+        expect(received).to.equal(expected);
+      });
+    });
+
+    it("providing transact upsert and create with the same data should result in the same item created", async () => {
+      const updatedAt = Date.now();
+      function createThing() {
+        let createdAt = 1;
+        return new Entity(
+          {
+            model: {
+              entity: "transaction",
+              service: "bank",
+              version: "1",
+            },
+            attributes: {
+              accountNumber: {
+                type: "string",
+              },
+              transactionId: {
+                type: "string",
+              },
+              transactionType: {
+                type: "string",
+              },
+              description: {
+                type: "string",
+              },
+              source: {
+                type: "string",
+                readOnly: true,
+              },
+              createdAt: {
+                type: "number",
+                readOnly: true,
+                required: true,
+                default: () => 1,
+                set: () => {
+                  return createdAt++;
+                },
+              },
+              updatedAt: {
+                type: "number",
+                watch: "*",
+                required: true,
+                default: () => updatedAt,
+                set: () => updatedAt,
+              },
+            },
+            indexes: {
+              transactions: {
+                pk: {
+                  field: "pk",
+                  composite: ["accountNumber"],
+                },
+                sk: {
+                  field: "sk",
+                  composite: ["transactionId"],
+                },
+              },
+              byCreated: {
+                index: "gis1pk-gsi1sk-index",
+                pk: {
+                  field: "gsi1pk",
+                  composite: ["transactionType"],
+                },
+                sk: {
+                  field: "gsi1sk",
+                  composite: ["createdAt"],
+                },
+              },
+            },
+          },
+          { table, client },
+        );
+      }
+
+      const accountNumber1 = uuid();
+      const accountNumber2 = uuid();
+      const transactionId = uuid();
+      const description = uuid();
+      const source = uuid();
+
+      const thing1 = createThing();
+      const thing2 = createThing();
+      const thingService = new Service({thing1, thing2});
+
+      const events: Array<{ method: string; params: any }> = [];
+      const logger = (event: ElectroEvent) => {
+        if (event.type === "query") {
+          const { method, params } = event;
+          events.push({ method, params });
+        }
+      };
+
+      const upsertParams = thingService.transaction.write(({ thing1 }) => {
+        return [
+          thing1.upsert({
+            transactionId,
+            accountNumber: accountNumber1,
+            description,
+            source,
+          })
+          .commit()
+        ]
+      }).params();
+
+      expect(upsertParams).to.deep.equal({
+        TransactItems: [
+          {
+            Update: {
+              ExpressionAttributeNames: {
+                "#__edb_e__": "__edb_e__",
+                "#__edb_v__": "__edb_v__",
+                "#accountNumber": "accountNumber",
+                "#createdAt": "createdAt",
+                "#description": "description",
+                "#gsi1pk": "gsi1pk",
+                "#gsi1sk": "gsi1sk",
+                "#source": "source",
+                "#transactionId": "transactionId",
+                "#updatedAt": "updatedAt",
+              },
+              ExpressionAttributeValues: {
+                ":__edb_e___u0": "transaction",
+                ":__edb_v___u0": "1",
+                ":accountNumber_u0": accountNumber1,
+                ":createdAt_u0": 1,
+                ":description_u0": description,
+                ":gsi1pk_u0": "$bank#transactiontype_",
+                ":gsi1sk_u0": "$transaction_1#createdat_1",
+                ":source_u0": source,
+                ":transactionId_u0": transactionId,
+                ":updatedAt_u0": updatedAt,
+              },
+              Key: {
+                  pk: `$bank#accountnumber_${accountNumber1}`,
+                  sk: `$transaction_1#transactionid_${transactionId}`,
+              },
+              TableName: table,
+              UpdateExpression: "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #accountNumber = :accountNumber_u0, #transactionId = :transactionId_u0, #description = :description_u0, #source = if_not_exists(#source, :source_u0), #createdAt = :createdAt_u0, #updatedAt = :updatedAt_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0",
+            }
+          }
+        ]
+      });
+
+      const createParams = thing2
+        .put({
+          transactionId,
+          accountNumber: accountNumber2,
+          description,
+          source,
+        })
+        .params();
+
+      expect(createParams).to.deep.equal({
+        Item: {
+          accountNumber: accountNumber2,
+          transactionId: transactionId,
+          description: description,
+          source: source,
+          createdAt: 1,
+          updatedAt: updatedAt,
+          pk: `$bank#accountnumber_${accountNumber2}`,
+          sk: `$transaction_1#transactionid_${transactionId}`,
+          gsi1pk: "$bank#transactiontype_",
+          gsi1sk: "$transaction_1#createdat_1",
+          __edb_e__: "transaction",
+          __edb_v__: "1",
+        },
+        TableName: table,
+      });
+
+      await thingService.transaction.write(({ thing1 }) => [
+        thing1.upsert({
+          transactionId,
+          accountNumber: accountNumber1,
+          description,
+          source,
+        }).commit(),
+      ]).go({ logger });
+
+      await thing2
+        .put({
+          transactionId,
+          accountNumber: accountNumber2,
+          description,
+          source,
+        })
+        .go({ logger });
+
+      const item1 = await thing1
+        .get({
+          transactionId,
+          accountNumber: accountNumber1,
+        })
+        .go();
+
+      const item2 = await thing2
+        .get({
+          transactionId,
+          accountNumber: accountNumber2,
+        })
+        .go();
+
+      expect(item1.data).to.deep.equal({
+        accountNumber: accountNumber1,
+        updatedAt: updatedAt,
+        createdAt: 2,
+        source,
+        description,
+        transactionId,
+      });
+
+      expect(item2.data).to.deep.equal({
+        accountNumber: accountNumber2,
+        updatedAt: updatedAt,
+        createdAt: 2,
+        source,
+        description,
+        transactionId,
+      });
+
+      expect({ ...item1.data, accountNumber: null }).to.deep.equal({
+        ...item2.data,
+        accountNumber: null,
+      });
+      
+      expect(events.length).to.equal(2);
+      events.forEach((event) => {
+        const expected = "$transaction_1#createdat_2";
+        const received =
+          event.method === "put"
+            ? event.params.Item.gsi1sk
+            : event.params.TransactItems[0].Update.ExpressionAttributeValues[":gsi1sk_u0"];
 
         expect(received).to.equal(expected);
       });

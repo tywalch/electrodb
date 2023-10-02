@@ -512,10 +512,7 @@ describe("conversions", () => {
       throw new Error("Item not defined!");
     }
     // @ts-ignore
-    const cursor =
-      entity.conversions.byAccessPattern[accessPattern].fromComposite.toCursor(
-        item,
-      );
+    const cursor = entity.conversions.byAccessPattern[accessPattern].fromComposite.toCursor(item);
     expect(cursor).not.to.be.null;
 
     const keysFromCursor = entity.conversions.byAccessPattern[
@@ -535,10 +532,7 @@ describe("conversions", () => {
     expect(compositeFromCursor).not.to.be.null;
 
     // @ts-ignore
-    const keysFromComposite =
-      entity.conversions.byAccessPattern[accessPattern].fromComposite.toKeys(
-        item,
-      );
+    const keysFromComposite =entity.conversions.byAccessPattern[accessPattern].fromComposite.toKeys(item);
     expect(keysFromComposite).not.to.be.null;
     expect(keysFromCursor).to.deep.equal(keysFromComposite);
 

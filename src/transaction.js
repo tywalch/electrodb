@@ -130,7 +130,12 @@ function createTransaction(options) {
           data: [],
         };
       }
-
+      if (options && options.logger) {
+        if (!options.listeners) {
+          options.listeners = [];
+        }
+        options.listeners.push(options.logger);
+      }
       const response = await driver.go(method, params, {
         ...options,
         parse: (options, data) => {
