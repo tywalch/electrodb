@@ -1404,24 +1404,6 @@ export interface PutRecordOperationOptionsTransaction<
   >;
 }
 
-export interface UpsertRecordOperationOptionsTransaction<
-  A extends string,
-  F extends string,
-  C extends string,
-  S extends Schema<A, F, C>,
-  ResponseType,
-> {
-  commit: PutRecordGoTransaction<ResponseType, TransactWriteQueryOptions>;
-  where: WhereClause<
-    A,
-    F,
-    C,
-    S,
-    Item<A, F, C, S, S["attributes"]>,
-    UpsertRecordOperationOptionsTransaction<A, F, C, S, ResponseType>
-  >;
-}
-
 export type UpdateRecordGoTransaction<ResponseType> = <
   T = ResponseType,
   Options extends TransactWriteQueryOptions = TransactWriteQueryOptions,
@@ -1646,7 +1628,232 @@ type NonOverlappingProperties<T1, T2> = {
   [Key in keyof T1 as Key extends keyof T2 ? never : Key]: T1[Key];
 };
 
-// RequiredPutItems
+export type UpsertRecordOperationOptionsTransaction<
+    A extends string,
+    F extends string,
+    C extends string,
+    S extends Schema<A, F, C>,
+    ResponseType,
+    FullExpectedItem,
+    RemainingExpectedItem,
+    ProvidedItem,
+> =
+    [RequiredKeys<RemainingExpectedItem>] extends [never]
+        ? {
+          commit: PutRecordGoTransaction<ResponseType, TransactWriteQueryOptions>;
+
+          where: WhereClause<
+              A,
+              F,
+              C,
+              S,
+              Item<A, F, C, S, S["attributes"]>,
+              UpsertRecordOperationOptionsTransaction<
+                  A,
+                  F,
+                  C,
+                  S,
+                  ResponseType,
+                  FullExpectedItem,
+                  RemainingExpectedItem,
+                  ProvidedItem
+              >
+          >;
+
+          set: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<RemainingExpectedItem, PutItem<A, F, C, S>>
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+          ifNotExists: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<RemainingExpectedItem, PutItem<A, F, C, S>>
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+          add: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<RemainingExpectedItem, AddItem<A, F, C, S>>
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+          subtract: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<
+                      RemainingExpectedItem,
+                      SubtractItem<A, F, C, S>
+                  >
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+          append: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<RemainingExpectedItem, AppendItem<A, F, C, S>>
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+        }
+        : {
+          // these are strings to give context to the user this is a builder pattern
+          commit:
+              | `Missing required attributes to perform upsert`
+              | `Required: ${RequiredKeys<RemainingExpectedItem>}`;
+
+          where: WhereClause<
+              A,
+              F,
+              C,
+              S,
+              Item<A, F, C, S, S["attributes"]>,
+              UpsertRecordOperationOptionsTransaction<
+                  A,
+                  F,
+                  C,
+                  S,
+                  ResponseType,
+                  FullExpectedItem,
+                  RemainingExpectedItem,
+                  ProvidedItem
+              >
+          >;
+
+          set: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<RemainingExpectedItem, PutItem<A, F, C, S>>
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+          ifNotExists: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<RemainingExpectedItem, PutItem<A, F, C, S>>
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+          add: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<RemainingExpectedItem, AddItem<A, F, C, S>>
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+          subtract: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<
+                      RemainingExpectedItem,
+                      SubtractItem<A, F, C, S>
+                  >
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+          append: <
+              ReceivedItem extends Partial<
+                  OverlappingProperties<RemainingExpectedItem, AppendItem<A, F, C, S>>
+              >,
+          >(
+              item: ReceivedItem,
+          ) => UpsertRecordOperationOptionsTransaction<
+              A,
+              F,
+              C,
+              S,
+              ResponseType,
+              FullExpectedItem,
+              NonOverlappingProperties<RemainingExpectedItem, ReceivedItem>,
+              NonOverlappingProperties<ProvidedItem, ReceivedItem>
+          >;
+        };
+
+
 export type UpsertRecordOperationOptions<
   A extends string,
   F extends string,
@@ -1657,7 +1864,6 @@ export type UpsertRecordOperationOptions<
   RemainingExpectedItem,
   ProvidedItem,
 > =
-  // keyof Omit<ProvidedItem, RequiredKeys<RemainingExpectedItem>> extends RequiredKeys<RemainingExpectedItem>
   [RequiredKeys<RemainingExpectedItem>] extends [never]
     ? {
         go: UpsertRecordGo<
@@ -5082,8 +5288,6 @@ export class Entity<
       }
     : { data: Array<ResponseItem<A, F, C, S>>; cursor: string | null };
 
-  go();
-
   setIdentifier(type: "entity" | "version", value: string): void;
   setTableName(tableName: string): void;
   getTableName(): string | undefined;
@@ -5134,14 +5338,19 @@ export class TransactWriteEntity<
   create(
     record: PutItem<A, F, C, S>,
   ): PutRecordOperationOptionsTransaction<A, F, C, S, ResponseItem<A, F, C, S>>;
-  upsert(
-    record: PutItem<A, F, C, S>,
+  upsert<InitialItem extends UpsertItem<A, F, C, S>>(
+    record: InitialItem,
   ): UpsertRecordOperationOptionsTransaction<
     A,
     F,
     C,
     S,
-    ResponseItem<A, F, C, S>
+    ResponseItem<A, F, C, S>,
+    PutItem<A, F, C, S>,
+    [keyof InitialItem] extends [never]
+        ? PutItem<A, F, C, S>
+        : Omit<PutItem<A, F, C, S>, keyof InitialItem>,
+    InitialItem
   >;
   update(key: AllTableIndexCompositeAttributes<A, F, C, S>): {
     set: SetRecordTransaction<
@@ -5298,6 +5507,7 @@ export class TransactGetEntity<
 
 type TransactWriteFunctionOptions = {
   token?: string;
+  logger?: ElectroEventListener;
 };
 
 type TransactGetFunctionOptions = {};

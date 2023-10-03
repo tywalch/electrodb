@@ -1,5 +1,5 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import { CustomAttributeType, Entity, Attribute } from "../index";
+import { CustomAttributeType, Entity, Attribute, Service } from "../index";
 import { createNumberEntity } from "./mocks.test";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
@@ -728,7 +728,7 @@ describe("Update Item", () => {
       });
     });
 
-    it("should allow non-existent lists to be appended to", async () => {
+    it("should allow non-existent lists to be appended to with upsert", async () => {
       const StoreLocations = new Entity(
         {
           model: {
@@ -896,6 +896,199 @@ describe("Update Item", () => {
         .subtract({ petFee })
         .append({ rentalAgreement })
         .go({ response: "all_new" });
+
+      expect(data).to.deep.equal({
+        cityId,
+        storeId,
+        mallId,
+        buildingId,
+        unitId,
+        category,
+        leaseEndDate,
+        rent,
+        deposit,
+        tenants,
+        warnings,
+        rentalAgreement,
+        discount: "0.00",
+        petFee: 0 - petFee,
+      });
+    });
+
+    it("should allow non-existent lists to be appended to with transact upsert", async () => {
+      const StoreLocations = new Entity(
+        {
+          model: {
+            service: "MallStoreDirectory",
+            entity: "MallStore",
+            version: "1",
+          },
+          attributes: {
+            cityId: {
+              type: "string",
+              required: true,
+            },
+            mallId: {
+              type: "string",
+              required: true,
+            },
+            storeId: {
+              type: "string",
+              required: true,
+            },
+            buildingId: {
+              type: "string",
+              required: true,
+            },
+            unitId: {
+              type: "string",
+              required: true,
+            },
+            category: {
+              type: [
+                "spite store",
+                "food/coffee",
+                "food/meal",
+                "clothing",
+                "electronics",
+                "department",
+                "misc",
+              ],
+              required: true,
+            },
+            leaseEndDate: {
+              type: "string",
+              required: true,
+            },
+            rent: {
+              type: "string",
+              required: true,
+              validate: /^(\d+\.\d{2})$/,
+            },
+            discount: {
+              type: "string",
+              required: false,
+              default: "0.00",
+              validate: /^(\d+\.\d{2})$/,
+            },
+            tenants: {
+              type: "set",
+              items: "string",
+            },
+            warnings: {
+              type: "number",
+              default: 0,
+            },
+            deposit: {
+              type: "number",
+            },
+            contact: {
+              type: "set",
+              items: "string",
+            },
+            rentalAgreement: {
+              type: "list",
+              items: {
+                type: "map",
+                properties: {
+                  type: {
+                    type: "string",
+                  },
+                  detail: {
+                    type: "string",
+                  },
+                },
+              },
+            },
+            petFee: {
+              type: "number",
+            },
+            fees: {
+              type: "number",
+            },
+            tags: {
+              type: "set",
+              items: "string",
+            },
+          },
+          indexes: {
+            stores: {
+              pk: {
+                field: "pk",
+                composite: ["cityId", "mallId"],
+              },
+              sk: {
+                field: "sk",
+                composite: ["buildingId", "storeId"],
+              },
+            },
+            units: {
+              index: "gsi1pk-gsi1sk-index",
+              pk: {
+                field: "gsi1pk",
+                composite: ["mallId"],
+              },
+              sk: {
+                field: "gsi1sk",
+                composite: ["buildingId", "unitId"],
+              },
+            },
+            leases: {
+              index: "gsi2pk-gsi2sk-index",
+              pk: {
+                field: "gsi2pk",
+                composite: ["storeId"],
+              },
+              sk: {
+                field: "gsi2sk",
+                composite: ["leaseEndDate"],
+              },
+            },
+          },
+        },
+        { table, client },
+      );
+
+      const service = new Service({StoreLocations});
+
+      const cityId = uuid();
+      const storeId = "LatteLarrys";
+      const mallId = "EastPointe";
+      const buildingId = "BuildingA1";
+      const unitId = "B47";
+      const category = "food/coffee";
+      const leaseEndDate = "2020-03-22";
+      const rent = "4500.00";
+      const deposit = 100;
+      const tenants = ["Larry David"];
+      const warnings = 0;
+      const petFee = 250;
+      const rentalAgreement = [
+        {
+          type: "amendment",
+          detail: "Larry David accepts coffee liability",
+        },
+      ];
+
+      const { canceled } = await service.transaction.write(({StoreLocations}) => [
+        StoreLocations.upsert({
+            cityId,
+            storeId,
+            mallId,
+            buildingId,
+            unitId,
+            category,
+            leaseEndDate,
+            rent,
+          })
+          .add({ deposit, tenants })
+          .ifNotExists({ warnings })
+          .subtract({ petFee })
+          .append({ rentalAgreement }).commit({ response: "all_old" })
+      ]).go();
+
+      expect(canceled).to.be.false;
+      const { data } = await StoreLocations.get({ cityId, storeId, buildingId, mallId }).go();
 
       expect(data).to.deep.equal({
         cityId,
@@ -5205,6 +5398,181 @@ describe("Update Item", () => {
       });
     });
 
+    it("should perform ifNotExists while performing a transact upsert", async () => {
+      const serviceName = uuid();
+      const UrlEntity = new Entity(
+        {
+          model: {
+            entity: "url",
+            version: "1",
+            service: serviceName,
+          },
+          attributes: {
+            id: {
+              type: "string",
+            },
+            url: {
+              type: "string",
+              required: true,
+            },
+            citation: {
+              type: "string",
+              required: true,
+            },
+            description: {
+              type: "string",
+              required: false,
+            },
+            count: {
+              type: "number",
+            },
+            hits: {
+              type: "number",
+              required: true,
+            },
+            minimum: {
+              type: "number",
+            },
+            maximum: {
+              type: "number",
+              readOnly: true,
+            },
+            secure: {
+              type: "boolean",
+              required: true,
+              default: () => false,
+              watch: ["protocol"],
+              set: (_, { protocol }) => {
+                return protocol === "https";
+              },
+            },
+            protocol: {
+              type: "string",
+              required: true,
+            },
+            createdAt: {
+              type: "number",
+              default: () => createdAt,
+              // cannot be modified after created
+              readOnly: true,
+            },
+            updatedAt: {
+              type: "number",
+              // watch for changes to any attribute
+              watch: "*",
+              // set current timestamp when updated
+              set: () => updatedAt,
+              readOnly: true,
+            },
+          },
+          indexes: {
+            urls: {
+              pk: {
+                field: "pk",
+                composite: ["id"],
+              },
+              sk: {
+                field: "sk",
+                composite: ["url"],
+              },
+            },
+            byUpdated: {
+              index: "gsi1pk-gsi1sk-index",
+              pk: {
+                // map to your GSI Hash/Partition key
+                field: "gsi1pk",
+                composite: [],
+              },
+              sk: {
+                // map to your GSI Range/Sort key
+                field: "gsi1sk",
+                composite: ["updatedAt"],
+              },
+            },
+          },
+        },
+        { table, client },
+      );
+
+      const service = new Service({ UrlEntity });
+
+      const id = uuid();
+      const url = "www.cool.com";
+      const citation = "my_citation";
+      const description = "my_description";
+      const count = 2;
+      const hits = 3;
+      const minimum = 1;
+      const maximum = 20;
+      const protocol = "https";
+
+      await service.transaction.write(({UrlEntity}) => [ 
+        UrlEntity.upsert({
+          id,
+          url,
+          citation,
+          description,
+          count,
+          hits,
+          minimum,
+          maximum,
+          protocol,
+        }).commit()
+      ]).go();
+
+      const firstUpsert = await UrlEntity.get({ id, url }).go();
+
+      expect(firstUpsert.data).to.deep.equal({
+        updatedAt,
+        createdAt,
+        id,
+        url,
+        citation,
+        description,
+        count,
+        hits,
+        minimum,
+        maximum,
+        protocol,
+        secure: true,
+      });
+
+      await service.transaction.write(({UrlEntity}) => [
+        UrlEntity.upsert({
+          id,
+          url,
+          citation,
+          description,
+          protocol,
+        }).ifNotExists({
+            minimum: minimum + 50,
+            maximum: maximum + 50,
+          })
+          .add({
+            count,
+            hits,
+          })
+          .commit()
+      ]).go();
+
+      const secondUpsert = await UrlEntity.get({ id, url }).go();
+
+      expect(secondUpsert.data).to.deep.equal({
+        secure: true,
+        updatedAt,
+        createdAt,
+        id,
+        url,
+        citation,
+        description,
+        minimum,
+        maximum,
+        protocol,
+        count: count * 2,
+        hits: hits * 2,
+      });
+    });
+
     it("should perform add, subtract, and append while performing an upsert", async () => {
       const serviceName = uuid();
       const UrlEntity = new Entity(
@@ -5357,6 +5725,188 @@ describe("Update Item", () => {
         .subtract({ hits, minimum })
         .set({ url })
         .go();
+
+      const afterSecondUpsert = await UrlEntity.get({ id, url }).go();
+
+      expect(afterSecondUpsert.data).to.deep.equal({
+        ...afterFirstUpsertExpected,
+        updatedAt,
+        createdAt,
+
+        // protocol changed so should watcher attribute
+        protocol: "http",
+        secure: false,
+
+        // maximum was readOnly so should not have been altered
+        maximum: maximum,
+
+        // count was added to count again
+        count: afterFirstUpsertExpected.count * count,
+
+        // hits/minimum was subtracted again
+        hits: afterFirstUpsertExpected.hits - hits,
+        minimum: afterFirstUpsertExpected.minimum - minimum,
+      });
+    });
+
+    it("should perform add, subtract, and append while performing a transact upsert", async () => {
+      const serviceName = uuid();
+      const UrlEntity = new Entity(
+        {
+          model: {
+            entity: "url",
+            version: "1",
+            service: serviceName,
+          },
+          attributes: {
+            id: {
+              type: "string",
+            },
+            url: {
+              type: "string",
+              required: true,
+            },
+            citation: {
+              type: "string",
+              required: true,
+            },
+            description: {
+              type: "string",
+              required: false,
+            },
+            count: {
+              type: "number",
+            },
+            hits: {
+              type: "number",
+              required: true,
+            },
+            minimum: {
+              type: "number",
+            },
+            maximum: {
+              type: "number",
+              readOnly: true,
+            },
+            secure: {
+              type: "boolean",
+              required: true,
+              default: () => false,
+              watch: ["protocol"],
+              set: (_, { protocol }) => {
+                return protocol === "https";
+              },
+            },
+            protocol: {
+              type: "string",
+              required: true,
+            },
+            createdAt: {
+              type: "number",
+              default: () => createdAt,
+              // cannot be modified after created
+              readOnly: true,
+            },
+            updatedAt: {
+              type: "number",
+              // watch for changes to any attribute
+              watch: "*",
+              // set current timestamp when updated
+              set: () => updatedAt,
+              readOnly: true,
+            },
+          },
+          indexes: {
+            urls: {
+              pk: {
+                field: "pk",
+                composite: ["id"],
+              },
+              sk: {
+                field: "sk",
+                composite: ["url"],
+              },
+            },
+            byUpdated: {
+              index: "gsi1pk-gsi1sk-index",
+              pk: {
+                // map to your GSI Hash/Partition key
+                field: "gsi1pk",
+                composite: [],
+              },
+              sk: {
+                // map to your GSI Range/Sort key
+                field: "gsi1sk",
+                composite: ["updatedAt"],
+              },
+            },
+          },
+        },
+        { table, client },
+      );
+
+      const service = new Service({ UrlEntity });
+
+      const id = uuid();
+      const url = "www.cool.com";
+      const citation = "my_citation";
+      const description = "my_description";
+      const count = 2;
+      const hits = 3;
+      const minimum = 1;
+      const maximum = 20;
+      const protocol = "https";
+
+      await service.transaction.write(({UrlEntity}) => [
+        UrlEntity.upsert({
+            // this object contains no composite attributes
+            citation,
+            protocol,
+            description,
+          })
+          .set({ id, maximum })
+          .add({ count })
+          .subtract({ hits, minimum })
+          .set({ url })
+          .commit()
+      ]).go();
+
+      const afterFirstUpsert = await UrlEntity.get({ id, url }).go();
+
+      const afterFirstUpsertExpected = {
+        id,
+        url,
+        citation,
+        updatedAt,
+        createdAt,
+        protocol,
+        count,
+        maximum,
+        description,
+        secure: true,
+        hits: 0 - hits,
+        minimum: 0 - minimum,
+      };
+
+      expect(afterFirstUpsert.data).to.deep.equal(afterFirstUpsertExpected);
+
+      await service.transaction.write(({UrlEntity}) => [
+        UrlEntity.upsert({
+          citation,
+          description,
+          // protocol changes, so should watcher "secure"
+          protocol: "http",
+        })
+        .set({
+          id,
+          // different value for readonly maximum
+          maximum: maximum * 2,
+        })
+        .add({ count })
+        .subtract({ hits, minimum })
+        .set({ url })
+        .commit()
+      ]).go();
 
       const afterSecondUpsert = await UrlEntity.get({ id, url }).go();
 

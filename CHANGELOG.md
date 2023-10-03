@@ -576,3 +576,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 - The `upsert` method now supports `add`, `subtract`, `append`, `set`, and `ifNotExists` operations. Addresses [Issue #286](https://github.com/tywalch/electrodb/issues/286).
 - The `add` and `subtract` operations provided to the `data` callback operation with `update` and `patch` methods now supports a third parameter for supply a defaultValue. Addresses [Issue #297](https://github.com/tywalch/electrodb/issues/297).
 - A condition expression operation called `field` that allows for references to raw field names as they exist in the table. This can be used with `escape` and `value` to create custom filter expressions.
+
+## [2.10.1]
+
+## Added
+- Transact `upsert` now supports `add`, `subtract`, `append`, `set`, and `ifNotExists` operations. Addresses [Issue #301](https://github.com/tywalch/electrodb/issues/301).
