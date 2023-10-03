@@ -4409,6 +4409,7 @@ class Entity {
       getClient: () => this.client,
       isRoot: true,
     });
+
     let filters = this._normalizeFilters(model.filters);
     // todo: consider a rename
     let prefixes = this._normalizeKeyFixings({
@@ -4445,6 +4446,12 @@ class Entity {
           labels,
           attributes,
         );
+        for (let attributeName in schema.attributes) {
+          const { field } = schema.attributes[attributeName];
+          if (indexes[accessPattern][keyType].field === field) {
+            indexes[accessPattern][keyType].isFieldRef = true;
+          }
+        }
       }
     }
 
