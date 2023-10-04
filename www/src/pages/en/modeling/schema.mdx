@@ -118,9 +118,8 @@ In the below `model` example, ElectroDB will define isolation with the following
 
 The [Attributes page](/en/modeling/attributes) contains everything you need to know about attributes in ElectroDB. In the context of an overall schema, the `attributes` object defines all attributes that can be defined on an entity item. Additionally, the [indexes object](#indexes) will reference attributes defined here.
 
-:::caution
-The `attributes` object should not contain fields that represent your partition or sort keys. ElectroDB creates mappings to your partition and sort keys in the [indexes object](#indexes).
-:::
+> The `attributes` object should not contain fields that represent your partition or sort keys. ElectroDB creates mappings to your partition and sort keys in the [indexes object](#indexes).
+
 
 ```typescript
 {
