@@ -1,6 +1,4 @@
 /* istanbul ignore file */
-import moment from "moment";
-import { v4 as uuid } from "uuid";
 import { Entity, EntityItem, QueryResponse, CreateEntityItem } from "../../../";
 import { table, client } from "../../common";
 

@@ -16,7 +16,6 @@ import {
 } from "./models";
 import {
   initializeTable,
-  table,
   createItems,
   uniqueItems,
   dynamodb,

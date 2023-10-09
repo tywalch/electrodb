@@ -69,7 +69,8 @@
     "ts-node": "^10.9.1",
     "tsd": "^0.28.1",
     "typescript": "^5.2.2",
-    "uuid": "7.0.1"
+    "uuid": "7.0.1",
+    "aws-cdk-lib": "^2.100.0"
   },
   "keywords": [
     "electrodb",
@@ -85,7 +86,6 @@
   },
   "dependencies": {
     "@aws-sdk/lib-dynamodb": "^3.395.0",
-    "aws-cdk-lib": "^2.100.0",
     "jsonschema": "1.2.7"
   }
 }

@@ -3,7 +3,6 @@ import { faker } from "@faker-js/faker";
 import * as models from "./models";
 import {
   initializeTable,
-  table,
   createItems,
   dynamodb,
   tableDefinition,

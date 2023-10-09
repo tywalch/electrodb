@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 import createTableDefinition from "./definition.json";
-import { dynamodb, DynamoDB, CreateTableInput } from "./client";
+import { DynamoDB, CreateTableInput } from "./client";
 
 export const table = "electro";
 

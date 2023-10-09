@@ -69,7 +69,7 @@ export type CreatePullRequest = CreateEntityItem<typeof PullRequest>;
 export type UpdatePullRequest = UpdateEntityItem<typeof PullRequest>;
 export type PullRequestItem = EntityItem<typeof PullRequest>;
 export type PullRequestIds = Parameters<typeof PullRequest.get>[0][0];
-export type PullRequest = EntityRecord<typeof PullRequest>;
+export type PullRequestRecord = EntityRecord<typeof PullRequest>;
 
 export type CreatePullRequestComment = CreateEntityItem<
   typeof PullRequestComment

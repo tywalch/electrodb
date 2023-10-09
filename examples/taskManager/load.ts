@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 import data from "./data.json";
-import { initializeTable, table, dynamodb, tableDefinition } from "../common";
+import { initializeTable, dynamodb, tableDefinition } from "../common";
 import {
   OfficeItem,
   EmployeeItem,

@@ -25,7 +25,6 @@ const configuration = {
   region: "us-east-1",
 };
 
-const client = new DynamoDB.DocumentClient(configuration);
 const dynamodb = new DynamoDB(configuration);
 
 function createTableManager(dynamodb, table) {
@@ -55,7 +54,9 @@ async function createTable(dynamodb, table, definition) {
       }
       await tableManager.create(definition);
     } else {
-      throw new Error("No table specified");
+      // make sure we're hitting dynamodb local
+      // (this code is only for tests and experimentation)
+      throw new Error("No endpoint defined");
     }
   } catch (err) {
     console.log(err);
