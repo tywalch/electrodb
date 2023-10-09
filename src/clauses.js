@@ -978,7 +978,7 @@ let clauses = {
           entity.model.translations.indexes.fromIndexToAccessPattern[
             state.query.index
           ];
-          
+
         if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
           state.filterProperties(FilterOperationNames.lte, endingSk.composites);
         }

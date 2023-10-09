@@ -14,7 +14,14 @@ import {
   GenreItem,
   AuthorItem,
 } from "./models";
-import { initializeTable, table, createItems, uniqueItems, dynamodb, tableDefinition } from "../common";
+import {
+  initializeTable,
+  table,
+  createItems,
+  uniqueItems,
+  dynamodb,
+  tableDefinition,
+} from "../common";
 
 /**
  * ATTENTION READ FIRST:

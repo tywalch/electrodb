@@ -1,4 +1,10 @@
-import {client, dynamodb, initializeTable, table, tableDefinition} from "../common";
+import {
+  client,
+  dynamodb,
+  initializeTable,
+  table,
+  tableDefinition,
+} from "../common";
 import { createLock } from "./Lock";
 
 function print(value: any, label?: string) {

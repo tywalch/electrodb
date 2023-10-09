@@ -6,7 +6,7 @@ export const table = "electro";
 
 export const tableDefinition = {
   TableName: table,
-  ...createTableDefinition
+  ...createTableDefinition,
 };
 
 type CreateTableManagerOptions = {
@@ -23,12 +23,10 @@ export function createTableManager(options: CreateTableManagerOptions) {
       return !!tables.TableNames?.includes(TableName);
     },
     async drop() {
-        return dynamodb.deleteTable({ TableName }).promise();
+      return dynamodb.deleteTable({ TableName }).promise();
     },
     async create() {
-      return dynamodb
-        .createTable(definition)
-        .promise();
+      return dynamodb.createTable(definition).promise();
     },
   };
 }
