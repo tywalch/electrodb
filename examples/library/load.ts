@@ -14,7 +14,13 @@ import {
   GenreItem,
   AuthorItem,
 } from "./models";
-import { initializeTable, table, createItems, uniqueItems } from "../common";
+import {
+  initializeTable,
+  createItems,
+  uniqueItems,
+  dynamodb,
+  tableDefinition,
+} from "../common";
 
 /**
  * ATTENTION READ FIRST:
@@ -96,7 +102,11 @@ async function loadTable(options: LoadTableOptions) {
 }
 
 async function main() {
-  await initializeTable({ tableName: table });
+  await initializeTable({
+    definition: tableDefinition,
+    dropOnExists: false,
+    dynamodb,
+  });
   const data = createMockData();
   await loadTable(data);
 }

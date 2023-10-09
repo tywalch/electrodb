@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 import data from "./data.json";
-import { initializeTable, table } from "../common";
+import { initializeTable, dynamodb, tableDefinition } from "../common";
 import {
   OfficeItem,
   EmployeeItem,
@@ -34,7 +34,11 @@ async function loadTable(options: LoadTableOptions) {
 }
 
 async function main() {
-  await initializeTable({ tableName: table });
+  await initializeTable({
+    definition: tableDefinition,
+    dropOnExists: false,
+    dynamodb,
+  });
   await loadTable(data as LoadTableOptions);
 }
 

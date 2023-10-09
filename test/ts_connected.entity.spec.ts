@@ -1382,6 +1382,58 @@ describe("index casting", () => {
     );
   });
 
+  it('should allow numeric sort keys', () => {
+    const products = new Entity(
+        {
+          model: {
+            entity: 'products',
+            version: '1',
+            service: 'star'
+          },
+          attributes: {
+            product_code: {
+              type: 'string'
+            },
+            product_id: {
+              type: 'number'
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'product_code',
+                composite: ['product_code'],
+                template: '${product_code}',
+                casing: 'upper'
+              },
+              sk: {
+                field: 'product_id',
+                composite: ['product_id'],
+                template: '${product_id}'
+              }
+            }
+          }
+        },
+        { client, table: "electro" }
+    );
+
+    const queryParams = products.query.record({ product_code: 'abc', product_id: 123 }).params();
+    expect(queryParams).to.deep.equal({
+      KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
+      TableName: 'electro',
+      ExpressionAttributeNames: { '#pk': 'product_code', '#sk1': 'product_id' },
+      ExpressionAttributeValues: { ':pk': 'DMC', ':sk1': 123 }
+    });
+
+    const beginsWithParams = products.query.record({ product_code: 'abc'}).begins({ product_id: 123 }).params();
+    expect(beginsWithParams).to.deep.equal({
+      KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
+      TableName: 'electro',
+      ExpressionAttributeNames: { '#pk': 'product_code', '#sk1': 'product_id' },
+      ExpressionAttributeValues: { ':pk': 'DMC', ':sk1': 123 }
+    });
+  })
+
   it("should reject when provided string index composite cannot be cast to number", () => {
     const gamerTag = uuid();
 

@@ -2724,8 +2724,9 @@ class Entity {
 
     if (
       this.model.lookup.indexHasSortKeys[index] &&
-      typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "string" &&
-      keyExpressions.ExpressionAttributeValues[":sk1"].length > 0
+        (typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "number" ||
+        (typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "string" &&
+        keyExpressions.ExpressionAttributeValues[":sk1"].length > 0))
     ) {
       if (type === QueryTypes.is) {
         KeyConditionExpression = `${KeyConditionExpression} and #sk1 = :sk1`;
@@ -4409,6 +4410,7 @@ class Entity {
       getClient: () => this.client,
       isRoot: true,
     });
+
     let filters = this._normalizeFilters(model.filters);
     // todo: consider a rename
     let prefixes = this._normalizeKeyFixings({
@@ -4445,6 +4447,12 @@ class Entity {
           labels,
           attributes,
         );
+        for (let attributeName in schema.attributes) {
+          const { field } = schema.attributes[attributeName];
+          if (indexes[accessPattern][keyType].field === field) {
+            indexes[accessPattern][keyType].isFieldRef = true;
+          }
+        }
       }
     }
 

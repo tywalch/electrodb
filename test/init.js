@@ -25,10 +25,9 @@ const configuration = {
   region: "us-east-1",
 };
 
-const client = new DynamoDB.DocumentClient(configuration);
 const dynamodb = new DynamoDB(configuration);
 
-function createTableManager(table) {
+function createTableManager(dynamodb, table) {
   return {
     async exists() {
       let tables = await dynamodb.listTables().promise();
@@ -45,17 +44,19 @@ function createTableManager(table) {
   };
 }
 
-async function createTable(table, definition) {
+async function createTable(dynamodb, table, definition) {
   try {
     if (configuration.endpoint !== undefined) {
-      let tableManager = createTableManager(table);
+      let tableManager = createTableManager(dynamodb, table);
       let exists = await tableManager.exists();
       if (exists) {
         await tableManager.drop();
       }
       await tableManager.create(definition);
     } else {
-      throw new Error("No table specified");
+      // make sure we're hitting dynamodb local
+      // (this code is only for tests and experimentation)
+      throw new Error("No endpoint defined");
     }
   } catch (err) {
     console.log(err);
@@ -65,15 +66,15 @@ async function createTable(table, definition) {
 
 async function main() {
   await Promise.all([
-    createTable("electro", definition),
-    createTable("electro_customkeys", customKeys),
-    createTable("electro_nosort", noSortKeys),
-    createTable("electro_nostringkeys", noStringKeys),
-    createTable("electro_keynamesattributenames", keyNamesAttributeNames),
-    createTable("electro_leadingunderscorekeys", leadingUnderscoreKeys),
-    createTable("electro_localsecondaryindex", localSecondaryIndexes),
-    createTable("electro_keysonly", keysOnly),
-    createTable("electro_castkeys", castKeys),
+    createTable(dynamodb, "electro", definition),
+    createTable(dynamodb, "electro_customkeys", customKeys),
+    createTable(dynamodb, "electro_nosort", noSortKeys),
+    createTable(dynamodb, "electro_nostringkeys", noStringKeys),
+    createTable(dynamodb, "electro_keynamesattributenames", keyNamesAttributeNames),
+    createTable(dynamodb, "electro_leadingunderscorekeys", leadingUnderscoreKeys),
+    createTable(dynamodb, "electro_localsecondaryindex", localSecondaryIndexes),
+    createTable(dynamodb, "electro_keysonly", keysOnly),
+    createTable(dynamodb, "electro_castkeys", castKeys),
   ]);
 }
 

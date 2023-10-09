@@ -973,12 +973,21 @@ let clauses = {
           sk,
           pk,
         );
+
+        const accessPattern =
+          entity.model.translations.indexes.fromIndexToAccessPattern[
+            state.query.index
+          ];
+
+        if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+          state.filterProperties(FilterOperationNames.lte, endingSk.composites);
+        }
+
         return state
           .setType(QueryTypes.and)
           .setSK(endingSk.composites)
           .setType(QueryTypes.between)
-          .setSK(startingSk.composites)
-          .filterProperties(FilterOperationNames.lte, endingSk.composites);
+          .setSK(startingSk.composites);
       } catch (err) {
         state.setError(err);
         return state;
@@ -1019,9 +1028,14 @@ let clauses = {
             pk,
           );
           state.setSK(composites);
-          state.filterProperties(FilterOperationNames.gt, {
-            ...composites,
-          });
+          const accessPattern =
+            entity.model.translations.indexes.fromIndexToAccessPattern[
+              state.query.index
+            ];
+
+          if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+            state.filterProperties(FilterOperationNames.lte, composites);
+          }
         });
       } catch (err) {
         state.setError(err);
@@ -1086,9 +1100,13 @@ let clauses = {
             pk,
           );
           state.setSK(composites);
-          state.filterProperties(FilterOperationNames.lte, {
-            ...composites,
-          });
+          const accessPattern =
+            entity.model.translations.indexes.fromIndexToAccessPattern[
+              state.query.index
+            ];
+          if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+            state.filterProperties(FilterOperationNames.lte, composites);
+          }
         });
       } catch (err) {
         state.setError(err);

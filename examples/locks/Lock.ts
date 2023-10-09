@@ -15,13 +15,13 @@ function getTimeToExpiration(options: GetTimeToExpirationOptions) {
 
 export type GetKeyOptions = {
   lockManager: LockManager;
-  aquiredLock: LockItem;
+  acquiredLock: LockItem;
 };
 
 // LockManager depenedency injection makes it much easier to test this function
 export function getKey(options: GetKeyOptions): Key {
-  const { lockManager, aquiredLock } = options;
-  const { keyId, expiresAt, targetId } = aquiredLock;
+  const { lockManager, acquiredLock } = options;
+  const { keyId, expiresAt, targetId } = acquiredLock;
 
   // We encapsulate a little bit of state here to save us uncessary calls to the database.
   let released = false;
@@ -59,7 +59,7 @@ export function getLock(options: GetLockOptions): Lock {
       if (!aquiredLock) {
         return null;
       }
-      return getKey({ lockManager, aquiredLock });
+      return getKey({ lockManager, acquiredLock: aquiredLock });
     },
     check: async (id: string): Promise<LockStatus> => {
       const item = await lockManager.getLockItem({ targetId: id });
