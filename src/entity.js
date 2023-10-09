@@ -2724,9 +2724,9 @@ class Entity {
 
     if (
       this.model.lookup.indexHasSortKeys[index] &&
-        (typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "number" ||
+      (typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "number" ||
         (typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "string" &&
-        keyExpressions.ExpressionAttributeValues[":sk1"].length > 0))
+          keyExpressions.ExpressionAttributeValues[":sk1"].length > 0))
     ) {
       if (type === QueryTypes.is) {
         KeyConditionExpression = `${KeyConditionExpression} and #sk1 = :sk1`;

@@ -1422,7 +1422,7 @@ describe("index casting", () => {
       KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
       TableName: 'electro',
       ExpressionAttributeNames: { '#pk': 'product_code', '#sk1': 'product_id' },
-      ExpressionAttributeValues: { ':pk': 'DMC', ':sk1': 123 }
+      ExpressionAttributeValues: { ':pk': 'ABC', ':sk1': 123 }
     });
 
     const beginsWithParams = products.query.record({ product_code: 'abc'}).begins({ product_id: 123 }).params();
@@ -1430,7 +1430,7 @@ describe("index casting", () => {
       KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
       TableName: 'electro',
       ExpressionAttributeNames: { '#pk': 'product_code', '#sk1': 'product_id' },
-      ExpressionAttributeValues: { ':pk': 'DMC', ':sk1': 123 }
+      ExpressionAttributeValues: { ':pk': 'ABC', ':sk1': 123 }
     });
   })
 

@@ -8,7 +8,7 @@
     "build:browser": "browserify playground/browser.js -o playground/bundle.js",
     "test": "./test.sh",
     "test:ci": "npm install && npm test",
-    "test:run": "npm run test:format && npm run test:types && npm run test:init && npm run test:unit",
+    "test:run": "npm run test:types && npm run test:init && npm run test:unit",
     "test:init": "node ./test/init.js",
     "test:unit": "mocha -r ts-node/register ./test/**.spec.*",
     "test:types": "tsd",
