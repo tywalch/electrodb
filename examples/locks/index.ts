@@ -1,4 +1,4 @@
-import { client, table } from "../common";
+import {client, dynamodb, initializeTable, table, tableDefinition} from "../common";
 import { createLock } from "./Lock";
 
 function print(value: any, label?: string) {
@@ -15,6 +15,11 @@ function sleep(ms: number) {
 const lock = createLock({ client, table, defaultTtl: 1000 });
 
 async function main() {
+  await initializeTable({
+    definition: tableDefinition,
+    dropOnExists: true,
+    dynamodb,
+  });
   // a long ttl to allow time to play with the keys
   const ttl = 10_000;
   const target1 = "test1";

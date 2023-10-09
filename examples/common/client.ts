@@ -1,5 +1,5 @@
 /* istanbul ignore file */
-import DynamoDB from "aws-sdk/clients/dynamodb";
+import DynamoDB, { DocumentClient, CreateTableInput } from "aws-sdk/clients/dynamodb";
 
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 
@@ -17,5 +17,11 @@ export const configuration = {
   region: "us-east-1",
 };
 
-export const client = new DynamoDB.DocumentClient(configuration);
+export const client = new DocumentClient(configuration);
 export const dynamodb = new DynamoDB(configuration);
+
+export type {
+  DynamoDB,
+  DocumentClient,
+  CreateTableInput,
+}

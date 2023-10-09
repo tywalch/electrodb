@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 import { faker } from "@faker-js/faker";
 import * as models from "./models";
-import { initializeTable, table, createItems } from "../common";
+import {initializeTable, table, createItems, dynamodb, tableDefinition} from "../common";
 
 /**
  * ATTENTION READ FIRST:
@@ -111,7 +111,11 @@ async function loadTable(options: LoadTableOptions) {
 }
 
 async function main() {
-  await initializeTable({ tableName: table });
+  await initializeTable({
+    definition: tableDefinition,
+    dropOnExists: false,
+    dynamodb,
+  });
   const data = createMockData();
   await loadTable(data);
 }

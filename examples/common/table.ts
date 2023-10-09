@@ -1,41 +1,54 @@
 /* istanbul ignore file */
-import tableDefinition from "./definition.json";
-import { dynamodb } from "./client";
+import createTableDefinition from "./definition.json";
+import { dynamodb, DynamoDB, CreateTableInput } from "./client";
 
 export const table = "electro";
 
+export const tableDefinition = {
+  TableName: table,
+  ...createTableDefinition
+};
+
 type CreateTableManagerOptions = {
-  tableName: string;
+  dynamodb: DynamoDB;
+  definition: CreateTableInput;
 };
 
 export function createTableManager(options: CreateTableManagerOptions) {
-  const { tableName } = options;
+  const { dynamodb, definition } = options;
+  const { TableName } = definition;
   return {
     async exists() {
       let tables = await dynamodb.listTables().promise();
-      return !!tables.TableNames?.includes(tableName);
+      return !!tables.TableNames?.includes(TableName);
     },
     async drop() {
-      return dynamodb.deleteTable({ TableName: tableName }).promise();
+        return dynamodb.deleteTable({ TableName }).promise();
     },
     async create() {
       return dynamodb
-        .createTable({ ...tableDefinition, TableName: tableName })
+        .createTable(definition)
         .promise();
     },
   };
 }
 
 type InitializeTableOptions = {
-  tableName: string;
+  dynamodb: DynamoDB;
+  dropOnExists: boolean;
+  definition: CreateTableInput;
 };
 
 export async function initializeTable(options: InitializeTableOptions) {
-  const { tableName } = options;
-  const tableManager = createTableManager({ tableName });
+  const { definition, dynamodb, dropOnExists } = options;
+  const tableManager = createTableManager({ definition, dynamodb });
   const exists = await tableManager.exists();
   if (exists) {
-    return;
+    if (!dropOnExists) {
+      return;
+    }
+    await tableManager.drop();
   }
+
   await tableManager.create();
 }
