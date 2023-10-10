@@ -2837,11 +2837,11 @@ class Entity {
   ) {
     const { pk } = indexKeys;
     const sk = indexKeys.sk[0];
-    
-    let operator = 
-    typeof sk === "number"
-      ? Comparisons[comparison]
-      : PartialComparisons[comparison];
+
+    let operator =
+      typeof sk === "number"
+        ? Comparisons[comparison]
+        : PartialComparisons[comparison];
 
     if (!operator) {
       throw new Error(
@@ -2855,7 +2855,7 @@ class Entity {
       pk,
       sk,
     );
-    
+
     let params = {
       TableName: this.getTableName(),
       ExpressionAttributeNames: this._mergeExpressionsAttributes(
