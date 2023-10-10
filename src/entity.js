@@ -2724,9 +2724,9 @@ class Entity {
 
     if (
       this.model.lookup.indexHasSortKeys[index] &&
-        (typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "number" ||
+      (typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "number" ||
         (typeof keyExpressions.ExpressionAttributeValues[":sk1"] === "string" &&
-        keyExpressions.ExpressionAttributeValues[":sk1"].length > 0))
+          keyExpressions.ExpressionAttributeValues[":sk1"].length > 0))
     ) {
       if (type === QueryTypes.is) {
         KeyConditionExpression = `${KeyConditionExpression} and #sk1 = :sk1`;
@@ -2835,17 +2835,18 @@ class Entity {
     filter = {},
     indexKeys = {},
   ) {
-    const { pk, fulfilled } = indexKeys;
+    const { pk } = indexKeys;
     const sk = indexKeys.sk[0];
-    let operator = PartialComparisons[comparison];
-    // fulfilled
-    // ? Comparisons[comparison]
-    // : PartialComparisons[comparison];
+
+    let operator =
+      typeof sk === "number"
+        ? Comparisons[comparison]
+        : PartialComparisons[comparison];
 
     if (!operator) {
       throw new Error(
         `Unexpected comparison operator "${comparison}", expected ${u.commaSeparatedString(
-          Object.values(Comparisons),
+          Object.values(PartialComparisons),
         )}`,
       );
     }
@@ -2854,6 +2855,7 @@ class Entity {
       pk,
       sk,
     );
+
     let params = {
       TableName: this.getTableName(),
       ExpressionAttributeNames: this._mergeExpressionsAttributes(

@@ -1034,7 +1034,7 @@ let clauses = {
             ];
 
           if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
-            state.filterProperties(FilterOperationNames.lte, composites);
+            state.filterProperties(FilterOperationNames.gt, composites);
           }
         });
       } catch (err) {

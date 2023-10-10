@@ -1382,7 +1382,8 @@ describe("index casting", () => {
     );
   });
 
-  it('should allow numeric sort keys', () => {
+  it('should allow numeric sort keys', async () => {
+    const table = "electro_nostringkeys";
     const products = new Entity(
         {
           model: {
@@ -1391,48 +1392,135 @@ describe("index casting", () => {
             service: 'star'
           },
           attributes: {
-            product_code: {
-              type: 'string'
+            pk: {
+              type: 'number'
             },
-            product_id: {
+            sk: {
               type: 'number'
             }
           },
           indexes: {
             record: {
               pk: {
-                field: 'product_code',
-                composite: ['product_code'],
-                template: '${product_code}',
-                casing: 'upper'
+                field: 'pk',
+                composite: ['pk'],
+                template: '${pk}',
               },
               sk: {
-                field: 'product_id',
-                composite: ['product_id'],
-                template: '${product_id}'
+                field: 'sk',
+                composite: ['sk'],
+                template: '${sk}'
               }
             }
           }
         },
-        { client, table: "electro" }
+        { client, table }
     );
 
-    const queryParams = products.query.record({ product_code: 'abc', product_id: 123 }).params();
+    const items = [
+      {pk: 8, sk: -1},
+      {pk: 8, sk: 0},
+      {pk: 8, sk: 1},
+      {pk: 8, sk: 2},
+      {pk: 8, sk: 3},
+      {pk: 8, sk: 4},
+      {pk: 8, sk: 5},
+    ];
+
+    await products.put(items).go();
+    
+    const queryParams = products.query.record({ pk: 8, sk: 4 }).params();
     expect(queryParams).to.deep.equal({
       KeyConditionExpression: '#pk = :pk and #sk1 = :sk1',
-      TableName: 'electro',
-      ExpressionAttributeNames: { '#pk': 'product_code', '#sk1': 'product_id' },
-      ExpressionAttributeValues: { ':pk': 'DMC', ':sk1': 123 }
+      TableName: table,
+      ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+      ExpressionAttributeValues: { ':pk': 8, ':sk1': 4 }
     });
 
-    const beginsWithParams = products.query.record({ product_code: 'abc'}).begins({ product_id: 123 }).params();
+    const queryResults = await products.query.record({ pk: 8, sk: 4 }).go();
+    expect(queryResults.data).to.deep.equal([
+      items[5],
+    ]);
+
+    const beginsWithParams = products.query.record({ pk: 8 }).begins({ sk: 4 }).params();
     expect(beginsWithParams).to.deep.equal({
       KeyConditionExpression: '#pk = :pk and begins_with(#sk1, :sk1)',
-      TableName: 'electro',
-      ExpressionAttributeNames: { '#pk': 'product_code', '#sk1': 'product_id' },
-      ExpressionAttributeValues: { ':pk': 'DMC', ':sk1': 123 }
+      TableName: table,
+      ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+      ExpressionAttributeValues: { ':pk': 8, ':sk1': 4 }
     });
-  })
+
+    const beginsWithResults = await products.query.record({ pk: 8 })
+      .begins({ sk: 4 })
+      .go()
+      .then(() => ({err: null}))
+      .catch((err) => ({err}));
+    expect(beginsWithResults.err?.message).to.equal(`Error thrown by DynamoDB client: "Invalid KeyConditionExpression: Incorrect operand type for operator or function; operator or function: begins_with, operand type: N" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`);
+
+    const gtParams = products.query.record({ pk: 8 }).gt({ sk: 4 }).params();
+    expect(gtParams).to.deep.equal({
+      TableName: 'electro_nostringkeys',
+      ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+      ExpressionAttributeValues: { ':pk': 8, ':sk1': 4 },
+      KeyConditionExpression: '#pk = :pk and #sk1 > :sk1'
+    });
+
+    const gtResults = await products.query.record({ pk: 8 }).gt({ sk: 4 }).go();
+    expect(gtResults.data).to.deep.equal(items.filter(item => item.sk > 4));
+
+    const gteParams = products.query.record({ pk: 8 }).gte({ sk: 4 }).params();
+    expect(gteParams).to.deep.equal({
+      TableName: 'electro_nostringkeys',
+      ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+      ExpressionAttributeValues: { ':pk': 8, ':sk1': 4 },
+      KeyConditionExpression: '#pk = :pk and #sk1 >= :sk1'
+    });
+
+    const gteResults = await products.query.record({ pk: 8 }).gte({ sk: 4 }).go();
+    expect(gteResults.data).to.deep.equal(items.filter(item => item.sk >= 4));
+
+    const ltParams = products.query.record({ pk: 8 }).lt({ sk: 4 }).params();
+    expect(ltParams).to.deep.equal({
+      TableName: 'electro_nostringkeys',
+      ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+      ExpressionAttributeValues: { ':pk': 8, ':sk1': 4 },
+      KeyConditionExpression: '#pk = :pk and #sk1 < :sk1'
+    });
+
+    const ltResults = await products.query.record({ pk: 8 }).lt({ sk: 4 }).go();
+    expect(ltResults.data).to.deep.equal(items.filter(item => item.sk < 4));
+
+    
+    const lteParams = products.query.record({ pk: 8 }).lte({ sk: 4 }).params();
+    expect(lteParams).to.deep.equal({
+      TableName: 'electro_nostringkeys',
+      ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+      ExpressionAttributeValues: { ':pk': 8, ':sk1': 4 },
+      KeyConditionExpression: '#pk = :pk and #sk1 <= :sk1'
+    });
+
+    const lteResults = await products.query.record({ pk: 8 }).lte({ sk: 4 }).go();
+    expect(lteResults.data).to.deep.equal(items.filter(item => item.sk <= 4));
+    
+    const betweenParams = products.query.record({ pk: 8 })
+      .between(
+        { sk: 2 },
+        { sk: 4 })
+      .params();
+    expect(betweenParams).to.deep.equal({
+      TableName: 'electro_nostringkeys',
+      ExpressionAttributeNames: { '#pk': 'pk', '#sk1': 'sk' },
+      ExpressionAttributeValues: { ':pk': 8, ':sk1': 2, ':sk2': 4 },
+      KeyConditionExpression: '#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2'
+    });
+
+    const betweenResults = await products.query.record({ pk: 8 })
+    .between(
+      { sk: 2 },
+      { sk: 4 })
+    .go();
+    expect(betweenResults.data).to.deep.equal(items.filter(item => item.sk >= 2 && item.sk <= 4));
+  });
 
   it("should reject when provided string index composite cannot be cast to number", () => {
     const gamerTag = uuid();
