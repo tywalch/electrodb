@@ -1,4 +1,4 @@
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { DocumentClient, PutItemInput } from "aws-sdk/clients/dynamodb";
 import { Entity } from "../";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
@@ -1380,6 +1380,99 @@ describe("index casting", () => {
     ).to.throw(
       'Invalid "cast" option provided for sk definition on index "(Primary Index)". Keys can only be cast to \'number\' if they are a composite of one numeric attribute. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model',
     );
+  });
+
+  it('should allow querying externally created items with numeric keys using ignoreOwnership', async () => {
+    const table = "electro_nostringkeys";
+    const fieldRefEntity = new Entity({
+      model: {
+          entity: 'fieldRefEntity',
+          version: '1',
+          service: "test",
+      },
+      attributes: {
+          pk: {
+              type: 'number',
+          },
+          sk: {
+              type: 'number',
+          },
+      },
+      indexes: {
+          edocs: {
+              pk: {
+                  field: 'pk',
+                  composite: ['pk'],
+              },
+              sk: {
+                  field: 'sk',
+                  composite: ['sk'],
+              },
+          }
+      },
+    }, { table, client });
+  
+    const now = Date.now();
+  
+    const params = fieldRefEntity.create({
+      pk: now, 
+      sk: 987,
+    }).params<PutItemInput>();
+
+    delete params.Item["__edb_e__"];
+    delete params.Item["__edb_v__"];
+
+    await client.put(params).promise();
+
+    const results = await fieldRefEntity.query.edocs({ pk: now }).go({ ignoreOwnership: true });
+
+    expect(results.data).to.deep.equal([{ pk: now, sk: 987 }]);
+
+    const outOfTheBoxNumericSupport = new Entity({
+      model: {
+          entity: 'outOfTheBoxNumericSupport',
+          version: '1',
+          service: "test",
+      },
+      attributes: {
+          prop1: {
+              type: 'number',
+          },
+          prop2: {
+              type: 'number',
+          },
+      },
+      indexes: {
+          edocs: {
+              pk: {
+                  field: 'pk',
+                  composite: ['prop1'],
+                  cast: 'number',
+              },
+              sk: {
+                  field: 'sk',
+                  composite: ['prop2'],
+                  cast: 'number',
+              },
+          }
+      },
+    }, { table, client });
+
+    const prop1 = now + 1;
+    const prop2 = 987;
+  
+    const params2 = outOfTheBoxNumericSupport
+      .create({ prop1, prop2 })
+      .params<PutItemInput>();
+
+    delete params2.Item["__edb_e__"];
+    delete params2.Item["__edb_v__"];
+
+    await client.put(params2).promise();
+
+    const results2 = await outOfTheBoxNumericSupport.query.edocs({ prop1 }).go({ ignoreOwnership: true });
+
+    expect(results2.data).to.deep.equal([{ prop1, prop2 }]);
   });
 
   it('should allow numeric sort keys', async () => {
