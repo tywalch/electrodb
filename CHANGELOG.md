@@ -175,409 +175,297 @@ All notable changes to this project will be documented in this file. Breaking ch
 - A new query option `pages` has been added to coincide with the change to automatically paginate all records when queried. The `pages` option sets a max number of pagination iterations ElectroDB will perform on a query. When this option is paired with `limit`, ElectroDB will respect the first condition reached. [[read more](./README.md#query-options)]
 
 ## [1.6.0] - 2021-11-21
-
 ### Added
-
 - Exporting TypeScript interfaces for `ElectroError` and `ElectroValidationError`
 - Errors thrown within an attribute's validate callback are now wrapped and accessible after being thrown. Prior to this change, only the `message` of the error thrown by a validation function was persisted back through to the user, now the error itself is also accessible. Reference the exported interface typedef for `ElectroValidationError` [here](./index.d.ts) to see the new properties available on a thrown validation error.
 
 ### Changed
-
 - As a byproduct of enhancing validation errors, the format of message text on a validation error has changed. This could be breaking if your app had a hardcoded dependency on the exact text of a thrown validation error.
 
 ### Fixed
-
 - For Set attributes, the callback functions `get`, `set`, and `validate` are now consistently given an Array of values. These functions would sometimes (incorrectly) be called with a DynamoDB DocClient Set.
 
 ## [1.6.1] - 2021-12-05
-
 ### Fixed
-
 - In some cases the `find()` and `match()` methods would incorrectly select an index without a complete partition key. This would result in validation exceptions preventing the user from querying if an index definition and provided attribute object aligned improperly. This was fixed and a slightly more robust mechanism for ranking indexes was made.
 
 ## [1.6.2] - 2022-01-27
-
 ### Changed
-
 - The methods `create`, `patch`, and `remove` will now refer to primary table keys through parameters via ExpressionAttributeNames when using `attribute_exists()`/`attribute_not_exists()` DynamoDB conditions. Prior to this they were referenced directly which would fail in cases where key names include illegal characters. Parameter implementation change only, non-breaking.
 
 ## [1.6.3] - 2022-02-22
-
 ### Added
 
 - Add `data` update operation `ifNotExists` to allow for use of the UpdateExpression function "if_not_exists()".
 
 ## [1.7.0] - 2022-03-13
-
 ### Added
-
 - New feature: "Listeners". Listeners open the door to some really cool tooling that was not possible because of how ElectroDB augments raw DynamoDB responses and did not provide easy access to raw DyanmoDB parameters. [[read more](./README.md#listeners)]
 
 ## [1.7.1] - 2022-03-19
-
 ### Added
-
 - Adding support for the v3 DyanmoDBClient. This change also brings in a new ElectroDB dependency [@aws-sdk/lib-dynamodb](https://www.npmjs.com/package/@aws-sdk/client-dynamodb). [[read more](./README.md#aws-dynamodb-client)]
 
 ## [1.7.2] - 2022-03-27
-
 ### Fixed
-
 - Fixed issue#111, `update` method specific query option typing no longer lost when using a `where` method in a query chain
 - Fixing incorrect typing for exposed `UpdateEntityItem` type. Exported type was missing composite key attributes
 
 ## [1.8.0] - 2022-03-28
-
 ### Added
 
 - Expected typings for the injected v2 client now include methods for `transactWrite` and `transactGet`
 
 ### Changed
-
 - Map attributes will now always resolve to least an empty object on a `create` and `put` methods (instead of just the root map)
 - In the past, default values for property attributes on maps only resolves when a user provided an object to place the values on. Now default values within maps attributes will now always resolve onto the object on `create` and `put` methods.
 
 ## [1.8.1] - 2022-03-29
-
 ### Fixed
-
 - Solidifying default application methodology: default values for nested properties will be applied up until an undefined default occurs or default callback returns undefined
 
 ## [1.8.2] - 2022-05-13
-
 ### Fixed
-
 - Issue impacting the successful propagation loggers and listeners from a Service definition to Entity children
 
 ## [1.8.3] - 2022-05-14
-
 ### Changed
-
 - Removing validation that requires at least one attribute to be provided in a PK composite. This opens the door to static PKs if the user so chooses
 
 ## [1.8.4] - 2022-05-18
-
 ### Changed
-
 - Removing validation that an attribute used for one index cannot be used by another. ElectroDB will now simply validate that all composite attributes associated with an indexed field are identical, and that a field is not used as both a PK and SK in separate indexes. This change allows for LSIs to be used with ElectroDB
 
 ## [1.9.0] - 2022-06-18
-
 ### Added
-
 - Add new batchGet query option, `preserveBatchOrder`, which will ensure the order returned by a batchGet will be the same as the order provided. [[read more](./README.md#query-options)]
 
 ## [1.10.0] - 2022-06-29
-
 ### Fixed
-
 - TypeScript 4.7 introduced changes that caused type inference issues with the Entity, Service, and exposed types. A re-vamp of some typing was done to rectify these issues, new tests and existing tests were made work with the latest versions of TypeScript and tsd.
 
 ### Changed
-
 - Project now is more deliberate about the types exposed via the package. This is because I have moved away from a single type definition file (which by default exports all types). If you had a dependency on a type that used to be exposed, open a ticket and I can expose it. In the future exposed types will be the only types officially supported by semver.
 
 ## [1.10.1] - 2022-06-30
-
 ### Fixed
-
 - Exported additional types
 
 ## [1.10.2] - 2022-07-02
-
 ### Fixed
-
 - Reorganizing type definition files into single file again to appease the frontend dependency overlords in https://electrodb.fun
 
 ## [1.11.0] - 2022-07-04
-
 ### Added
-
 - Adding support for "ProjectionExpressions" via the Query Option: `attributes` [[read more](./README#query-options)]
 
 ## [1.11.1] - 2022-07-06
-
 ### Fixed
-
 - Sort keys for queries will now match on equality when all sort key composite attributes are provided in full. Prior to this release, ElectroDB would use `begins_with(...)` which could potentially result in data leakages if a sort key's value was the starting prefix to another sort key value. [[read more](./README.md#begins-with-queries)]
 
 ## [1.12.0] - 2022-08-11
-
 ### Added
-
 - Added support for attribute types "enum string set" and "enum number set". This will allow users to defined a finite list of values (strings or numbers ) supported for a set [[read more](./README#set-attributes)]
 - TypeScript support for "Custom Attributes", bring your own types to express complex attributes. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
 
 ## [2.0.0] - 2022-09-19 [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#version-2-migration)]
 
 ### Added
-
 - Additional exported exported types to match new response structures. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
 
 ### Changed
-
 - Changing response structure on all methods to be an object with query results on a `data` property. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#version-2-migration)]
 - Pagination is now performed via the `.go()` terminal method, and the LastEvaluatedKey is now returned a string `cursor`. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#cursor-pagination)]
 - The `go()` terminal method now only queries one page by default. To auto-page (to match functionality prior to this change), pass the query option `pages` with a value of `'all'`. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#unified-pagination-apis)]
 
 ### Deprecated
-
 - The boolean query option `raw` and `returnKeys` have been deprecated (still accepted for the time being) and replaced with the query option `data`, which accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`.
 
 ### Removed
-
 - `.page()` terminal method. All pagination is now done through the `.go()` method. Queries and scans now return a `cursor` property (of type "string") to be passed on subsequent pagination requests. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#unified-pagination-apis)]
 
 ## [2.1.0] - 2022-10-02
-
 ### Added
-
 - Added a new attribute property `padding` to aid with zero padding patterns. [[read more](#attribute-definition)]
 
 ## [2.1.1] - 2022-10-09
-
 ### Fixed
-
 - Defect with sort key composition that would treat falsely values as absent attributes.
 
 ## [2.1.2] - 2022-10-16
-
 ### Added
-
 - Now exporting `ElectroValidationError` and `ElectroError` as classes so they can be more easily interrogated/triaged by user error handling.
 
 ### Fixed
-
 - On `update` and `patch` operations, the `data` method did not properly apply mutation constraints for `required` and `readOnly`. Data will now correctly throw in a similar manor the to individual mutation methods.
 
 ## [2.2.0] - 2022-10-31
-
 ### Added
-
 - A BIG addition to the library: Clustered Indexes. Clustered indexes allow for Collections to be composed of more similar, homogenous data.
 - The addition of new Entity and Service methods: `setTableName`, `getTableName`, `setClient`, `getClient`.
 
 ## [2.2.1] - 2022-11-02
-
 ### Fixed
-
 - Addressed github issue #144, root map attributes would set an empty object regardless if the user supplied it.
 
 ## [2.2.2] - 2022-11-04
-
 ### Added
-
 - (since rolled back) ~The return type from an update/patch call now returns an Entity item when `all_new` or `all_old` response options are passed~
 
 ## [2.2.3] - 2022-11-05
-
-### Removed
-
+### Remove
 - Backed out the response typing change added in `2.2.2`. The type of a record coming back from an update is more complex than one might expect. Because update operations can result in a record insert, the response type is not necessarily a TableItem. I am backing out this change for now until I can be be more sure of an appropriate typing.
 
 ### Added
-
 - New function to help with Custom Types: CustomAttributeType. This replaces `createCustomAttribute` (now depreciated) because of the unfortunate widening caused by the initial implementation. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes))]
 
 ### Deprecated
-
 - The function `createCustomAttribute` is now deprecated. The function still operates as it did, though any changes related to Custom Attribute types will see development focused on `CustomAttributeType` rather than this function.
 
 ## [2.2.4] - 2022-11-06
-
 ### Fixed
-
 - Addressed issue#162: attribute validation functions were not invoked when updating through the `data` method.
 - Conditional filters can now be added to `get` operations. DynamoDB `get` does not allow for filtering but the TransactWrite/TransactGet methods allow for `ConditionCheck` which is essentially `get` + `conditions`.
 
 ## [2.2.5] - 2022-11-09
-
 ### Fixed
-
 - Addressed [issue#172](https://github.com/tywalch/electrodb/issues/172), where clause mishandling of nested attribute references
 
 ## [2.2.6] - 2022-11-10
-
 ### Fixed
-
 - Addressed issue where scans would incorrectly accumulate filters across usages
 
 ## [2.3.0] - 2022-11-22
-
 ### Added
-
 - Adding new update method: `upsert`. Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.
 
 ## [2.3.1] - 2022-11-23
-
 ### Fixed
-
 - Address issue#179, the query option `table` was not correctly propagated, resulting a failure for that declared the table name was "missing"
 
 ## [2.3.2] - 2022-11-23
-
 ### Fixed
-
 - Upsert method would silently disregard `where` clause usage, and would not add condition expression to parameters.
 
 ## [2.3.3] - 2022-11-28
-
 ### Fixed
-
 - Issue #182: Addressed inconsistency with `remove` and `delete` functionality between `update` and `patch` methods.
 
 ## [2.3.4] - 2022-12-17
-
 ### Milestone
-
 - First code contribution by user @NoahDavey (via [PR-197](https://github.com/tywalch/electrodb/pull/197)). Fixes boolean evaluation during upsert
 
 ## [2.3.5] - 2022-12-18
-
 ### Fixed
-
 - Fixes issue that resulted in provided undefined values from becoming involuntarily set via updates
 - Updated documentation links in error message to direct traffic to https://electrodb.dev
 
 ## [2.4.0] - 2022-01-19
-
 ### Added
-
 - Adds the new filter expression methods: `size()`, `type()` and `escape`. Addresses Issue#208 [[read more]](https://electrodb.dev/en/queries/filters/#operations)
 - Adds the `createSchema()` function for helping create and type ElectroDB schemas without instantiating an Entity. Addresses Issue#167. [[read more]](https://electrodb.dev/en/reference/typscript/#createSchema)
 
 ## [2.4.1] - 2023-01-20
-
 ### Fixed
-
 - Recently added `createSchema()` function would validate but not return the schema object provided
 
 ## [2.4.2] - 2023-03-03
-
 ### Fixed
-
 - Restores `ignoreOwnership` execution option. Addresses [Issue #194](https://github.com/tywalch/electrodb/issues/194) which calls out regression with `ignoreOwnership`. This flag is now appropriately applied to "query", "get", and "scan" operations.
 
 ## [2.5.0] - 2023-03-19
-
 ### Added
-
 - Adds transaction functionality: `get` and `write` transactions are now supported in ElectroDB via [transact write](https://electrodb.dev/en/mutations/transact-write) and [transact get](https://electrodb.dev/en/queries/transact-get) methods.
 
 ## [2.5.1] - 2023-03-22
-
 ### Fixed
-
 - The previous version exported typings directly from the AWS dynamodb client package which, because it was so large, caused the playground to take a massive performance hit. Instead, the library now expose a simplistic version of those types instead.
 
 ## [2.6.0] - 2023-05-22
-
 ### Added
-
 - Adds new query execution option `hydrate`. When a GSI uses a `KEYS_ONLY` projection, the `hydrate` option will perform the query and then a subsequent `batchGet` to "hydrate" the results.
 - Adds new `conversion` methods to help transform values between "composite attributes", "keys", and "cursors".
 - Adds improved return typing for `patch` operations. The response type for `patch` now returns an Entity item when passed the execution options `{ response: 'all_new' }` or `{ response: 'all_old' }`.
 
 ### Fixed
-
 - A common issue amongst new users, was unexpected errors when using a terminal method twice on a query chain. This would often come up when a user called `.params()` to log out parameters and then call `.go()` on the same chain. The fix was to prevent duplicative side effects from occurring on each subsequent terminal method call.
 - Fixes typing issue with transactGet api that would type `response.data` as `never` when the transaction included more than one element.
 
 ## [2.6.1] - 2023-06-09
-
 ### Added
-
 - For queries, ElectroDB now trims the ExclusiveStartKey object to only include the keys associated with the index provided. DynamoDB currently rejects queries when properties not associated with the keys of the queried index are provided on the ExclusiveStartKey. By removing irrelevant properties, ElectroDB offers users more flexibility and opportunities for dynamic querying.
 
 ## [2.7.0] - 2023-07-01
 
 ### Fixed
-
 - Fixes return typing for `delete`, `remove`, `update` and `upsert` operations. These types were incorrect and did not reflect the real values returned. Instead of breaking the APIs, changing response types to `T | null`, the new response type is now the Entity's key composite values by default. You can also now use the Execution Option `response` to get back the item as it exists in the table. This is the closed I could get to a non-breaking change that also fixes the incorrect return typing for these methods.
 - Fixes typing for `contains` where conditions to accept collection element values (e.g., `set` and `list` type attributes).
 - The exported type `UpdateEntityItem` was incorrectly typed, it now includes the correct typing as the values that can be passed to the `set` method
 
 ### Changed
-
 - Upsert operations now take into consideration `readOnly` attributes when applying changes. If an attribute is configured as `readOnly` ElectroDB will apply the property with an `if_not_exists` set operation to prevent overwriting the existing value if one is set.
 
 ## [2.7.1] - 2023-07-03
-
 ### Fixed
-
 - Upsert now only allies `if_not_exists()` if the attribute is not a composite attribute in an index.
 
 ## [2.7.2] - 2023-07-03
-
 ### Fixed
-
 - Fixed bug reported via [Issue #271](https://github.com/tywalch/electrodb/issues/271): Root map object with required flag would not set empty object even when it was provided.
 
 ## [2.8.0] - 2023-08-06
-
 ### Adds
-
 - Adds new `cast` option for indexes to allow users to cast index values to a different type than their composite attribute. This change comers from a user requested feature and addresses issue #237
 
 ### Fixed
-
 - Fixed edge case when model defines an index without composites while using the template syntax that prevented `ignoreOwnership` from correctly gating return records
 
 ## [2.8.1] - 2023-08-06
-
 ### Fixed
-
 - Fixes bug with creating sets when client is provided or changed after initial Entity construction
 
 ## [2.8.2] - 2023-08-19
-
 ### Fixed
-
 - Fixes bug reported via [Issue #281](https://github.com/tywalch/electrodb/issues/281): ElectroDB failed to use an attribute's `field` name when it was updated via `watch`.
 - Fixes bug reported via [Issue #229](https://github.com/tywalch/electrodb/issues/229): ElectroDB would generate empty string keys on item creating. This would occur only in cases where a key's field name matched an attribute's field name.
 
 ### Changed
-
 - Relaxes validation surrounding the use of composite attributes appearing as composite attributes in both the partition and sort key for the same index. Reported in [Issue#265](https://github.com/tywalch/electrodb/issues/265), validation surrounding this pattern have been relaxed to only throw when a composite attribute in both the pk and sk AND the sk contains greater than one composite attribute. This constraint is critical for ElectroDB to reliably generate/format sort key values.
 
 ## [2.9.0]
-
 ### Added
-
 - Addresses [Issue #277](https://github.com/tywalch/electrodb/issues/277) Introduces new `composite()` method for `update` and `patch` operations. The `composite` method is used to help electrodb complete and format keys when updating a subset of the key's composite attributes. Prior to this update, updating a key partially resulted in an [invalid query error](https://electrodb.dev/en/reference/errors/#missing-composite-attributes), which [caused difficulties](https://github.com/tywalch/electrodb/issues/277) when some composite attributes were flagged as readOnly. [[read more](https://electrodb.dev/en/mutations/patch#composite)]
 - Adds more deliberate collection validation to ensure entity compatibility. This will allow for indexes defined with "template" be used with collections. This also might cause some existing implementations to now throw on service instantiation, however that would mean these services were never valid to begin with.
 
 ## [2.9.1]
-
 ### Fixed
-
 - Version `2.9.0` was accidentally published without the dependency `@aws-sdk/lib-dynamodb`
 
 ## [2.9.2]
-
 ### Changed
-
 - The `composite()` method for `update` and `patch` now adds a condition expression that allows for cases where the composite attribute doesn't exist. Prior to this change the condition used a strict equals check on the attribute value (e.g. `#prop1 = :prop1`). This change now revises that expression to `(#prop1 = :prop1 OR attribute_not_exists(#prop1))`.
 
 ## [2.9.3]
-
 ### Revert
-
 - Reverts change in `2.9.2`. The `composite()` method no longer allows for `attribute_not_exists()`.
 
 ### Fixed
-
 - Composite attributes that used the attribute option `watch`, and were not provided to the `create` or `put` methods, were not property applied to their composite keys. This addresses the issue brough forward in [discussion #292](https://github.com/tywalch/electrodb/discussions/292).
 
 ## [2.10.0]
-
 ### Added
-
 - The `upsert` method now supports `add`, `subtract`, `append`, `set`, and `ifNotExists` operations. Addresses [Issue #286](https://github.com/tywalch/electrodb/issues/286).
 - The `add` and `subtract` operations provided to the `data` callback operation with `update` and `patch` methods now supports a third parameter for supply a defaultValue. Addresses [Issue #297](https://github.com/tywalch/electrodb/issues/297).
 - A condition expression operation called `field` that allows for references to raw field names as they exist in the table. This can be used with `escape` and `value` to create custom filter expressions.
 
 ## [2.10.1]
-
 ## Added
 - Transact `upsert` now supports `add`, `subtract`, `append`, `set`, and `ifNotExists` operations. Addresses [Issue #301](https://github.com/tywalch/electrodb/issues/301).
+
+## [2.10.2]
+### Fixed 
+- Addresses [Issue #308](https://github.com/tywalch/electrodb/issues/308) and [Issue #228](https://github.com/tywalch/electrodb/issues/228) 
+
+## [2.10.3]
+### Fixed
+- Addresses edgecase that filtered valid items when item lacked entity identifiers (created outside of ElectroDB) when keys (pk or sk) were numeric.

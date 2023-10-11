@@ -217,13 +217,15 @@ class Entity {
     let { pk, sk } = this.model.prefixes[TableIndex];
     let hasSK = this.model.lookup.indexHasSortKeys[TableIndex];
     const typeofPkProvided = typeof key[pk.field];
-    const pkPrefixMatch = typeofPkProvided === "string" && key[pk.field].startsWith(pk.prefix);
+    const pkPrefixMatch =
+      typeofPkProvided === "string" && key[pk.field].startsWith(pk.prefix);
     const isNumericPk = typeofPkProvided === "number" && pk.cast === "number";
     let pkMatch = pkPrefixMatch || isNumericPk;
     let skMatch = pkMatch && !hasSK;
     if (pkMatch && hasSK) {
       const typeofSkProvided = typeof key[sk.field];
-      const skPrefixMatch = typeofSkProvided === "string" && key[sk.field].startsWith(sk.prefix);
+      const skPrefixMatch =
+        typeofSkProvided === "string" && key[sk.field].startsWith(sk.prefix);
       const isNumericSk = typeofSkProvided === "number" && sk.cast === "number";
       skMatch = skPrefixMatch || isNumericSk;
     }
@@ -964,7 +966,6 @@ class Entity {
         } else if (response.Items) {
           results = [];
           for (let item of response.Items) {
-            
             if (
               (config.ignoreOwnership &&
                 config.attributes &&
@@ -1491,8 +1492,9 @@ class Entity {
         return null;
       }
       key = `${key}`;
-      const isNumeric = cast === CastKeyOptions.number && typeofKey === "number";
-      let match =  key.match(regex);
+      const isNumeric =
+        cast === CastKeyOptions.number && typeofKey === "number";
+      let match = key.match(regex);
       let results = {};
       if (match || isNumeric) {
         for (let i = 0; i < names.length; i++) {
