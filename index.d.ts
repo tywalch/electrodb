@@ -2930,11 +2930,12 @@ export type ParamRecord<Options = ParamOptions> = <P = Record<string, any>>(
   options?: Options,
 ) => P;
 
-export class ElectroError extends Error {
+export class ElectroError<T extends Error = Error> extends Error {
   readonly name: "ElectroError";
   readonly code: number;
   readonly date: number;
   readonly isElectroError: boolean;
+  cause: T | undefined;
   ref: {
     readonly code: number;
     readonly section: string;
@@ -2967,7 +2968,7 @@ export interface ElectroValidationErrorFieldReference<T extends Error = Error> {
 
 export class ElectroValidationError<
   T extends Error = Error,
-> extends ElectroError {
+> extends ElectroError<T> {
   readonly fields: ReadonlyArray<ElectroValidationErrorFieldReference<T>>;
 }
 
