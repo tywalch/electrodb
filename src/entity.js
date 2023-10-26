@@ -494,7 +494,7 @@ class Entity {
   async go(method, parameters = {}, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
-      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError).stack;
     }
     try {
       switch (method) {
@@ -513,12 +513,13 @@ class Entity {
         return Promise.reject(err);
       } else {
         if (err.__isAWSError) {
-          stackTrace.message = new e.ElectroError(
+          const error = new e.ElectroError(
             e.ErrorCodes.AWSError,
             `Error thrown by DynamoDB client: "${err.message}"`,
             err,
-          ).message;
-          return Promise.reject(stackTrace);
+          );
+          error.stack = stackTrace;
+          return Promise.reject(error);
         } else if (err.isElectroError) {
           return Promise.reject(err);
         } else {
@@ -925,7 +926,7 @@ class Entity {
   formatResponse(response, index, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
-      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError).stack;
     }
     try {
       let results = {};
@@ -1013,11 +1014,17 @@ class Entity {
 
       return { data: results };
     } catch (err) {
-      if (config.originalErr || stackTrace === undefined) {
+      if (config.originalErr || stackTrace === undefined || err.isElectroError) {
         throw err;
       } else {
-        stackTrace.message = err.message;
-        throw stackTrace;
+        const error = new e.ElectroError(
+            e.ErrorCodes.AWSError,
+            err.message,
+            err,
+        );
+        error.stack = stackTrace;
+
+        throw error;
       }
     }
   }
