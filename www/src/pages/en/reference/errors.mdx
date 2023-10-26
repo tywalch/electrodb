@@ -20,10 +20,11 @@ This section contains formation and guidance related to Errors thrown by Electro
 ElectroDB wraps errors with an `ElectroError` class exception. This class extends error and adds additional metadata/properties for additional context.
 
 ```typescript
-export class ElectroError extends Error {
+export class ElectroError<E extends Error = Error> extends Error {
   readonly name: "ElectroError";
   readonly code: number;
   readonly date: number;
+  readonly cause: E | undefined;
   readonly isElectroError: boolean;
   ref: {
     readonly code: number;
@@ -56,11 +57,13 @@ export interface ElectroValidationErrorFieldReference<T extends Error = Error> {
 }
 
 export class ElectroValidationError<
-  T extends Error = Error,
-> extends ElectroError {
-  readonly fields: ReadonlyArray<ElectroValidationErrorFieldReference<T>>;
+  E extends Error = Error,
+> extends ElectroError<E> {
+  readonly fields: ReadonlyArray<ElectroValidationErrorFieldReference<E>>;
 }
 ```
+
+In the event of an error thrown by the AWS Client (e.g. ConditionalCheckFailedException), the original error will be wrapped with an ElectroError and the original error will be accessible via the `cause` property. Pass the error type expected for your given client as the first generic argument to ElectroError to strongly type the returned error beyond the base Error class.
 
 ## Error Classifications
 

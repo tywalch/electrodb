@@ -84,7 +84,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Added
 
-- New entity method `parse()` to expose ElectroDB formatting for values retrieved outside of ElectroDB. [[read more]](./README.md#parse)
+- New entity method `parse()` to expose ElectroDB formatting for values retrieved outside ElectroDB. [[read more]](./README.md#parse)
 
 ## [1.3.2] - 2021-08-11
 
@@ -200,11 +200,11 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [1.7.0] - 2022-03-13
 ### Added
-- New feature: "Listeners". Listeners open the door to some really cool tooling that was not possible because of how ElectroDB augments raw DynamoDB responses and did not provide easy access to raw DyanmoDB parameters. [[read more](./README.md#listeners)]
+- New feature: "Listeners". Listeners open the door to some really cool tooling that was not possible because of how ElectroDB augments raw DynamoDB responses and did not provide easy access to raw DynamoDB parameters. [[read more](./README.md#listeners)]
 
 ## [1.7.1] - 2022-03-19
 ### Added
-- Adding support for the v3 DyanmoDBClient. This change also brings in a new ElectroDB dependency [@aws-sdk/lib-dynamodb](https://www.npmjs.com/package/@aws-sdk/client-dynamodb). [[read more](./README.md#aws-dynamodb-client)]
+- Adding support for the v3 DynamoDBClient. This change also brings in a new ElectroDB dependency [@aws-sdk/lib-dynamodb](https://www.npmjs.com/package/@aws-sdk/client-dynamodb). [[read more](./README.md#aws-dynamodb-client)]
 
 ## [1.7.2] - 2022-03-27
 ### Fixed
@@ -265,13 +265,13 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [1.12.0] - 2022-08-11
 ### Added
-- Added support for attribute types "enum string set" and "enum number set". This will allow users to defined a finite list of values (strings or numbers ) supported for a set [[read more](./README#set-attributes)]
+- Added support for attribute types "enum string set" and "enum number set". This will allow users to define a finite list of values (strings or numbers ) supported for a set [[read more](./README#set-attributes)]
 - TypeScript support for "Custom Attributes", bring your own types to express complex attributes. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
 
 ## [2.0.0] - 2022-09-19 [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#version-2-migration)]
 
 ### Added
-- Additional exported exported types to match new response structures. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
+- Additional exported types to match new response structures. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes)]
 
 ### Changed
 - Changing response structure on all methods to be an object with query results on a `data` property. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#version-2-migration)]
@@ -294,10 +294,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.1.2] - 2022-10-16
 ### Added
-- Now exporting `ElectroValidationError` and `ElectroError` as classes so they can be more easily interrogated/triaged by user error handling.
+- Now exporting `ElectroValidationError` and `ElectroError` as classes, so they can be more easily interrogated/triaged by user error handling.
 
 ### Fixed
-- On `update` and `patch` operations, the `data` method did not properly apply mutation constraints for `required` and `readOnly`. Data will now correctly throw in a similar manor the to individual mutation methods.
+- On `update` and `patch` operations, the `data` method did not properly apply mutation constraints for `required` and `readOnly`. Data will now correctly throw in a similar manner the to individual mutation methods.
 
 ## [2.2.0] - 2022-10-31
 ### Added
@@ -306,7 +306,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.2.1] - 2022-11-02
 ### Fixed
-- Addressed github issue #144, root map attributes would set an empty object regardless if the user supplied it.
+- Addressed GitHub issue #144, root map attributes would set an empty object regardless if the user supplied it.
 
 ## [2.2.2] - 2022-11-04
 ### Added
@@ -314,7 +314,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.2.3] - 2022-11-05
 ### Remove
-- Backed out the response typing change added in `2.2.2`. The type of a record coming back from an update is more complex than one might expect. Because update operations can result in a record insert, the response type is not necessarily a TableItem. I am backing out this change for now until I can be be more sure of an appropriate typing.
+- Backed out the response typing change added in `2.2.2`. The type of record coming back from an update is more complex than one might expect. Because update operations can result in a record insert, the response type is not necessarily a TableItem. I am backing out this change for now until I can be more sure of an appropriate typing.
 
 ### Added
 - New function to help with Custom Types: CustomAttributeType. This replaces `createCustomAttribute` (now depreciated) because of the unfortunate widening caused by the initial implementation. [[read more](https://github.com/tywalch/electrodb/blob/master/README.md#custom-attributes))]
@@ -450,7 +450,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Reverts change in `2.9.2`. The `composite()` method no longer allows for `attribute_not_exists()`.
 
 ### Fixed
-- Composite attributes that used the attribute option `watch`, and were not provided to the `create` or `put` methods, were not property applied to their composite keys. This addresses the issue brough forward in [discussion #292](https://github.com/tywalch/electrodb/discussions/292).
+- Composite attributes that used the attribute option `watch`, and were not provided to the `create` or `put` methods, were not property applied to their composite keys. This addresses the issue brought forward in [discussion #292](https://github.com/tywalch/electrodb/discussions/292).
 
 ## [2.10.0]
 ### Added
@@ -468,4 +468,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.10.3]
 ### Fixed
-- Addresses edgecase that filtered valid items when item lacked entity identifiers (created outside of ElectroDB) when keys (pk or sk) were numeric.
+- Addresses edge case that filtered valid items when item lacked entity identifiers (created outside ElectroDB) when keys (pk or sk) were numeric.
+
+## [2.10.3] - 2023-10-26
+### Added
+- Adds `cause` property to `ElectroError`, currently populated when error originates from the AWS Client, to help with error triage. This also adds the ability to provide an error type to ElectroError<Error> to type the error located on `cause`.
