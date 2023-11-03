@@ -208,20 +208,20 @@ describe("Offline Where", () => {
 
     expect(updateParams).to.deep.equal({
       UpdateExpression:
-        "SET #dangerous = :dangerous_u0, #pen = :pen_u0, #row = :row_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+        "SET #dangerous = :dangerous_u0, #p = :p_u0, #r = :r_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
       ExpressionAttributeNames: {
         "#animal": "a",
         "#dangerous": "d",
-        "#pen": "pen",
-        "#row": "row",
+        "#p": "p",
+        "#r": "r",
         "#__edb_e__": "__edb_e__",
         "#__edb_v__": "__edb_v__",
       },
       ExpressionAttributeValues: {
         ":animal0": "cow",
         ":dangerous_u0": false,
-        ":pen_u0": "abc",
-        ":row_u0": "def",
+        ":p_u0": "abc",
+        ":r_u0": "def",
         ":__edb_e___u0": "filters",
         ":__edb_v___u0": "1",
       },
@@ -232,12 +232,12 @@ describe("Offline Where", () => {
 
     expect(patchParams).to.deep.equal({
       UpdateExpression:
-        "SET #dangerous = :dangerous_u0, #pen = :pen_u0, #row = :row_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+        "SET #dangerous = :dangerous_u0, #p = :p_u0, #r = :r_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
       ExpressionAttributeNames: {
         "#animal": "a",
         "#dangerous": "d",
-        "#pen": "pen",
-        "#row": "row",
+        "#p": "p",
+        "#r": "r",
         "#__edb_e__": "__edb_e__",
         "#__edb_v__": "__edb_v__",
         "#pk": "pk",
@@ -246,8 +246,8 @@ describe("Offline Where", () => {
       ExpressionAttributeValues: {
         ":animal0": "cow",
         ":dangerous_u0": false,
-        ":pen_u0": "abc",
-        ":row_u0": "def",
+        ":p_u0": "abc",
+        ":r_u0": "def",
         ":__edb_e___u0": "filters",
         ":__edb_v___u0": "1",
       },

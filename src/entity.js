@@ -2317,7 +2317,7 @@ class Entity {
           // TODO: This will only work with root attributes and should be refactored for nested attributes.
           update.set(attr.field, preparedUpdateValues[path]);
         } else {
-          // this could be fields added by electro that don't apeear in the schema
+          // this could be fields added by electro that don't appear in the schema
           update.set(path, preparedUpdateValues[path]);
         }
       }
@@ -2369,7 +2369,7 @@ class Entity {
         modifiedAttributeNames[primaryIndexAttribute] === undefined;
       if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
         update.set(
-          primaryIndexAttribute,
+          attribute.field,
           primaryIndexAttributes[primaryIndexAttribute],
         );
       }
