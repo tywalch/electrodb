@@ -470,6 +470,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Addresses edge case that filtered valid items when item lacked entity identifiers (created outside ElectroDB) when keys (pk or sk) were numeric.
 
-## [2.10.3] - 2023-10-26
+## [2.10.4] - 2023-10-26
 ### Added
 - Adds `cause` property to `ElectroError`, currently populated when error originates from the AWS Client, to help with error triage. This also adds the ability to provide an error type to ElectroError<Error> to type the error located on `cause`.
+
+## [2.10.5] - 2023-11-03
+### Fixed
+- Addresses bug in `patch` and `update` methods that caused key composite attributes to be set with their attribute name not their "field" name. This would impact users who both use the `update` method to create new items and use alternative field name definitions for their composite keys. All other users would likely be silently impacted by this issue. 

@@ -2048,3 +2048,324 @@ describe("sparse index formatting", () => {
     });
   });
 });
+
+describe('field translation', () => {
+  const serviceName = uuid();
+  const TestEntity = new Entity(
+      {
+        model: {
+          entity: "test",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          entityId: {
+            field: "entity_id",
+            type: "string",
+          },
+          otherId: {
+            field: "other_id",
+            type: "string",
+          },
+          thirdId: {
+            field: "third_id",
+            type: "string"
+          },
+          numParam: {
+            type: "number",
+            field: "num_param"
+          },
+          setParam: {
+            type: "set",
+            items: "string",
+            field: "set_param"
+          },
+          listParam: {
+            type: "list",
+            items: {
+              type: "string"
+            },
+            field: "list_param"
+          },
+          anyParam: {
+            type: 'any',
+            field: 'any_param'
+          }
+        },
+        indexes: {
+          test: {
+            pk: {
+              field: "pk",
+              composite: ["entityId"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["otherId", "thirdId"],
+            },
+          },
+        },
+      },
+      { table: "electro" }
+  );
+
+  const entityId = 'abc';
+  const otherId = 'def';
+  const thirdId = 'ghi';
+  const numParam = 123;
+  const setParam = ['abc', 'def'];
+  const listParam = ['ghi', 'jkl'];
+  const anyParam = 'mno';
+
+  describe('when performing upsert operation', () => {
+    it('should translate attribute field names on set', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).set({numParam, setParam, listParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+    });
+
+    it('should translate attribute field names on add', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).add({numParam, setParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+    });
+
+    it('should translate attribute field names on subtract', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).subtract({numParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+    });
+
+    it('should translate attribute field names on append', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).append({listParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+    });
+
+    it('should translate attribute field names on ifNotExists', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).ifNotExists({numParam, setParam, listParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+    });
+  })
+
+  const updateMethods = ['update', 'patch'] as const;
+  for (const updateMethod of updateMethods) {
+    describe(`when performing ${updateMethod} operation`, () => {
+      it('should translate attribute field names on set', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).set({numParam, setParam, listParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on add', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).add({numParam, setParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      });
+
+      it('should translate attribute field names on subtract', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).subtract({numParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      });
+
+      it('should translate attribute field names on append', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).append({listParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on delete', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).delete({setParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      });
+
+      it('should translate attribute field names on remove', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).remove(['numParam', 'setParam', 'listParam']).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on data set', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, {set}) => {
+          set(attr.numParam, numParam);
+          set(attr.setParam, setParam);
+          set(attr.listParam, listParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on data add', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.add(attr.numParam, numParam);
+          op.add(attr.setParam, setParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      });
+
+      it('should translate attribute field names on data delete', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.delete(attr.setParam, setParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      });
+
+      it('should translate attribute field names on data subtract', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.subtract(attr.numParam, numParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      });
+
+      it('should translate attribute field names on data append', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.append(attr.listParam, listParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on data remove', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.remove(attr.numParam);
+          op.remove(attr.setParam);
+          op.remove(attr.listParam);
+        }).params();
+
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+    });
+  }
+
+  const insertMethods = ['put', 'create'] as const;
+  for (const insertMethod of insertMethods) {
+    it(`should translate attribute field names on ${insertMethod} operation`, () => {
+      const params = TestEntity[insertMethod]({entityId, otherId, thirdId, numParam, setParam, listParam}).params();
+      expect(params.Item.entity_id).to.equal(entityId);
+      expect(params.Item.other_id).to.equal(otherId);
+      expect(params.Item.third_id).to.equal(thirdId);
+      expect(params.Item.num_param).to.equal(numParam);
+      expect(params.Item.list_param).to.deep.equal(listParam);
+    });
+  }
+
+  describe('when performing queries', async () => {
+    const sortKeyOperations = ['begins', 'gt', 'gte', 'lt', 'lte'] as const;
+    for (const sortKeyOperation of sortKeyOperations) {
+      it(`should translate attribute field names on when using the ${sortKeyOperation} sort key operation`, async () => {
+        const params = TestEntity.query.test({entityId})[sortKeyOperation]({otherId, thirdId}).params();
+        if (params.FilterExpression) {
+          for (const [key, value] of Object.entries(params.ExpressionAttributeNames)) {
+            if (key.includes('other')) {
+              expect(value).to.equal('other_id');
+            } else if (key.includes('third')) {
+              expect(value).to.equal('third_id');
+            }
+          }
+        }
+      });
+    }
+  });
+
+  describe('when performing filters', () => {
+    const filterOperations = ['begins', 'between', 'contains', 'eq', 'escape', 'exists', 'eqOrNotExists', 'field', 'gt', 'gte', 'lt', 'lte', 'name', 'ne', 'notContains', 'notExists', 'size', 'type', 'value'] as const;
+
+    it('test case should contain all filter operations', () => {
+      let foundFilterOperations: string[] = [];
+      TestEntity.query.test({entityId}).where((_, op) => {
+        foundFilterOperations = Object.getOwnPropertyNames(op);
+        return '';
+      }).params();
+      expect(foundFilterOperations.sort()).to.deep.equal([...filterOperations].sort());
+    });
+
+    for (const filterOperation of filterOperations) {
+      it(`should translate attribute field names on when using the ${filterOperation} filter operation`, () => {
+        const params = TestEntity.query.test({entityId, otherId, thirdId}).where((attr, op) => {
+          switch (filterOperation) {
+            case 'between':
+              return `${op.between(attr.anyParam, 1, 2)}`;
+            case 'exists':
+            case 'notExists':
+            case 'name':
+              return `${op[filterOperation](attr.anyParam)}`;
+            case 'type':
+              return `${op.type(attr.anyParam, 'S')}`;
+            case 'eqOrNotExists':
+            case 'escape':
+              return '';
+            default:
+              return `${op[filterOperation](attr.anyParam, anyParam)}`;
+          }
+        }).params();
+
+        if (filterOperation === 'eqOrNotExists' || 'escape') {
+          return;
+        }
+        const keyValue = Object.entries(params.ExpressionAttributeNames).find((([key]) => key.includes('any')));
+        expect(keyValue).not.to.be.undefined;
+        if (keyValue) {
+          const [_, value] = keyValue;
+          expect(value).to.equal(anyParam);
+        }
+      });
+    }
+  });
+});
+
+
