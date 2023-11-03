@@ -1955,9 +1955,9 @@ describe("Entity", () => {
         .params();
       expect(update).to.deep.equal({
         UpdateExpression:
-          "SET #mall = :mall_u0, #store = :store_u0, #building = :building_u0, #category = :category_u0, #unit = :unit_u0, #rent = :rent_u0, #leaseEnd = :leaseEnd_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #gsi4pk = :gsi4pk_u0, #gsi4sk = :gsi4sk_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+          "SET #mall = :mall_u0, #store = :store_u0, #building = :building_u0, #category = :category_u0, #unit = :unit_u0, #rent = :rent_u0, #leaseEnd = :leaseEnd_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #gsi4pk = :gsi4pk_u0, #gsi4sk = :gsi4sk_u0, #storeLocationId = :storeLocationId_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
         ExpressionAttributeNames: {
-          "#id": "id",
+          "#storeLocationId": "storeLocationId",
           "#mall": "mall",
           "#store": "storeId",
           "#building": "buildingId",
@@ -1977,7 +1977,7 @@ describe("Entity", () => {
           "#__edb_v__": "__edb_v__",
         },
         ExpressionAttributeValues: {
-          ":id_u0": id,
+          ":storeLocationId_u0": id,
           ":mall_u0": mall,
           ":store_u0": store,
           ":building_u0": building,
