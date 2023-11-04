@@ -2548,6 +2548,7 @@ describe('field translation', () => {
       const params = entity.patch({prop1, prop2})
           .data((attr, op) => {
             op.set(attr[weirdProp1][weirdProp2], 2);
+            op.set(attr[weirdProp1][weirdProp4], 'test2');
             op.set(attr[weirdProp3], 'test2');
           })
           .params();
