@@ -1014,13 +1014,17 @@ class Entity {
 
       return { data: results };
     } catch (err) {
-      if (config.originalErr || stackTrace === undefined || err.isElectroError) {
+      if (
+        config.originalErr ||
+        stackTrace === undefined ||
+        err.isElectroError
+      ) {
         throw err;
       } else {
         const error = new e.ElectroError(
-            e.ErrorCodes.AWSError,
-            err.message,
-            err,
+          e.ErrorCodes.AWSError,
+          err.message,
+          err,
         );
         error.stack = stackTrace;
 
