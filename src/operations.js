@@ -29,16 +29,19 @@ class ExpressionState {
   }
 
   formatName(name = "") {
+    const nameWasNotANumber = isNaN(name);
     name = `${name}`.replaceAll(/[^\w]/g, "");
     if (name.length === 0) {
       name = "p";
+    } else if (nameWasNotANumber !== isNaN(name)) {
+      // name became number due to replace
+      name = `p${name}`;
     }
     return name;
   }
 
   // todo: make the structure: name, value, paths
   setName(paths, name, value) {
-    const nameIsNotANumber = isNaN(name);
     name = this.formatName(name);
     let json = "";
     let expression = "";
@@ -47,7 +50,7 @@ class ExpressionState {
       json = `${name}`;
       expression = `${prop}`;
       this.names[prop] = value;
-    } else if (nameIsNotANumber) {
+    } else if (isNaN(name)) {
       json = `${paths.json}.${name}`;
       expression = `${paths.expression}.${prop}`;
       this.names[prop] = value;

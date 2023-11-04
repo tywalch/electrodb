@@ -2376,6 +2376,8 @@ describe('field translation', () => {
     const weirdProp2 = 'hello this is a full on sentence.' as const;
     // this one has ONLY invalid characters (special case that should be handled)
     const weirdProp3 = '\' -~!@#$%^&*()+="/?><.,`\'' as const;
+    // this one has only invalid characters except two numbers (special case that should be handled)
+    const weirdProp4 = '\' -~!@#$%^&*()+="/?><.,`\'55' as const;
     const entity = new Entity({
       model: {
         entity: "specialCharacters",
@@ -2398,6 +2400,10 @@ describe('field translation', () => {
           properties: {
             [weirdProp2]: {
               type: 'number',
+              required: true,
+            },
+            [weirdProp4]: {
+              type: 'string',
               required: true,
             }
           }
@@ -2427,7 +2433,8 @@ describe('field translation', () => {
         prop1,
         prop2: 'value1',
         [weirdProp1]: {
-            [weirdProp2]: 1
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test',
         },
         [weirdProp3]: 'test1'
       }).go();
@@ -2436,7 +2443,8 @@ describe('field translation', () => {
         prop1,
         prop2: 'value2',
         [weirdProp1]: {
-          [weirdProp2]: 2
+          [weirdProp2]: 2,
+          [weirdProp4]: 'test',
         },
         [weirdProp3]: 'test2'
       }).go();
@@ -2445,26 +2453,28 @@ describe('field translation', () => {
         prop1,
         prop2: 'value3',
         [weirdProp1]: {
-          [weirdProp2]: 2
+          [weirdProp2]: 2,
+          [weirdProp4]: 'test',
         },
         [weirdProp3]: 'test3'
       }).go();
 
       const params = entity.query
           .record({ prop1 })
-          .where((attr, op) => `
-            ${op.eq(attr[weirdProp1][weirdProp2], 2)} AND ${op.eq(attr[weirdProp3], 'test2')}
+          .where((attr, { eq }) => `
+            ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test')}
           `)
           .params();
 
       expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
       expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
       expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
 
       const { data } = await entity.query
         .record({ prop1 })
-        .where((attr, op) => `
-          ${op.eq(attr[weirdProp1][weirdProp2], 2)} AND ${op.eq(attr[weirdProp3], 'test2')}
+        .where((attr, { eq }) => `
+          ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test')}
         `)
         .go();
 
@@ -2480,26 +2490,28 @@ describe('field translation', () => {
         prop1,
         prop2,
         [weirdProp1]: {
-          [weirdProp2]: 1
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test',
         },
         [weirdProp3]: 'test1'
       }).go();
 
       const params = entity.update({prop1, prop2})
-          .set({prop3})
+          .set({ prop3 })
           .where((attr, { ne }) => `
-            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} 
+            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test')}
           `)
           .params();
 
       expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
       expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
       expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
 
       const err = await entity.update({prop1, prop2})
-          .set({prop3})
+          .set({ prop3 })
           .where((attr, { ne }) => `
-            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} 
+            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test')}
           `)
           .go()
           .then(() => null)
@@ -2518,7 +2530,8 @@ describe('field translation', () => {
         prop1,
         prop2,
         [weirdProp1]: {
-          [weirdProp2]: 1
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test1',
         },
         [weirdProp3]: 'test1'
       }).go();
@@ -2533,15 +2546,18 @@ describe('field translation', () => {
       expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
       expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
       expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
 
       const { data } = await entity.patch({prop1, prop2})
           .data((attr, op) => {
             op.set(attr[weirdProp1][weirdProp2], 2);
+            op.set(attr[weirdProp1][weirdProp4], 'test2');
             op.set(attr[weirdProp3], 'test2');
           })
           .go({response: 'all_new'});
 
       expect(data[weirdProp1][weirdProp2]).to.equal(2);
+      expect(data[weirdProp1][weirdProp4]).to.equal('test2');
       expect(data[weirdProp3]).to.equal('test2');
     });
   });
