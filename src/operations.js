@@ -28,8 +28,8 @@ class ExpressionState {
     return `${this.prefix}${this.counts[name]++}`;
   }
 
-  formatName(name) {
-    name = name.replaceAll(/[^\w]/g, "");
+  formatName(name = "") {
+    name = `${name}`.replaceAll(/[^\w]/g, "");
     if (name.length === 0) {
       name = "p";
     }
@@ -38,6 +38,7 @@ class ExpressionState {
 
   // todo: make the structure: name, value, paths
   setName(paths, name, value) {
+    const nameIsNotANumber = isNaN(name);
     name = this.formatName(name);
     let json = "";
     let expression = "";
@@ -46,7 +47,7 @@ class ExpressionState {
       json = `${name}`;
       expression = `${prop}`;
       this.names[prop] = value;
-    } else if (isNaN(name)) {
+    } else if (nameIsNotANumber) {
       json = `${paths.json}.${name}`;
       expression = `${paths.expression}.${prop}`;
       this.names[prop] = value;
