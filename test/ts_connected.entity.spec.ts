@@ -2434,7 +2434,7 @@ describe('field translation', () => {
         prop2: 'value1',
         [weirdProp1]: {
           [weirdProp2]: 1,
-          [weirdProp4]: 'test',
+          [weirdProp4]: 'test1',
         },
         [weirdProp3]: 'test1'
       }).go();
@@ -2444,7 +2444,7 @@ describe('field translation', () => {
         prop2: 'value2',
         [weirdProp1]: {
           [weirdProp2]: 2,
-          [weirdProp4]: 'test',
+          [weirdProp4]: 'test2',
         },
         [weirdProp3]: 'test2'
       }).go();
@@ -2454,7 +2454,7 @@ describe('field translation', () => {
         prop2: 'value3',
         [weirdProp1]: {
           [weirdProp2]: 2,
-          [weirdProp4]: 'test',
+          [weirdProp4]: 'test3',
         },
         [weirdProp3]: 'test3'
       }).go();
@@ -2462,7 +2462,7 @@ describe('field translation', () => {
       const params = entity.query
           .record({ prop1 })
           .where((attr, { eq }) => `
-            ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test')}
+            ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test2')}
           `)
           .params();
 
@@ -2474,7 +2474,7 @@ describe('field translation', () => {
       const { data } = await entity.query
         .record({ prop1 })
         .where((attr, { eq }) => `
-          ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test')}
+          ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test2')}
         `)
         .go();
 
@@ -2491,7 +2491,7 @@ describe('field translation', () => {
         prop2,
         [weirdProp1]: {
           [weirdProp2]: 1,
-          [weirdProp4]: 'test',
+          [weirdProp4]: 'test1',
         },
         [weirdProp3]: 'test1'
       }).go();
@@ -2499,7 +2499,7 @@ describe('field translation', () => {
       const params = entity.update({prop1, prop2})
           .set({ prop3 })
           .where((attr, { ne }) => `
-            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test')}
+            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test1')}
           `)
           .params();
 
@@ -2511,7 +2511,7 @@ describe('field translation', () => {
       const err = await entity.update({prop1, prop2})
           .set({ prop3 })
           .where((attr, { ne }) => `
-            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test')}
+            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test1')}
           `)
           .go()
           .then(() => null)
@@ -2521,6 +2521,15 @@ describe('field translation', () => {
       if (err) {
         expect(err.cause.code).to.equal('ConditionalCheckFailedException');
       }
+
+      const { data } = await entity.patch({prop1, prop2})
+          .set({ prop3 })
+          .where((attr, { ne }) => `
+            ${ne(attr[weirdProp1][weirdProp2], 2)} AND ${ne(attr[weirdProp3], 'test2')} AND ${ne(attr[weirdProp1][weirdProp4], 'test2')}
+          `)
+          .go({ response: 'all_new' });
+
+      expect(data.prop3).to.equal(prop3);
     });
 
     it('should create valid parameters with where data updates', async () => {
