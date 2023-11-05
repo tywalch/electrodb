@@ -2366,6 +2366,211 @@ describe('field translation', () => {
       });
     }
   });
+
+  describe('when attribute names have special characters', () => {
+    const table = "electro";
+    const serviceName = uuid();
+    // example from original GitHub issue
+    const weirdProp1 = 'example-key XXX _ 1 2 3 4' as const;
+    // this will nest under, and be a valid attribute name
+    const weirdProp2 = 'hello this is a full on sentence.' as const;
+    // this one has ONLY invalid characters (special case that should be handled)
+    const weirdProp3 = '\' -~!@#$%^&*()+="/?><.,`\'' as const;
+    // this one has only invalid characters except two numbers (special case that should be handled)
+    const weirdProp4 = '\' -~!@#$%^&*()+="/?><.,`\'55' as const;
+    const entity = new Entity({
+      model: {
+        entity: "specialCharacters",
+        version: "1",
+        service: serviceName,
+      },
+      attributes: {
+        prop1: {
+          type: "string",
+        },
+        prop2: {
+          type: "string",
+        },
+        prop3: {
+          type: "string"
+        },
+        [weirdProp1]: {
+          type: "map",
+          required: true,
+          properties: {
+            [weirdProp2]: {
+              type: 'number',
+              required: true,
+            },
+            [weirdProp4]: {
+              type: 'string',
+              required: true,
+            }
+          }
+        },
+        [weirdProp3]: {
+          type: 'string',
+          required: true,
+        }
+      },
+      indexes: {
+        record: {
+          pk: {
+            field: "pk",
+            composite: ["prop1"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["prop2"]
+          }
+        }
+      },
+    }, { table, client });
+
+    it('should create valid parameters with where query filters', async () => {
+      const prop1 = uuid();
+      await entity.create({
+        prop1,
+        prop2: 'value1',
+        [weirdProp1]: {
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test1',
+        },
+        [weirdProp3]: 'test1'
+      }).go();
+
+      await entity.create({
+        prop1,
+        prop2: 'value2',
+        [weirdProp1]: {
+          [weirdProp2]: 2,
+          [weirdProp4]: 'test2',
+        },
+        [weirdProp3]: 'test2'
+      }).go();
+
+      await entity.create({
+        prop1,
+        prop2: 'value3',
+        [weirdProp1]: {
+          [weirdProp2]: 2,
+          [weirdProp4]: 'test3',
+        },
+        [weirdProp3]: 'test3'
+      }).go();
+
+      const params = entity.query
+          .record({ prop1 })
+          .where((attr, { eq }) => `
+            ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test2')}
+          `)
+          .params();
+
+      expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
+      expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
+      expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
+
+      const { data } = await entity.query
+        .record({ prop1 })
+        .where((attr, { eq }) => `
+          ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test2')}
+        `)
+        .go();
+
+      expect(data.length).to.equal(1);
+      expect(data[0].prop2).to.equal('value2');
+    });
+
+    it('should create valid parameters with where mutation conditions', async () => {
+      const prop1 = uuid();
+      const prop2 = "value1";
+      const prop3 = "value2";
+      await entity.create({
+        prop1,
+        prop2,
+        [weirdProp1]: {
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test1',
+        },
+        [weirdProp3]: 'test1'
+      }).go();
+
+      const params = entity.update({prop1, prop2})
+          .set({ prop3 })
+          .where((attr, { ne }) => `
+            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test1')}
+          `)
+          .params();
+
+      expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
+      expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
+      expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
+
+      const err = await entity.update({prop1, prop2})
+          .set({ prop3 })
+          .where((attr, { ne }) => `
+            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test1')}
+          `)
+          .go()
+          .then(() => null)
+          .catch(e => e);
+
+      expect(!!err).to.be.true;
+      if (err) {
+        expect(err.cause.code).to.equal('ConditionalCheckFailedException');
+      }
+
+      const { data } = await entity.patch({prop1, prop2})
+          .set({ prop3 })
+          .where((attr, { ne }) => `
+            ${ne(attr[weirdProp1][weirdProp2], 2)} AND ${ne(attr[weirdProp3], 'test2')} AND ${ne(attr[weirdProp1][weirdProp4], 'test2')}
+          `)
+          .go({ response: 'all_new' });
+
+      expect(data.prop3).to.equal(prop3);
+    });
+
+    it('should create valid parameters with where data updates', async () => {
+      const prop1 = uuid();
+      const prop2 = 'value1';
+      await entity.create({
+        prop1,
+        prop2,
+        [weirdProp1]: {
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test1',
+        },
+        [weirdProp3]: 'test1'
+      }).go();
+
+      const params = entity.patch({prop1, prop2})
+          .data((attr, op) => {
+            op.set(attr[weirdProp1][weirdProp2], 2);
+            op.set(attr[weirdProp1][weirdProp4], 'test2');
+            op.set(attr[weirdProp3], 'test2');
+          })
+          .params();
+
+      expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
+      expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
+      expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
+
+      const { data } = await entity.patch({prop1, prop2})
+          .data((attr, op) => {
+            op.set(attr[weirdProp1][weirdProp2], 2);
+            op.set(attr[weirdProp1][weirdProp4], 'test2');
+            op.set(attr[weirdProp3], 'test2');
+          })
+          .go({response: 'all_new'});
+
+      expect(data[weirdProp1][weirdProp2]).to.equal(2);
+      expect(data[weirdProp1][weirdProp4]).to.equal('test2');
+      expect(data[weirdProp3]).to.equal('test2');
+    });
+  });
 });
 
 

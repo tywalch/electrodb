@@ -477,3 +477,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.10.5] - 2023-11-03
 ### Fixed
 - Addresses bug in `patch` and `update` methods that caused key composite attributes to be set with their attribute name not their "field" name. This would impact users who both use the `update` method to create new items and use alternative field name definitions for their composite keys. All other users would likely be silently impacted by this issue. 
+
+## [2.10.6] - 2023-11-04
+### Fixed
+- Addresses [Issue #321](https://github.com/tywalch/electrodb/issues/321), fixing expression attribute name and value formatting to remove non-alphanumeric and underscore characters.  
