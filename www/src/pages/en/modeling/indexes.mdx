@@ -174,6 +174,8 @@ indexes: {
 
 ### Composite Attribute Templates
 
+> Note: You may have found examples online that demonstrate how to make keys for Single Table Design. These patterns often look like "user#{id}" or "org#{id}". ElectroDB creates keys similar to these patterns out of the box without the need for using "template". It is _highly_ recommended to only use "template" when you are attempting to use ElectroDB on an existing table/dataset. If you are starting a new project, you should not need to use "template".
+
 In a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
 Attributes are identified by surrounding the attribute with `${...}` braces. For example, the syntax `${storeId}` will match `storeId` attribute in the model.
@@ -181,76 +183,6 @@ Attributes are identified by surrounding the attribute with `${...}` braces. For
 Convention for a composing a key use the `#` symbol to separate attributes, and for labels to attach with underscore. For example, when composing both the `mallId` and `buildingId` would be expressed as `mid_${mallId}#bid_${buildingId}`.
 
 > **ElectroDB** will not prefix templated keys with the Entity, Project, Version, or Collection. This will give you greater control of your keys but will limit **_ElectroDB's_** ability to prevent leaking entities with some queries.
-
-#### Example
-
-```typescript
-{
-  model: {
-      entity: "MallStoreCustom",
-      version: "1",
-      service: "mallstoredirectory"
-  },
-  attributes: {
-    storeId: {
-        type: "string"
-    },
-    mallId: {
-        type: "string"
-    },
-    buildingId: {
-        type: "string"
-    },
-    unitId: {
-        type: "string"
-    }
-  },
-  indexes: {
-    locations: {
-      pk: {
-        field: "pk",
-        template: "sid_${storeId}"
-      },
-      sk: {
-        field: "sk",
-        template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}"
-      }
-    }
-  }
-}
-```
-
-#### Input
-
-```json
-{
-    "storeId": "STOREVALUE",
-    "mallId": "MALLVALUE",
-    "buildingId": "BUILDINGVALUE",
-    "unitId": "UNITVALUE"
-};
-```
-
-#### Output
-
-```json
-{
-  "pk": "sid_storevalue",
-  "sk": "mid_mallvalue#bid_buildingvalue#uid_unitvalue"
-}
-```
-
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gDoFPnAC8cVBQDuKdJiwAKBBzhq4ICI2oAuRKvWGK87HrIBZAIZUqAZRjCAwgFchIMgBoDhtQDcKUHzAvGYAjJ7ePnwBvsC0FGYg1lRCUBSMwGn00FhkkbhehpYwDMDMzjAieio+6qkUAJKM1ZG1athgCeQCUMCoAOZ5bXiFbUk2TS3Dhh1dZD19g63qBctq5cBUGQOT+tPqs2YLA0Ntq8POqJi7Nftwh92lJ2t4+aNqfdoAHlV7bVQQWjFYL8KZ3MAAazBd3UBGA1Ga5EhERhMwo4CoxTmQUYAH0ACQIepNXAo1FqHjgCBBSp6ADa8wcaSaZAAui9DOc7nwoX9yXCEUcIWTyZUMVjEsA8YTxlQSQBiZhSgkIDZbRYK5zKwmXa6MUnvVGUyA0roM2UsjzkNXbfqW8i6mAs9kw3AvN2cjgFRD3SzMGhmLAQZxQXEwP00XGoSwgChkPAASk4HHqfAMADowBVlJFiYiyLYACoAeQASsgAGoAQQAMgBVZAijTJXYWWs16v1xuGm0a-MAITrDRrABEGgA5ADinYbTcdrbr44ahZnjYMuATGf6EEUSaAA)
-
-### Templates and Composite Attribute Arrays
-
-The example above shows indexes defined only with the `template` property. This property alone is enough to work with ElectroDB, however it can be useful to also include a `composite` array with the names of the Composite Attributes included in the `template` string. Doing so achieves the following benefits:
-
-1. ElectroDB will enforce that the template you have supplied actually resolves to the composite attributes specified in the array.
-
-2. If you use ElectroDB with TypeScript, supplying the `composite` array will ensure the indexes' Composite Attributes are typed just the same as if you had not used a composite template.
-
-An example of using `template` while also using `composite`:
 
 #### Example
 
@@ -395,10 +327,10 @@ const schema = {
     version: "1",
   },
   attributes: {
-    number1: {
+    prop1: {
       type: "number", // defined as number
     },
-    number2: {
+    prop22: {
       type: "number", // defined as number
     },
   },
@@ -406,11 +338,13 @@ const schema = {
     record: {
       pk: {
         field: "pk",
-        template: "${number1}", // will build PK as numeric value
+        composite: ["prop1"],
+        cast: "number", // cast key to number
       },
       sk: {
         field: "sk",
-        template: "${number2}", // will build SK as numeric value
+        composite: ["prop2"],
+        cast: "number", // cast key to number
       },
     },
   },
