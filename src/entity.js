@@ -513,7 +513,7 @@ class Entity {
         return Promise.reject(err);
       } else {
         if (err.__isAWSError) {
-          stackTrace.message = `Error thrown by DynamoDB client: "${err.message}"`;
+          stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
           stackTrace.cause = err;
           return Promise.reject(stackTrace);
         } else if (err.isElectroError) {
@@ -1017,7 +1017,7 @@ class Entity {
       ) {
         throw err;
       } else {
-        stackTrace.message = `Error thrown by DynamoDB client: "${err.message}"`;
+        stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
         stackTrace.cause = err;
         throw stackTrace;
       }
