@@ -494,7 +494,7 @@ class Entity {
   async go(method, parameters = {}, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
-      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError).stack;
+      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
     }
     try {
       switch (method) {
@@ -513,13 +513,9 @@ class Entity {
         return Promise.reject(err);
       } else {
         if (err.__isAWSError) {
-          const error = new e.ElectroError(
-            e.ErrorCodes.AWSError,
-            `Error thrown by DynamoDB client: "${err.message}"`,
-            err,
-          );
-          error.stack = stackTrace;
-          return Promise.reject(error);
+          stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
+          stackTrace.cause = err;
+          return Promise.reject(stackTrace);
         } else if (err.isElectroError) {
           return Promise.reject(err);
         } else {
@@ -926,7 +922,7 @@ class Entity {
   formatResponse(response, index, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
-      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError).stack;
+      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
     }
     try {
       let results = {};
@@ -1021,14 +1017,9 @@ class Entity {
       ) {
         throw err;
       } else {
-        const error = new e.ElectroError(
-          e.ErrorCodes.AWSError,
-          err.message,
-          err,
-        );
-        error.stack = stackTrace;
-
-        throw error;
+        stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
+        stackTrace.cause = err;
+        throw stackTrace;
       }
     }
   }
