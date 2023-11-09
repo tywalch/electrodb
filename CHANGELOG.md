@@ -471,6 +471,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Addresses edge case that filtered valid items when item lacked entity identifiers (created outside ElectroDB) when keys (pk or sk) were numeric.
 
 ## [2.10.4] - 2023-10-26
+> NOTE: This version is depricated, this version introduced code that significantly increased latency. That code was fixed in `2.10.7` 
 ### Added
 - Adds `cause` property to `ElectroError`, currently populated when error originates from the AWS Client, to help with error triage. This also adds the ability to provide an error type to ElectroError<Error> to type the error located on `cause`.
 
@@ -480,4 +481,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.10.6] - 2023-11-04
 ### Fixed
-- Addresses [Issue #321](https://github.com/tywalch/electrodb/issues/321), fixing expression attribute name and value formatting to remove non-alphanumeric and underscore characters.  
+- Addresses [Issue #321](https://github.com/tywalch/electrodb/issues/321), fixing expression attribute name and value formatting to remove non-alphanumeric and underscore characters.
+
+## [2.10.7] - 2023-11-09
+### Fixed
+- Fixes latency issue introduced in `2.10.4` affecting all queries discovered and brought forward by Ross Gerbasi. Thank you, Ross Gerbasi!
