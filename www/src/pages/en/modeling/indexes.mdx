@@ -14,8 +14,6 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import { Picture } from "@astrojs/image/components";
-
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will be referenced as _"Access Patterns"_.
 
 All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
@@ -174,9 +172,9 @@ indexes: {
 
 ### Composite Attribute Templates
 
-> Note: You may have found examples online that demonstrate how to make keys for Single Table Design. These patterns often look like "user#{id}" or "org#{id}". ElectroDB creates keys similar to these patterns out of the box without the need for using "template". It is _highly_ recommended to only use "template" when you are attempting to use ElectroDB on an existing table/dataset. If you are starting a new project, you should not need to use "template".
+You may have found examples online that demonstrate how to make keys for Single Table Design. These patterns often look like `user#${id}` or `org#${id}`. ElectroDB creates keys similar to these patterns out of the box without the need for using "template". It is _highly_ recommended to only use "template" when you are attempting to use ElectroDB on an existing table/dataset. If you are starting a new project, you should not need to use "template", and using it will limit some protections and features granted by ElectroDB.
 
-In a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
+With a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
 Attributes are identified by surrounding the attribute with `${...}` braces. For example, the syntax `${storeId}` will match `storeId` attribute in the model.
 
@@ -188,20 +186,59 @@ Convention for a composing a key use the `#` symbol to separate attributes, and 
 
 ```typescript
 {
+  model: {
+      entity: "MallStoreCustom",
+      version: "1",
+      service: "mallstoredirectory"
+  },
+  attributes: {
+    storeId: {
+        type: "string"
+    },
+    mallId: {
+        type: "string"
+    },
+    buildingId: {
+        type: "string"
+    },
+    unitId: {
+        type: "string"
+    }
+  },
   indexes: {
     locations: {
       pk: {
         field: "pk",
+        composite: ["storeId"],        
         template: "sid_${storeId}"
-        composite: ["storeId"]
       },
       sk: {
         field: "sk",
-        template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}",
-        composite: ["mallId", "buildingId", "unitId"]
+        composite: ["mallId", "buildingId", "unitId"],
+        template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}"
       }
     }
   }
+}
+```
+
+#### Input
+
+```json
+{
+    "storeId": "STOREVALUE",
+    "mallId": "MALLVALUE",
+    "buildingId": "BUILDINGVALUE",
+    "unitId": "UNITVALUE"
+};
+```
+
+#### Output
+
+```json
+{
+  "pk": "sid_storevalue",
+  "sk": "mid_mallvalue#bid_buildingvalue#uid_unitvalue"
 }
 ```
 
@@ -250,13 +287,13 @@ The following images illustrate the difference between an `isolated` and `cluste
 In this example, the following records have the same partition key composite attributes.
 
 <div style={{ textAlign: "center" }}>
-  <img src="/isolated.png" style={{ maxWidth: "75%" }} />
+    <img src="/isolated.png" style={{ maxWidth: "75%" }} />
 </div>
 
 In an `isolated` index type, entities sharing a partition key do not co-mingle. While this is not ideal for querying across entities, it is ideal for efficently targetting (or "isolating") a single entity type.
 
 <div style={{ textAlign: "center" }}>
-  <img src="/clustered.png" style={{ maxWidth: "75%" }} />
+    <img src="/clustered.png" style={{ maxWidth: "75%" }} />
 </div>
 
 In a `clustered` index type, entities sharing a partition key intermix (or "cluster") together. This is ideal for querying across entities, but not ideal for efficently targetting a single entity type.
@@ -327,10 +364,10 @@ const schema = {
     version: "1",
   },
   attributes: {
-    prop1: {
+    number1: {
       type: "number", // defined as number
     },
-    prop22: {
+    number2: {
       type: "number", // defined as number
     },
   },
@@ -338,13 +375,11 @@ const schema = {
     record: {
       pk: {
         field: "pk",
-        composite: ["prop1"],
-        cast: "number", // cast key to number
+        template: "${number1}", // will build PK as numeric value
       },
       sk: {
         field: "sk",
-        composite: ["prop2"],
-        cast: "number", // cast key to number
+        template: "${number2}", // will build SK as numeric value
       },
     },
   },
