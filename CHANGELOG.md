@@ -486,3 +486,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.10.7] - 2023-11-09
 ### Fixed
 - Fixes latency issue introduced in `2.10.4` affecting all queries discovered and brought forward by Ross Gerbasi. Thank you, Ross Gerbasi!
+
+## [2.11.0] - 2023-11-12
+### Added
+- Adds new property `scope` to index definitions, allowing users to further isolate partition keys beyond just `service` participation. This implements an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290).  
