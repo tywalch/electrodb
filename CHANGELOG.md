@@ -489,4 +489,4 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.11.0] - 2023-11-12
 ### Added
-- Adds new property `namespace` to index definitions, allowing users to further isolate partition keys beyond just `service` participation. This implements an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290).  
+- Adds new property `namespace` to index definitions, allowing users to further isolate partition keys beyond just `service` participation. This implements an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290). Thank you, Brooke for your contribution!  

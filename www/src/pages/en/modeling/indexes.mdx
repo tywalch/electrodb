@@ -425,9 +425,11 @@ In the example below, we are configuring the casing ElectroDB will use individua
 |    `upper`    | Will convert the key to uppercase prior it its use     |
 |    `none`     | Will not perform any casing changes when building keys |
 
-### Index Scoping
+### Index Namespacing
 
-When designing your indexes with Single Table Design, you may find yourself in a situation where the composite attributes of one entity's partition key are the same as another entity. While in most cases this would be a deliberate choice, made to more easily query across entities via [collections](en/modeling/collections), there are times when you might desire further isolation between entities. This is most commonly encountered when the partition key of both entities are defined with an empty composite array. When futher isolation between entities on an index is necessary, you can use the `namespace` property on your index to directly impact how records are partitioned.
+When designing your indexes with Single Table Design, you may find yourself in a situation where the composite attributes of one entity's partition key are the same as another entity. While in most cases this would be a deliberate choice, made to more easily query across entities via [collections](en/modeling/collections), there are times when you might desire further isolation between entities. This scenario is most commonly encountered when the partition key of both entities are defined with an empty composite array. When futher isolation between entities on an index is necessary, you can use the `namespace` property on your index to directly impact how records are partitioned.
+
+> Note: the `namespace` concept came from an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290), which can be read for further context. Thank you, Brooke for your contribution!
 
 The example below demonstrates how to use the `namespace` property to isolate records on an index. In this example, the `organization` entity and the `user` entity both have a partition key of `pk` with an empty composite array. This means that both entities will share the same partition key, and will be stored in the same partition. This is not ideal, as it means that a query for a user will also return records for an organization. To isolate these entities, we can use the `namespace` property on the index to further isolate the partition key for each entity.
 
