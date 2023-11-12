@@ -3222,8 +3222,8 @@ class Entity {
 
     // If keys are not custom, set the prefixes
     if (!keys.pk.isCustom) {
-      if (tableIndex.scope) {
-        pk = `${pk}_${tableIndex.scope}`;
+      if (tableIndex.namespace) {
+        pk = `${pk}_${tableIndex.namespace}`;
       }
       keys.pk.prefix = u.formatKeyCasing(pk, tableIndex.pk.casing);
     }
@@ -3845,7 +3845,7 @@ class Entity {
       let indexName = index.index || TableIndex;
       let indexType =
         typeof index.type === "string" ? index.type : IndexTypes.isolated;
-      let indexScope = index.scope || "";
+      let indexNamespace = index.namespace || "";
       if (indexType === "clustered") {
         clusteredIndexes.add(accessPattern);
       }
@@ -3952,7 +3952,7 @@ class Entity {
         customFacets,
         type: indexType,
         index: indexName,
-        scope: indexScope,
+        namespace: indexNamespace,
       };
 
       indexHasSubCollections[indexName] =

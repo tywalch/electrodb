@@ -2573,9 +2573,9 @@ describe('field translation', () => {
   });
 });
 
-describe('index scope', () => {
+describe('index namespace', () => {
   const serviceName = uuid();
-  const withScope = new Entity(
+  const withNamespace = new Entity(
       {
         model: {
           entity: serviceName,
@@ -2601,7 +2601,7 @@ describe('index scope', () => {
         },
         indexes: {
           test: {
-            scope: 'scope1',
+            namespace: 'namespace1',
             pk: {
               field: "pk",
               composite: ["prop1"],
@@ -2613,7 +2613,7 @@ describe('index scope', () => {
           },
           reverse: {
             index: 'gsi1pk-gsi1sk-index',
-            scope: 'scope2',
+            namespace: 'namespace2',
             pk: {
               field: "gsi1pk",
               composite: ["prop2"],
@@ -2628,7 +2628,7 @@ describe('index scope', () => {
       { table: "electro", client }
   );
 
-  const withoutScope = new Entity(
+  const withoutNamespace = new Entity(
       {
         model: {
           entity: serviceName,
@@ -2679,71 +2679,71 @@ describe('index scope', () => {
       { table: "electro", client }
   );
 
-  it('should add scope value to all keys', () => {
-    const getParams = withScope.get({prop1: 'abc', prop2: 'def'}).params();
-    expect(getParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+  it('should add namespace value to all keys', () => {
+    const getParams = withNamespace.get({prop1: 'abc', prop2: 'def'}).params();
+    expect(getParams.Key.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const queryParams = withScope.query.test({prop1: 'abc'}).params();
-    expect(queryParams.ExpressionAttributeValues[':pk']).to.equal('$test_scope1#prop1_abc');
+    const queryParams = withNamespace.query.test({prop1: 'abc'}).params();
+    expect(queryParams.ExpressionAttributeValues[':pk']).to.equal('$test_namespace1#prop1_abc');
 
-    const queryParams2 = withScope.query.reverse({prop2: 'def'}).params();
-    expect(queryParams2.ExpressionAttributeValues[':pk']).to.equal('$test_scope2#prop2_def');
+    const queryParams2 = withNamespace.query.reverse({prop2: 'def'}).params();
+    expect(queryParams2.ExpressionAttributeValues[':pk']).to.equal('$test_namespace2#prop2_def');
 
-    const scanParams = withScope.scan.params();
-    expect(scanParams.ExpressionAttributeValues[':pk']).to.equal('$test_scope1#prop1_');
+    const scanParams = withNamespace.scan.params();
+    expect(scanParams.ExpressionAttributeValues[':pk']).to.equal('$test_namespace1#prop1_');
 
-    const deleteParams = withScope.delete({prop1: 'abc', prop2: 'def'}).params();
-    expect(deleteParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+    const deleteParams = withNamespace.delete({prop1: 'abc', prop2: 'def'}).params();
+    expect(deleteParams.Key.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const removeParams = withScope.remove({prop1: 'abc', prop2: 'def'}).params();
-    expect(removeParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+    const removeParams = withNamespace.remove({prop1: 'abc', prop2: 'def'}).params();
+    expect(removeParams.Key.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const updateParams = withScope.update({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
-    expect(updateParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+    const updateParams = withNamespace.update({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(updateParams.Key.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const patchParams = withScope.patch({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
-    expect(patchParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+    const patchParams = withNamespace.patch({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(patchParams.Key.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const putParams = withScope.put({prop1: 'abc', prop2: 'def'}).params();
-    expect(putParams.Item.pk).to.equal('$test_scope1#prop1_abc');
+    const putParams = withNamespace.put({prop1: 'abc', prop2: 'def'}).params();
+    expect(putParams.Item.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const createParams = withScope.create({prop1: 'abc', prop2: 'def'}).params();
-    expect(createParams.Item.pk).to.equal('$test_scope1#prop1_abc');
+    const createParams = withNamespace.create({prop1: 'abc', prop2: 'def'}).params();
+    expect(createParams.Item.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const upsertParams = withScope.upsert({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
-    expect(upsertParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+    const upsertParams = withNamespace.upsert({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(upsertParams.Key.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const batchGetParams = withScope.get([{prop1: 'abc', prop2: 'def'}]).params();
-    expect(batchGetParams[0].RequestItems.electro.Keys[0].pk).to.equal('$test_scope1#prop1_abc');
+    const batchGetParams = withNamespace.get([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchGetParams[0].RequestItems.electro.Keys[0].pk).to.equal('$test_namespace1#prop1_abc');
 
-    const batchDeleteParams = withScope.delete([{prop1: 'abc', prop2: 'def'}]).params();
-    expect(batchDeleteParams[0].RequestItems.electro[0].DeleteRequest.Key.pk).to.equal('$test_scope1#prop1_abc');
+    const batchDeleteParams = withNamespace.delete([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchDeleteParams[0].RequestItems.electro[0].DeleteRequest.Key.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const batchPutParams = withScope.put([{prop1: 'abc', prop2: 'def'}]).params();
-    expect(batchPutParams[0].RequestItems.electro[0].PutRequest.Item.pk).to.equal('$test_scope1#prop1_abc');
+    const batchPutParams = withNamespace.put([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchPutParams[0].RequestItems.electro[0].PutRequest.Item.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const keys = withScope.conversions.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
-    expect(keys.pk).to.equal('$test_scope1#prop1_abc');
-    expect(keys.gsi1pk).to.equal('$test_scope2#prop2_def');
+    const keys = withNamespace.conversions.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(keys.pk).to.equal('$test_namespace1#prop1_abc');
+    expect(keys.gsi1pk).to.equal('$test_namespace2#prop2_def');
 
-    const keysComposite = withScope.conversions.fromKeys.toComposite(keys);
+    const keysComposite = withNamespace.conversions.fromKeys.toComposite(keys);
     expect(keysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
 
-    const indexKeys = withScope.conversions.byAccessPattern.test.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
-    expect(indexKeys.pk).to.equal('$test_scope1#prop1_abc');
+    const indexKeys = withNamespace.conversions.byAccessPattern.test.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(indexKeys.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const indexKeysComposite = withScope.conversions.byAccessPattern.test.fromKeys.toComposite(indexKeys);
+    const indexKeysComposite = withNamespace.conversions.byAccessPattern.test.fromKeys.toComposite(indexKeys);
     expect(indexKeysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
 
-    const reverseKeys = withScope.conversions.byAccessPattern.reverse.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
-    expect(reverseKeys.gsi1pk).to.equal('$test_scope2#prop2_def');
-    expect(keys.pk).to.equal('$test_scope1#prop1_abc');
+    const reverseKeys = withNamespace.conversions.byAccessPattern.reverse.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(reverseKeys.gsi1pk).to.equal('$test_namespace2#prop2_def');
+    expect(keys.pk).to.equal('$test_namespace1#prop1_abc');
 
-    const reverseKeysComposite = withScope.conversions.byAccessPattern.reverse.fromKeys.toComposite(reverseKeys);
+    const reverseKeysComposite = withNamespace.conversions.byAccessPattern.reverse.fromKeys.toComposite(reverseKeys);
     expect(reverseKeysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
   });
 
-  it('should query scoped indexes without issue', async () => {
+  it('should query namespaced indexes without issue', async () => {
     const prop1 = uuid();
     const prop2 = uuid();
 
@@ -2760,72 +2760,72 @@ describe('index scope', () => {
     };
 
     const [
-      scopeRecord,
-      withoutScopeRecord
+      namespaceRecord,
+      withoutNamespaceRecord
     ] = await Promise.all([
-        withScope.create(record1).go(),
-        withoutScope.create(record2).go(),
+        withNamespace.create(record1).go(),
+        withoutNamespace.create(record2).go(),
     ]);
 
-    expect(scopeRecord.data).to.deep.equal(record1);
-    expect(withoutScopeRecord.data).to.deep.equal(record2);
+    expect(namespaceRecord.data).to.deep.equal(record1);
+    expect(withoutNamespaceRecord.data).to.deep.equal(record2);
 
-    const scopeGet = await withScope.get({prop1, prop2}).go();
-    expect(scopeGet.data).to.deep.equal(record1);
+    const namespaceGet = await withNamespace.get({prop1, prop2}).go();
+    expect(namespaceGet.data).to.deep.equal(record1);
 
-    const withoutScopeGet = await withoutScope.get({prop1, prop2}).go();
-    expect(withoutScopeGet.data).to.deep.equal(record2);
+    const withoutNamespaceGet = await withoutNamespace.get({prop1, prop2}).go();
+    expect(withoutNamespaceGet.data).to.deep.equal(record2);
 
-    const scopeQuery = await withScope.query.test({prop1}).go();
-    expect(scopeQuery.data).to.deep.equal([record1]);
+    const namespaceQuery = await withNamespace.query.test({prop1}).go();
+    expect(namespaceQuery.data).to.deep.equal([record1]);
 
-    const withoutScopeQuery = await withoutScope.query.test({prop1}).go();
-    expect(withoutScopeQuery.data).to.deep.equal([record2]);
+    const withoutNamespaceQuery = await withoutNamespace.query.test({prop1}).go();
+    expect(withoutNamespaceQuery.data).to.deep.equal([record2]);
 
-    const reverseScopeQuery = await withScope.query.reverse({prop2}).go();
-    expect(reverseScopeQuery.data).to.deep.equal([record1]);
+    const reverseNamespaceQuery = await withNamespace.query.reverse({prop2}).go();
+    expect(reverseNamespaceQuery.data).to.deep.equal([record1]);
 
-    const reverseWithoutScopeQuery = await withoutScope.query.reverse({prop2}).go();
-    expect(reverseWithoutScopeQuery.data).to.deep.equal([record2]);
+    const reverseWithoutNamespaceQuery = await withoutNamespace.query.reverse({prop2}).go();
+    expect(reverseWithoutNamespaceQuery.data).to.deep.equal([record2]);
 
-    const batchGetScopeRecords = await withScope.get([{prop1, prop2}]).go();
-    expect(batchGetScopeRecords.data).to.deep.equal([record1]);
+    const batchGetNamespaceRecords = await withNamespace.get([{prop1, prop2}]).go();
+    expect(batchGetNamespaceRecords.data).to.deep.equal([record1]);
 
-    const batchGetWithoutScopeRecords = await withoutScope.get([{prop1, prop2}]).go();
-    expect(batchGetWithoutScopeRecords.data).to.deep.equal([record2]);
+    const batchGetWithoutNamespaceRecords = await withoutNamespace.get([{prop1, prop2}]).go();
+    expect(batchGetWithoutNamespaceRecords.data).to.deep.equal([record2]);
 
-    const updatedScopeRecord = await withScope.update({prop1, prop2}).set({prop4: ['updated1']}).go({response: 'all_new'});
-    expect(updatedScopeRecord.data).to.deep.equal({
+    const updatedNamespaceRecord = await withNamespace.update({prop1, prop2}).set({prop4: ['updated1']}).go({response: 'all_new'});
+    expect(updatedNamespaceRecord.data).to.deep.equal({
       ...record1,
       prop4: ['updated1'],
     });
 
-    const updatedWithoutScopeRecord = await withoutScope.update({prop1, prop2}).set({prop4: ['updated2']}).go({response: 'all_new'});
-    expect(updatedWithoutScopeRecord.data).to.deep.equal({
+    const updatedWithoutNamespaceRecord = await withoutNamespace.update({prop1, prop2}).set({prop4: ['updated2']}).go({response: 'all_new'});
+    expect(updatedWithoutNamespaceRecord.data).to.deep.equal({
       ...record2,
       prop4: ['updated2'],
     });
 
-    const patchedScopeRecord = await withScope.patch({prop1, prop2}).append({prop4: ['patched1']}).go({response: 'all_new'});
-    expect(patchedScopeRecord.data).to.deep.equal({
+    const patchedNamespaceRecord = await withNamespace.patch({prop1, prop2}).append({prop4: ['patched1']}).go({response: 'all_new'});
+    expect(patchedNamespaceRecord.data).to.deep.equal({
       ...record1,
       prop4: ['updated1', 'patched1'],
     });
 
-    const patchedWithoutScopeRecord = await withoutScope.patch({prop1, prop2}).append({prop4: ['patched2']}).go({response: 'all_new'});
-    expect(patchedWithoutScopeRecord.data).to.deep.equal({
+    const patchedWithoutNamespaceRecord = await withoutNamespace.patch({prop1, prop2}).append({prop4: ['patched2']}).go({response: 'all_new'});
+    expect(patchedWithoutNamespaceRecord.data).to.deep.equal({
       ...record2,
       prop4: ['updated2', 'patched2'],
     });
 
-    const upsertedScopeRecord = await withScope.upsert({prop1, prop2}).append({prop4: ['upserted1']}).go({response: 'all_new'});
-    expect(upsertedScopeRecord.data).to.deep.equal({
+    const upsertedNamespaceRecord = await withNamespace.upsert({prop1, prop2}).append({prop4: ['upserted1']}).go({response: 'all_new'});
+    expect(upsertedNamespaceRecord.data).to.deep.equal({
       ...record1,
       prop4: ['updated1', 'patched1', 'upserted1'],
     });
 
-    const upsertedWithoutScopeRecord = await withoutScope.upsert({prop1, prop2}).append({prop4: ['upserted2']}).go({response: 'all_new'});
-    expect(upsertedWithoutScopeRecord.data).to.deep.equal({
+    const upsertedWithoutNamespaceRecord = await withoutNamespace.upsert({prop1, prop2}).append({prop4: ['upserted2']}).go({response: 'all_new'});
+    expect(upsertedWithoutNamespaceRecord.data).to.deep.equal({
       ...record2,
       prop4: ['updated2', 'patched2', 'upserted2'],
     });
