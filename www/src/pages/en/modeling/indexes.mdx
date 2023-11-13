@@ -425,13 +425,13 @@ In the example below, we are configuring the casing ElectroDB will use individua
 |    `upper`    | Will convert the key to uppercase prior it its use     |
 |    `none`     | Will not perform any casing changes when building keys |
 
-### Index Namespacing
+### Index Scoping
 
-When designing your indexes with Single Table Design, you may find yourself in a situation where the composite attributes of one entity's partition key are the same as another entity. While in most cases this would be a deliberate choice, made to more easily query across entities via [collections](en/modeling/collections), there are times when you might desire further isolation between entities. This scenario is most commonly encountered when the partition key of both entities are defined with an empty composite array. When futher isolation between entities on an index is necessary, you can use the `namespace` property on your index to directly impact how records are partitioned.
+When designing your indexes with Single Table Design, you may find yourself in a situation where the composite attributes of one entity's partition key are the same as another entity. While in most cases this would be a deliberate choice, made to more easily query across entities via [collections](en/modeling/collections), there are times when you might desire further isolation between entities. This scenario is most commonly encountered when the partition key of both entities are defined with an empty composite array. When futher isolation between entities on an index is necessary, you can use the `scope` property on your index to directly impact how records are partitioned.
 
-> Note: the `namespace` concept came from an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290), which can be read for further context. Thank you, Brooke for your contribution!
+> Note: the `scope` concept came from an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290), which can be read for further context. Thank you, Brooke for your contribution!
 
-The example below demonstrates how to use the `namespace` property to isolate records on an index. In this example, the `organization` entity and the `user` entity both have a partition key of `pk` with an empty composite array. This means that both entities will share the same partition key, and will be stored in the same partition. This is not ideal, as it means that a query for a user will also return records for an organization. To isolate these entities, we can use the `namespace` property on the index to further isolate the partition key for each entity.
+The example below demonstrates how to use the `scope` property to isolate records on an index. In this example, the `organization` entity and the `user` entity both have a partition key of `pk` with an empty composite array. This means that both entities will share the same partition key, and will be stored in the same partition. This is not ideal, as it means that a query for a user will also return records for an organization. To isolate these entities, we can use the `scope` property on the index to further isolate the partition key for each entity.
 
 ```typescript
 const organization = new Entity({
@@ -447,7 +447,7 @@ const organization = new Entity({
   },
   indexes: {
     myIndex: {
-      namespace: "org", // <--- Namespace is set to unique value "org"
+      scope: "org", // <--- Scope is set to unique value "org"
       pk: {
         field: "pk",
         composite: []
@@ -473,7 +473,7 @@ const user = new Entity({
   },
   indexes: {
     myIndex: {
-      namespace: "user", // <--- Namespace is set to unique value "user"
+      scope: "user", // <--- Scope is set to unique value "user"
       pk: {
         field: "pk",
         composite: []
@@ -487,11 +487,11 @@ const user = new Entity({
 }, { table: "your_table_name" });
 ```
 
-Without the use of `namespace`, both entities would share the same partition key and would be stored in the same partition. With the use of `namespace`, each entity will have a unique partition key and will be stored in a separate partition.
+Without the use of `scope`, both entities would share the same partition key and would be stored in the same partition. With the use of `scope`, each entity will have a unique partition key and will be stored in a separate partition.
 
-#### Without Namespace
+#### Without Scope
 
-Without a `namespace` value, notice the partition key value at ExpressionAttributeValues[':pk'] is the same for both queries. This occurs when composite attribute array for a partition key matches between entities. Keep in mind that, in most cases, this is desirable because it helps enable querying across entities via [collections](/en/modeling/collections). However, in some cases, this may not be desirable which is why the `namespace` property exists.
+Without a `scope` value, notice the partition key value at ExpressionAttributeValues[':pk'] is the same for both queries. This occurs when composite attribute array for a partition key matches between entities. Keep in mind that, in most cases, this is desirable because it helps enable querying across entities via [collections](/en/modeling/collections). However, in some cases, this may not be desirable which is why the `scope` property exists.
 
 ```typescript
 organization.query.myIndex({organizationId: '123'}).go();
@@ -527,9 +527,9 @@ user.query.myIndex({userId: '456'}).go();
 // }
 ```
 
-#### With Namespace
+#### With Scope
 
-Notice the value at ExpressionAttributeValues[':pk'] now contains the `namespace` value that was provided by the user on the index definition.
+Notice the value at ExpressionAttributeValues[':pk'] now contains the `scope` value that was provided by the user on the index definition.
 
 ```typescript
 organization.query.myIndex({organizationId: '123'}).go();

@@ -3655,7 +3655,7 @@ export interface Schema<A extends string, F extends string, C extends string> {
     [accessPattern: string]: {
       readonly project?: "keys_only";
       readonly index?: string;
-      readonly namespace?: string;
+      readonly scope?: string;
       readonly type?: "clustered" | "isolated";
       readonly collection?: AccessPatternCollection<C>;
       readonly pk: {

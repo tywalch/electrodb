@@ -3168,7 +3168,7 @@ describe("composite compatibility", () => {
   });
 });
 
-describe('namespace compatibility', () => {
+describe('scope compatibility', () => {
   const entity1 = new Entity(
       {
         model: {
@@ -3190,7 +3190,7 @@ describe('namespace compatibility', () => {
         indexes: {
           test: {
             collection: 'testing',
-            namespace: 'subtest',
+            scope: 'subtest',
             pk: {
               field: "pk",
               composite: ["prop1"],
@@ -3226,7 +3226,7 @@ describe('namespace compatibility', () => {
         indexes: {
           test: {
             collection: 'testing',
-            namespace: 'subtestz',
+            scope: 'subtestz',
             pk: {
               field: "pk",
               composite: ["prop1"],
@@ -3262,7 +3262,7 @@ describe('namespace compatibility', () => {
         indexes: {
           test: {
             collection: 'testing',
-            namespace: 'subtest',
+            scope: 'subtest',
             pk: {
               field: "pk",
               composite: ["prop1"],
@@ -3277,7 +3277,7 @@ describe('namespace compatibility', () => {
       { table: "electro", client }
   );
 
-  it('should throw an error when namespaces are not compatible between collection members', () => {
+  it('should throw an error when scopes are not compatible between collection members', () => {
     let result: any = null;
     let threw = false;
     try {
@@ -3288,10 +3288,10 @@ describe('namespace compatibility', () => {
     }
 
     expect(threw).to.be.true;
-    expect(result.message).to.equal(`Validation Error while joining entity, "entity2". The index namespace value provided "subtestz" does not match established index namespace value "subtest" on index "(Primary Index)". Index namespace options must match across all entities participating in a collection - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`)
+    expect(result.message).to.equal(`Validation Error while joining entity, "entity2". The index scope value provided "subtestz" does not match established index scope value "subtest" on index "(Primary Index)". Index scope options must match across all entities participating in a collection - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`)
   });
 
-  it('should not throw when namespaces are compatible between collection members', () => {
+  it('should not throw when scopes are compatible between collection members', () => {
     let result: any = null;
     let threw = false;
     try {
@@ -3305,7 +3305,7 @@ describe('namespace compatibility', () => {
     expect(result).to.be.null;
   });
 
-  it('should query when namespaces are compatible between collection members', async () => {
+  it('should query when scopes are compatible between collection members', async () => {
     const service = new Service({ entity1, entity3 });
     const prop1 = uuid();
     const prop2 = uuid();

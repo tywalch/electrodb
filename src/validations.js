@@ -119,7 +119,7 @@ const Index = {
           enum: ["string", "number"],
           required: false,
         },
-        namespace: {
+        scope: {
           type: "string",
           required: false,
         }

@@ -584,7 +584,7 @@ class Service {
     let pkFieldMatch = definition.pk.field === providedIndex.pk.field;
     let pkFacetLengthMatch =
       definition.pk.facets.length === providedIndex.pk.facets.length;
-    let namespaceMatch = definition.namespace === providedIndex.namespace;
+    let scopeMatch = definition.scope === providedIndex.scope;
     let mismatchedFacetLabels = [];
     let collectionDifferences = [];
     let definitionIndexName = u.formatIndexNameForDisplay(definition.index);
@@ -632,13 +632,13 @@ class Service {
       }
     }
 
-    if (!namespaceMatch) {
+    if (!scopeMatch) {
       collectionDifferences.push(
-          `The index namespace value provided "${
-              providedIndex.namespace || "undefined"
-          }" does not match established index namespace value "${
-              definition.namespace || "undefined"
-          }" on index "${providedIndexName}". Index namespace options must match across all entities participating in a collection`,
+          `The index scope value provided "${
+              providedIndex.scope || "undefined"
+          }" does not match established index scope value "${
+              definition.scope || "undefined"
+          }" on index "${providedIndexName}". Index scope options must match across all entities participating in a collection`,
       );
     }
 
