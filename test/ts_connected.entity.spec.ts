@@ -2573,4 +2573,263 @@ describe('field translation', () => {
   });
 });
 
+describe('index scope', () => {
+  const serviceName = uuid();
+  const withScope = new Entity(
+      {
+        model: {
+          entity: serviceName,
+          service: 'test',
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "string",
+          },
+          prop3: {
+            type: "string",
+          },
+          prop4: {
+            type: 'list',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        indexes: {
+          test: {
+            scope: 'scope1',
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["prop2"],
+            },
+          },
+          reverse: {
+            index: 'gsi1pk-gsi1sk-index',
+            scope: 'scope2',
+            pk: {
+              field: "gsi1pk",
+              composite: ["prop2"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: ["prop1"],
+            },
+          },
+        },
+      },
+      { table: "electro", client }
+  );
+
+  const withoutScope = new Entity(
+      {
+        model: {
+          entity: serviceName,
+          service: 'test',
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "string",
+          },
+          prop3: {
+            type: "string",
+          },
+          prop4: {
+            type: 'list',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        indexes: {
+          test: {
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["prop2"],
+            },
+          },
+          reverse: {
+            index: 'gsi1pk-gsi1sk-index',
+            pk: {
+              field: "gsi1pk",
+              composite: ["prop2"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: ["prop1"],
+            },
+          },
+        },
+      },
+      { table: "electro", client }
+  );
+
+  it('should add scope value to all keys', () => {
+    const getParams = withScope.get({prop1: 'abc', prop2: 'def'}).params();
+    expect(getParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const queryParams = withScope.query.test({prop1: 'abc'}).params();
+    expect(queryParams.ExpressionAttributeValues[':pk']).to.equal('$test_scope1#prop1_abc');
+
+    const queryParams2 = withScope.query.reverse({prop2: 'def'}).params();
+    expect(queryParams2.ExpressionAttributeValues[':pk']).to.equal('$test_scope2#prop2_def');
+
+    const scanParams = withScope.scan.params();
+    expect(scanParams.ExpressionAttributeValues[':pk']).to.equal('$test_scope1#prop1_');
+
+    const deleteParams = withScope.delete({prop1: 'abc', prop2: 'def'}).params();
+    expect(deleteParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const removeParams = withScope.remove({prop1: 'abc', prop2: 'def'}).params();
+    expect(removeParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const updateParams = withScope.update({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(updateParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const patchParams = withScope.patch({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(patchParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const putParams = withScope.put({prop1: 'abc', prop2: 'def'}).params();
+    expect(putParams.Item.pk).to.equal('$test_scope1#prop1_abc');
+
+    const createParams = withScope.create({prop1: 'abc', prop2: 'def'}).params();
+    expect(createParams.Item.pk).to.equal('$test_scope1#prop1_abc');
+
+    const upsertParams = withScope.upsert({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(upsertParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const batchGetParams = withScope.get([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchGetParams[0].RequestItems.electro.Keys[0].pk).to.equal('$test_scope1#prop1_abc');
+
+    const batchDeleteParams = withScope.delete([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchDeleteParams[0].RequestItems.electro[0].DeleteRequest.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const batchPutParams = withScope.put([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchPutParams[0].RequestItems.electro[0].PutRequest.Item.pk).to.equal('$test_scope1#prop1_abc');
+
+    const keys = withScope.conversions.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(keys.pk).to.equal('$test_scope1#prop1_abc');
+    expect(keys.gsi1pk).to.equal('$test_scope2#prop2_def');
+
+    const keysComposite = withScope.conversions.fromKeys.toComposite(keys);
+    expect(keysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
+
+    const indexKeys = withScope.conversions.byAccessPattern.test.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(indexKeys.pk).to.equal('$test_scope1#prop1_abc');
+
+    const indexKeysComposite = withScope.conversions.byAccessPattern.test.fromKeys.toComposite(indexKeys);
+    expect(indexKeysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
+
+    const reverseKeys = withScope.conversions.byAccessPattern.reverse.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(reverseKeys.gsi1pk).to.equal('$test_scope2#prop2_def');
+    expect(keys.pk).to.equal('$test_scope1#prop1_abc');
+
+    const reverseKeysComposite = withScope.conversions.byAccessPattern.reverse.fromKeys.toComposite(reverseKeys);
+    expect(reverseKeysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
+  });
+
+  it('should query scoped indexes without issue', async () => {
+    const prop1 = uuid();
+    const prop2 = uuid();
+
+    const record1 = {
+      prop1,
+      prop2,
+      prop3: uuid(),
+    };
+
+    const record2 = {
+      prop1,
+      prop2,
+      prop3: uuid(),
+    };
+
+    const [
+      scopeRecord,
+      withoutScopeRecord
+    ] = await Promise.all([
+        withScope.create(record1).go(),
+        withoutScope.create(record2).go(),
+    ]);
+
+    expect(scopeRecord.data).to.deep.equal(record1);
+    expect(withoutScopeRecord.data).to.deep.equal(record2);
+
+    const scopeGet = await withScope.get({prop1, prop2}).go();
+    expect(scopeGet.data).to.deep.equal(record1);
+
+    const withoutScopeGet = await withoutScope.get({prop1, prop2}).go();
+    expect(withoutScopeGet.data).to.deep.equal(record2);
+
+    const scopeQuery = await withScope.query.test({prop1}).go();
+    expect(scopeQuery.data).to.deep.equal([record1]);
+
+    const withoutScopeQuery = await withoutScope.query.test({prop1}).go();
+    expect(withoutScopeQuery.data).to.deep.equal([record2]);
+
+    const reverseScopeQuery = await withScope.query.reverse({prop2}).go();
+    expect(reverseScopeQuery.data).to.deep.equal([record1]);
+
+    const reverseWithoutScopeQuery = await withoutScope.query.reverse({prop2}).go();
+    expect(reverseWithoutScopeQuery.data).to.deep.equal([record2]);
+
+    const batchGetScopeRecords = await withScope.get([{prop1, prop2}]).go();
+    expect(batchGetScopeRecords.data).to.deep.equal([record1]);
+
+    const batchGetWithoutScopeRecords = await withoutScope.get([{prop1, prop2}]).go();
+    expect(batchGetWithoutScopeRecords.data).to.deep.equal([record2]);
+
+    const updatedScopeRecord = await withScope.update({prop1, prop2}).set({prop4: ['updated1']}).go({response: 'all_new'});
+    expect(updatedScopeRecord.data).to.deep.equal({
+      ...record1,
+      prop4: ['updated1'],
+    });
+
+    const updatedWithoutScopeRecord = await withoutScope.update({prop1, prop2}).set({prop4: ['updated2']}).go({response: 'all_new'});
+    expect(updatedWithoutScopeRecord.data).to.deep.equal({
+      ...record2,
+      prop4: ['updated2'],
+    });
+
+    const patchedScopeRecord = await withScope.patch({prop1, prop2}).append({prop4: ['patched1']}).go({response: 'all_new'});
+    expect(patchedScopeRecord.data).to.deep.equal({
+      ...record1,
+      prop4: ['updated1', 'patched1'],
+    });
+
+    const patchedWithoutScopeRecord = await withoutScope.patch({prop1, prop2}).append({prop4: ['patched2']}).go({response: 'all_new'});
+    expect(patchedWithoutScopeRecord.data).to.deep.equal({
+      ...record2,
+      prop4: ['updated2', 'patched2'],
+    });
+
+    const upsertedScopeRecord = await withScope.upsert({prop1, prop2}).append({prop4: ['upserted1']}).go({response: 'all_new'});
+    expect(upsertedScopeRecord.data).to.deep.equal({
+      ...record1,
+      prop4: ['updated1', 'patched1', 'upserted1'],
+    });
+
+    const upsertedWithoutScopeRecord = await withoutScope.upsert({prop1, prop2}).append({prop4: ['upserted2']}).go({response: 'all_new'});
+    expect(upsertedWithoutScopeRecord.data).to.deep.equal({
+      ...record2,
+      prop4: ['updated2', 'patched2', 'upserted2'],
+    });
+  });
+});
+
 

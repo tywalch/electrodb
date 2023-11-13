@@ -584,6 +584,7 @@ class Service {
     let pkFieldMatch = definition.pk.field === providedIndex.pk.field;
     let pkFacetLengthMatch =
       definition.pk.facets.length === providedIndex.pk.facets.length;
+    let scopeMatch = definition.scope === providedIndex.scope;
     let mismatchedFacetLabels = [];
     let collectionDifferences = [];
     let definitionIndexName = u.formatIndexNameForDisplay(definition.index);
@@ -629,6 +630,16 @@ class Service {
         });
         break;
       }
+    }
+
+    if (!scopeMatch) {
+      collectionDifferences.push(
+          `The index scope value provided "${
+              providedIndex.scope || "undefined"
+          }" does not match established index scope value "${
+              definition.scope || "undefined"
+          }" on index "${providedIndexName}". Index scope options must match across all entities participating in a collection`,
+      );
     }
 
     if (!isCustomMatchPK) {

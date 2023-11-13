@@ -119,6 +119,10 @@ const Index = {
           enum: ["string", "number"],
           required: false,
         },
+        scope: {
+          type: "string",
+          required: false,
+        }
       },
     },
     sk: {
