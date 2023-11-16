@@ -172,7 +172,9 @@ indexes: {
 
 ### Composite Attribute Templates
 
-You may have found examples online that demonstrate how to make keys for Single Table Design. These patterns often look like `user#${id}` or `org#${id}`. ElectroDB creates keys similar to these patterns out of the box without the need for using "template". It is _highly_ recommended to only use "template" when you are attempting to use ElectroDB on an existing table/dataset. If you are starting a new project, you should not need to use "template", and using it will limit some protections and features granted by ElectroDB.
+export const key = "id"
+
+You may have found examples online that demonstrate how to make keys for Single Table Design. These patterns often look like <code>user#{key}</code> or <code>org#{key}</code>. ElectroDB creates keys similar to these patterns out of the box without the need for using "template". It is _highly_ recommended to only use "template" when you are attempting to use ElectroDB on an existing table/dataset. If you are starting a new project, you should not need to use "template", and using it will limit some protections and features granted by ElectroDB.
 
 With a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
