@@ -2412,22 +2412,22 @@ class Entity {
           (!attribute || !attribute.indexes || attribute.indexes.length === 0)
         ) {
           /*
-						// this should be considered but is likely overkill at best and unexpected at worst. 
-						// It also is likely symbolic of a deeper issue. That said maybe it could be helpful
-						// in the future? It is unclear, if this were added, whether this should get the
-						// default value and then call the setter on the defaultValue. That would at least
-						// make parity between upsert and a create (without including the attribute) and then
-						// an "update"
+            // this should be considered but is likely overkill at best and unexpected at worst.
+            // It also is likely symbolic of a deeper issue. That said maybe it could be helpful
+            // in the future? It is unclear, if this were added, whether this should get the
+            // default value and then call the setter on the defaultValue. That would at least
+            // make parity between upsert and a create (without including the attribute) and then
+            // an "update"
 
-						const defaultValue = attribute.default();
-						const valueIsNumber = typeof value === 'number';
-						const resolvedDefaultValue  = typeof defaultValue === 'number' ? defaultValue : 0;
-						if (operation === UpsertOperations.subtract && valueIsNumber) {
-							value = resolvedDefaultValue - value;
-						} else if (operation === UpsertOperations.add && valueIsNumber) {
-							value = resolvedDefaultValue + value;
-					// }
-					*/
+            const defaultValue = attribute.default();
+            const valueIsNumber = typeof value === 'number';
+            const resolvedDefaultValue  = typeof defaultValue === 'number' ? defaultValue : 0;
+            if (operation === UpsertOperations.subtract && valueIsNumber) {
+                value = resolvedDefaultValue - value;
+            } else if (operation === UpsertOperations.add && valueIsNumber) {
+                value = resolvedDefaultValue + value;
+          // }
+        */
           update.set(field, value, ItemOperations.ifNotExists);
         } else {
           updateProxy.performOperation({
@@ -2880,12 +2880,18 @@ class Entity {
         )}. If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes.`,
       );
     }
+
     return complete;
   }
 
   _makeKeysFromAttributes(indexes, attributes) {
     let indexKeys = {};
     for (let [index, keyTypes] of Object.entries(indexes)) {
+      const shouldMakeKeys = this.model.indexes[this.model.translations.indexes.fromIndexToAccessPattern[index]].condition(attributes);
+      if (!shouldMakeKeys) {
+        continue;
+      }
+
       let keys = this._makeIndexKeys({
         index,
         pkAttributes: attributes,
@@ -2912,6 +2918,10 @@ class Entity {
   _makePutKeysFromAttributes(indexes, attributes) {
     let indexKeys = {};
     for (let index of indexes) {
+      const shouldMakeKeys = this.model.indexes[this.model.translations.indexes.fromIndexToAccessPattern[index]].condition(attributes);
+      if (!shouldMakeKeys) {
+        continue;
+      }
       indexKeys[index] = this._makeIndexKeys({
         index,
         pkAttributes: attributes,
@@ -2935,6 +2945,7 @@ class Entity {
     if (!completeFacets.indexes.includes(updateIndex)) {
       completeFacets.indexes.push(updateIndex);
     }
+
     let composedKeys = this._makePutKeysFromAttributes(completeFacets.indexes, {
       ...keyAttributes,
       ...setAttributes,
@@ -3027,6 +3038,7 @@ class Entity {
   _getIndexImpact(attributes = {}, included = {}) {
     let includedFacets = Object.keys(included);
     let impactedIndexes = {};
+    let skippedIndexes = new Set();
     let impactedIndexTypes = {};
     let completedIndexes = [];
     let facets = {};
@@ -3044,11 +3056,22 @@ class Entity {
       }
     }
 
+    for (const indexName in impactedIndexes) {
+      const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexName];
+      const shouldMakeKeys = this.model.indexes[accessPattern].condition({ ...attributes, ...included });
+      if (!shouldMakeKeys) {
+        skippedIndexes.add(indexName);
+      }
+    }
+
     let incomplete = Object.entries(this.model.facets.byIndex)
       .map(([index, { pk, sk }]) => {
         let impacted = impactedIndexes[index];
-        let impact = { index, missing: [] };
-        if (impacted) {
+        let impact = {
+          index,
+          missing: []
+        };
+        if (impacted && !skippedIndexes.has(index)) {
           let missingPk =
             impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
           let missingSk =
@@ -3846,6 +3869,14 @@ class Entity {
       let indexType =
         typeof index.type === "string" ? index.type : IndexTypes.isolated;
       let indexScope = index.scope || "";
+      if (index.index === undefined && v.isFunction(index.condition)) {
+        throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexCondition,
+            `The index option 'condition' is only allowed on secondary indexes`,
+        );
+      }
+      let indexCondition = index.condition || (() => true);
+
       if (indexType === "clustered") {
         clusteredIndexes.add(accessPattern);
       }
@@ -3953,6 +3984,7 @@ class Entity {
         type: indexType,
         index: indexName,
         scope: indexScope,
+        condition: indexCondition,
       };
 
       indexHasSubCollections[indexName] =

@@ -3658,6 +3658,7 @@ export interface Schema<A extends string, F extends string, C extends string> {
       readonly scope?: string;
       readonly type?: "clustered" | "isolated";
       readonly collection?: AccessPatternCollection<C>;
+      readonly condition?: (composite: Record<string, unknown>) => boolean;
       readonly pk: {
         readonly casing?: "upper" | "lower" | "none" | "default";
         readonly field: string;
