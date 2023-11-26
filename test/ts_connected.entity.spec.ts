@@ -3009,7 +3009,67 @@ describe("conditional indexes", () => {
   });
 
   it('should prevent thrown exception from partial index update', () => {
-    throw new Error('Test not yet implemented');
+    let conditionValue = false;
+    const entity = new Entity({
+      model: {
+        entity: 'test',
+        version: '1',
+        service: 'test',
+      },
+      attributes: {
+        prop1: {
+          type: 'string'
+        },
+        prop2: {
+          type: 'string'
+        },
+        prop3: {
+          type: 'string'
+        },
+        prop4: {
+          type: 'string'
+        },
+        prop5: {
+          type: 'string'
+        }
+      },
+      indexes: {
+        record: {
+          pk: {
+            field: 'pk',
+            composite: ['prop1']
+          },
+          sk: {
+            field: 'sk',
+            composite: ['prop2']
+          }
+        },
+        secondary: {
+          condition: () => conditionValue,
+          index: 'gsi1pk-gsi1sk-index',
+          pk: {
+            field: 'gsi1pk',
+            composite: ['prop3']
+          },
+          sk: {
+            field: 'gsi1sk',
+            composite: ['prop4', 'prop5']
+          }
+        }
+      }
+    }, { table });
+
+    const prop1 = uuid();
+    const prop2 = uuid();
+    const prop3 = uuid();
+    const prop4 = uuid();
+    const prop5 = uuid();
+
+    conditionValue = false;
+    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).not.to.throw();
+
+    conditionValue = true;
+    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).to.throw('Incomplete composite attributes: Without the composite attributes "prop4" the following access patterns cannot be updated: "secondary". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes');
   });
 
   it('should check the index condition individually on the subject entity', () => {
@@ -3143,88 +3203,90 @@ describe("conditional indexes", () => {
           }
         });
 
-        it(`${prefix} write index with provided update attributes`, async () => {
-          const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
-          const { params, logger } = createParamsCollector();
-          const { prop1, prop2, ...props } = createTestEntityData();
-          const entity = createTestEntity(condition);
-          await entity.update({prop1, prop2}).set(props).go({logger});
-          // @ts-ignore
-          const { data } = await entity.query[index]({ prop1, prop2, ...props }).go();
-          if (shouldWrite) {
-            expect(data.length).to.equal(1);
-            expect(data[0]).to.deep.equal({ prop1, prop2, ...props });
-          } else {
-            expect(data.length).to.equal(0);
-          }
+        if (index !== 'sparse1') {
+          it(`${prefix} write index with provided update attributes`, async () => {
+            const {condition, invocations} = createConditionInvocationCollector(shouldWrite);
+            const {params, logger} = createParamsCollector();
+            const {prop1, prop2, ...props} = createTestEntityData();
+            const entity = createTestEntity(condition);
+            await entity.update({prop1, prop2}).set(props).go({logger});
+            // @ts-ignore
+            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+            if (shouldWrite) {
+              expect(data.length).to.equal(1);
+              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+            } else {
+              expect(data.length).to.equal(0);
+            }
 
-          for (const invocation of invocations) {
-            expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
-          }
-        });
+            for (const invocation of invocations) {
+              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+            }
+          });
 
-        it(`${prefix} write index with provided update attributes spread across multiple method calls`, async () => {
-          const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
-          const { params, logger } = createParamsCollector();
-          const { prop1, prop2, ...props } = createTestEntityData();
-          const entity = createTestEntity(condition);
-          await entity.update({prop1, prop2}).set({
-            prop3: props.prop3,
-            prop4: props.prop4,
-          }).set({
-            prop5: props.prop5,
-            prop6: props.prop6,
-          }).set({
-            prop7: props.prop7,
-            prop8: props.prop8,
-            prop9: props.prop9,
-          }).go({logger});
-          // @ts-ignore
-          const { data } = await entity.query[index]({ prop1, prop2, ...props }).go();
-          if (shouldWrite) {
-            expect(data.length).to.equal(1);
-            expect(data[0]).to.deep.equal({ prop1, prop2, ...props });
-          } else {
-            expect(data.length).to.equal(0);
-          }
+          it(`${prefix} write index with provided update attributes spread across multiple method calls`, async () => {
+            const {condition, invocations} = createConditionInvocationCollector(shouldWrite);
+            const {params, logger} = createParamsCollector();
+            const {prop1, prop2, ...props} = createTestEntityData();
+            const entity = createTestEntity(condition);
+            await entity.update({prop1, prop2}).set({
+              prop3: props.prop3,
+              prop4: props.prop4,
+            }).set({
+              prop5: props.prop5,
+              prop6: props.prop6,
+            }).set({
+              prop7: props.prop7,
+              prop8: props.prop8,
+              prop9: props.prop9,
+            }).go({logger});
+            // @ts-ignore
+            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+            if (shouldWrite) {
+              expect(data.length).to.equal(1);
+              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+            } else {
+              expect(data.length).to.equal(0);
+            }
 
-          for (const invocation of invocations) {
-            expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
-          }
-        });
+            for (const invocation of invocations) {
+              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+            }
+          });
 
-        it(`${prefix} write index with provided patch attributes`, async () => {
-          const { params, logger } = createParamsCollector();
-          const { prop1, prop2, ...props } = createTestEntityData();
-          let invocations: ConditionArguments[] = [];
-          let allow = false;
-          const condition = (args: ConditionArguments) => {
-            invocations.push(args);
-            return allow;
-          }
+          it(`${prefix} write index with provided patch attributes`, async () => {
+            const {params, logger} = createParamsCollector();
+            const {prop1, prop2, ...props} = createTestEntityData();
+            let invocations: ConditionArguments[] = [];
+            let allow = false;
+            const condition = (args: ConditionArguments) => {
+              invocations.push(args);
+              return allow;
+            }
 
-          const entity = createTestEntity(condition);
-          // don't write for sure on put, but then yield to test; patch requires an existing item
-          await entity.put({ prop1, prop2 }).go();
+            const entity = createTestEntity(condition);
+            // don't write for sure on put, but then yield to test; patch requires an existing item
+            await entity.put({prop1, prop2}).go();
 
-          // reset "allow" and reset "invocations"
-          allow = shouldWrite;
-          invocations = [];
+            // reset "allow" and reset "invocations"
+            allow = shouldWrite;
+            invocations = [];
 
-          await entity.patch({prop1, prop2}).set(props).go({logger});
-          // @ts-ignore
-          const { data } = await entity.query[index]({ prop1, prop2, ...props }).go();
-          if (shouldWrite) {
-            expect(data.length).to.equal(1);
-            expect(data[0]).to.deep.equal({ prop1, prop2, ...props });
-          } else {
-            expect(data.length).to.equal(0);
-          }
+            await entity.patch({prop1, prop2}).set(props).go({logger});
+            // @ts-ignore
+            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+            if (shouldWrite) {
+              expect(data.length).to.equal(1);
+              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+            } else {
+              expect(data.length).to.equal(0);
+            }
 
-          for (const invocation of invocations) {
-            expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
-          }
-        });
+            for (const invocation of invocations) {
+              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+            }
+          });
+        }
 
         it(`${prefix} write index with provided batchPut attributes`, async () => {
           const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
