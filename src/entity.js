@@ -2412,22 +2412,22 @@ class Entity {
           (!attribute || !attribute.indexes || attribute.indexes.length === 0)
         ) {
           /*
-            // this should be considered but is likely overkill at best and unexpected at worst.
-            // It also is likely symbolic of a deeper issue. That said maybe it could be helpful
-            // in the future? It is unclear, if this were added, whether this should get the
-            // default value and then call the setter on the defaultValue. That would at least
-            // make parity between upsert and a create (without including the attribute) and then
-            // an "update"
+						// this should be considered but is likely overkill at best and unexpected at worst.
+						// It also is likely symbolic of a deeper issue. That said maybe it could be helpful
+						// in the future? It is unclear, if this were added, whether this should get the
+						// default value and then call the setter on the defaultValue. That would at least
+						// make parity between upsert and a create (without including the attribute) and then
+						// an "update"
 
-            const defaultValue = attribute.default();
-            const valueIsNumber = typeof value === 'number';
-            const resolvedDefaultValue  = typeof defaultValue === 'number' ? defaultValue : 0;
-            if (operation === UpsertOperations.subtract && valueIsNumber) {
-                value = resolvedDefaultValue - value;
-            } else if (operation === UpsertOperations.add && valueIsNumber) {
-                value = resolvedDefaultValue + value;
-          // }
-        */
+						const defaultValue = attribute.default();
+						const valueIsNumber = typeof value === 'number';
+						const resolvedDefaultValue  = typeof defaultValue === 'number' ? defaultValue : 0;
+						if (operation === UpsertOperations.subtract && valueIsNumber) {
+							value = resolvedDefaultValue - value;
+						} else if (operation === UpsertOperations.add && valueIsNumber) {
+							value = resolvedDefaultValue + value;
+					// }
+					*/
           update.set(field, value, ItemOperations.ifNotExists);
         } else {
           updateProxy.performOperation({
@@ -2945,7 +2945,6 @@ class Entity {
     if (!completeFacets.indexes.includes(updateIndex)) {
       completeFacets.indexes.push(updateIndex);
     }
-
     let composedKeys = this._makePutKeysFromAttributes(completeFacets.indexes, {
       ...keyAttributes,
       ...setAttributes,
@@ -2995,6 +2994,7 @@ class Entity {
       completeFacets.impactedIndexTypes,
       { ...set, ...keyAttributes },
     );
+
     let updatedKeys = {};
     let deletedKeys = [];
     let indexKey = {};
@@ -3046,12 +3046,12 @@ class Entity {
       if (attributes[attribute] !== undefined) {
         facets[attribute] = attributes[attribute];
         indexes.forEach(({ index, type }) => {
-          impactedIndexes[index] = impactedIndexes[index] || {};
-          impactedIndexes[index][type] = impactedIndexes[index][type] || [];
-          impactedIndexes[index][type].push(attribute);
-          impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-          impactedIndexTypes[index][type] =
-            this.model.translations.keys[index][type];
+            impactedIndexes[index] = impactedIndexes[index] || {};
+            impactedIndexes[index][type] = impactedIndexes[index][type] || [];
+            impactedIndexes[index][type].push(attribute);
+            impactedIndexTypes[index] = impactedIndexTypes[index] || {};
+            impactedIndexTypes[index][type] =
+                this.model.translations.keys[index][type];
         });
       }
     }
