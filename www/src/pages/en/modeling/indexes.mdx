@@ -55,8 +55,9 @@ indexes: {
 | Property       |                 Type                 | Required | Description                                                                                                                                                                                                                                                                                                                                 |
 | -------------- | :----------------------------------: | :------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `index`        |               `string`               |    no    | Required when the `Index` defined is a _Global/Local Secondary Index_; but is omitted for the table's primary index.                                                                                                                                                                                                                        |
-| `collection`   |         `string`, `string[]`         |    no    | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](/en/modeling/collections) below for more on this functionality). |
+| `collection`   |         `string`, `string[]`         |    no    | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`; See the page on [Collections](/en/modeling/collections) for more information on this functionality. |
 | `type`         |       `isolated`, `clustered`        |    no    | Allows you to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (high volume of records per partition) or (entity relationships)[#clustered-indexes] (high relationship density per partition). When omitted, ElectroDB defaults to `isolation`.                                                     |
+| `condition`    |        `(attr: T) => boolean`        |    no    | A function that accepts all attributes provided every mutation method and returns a boolean value. When provided, ElectroDB will use this function to determine if an index should be be written given a provided set of attributes. This is useful for implementing "sparse" indexes, See the second on [Sparse Indexes](/en/modeling/indexes#sparse-indexes) below for more information on this functionality |
 | `pk`           |               `object`               |   yes    | Configuration for the pk of that index or table                                                                                                                                                                                                                                                                                             |
 | `pk.composite` |              `string[]`              |   yes    | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composing-attributes) below for more on this functionality).                                                                                                                                           |
 | `pk.template`  |               `string`               |    no    | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).                                                                                                                                                |
@@ -424,6 +425,35 @@ In the example below, we are configuring the casing ElectroDB will use individua
 |    `lower`    | Will convert the key to lowercase prior it its use     |
 |    `upper`    | Will convert the key to uppercase prior it its use     |
 |    `none`     | Will not perform any casing changes when building keys |
+
+### Sparse Indexes
+
+Sparse indexes are indexes that are only contain a subset of the items on your main table. Sparse indexes are useful when you want to reduce the number of records your query must iterate over to find the records you are looking on a secondary index. By having fewer records on a secondary index, you can improve the performance of your queries and reduce the cost of your table.
+
+ElectroDB manages which secondary indexes are written to your DynamoDB table based on the attributes you provide to your query; this includes adding runtime constraints to ensure consistency between your index key values and its constituent composite attributes. If you wish to prevent an index from being written, you can define a `condition` callback on your index. The provided callback will be invoked at query-time, passed all attributes set on that mutation, and if it returns `false` the index will not be written to your DynamoDB table.
+
+#### Example
+
+This example shows an index called `myIndex` which has a provided `condition` callback. The `attr` argument contains all attributes provided to the mutation method. This includes all attributes for a `put`, `create`, or `upsert` and/or all attributes `set` on an `update` or `patch`.
+
+```typescript
+{
+  indexes: {
+    myIndex: {
+      index: "gsi1",
+      condition: (attr) => attr.type === "closed"
+      pk: {
+        field: "gsi1pk",
+        composite: ["organizationId"]
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["type", "accountId"]
+      }
+    }
+  }
+}
+```
 
 ### Index Scoping
 

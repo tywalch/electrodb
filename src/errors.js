@@ -211,6 +211,12 @@ const ErrorCodes = {
     name: "DuplicateUpdateCompositesProvided",
     sym: ErrorCode,
   },
+  InvalidIndexCondition: {
+    code: 2011,
+    section: "invalid-index-option",
+    name: "InvalidIndexOption",
+    sym: ErrorCode,
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",
