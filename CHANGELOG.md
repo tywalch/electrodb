@@ -489,4 +489,9 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.11.0] - 2023-11-12
 ### Added
-- Adds new property `scope` to index definitions, allowing users to further isolate partition keys beyond just `service` participation. This implements an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290). Thank you, Brooke for your contribution!  
+- Adds new property `scope` to index definitions, allowing users to further isolate partition keys beyond just `service` participation. This implements an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290). Thank you, Brooke for your contribution!
+
+## [2.12.0] - 2023-11-27
+### Added
+- Adds support for nested usage of `any` and `CustomAttributeType` attribute types. Prior to this release, `any` and `CustomAttributeType` could only be used with root attributes. This change adds support for `CustomAttributeType` to be used with `map` attributes. 
+- Adds new `condition` property [on index definitions](https://electrodb.dev/en/modeling/indexes#sparse-indexes) to prevent unnecessary GSI writes & hot partitions for certain data models. The provided `condition` callback will be invoked at query-time, passed all attributes set on that mutation, and if it returns `false` the index will not be written to your DynamoDB table. Addresses [Issue #330](https://github.com/tywalch/electrodb/issues/300).  
