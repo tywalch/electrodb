@@ -3914,51 +3914,53 @@ type PartialDefinedKeys<T> = {
 };
 
 export type ItemAttribute<A extends Attribute> =
-  A["type"] extends OpaquePrimitiveTypeName<infer T>
-    ? T
-    : A["type"] extends CustomAttributeTypeName<infer T>
-    ? T
-    : A["type"] extends infer R
-    ? R extends "string"
-      ? string
-      : R extends "number"
-      ? number
-      : R extends "boolean"
-      ? boolean
-      : R extends ReadonlyArray<infer E>
-      ? E
-      : R extends "map"
-      ? "properties" extends keyof A
-        ? {
-            [P in keyof A["properties"]]: A["properties"][P] extends infer M
-              ? M extends Attribute
-                ? ItemAttribute<M>
-                : never
-              : never;
-          }
-        : never
-      : R extends "list"
-      ? "items" extends keyof A
-        ? A["items"] extends infer I
-          ? I extends Attribute
-            ? Array<ItemAttribute<I>>
+  A["type"] extends infer T
+    ? T extends OpaquePrimitiveTypeName<infer OP>
+      ? OP
+      : T extends CustomAttributeTypeName<infer CA>
+      ? CA
+      : T extends infer R
+      ? R extends "string"
+        ? string
+        : R extends "number"
+        ? number
+        : R extends "boolean"
+        ? boolean
+        : R extends ReadonlyArray<infer E>
+        ? E
+        : R extends "map"
+        ? "properties" extends keyof A
+          ? {
+              [P in keyof A["properties"]]: A["properties"][P] extends infer M
+                ? M extends Attribute
+                  ? ItemAttribute<M>
+                  : never
+                : never;
+            }
+          : never
+        : R extends "list"
+        ? "items" extends keyof A
+          ? A["items"] extends infer I
+            ? I extends Attribute
+              ? Array<ItemAttribute<I>>
+              : never
             : never
           : never
-        : never
-      : R extends "set"
-      ? "items" extends keyof A
-        ? A["items"] extends infer I
-          ? I extends "string"
-            ? string[]
-            : I extends "number"
-            ? number[]
-            : I extends ReadonlyArray<infer ENUM>
-            ? ENUM[]
+        : R extends "set"
+        ? "items" extends keyof A
+          ? A["items"] extends infer I
+            ? I extends "string"
+              ? string[]
+              : I extends "number"
+              ? number[]
+              : I extends ReadonlyArray<infer ENUM>
+              ? ENUM[]
+              : never
             : never
           : never
+        : R extends "any"
+        ? any
         : never
-      : R extends "any"
-      ? any
       : never
     : never;
 
