@@ -494,4 +494,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.12.0] - 2023-11-27
 ### Added
 - Adds support for nested usage of `any` and `CustomAttributeType` attribute types. Prior to this release, `any` and `CustomAttributeType` could only be used with root attributes. This change adds support for `CustomAttributeType` to be used with `map` attributes. 
-- Adds new `condition` property [on index definitions](https://electrodb.dev/en/modeling/indexes#sparse-indexes) to prevent unnecessary GSI writes & hot partitions for certain data models. The provided `condition` callback will be invoked at query-time, passed all attributes set on that mutation, and if it returns `false` the index will not be written to your DynamoDB table. Addresses [Issue #330](https://github.com/tywalch/electrodb/issues/300).  
+- Adds new `condition` property [on index definitions](https://electrodb.dev/en/modeling/indexes#sparse-indexes) to prevent unnecessary GSI writes & hot partitions for certain data models. The provided `condition` callback will be invoked at query-time, passed all attributes set on that mutation, and if it returns `false` the index will not be written to your DynamoDB table. Addresses [Issue #330](https://github.com/tywalch/electrodb/issues/300).
+
+## [2.12.1] - 2023-11-29
+### Fixed
+- Adds more sophisticated custom attribute type extraction. Patch provided by github user @wentsul with an assist by @adriancooney via [PR #332](https://github.com/tywalch/electrodb/pull/334). Thank you both for this great addition!
