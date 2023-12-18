@@ -3400,6 +3400,121 @@ describe("Entity", () => {
       });
     });
 
+    it('should create valid scan params for entities with key field and attribute values', async () => {
+      const TestEntity = new Entity(
+          {
+            model: {
+              entity: 'test',
+              version: '1',
+              service: 'testing',
+            },
+            attributes: {
+              uuid: {
+                type: 'string',
+                required: true,
+              },
+              id: {
+                type: 'number',
+                required: true,
+              },
+              name: {
+                type: 'string'
+              }
+            },
+            indexes: {
+              primary: {
+                pk: {
+                  field: 'id',
+                  composite: ['id'],
+                },
+                sk: {
+                  field: 'uuid',
+                  composite: ['uuid'],
+                  casing: 'none',
+                },
+              },
+            },
+          },
+          { table, client },
+      );
+
+      const params = TestEntity.scan.params();
+
+      expect(params).to.deep.equal({
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__"
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "test",
+          ":__edb_v__0": "1"
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+      });
+
+      // should not throw
+      await TestEntity.scan.go()
+    });
+
+    it('should create valid scan params for entities with templated indexes', async () => {
+      const TestEntity = new Entity(
+          {
+            model: {
+              entity: 'test',
+              version: '1',
+              service: 'testing',
+            },
+            attributes: {
+              uuid: {
+                type: 'string',
+                required: true,
+              },
+              id: {
+                type: 'number',
+                required: true,
+              },
+              name: {
+                type: 'string'
+              }
+            },
+            indexes: {
+              primary: {
+                pk: {
+                  field: 'pk',
+                  composite: ['id'],
+                  template: '${id}'
+                },
+                sk: {
+                  field: 'sk',
+                  composite: ['uuid'],
+                  template: '${uuid}'
+                },
+              },
+            },
+          },
+          { table, client },
+      );
+
+      const params = TestEntity.scan.params();
+
+      expect(params).to.deep.equal({
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__"
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "test",
+          ":__edb_v__0": "1"
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+      });
+
+      // should not throw
+      await TestEntity.scan.go();
+    });
+
     it("should parse the response from a scan", async () => {
       const prop1 = uuid();
       const prop2 = uuid();

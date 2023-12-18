@@ -2211,30 +2211,61 @@ class Entity {
     let { pk, sk } = this._makeIndexKeys({
       index: indexBase,
     });
+
     let keys = this._makeParameterKey(indexBase, pk, ...sk);
+    // trim empty key values (this can occur when keys are defined by users)
+    for (let key in keys) {
+      if (keys[key] === undefined || keys[key] === '') {
+        delete keys[key];
+      }
+    }
+
     let keyExpressions = this._expressionAttributeBuilder(keys);
-    let params = {
-      TableName: this.getTableName(),
-      ExpressionAttributeNames: this._mergeExpressionsAttributes(
+
+    const expressionAttributeNames = this._mergeExpressionsAttributes(
         filter.getNames(),
         keyExpressions.ExpressionAttributeNames,
-      ),
-      ExpressionAttributeValues: this._mergeExpressionsAttributes(
+    );
+
+    const expressionAttributeValues = this._mergeExpressionsAttributes(
         filter.getValues(),
         keyExpressions.ExpressionAttributeValues,
-      ),
-      FilterExpression: `begins_with(#${pkField}, :${pkField})`,
+    );
+
+
+    let params = {
+      TableName: this.getTableName(),
     };
+
+    if (Object.keys(expressionAttributeNames).length) {
+      params['ExpressionAttributeNames'] = expressionAttributeNames;
+    }
+
+    if (Object.keys(expressionAttributeValues).length) {
+      params['ExpressionAttributeValues'] = expressionAttributeValues;
+    }
+
+    let filterExpressions = [];
+
+    if (keys[pkField]) {
+      filterExpressions.push(`begins_with(#${pkField}, :${pkField})`);
+    }
 
     if (hasSortKey) {
       let skField = this.model.indexes[accessPattern].sk.field;
-      params.FilterExpression = `${params.FilterExpression} AND begins_with(#${skField}, :${skField})`;
+      if (keys[skField]) {
+        filterExpressions.push(`begins_with(#${skField}, :${skField})`);
+      }
     }
+
     if (filter.build()) {
-      params.FilterExpression = `${
-        params.FilterExpression
-      } AND ${filter.build()}`;
+      filterExpressions.push(filter.build());
     }
+
+    if (filterExpressions.length) {
+      params.FilterExpression = filterExpressions.join(' AND ');
+    }
+
     return params;
   }
 
