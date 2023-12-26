@@ -413,6 +413,93 @@ describe("Page", () => {
     } while (cursor !== null);
   }).timeout(10000);
 
+  describe('null cursors', () => {
+    const entity1 = new Entity({
+      model: {
+        entity: uuid(),
+        version: '1',
+        service: 'null-cursor',
+      },
+      attributes: {
+        id: {
+          type: 'string'
+        }
+      },
+      indexes: {
+        record: {
+          collection: 'test',
+          pk: {
+            field: 'pk',
+            composite: ['id'],
+          },
+          sk: {
+            field: 'sk',
+            composite: [],
+          }
+        }
+      }
+    }, { table, client });
+    const entity2 = new Entity({
+      model: {
+        entity: uuid(),
+        version: '1',
+        service: 'null-cursor',
+      },
+      attributes: {
+        id: {
+          type: 'string'
+        }
+      },
+      indexes: {
+        record: {
+          collection: 'test',
+          pk: {
+            field: 'pk',
+            composite: ['id'],
+          },
+          sk: {
+            field: 'sk',
+            composite: [],
+          }
+        }
+      }
+    }, { table, client });
+
+    const service = new Service({ entity1, entity2 });
+
+    const id = uuid();
+    const queries = [
+      ['query operation using default execution options', () => entity1.query.record({ id }).go()],
+      ['query operation with raw flag', () => entity1.query.record({ id }).go({ raw: true })],
+      ['query operation with includeKeys flag', () => entity1.query.record({ id }).go({ includeKeys: true })],
+      ['query operation with ignoreOwnership flag', () => entity1.query.record({ id }).go({ ignoreOwnership: true })],
+      // ['scan query using default execution options', () => entity1.scan.go()],
+      // ['scan query with raw flag', () => entity1.scan.go({ raw: true })],
+      // ['scan query with includeKeys flag', () => entity1.scan.go({ includeKeys: true })],
+      // ['scan query with ignoreOwnership flag', () => entity1.scan.go({ ignoreOwnership: true })],
+      ['match query using default execution options', () => entity1.match({ id }).go()],
+      ['match query with raw flag', () => entity1.match({ id }).go({ raw: true })],
+      ['match query with includeKeys flag', () => entity1.match({ id }).go({ includeKeys: true })],
+      ['match query with ignoreOwnership flag', () => entity1.match({ id }).go({ ignoreOwnership: true })],
+      ['find query using default execution options', () => entity1.find({ id }).go()],
+      ['find query with raw flag', () => entity1.find({ id }).go({ raw: true })],
+      ['find query with includeKeys flag', () => entity1.find({ id }).go({ includeKeys: true })],
+      ['find query with ignoreOwnership flag', () => entity1.find({ id }).go({ ignoreOwnership: true })],
+      ['collection query using default execution options', () => service.collections.test({ id }).go()],
+      ['collection query with raw flag', () => service.collections.test({ id }).go({ raw: true })],
+      ['collection query with includeKeys flag', () => service.collections.test({ id }).go({ includeKeys: true })],
+      ['collection query with ignoreOwnership flag', () => service.collections.test({ id }).go({ ignoreOwnership: true })],
+    ];
+
+    for (const [variation, query] of queries) {
+      it(`should return a null cursor when performing ${variation}`, async () => {
+        const { cursor } = await query();
+        expect(cursor).to.be.null;
+      });
+    }
+  });
+
+
   // it("Should not accept incomplete page composite attributes", async () => {
   //   let tests = [
   //     {
