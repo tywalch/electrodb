@@ -471,7 +471,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 - Addresses edge case that filtered valid items when item lacked entity identifiers (created outside ElectroDB) when keys (pk or sk) were numeric.
 
 ## [2.10.4] - 2023-10-26
-> NOTE: This version is depricated, this version introduced code that significantly increased latency. That code was fixed in `2.10.7` 
+> NOTE: This version is deprecated, this version introduced code that significantly increased latency. That code was fixed in `2.10.7` 
 ### Added
 - Adds `cause` property to `ElectroError`, currently populated when error originates from the AWS Client, to help with error triage. This also adds the ability to provide an error type to ElectroError<Error> to type the error located on `cause`.
 
@@ -498,8 +498,13 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.12.1] - 2023-11-29
 ### Fixed
-- Adds more sophisticated custom attribute type extraction. Patch provided by github user @wentsul with an assist by @adriancooney via [PR #332](https://github.com/tywalch/electrodb/pull/334). Thank you both for this great addition!
+- Adds more sophisticated custom attribute type extraction. Patch provided by GitHub user @wentsul with an assist by @adriancooney via [PR #332](https://github.com/tywalch/electrodb/pull/334). Thank you both for this great addition!
 
 ## [2.12.2] - 2023-12-18
 ### Fixed
-- Fixes bug where `scan` appended invalid filters if some cases. In cases where [attributes are used as keys](https://electrodb.dev/en/modeling/indexes/#attributes-as-indexes) or [composite templates contain no prefixes](https://electrodb.dev/en/modeling/indexes/#composite-attribute-templates) the `scan` operation would append invalid filters to parameters. This bug was identified by discord user @engi22, thank you!  
+- Fixes bug where `scan` appended invalid filters if some cases. In cases where [attributes are used as keys](https://electrodb.dev/en/modeling/indexes/#attributes-as-indexes) or [composite templates contain no prefixes](https://electrodb.dev/en/modeling/indexes/#composite-attribute-templates) the `scan` operation would append invalid filters to parameters. This bug was identified by discord user @engi22, thank you!
+
+## [2.12.3] - 2023-12-26
+### Fixed
+- Collection queries returned an `undefined` cursor (currently typed as `string | null`) when using the `raw:true` execution option. Fixed to return `null` instead of `undefined`.
+- Removed superfluous and unused files, `./library-data.json` and `test.csv`, accidentally published in version `2.12.2`.  

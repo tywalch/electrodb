@@ -49,10 +49,9 @@ async function createTable(dynamodb, table, definition) {
     if (configuration.endpoint !== undefined) {
       let tableManager = createTableManager(dynamodb, table);
       let exists = await tableManager.exists();
-      if (exists) {
-        await tableManager.drop();
+      if (!exists) {
+        await tableManager.create(definition);
       }
-      await tableManager.create(definition);
     } else {
       // make sure we're hitting dynamodb local
       // (this code is only for tests and experimentation)
