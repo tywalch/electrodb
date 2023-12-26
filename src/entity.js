@@ -343,6 +343,7 @@ class Entity {
   collection(collection = "", clauses = {}, facets = {}, options = {}) {
     const chainOptions = {
       ...options,
+      _isPagination: true,
       _isCollectionQuery: true,
     };
 
