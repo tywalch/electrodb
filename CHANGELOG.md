@@ -507,4 +507,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.12.3] - 2023-12-26
 ### Fixed
 - Collection queries returned an `undefined` cursor (currently typed as `string | null`) when using the `raw:true` execution option. Fixed to return `null` instead of `undefined`.
-- Removed superfluous and unused files, `./library-data.json` and `test.csv`, accidentally published in version `2.12.2`.  
+- Removed superfluous and unused files, `./library-data.json` and `test.csv`, accidentally published in version `2.12.2`.
+
+## [2.13.0] - 2023-12-28
+### Added
+- Adds new query execution option `count` which allows you to specify a specific item count to return from a query. This is useful for cases where you must return a specific/consistent number of items from a query, a deceptively difficult task with DynamoDB and Single Table Design.  

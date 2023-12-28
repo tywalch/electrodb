@@ -2637,7 +2637,6 @@ interface ServiceQueryGoTerminalOptions {
   includeKeys?: boolean;
   table?: string;
   limit?: number;
-  count?: number;
   params?: object;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
