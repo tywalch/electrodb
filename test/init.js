@@ -11,9 +11,11 @@ const localSecondaryIndexes = require("./definitions/localsecondaryindexes.json"
 const keysOnly = require("./definitions/keysonly.json");
 const castKeys = require("./definitions/castkeys.json");
 
+const shouldDestroy = process.argv.includes("--recreate");
+
 if (
-  typeof process.env.LOCAL_DYNAMO_ENDPOINT !== "string" &&
-  !process.env.LOCAL_DYNAMO_ENDPOINT.length
+  typeof process.env.LOCAL_DYNAMO_ENDPOINT !== "string" ||
+  process.env.LOCAL_DYNAMO_ENDPOINT.length === 0
 ) {
   throw new Error(
     "Tests are only intended to be used against dyanmodb local to prevent needless cost. If you would like to proceed without dynamodb-local, remove this line.",
@@ -49,7 +51,10 @@ async function createTable(dynamodb, table, definition) {
     if (configuration.endpoint !== undefined) {
       let tableManager = createTableManager(dynamodb, table);
       let exists = await tableManager.exists();
-      if (!exists) {
+      if (exists && shouldDestroy) {
+        await tableManager.drop();
+        await tableManager.create(definition);
+      } else if (!exists) {
         await tableManager.create(definition);
       }
     } else {
