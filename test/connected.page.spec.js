@@ -397,7 +397,7 @@ describe("Query Pagination", () => {
       } while (cursor !== null);
     }).timeout(10000);
 
-    it(`entity query should continue to query until '${limitOption}' option is reached`, async () => {
+    it(`should continue to query until '${limitOption}' option is reached`, async () => {
       const ExclusiveStartKey = { key: "hi" };
       const [one, two, three, four, five, six] = tasks.data;
       const { client, calls } = createClient({
@@ -499,8 +499,6 @@ describe("Query Pagination", () => {
       expect(result6.success).to.be.false;
       expect(result6.message).to.equal(message);
     });
-
-
   }
 
   it(`should not iterate or paginate when options.raw is supplied with limit`, async () => {
@@ -554,7 +552,7 @@ describe("Query Pagination", () => {
     } while (cursor !== null);
   }).timeout(10000);
 
-  it(`entity query return exact 'count' specified`, async () => {
+  it(`should return exact 'count' specified`, async () => {
     const ExclusiveStartKey = { key: "hi" };
     const [one, two, three, four, five, six] = tasks.data;
     const { client, calls } = createClient({
@@ -588,6 +586,52 @@ describe("Query Pagination", () => {
         .go({ count })
         .then((res) => res.data);
     expect(results).to.be.an("array").with.length(5);
+    expect(calls).to.have.length(4);
+    for (let i = 0; i < calls.length; i++) {
+      const call = calls[i];
+      if (i === 0) {
+        expect(call.ExclusiveStartKey).to.be.undefined;
+      } else {
+        expect(call.ExclusiveStartKey.key).to.equal("hi");
+        expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be.true;
+      }
+    }
+  });
+
+  it(`should stop paginating when LastEvaluatedKey is no longer returned even if 'count' not yet reached`, async () => {
+    const ExclusiveStartKey = { key: "hi" };
+    const [one, two, three, four, five, six] = tasks.data;
+    const { client, calls } = createClient({
+      mockResponses: [
+        {
+          Items: [one, two],
+          LastEvaluatedKey: ExclusiveStartKey,
+        },
+        {
+          Items: [three],
+          LastEvaluatedKey: ExclusiveStartKey,
+        },
+        {
+          Items: [],
+          LastEvaluatedKey: ExclusiveStartKey,
+        },
+        {
+          Items: [four],
+          LastEvaluatedKey: undefined,
+        },
+        {
+          Items: [],
+          LastEvaluatedKey: ExclusiveStartKey,
+        },
+      ],
+    });
+    const count = 5;
+    const entity = new Tasks(TasksModel, { client, table });
+    const results = await entity.query
+        .task({ task: "my_task" })
+        .go({ count })
+        .then((res) => res.data);
+    expect(results).to.be.an("array").with.length(4);
     expect(calls).to.have.length(4);
     for (let i = 0; i < calls.length; i++) {
       const call = calls[i];
