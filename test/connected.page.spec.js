@@ -352,13 +352,12 @@ describe("Query Pagination", () => {
             .assigned({ employee: Tasks.employees[0] })
             .go({ cursor, [limitOption]: limit })
             .then((res) => [res.cursor, res.data]);
+
         if (next && count > 0) {
           const deserialized = cursorFormatter.deserialize(next);
           expect(deserialized).to.have.keys(["gsi2pk", "gsi2sk", "pk", "sk"]);
         }
-        if (!(items.length <= limit)) {
-          console.log('oh no', {length: items.length, limit});
-        }
+
         expect(items.length <= limit).to.be.true;
         for (let item of items) {
           keys.add(item.task + item.project + item.employee);
@@ -384,9 +383,7 @@ describe("Query Pagination", () => {
         if (next !== null && count > 1) {
           expect(next).to.have.keys(["sk", "pk", "gsi1sk", "gsi1pk"]);
         }
-        if (!(items.length <= limit)) {
-          console.log('oh no 2', {length: items.length, limit});
-        }
+
         expect(items.length <= limit).to.be.true;
         for (let item of items) {
           keys.add(item.task + item.project + item.employee);
