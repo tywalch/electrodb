@@ -625,6 +625,21 @@ class Entity {
     });
   }
 
+  _safeMinimum(...values) {
+    let eligibleNumbers = [];
+    for (let value of values) {
+      if (typeof value === 'number') {
+        eligibleNumbers.push(value);
+      }
+    }
+
+    if (eligibleNumbers.length) {
+      return Math.min(...eligibleNumbers);
+    }
+
+    return undefined;
+  }
+
   async executeBulkGet(parameters, config) {
     if (!Array.isArray(parameters)) {
       parameters = [parameters];
@@ -703,10 +718,11 @@ class Entity {
   }
 
   async executeQuery(method, parameters, config = {}) {
+    const indexName = parameters.IndexName;
     let results = config._isCollectionQuery ? {} : [];
     let ExclusiveStartKey = this._formatExclusiveStartKey({
+      indexName,
       config,
-      indexName: parameters.IndexName,
     });
     if (ExclusiveStartKey === null) {
       ExclusiveStartKey = undefined;
@@ -724,7 +740,9 @@ class Entity {
         { ExclusiveStartKey, ...parameters, Limit: limit },
         config,
       );
+
       ExclusiveStartKey = response.LastEvaluatedKey;
+
       response = this.formatResponse(response, parameters.IndexName, {
         ...config,
         includeKeys: shouldHydrate || config.includeKeys,
@@ -755,10 +773,15 @@ class Entity {
           results[entity] = [...results[entity], ...items];
         }
       } else if (Array.isArray(response.data)) {
-        if (max) {
+        let prevCount = count
+        if (!!max || !!config.count) {
           count += response.data.length;
         }
         let items = response.data;
+        const moreItemsThanRequired = !!config.count && count > config.count;
+        if (moreItemsThanRequired) {
+          items = items.slice(0, config.count - prevCount);
+        }
         if (shouldHydrate) {
           const hydrated = await this.hydrate(
             parameters.IndexName,
@@ -771,14 +794,20 @@ class Entity {
           );
         }
         results = [...results, ...items];
+        if (moreItemsThanRequired || count === config.count) {
+          const lastItem = results[results.length - 1];
+          ExclusiveStartKey = this._fromCompositeToKeysByIndex({ indexName, provided: lastItem });
+          break;
+        }
       } else {
         return response;
       }
       iterations++;
     } while (
       ExclusiveStartKey &&
-      (pages === AllPages || iterations < pages) &&
-      (max === undefined || count < max)
+      (pages === AllPages || (config.count !== undefined || iterations < pages)) &&
+      (max === undefined || count < max) &&
+      (config.count === undefined || count < config.count)
     );
 
     const cursor = this._formatReturnPager(config, ExclusiveStartKey);
@@ -1654,6 +1683,7 @@ class Entity {
       _isPagination: false,
       _isCollectionQuery: false,
       pages: 1,
+      count: undefined,
       listeners: [],
       preserveBatchOrder: false,
       attributes: [],
@@ -1775,6 +1805,13 @@ class Entity {
             config.includeKeys = true;
             break;
         }
+      }
+
+      if (option.count !== undefined) {
+        if (typeof option.count !== "number" || option.count < 1) {
+          throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Query option 'count' must be of type 'number' and greater than zero.`);
+        }
+        config.count = option.count;
       }
 
       if (option.limit !== undefined) {

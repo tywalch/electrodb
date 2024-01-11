@@ -3346,7 +3346,7 @@ describe('scope compatibility', () => {
     expect(entity2Params.ExpressionAttributeValues[':pk']).to.equal(`$test_subtestz#prop1_${prop1}`);
 
     const entity2Response = await entity2.query.test({ prop1 }).go();
-    console.log(JSON.stringify({entity2Params, entity2Response}, null, 4));
+
     expect(entity2Response.data.length).to.equal(1);
     expect(entity2Response.data[0]).to.deep.equal(record2);
   })
