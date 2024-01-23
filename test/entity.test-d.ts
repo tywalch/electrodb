@@ -1,4 +1,10 @@
-import { Entity, Resolve, CustomAttributeType, EntityRecord } from "../";
+import {
+  Entity,
+  Resolve,
+  CustomAttributeType,
+  EntityRecord,
+  EntityItem,
+} from "../";
 import { expectType } from "tsd";
 
 const troubleshoot = <Params extends any[], Response>(
@@ -237,7 +243,14 @@ expectType<{
   };
 }>(magnify(item));
 
-type CustomAttributeEntityType = EntityRecord<typeof customAttributeEntity>;
-const unionItem = {} as CustomAttributeEntityType["union"];
+type CustomAttributeEntityRecordType = EntityRecord<
+  typeof customAttributeEntity
+>;
+const unionEntityRecord = {} as CustomAttributeEntityRecordType["union"];
 
-expectType<UnionType>(magnify(unionItem));
+expectType<UnionType>(magnify(unionEntityRecord));
+
+type CustomAttributeEntityItemType = EntityItem<typeof customAttributeEntity>;
+const unionEntityItem = {} as CustomAttributeEntityItemType["union"];
+
+expectType<UnionType>(magnify(unionEntityItem));

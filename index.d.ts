@@ -3967,65 +3967,67 @@ export type ItemAttribute<A extends Attribute> =
     : never;
 
 export type ReturnedAttribute<A extends Attribute> =
-  A["type"] extends OpaquePrimitiveTypeName<infer T>
-    ? T
-    : A["type"] extends CustomAttributeTypeName<infer T>
-    ? T
-    : A["type"] extends infer R
-    ? R extends "static"
-      ? never
-      : R extends "string"
-      ? string
-      : R extends "number"
-      ? number
-      : R extends "boolean"
-      ? boolean
-      : R extends ReadonlyArray<infer E>
-      ? E
-      : R extends "map"
-      ? "properties" extends keyof A
-        ? {
-            [P in keyof A["properties"] as A["properties"][P] extends RequiredAttribute
-              ? P
-              : never]: A["properties"][P] extends infer M
-              ? M extends Attribute
-                ? ReturnedAttribute<M>
-                : never
-              : never;
-          } & {
-            [P in keyof A["properties"] as A["properties"][P] extends
-              | HiddenAttribute
-              | RequiredAttribute
-              ? never
-              : P]?: A["properties"][P] extends infer M
-              ? M extends Attribute
-                ? ReturnedAttribute<M> | undefined
-                : never
-              : never;
-          }
-        : never
-      : R extends "list"
-      ? "items" extends keyof A
-        ? A["items"] extends infer I
-          ? I extends Attribute
-            ? ReturnedAttribute<I>[]
+  A["type"] extends infer T
+    ? T extends OpaquePrimitiveTypeName<infer OP>
+      ? OP
+      : T extends CustomAttributeTypeName<infer CA>
+      ? CA
+      : T extends infer R
+      ? R extends "static"
+        ? never
+        : R extends "string"
+        ? string
+        : R extends "number"
+        ? number
+        : R extends "boolean"
+        ? boolean
+        : R extends ReadonlyArray<infer E>
+        ? E
+        : R extends "map"
+        ? "properties" extends keyof A
+          ? {
+              [P in keyof A["properties"] as A["properties"][P] extends RequiredAttribute
+                ? P
+                : never]: A["properties"][P] extends infer M
+                ? M extends Attribute
+                  ? ReturnedAttribute<M>
+                  : never
+                : never;
+            } & {
+              [P in keyof A["properties"] as A["properties"][P] extends
+                | HiddenAttribute
+                | RequiredAttribute
+                ? never
+                : P]?: A["properties"][P] extends infer M
+                ? M extends Attribute
+                  ? ReturnedAttribute<M> | undefined
+                  : never
+                : never;
+            }
+          : never
+        : R extends "list"
+        ? "items" extends keyof A
+          ? A["items"] extends infer I
+            ? I extends Attribute
+              ? ReturnedAttribute<I>[]
+              : never
             : never
           : never
-        : never
-      : R extends "set"
-      ? "items" extends keyof A
-        ? A["items"] extends infer I
-          ? I extends "string"
-            ? string[]
-            : I extends "number"
-            ? number[]
-            : I extends ReadonlyArray<infer ENUM>
-            ? ENUM[]
+        : R extends "set"
+        ? "items" extends keyof A
+          ? A["items"] extends infer I
+            ? I extends "string"
+              ? string[]
+              : I extends "number"
+              ? number[]
+              : I extends ReadonlyArray<infer ENUM>
+              ? ENUM[]
+              : never
             : never
           : never
+        : R extends "any"
+        ? any
         : never
-      : R extends "any"
-      ? any
       : never
     : never;
 
