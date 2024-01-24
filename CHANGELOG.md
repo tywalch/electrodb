@@ -511,4 +511,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [2.13.0] - 2023-12-28
 ### Added
-- Adds new query execution option `count` which allows you to specify a specific item count to return from a query. This is useful for cases where you must return a specific/consistent number of items from a query, a deceptively difficult task with DynamoDB and Single Table Design.  
+- Adds new query execution option `count` which allows you to specify a specific item count to return from a query. This is useful for cases where you must return a specific/consistent number of items from a query, a deceptively difficult task with DynamoDB and Single Table Design.
+
+## [2.13.1] - 2023-01-23
+### Fixed
+- Fixes custom attribute type extraction for union types with RecordItem. Patch provided by GitHub user @wentsul via [PR #346](https://github.com/tywalch/electrodb/pull/346). Thank you for another great addition! 
