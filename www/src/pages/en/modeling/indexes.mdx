@@ -428,7 +428,7 @@ In the example below, we are configuring the casing ElectroDB will use individua
 
 ### Sparse Indexes
 
-Sparse indexes are indexes that are only contain a subset of the items on your main table. Sparse indexes are useful when you want to reduce the number of records your query must iterate over to find the records you are looking on a secondary index. By having fewer records on a secondary index, you can improve the performance of your queries and reduce the cost of your table.
+Sparse indexes are indexes that only contain a subset of the items on your main table. Sparse indexes are useful when you want to reduce the number of records your query must iterate over to find the records you are looking on a secondary index. By having fewer records on a secondary index, you can improve the performance of your queries and reduce the cost of your table.
 
 ElectroDB manages which secondary indexes are written to your DynamoDB table based on the attributes you provide to your query; this includes adding runtime constraints to ensure consistency between your index key values and its constituent composite attributes. If you wish to prevent an index from being written, you can define a `condition` callback on your index. The provided callback will be invoked at query-time, passed all attributes set on that mutation, and if it returns `false` the index will not be written to your DynamoDB table.
 
