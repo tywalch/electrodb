@@ -2884,19 +2884,7 @@ export type UpsertRecordGo<ResponseType, Keys> = <
   Options extends UpdateQueryOptions = UpdateQueryOptions,
 >(
   options?: Options,
-) => Options extends infer O
-  ? "response" extends keyof O
-    ? O["response"] extends "all_new"
-      ? Promise<{ data: T }>
-      : O["response"] extends "all_old"
-      ? Promise<{ data: T }>
-      : O["response"] extends "default"
-      ? Promise<{ data: Keys }>
-      : O["response"] extends "none"
-      ? Promise<{ data: null }>
-      : Promise<{ data: Partial<T> }>
-    : Promise<{ data: Keys }>
-  : never;
+) => Promise<{ data: T }>;
 
 export type PutRecordGo<ResponseType> = <
   T = ResponseType,

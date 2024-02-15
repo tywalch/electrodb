@@ -1504,6 +1504,20 @@ expectAssignable<"paramtest">(
   entityWithoutSK.create(putItemFull).params<"paramtest">(),
 );
 
+// upsert (responses)
+expectAssignable<Promise<ItemWithoutSK>>(
+    entityWithoutSK.upsert(putItemFull)
+        .go()
+        .then((res) => res.data),
+)
+
+expectAssignable<Promise<Item>>(
+    entityWithSK
+        .upsert(putItemFull)
+        .go()
+        .then((res) => res.data),
+);
+
 // Update
 let setItemFull = {
   attr4: "abc",
