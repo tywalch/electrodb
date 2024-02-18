@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-In **_ElectroDB_** a `Service` represents a collection of related Entities. Services allow you to build queries that span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do you need to use a Service if you intend make queries that "join" multiple Entities.
+In **_ElectroDB_** a `Service` represents a collection of related Entities. Services allow you to build queries that span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually. However, you do need to use a Service if you intend to make queries that "join" multiple Entities.
 
 ## Creation
 
@@ -45,7 +45,7 @@ When joining an Entity to a Service, ElectroDB will perform numerous validations
 
 - [Entity](/en/modeling/entities) names must be unique across a Service.
 - [Collection](/en/modeling/collections) names must be unique across a Service.
-- All [Collections](/en/modeling/collections) map to on the same DynamoDB indexes with the same index field names. See [Indexes](/en/modeling/indexes).
+- All [Collections](/en/modeling/collections) map to the same DynamoDB indexes with the same index field names. See [Indexes](/en/modeling/indexes).
 - Partition Key [Composite Attributes](#composite attribute-arrays) on a [Collection](/en/modeling/collections) must have the same attribute names and labels (if applicable). See [Attribute Definitions](/en/modeling/attributes#attribute-definition).
 - The [name of the Service in the Model](/en/modeling/entity#entity-definition-schema) must match the Name defined on the [Service](/en/modeling/services) instance.
 - If the attributes of an Entity have overlapping names with other attributes in that service, they must all have compatible or matching [attribute definitions](/en/modeling/attributes#attribute-definition).
