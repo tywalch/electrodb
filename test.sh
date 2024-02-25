@@ -5,7 +5,13 @@ function finish {
   docker compose down
 }
 
-trap finish EXIT
-
 docker compose up -d
-docker compose exec electro npm run test:run; finish;
+docker compose exec electro npm run test:run;
+if [ $? -eq 0 ]; then
+  finish
+else
+  finish
+  exit 1
+fi
+
+

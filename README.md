@@ -46,10 +46,10 @@ _Please submit issues/feedback or reach out on Twitter [@tinkertamper](https://t
 - [**Easily Query Across Entities**](https://electrodb.dev/en/core-concepts/single-table-relationships) - Define "collections" to create powerful/idiomatic queries that return multiple entities in a single request.
 - [**Automatic Index Selection**](https://electrodb.dev/en/queries/find/) - Use `.find()` or `.match()` methods to dynamically and efficiently query based on defined sort key structures.
 - [**Simplified Pagination API**](https://electrodb.dev/en/queries/pagination/) - ElectroDB generates url safe cursors for pagination, allows for fine grain automated pagination, and supports async iteration.
-- [**TypeScript Support**](https://electrodb.dev/en/reference/typscript/) - Strong **TypeScript** support for both Entities and Services now in Beta.
+- [**Strong TypeScript Inference**](https://electrodb.dev/en/reference/typescript/) - Strong **TypeScript** support for both Entities and Services now in Beta.
 - [**Query Directly via the Terminal**](https://github.com/tywalch/electrocli#query-taskapp) - Execute queries against your `Entities`, `Services`, `Models` directly from the command line.
 - [**Stand Up Rest Server for Entities**](https://github.com/tywalch/electrocli#query-taskapp) - Stand up a REST Server to interact with your `Entities`, `Services`, `Models` for easier prototyping.
-- [**Use with your existing tables**](https://electrodb.dev/en/core-concepts/use-electrodb-with-existing-table/) - ElectroDB simplifies building DocumentClient parameters, so you can use it with existing tables/data.
+- [**Use with your existing tables**](https://electrodb.dev/en/recipes/use-electrodb-with-existing-table/) - ElectroDB simplifies building DocumentClient parameters, so you can use it with existing tables/data.
 
 ---
 

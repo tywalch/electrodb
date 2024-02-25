@@ -1,4 +1,10 @@
-import { Entity, Resolve } from "../";
+import {
+  Entity,
+  Resolve,
+  CustomAttributeType,
+  EntityRecord,
+  EntityItem,
+} from "../";
 import { expectType } from "tsd";
 
 const troubleshoot = <Params extends any[], Response>(
@@ -151,6 +157,42 @@ const requiredMapAttributeEntity = new Entity({
   },
 });
 
+type UnionType =
+  | { prop1: string }
+  | { prop1: string; prop2: number }
+  | { prop3: string }
+  | { prop4: number; prop3: string };
+
+const customAttributeEntity = new Entity({
+  model: {
+    entity: "user",
+    service: "versioncontrol",
+    version: "1",
+  },
+  attributes: {
+    union: {
+      required: true,
+      type: CustomAttributeType<UnionType>("any"),
+    },
+    stringVal: {
+      type: "string",
+    },
+  },
+  indexes: {
+    user: {
+      collection: "overview",
+      pk: {
+        composite: ["stringVal"],
+        field: "pk",
+      },
+      sk: {
+        composite: ["stringVal2"],
+        field: "sk",
+      },
+    },
+  },
+});
+
 entityWithSK
   .update({
     attr1: "abc",
@@ -200,3 +242,15 @@ expectType<{
     test?: string;
   };
 }>(magnify(item));
+
+type CustomAttributeEntityRecordType = EntityRecord<
+  typeof customAttributeEntity
+>;
+const unionEntityRecord = {} as CustomAttributeEntityRecordType["union"];
+
+expectType<UnionType>(magnify(unionEntityRecord));
+
+type CustomAttributeEntityItemType = EntityItem<typeof customAttributeEntity>;
+const unionEntityItem = {} as CustomAttributeEntityItemType["union"];
+
+expectType<UnionType>(magnify(unionEntityItem));

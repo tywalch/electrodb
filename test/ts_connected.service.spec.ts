@@ -3167,3 +3167,187 @@ describe("composite compatibility", () => {
     two();
   });
 });
+
+describe('scope compatibility', () => {
+  const entity1 = new Entity(
+      {
+        model: {
+          entity: "entity1",
+          service: 'test',
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "string",
+          },
+          prop3: {
+            type: "string",
+          }
+        },
+        indexes: {
+          test: {
+            collection: 'testing',
+            scope: 'subtest',
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["prop2"],
+            },
+          },
+        },
+      },
+      { table: "electro", client }
+  );
+
+  const entity2 = new Entity(
+      {
+        model: {
+          entity: "entity2",
+          service: 'test',
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "string",
+          },
+          prop3: {
+            type: "string",
+          }
+        },
+        indexes: {
+          test: {
+            collection: 'testing',
+            scope: 'subtestz',
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["prop2"],
+            },
+          },
+        },
+      },
+      { table: "electro", client }
+  );
+
+  const entity3 = new Entity(
+      {
+        model: {
+          entity: "entity3",
+          service: 'test',
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "string",
+          },
+          prop3: {
+            type: "string",
+          }
+        },
+        indexes: {
+          test: {
+            collection: 'testing',
+            scope: 'subtest',
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["prop2"],
+            },
+          },
+        },
+      },
+      { table: "electro", client }
+  );
+
+  it('should throw an error when scopes are not compatible between collection members', () => {
+    let result: any = null;
+    let threw = false;
+    try {
+      new Service({ entity1, entity2 });
+    } catch(err) {
+      threw = true;
+      result = err;
+    }
+
+    expect(threw).to.be.true;
+    expect(result.message).to.equal(`Validation Error while joining entity, "entity2". The index scope value provided "subtestz" does not match established index scope value "subtest" on index "(Primary Index)". Index scope options must match across all entities participating in a collection - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#join`)
+  });
+
+  it('should not throw when scopes are compatible between collection members', () => {
+    let result: any = null;
+    let threw = false;
+    try {
+      new Service({ entity1, entity3 });
+    } catch(err) {
+      threw = true;
+      result = err;
+    }
+
+    expect(threw).to.be.false;
+    expect(result).to.be.null;
+  });
+
+  it('should query when scopes are compatible between collection members', async () => {
+    const service = new Service({ entity1, entity3 });
+    const prop1 = uuid();
+    const prop2 = uuid();
+    const record1 = {
+      prop1,
+      prop2,
+      prop3: uuid(),
+    };
+
+    const record2 = {
+      prop1,
+      prop2,
+      prop3: uuid(),
+    };
+
+    const record3 = {
+      prop1,
+      prop2,
+      prop3: uuid(),
+    };
+
+    await Promise.all([
+        entity1.put(record1).go(),
+        entity2.put(record2).go(),
+        entity3.put(record3).go(),
+    ]);
+
+    const params = service.collections.testing({ prop1 }).params();
+    expect(params.ExpressionAttributeValues[':pk']).to.equal(`$test_subtest#prop1_${prop1}`);
+
+    const collectionResponse = await service.collections.testing({ prop1 }).go();
+    expect(collectionResponse.data).to.deep.equal({
+        entity1: [record1],
+        entity3: [record3],
+    });
+
+    const entity2Params = entity2.query.test({ prop1 }).params();
+    expect(entity2Params.ExpressionAttributeValues[':pk']).to.equal(`$test_subtestz#prop1_${prop1}`);
+
+    const entity2Response = await entity2.query.test({ prop1 }).go();
+
+    expect(entity2Response.data.length).to.equal(1);
+    expect(entity2Response.data[0]).to.deep.equal(record2);
+  })
+});

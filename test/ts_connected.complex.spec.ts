@@ -1,6 +1,6 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 import { expect } from "chai";
-import { Entity, createCustomAttribute } from "../index";
+import { Entity, CustomAttributeType } from "../index";
 import DynamoDB from "aws-sdk/clients/dynamodb";
 import { v4 as uuid } from "uuid";
 const client = new DynamoDB.DocumentClient({
@@ -2116,174 +2116,305 @@ describe("Simple Crud On Complex Entity", () => {
     expect(putErrors).to.deep.equal(tests.map((test) => test.error));
   });
 
-  it("should throw if any attributes are typed as any within map properties", async () => {
-    expect(
-      () =>
-        new Entity(
-          {
-            model: {
-              service: "any_service",
-              entity: uuid(),
-              version: "1",
-            },
-            attributes: {
-              prop1: {
-                type: "string",
-              },
-              prop2: {
-                type: "map",
-                properties: {
-                  any1: {
-                    type: "any",
-                  },
-                },
-              },
-            },
-            indexes: {
-              record: {
-                pk: {
-                  field: "pk",
-                  composite: ["prop1"],
-                },
-                sk: {
-                  field: "sk",
-                  composite: [],
-                },
-              },
-            },
-          },
-          { table, client },
-        ),
-    ).to.throw(
-      'Invalid attribute "any1" defined within "prop2". Attributes with type "any", "custom" are only supported as root level attributes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition',
-    );
-  });
+  describe('nested any and custom attributes', () => {
 
-  it("should throw if any attributes are typed as any within map list", async () => {
-    expect(
-      () =>
-        new Entity(
-          {
-            model: {
-              service: "any_service",
-              entity: uuid(),
-              version: "1",
-            },
-            attributes: {
-              prop1: {
-                type: "string",
-              },
-              prop2: {
-                type: "list",
-                items: {
-                  // @ts-ignore
-                  type: "any",
-                },
-              },
-            },
-            indexes: {
-              record: {
-                pk: {
-                  field: "pk",
-                  composite: ["prop1"],
-                },
-                sk: {
-                  field: "sk",
-                  composite: [],
-                },
+    it("should allow any values when attribute is typed as any within a map", async () => {
+      const entity = new Entity({
+        model: {
+          service: "any_service",
+          entity: uuid(),
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "map",
+            properties: {
+              any1: {
+                type: "any",
               },
             },
           },
-          { table, client },
-        ),
-    ).to.throw(
-      'Invalid attribute "*" defined within "prop2". Attributes with type "any", "custom" are only supported as root level attributes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition',
-    );
-  });
+        },
+        indexes: {
+          record: {
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+        },
+      }, { table, client });
 
-  it("should throw if any attributes are typed as custom within map properties", async () => {
-    expect(
-      () =>
-        new Entity(
-          {
-            model: {
-              service: "any_service",
-              entity: uuid(),
-              version: "1",
-            },
-            attributes: {
-              prop1: {
-                type: "string",
-              },
-              prop2: {
-                type: "map",
-                properties: {
-                  // @ts-ignore
-                  custom1: createCustomAttribute<{ abc: string }>({
-                    required: true,
-                  }),
-                },
-              },
-            },
-            indexes: {
-              record: {
-                pk: {
-                  field: "pk",
-                  composite: ["prop1"],
-                },
-                sk: {
-                  field: "sk",
-                  composite: [],
-                },
-              },
-            },
-          },
-          { table, client },
-        ),
-    ).to.throw(
-      'Invalid attribute "custom1" defined within "prop2". Attributes with type "any", "custom" are only supported as root level attributes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition',
-    );
-  });
+      const prop1 = uuid();
+      await entity.create({
+        prop1,
+        prop2: {
+          any1: {
+            str: 'abc',
+            num: 123,
+            bool: true,
+            list: ['abc', 'def']
+          }
+        }
+      }).go();
 
-  it("should throw if any attributes are typed as custom within map list", async () => {
-    expect(
-      () =>
-        new Entity(
-          {
-            model: {
-              service: "any_service",
-              entity: uuid(),
-              version: "1",
+      const patched = await entity.patch({prop1})
+        .data((attr, op) => {
+          op.add(attr.prop2.any1.num, 5);
+          op.set(attr.prop2.any1.bool, false);
+          op.remove(attr.prop2.any1.list[0]);
+          op.set(attr.prop2.any1.str2, op.name(attr.prop2.any1.str));
+        })
+        .where((attr, op) => `${op.size(attr.prop2.any1.list)} = ${op.escape(2)} AND ${op.eq(attr.prop2.any1.num, 123)}`)
+        .go({response: 'all_new'});
+
+      expect(patched.data).to.deep.equal({
+        prop1,
+        prop2: {
+          any1: {
+            str: 'abc',
+            str2: 'abc',
+            num: 128,
+            bool: false,
+            list: ['def'],
+          }
+        }
+      });
+    });
+
+    it("should allow any values when attribute is typed as any within map list", async () => {
+      const entity = new Entity({
+        model: {
+          service: "any_service",
+          entity: uuid(),
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "list",
+            items: {
+              // @ts-ignore
+              type: "any",
             },
-            attributes: {
-              prop1: {
-                type: "string",
-              },
-              prop2: {
-                type: "list",
-                // @ts-ignore
-                items: createCustomAttribute({
-                  default: "abc",
-                }),
-              },
+          },
+        },
+        indexes: {
+          record: {
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
             },
-            indexes: {
-              record: {
-                pk: {
-                  field: "pk",
-                  composite: ["prop1"],
-                },
-                sk: {
-                  field: "sk",
-                  composite: [],
-                },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+        },
+      }, { table, client });
+
+      const prop1 = uuid();
+      await entity.create({
+        prop1,
+        prop2: [{
+          any1: {
+            str: 'abc',
+            num: 123,
+            bool: true,
+            list: ['abc', 'def']
+          }
+        }]
+      }).go();
+
+      const patched = await entity.patch({prop1})
+          .data((attr, op) => {
+            op.add(attr.prop2[0].any1.num, 5);
+            op.set(attr.prop2[0].any1.bool, false);
+            op.remove(attr.prop2[0].any1.list[0]);
+            op.set(attr.prop2[0].any1.str2, op.name(attr.prop2[0].any1.str));
+          })
+          .where((attr, op) => `${op.size(attr.prop2[0].any1.list)} = ${op.escape(2)} AND ${op.eq(attr.prop2[0].any1.num, 123)}`)
+          .go({response: 'all_new'});
+
+      expect(patched.data).to.deep.equal({
+        prop1,
+        prop2: [{
+          any1: {
+            str: 'abc',
+            str2: 'abc',
+            num: 128,
+            bool: false,
+            list: ['def'],
+          }
+        }]
+      });
+    });
+
+    it("should allow any attributes when attribute is typed as custom within map properties", async () => {
+      type CustomAttribute = {
+        str: string;
+        str2?: string;
+        num: number;
+        bool: boolean;
+        list?: string[];
+      }
+
+      const entity = new Entity({
+        model: {
+          service: "any_service",
+          entity: uuid(),
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "map",
+            properties: {
+              any1: {
+                type: CustomAttributeType<CustomAttribute>('any'),
               },
             },
           },
-          { table, client },
-        ),
-    ).to.throw(
-      'Invalid attribute "*" defined within "prop2". Attributes with type "any", "custom" are only supported as root level attributes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute-definition',
-    );
+        },
+        indexes: {
+          record: {
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+        },
+      }, { table, client });
+
+      const prop1 = uuid();
+      await entity.create({
+        prop1,
+        prop2: {
+          any1: {
+            str: 'abc',
+            num: 123,
+            bool: true,
+            list: ['abc', 'def']
+          }
+        }
+      }).go();
+
+      const patched = await entity.patch({prop1})
+          .data((attr, op) => {
+            op.add(attr.prop2.any1.num, 5);
+            op.set(attr.prop2.any1.bool, false);
+            op.remove(attr.prop2.any1.list?.[0]);
+            op.set(attr.prop2.any1.str2, op.name(attr.prop2.any1.str));
+          })
+          .where((attr, op) => `${op.size(attr.prop2.any1.list)} = ${op.escape(2)} AND ${op.eq(attr.prop2.any1.num, 123)}`)
+          .go({response: 'all_new'});
+
+      expect(patched.data).to.deep.equal({
+        prop1,
+        prop2: {
+          any1: {
+            str: 'abc',
+            str2: 'abc',
+            num: 128,
+            bool: false,
+            list: ['def'],
+          }
+        }
+      });
+    });
+
+    it("should allow any values when attribute is typed as custom within map list", async () => {
+      type CustomAttribute = {
+        str: string;
+        str2?: string;
+        num: number;
+        bool: boolean;
+        list: string[];
+      }
+
+      const entity = new Entity({
+        model: {
+          service: "any_service",
+          entity: uuid(),
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "list",
+            items: {
+              type: CustomAttributeType<{ any1: CustomAttribute }>('any')
+            },
+          },
+        },
+        indexes: {
+          record: {
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+        },
+      },
+      { table, client });
+
+      const prop1 = uuid();
+      await entity.create({
+        prop1,
+        prop2: [{
+          any1: {
+            str: 'abc',
+            num: 123,
+            bool: true,
+            list: ['abc', 'def']
+          }
+        }]
+      }).go();
+
+      const patched = await entity.patch({prop1})
+          .data((attr, op) => {
+            op.add(attr.prop2[0].any1.num, 5);
+            op.set(attr.prop2[0].any1.bool, false);
+            op.remove(attr.prop2[0].any1.list[0]);
+            op.set(attr.prop2[0].any1.str2, op.name(attr.prop2[0].any1.str));
+          })
+          .where((attr, op) => `${op.size(attr.prop2[0].any1.list)} = ${op.escape(2)} AND ${op.eq(attr.prop2[0].any1.num, 123)}`)
+          .go({response: 'all_new'});
+
+      expect(patched.data).to.deep.equal({
+        prop1,
+        prop2: [{
+          any1: {
+            str: 'abc',
+            str2: 'abc',
+            num: 128,
+            bool: false,
+            list: ['def'],
+          }
+        }]
+      });
+    });
+
   });
 });

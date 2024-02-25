@@ -7,6 +7,8 @@ import {
   DataUpdateAttributes,
   WhereCallback,
   DataUpdateCallback,
+  createSchema,
+  CustomAttributeType,
 } from "../";
 
 type Resolve<T> = T extends Function | string | number | boolean
@@ -63,6 +65,103 @@ class MockEntity<
     return fn;
   }
 }
+
+type MyBasicCustomAttribute = {
+  type: "pizza" | "flatbread";
+  toppings: Array<"pep" | "mush" | "garlic">;
+  count: number;
+};
+
+type OpaqueAttr1 = string & { cheese: "cheddar" };
+type OpaqueAttr2 = number & { cheese: "bacon" };
+type PizzaSize = number & { isPizzaSize: true };
+
+const schemaWithNestedCustomAttribute = createSchema({
+  model: {
+    entity: "withnestedcustomattribute",
+    service: "myservice",
+    version: "myversion",
+  },
+  attributes: {
+    attr1: {
+      type: CustomAttributeType<OpaqueAttr1>("string"),
+    },
+    attr2: {
+      type: CustomAttributeType<OpaqueAttr2>("number"),
+      default: () => 1234 as OpaqueAttr2,
+    },
+    map: {
+      type: "map",
+      required: true,
+      properties: {
+        attr3: {
+          type: CustomAttributeType<MyBasicCustomAttribute>("any"),
+          required: true,
+        },
+        attr4: {
+          type: CustomAttributeType<MyBasicCustomAttribute>("any"),
+          required: true,
+          default: {
+            type: "pizza",
+            toppings: ["mush"],
+            count: 10,
+          },
+        },
+        attr5: {
+          type: CustomAttributeType<MyBasicCustomAttribute>("any"),
+          readOnly: true,
+        },
+        attr6: {
+          type: CustomAttributeType<PizzaSize>("number"),
+        },
+      }
+    },
+    list: {
+      type: 'list',
+      required: true,
+      items: {
+        type: "map",
+        required: true,
+        properties: {
+          attr3: {
+            type: CustomAttributeType<MyBasicCustomAttribute>("any"),
+            required: true,
+          },
+          attr4: {
+            type: CustomAttributeType<MyBasicCustomAttribute>("any"),
+            required: true,
+            default: {
+              type: "pizza",
+              toppings: ["mush"],
+              count: 10,
+            },
+          },
+          attr5: {
+            type: CustomAttributeType<MyBasicCustomAttribute>("any"),
+            readOnly: true,
+          },
+          attr6: {
+            type: CustomAttributeType<PizzaSize>("number"),
+          },
+        }
+      }
+    }
+  },
+  indexes: {
+    myIndex: {
+      pk: {
+        field: "pk",
+        composite: ["attr1"],
+      },
+      sk: {
+        field: "sk",
+        composite: ["attr2"],
+      },
+    },
+  },
+});
+
+const entityWithNestedCustomAttribute = new MockEntity(schemaWithNestedCustomAttribute);
 
 const entityWithoutCollection = new MockEntity({
   model: {
@@ -1723,6 +1822,23 @@ const diverseTableKeyTypes = new MockEntity({
   },
 });
 
+expectType<{
+  attr1: OpaqueAttr1;
+  attr2: OpaqueAttr2;
+  map: {
+    attr3: MyBasicCustomAttribute;
+    attr4: MyBasicCustomAttribute;
+    attr5: MyBasicCustomAttribute;
+    attr6: PizzaSize;
+  };
+  list: Array<{
+    attr3: MyBasicCustomAttribute;
+    attr4: MyBasicCustomAttribute;
+    attr5: MyBasicCustomAttribute;
+    attr6: PizzaSize;
+  }>;
+}>(entityWithNestedCustomAttribute.getWhereAttributes());
+
 // WhereAttributes
 expectType<{
   attr1: string;
@@ -1753,6 +1869,23 @@ expectType<{
 }>(entityWithComplexShapes.getWhereAttributes());
 
 // DataUpdateAttributes
+
+expectType<{
+  // attr1: OpaqueAttr1;
+  // attr2: OpaqueAttr2;
+  map: {
+    attr3: MyBasicCustomAttribute;
+    attr4: MyBasicCustomAttribute;
+    // attr5: MyBasicCustomAttribute;
+    attr6: PizzaSize;
+  };
+  list: Array<{
+    attr3: MyBasicCustomAttribute;
+    attr4: MyBasicCustomAttribute;
+    // attr5: MyBasicCustomAttribute;
+    attr6: PizzaSize;
+  }>;
+}>(entityWithNestedCustomAttribute.getDataUpdateAttributes());
 
 expectType<{
   attr3: "123" | "def" | "ghi";
@@ -1796,6 +1929,14 @@ expectType<{
 }>(readOnlyEntity.getDataUpdateAttributes());
 
 // WhereCallback
+entityWithNestedCustomAttribute.getWhereCallback((a, o) => {
+  expectType<MyBasicCustomAttribute['type']>(a.map.attr3.type);
+  expectType<MyBasicCustomAttribute['toppings']>(a.map.attr3.toppings);
+  expectType<number>(a.map.attr3.count);
+  expectError(() => o.eq(a.map.attr3.count, "1"));
+  return "";
+});
+
 entityWithSK.getWhereCallback((a, o) => {
   const attr = magnify(a);
   const op = magnify(o);
@@ -1934,6 +2075,14 @@ entityWithComplexShapes.getWhereCallback((a, o) => {
 });
 
 // DataUpdateCallback
+
+entityWithNestedCustomAttribute.getDataUpdateCallback((a, o) => {
+    expectType<MyBasicCustomAttribute['type']>(a.map.attr3.type);
+    expectType<MyBasicCustomAttribute['toppings']>(a.map.attr3.toppings);
+    expectType<number>(a.map.attr3.count);
+    expectError(() => o.set(a.map.attr3.count, "1"));
+});
+
 mapTests.getDataUpdateCallback((a, o) => {
   expectError(() => a.username);
   expectError(() => a.mapObject.readOnly);

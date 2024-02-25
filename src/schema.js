@@ -1496,18 +1496,6 @@ class Schema {
         case AttributeTypes.set:
           normalized[name] = new SetAttribute(definition);
           break;
-        case AttributeTypes.any:
-          if (attributeHasParent) {
-            throw new e.ElectroError(
-              e.ErrorCodes.InvalidAttributeDefinition,
-              `Invalid attribute "${definition.name}" defined within "${
-                parent.parentPath
-              }". Attributes with type ${u.commaSeparatedString([
-                AttributeTypes.any,
-                AttributeTypes.custom,
-              ])} are only supported as root level attributes.`,
-            );
-          }
         default:
           normalized[name] = new Attribute(definition);
       }

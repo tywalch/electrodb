@@ -470,6 +470,49 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - Addresses edge case that filtered valid items when item lacked entity identifiers (created outside ElectroDB) when keys (pk or sk) were numeric.
 
-## [2.10.3] - 2023-10-26
+## [2.10.4] - 2023-10-26
+> NOTE: This version is deprecated, this version introduced code that significantly increased latency. That code was fixed in `2.10.7` 
 ### Added
 - Adds `cause` property to `ElectroError`, currently populated when error originates from the AWS Client, to help with error triage. This also adds the ability to provide an error type to ElectroError<Error> to type the error located on `cause`.
+
+## [2.10.5] - 2023-11-03
+### Fixed
+- Addresses bug in `patch` and `update` methods that caused key composite attributes to be set with their attribute name not their "field" name. This would impact users who both use the `update` method to create new items and use alternative field name definitions for their composite keys. All other users would likely be silently impacted by this issue. 
+
+## [2.10.6] - 2023-11-04
+### Fixed
+- Addresses [Issue #321](https://github.com/tywalch/electrodb/issues/321), fixing expression attribute name and value formatting to remove non-alphanumeric and underscore characters.
+
+## [2.10.7] - 2023-11-09
+### Fixed
+- Fixes latency issue introduced in `2.10.4` affecting all queries discovered and brought forward by Ross Gerbasi. Thank you, Ross Gerbasi!
+
+## [2.11.0] - 2023-11-12
+### Added
+- Adds new property `scope` to index definitions, allowing users to further isolate partition keys beyond just `service` participation. This implements an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290). Thank you, Brooke for your contribution!
+
+## [2.12.0] - 2023-11-27
+### Added
+- Adds support for nested usage of `any` and `CustomAttributeType` attribute types. Prior to this release, `any` and `CustomAttributeType` could only be used with root attributes. This change adds support for `CustomAttributeType` to be used with `map` attributes. 
+- Adds new `condition` property [on index definitions](https://electrodb.dev/en/modeling/indexes#sparse-indexes) to prevent unnecessary GSI writes & hot partitions for certain data models. The provided `condition` callback will be invoked at query-time, passed all attributes set on that mutation, and if it returns `false` the index will not be written to your DynamoDB table. Addresses [Issue #330](https://github.com/tywalch/electrodb/issues/300).
+
+## [2.12.1] - 2023-11-29
+### Fixed
+- Adds more sophisticated custom attribute type extraction. Patch provided by GitHub user @wentsul with an assist by @adriancooney via [PR #332](https://github.com/tywalch/electrodb/pull/334). Thank you both for this great addition!
+
+## [2.12.2] - 2023-12-18
+### Fixed
+- Fixes bug where `scan` appended invalid filters if some cases. In cases where [attributes are used as keys](https://electrodb.dev/en/modeling/indexes/#attributes-as-indexes) or [composite templates contain no prefixes](https://electrodb.dev/en/modeling/indexes/#composite-attribute-templates) the `scan` operation would append invalid filters to parameters. This bug was identified by discord user @engi22, thank you!
+
+## [2.12.3] - 2023-12-26
+### Fixed
+- Collection queries returned an `undefined` cursor (currently typed as `string | null`) when using the `raw:true` execution option. Fixed to return `null` instead of `undefined`.
+- Removed superfluous and unused files, `./library-data.json` and `test.csv`, accidentally published in version `2.12.2`.
+
+## [2.13.0] - 2023-12-28
+### Added
+- Adds new query execution option `count` which allows you to specify a specific item count to return from a query. This is useful for cases where you must return a specific/consistent number of items from a query, a deceptively difficult task with DynamoDB and Single Table Design.
+
+## [2.13.1] - 2023-01-23
+### Fixed
+- Fixes custom attribute type extraction for union types with RecordItem. Patch provided by GitHub user @wentsul via [PR #346](https://github.com/tywalch/electrodb/pull/346). Thank you for another great addition! 

@@ -1,0 +1,424 @@
+---
+title: Strategies for counting items
+description: Using ElectroDB to count items in DynamoDB
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - query
+  - entity
+  - attribute
+  - schema
+  - index
+  - count
+  - counting
+  - aggregation
+layout: ../../../layouts/MainLayout.astro
+---
+
+Counting items in DynamoDB is not always a straightforward task. DynamoDB is a NoSQL database, and as such, it does not support the same types of queries that you might be used to with a relational database. DynamoDB does not support the `COUNT` operation, and as such, you must use other strategies to count items in DynamoDB.
+
+There are two main strategies for counting items in DynamoDB: counting items on write and counting items on read. Each strategy has its own pros and cons, and you should choose the strategy that best fits your use case.
+
+## Counting items on write
+You can count items on write by using a DynamoDB transaction. A transaction is a set of operations that are executed atomically. If any of the operations in the transaction fail, then the entire transaction fails. DynamoDB transactions are ACID-compliant, which means that they are atomic, consistent, isolated, and durable.
+
+You can use a DynamoDB transaction to count items by using a conditional write operation. A conditional write operation is a write operation that only succeeds if the condition evaluates to true. You can use a conditional write operation to increment a counter attribute on an item. If the conditional write operation succeeds, then you know that the item was successfully written to the table. If the conditional write operation fails, then you know that the item was not written to the table.
+
+The following example demonstrates a pattern using a "counter" entity. A counter entity has a `count` attribute that is incremented each time a new item is written to the table or decremented each time an item is removed from the table.
+
+```typescript
+import { Entity, Service } from 'electrodb';
+
+const table = 'company-directory';
+
+const Employee = new Entity({
+  model: {
+    entity: 'employee',
+    service: 'directory',
+    version: '1',
+  },
+  attributes: {
+    organizationId: {
+      type: 'string',
+    },
+    employeeId: {
+      type: 'string',
+    },
+    name: {
+      type: 'string',
+    },
+    teamId: {
+      type: 'string',
+    }
+  },
+  indexes: {
+    employees: {
+      collection: 'employed',
+      pk: {
+        field: 'pk',
+        composite: ['organizationId'],
+      },
+      sk: {
+        field: 'sk',
+        composite: ['employeeId'],
+      }
+    }
+  },
+}, { table });
+
+```
+### Global Counters
+
+This example demonstrates a counter scoped to an ElectroDB service (the widest scope possible with ElectroDB). The `GlobalCounter` entity does not have a "pk" or "sk" composite attribute, effectively making the item this entity creates global to the "directory" service. Be careful when using this pattern, as it can lead to hot partitions.
+
+```typescript
+const GlobalCounter = new Entity({
+  model: {
+    entity: 'global-counter',
+    service: 'directory',
+    version: '1',
+  },
+  attributes: {
+    count: {
+      type: 'number',
+    },
+  },
+  indexes: {
+    count: {
+      pk: {
+        field: 'pk',
+        composite: [],
+      },
+      sk: {
+        field: 'sk',
+        composite: [],
+      }
+    },
+  },
+}, { table });
+```
+
+### Scoped Counters
+
+This example shows how you might scope a counter to a more specific subset of data. The `TeamCounter` entity has a "pk" and "sk" composite attribute of "organizationId" and "teamId" which allows you to count the number of items scoped by the "organizationId" and "teamId" attributes. You can choose to partition your counters by any attributes that you want, and this example would count items just as well if the "pk" composite attribute was "organizationId" and "teamId". However, this example demonstrates how you can use a "sk" composite attribute to further partition your counters, which allows you to access the all team counters
+
+```typescript
+const TeamCounter = new Entity({
+  model: {
+    entity: 'team-counter',
+    service: 'directory',
+    version: '1',
+  },
+  attributes: {
+    organizationId: {
+      type: 'string',
+    },
+    teamId: {
+      type: 'string',
+    },
+    count: {
+      type: 'number',
+    },
+  },
+  indexes: {
+    organization: {
+      collection: 'employed',
+      pk: {
+        field: 'pk',
+        composite: ['organizationId'],
+      },
+      sk: {
+        field: 'sk',
+        composite: ['teamId'],
+      }
+    },
+  },
+}, { table });
+```
+
+### Dynamically Scoped Counters
+
+This example demonstrates another approach to scoping a counter. The `OrganizationItemCounter` entity has a "pk" composite attribute of "organizationId" which allows you to count the number of items scoped by the "organizationId" attribute. In this example, a "kind" attribute is added to demonstrate how you can use a dynamic attribute to further partition your counters. The `kind` property could also be a type `string` if you wish to allow for that degree of cardinality.
+
+```typescript
+const OrganizationItemCounter = new Entity({
+  model: {
+    entity: 'member-counter',
+    service: 'directory',
+    version: '1',
+  },
+  attributes: {
+    organizationId: {
+      type: 'string',
+    },
+    kind: {
+        type: ['employee', 'team'] as const,
+    },
+    count: {
+      type: 'number',
+    },
+  },
+  indexes: {
+    organization: {
+      collection: 'employed',
+      pk: {
+        field: 'pk',
+        composite: ['organizationId'],
+      },
+      sk: {
+        field: 'sk',
+        composite: ["kind"],
+      }
+    },
+  },
+}, { table });
+```
+
+### Writing to multiple entities in a transaction
+
+Once you have planned out your counter entity schema, you can use a DynamoDB transaction to increment and decrement the counters as you write and remove items from the table. The following example demonstrates how you might use a DynamoDB transaction to increment and decrement counters as you write and remove items from the table.
+
+```typescript
+const AccountService = new Service({ Employee, OrganizationItemCounter, TeamCounter, GlobalCounter });
+
+export type CreateEmployeeOptions = {
+  organizationId: string;
+  teamId: string;
+  employeeId: string;
+  name: string;
+}
+
+export function createEmployee(options: CreateEmployeeOptions) {
+  const { organizationId, employeeId, name, teamId } = options;
+
+  return AccountService.transaction.write(({ Employee, OrganizationItemCounter, GlobalCounter, TeamCounter }) => [
+    Employee.create({ organizationId, employeeId, name }).commit(),
+
+    GlobalCounter.upsert({}).add({count: 1}).commit(),
+    TeamCounter.upsert({organizationId, teamId}).add({count: 1}).commit(),
+    OrganizationItemCounter.upsert({organizationId, kind: 'employee'}).add({count: 1}).commit(),
+  ]).go();
+}
+
+export type RemoveEmployeeOptions = {
+  organizationId: string;
+  teamId: string;
+  employeeId: string;
+}
+
+export function removeEmployee(options: RemoveEmployeeOptions) {
+  const { organizationId, employeeId, teamId } = options;
+
+  return AccountService.transaction.write(({ Employee, OrganizationItemCounter, GlobalCounter, TeamCounter }) => [
+    Employee.remove({ organizationId, employeeId }).commit(),
+
+    GlobalCounter.upsert({}).subtract({count: 1}).commit(),
+    TeamCounter.upsert({organizationId, teamId}).subtract({count: 1}).commit(),
+    OrganizationItemCounter.upsert({organizationId, kind: 'employee'}).subtract({count: 1}).commit(),
+  ]).go();
+}
+```
+
+## Counting items on read
+You can count items on read by instructing DynamoDB to return counts instead of items. DynamoDB supports the `SELECT` operation, which allows you to specify whether you want to return items or counts. You can use the `SELECT` operation to return counts instead of items which will be faster to paginate than returning items.
+
+An advantage to counting items on read is that it does not require upfront planning and the final count will reflect the query you performed.
+
+> Note: although using `{ Select: "Count" }` with DynamoDB only returns the number of items for a query and not the items themselves, the operation is not cheaper than an operation that returns items.
+
+The following example demonstrates how you might use the `SELECT` operation to return counts instead of items. It uses two "escape hatch" query execution options: `raw` and `params`:
+- `raw` allows you return the unprocess results directly from DynamoDB
+- `params` allows you to append additional parameters to the query sent to DynamoDB
+
+```typescript
+import { Entity, Service } from 'electrodb';
+
+const table = "accounts";
+
+const User = new Entity({
+  model: {
+    entity: 'user',
+    service: 'accounts',
+    version: '1',
+  },
+  attributes: {
+    accountId: {
+      type: 'string',
+    },
+    userId: {
+      type: 'string',
+    },
+    name: {
+      type: 'string',
+    },
+  },
+  indexes: {
+    account: {
+      collection: 'members',
+      pk: {
+        field: 'pk',
+        composite: ['accountId'],
+      },
+      sk: {
+        field: 'sk',
+        composite: ['userId'],
+      }
+    },
+  },
+}, { table });
+
+const Account = new Entity({
+  model: {
+    entity: 'account',
+    service: 'accounts',
+    version: '1',
+  },
+  attributes: {
+    accountId: {
+      type: 'string',
+    },
+    name: {
+      type: 'string',
+    },
+  },
+  indexes: {
+    account: {
+      collection: 'members',
+      pk: {
+        field: 'pk',
+        composite: ['accountId'],
+      },
+      sk: {
+        field: 'sk',
+        composite: [],
+      }
+    },
+  },
+}, { table });
+
+const AccountService = new Service({ User, Account });
+
+type Cursor = string | null;
+
+type QueryResponse = {
+  cursor: Cursor;
+  data: unknown;
+}
+
+type CountQueryResponse = {
+  cursor: Cursor;
+  data: { count: number };
+}
+
+type CountFnOptions = {
+  next: Cursor;
+}
+
+type CountFn = (options: CountFnOptions) => Promise<CountQueryResponse>;
+
+function toCountFnResponse(resp: QueryResponse): CountQueryResponse {
+  const { cursor } = resp;
+
+  const data = { count: 0 };
+  if (typeof resp.data === 'object' && resp.data !== null && 'Count' in resp.data && typeof resp.data.Count === 'number') {
+    data.count = resp.data.Count;
+  };
+
+  return {
+    cursor,
+    data,
+  };
+}
+
+type PaginateCountQueryOptions = {
+  countFn: CountFn;
+}
+
+// this function exists to demonstrate how you might implement some indirection to accomplish this task in a generic way
+async function paginateCountQuery(options: PaginateCountQueryOptions) {
+  const { countFn } = options;
+  let count = 0;
+  let next: Cursor = null;
+  do {
+    const { cursor, data } = await countFn({ next });
+    count += data.count;
+    next = cursor;
+  } while(next);
+
+  return count;
+}
+
+type CreateCountFnOptions = {
+  accountId: string;
+}
+
+// count collection query
+function createMembersCountFn(options: CreateCountFnOptions): CountFn {
+  const { accountId } = options;
+  return ({ next }) => {
+    return AccountService.collections
+      .members({ accountId })
+      .go({
+        // `raw` allows you return the unprocess results directly from DynamoDB (escape hatch)
+        raw: true,
+        // paginate through the results using the cursor
+        cursor: next,
+        // `params` allows you to append additional parameters to the DynamoDB query (escape hatch)
+        params: { Select: 'COUNT'},
+        // transform results
+      }).then(toCountFnResponse);
+  };
+}
+
+// count entity query
+function createUsersCountFn(options: CreateCountFnOptions): CountFn {
+  const { accountId } = options;
+  return async ({ next }) => {
+    return User.query.account({ accountId })
+      .go({
+        // `raw` allows you return the unprocess results directly from DynamoDB (escape hatch)
+        raw: true,
+        // paginate through the results using the cursor
+        cursor: next,
+        // `params` allows you to append additional parameters to the DynamoDB query (escape hatch)
+        params: { Select: 'COUNT'},
+        // transform results
+      }).then(toCountFnResponse);
+  };
+}
+
+function createUsersScanCountFn(options: CreateCountFnOptions): CountFn {
+  const { accountId } = options;
+  return async ({ next }) => {
+    return User.scan
+      .where((attr, op) => op.eq(attr.accountId, accountId))
+      .go({
+        // `raw` allows you return the unprocess results directly from DynamoDB (escape hatch)
+        raw: true,
+        // paginate through the results using the cursor
+        cursor: next,
+        // `params` allows you to append additional parameters to the DynamoDB query (escape hatch)
+        params: { Select: 'COUNT'},
+        // transform results
+      }).then(toCountFnResponse);
+  };
+}
+
+(async function main() {
+  const accountId = '1234';
+
+  const membersCount = await paginateCountQuery({
+    countFn: createMembersCountFn({ accountId })
+  });
+
+  const usersCount = await paginateCountQuery({
+    countFn: createUsersCountFn({ accountId })
+  });
+
+  const usersScanCount = await paginateCountQuery({
+    countFn: createUsersScanCountFn({ accountId })
+  });
+})().catch(console.error);
+```

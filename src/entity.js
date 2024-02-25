@@ -343,6 +343,7 @@ class Entity {
   collection(collection = "", clauses = {}, facets = {}, options = {}) {
     const chainOptions = {
       ...options,
+      _isPagination: true,
       _isCollectionQuery: true,
     };
 
@@ -494,7 +495,7 @@ class Entity {
   async go(method, parameters = {}, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
-      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError).stack;
+      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
     }
     try {
       switch (method) {
@@ -513,13 +514,9 @@ class Entity {
         return Promise.reject(err);
       } else {
         if (err.__isAWSError) {
-          const error = new e.ElectroError(
-            e.ErrorCodes.AWSError,
-            `Error thrown by DynamoDB client: "${err.message}"`,
-            err,
-          );
-          error.stack = stackTrace;
-          return Promise.reject(error);
+          stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
+          stackTrace.cause = err;
+          return Promise.reject(stackTrace);
         } else if (err.isElectroError) {
           return Promise.reject(err);
         } else {
@@ -628,6 +625,21 @@ class Entity {
     });
   }
 
+  _safeMinimum(...values) {
+    let eligibleNumbers = [];
+    for (let value of values) {
+      if (typeof value === 'number') {
+        eligibleNumbers.push(value);
+      }
+    }
+
+    if (eligibleNumbers.length) {
+      return Math.min(...eligibleNumbers);
+    }
+
+    return undefined;
+  }
+
   async executeBulkGet(parameters, config) {
     if (!Array.isArray(parameters)) {
       parameters = [parameters];
@@ -706,10 +718,11 @@ class Entity {
   }
 
   async executeQuery(method, parameters, config = {}) {
+    const indexName = parameters.IndexName;
     let results = config._isCollectionQuery ? {} : [];
     let ExclusiveStartKey = this._formatExclusiveStartKey({
+      indexName,
       config,
-      indexName: parameters.IndexName,
     });
     if (ExclusiveStartKey === null) {
       ExclusiveStartKey = undefined;
@@ -727,7 +740,9 @@ class Entity {
         { ExclusiveStartKey, ...parameters, Limit: limit },
         config,
       );
+
       ExclusiveStartKey = response.LastEvaluatedKey;
+
       response = this.formatResponse(response, parameters.IndexName, {
         ...config,
         includeKeys: shouldHydrate || config.includeKeys,
@@ -758,10 +773,15 @@ class Entity {
           results[entity] = [...results[entity], ...items];
         }
       } else if (Array.isArray(response.data)) {
-        if (max) {
+        let prevCount = count
+        if (!!max || !!config.count) {
           count += response.data.length;
         }
         let items = response.data;
+        const moreItemsThanRequired = !!config.count && count > config.count;
+        if (moreItemsThanRequired) {
+          items = items.slice(0, config.count - prevCount);
+        }
         if (shouldHydrate) {
           const hydrated = await this.hydrate(
             parameters.IndexName,
@@ -774,14 +794,20 @@ class Entity {
           );
         }
         results = [...results, ...items];
+        if (moreItemsThanRequired || count === config.count) {
+          const lastItem = results[results.length - 1];
+          ExclusiveStartKey = this._fromCompositeToKeysByIndex({ indexName, provided: lastItem });
+          break;
+        }
       } else {
         return response;
       }
       iterations++;
     } while (
       ExclusiveStartKey &&
-      (pages === AllPages || iterations < pages) &&
-      (max === undefined || count < max)
+      (pages === AllPages || (config.count !== undefined || iterations < pages)) &&
+      (max === undefined || count < max) &&
+      (config.count === undefined || count < config.count)
     );
 
     const cursor = this._formatReturnPager(config, ExclusiveStartKey);
@@ -926,7 +952,7 @@ class Entity {
   formatResponse(response, index, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
-      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError).stack;
+      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
     }
     try {
       let results = {};
@@ -1014,17 +1040,16 @@ class Entity {
 
       return { data: results };
     } catch (err) {
-      if (config.originalErr || stackTrace === undefined || err.isElectroError) {
+      if (
+        config.originalErr ||
+        stackTrace === undefined ||
+        err.isElectroError
+      ) {
         throw err;
       } else {
-        const error = new e.ElectroError(
-            e.ErrorCodes.AWSError,
-            err.message,
-            err,
-        );
-        error.stack = stackTrace;
-
-        throw error;
+        stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
+        stackTrace.cause = err;
+        throw stackTrace;
       }
     }
   }
@@ -1658,6 +1683,7 @@ class Entity {
       _isPagination: false,
       _isCollectionQuery: false,
       pages: 1,
+      count: undefined,
       listeners: [],
       preserveBatchOrder: false,
       attributes: [],
@@ -1779,6 +1805,13 @@ class Entity {
             config.includeKeys = true;
             break;
         }
+      }
+
+      if (option.count !== undefined) {
+        if (typeof option.count !== "number" || option.count < 1) {
+          throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Query option 'count' must be of type 'number' and greater than zero.`);
+        }
+        config.count = option.count;
       }
 
       if (option.limit !== undefined) {
@@ -2216,30 +2249,61 @@ class Entity {
     let { pk, sk } = this._makeIndexKeys({
       index: indexBase,
     });
+
     let keys = this._makeParameterKey(indexBase, pk, ...sk);
+    // trim empty key values (this can occur when keys are defined by users)
+    for (let key in keys) {
+      if (keys[key] === undefined || keys[key] === '') {
+        delete keys[key];
+      }
+    }
+
     let keyExpressions = this._expressionAttributeBuilder(keys);
-    let params = {
-      TableName: this.getTableName(),
-      ExpressionAttributeNames: this._mergeExpressionsAttributes(
+
+    const expressionAttributeNames = this._mergeExpressionsAttributes(
         filter.getNames(),
         keyExpressions.ExpressionAttributeNames,
-      ),
-      ExpressionAttributeValues: this._mergeExpressionsAttributes(
+    );
+
+    const expressionAttributeValues = this._mergeExpressionsAttributes(
         filter.getValues(),
         keyExpressions.ExpressionAttributeValues,
-      ),
-      FilterExpression: `begins_with(#${pkField}, :${pkField})`,
+    );
+
+
+    let params = {
+      TableName: this.getTableName(),
     };
+
+    if (Object.keys(expressionAttributeNames).length) {
+      params['ExpressionAttributeNames'] = expressionAttributeNames;
+    }
+
+    if (Object.keys(expressionAttributeValues).length) {
+      params['ExpressionAttributeValues'] = expressionAttributeValues;
+    }
+
+    let filterExpressions = [];
+
+    if (keys[pkField]) {
+      filterExpressions.push(`begins_with(#${pkField}, :${pkField})`);
+    }
 
     if (hasSortKey) {
       let skField = this.model.indexes[accessPattern].sk.field;
-      params.FilterExpression = `${params.FilterExpression} AND begins_with(#${skField}, :${skField})`;
+      if (keys[skField]) {
+        filterExpressions.push(`begins_with(#${skField}, :${skField})`);
+      }
     }
+
     if (filter.build()) {
-      params.FilterExpression = `${
-        params.FilterExpression
-      } AND ${filter.build()}`;
+      filterExpressions.push(filter.build());
     }
+
+    if (filterExpressions.length) {
+      params.FilterExpression = filterExpressions.join(' AND ');
+    }
+
     return params;
   }
 
@@ -2317,7 +2381,7 @@ class Entity {
           // TODO: This will only work with root attributes and should be refactored for nested attributes.
           update.set(attr.field, preparedUpdateValues[path]);
         } else {
-          // this could be fields added by electro that don't apeear in the schema
+          // this could be fields added by electro that don't appear in the schema
           update.set(path, preparedUpdateValues[path]);
         }
       }
@@ -2369,7 +2433,7 @@ class Entity {
         modifiedAttributeNames[primaryIndexAttribute] === undefined;
       if (isNotTablePK && isNotTableSK && wasNotAlreadyModified) {
         update.set(
-          primaryIndexAttribute,
+          attribute.field,
           primaryIndexAttributes[primaryIndexAttribute],
         );
       }
@@ -2417,7 +2481,7 @@ class Entity {
           (!attribute || !attribute.indexes || attribute.indexes.length === 0)
         ) {
           /*
-						// this should be considered but is likely overkill at best and unexpected at worst. 
+						// this should be considered but is likely overkill at best and unexpected at worst.
 						// It also is likely symbolic of a deeper issue. That said maybe it could be helpful
 						// in the future? It is unclear, if this were added, whether this should get the
 						// default value and then call the setter on the defaultValue. That would at least
@@ -2885,12 +2949,18 @@ class Entity {
         )}. If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes.`,
       );
     }
+
     return complete;
   }
 
   _makeKeysFromAttributes(indexes, attributes) {
     let indexKeys = {};
     for (let [index, keyTypes] of Object.entries(indexes)) {
+      const shouldMakeKeys = this.model.indexes[this.model.translations.indexes.fromIndexToAccessPattern[index]].condition(attributes);
+      if (!shouldMakeKeys) {
+        continue;
+      }
+
       let keys = this._makeIndexKeys({
         index,
         pkAttributes: attributes,
@@ -2917,6 +2987,10 @@ class Entity {
   _makePutKeysFromAttributes(indexes, attributes) {
     let indexKeys = {};
     for (let index of indexes) {
+      const shouldMakeKeys = this.model.indexes[this.model.translations.indexes.fromIndexToAccessPattern[index]].condition(attributes);
+      if (!shouldMakeKeys) {
+        continue;
+      }
       indexKeys[index] = this._makeIndexKeys({
         index,
         pkAttributes: attributes,
@@ -2989,6 +3063,7 @@ class Entity {
       completeFacets.impactedIndexTypes,
       { ...set, ...keyAttributes },
     );
+
     let updatedKeys = {};
     let deletedKeys = [];
     let indexKey = {};
@@ -3032,6 +3107,7 @@ class Entity {
   _getIndexImpact(attributes = {}, included = {}) {
     let includedFacets = Object.keys(included);
     let impactedIndexes = {};
+    let skippedIndexes = new Set();
     let impactedIndexTypes = {};
     let completedIndexes = [];
     let facets = {};
@@ -3039,21 +3115,32 @@ class Entity {
       if (attributes[attribute] !== undefined) {
         facets[attribute] = attributes[attribute];
         indexes.forEach(({ index, type }) => {
-          impactedIndexes[index] = impactedIndexes[index] || {};
-          impactedIndexes[index][type] = impactedIndexes[index][type] || [];
-          impactedIndexes[index][type].push(attribute);
-          impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-          impactedIndexTypes[index][type] =
-            this.model.translations.keys[index][type];
+            impactedIndexes[index] = impactedIndexes[index] || {};
+            impactedIndexes[index][type] = impactedIndexes[index][type] || [];
+            impactedIndexes[index][type].push(attribute);
+            impactedIndexTypes[index] = impactedIndexTypes[index] || {};
+            impactedIndexTypes[index][type] =
+                this.model.translations.keys[index][type];
         });
+      }
+    }
+
+    for (const indexName in impactedIndexes) {
+      const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexName];
+      const shouldMakeKeys = this.model.indexes[accessPattern].condition({ ...attributes, ...included });
+      if (!shouldMakeKeys) {
+        skippedIndexes.add(indexName);
       }
     }
 
     let incomplete = Object.entries(this.model.facets.byIndex)
       .map(([index, { pk, sk }]) => {
         let impacted = impactedIndexes[index];
-        let impact = { index, missing: [] };
-        if (impacted) {
+        let impact = {
+          index,
+          missing: []
+        };
+        if (impacted && !skippedIndexes.has(index)) {
           let missingPk =
             impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
           let missingSk =
@@ -3227,6 +3314,9 @@ class Entity {
 
     // If keys are not custom, set the prefixes
     if (!keys.pk.isCustom) {
+      if (tableIndex.scope) {
+        pk = `${pk}_${tableIndex.scope}`;
+      }
       keys.pk.prefix = u.formatKeyCasing(pk, tableIndex.pk.casing);
     }
 
@@ -3847,6 +3937,15 @@ class Entity {
       let indexName = index.index || TableIndex;
       let indexType =
         typeof index.type === "string" ? index.type : IndexTypes.isolated;
+      let indexScope = index.scope || "";
+      if (index.index === undefined && v.isFunction(index.condition)) {
+        throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexCondition,
+            `The index option 'condition' is only allowed on secondary indexes`,
+        );
+      }
+      let indexCondition = index.condition || (() => true);
+
       if (indexType === "clustered") {
         clusteredIndexes.add(accessPattern);
       }
@@ -3945,14 +4044,16 @@ class Entity {
         }
       }
 
-      let definition = {
+      let definition= {
         pk,
         sk,
-        collection,
         hasSk,
+        collection,
         customFacets,
-        index: indexName,
         type: indexType,
+        index: indexName,
+        scope: indexScope,
+        condition: indexCondition,
       };
 
       indexHasSubCollections[indexName] =

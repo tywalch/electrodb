@@ -2529,6 +2529,7 @@ export interface QueryOptions {
   params?: object;
   table?: string;
   limit?: number;
+  count?: number;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
   pages?: number | "all";
@@ -2655,6 +2656,7 @@ interface GoQueryTerminalOptions<Attributes> {
   includeKeys?: boolean;
   table?: string;
   limit?: number;
+  count?: number;
   params?: object;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
@@ -3216,6 +3218,27 @@ export interface MapAttribute {
   readonly watch?: ReadonlyArray<string> | "*";
 }
 
+export interface NestedCustomListAttribute {
+  readonly type: "list";
+  readonly items: CustomAttribute;
+  readonly required?: boolean;
+  readonly hidden?: boolean;
+  readonly readOnly?: boolean;
+  readonly get?: (
+      val: Array<any>,
+      item: any,
+  ) => Array<string> | undefined | void;
+  readonly set?: (
+      val?: Array<any>,
+      item?: any,
+  ) => Array<any> | undefined | void;
+  readonly default?: Array<any> | (() => Array<any>);
+  readonly validate?:
+      | ((val: Array<any>) => boolean)
+      | ((val: Array<any>) => void)
+      | ((val: Array<any>) => string | void);
+}
+
 export interface NestedStringListAttribute {
   readonly type: "list";
   readonly items: {
@@ -3354,6 +3377,28 @@ export interface NestedMapListAttribute {
   readonly field?: string;
 }
 
+export interface NestedAnyListAttribute {
+  readonly type: "list";
+  readonly items: NestedAnyAttribute;
+  readonly required?: boolean;
+  readonly hidden?: boolean;
+  readonly readOnly?: boolean;
+  readonly get?: (
+      val: Record<string, any>[],
+      item: any,
+  ) => Record<string, any>[] | undefined | void;
+  readonly set?: (
+      val?: Record<string, any>[],
+      item?: any,
+  ) => Record<string, any>[] | undefined | void;
+  readonly default?: Record<string, any>[] | (() => Record<string, any>[]);
+  readonly validate?:
+      | ((val: Record<string, any>[]) => boolean)
+      | ((val: Record<string, any>[]) => void)
+      | ((val: Record<string, any>[]) => string | void);
+  readonly field?: string;
+}
+
 export interface MapListAttribute {
   readonly type: "list";
   readonly items: NestedMapAttribute;
@@ -3373,6 +3418,52 @@ export interface MapListAttribute {
     | ((val: Record<string, any>[]) => boolean)
     | ((val: Record<string, any>[]) => void)
     | ((val: Record<string, any>[]) => string | void);
+  readonly field?: string;
+  readonly watch?: ReadonlyArray<string> | "*";
+}
+
+export interface CustomListAttribute {
+  readonly type: "list";
+  readonly items: NestedCustomAttribute;
+  readonly required?: boolean;
+  readonly hidden?: boolean;
+  readonly readOnly?: boolean;
+  readonly get?: (
+      val: Array<any>,
+      item: any,
+  ) => Array<any> | undefined | void;
+  readonly set?: (
+      val?: Array<any>,
+      item?: any,
+  ) => Array<any> | undefined | void;
+  readonly default?: Array<any> | (() => Array<any>);
+  readonly validate?:
+      | ((val: Array<any>) => boolean)
+      | ((val: Array<any>) => void)
+      | ((val: Array<any>) => string | void);
+  readonly field?: string;
+  readonly watch?: ReadonlyArray<string> | "*";
+}
+
+export interface AnyListAttribute {
+  readonly type: "list";
+  readonly items: NestedAnyAttribute;
+  readonly required?: boolean;
+  readonly hidden?: boolean;
+  readonly readOnly?: boolean;
+  readonly get?: (
+      val: Array<any>,
+      item: any,
+  ) => Array<any> | undefined | void;
+  readonly set?: (
+      val?: Array<any>,
+      item?: any,
+  ) => Array<any> | undefined | void;
+  readonly default?: Array<any> | (() => Array<any>);
+  readonly validate?:
+      | ((val: Array<any>) => boolean)
+      | ((val: Array<any>) => void)
+      | ((val: Array<any>) => string | void);
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 }
@@ -3563,13 +3654,6 @@ export interface NumberSetAttribute {
   readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type StaticAttribute = {
-  readonly type: "static";
-  readonly hidden?: boolean;
-  value: string | number | boolean;
-  readonly field?: string;
-};
-
 type CustomAttributeTypeName<T> = { readonly [CustomAttributeSymbol]: T };
 
 type OpaquePrimitiveTypeName<T extends string | number | boolean> =
@@ -3597,6 +3681,21 @@ type CustomAttribute = {
   readonly watch?: ReadonlyArray<string> | "*";
 };
 
+type NestedCustomAttribute = {
+  readonly type: CustomAttributeTypeName<any> | OpaquePrimitiveTypeName<any>;
+  readonly required?: boolean;
+  readonly hidden?: boolean;
+  readonly readOnly?: boolean;
+  readonly get?: (val: any, item: any) => any | undefined | void;
+  readonly set?: (val?: any, item?: any) => any | undefined | void;
+  readonly default?: any | (() => any);
+  readonly validate?:
+      | ((val: any) => boolean)
+      | ((val: any) => void)
+      | ((val: any) => string | void);
+  readonly field?: string;
+};
+
 export type Attribute =
   | BooleanAttribute
   | NumberAttribute
@@ -3609,7 +3708,8 @@ export type Attribute =
   | StringListAttribute
   | NumberListAttribute
   | MapListAttribute
-  | StaticAttribute
+  | AnyListAttribute
+  | CustomListAttribute
   | CustomAttribute
   | EnumNumberSetAttribute
   | EnumStringSetAttribute;
@@ -3621,12 +3721,14 @@ export type NestedAttributes =
   | NestedAnyAttribute
   | NestedMapAttribute
   | NestedStringListAttribute
+  | NestedCustomListAttribute
   | NestedNumberListAttribute
   | NestedMapListAttribute
+  | NestedAnyListAttribute
   | NestedStringSetAttribute
   | NestedNumberSetAttribute
   | NestedEnumAttribute
-  | NestedEnumAttribute
+  | NestedCustomAttribute
   | NestedEnumNumberSetAttribute
   | NestedEnumStringSetAttribute;
 
@@ -3655,8 +3757,10 @@ export interface Schema<A extends string, F extends string, C extends string> {
     [accessPattern: string]: {
       readonly project?: "keys_only";
       readonly index?: string;
+      readonly scope?: string;
       readonly type?: "clustered" | "isolated";
       readonly collection?: AccessPatternCollection<C>;
+      readonly condition?: (composite: Record<string, unknown>) => boolean;
       readonly pk: {
         readonly casing?: "upper" | "lower" | "none" | "default";
         readonly field: string;
@@ -3812,114 +3916,118 @@ type PartialDefinedKeys<T> = {
 };
 
 export type ItemAttribute<A extends Attribute> =
-  A["type"] extends OpaquePrimitiveTypeName<infer T>
-    ? T
-    : A["type"] extends CustomAttributeTypeName<infer T>
-    ? T
-    : A["type"] extends infer R
-    ? R extends "string"
-      ? string
-      : R extends "number"
-      ? number
-      : R extends "boolean"
-      ? boolean
-      : R extends ReadonlyArray<infer E>
-      ? E
-      : R extends "map"
-      ? "properties" extends keyof A
-        ? {
-            [P in keyof A["properties"]]: A["properties"][P] extends infer M
-              ? M extends Attribute
-                ? ItemAttribute<M>
-                : never
-              : never;
-          }
-        : never
-      : R extends "list"
-      ? "items" extends keyof A
-        ? A["items"] extends infer I
-          ? I extends Attribute
-            ? Array<ItemAttribute<I>>
+  A["type"] extends infer T
+    ? T extends OpaquePrimitiveTypeName<infer OP>
+      ? OP
+      : T extends CustomAttributeTypeName<infer CA>
+      ? CA
+      : T extends infer R
+      ? R extends "string"
+        ? string
+        : R extends "number"
+        ? number
+        : R extends "boolean"
+        ? boolean
+        : R extends ReadonlyArray<infer E>
+        ? E
+        : R extends "map"
+        ? "properties" extends keyof A
+          ? {
+              [P in keyof A["properties"]]: A["properties"][P] extends infer M
+                ? M extends Attribute
+                  ? ItemAttribute<M>
+                  : never
+                : never;
+            }
+          : never
+        : R extends "list"
+        ? "items" extends keyof A
+          ? A["items"] extends infer I
+            ? I extends Attribute
+              ? Array<ItemAttribute<I>>
+              : never
             : never
           : never
-        : never
-      : R extends "set"
-      ? "items" extends keyof A
-        ? A["items"] extends infer I
-          ? I extends "string"
-            ? string[]
-            : I extends "number"
-            ? number[]
-            : I extends ReadonlyArray<infer ENUM>
-            ? ENUM[]
+        : R extends "set"
+        ? "items" extends keyof A
+          ? A["items"] extends infer I
+            ? I extends "string"
+              ? string[]
+              : I extends "number"
+              ? number[]
+              : I extends ReadonlyArray<infer ENUM>
+              ? ENUM[]
+              : never
             : never
           : never
+        : R extends "any"
+        ? any
         : never
-      : R extends "any"
-      ? any
       : never
     : never;
 
 export type ReturnedAttribute<A extends Attribute> =
-  A["type"] extends OpaquePrimitiveTypeName<infer T>
-    ? T
-    : A["type"] extends CustomAttributeTypeName<infer T>
-    ? T
-    : A["type"] extends infer R
-    ? R extends "static"
-      ? never
-      : R extends "string"
-      ? string
-      : R extends "number"
-      ? number
-      : R extends "boolean"
-      ? boolean
-      : R extends ReadonlyArray<infer E>
-      ? E
-      : R extends "map"
-      ? "properties" extends keyof A
-        ? {
-            [P in keyof A["properties"] as A["properties"][P] extends RequiredAttribute
-              ? P
-              : never]: A["properties"][P] extends infer M
-              ? M extends Attribute
-                ? ReturnedAttribute<M>
-                : never
-              : never;
-          } & {
-            [P in keyof A["properties"] as A["properties"][P] extends
-              | HiddenAttribute
-              | RequiredAttribute
-              ? never
-              : P]?: A["properties"][P] extends infer M
-              ? M extends Attribute
-                ? ReturnedAttribute<M> | undefined
-                : never
-              : never;
-          }
-        : never
-      : R extends "list"
-      ? "items" extends keyof A
-        ? A["items"] extends infer I
-          ? I extends Attribute
-            ? ReturnedAttribute<I>[]
+  A["type"] extends infer T
+    ? T extends OpaquePrimitiveTypeName<infer OP>
+      ? OP
+      : T extends CustomAttributeTypeName<infer CA>
+      ? CA
+      : T extends infer R
+      ? R extends "static"
+        ? never
+        : R extends "string"
+        ? string
+        : R extends "number"
+        ? number
+        : R extends "boolean"
+        ? boolean
+        : R extends ReadonlyArray<infer E>
+        ? E
+        : R extends "map"
+        ? "properties" extends keyof A
+          ? {
+              [P in keyof A["properties"] as A["properties"][P] extends RequiredAttribute
+                ? P
+                : never]: A["properties"][P] extends infer M
+                ? M extends Attribute
+                  ? ReturnedAttribute<M>
+                  : never
+                : never;
+            } & {
+              [P in keyof A["properties"] as A["properties"][P] extends
+                | HiddenAttribute
+                | RequiredAttribute
+                ? never
+                : P]?: A["properties"][P] extends infer M
+                ? M extends Attribute
+                  ? ReturnedAttribute<M> | undefined
+                  : never
+                : never;
+            }
+          : never
+        : R extends "list"
+        ? "items" extends keyof A
+          ? A["items"] extends infer I
+            ? I extends Attribute
+              ? ReturnedAttribute<I>[]
+              : never
             : never
           : never
-        : never
-      : R extends "set"
-      ? "items" extends keyof A
-        ? A["items"] extends infer I
-          ? I extends "string"
-            ? string[]
-            : I extends "number"
-            ? number[]
-            : I extends ReadonlyArray<infer ENUM>
-            ? ENUM[]
+        : R extends "set"
+        ? "items" extends keyof A
+          ? A["items"] extends infer I
+            ? I extends "string"
+              ? string[]
+              : I extends "number"
+              ? number[]
+              : I extends ReadonlyArray<infer ENUM>
+              ? ENUM[]
+              : never
             : never
           : never
+        : R extends "any"
+        ? any
         : never
-      : R extends "any"
-      ? any
       : never
     : never;
 

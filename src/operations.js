@@ -28,8 +28,21 @@ class ExpressionState {
     return `${this.prefix}${this.counts[name]++}`;
   }
 
+  formatName(name = "") {
+    const nameWasNotANumber = isNaN(name);
+    name = `${name}`.replaceAll(/[^\w]/g, "");
+    if (name.length === 0) {
+      name = "p";
+    } else if (nameWasNotANumber !== isNaN(name)) {
+      // name became number due to replace
+      name = `p${name}`;
+    }
+    return name;
+  }
+
   // todo: make the structure: name, value, paths
   setName(paths, name, value) {
+    name = this.formatName(name);
     let json = "";
     let expression = "";
     const prop = `#${name}`;
@@ -53,6 +66,7 @@ class ExpressionState {
   }
 
   setValue(name, value) {
+    name = this.formatName(name);
     let valueCount = this.incrementName(name);
     let expression = `:${name}${valueCount}`;
     this.values[expression] = value;
@@ -299,16 +313,13 @@ class AttributeOperationProxy {
           return AttributeOperationProxy.pathProxy(() => {
             const { commit, root, target, builder } = build();
             const attribute = target.getChild(prop);
+            const nestedAny = attribute.type === AttributeTypes.any &&
+                // if the name doesn't match that's because we are nested under 'any'
+                attribute.name !== prop;
             let field;
             if (attribute === undefined) {
-              throw new Error(
-                `Invalid attribute "${prop}" at path "${target.path}.${prop}"`,
-              );
-            } else if (
-              attribute === root &&
-              attribute.type === AttributeTypes.any
-            ) {
-              // This function is only called if a nested property is called. If this attribute is ultimately the root, don't use the root's field name
+              throw new Error(`Invalid attribute "${prop}" at path "${target.path}.${prop}"`);
+            } else if (nestedAny) {
               field = prop;
             } else {
               field = attribute.field;
@@ -317,6 +328,7 @@ class AttributeOperationProxy {
             return {
               root,
               builder,
+              nestedAny,
               target: attribute,
               commit: () => {
                 const paths = commit();

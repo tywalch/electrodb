@@ -1,5 +1,5 @@
 import { DocumentClient, PutItemInput } from "aws-sdk/clients/dynamodb";
-import { Entity } from "../";
+import { Entity, EntityRecord, createWriteTransaction, ElectroEvent } from "../";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
 const u = require("../src/util");
@@ -20,6 +20,8 @@ const client = new DocumentClient({
   endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
   region: "us-east-1",
 });
+
+const table = "electro";
 
 describe("conversions", () => {
   const table = "electro";
@@ -2048,3 +2050,1288 @@ describe("sparse index formatting", () => {
     });
   });
 });
+
+describe('field translation', () => {
+  const serviceName = uuid();
+  const TestEntity = new Entity(
+      {
+        model: {
+          entity: "test",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          entityId: {
+            field: "entity_id",
+            type: "string",
+          },
+          otherId: {
+            field: "other_id",
+            type: "string",
+          },
+          thirdId: {
+            field: "third_id",
+            type: "string"
+          },
+          numParam: {
+            type: "number",
+            field: "num_param"
+          },
+          setParam: {
+            type: "set",
+            items: "string",
+            field: "set_param"
+          },
+          listParam: {
+            type: "list",
+            items: {
+              type: "string"
+            },
+            field: "list_param"
+          },
+          anyParam: {
+            type: 'any',
+            field: 'any_param'
+          }
+        },
+        indexes: {
+          test: {
+            pk: {
+              field: "pk",
+              composite: ["entityId"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["otherId", "thirdId"],
+            },
+          },
+        },
+      },
+      { table: "electro" }
+  );
+
+  const entityId = 'abc';
+  const otherId = 'def';
+  const thirdId = 'ghi';
+  const numParam = 123;
+  const setParam = ['abc', 'def'];
+  const listParam = ['ghi', 'jkl'];
+  const anyParam = 'mno';
+
+  describe('when performing upsert operation', () => {
+    it('should translate attribute field names on set', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).set({numParam, setParam, listParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+    });
+
+    it('should translate attribute field names on add', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).add({numParam, setParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+    });
+
+    it('should translate attribute field names on subtract', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).subtract({numParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+    });
+
+    it('should translate attribute field names on append', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).append({listParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+    });
+
+    it('should translate attribute field names on ifNotExists', () => {
+      const params = TestEntity.upsert({entityId, otherId, thirdId}).ifNotExists({numParam, setParam, listParam}).params();
+      expect(params.ExpressionAttributeNames['#entityId']).to.equal('entity_id');
+      expect(params.ExpressionAttributeNames['#otherId']).to.equal('other_id');
+      expect(params.ExpressionAttributeNames['#thirdId']).to.equal('third_id');
+      expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+    });
+  })
+
+  const updateMethods = ['update', 'patch'] as const;
+  for (const updateMethod of updateMethods) {
+    describe(`when performing ${updateMethod} operation`, () => {
+      it('should translate attribute field names on set', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).set({numParam, setParam, listParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on add', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).add({numParam, setParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      });
+
+      it('should translate attribute field names on subtract', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).subtract({numParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      });
+
+      it('should translate attribute field names on append', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).append({listParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on delete', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).delete({setParam}).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      });
+
+      it('should translate attribute field names on remove', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).remove(['numParam', 'setParam', 'listParam']).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on data set', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, {set}) => {
+          set(attr.numParam, numParam);
+          set(attr.setParam, setParam);
+          set(attr.listParam, listParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on data add', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.add(attr.numParam, numParam);
+          op.add(attr.setParam, setParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      });
+
+      it('should translate attribute field names on data delete', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.delete(attr.setParam, setParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+      });
+
+      it('should translate attribute field names on data subtract', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.subtract(attr.numParam, numParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+      });
+
+      it('should translate attribute field names on data append', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.append(attr.listParam, listParam);
+        }).params();
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+
+      it('should translate attribute field names on data remove', () => {
+        const params = TestEntity[updateMethod]({entityId, otherId, thirdId}).data((attr, op) => {
+          op.remove(attr.numParam);
+          op.remove(attr.setParam);
+          op.remove(attr.listParam);
+        }).params();
+
+        expect(params.ExpressionAttributeNames['#entity_id']).to.equal('entity_id');
+        expect(params.ExpressionAttributeNames['#other_id']).to.equal('other_id');
+        expect(params.ExpressionAttributeNames['#third_id']).to.equal('third_id');
+        expect(params.ExpressionAttributeNames['#numParam']).to.equal('num_param');
+        expect(params.ExpressionAttributeNames['#setParam']).to.equal('set_param');
+        expect(params.ExpressionAttributeNames['#listParam']).to.equal('list_param');
+      });
+    });
+  }
+
+  const insertMethods = ['put', 'create'] as const;
+  for (const insertMethod of insertMethods) {
+    it(`should translate attribute field names on ${insertMethod} operation`, () => {
+      const params = TestEntity[insertMethod]({entityId, otherId, thirdId, numParam, setParam, listParam}).params();
+      expect(params.Item.entity_id).to.equal(entityId);
+      expect(params.Item.other_id).to.equal(otherId);
+      expect(params.Item.third_id).to.equal(thirdId);
+      expect(params.Item.num_param).to.equal(numParam);
+      expect(params.Item.list_param).to.deep.equal(listParam);
+    });
+  }
+
+  describe('when performing queries', async () => {
+    const sortKeyOperations = ['begins', 'gt', 'gte', 'lt', 'lte'] as const;
+    for (const sortKeyOperation of sortKeyOperations) {
+      it(`should translate attribute field names on when using the ${sortKeyOperation} sort key operation`, async () => {
+        const params = TestEntity.query.test({entityId})[sortKeyOperation]({otherId, thirdId}).params();
+        if (params.FilterExpression) {
+          for (const [key, value] of Object.entries(params.ExpressionAttributeNames)) {
+            if (key.includes('other')) {
+              expect(value).to.equal('other_id');
+            } else if (key.includes('third')) {
+              expect(value).to.equal('third_id');
+            }
+          }
+        }
+      });
+    }
+  });
+
+  describe('when performing filters', () => {
+    const filterOperations = ['begins', 'between', 'contains', 'eq', 'escape', 'exists', 'eqOrNotExists', 'field', 'gt', 'gte', 'lt', 'lte', 'name', 'ne', 'notContains', 'notExists', 'size', 'type', 'value'] as const;
+
+    it('test case should contain all filter operations', () => {
+      let foundFilterOperations: string[] = [];
+      TestEntity.query.test({entityId}).where((_, op) => {
+        foundFilterOperations = Object.getOwnPropertyNames(op);
+        return '';
+      }).params();
+      expect(foundFilterOperations.sort()).to.deep.equal([...filterOperations].sort());
+    });
+
+    for (const filterOperation of filterOperations) {
+      it(`should translate attribute field names on when using the ${filterOperation} filter operation`, () => {
+        const params = TestEntity.query.test({entityId, otherId, thirdId}).where((attr, op) => {
+          switch (filterOperation) {
+            case 'between':
+              return `${op.between(attr.anyParam, 1, 2)}`;
+            case 'exists':
+            case 'notExists':
+            case 'name':
+              return `${op[filterOperation](attr.anyParam)}`;
+            case 'type':
+              return `${op.type(attr.anyParam, 'S')}`;
+            case 'eqOrNotExists':
+            case 'escape':
+              return '';
+            default:
+              return `${op[filterOperation](attr.anyParam, anyParam)}`;
+          }
+        }).params();
+
+        if (filterOperation === 'eqOrNotExists' || 'escape') {
+          return;
+        }
+        const keyValue = Object.entries(params.ExpressionAttributeNames).find((([key]) => key.includes('any')));
+        expect(keyValue).not.to.be.undefined;
+        if (keyValue) {
+          const [_, value] = keyValue;
+          expect(value).to.equal(anyParam);
+        }
+      });
+    }
+  });
+
+  describe('when attribute names have special characters', () => {
+    const table = "electro";
+    const serviceName = uuid();
+    // example from original GitHub issue
+    const weirdProp1 = 'example-key XXX _ 1 2 3 4' as const;
+    // this will nest under, and be a valid attribute name
+    const weirdProp2 = 'hello this is a full on sentence.' as const;
+    // this one has ONLY invalid characters (special case that should be handled)
+    const weirdProp3 = '\' -~!@#$%^&*()+="/?><.,`\'' as const;
+    // this one has only invalid characters except two numbers (special case that should be handled)
+    const weirdProp4 = '\' -~!@#$%^&*()+="/?><.,`\'55' as const;
+    const entity = new Entity({
+      model: {
+        entity: "specialCharacters",
+        version: "1",
+        service: serviceName,
+      },
+      attributes: {
+        prop1: {
+          type: "string",
+        },
+        prop2: {
+          type: "string",
+        },
+        prop3: {
+          type: "string"
+        },
+        [weirdProp1]: {
+          type: "map",
+          required: true,
+          properties: {
+            [weirdProp2]: {
+              type: 'number',
+              required: true,
+            },
+            [weirdProp4]: {
+              type: 'string',
+              required: true,
+            }
+          }
+        },
+        [weirdProp3]: {
+          type: 'string',
+          required: true,
+        }
+      },
+      indexes: {
+        record: {
+          pk: {
+            field: "pk",
+            composite: ["prop1"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["prop2"]
+          }
+        }
+      },
+    }, { table, client });
+
+    it('should create valid parameters with where query filters', async () => {
+      const prop1 = uuid();
+      await entity.create({
+        prop1,
+        prop2: 'value1',
+        [weirdProp1]: {
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test1',
+        },
+        [weirdProp3]: 'test1'
+      }).go();
+
+      await entity.create({
+        prop1,
+        prop2: 'value2',
+        [weirdProp1]: {
+          [weirdProp2]: 2,
+          [weirdProp4]: 'test2',
+        },
+        [weirdProp3]: 'test2'
+      }).go();
+
+      await entity.create({
+        prop1,
+        prop2: 'value3',
+        [weirdProp1]: {
+          [weirdProp2]: 2,
+          [weirdProp4]: 'test3',
+        },
+        [weirdProp3]: 'test3'
+      }).go();
+
+      const params = entity.query
+          .record({ prop1 })
+          .where((attr, { eq }) => `
+            ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test2')}
+          `)
+          .params();
+
+      expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
+      expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
+      expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
+
+      const { data } = await entity.query
+        .record({ prop1 })
+        .where((attr, { eq }) => `
+          ${eq(attr[weirdProp1][weirdProp2], 2)} AND ${eq(attr[weirdProp3], 'test2')} AND ${eq(attr[weirdProp1][weirdProp4], 'test2')}
+        `)
+        .go();
+
+      expect(data.length).to.equal(1);
+      expect(data[0].prop2).to.equal('value2');
+    });
+
+    it('should create valid parameters with where mutation conditions', async () => {
+      const prop1 = uuid();
+      const prop2 = "value1";
+      const prop3 = "value2";
+      await entity.create({
+        prop1,
+        prop2,
+        [weirdProp1]: {
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test1',
+        },
+        [weirdProp3]: 'test1'
+      }).go();
+
+      const params = entity.update({prop1, prop2})
+          .set({ prop3 })
+          .where((attr, { ne }) => `
+            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test1')}
+          `)
+          .params();
+
+      expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
+      expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
+      expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
+
+      const err = await entity.update({prop1, prop2})
+          .set({ prop3 })
+          .where((attr, { ne }) => `
+            ${ne(attr[weirdProp1][weirdProp2], 1)} AND ${ne(attr[weirdProp3], 'test1')} AND ${ne(attr[weirdProp1][weirdProp4], 'test1')}
+          `)
+          .go()
+          .then(() => null)
+          .catch(e => e);
+
+      expect(!!err).to.be.true;
+      if (err) {
+        expect(err.cause.code).to.equal('ConditionalCheckFailedException');
+      }
+
+      const { data } = await entity.patch({prop1, prop2})
+          .set({ prop3 })
+          .where((attr, { ne }) => `
+            ${ne(attr[weirdProp1][weirdProp2], 2)} AND ${ne(attr[weirdProp3], 'test2')} AND ${ne(attr[weirdProp1][weirdProp4], 'test2')}
+          `)
+          .go({ response: 'all_new' });
+
+      expect(data.prop3).to.equal(prop3);
+    });
+
+    it('should create valid parameters with where data updates', async () => {
+      const prop1 = uuid();
+      const prop2 = 'value1';
+      await entity.create({
+        prop1,
+        prop2,
+        [weirdProp1]: {
+          [weirdProp2]: 1,
+          [weirdProp4]: 'test1',
+        },
+        [weirdProp3]: 'test1'
+      }).go();
+
+      const params = entity.patch({prop1, prop2})
+          .data((attr, op) => {
+            op.set(attr[weirdProp1][weirdProp2], 2);
+            op.set(attr[weirdProp1][weirdProp4], 'test2');
+            op.set(attr[weirdProp3], 'test2');
+          })
+          .params();
+
+      expect(params.ExpressionAttributeNames['#examplekeyXXX_1234']).to.equal(weirdProp1);
+      expect(params.ExpressionAttributeNames['#hellothisisafullonsentence']).to.equal(weirdProp2);
+      expect(params.ExpressionAttributeNames['#p']).to.equal(weirdProp3);
+      expect(params.ExpressionAttributeNames['#p55']).to.equal(weirdProp4);
+
+      const { data } = await entity.patch({prop1, prop2})
+          .data((attr, op) => {
+            op.set(attr[weirdProp1][weirdProp2], 2);
+            op.set(attr[weirdProp1][weirdProp4], 'test2');
+            op.set(attr[weirdProp3], 'test2');
+          })
+          .go({response: 'all_new'});
+
+      expect(data[weirdProp1][weirdProp2]).to.equal(2);
+      expect(data[weirdProp1][weirdProp4]).to.equal('test2');
+      expect(data[weirdProp3]).to.equal('test2');
+    });
+  });
+});
+
+describe('index scope', () => {
+  const serviceName = uuid();
+  const withScope = new Entity(
+      {
+        model: {
+          entity: serviceName,
+          service: 'test',
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "string",
+          },
+          prop3: {
+            type: "string",
+          },
+          prop4: {
+            type: 'list',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        indexes: {
+          test: {
+            scope: 'scope1',
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["prop2"],
+            },
+          },
+          reverse: {
+            index: 'gsi1pk-gsi1sk-index',
+            scope: 'scope2',
+            pk: {
+              field: "gsi1pk",
+              composite: ["prop2"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: ["prop1"],
+            },
+          },
+        },
+      },
+      { table: "electro", client }
+  );
+
+  const withoutScope = new Entity(
+      {
+        model: {
+          entity: serviceName,
+          service: 'test',
+          version: "1",
+        },
+        attributes: {
+          prop1: {
+            type: "string",
+          },
+          prop2: {
+            type: "string",
+          },
+          prop3: {
+            type: "string",
+          },
+          prop4: {
+            type: 'list',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        indexes: {
+          test: {
+            pk: {
+              field: "pk",
+              composite: ["prop1"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["prop2"],
+            },
+          },
+          reverse: {
+            index: 'gsi1pk-gsi1sk-index',
+            pk: {
+              field: "gsi1pk",
+              composite: ["prop2"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: ["prop1"],
+            },
+          },
+        },
+      },
+      { table: "electro", client }
+  );
+
+  it('should add scope value to all keys', () => {
+    const getParams = withScope.get({prop1: 'abc', prop2: 'def'}).params();
+    expect(getParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const queryParams = withScope.query.test({prop1: 'abc'}).params();
+    expect(queryParams.ExpressionAttributeValues[':pk']).to.equal('$test_scope1#prop1_abc');
+
+    const queryParams2 = withScope.query.reverse({prop2: 'def'}).params();
+    expect(queryParams2.ExpressionAttributeValues[':pk']).to.equal('$test_scope2#prop2_def');
+
+    const scanParams = withScope.scan.params();
+    expect(scanParams.ExpressionAttributeValues[':pk']).to.equal('$test_scope1#prop1_');
+
+    const deleteParams = withScope.delete({prop1: 'abc', prop2: 'def'}).params();
+    expect(deleteParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const removeParams = withScope.remove({prop1: 'abc', prop2: 'def'}).params();
+    expect(removeParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const updateParams = withScope.update({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(updateParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const patchParams = withScope.patch({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(patchParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const putParams = withScope.put({prop1: 'abc', prop2: 'def'}).params();
+    expect(putParams.Item.pk).to.equal('$test_scope1#prop1_abc');
+
+    const createParams = withScope.create({prop1: 'abc', prop2: 'def'}).params();
+    expect(createParams.Item.pk).to.equal('$test_scope1#prop1_abc');
+
+    const upsertParams = withScope.upsert({prop1: 'abc', prop2: 'def'}).set({prop3: 'ghi'}).params();
+    expect(upsertParams.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const batchGetParams = withScope.get([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchGetParams[0].RequestItems.electro.Keys[0].pk).to.equal('$test_scope1#prop1_abc');
+
+    const batchDeleteParams = withScope.delete([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchDeleteParams[0].RequestItems.electro[0].DeleteRequest.Key.pk).to.equal('$test_scope1#prop1_abc');
+
+    const batchPutParams = withScope.put([{prop1: 'abc', prop2: 'def'}]).params();
+    expect(batchPutParams[0].RequestItems.electro[0].PutRequest.Item.pk).to.equal('$test_scope1#prop1_abc');
+
+    const keys = withScope.conversions.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(keys.pk).to.equal('$test_scope1#prop1_abc');
+    expect(keys.gsi1pk).to.equal('$test_scope2#prop2_def');
+
+    const keysComposite = withScope.conversions.fromKeys.toComposite(keys);
+    expect(keysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
+
+    const indexKeys = withScope.conversions.byAccessPattern.test.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(indexKeys.pk).to.equal('$test_scope1#prop1_abc');
+
+    const indexKeysComposite = withScope.conversions.byAccessPattern.test.fromKeys.toComposite(indexKeys);
+    expect(indexKeysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
+
+    const reverseKeys = withScope.conversions.byAccessPattern.reverse.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    expect(reverseKeys.gsi1pk).to.equal('$test_scope2#prop2_def');
+    expect(keys.pk).to.equal('$test_scope1#prop1_abc');
+
+    const reverseKeysComposite = withScope.conversions.byAccessPattern.reverse.fromKeys.toComposite(reverseKeys);
+    expect(reverseKeysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
+  });
+
+  it('should query scoped indexes without issue', async () => {
+    const prop1 = uuid();
+    const prop2 = uuid();
+
+    const record1 = {
+      prop1,
+      prop2,
+      prop3: uuid(),
+    };
+
+    const record2 = {
+      prop1,
+      prop2,
+      prop3: uuid(),
+    };
+
+    const [
+      scopeRecord,
+      withoutScopeRecord
+    ] = await Promise.all([
+        withScope.create(record1).go(),
+        withoutScope.create(record2).go(),
+    ]);
+
+    expect(scopeRecord.data).to.deep.equal(record1);
+    expect(withoutScopeRecord.data).to.deep.equal(record2);
+
+    const scopeGet = await withScope.get({prop1, prop2}).go();
+    expect(scopeGet.data).to.deep.equal(record1);
+
+    const withoutScopeGet = await withoutScope.get({prop1, prop2}).go();
+    expect(withoutScopeGet.data).to.deep.equal(record2);
+
+    const scopeQuery = await withScope.query.test({prop1}).go();
+    expect(scopeQuery.data).to.deep.equal([record1]);
+
+    const withoutScopeQuery = await withoutScope.query.test({prop1}).go();
+    expect(withoutScopeQuery.data).to.deep.equal([record2]);
+
+    const reverseScopeQuery = await withScope.query.reverse({prop2}).go();
+    expect(reverseScopeQuery.data).to.deep.equal([record1]);
+
+    const reverseWithoutScopeQuery = await withoutScope.query.reverse({prop2}).go();
+    expect(reverseWithoutScopeQuery.data).to.deep.equal([record2]);
+
+    const batchGetScopeRecords = await withScope.get([{prop1, prop2}]).go();
+    expect(batchGetScopeRecords.data).to.deep.equal([record1]);
+
+    const batchGetWithoutScopeRecords = await withoutScope.get([{prop1, prop2}]).go();
+    expect(batchGetWithoutScopeRecords.data).to.deep.equal([record2]);
+
+    const updatedScopeRecord = await withScope.update({prop1, prop2}).set({prop4: ['updated1']}).go({response: 'all_new'});
+    expect(updatedScopeRecord.data).to.deep.equal({
+      ...record1,
+      prop4: ['updated1'],
+    });
+
+    const updatedWithoutScopeRecord = await withoutScope.update({prop1, prop2}).set({prop4: ['updated2']}).go({response: 'all_new'});
+    expect(updatedWithoutScopeRecord.data).to.deep.equal({
+      ...record2,
+      prop4: ['updated2'],
+    });
+
+    const patchedScopeRecord = await withScope.patch({prop1, prop2}).append({prop4: ['patched1']}).go({response: 'all_new'});
+    expect(patchedScopeRecord.data).to.deep.equal({
+      ...record1,
+      prop4: ['updated1', 'patched1'],
+    });
+
+    const patchedWithoutScopeRecord = await withoutScope.patch({prop1, prop2}).append({prop4: ['patched2']}).go({response: 'all_new'});
+    expect(patchedWithoutScopeRecord.data).to.deep.equal({
+      ...record2,
+      prop4: ['updated2', 'patched2'],
+    });
+
+    const upsertedScopeRecord = await withScope.upsert({prop1, prop2}).append({prop4: ['upserted1']}).go({response: 'all_new'});
+    expect(upsertedScopeRecord.data).to.deep.equal({
+      ...record1,
+      prop4: ['updated1', 'patched1', 'upserted1'],
+    });
+
+    const upsertedWithoutScopeRecord = await withoutScope.upsert({prop1, prop2}).append({prop4: ['upserted2']}).go({response: 'all_new'});
+    expect(upsertedWithoutScopeRecord.data).to.deep.equal({
+      ...record2,
+      prop4: ['updated2', 'patched2', 'upserted2'],
+    });
+  });
+});
+
+describe("conditional indexes", () => {
+  type IndexName = 'sparse1' | 'sparse2' | 'sparse3';
+  type ConditionArguments = {
+    index: IndexName;
+    attr: any;
+  }
+  type TestEntityCondition = (options: ConditionArguments) => boolean;
+  function createTestEntity(fn: TestEntityCondition) {
+    return new Entity(
+        {
+          model: {
+            entity: uuid(),
+            service: uuid(),
+            version: "1",
+          },
+          attributes: {
+            prop1: {
+              type: "string",
+            },
+            prop2: {
+              type: "string",
+            },
+            prop3: {
+              type: "string"
+            },
+            prop4: {
+              type: "string"
+            },
+            prop5: {
+              type: "string"
+            },
+            prop6: {
+              type: "string"
+            },
+            prop7: {
+              type: "string"
+            },
+            prop8: {
+              type: "string"
+            },
+            prop9: {
+              type: "string"
+            }
+          },
+          indexes: {
+            test: {
+              collection: 'testing',
+              pk: {
+                field: "pk",
+                composite: ["prop1"],
+              },
+              sk: {
+                field: "sk",
+                composite: ["prop2"],
+              },
+            },
+            sparse1: {
+              index: 'gsi1pk-gsi1sk-index',
+              condition: (attr) => {
+                return fn({index: 'sparse1', attr});
+              },
+              pk: {
+                field: "gsi1pk",
+                composite: ["prop1"],
+              },
+              sk: {
+                field: "gsi1sk",
+                composite: ["prop2"],
+              },
+            },
+            sparse2: {
+              index: 'gsi2pk-gsi2sk-index',
+              condition: (attr) => {
+                return fn({index: 'sparse2', attr});
+              },
+              pk: {
+                field: 'gsi2pk',
+                composite: ['prop2', 'prop3']
+              },
+              sk: {
+                field: 'gsi2sk',
+                composite: ['prop1', 'prop4', 'prop5']
+              }
+            },
+            sparse3: {
+              index: 'gsi3pk-gsi3sk-index',
+              condition: (attr) => {
+                return fn({index: 'sparse3', attr});
+              },
+              pk: {
+                field: 'gsi3pk',
+                composite: ['prop6', 'prop7']
+              },
+              sk: {
+                field: 'gsi3sk',
+                composite: ['prop8', 'prop9']
+              }
+            }
+          },
+        },
+        {table, client}
+    );
+  }
+
+  function createTestEntityData(): EntityRecord<ReturnType<typeof createTestEntity>> {
+    return {
+      prop1: uuid(),
+      prop2: uuid(),
+      prop3: uuid(),
+      prop4: uuid(),
+      prop5: uuid(),
+      prop6: uuid(),
+      prop7: uuid(),
+      prop8: uuid(),
+      prop9: uuid(),
+    }
+  }
+
+  function createConditionInvocationCollector(result: boolean) {
+    const invocations: ConditionArguments[] = [];
+    const condition: TestEntityCondition = (options) => {
+      invocations.push(options);
+      return result;
+    };
+
+    return {
+      condition,
+      invocations,
+    }
+  }
+
+  function createParamsCollector() {
+    let params: any;
+    return {
+      params: () => params,
+      logger: (event: ElectroEvent) => {
+        if (event.type === 'query') {
+          params = event.params;
+        }
+      }
+    }
+  }
+
+  it('should throw if condition is added to the main table index', () => {
+    expect(() => new Entity({
+      model: {
+        entity: 'test',
+        version: '1',
+        service: 'test',
+      },
+      attributes: {
+        prop1: {
+          type: 'string'
+        },
+        prop2: {
+          type: 'string'
+        }
+      },
+      indexes: {
+        record: {
+          condition: () => true,
+          pk: {
+            field: 'pk',
+            composite: ['prop1']
+          },
+          sk: {
+            field: 'sk',
+            composite: ['prop2']
+          }
+        }
+      }
+    })).to.throw("The index option 'condition' is only allowed on secondary indexes - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-option");
+  });
+
+  it('should prevent thrown exception from partial index update', () => {
+    let conditionValue = false;
+    const entity = new Entity({
+      model: {
+        entity: 'test',
+        version: '1',
+        service: 'test',
+      },
+      attributes: {
+        prop1: {
+          type: 'string'
+        },
+        prop2: {
+          type: 'string'
+        },
+        prop3: {
+          type: 'string'
+        },
+        prop4: {
+          type: 'string'
+        },
+        prop5: {
+          type: 'string'
+        }
+      },
+      indexes: {
+        record: {
+          pk: {
+            field: 'pk',
+            composite: ['prop1']
+          },
+          sk: {
+            field: 'sk',
+            composite: ['prop2']
+          }
+        },
+        secondary: {
+          condition: () => conditionValue,
+          index: 'gsi1pk-gsi1sk-index',
+          pk: {
+            field: 'gsi1pk',
+            composite: ['prop3']
+          },
+          sk: {
+            field: 'gsi1sk',
+            composite: ['prop4', 'prop5']
+          }
+        }
+      }
+    }, { table });
+
+    const prop1 = uuid();
+    const prop2 = uuid();
+    const prop3 = uuid();
+    const prop4 = uuid();
+    const prop5 = uuid();
+
+    conditionValue = false;
+    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).not.to.throw();
+
+    conditionValue = true;
+    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).to.throw('Incomplete composite attributes: Without the composite attributes "prop4" the following access patterns cannot be updated: "secondary". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes');
+  });
+
+  it('should check the index condition individually on the subject entity', () => {
+    const collector1 = createConditionInvocationCollector(true);
+    const collector2 = createConditionInvocationCollector(false);
+    const data1 = createTestEntityData();
+    const data2 = createTestEntityData();
+    const entity1 = createTestEntity(collector1.condition);
+    const entity2 = createTestEntity(collector2.condition);
+
+    createWriteTransaction({ entity1, entity2 }, ({ entity1, entity2 }) => [
+      entity1.put(data1).commit(),
+      entity2.put(data2).commit(),
+    ]).params();
+
+    for (const invocation of collector1.invocations) {
+      expect(invocation.attr).to.deep.equal(data1);
+    }
+
+    for (const invocation of collector2.invocations) {
+      expect(invocation.attr).to.deep.equal(data2);
+    }
+  });
+
+  type TestCase = [description: string, index: keyof (ReturnType<typeof createTestEntity>['query'])]
+  const tests: TestCase[] = [
+    ["an index with identical pk and sk composite attributes as the main table", 'sparse1'],
+    ["an index with at least the pk and sk composite attributes as the main table", 'sparse2'],
+    ["an index with distinct composite attributes", "sparse3"],
+  ];
+  for (const [description, index] of tests) {
+    describe(`when using a conditional index with ${description}`, () => {
+      for (const shouldWrite of [true, false]) {
+        const prefix = shouldWrite ? 'should' : 'should not';
+        it(`${prefix} write index with provided put attributes`, async () => {
+          const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
+          const { params, logger } = createParamsCollector();
+          const props = createTestEntityData();
+          const entity = createTestEntity(condition);
+          await entity.put(props).go({logger});
+
+          // @ts-ignore
+          const { data } = await entity.query[index](props).go();
+          if (shouldWrite) {
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal(props);
+            expect(params().Item[entity.schema.indexes[index].pk.field]).to.not.equal(undefined);
+            expect(params().Item[entity.schema.indexes[index].sk.field]).to.not.equal(undefined);
+          } else {
+            expect(data.length).to.equal(0);
+            expect(params().Item[entity.schema.indexes[index].pk.field]).to.equal(undefined);
+            expect(params().Item[entity.schema.indexes[index].sk.field]).to.equal(undefined);
+          }
+
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal(props);
+          }
+        });
+
+        it(`${prefix} write index with provided create attributes`, async () => {
+          const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
+          const { params, logger } = createParamsCollector();
+          const props = createTestEntityData();
+          const entity = createTestEntity(condition);
+          await entity.create(props).go({logger});
+          // @ts-ignore
+          const { data } = await entity.query[index](props).go();
+          if (shouldWrite) {
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal(props);
+            expect(params().Item[entity.schema.indexes[index].pk.field]).to.not.equal(undefined);
+            expect(params().Item[entity.schema.indexes[index].sk.field]).to.not.equal(undefined);
+          } else {
+            expect(data.length).to.equal(0);
+            expect(params().Item[entity.schema.indexes[index].pk.field]).to.equal(undefined);
+            expect(params().Item[entity.schema.indexes[index].sk.field]).to.equal(undefined);
+          }
+
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal(props);
+          }
+        });
+
+        it(`${prefix} write index with provided upsert attributes`, async () => {
+          const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
+          const { params, logger } = createParamsCollector();
+          const props = createTestEntityData();
+          const entity = createTestEntity(condition);
+          await entity.upsert(props).go({logger});
+          // @ts-ignore
+          const { data } = await entity.query[index](props).go();
+          if (shouldWrite) {
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal(props);
+          } else {
+            expect(data.length).to.equal(0);
+          }
+
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal(props);
+          }
+        });
+
+        it(`${prefix} write index with provided upsert attributes across multiple method calls`, async () => {
+          const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
+          const { params, logger } = createParamsCollector();
+          const props = createTestEntityData();
+          const entity = createTestEntity(condition);
+          await entity.upsert({})
+              .set({ prop1: props.prop1 })
+              .set({ prop2: props.prop2 })
+              .set({ prop3: props.prop3 })
+              .set({ prop4: props.prop4 })
+              .set({ prop5: props.prop5 })
+              .set({ prop6: props.prop6 })
+              .set({ prop7: props.prop7 })
+              .set({ prop8: props.prop8 })
+              .set({ prop9: props.prop9 })
+              .go({logger});
+          // @ts-ignore
+          const { data } = await entity.query[index](props).go();
+          if (shouldWrite) {
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal(props);
+          } else {
+            expect(data.length).to.equal(0);
+          }
+
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal(props);
+          }
+        });
+
+        if (index !== 'sparse1') {
+          it(`${prefix} write index with provided update attributes`, async () => {
+            const {condition, invocations} = createConditionInvocationCollector(shouldWrite);
+            const {params, logger} = createParamsCollector();
+            const {prop1, prop2, ...props} = createTestEntityData();
+            const entity = createTestEntity(condition);
+            await entity.update({prop1, prop2}).set(props).go({logger});
+            // @ts-ignore
+            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+            if (shouldWrite) {
+              expect(data.length).to.equal(1);
+              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+            } else {
+              expect(data.length).to.equal(0);
+            }
+
+            for (const invocation of invocations) {
+              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+            }
+          });
+
+          it(`${prefix} write index with provided update attributes spread across multiple method calls`, async () => {
+            const {condition, invocations} = createConditionInvocationCollector(shouldWrite);
+            const {params, logger} = createParamsCollector();
+            const {prop1, prop2, ...props} = createTestEntityData();
+            const entity = createTestEntity(condition);
+            await entity.update({prop1, prop2}).set({
+              prop3: props.prop3,
+              prop4: props.prop4,
+            }).set({
+              prop5: props.prop5,
+              prop6: props.prop6,
+            }).set({
+              prop7: props.prop7,
+              prop8: props.prop8,
+              prop9: props.prop9,
+            }).go({logger});
+            // @ts-ignore
+            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+            if (shouldWrite) {
+              expect(data.length).to.equal(1);
+              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+            } else {
+              expect(data.length).to.equal(0);
+            }
+
+            for (const invocation of invocations) {
+              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+            }
+          });
+
+          it(`${prefix} write index with provided patch attributes`, async () => {
+            const {params, logger} = createParamsCollector();
+            const {prop1, prop2, ...props} = createTestEntityData();
+            let invocations: ConditionArguments[] = [];
+            let allow = false;
+            const condition = (args: ConditionArguments) => {
+              invocations.push(args);
+              return allow;
+            }
+
+            const entity = createTestEntity(condition);
+            // don't write for sure on put, but then yield to test; patch requires an existing item
+            await entity.put({prop1, prop2}).go();
+
+            // reset "allow" and reset "invocations"
+            allow = shouldWrite;
+            invocations = [];
+
+            await entity.patch({prop1, prop2}).set(props).go({logger});
+            // @ts-ignore
+            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+            if (shouldWrite) {
+              expect(data.length).to.equal(1);
+              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+            } else {
+              expect(data.length).to.equal(0);
+            }
+
+            for (const invocation of invocations) {
+              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+            }
+          });
+        }
+
+        it(`${prefix} write index with provided batchPut attributes`, async () => {
+          const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
+          const { params, logger } = createParamsCollector();
+          const props = createTestEntityData();
+          const entity = createTestEntity(condition);
+          await entity.put([props]).go({logger});
+          // @ts-ignore
+          const { data } = await entity.query[index](props).go();
+          if (shouldWrite) {
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal(props);
+          } else {
+            expect(data.length).to.equal(0);
+          }
+
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal(props);
+          }
+        });
+
+        it(`${prefix} write index with provided transactWrite attributes`, async () => {
+          const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
+          const { params, logger } = createParamsCollector();
+          const props = createTestEntityData();
+          const entity = createTestEntity(condition);
+          await createWriteTransaction({ entity }, ({ entity }) => [
+            entity.put(props).commit(),
+          ]).go({logger});
+          // @ts-ignore
+          const { data } = await entity.query[index](props).go();
+          if (shouldWrite) {
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal(props);
+          } else {
+            expect(data.length).to.equal(0);
+          }
+
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal(props);
+          }
+        });
+      }
+    });
+  }
+});
+
+

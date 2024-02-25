@@ -14,11 +14,9 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import { Picture } from "@astrojs/image/components";
-
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will be referenced as _"Access Patterns"_.
 
-All DynamoDB table start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
+All DynamoDB tables start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
 
 In your model, the _Table Index_ this is expressed as an _Access Pattern_ _without_ an `index` property. For Secondary Indexes (both GSIs and LSIs), use the `index` property to define the name of the index as defined on your DynamoDB table.
 
@@ -57,8 +55,9 @@ indexes: {
 | Property       |                 Type                 | Required | Description                                                                                                                                                                                                                                                                                                                                 |
 | -------------- | :----------------------------------: | :------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `index`        |               `string`               |    no    | Required when the `Index` defined is a _Global/Local Secondary Index_; but is omitted for the table's primary index.                                                                                                                                                                                                                        |
-| `collection`   |         `string`, `string[]`         |    no    | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`. (see [Collections](/en/modeling/collections) below for more on this functionality). |
-| `type`         |       `isolated`, `clustered`        |    no    | Allows you to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (high volume of records per partition) or (entity relationships)[#clustered-indexes] (high relationship density per partition). When omitted, ElectroDB defaults to `isolation`.                                                     |
+| `collection`   |         `string`, `string[]`         |    no    | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`; See the page on [Collections](/en/modeling/collections) for more information on this functionality. |
+| `type`         |       `isolated`, `clustered`        |    no    | Allows you to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (high volume of records per partition) or [entity relationships](/en/modeling/indexes#isolated-indexes) (high relationship density per partition). When omitted, ElectroDB defaults to `isolation`.                                                     |
+| `condition`    |        `(attr: T) => boolean`        |    no    | A function that accepts all attributes provided every mutation method and returns a boolean value. When provided, ElectroDB will use this function to determine if an index should be be written given a provided set of attributes. This is useful for implementing "sparse" indexes, See the second on [Sparse Indexes](/en/modeling/indexes#sparse-indexes) below for more information on this functionality |
 | `pk`           |               `object`               |   yes    | Configuration for the pk of that index or table                                                                                                                                                                                                                                                                                             |
 | `pk.composite` |              `string[]`              |   yes    | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composing-attributes) below for more on this functionality).                                                                                                                                           |
 | `pk.template`  |               `string`               |    no    | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).                                                                                                                                                |
@@ -174,7 +173,9 @@ indexes: {
 
 ### Composite Attribute Templates
 
-In a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
+You may have found examples online that demonstrate how to make keys for Single Table Design. These patterns often look like `user#${id}` or `org#${id}`. ElectroDB creates keys similar to these patterns out of the box without the need for using "template". It is _highly_ recommended to only use "template" when you are attempting to use ElectroDB on an existing table/dataset. If you are starting a new project, you should not need to use "template", and using it will limit some protections and features granted by ElectroDB.
+
+With a Composite Template, you provide a formatted template for ElectroDB to use when making keys. Composite Attribute Templates allow for potential ElectroDB adoption on already established tables and records.
 
 Attributes are identified by surrounding the attribute with `${...}` braces. For example, the syntax `${storeId}` will match `storeId` attribute in the model.
 
@@ -209,10 +210,12 @@ Convention for a composing a key use the `#` symbol to separate attributes, and 
     locations: {
       pk: {
         field: "pk",
+        composite: ["storeId"],        
         template: "sid_${storeId}"
       },
       sk: {
         field: "sk",
+        composite: ["mallId", "buildingId", "unitId"],
         template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}"
       }
     }
@@ -242,39 +245,6 @@ Convention for a composing a key use the `#` symbol to separate attributes, and 
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gDoFPnAC8cVBQDuKdJiwAKBBzhq4ICI2oAuRKvWGK87HrIBZAIZUqAZRjCAwgFchIMgBoDhtQDcKUHzAvGYAjJ7ePnwBvsC0FGYg1lRCUBSMwGn00FhkkbhehpYwDMDMzjAieio+6qkUAJKM1ZG1athgCeQCUMCoAOZ5bXiFbUk2TS3Dhh1dZD19g63qBctq5cBUGQOT+tPqs2YLA0Ntq8POqJi7Nftwh92lJ2t4+aNqfdoAHlV7bVQQWjFYL8KZ3MAAazBd3UBGA1Ga5EhERhMwo4CoxTmQUYAH0ACQIepNXAo1FqHjgCBBSp6ADa8wcaSaZAAui9DOc7nwoX9yXCEUcIWTyZUMVjEsA8YTxlQSQBiZhSgkIDZbRYK5zKwmXa6MUnvVGUyA0roM2UsjzkNXbfqW8i6mAs9kw3AvN2cjgFRD3SzMGhmLAQZxQXEwP00XGoSwgChkPAASk4HHqfAMADowBVlJFiYiyLYACoAeQASsgAGoAQQAMgBVZAijTJXYWWs16v1xuGm0a-MAITrDRrABEGgA5ADinYbTcdrbr44ahZnjYMuATGf6EEUSaAA)
 
-### Templates and Composite Attribute Arrays
-
-The example above shows indexes defined only with the `template` property. This property alone is enough to work with ElectroDB, however it can be useful to also include a `composite` array with the names of the Composite Attributes included in the `template` string. Doing so achieves the following benefits:
-
-1. ElectroDB will enforce that the template you have supplied actually resolves to the composite attributes specified in the array.
-
-2. If you use ElectroDB with TypeScript, supplying the `composite` array will ensure the indexes' Composite Attributes are typed just the same as if you had not used a composite template.
-
-An example of using `template` while also using `composite`:
-
-#### Example
-
-```typescript
-{
-  indexes: {
-    locations: {
-      pk: {
-        field: "pk",
-        template: "sid_${storeId}"
-        composite: ["storeId"]
-      },
-      sk: {
-        field: "sk",
-        template: "mid_${mallId}#bid_${buildingId}#uid_${unitId}",
-        composite: ["mallId", "buildingId", "unitId"]
-      }
-    }
-  }
-}
-```
-
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3gDoFPnAC8cVBQDuKdJiwAKBBzhq4ICI2oAuRKvWGK87HrIBZAIZUqAZRjCAwgFchIMgBoDhtQDcKUHzAvGYAjJ7ePnwBvsC0FGYg1lRCUBSMwGn00FhkkbhehpYwDMDMzjAieio+6qkUAJKM1ZG1athgCeQCUMCoAOZ5bXiFbUk2TS3Dhh1dZD19g63qBctq5cBUGQOT+tPqs2YLA0Ntq8POqJi7Nftwh92lJ2t4+aNqfdoAHlV7bVQQWjFYL8KZ3MAAazBd3UBGA1Ga5EhERhMwo4CoxTmQUYAH0ACQIepNXAo1FqHjgCBBSp6ADa8wcaSaZAAui9DOc7nwoX9yXCEUcIWTyZUMVjEsA8YTxlQSQBiZhSgkIDZbRYK5zKwmXa6MUnvVGUyA0roM2UsjzkNXbfqW8i6mAs9kw3AvN2cjgFRD3SzMGhmLAQZxQXEwP00XGoSwgChkPAASk4HHqfAMADowBVlJFiYiyLYACoAeQASsgAGoAQQAMgBVZAijTJXYWWs16v1xuGm0a-MAITrDRrABEGgA5ADinYbTcdrbr44ahZnjYMuATGf6EEUSaAA)
-
 ### Composite Attribute and Index Considerations
 
 As described in the above two sections ([Composite Attributes](#composing-attributes), [Indexes](#indexes)), ElectroDB builds your keys using the attribute values defined in your model and provided on your query. Here are a few considerations to take into account when thinking about how to model your indexes:
@@ -291,7 +261,7 @@ ElectroDB supports many ways to map your indexes to your unique table. From inde
 
 ## Index Types
 
-ElectroDB helps manage your key structure, and works to abstract out the details of how your keys are created/formatted. Depending on your unique data set, you may need ElectroDB to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (i.e. high volume of records per partition) or (entity relationships)[/en/modeling/indexes#clustered-indexes] (i.e. high relationship density per partition).
+ElectroDB helps manage your key structure, and works to abstract out the details of how your keys are created/formatted. Depending on your unique data set, you may need ElectroDB to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (i.e. high volume of records per partition) or [entity relationships](/en/modeling/indexes#clustered-indexes) (i.e. high relationship density per partition).
 
 This option changes how ElectroDB formats your keys for storage, so it is an important consideration to make early in your modeling phase. As a result, this choice cannot be simply walked back without requiring a migration. The choice between `clustered` and `isolated` depends wholly on your unique dataset and access patterns.
 
@@ -318,13 +288,13 @@ The following images illustrate the difference between an `isolated` and `cluste
 In this example, the following records have the same partition key composite attributes.
 
 <div style={{ textAlign: "center" }}>
-  <img src="/isolated.png" style={{ maxWidth: "75%" }} />
+    <img src="/isolated.png" style={{ maxWidth: "75%" }} />
 </div>
 
 In an `isolated` index type, entities sharing a partition key do not co-mingle. While this is not ideal for querying across entities, it is ideal for efficently targetting (or "isolating") a single entity type.
 
 <div style={{ textAlign: "center" }}>
-  <img src="/clustered.png" style={{ maxWidth: "75%" }} />
+    <img src="/clustered.png" style={{ maxWidth: "75%" }} />
 </div>
 
 In a `clustered` index type, entities sharing a partition key intermix (or "cluster") together. This is ideal for querying across entities, but not ideal for efficently targetting a single entity type.
@@ -455,6 +425,173 @@ In the example below, we are configuring the casing ElectroDB will use individua
 |    `lower`    | Will convert the key to lowercase prior it its use     |
 |    `upper`    | Will convert the key to uppercase prior it its use     |
 |    `none`     | Will not perform any casing changes when building keys |
+
+### Sparse Indexes
+
+Sparse indexes are indexes that only contain a subset of the items on your main table. Sparse indexes are useful when you want to reduce the number of records your query must iterate over to find the records you are looking on a secondary index. By having fewer records on a secondary index, you can improve the performance of your queries and reduce the cost of your table.
+
+ElectroDB manages which secondary indexes are written to your DynamoDB table based on the attributes you provide to your query; this includes adding runtime constraints to ensure consistency between your index key values and its constituent composite attributes. If you wish to prevent an index from being written, you can define a `condition` callback on your index. The provided callback will be invoked at query-time, passed all attributes set on that mutation, and if it returns `false` the index will not be written to your DynamoDB table.
+
+#### Example
+
+This example shows an index called `myIndex` which has a provided `condition` callback. The `attr` argument contains all attributes provided to the mutation method. This includes all attributes for a `put`, `create`, or `upsert` and/or all attributes `set` on an `update` or `patch`.
+
+```typescript
+{
+  indexes: {
+    myIndex: {
+      index: "gsi1",
+      condition: (attr) => attr.type === "closed"
+      pk: {
+        field: "gsi1pk",
+        composite: ["organizationId"]
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["type", "accountId"]
+      }
+    }
+  }
+}
+```
+
+### Index Scoping
+
+When designing your indexes with Single Table Design, you may find yourself in a situation where the composite attributes of one entity's partition key are the same as another entity. While in most cases this would be a deliberate choice, made to more easily query across entities via [collections](en/modeling/collections), there are times when you might desire further isolation between entities. This scenario is most commonly encountered when the partition key of both entities are defined with an empty composite array. When further isolation between entities on an index is necessary, you can use the `scope` property on your index to directly impact how records are partitioned.
+
+> Note: the `scope` concept came from an RFC that was thoughtfully put forward by [@Sam3d](https://github.com/sam3d) in [Issue #290](https://github.com/tywalch/electrodb/issues/290), which can be read for further context. Thank you, Brooke for your contribution!
+
+The example below demonstrates how to use the `scope` property to isolate records on an index. In this example, the `organization` entity and the `user` entity both have a partition key of `pk` with an empty composite array. This means that both entities will share the same partition key, and will be stored in the same partition. This is not ideal, as it means that a query for users may also impact the throughput of a query for organizations. To isolate these entities, we can use the `scope` property on the index to further isolate the partition key for each entity.
+
+```typescript
+const organization = new Entity({
+  model: {
+    entity: "organization",
+    service: "taskapp",
+    version: "1"
+  },
+  attributes: {
+    organizationId: {
+      type: "string"
+    },
+  },
+  indexes: {
+    myIndex: {
+      scope: "org", // <--- Scope is set to unique value "org"
+      pk: {
+        field: "pk",
+        composite: []
+      },
+      sk: {
+        field: "sk",
+        composite: ["organizationId"]
+      }
+    }
+  }
+}, { table: "your_table_name" });
+
+const user = new Entity({
+  model: {
+    entity: "user",
+    service: "taskapp",
+    version: "1"
+  },
+  attributes: {
+    userId: {
+      type: "string"
+    },
+  },
+  indexes: {
+    myIndex: {
+      scope: "user", // <--- Scope is set to unique value "user"
+      pk: {
+        field: "pk",
+        composite: []
+      },
+      sk: {
+        field: "sk",
+        composite: ["userId"]
+      }
+    }
+  }
+}, { table: "your_table_name" });
+```
+
+Without the use of `scope`, both entities would share the same partition key and would be stored in the same partition. With the use of `scope`, each entity will have a unique partition key and will be stored in a separate partition.
+
+#### Without Scope
+
+Without a `scope` value, notice the partition key value at ExpressionAttributeValues[':pk'] is the same for both queries. This occurs when composite attribute array for a partition key matches between entities. Keep in mind that, in most cases, this is desirable because it helps enable querying across entities via [collections](/en/modeling/collections). However, in some cases, this may not be desirable which is why the `scope` property exists.
+
+```typescript
+organization.query.myIndex({organizationId: '123'}).go();
+// {
+//     "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
+//     "TableName": "your_table_name",
+//     "ExpressionAttributeNames": {
+//         "#pk": "pk",
+//         "#sk1": "sk"
+//     },
+//     "ExpressionAttributeValues": {
+//         ":pk": "$taskapp",
+//         ":sk1": "$organization_1#organizationid_org123"
+//     }
+// }
+```
+
+```typescript
+user.query.myIndex({userId: '456'}).go();
+// {
+//     "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
+//     "TableName": "your_table_name",
+//     "ExpressionAttributeNames": {
+//         "#pk": "pk",
+//         "#sk1": "sk"
+//     },
+//     "ExpressionAttributeValues": {
+//         ":pk": "$taskapp",
+//         ":sk1": "$organization_1#organizationid_org123"
+//     }
+// }
+```
+
+#### With Scope
+
+Notice the value at ExpressionAttributeValues[':pk'] now contains the `scope` value that was provided by the user on the index definition.
+
+```typescript
+organization.query.myIndex({organizationId: '123'}).go();
+// {
+//     "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
+//     "TableName": "your_table_name",
+//     "ExpressionAttributeNames": {
+//         "#pk": "pk",
+//         "#sk1": "sk"
+//     },
+//     "ExpressionAttributeValues": {
+//         ":pk": "$taskapp_org",
+//         ":sk1": "$organization_1#organizationid_org123"
+//     }
+// }
+```
+
+```typescript
+user.query.myIndex({userId: '456'}).go();
+// {
+//     "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
+//     "TableName": "your_table_name",
+//     "ExpressionAttributeNames": {
+//         "#pk": "pk",
+//         "#sk1": "sk"
+//     },
+//     "ExpressionAttributeValues": {
+//         ":pk": "$taskapp_user",
+//         ":sk1": "$organization_1#organizationid_org123"
+//     }
+// }
+```
+
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3jQA5gENUwAF4iMvOAF44qCgHcU6TFgAUCDnDggIjagC5EuvXArrspssLGTpwXmQA05vXwpQAbsFoUtjAifADWImBgbh5wPt58zqi2AIxk5rjuetIMwMwArjAUfKY6FnD24lIyqACSjCUxethggeQCUMCoQmllGemZcJ1GAB5FDWUgWDWoI+NlcHw8LbbCbnAA9OtwADwAtPtwAMpLFIN8CxTwMBBweeIAjnmnPiJUT+SrjXBgoXPzhMBqPVyD9ov89DxwBAEoVTABtAC6Xz6-zCf3mBEBVGBZDCYPBkMgMNacLsUFElScvDqZCR-1wMQZegZGUQcGCzBotiwEDyUAA+hyaPzUCIQBQyHgAJScbi8AS3LxQeSKFRqDDYbTmAxGKjoqwarC2PJK-Gebx+AJBELhSJm2LxRIpHp4AbZDr5QrFMxlE3eOroppYZZtHJdF3MgYowYzCijb2lCyTaazH3zRYQENkP1QNabHb7XZHE5nC5XG53YCPZ6vd7Z01fH6BiyYoG2UEDf6E6GYEl0+bRspotP-VvY2x4zvzbvE+H1-2MWnIxnpDispBC1pkHl8wUiTkUEViiXS2UVRzVAB01agWEvydjw205XJDiqiQDcAA5MkAEwAZi-aVLyECBNBlDgc2vJ5b3vKZH2fHNPy-AAWABWAA2IDcClECwJlIA)
 
 ### Attributes as Indexes
 

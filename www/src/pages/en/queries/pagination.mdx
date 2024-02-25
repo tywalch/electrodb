@@ -79,21 +79,6 @@ type GoResults = {
 };
 ```
 
-### Pager
-
-A notable Pagination Option is `pager`. This property defines the post-processing ElectroDB should perform on a returned `LastEvaluatedKey`, as well as how ElectroDB should interpret an _incoming_ pager, to use as an ExclusiveStartKey.
-
-**"raw":** The `"raw"` option returns the LastEvaluatedKey as it was returned by the DynamoDB DocClient.
-
-```json
-{
-  "pk": "$taskapp#country_united states of america#state_oregon",
-  "sk": "$offices_1#city_power#zip_34706#office_mobile branch",
-  "gsi1pk": "$taskapp#office_mobile branch",
-  "gsi1sk": "$workplaces#offices_1"
-}
-```
-
 ## Example
 
 Simple pagination example:

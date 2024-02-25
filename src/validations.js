@@ -119,6 +119,10 @@ const Index = {
           enum: ["string", "number"],
           required: false,
         },
+        scope: {
+          type: "string",
+          required: false,
+        }
       },
     },
     sk: {
@@ -170,6 +174,11 @@ const Index = {
       enum: ["clustered", "isolated"],
       required: false,
     },
+    condition: {
+      type: "any",
+      required: false,
+      format: "isFunction",
+    }
   },
 };
 
