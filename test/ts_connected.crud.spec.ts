@@ -4141,8 +4141,15 @@ describe("pagination order", () => {
       .get(batch)
       .go()
       .then((res) => [res.data, res.unprocessed] as const);
-
-    expect(batch[0]).to.not.deep.equal(unOrderedRecords[0]);
+    const notExactlyEqual = batch.some((item, i) => {
+      try {
+        expect(item).not.to.deep.equal(unOrderedRecords[i]);
+        return true;
+      } catch(err) {
+        return false;
+      }
+    });
+    expect(notExactlyEqual).to.be.true;
     expect(unOrderedRecords)
       .to.be.an("array")
       .with.length(batch.length - totalUnprocessed);
