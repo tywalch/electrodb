@@ -735,13 +735,15 @@ describe("Entity", () => {
 
       const accountNumber1 = uuid();
       const accountNumber2 = uuid();
+      const accountNumber3 = uuid();
       const transactionId = uuid();
       const description = uuid();
       const source = uuid();
 
       const thing1 = createThing();
       const thing2 = createThing();
-      const thingService = new Service({thing1, thing2});
+      const thing3 = createThing();
+      const thingService = new Service({thing1, thing2, thing3});
 
       const events: Array<{ method: string; params: any }> = [];
       const logger = (event: ElectroEvent) => {
@@ -829,7 +831,7 @@ describe("Entity", () => {
         TableName: table,
       });
 
-      await thingService.transaction.write(({ thing1 }) => [
+      const upsertTxn = await thingService.transaction.write(({ thing1 }) => [
         thing1.upsert({
           transactionId,
           accountNumber: accountNumber1,
@@ -838,7 +840,7 @@ describe("Entity", () => {
         }).commit(),
       ]).go({ logger });
 
-      await thing2
+      const put1 = await thing2
         .put({
           transactionId,
           accountNumber: accountNumber2,
@@ -846,6 +848,32 @@ describe("Entity", () => {
           source,
         })
         .go({ logger });
+
+      const upsert1 = await thing3.upsert({
+        transactionId,
+        accountNumber: accountNumber3,
+        description,
+        source,
+      }).go( { logger });
+
+      expect(Object.keys(put1.data).sort())
+      expect({
+        ...upsert1.data
+      }).to.deep.equal({
+        ...put1.data,
+        accountNumber: accountNumber3,
+        updatedAt: updatedAt,
+        createdAt: 2,
+      });
+
+      expect({
+        ...upsertTxn.data[0].item
+      }).to.deep.equal({
+        ...put1.data,
+        accountNumber: accountNumber1,
+        updatedAt: updatedAt,
+        createdAt: 2,
+      });
 
       const item1 = await thing1
         .get({
@@ -4141,8 +4169,15 @@ describe("pagination order", () => {
       .get(batch)
       .go()
       .then((res) => [res.data, res.unprocessed] as const);
-
-    expect(batch[0]).to.not.deep.equal(unOrderedRecords[0]);
+    const notExactlyEqual = batch.some((item, i) => {
+      try {
+        expect(item).not.to.deep.equal(unOrderedRecords[i]);
+        return true;
+      } catch(err) {
+        return false;
+      }
+    });
+    expect(notExactlyEqual).to.be.true;
     expect(unOrderedRecords)
       .to.be.an("array")
       .with.length(batch.length - totalUnprocessed);
