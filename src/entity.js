@@ -2926,11 +2926,13 @@ class Entity {
     return params;
   }
 
-  _expectIndexFacets(attributes, facets) {
+  _expectIndexFacets(attributes, facets, utilizeIncludedOnlyIndexes) {
     let [isIncomplete, { incomplete, complete }] = this._getIndexImpact(
       attributes,
       facets,
+      utilizeIncludedOnlyIndexes,
     );
+
     if (isIncomplete) {
       let incompleteAccessPatterns = incomplete.map(
         ({ index }) =>
@@ -2940,6 +2942,7 @@ class Entity {
         (result, { missing }) => [...result, ...missing],
         [],
       );
+
       throw new e.ElectroError(
         e.ErrorCodes.IncompleteCompositeAttributes,
         `Incomplete composite attributes: Without the composite attributes ${u.commaSeparatedString(
@@ -3043,10 +3046,13 @@ class Entity {
     let updateIndex = TableIndex;
     let keyTranslations = this.model.translations.keys;
     let keyAttributes = { ...sk, ...pk };
+
     let completeFacets = this._expectIndexFacets(
       { ...set },
       { ...keyAttributes },
+        true,
     );
+
     const removedKeyImpact = this._expectIndexFacets(
       { ...removed },
       { ...keyAttributes },
@@ -3059,6 +3065,7 @@ class Entity {
         sk: "sk",
       };
     }
+
     let composedKeys = this._makeKeysFromAttributes(
       completeFacets.impactedIndexTypes,
       { ...set, ...keyAttributes },
@@ -3103,8 +3110,13 @@ class Entity {
     return { indexKey, updatedKeys, deletedKeys };
   }
 
+  _indexConditionIsDefined(index) {
+    const definition = this.model.indexes[this.model.translations.indexes.fromIndexToAccessPattern[index]];
+    return definition && definition.conditionDefined;
+  }
+
   /* istanbul ignore next */
-  _getIndexImpact(attributes = {}, included = {}) {
+  _getIndexImpact(attributes = {}, included = {}, utilizeIncludedOnlyIndexes) {
     let includedFacets = Object.keys(included);
     let impactedIndexes = {};
     let skippedIndexes = new Set();
@@ -3114,14 +3126,44 @@ class Entity {
     for (let [attribute, indexes] of Object.entries(this.model.facets.byAttr)) {
       if (attributes[attribute] !== undefined) {
         facets[attribute] = attributes[attribute];
-        indexes.forEach(({ index, type }) => {
+        indexes.forEach((definition) => {
+          const { index, type } = definition;
             impactedIndexes[index] = impactedIndexes[index] || {};
             impactedIndexes[index][type] = impactedIndexes[index][type] || [];
             impactedIndexes[index][type].push(attribute);
             impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-            impactedIndexTypes[index][type] =
-                this.model.translations.keys[index][type];
+            impactedIndexTypes[index][type] = this.model.translations.keys[index][type];
         });
+      }
+    }
+
+    // this function is used to determine key impact for update `set`, update `delete`, and `put`. This block is currently only used by update `set`
+    if (utilizeIncludedOnlyIndexes) {
+      for (const [index, { pk, sk }] of Object.entries(this.model.facets.byIndex)) {
+        // The main table index is handled somewhere else (messy I know), and we only want to do this processing if an index condition is defined for backwards compatibility. Backwards compatibility is not required for this change, but I have paranoid concerns of breaking changes around sparse indexes.
+        if (index === TableIndex || !this._indexConditionIsDefined(index)) {
+          continue;
+        }
+
+        if (pk && pk.length && pk.every(attr => included[attr] !== undefined)) {
+          pk.forEach((attr) => {
+            facets[attr] = included[attr];
+          });
+          impactedIndexes[index] = impactedIndexes[index] || {};
+          impactedIndexes[index][KeyTypes.pk] = [...pk];
+          impactedIndexTypes[index] = impactedIndexTypes[index] || {};
+          impactedIndexTypes[index][KeyTypes.pk] = this.model.translations.keys[index][KeyTypes.pk];
+        }
+
+        if (sk && sk.length && sk.every(attr => included[attr] !== undefined)) {
+          sk.forEach((attr) => {
+            facets[attr] = included[attr];
+          });
+          impactedIndexes[index] = impactedIndexes[index] || {};
+          impactedIndexes[index][KeyTypes.sk] = [...sk];
+          impactedIndexTypes[index] = impactedIndexTypes[index] || {};
+          impactedIndexTypes[index][KeyTypes.sk] = this.model.translations.keys[index][KeyTypes.sk];
+        }
       }
     }
 
@@ -3134,7 +3176,8 @@ class Entity {
     }
 
     let incomplete = Object.entries(this.model.facets.byIndex)
-      .map(([index, { pk, sk }]) => {
+      .map(([index, definition]) => {
+        const { pk, sk } = definition;
         let impacted = impactedIndexes[index];
         let impact = {
           index,
@@ -3146,15 +3189,15 @@ class Entity {
           let missingSk =
             impacted[KeyTypes.sk] && impacted[KeyTypes.sk].length !== sk.length;
           if (missingPk) {
-            impact.missing = [
-              ...impact.missing,
-              ...pk.filter((attr) => {
-                return (
-                  !impacted[KeyTypes.pk].includes(attr) &&
-                  !includedFacets.includes(attr)
-                );
-              }),
-            ];
+              impact.missing = [
+                ...impact.missing,
+                ...pk.filter((attr) => {
+                  return (
+                    !impacted[KeyTypes.pk].includes(attr) &&
+                    !includedFacets.includes(attr)
+                  );
+                }),
+              ];
           }
           if (missingSk) {
             impact.missing = [
@@ -3170,6 +3213,7 @@ class Entity {
             completedIndexes.push(index);
           }
         }
+
         return impact;
       })
       .filter(({ missing }) => missing.length);
@@ -3944,7 +3988,9 @@ class Entity {
             `The index option 'condition' is only allowed on secondary indexes`,
         );
       }
+
       let indexCondition = index.condition || (() => true);
+      let conditionDefined = v.isFunction(index.condition)
 
       if (indexType === "clustered") {
         clusteredIndexes.add(accessPattern);
@@ -4054,6 +4100,7 @@ class Entity {
         index: indexName,
         scope: indexScope,
         condition: indexCondition,
+        conditionDefined: conditionDefined,
       };
 
       indexHasSubCollections[indexName] =
