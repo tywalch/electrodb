@@ -39,6 +39,11 @@ const u = require("./util");
 const e = require("./errors");
 const v = require("./validations");
 
+const ImpactedIndexTypeSource = {
+  composite: 'composite',
+  provided: 'provided',
+}
+
 class Entity {
   constructor(model, config = {}) {
     config = c.normalizeConfig(config);
@@ -2926,11 +2931,11 @@ class Entity {
     return params;
   }
 
-  _expectIndexFacets(attributes, facets, utilizeIncludedOnlyIndexes) {
+  _expectIndexFacets(attributes, facets, { utilizeIncludedOnlyIndexes, skipConditionCheck } = {}) {
     let [isIncomplete, { incomplete, complete }] = this._getIndexImpact(
       attributes,
       facets,
-      utilizeIncludedOnlyIndexes,
+        { utilizeIncludedOnlyIndexes, skipConditionCheck },
     );
 
     if (isIncomplete) {
@@ -3011,6 +3016,7 @@ class Entity {
     let completeFacets = this._expectIndexFacets(
       { ...setAttributes, ...validationAssistance },
       { ...keyAttributes },
+        { set },
     );
 
     // complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
@@ -3050,12 +3056,13 @@ class Entity {
     let completeFacets = this._expectIndexFacets(
       { ...set },
       { ...keyAttributes },
-        true,
+        { utilizeIncludedOnlyIndexes: true },
     );
 
     const removedKeyImpact = this._expectIndexFacets(
       { ...removed },
       { ...keyAttributes },
+        { skipConditionCheck: true }
     );
 
     // complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
@@ -3074,6 +3081,14 @@ class Entity {
     let updatedKeys = {};
     let deletedKeys = [];
     let indexKey = {};
+    for (const [indexName, condition] of Object.entries(completeFacets.conditions)) {
+      if (!condition) {
+        deletedKeys.push(this.model.translations.keys[indexName][KeyTypes.pk]);
+        if (this.model.translations.keys[indexName][KeyTypes.sk]) {
+            deletedKeys.push(this.model.translations.keys[indexName][KeyTypes.sk]);
+        }
+      }
+    }
     for (const keys of Object.values(removedKeyImpact.impactedIndexTypes)) {
       deletedKeys = deletedKeys.concat(Object.values(keys));
     }
@@ -3116,11 +3131,13 @@ class Entity {
   }
 
   /* istanbul ignore next */
-  _getIndexImpact(attributes = {}, included = {}, utilizeIncludedOnlyIndexes) {
+  _getIndexImpact(attributes = {}, included = {}, { utilizeIncludedOnlyIndexes, skipConditionCheck } = {}) {
     let includedFacets = Object.keys(included);
     let impactedIndexes = {};
+    let conditions = {};
     let skippedIndexes = new Set();
     let impactedIndexTypes = {};
+    let impactedIndexTypeSources = {};
     let completedIndexes = [];
     let facets = {};
     for (let [attribute, indexes] of Object.entries(this.model.facets.byAttr)) {
@@ -3133,6 +3150,9 @@ class Entity {
             impactedIndexes[index][type].push(attribute);
             impactedIndexTypes[index] = impactedIndexTypes[index] || {};
             impactedIndexTypes[index][type] = this.model.translations.keys[index][type];
+
+            impactedIndexTypeSources[index] = impactedIndexTypeSources[index] || {};
+            impactedIndexTypeSources[index][type] = ImpactedIndexTypeSource.provided;
         });
       }
     }
@@ -3153,25 +3173,56 @@ class Entity {
           impactedIndexes[index][KeyTypes.pk] = [...pk];
           impactedIndexTypes[index] = impactedIndexTypes[index] || {};
           impactedIndexTypes[index][KeyTypes.pk] = this.model.translations.keys[index][KeyTypes.pk];
+
+          // flagging the impactedIndexTypeSource as `composite` means the entire key is only being impacted because
+          // all composites are in `included`. This will help us determine if we need to evaluate the `condition`
+          // callback for the index. If both the `sk` and `pk` were impacted because of `included` then we can skip
+          // the condition check because the index doesn't need to be recalculated;
+          impactedIndexTypeSources[index] = impactedIndexTypeSources[index] || {};
+          impactedIndexTypeSources[index][KeyTypes.pk] = impactedIndexTypeSources[index][KeyTypes.pk] || ImpactedIndexTypeSource.composite;
         }
 
         if (sk && sk.length && sk.every(attr => included[attr] !== undefined)) {
-          sk.forEach((attr) => {
-            facets[attr] = included[attr];
-          });
-          impactedIndexes[index] = impactedIndexes[index] || {};
-          impactedIndexes[index][KeyTypes.sk] = [...sk];
-          impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-          impactedIndexTypes[index][KeyTypes.sk] = this.model.translations.keys[index][KeyTypes.sk];
+          if (this.model.translations.keys[index][KeyTypes.sk]) {
+            sk.forEach((attr) => {
+              facets[attr] = included[attr];
+            });
+            impactedIndexes[index] = impactedIndexes[index] || {};
+            impactedIndexes[index][KeyTypes.sk] = [...sk];
+            impactedIndexTypes[index] = impactedIndexTypes[index] || {};
+            impactedIndexTypes[index][KeyTypes.sk] = this.model.translations.keys[index][KeyTypes.sk];
+
+            // flagging the impactedIndexTypeSource as `composite` means the entire key is only being impacted because
+            // all composites are in `included`. This will help us determine if we need to evaluate the `condition`
+            // callback for the index. If both the `sk` and `pk` were impacted because of `included` then we can skip
+            // the condition check because the index doesn't need to be recalculated;
+            impactedIndexTypeSources[index] = impactedIndexTypeSources[index] || {};
+            impactedIndexTypeSources[index][KeyTypes.sk] = impactedIndexTypeSources[index][KeyTypes.sk] || ImpactedIndexTypeSource.composite;
+          }
         }
       }
     }
 
-    for (const indexName in impactedIndexes) {
-      const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexName];
-      const shouldMakeKeys = this.model.indexes[accessPattern].condition({ ...attributes, ...included });
-      if (!shouldMakeKeys) {
-        skippedIndexes.add(indexName);
+    // skipConditionCheck is being used by update `remove`. If Attributes are being removed then the condition check is
+    // meaningless and ElectroDB should uphold its obligation to keep keys and attributes in sync.
+    if (!skipConditionCheck) {
+      for (const indexName in impactedIndexes) {
+        // this condition is a bit complex. The for loop above will note an index as "impacted" if each composite in a
+        // `pk` or `sk` is in `included` (which is currently being passed main table facets). If the index was only
+        // marked as "impacted" because of this reason, we don't need to invoke the condition check. This is because
+        // a "false" value from the condition check will signal an index must be deleted. It would be unintuitive to the
+        // user to revaluate the condition everytime any update is done; better to only evaluate if they set a value on
+        // a composite attribute for that index.
+        if (impactedIndexTypeSources[indexName][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[indexName][KeyTypes.sk] === ImpactedIndexTypeSource.provided) {
+          const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexName];
+          let shouldMakeKeys = this.model.indexes[accessPattern].condition({...attributes, ...included});
+          if (!shouldMakeKeys) {
+            skippedIndexes.add(indexName);
+          }
+          conditions[indexName] = shouldMakeKeys;
+        } else {
+          skippedIndexes.add(indexName);
+        }
       }
     }
 
@@ -3219,7 +3270,7 @@ class Entity {
       .filter(({ missing }) => missing.length);
 
     let isIncomplete = !!incomplete.length;
-    let complete = { facets, indexes: completedIndexes, impactedIndexTypes };
+    let complete = { facets, indexes: completedIndexes, impactedIndexTypes, conditions };
     return [isIncomplete, { incomplete, complete }];
   }
 

@@ -3452,7 +3452,7 @@ describe("conditional indexes", () => {
         .params();
 
     expect(params1).to.deep.equal({
-      "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+      "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi3pk, #gsi3sk",
       "ExpressionAttributeNames": {
         "#pk": "pk",
         "#sk": "sk",
@@ -3463,6 +3463,8 @@ describe("conditional indexes", () => {
         "#gsi1sk": "gsi1sk",
         "#gsi2pk": "gsi2pk",
         "#gsi2sk": "gsi2sk",
+        "#gsi3pk": "gsi3pk",
+        "#gsi3sk": "gsi3sk",
         "#organizationId": "organizationId",
         "#id": "id",
         "#__edb_e__": "__edb_e__",
@@ -3496,7 +3498,7 @@ describe("conditional indexes", () => {
         .params();
 
     expect(params2).to.deep.equal({
-      "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+      "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi2pk, #gsi2sk",
       "ExpressionAttributeNames": {
         "#pk": "pk",
         "#sk": "sk",
@@ -3505,6 +3507,8 @@ describe("conditional indexes", () => {
         "#accountId": "accountId",
         "#updatedAt": "updatedAt",
         "#gsi1sk": "gsi1sk",
+        "#gsi2pk": "gsi2pk",
+        "#gsi2sk": "gsi2sk",
         "#gsi3pk": "gsi3pk",
         "#gsi3sk": "gsi3sk",
         "#organizationId": "organizationId",
