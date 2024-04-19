@@ -2,6 +2,7 @@ import { DocumentClient, PutItemInput } from "aws-sdk/clients/dynamodb";
 import { Entity, EntityRecord, createWriteTransaction, ElectroEvent } from "../";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
+import {listeners} from "cluster";
 const u = require("../src/util");
 
 type ConversionTest = {
@@ -2953,13 +2954,18 @@ describe("conditional indexes", () => {
   }
 
   function createConditionInvocationCollector(result: boolean) {
-    const invocations: ConditionArguments[] = [];
+    let invocations: ConditionArguments[] = [];
     const condition: TestEntityCondition = (options) => {
       invocations.push(options);
       return result;
     };
 
+    const clear = () => {
+      invocations.length = 0;
+    }
+
     return {
+      clear,
       condition,
       invocations,
     }
@@ -2976,6 +2982,472 @@ describe("conditional indexes", () => {
       }
     }
   }
+
+  function expectMessageIfThrows(fn: () => void, errMessage?: string) {
+    let error: Error | undefined = undefined;
+    try {
+      fn();
+    } catch(err: any) {
+      error = err;
+    }
+
+    if (errMessage && !error) {
+      throw new Error(`Expected error message: ${errMessage}`);
+    } else if (errMessage && error) {
+      expect(error.message).to.equal(errMessage);
+    } else if (error) {
+      throw error;
+    }
+  }
+
+  const formatShouldStatement = (should: boolean) => `should${should ? ' ' : ' not '}`;
+
+  describe('when all composite attributes are not provided', () => {
+    const conditionCases = [
+        ['condition is set and returns true', true],
+        ['condition is set and returns false', false],
+        ['condition is not set', undefined],
+    ];
+    for (const [variation, setCondition] of conditionCases) {
+      describe(`when composite attributes are distinct and ${variation}`, () => {
+        const collector = createConditionInvocationCollector(!!setCondition);
+        const conditionIsSet = setCondition !== undefined;
+        const condition = conditionIsSet ? collector.condition : undefined;
+        afterEach(() => {
+          collector.clear();
+        });
+        const entity = new Entity(
+            {
+              model: {
+                entity: uuid(),
+                service: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                },
+                prop2: {
+                  type: "string",
+                },
+                prop3: {
+                  type: "string"
+                },
+              },
+              indexes: {
+                test: {
+                  collection: 'testing',
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+                sparse1: {
+                  index: 'gsi1pk-gsi1sk-index',
+                  // @ts-ignore
+                  condition: condition,
+                  pk: {
+                    field: "gsi1pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "gsi1sk",
+                    composite: ["prop2"],
+                  },
+                }
+              },
+            },
+            {table, client}
+        );
+
+        it(`should not throw when impacting composite attributes on put`, () => {
+          expectMessageIfThrows(() => {
+            entity.put({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop3: uuid(),
+            }).params();
+          });
+
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+
+        it(`should not throw when impacting composite attributes on create`, () => {
+          expectMessageIfThrows(() => {
+            entity.create({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop3: uuid(),
+            }).params();
+          });
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+
+        it(`should not throw when impacting composite attributes on update`, () => {
+          expectMessageIfThrows(() => {
+            entity.update({ prop1: uuid(), prop2: uuid() })
+                .set({prop3: uuid()})
+                .params();
+          });
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+
+        it(`should not throw when impacting composite attributes on patch`, () => {
+          expectMessageIfThrows(() => {
+            entity.patch({ prop1: uuid(), prop2: uuid() })
+                .set({ prop3: uuid() })
+                .params();
+          });
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+
+        it(`should not throw when impacting composite attributes on upsert`, () => {
+          expectMessageIfThrows(() => {
+            entity.upsert({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop3: uuid(),
+            }).params();
+          });
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+      });
+
+      describe(`when composite attributes share main table index composites and ${variation}`, () => {
+        const collector = createConditionInvocationCollector(!!setCondition);
+        const conditionIsSet = setCondition !== undefined;
+        const condition = conditionIsSet ? collector.condition : undefined;
+        const entity = new Entity(
+            {
+              model: {
+                entity: uuid(),
+                service: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                },
+                prop2: {
+                  type: "string",
+                },
+                prop3: {
+                  type: "string"
+                },
+                prop4: {
+                  type: "string"
+                },
+                prop5: {
+                  type: "string"
+                },
+                prop6: {
+                  type: "string"
+                },
+              },
+              indexes: {
+                test: {
+                  collection: 'testing',
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+                sparse2: {
+                  index: 'gsi2pk-gsi2sk-index',
+                  // @ts-ignore
+                  condition: condition,
+                  pk: {
+                    field: 'gsi2pk',
+                    composite: ['prop2', 'prop3']
+                  },
+                  sk: {
+                    field: 'gsi2sk',
+                    composite: ['prop1', 'prop4', 'prop5']
+                  }
+                },
+              },
+            },
+            {table, client}
+        );
+
+        beforeEach(() => {
+          collector.clear();
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on put`, () => {
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+          expectMessageIfThrows(() => {
+            entity.put({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop4: uuid(),
+              prop5: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on put`, () => {
+          const message = conditionIsSet ? 'Oops!' : undefined;
+          expectMessageIfThrows(() => {
+            entity.put({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop6: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on create`, () => {
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+          expectMessageIfThrows(() => {
+            entity.create({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop3: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on create`, () => {
+          const message = conditionIsSet ? 'Oops!' : undefined;
+          expectMessageIfThrows(() => {
+            entity.create({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop6: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on update`, () => {
+          const message = conditionIsSet ? 'Oops!' : undefined;
+          expectMessageIfThrows(() => {
+            entity.update({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({ prop6: uuid() }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on update`, () => {
+          const message = conditionIsSet ? 'missing prop3' : undefined;
+          expectMessageIfThrows(() => {
+            entity.update({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({ prop4: uuid(), prop5: uuid() }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on patch`, () => {
+          const message = conditionIsSet ? 'missing prop4 and prop5' : undefined;
+          expectMessageIfThrows(() => {
+            entity.patch({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({prop3: uuid()}).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on patch`, () => {
+          const message = conditionIsSet ? 'Oops!' : undefined;
+          expectMessageIfThrows(() => {
+            entity.patch({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({prop6: uuid()}).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on upsert`, () => {
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+          expectMessageIfThrows(() => {
+            entity.upsert({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop5: uuid(),
+              prop4: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on upsert`, () => {
+          const message = conditionIsSet ? 'Oops!' : undefined;
+          expectMessageIfThrows(() => {
+            entity.upsert({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop6: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+      });
+
+      describe(`when composite attributes are identical to main table index and ${variation}`, () => {
+        const collector = createConditionInvocationCollector(!!setCondition);
+        const conditionIsSet = setCondition !== undefined;
+        const condition = conditionIsSet ? collector.condition : undefined;
+        const entity = new Entity(
+            {
+              model: {
+                entity: uuid(),
+                service: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                },
+                prop2: {
+                  type: "string",
+                },
+                prop3: {
+                  type: "string"
+                },
+                prop4: {
+                  type: "string"
+                },
+                prop5: {
+                  type: "string"
+                },
+                prop6: {
+                  type: "string"
+                },
+                prop7: {
+                  type: "string"
+                },
+                prop8: {
+                  type: "string"
+                },
+                prop9: {
+                  type: "string"
+                }
+              },
+              indexes: {
+                test: {
+                  collection: 'testing',
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+                sparse3: {
+                  index: 'gsi3pk-gsi3sk-index',
+                  // @ts-ignore
+                  condition: condition,
+                  pk: {
+                    field: 'gsi3pk',
+                    composite: ['prop6', 'prop7']
+                  },
+                  sk: {
+                    field: 'gsi3sk',
+                    composite: ['prop8', 'prop9']
+                  }
+                }
+              },
+            },
+            {table, client}
+        );
+
+        beforeEach(() => {
+          collector.clear();
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on put`, () => {
+          const message = conditionIsSet ? 'missing prop8 and prop9' : undefined;
+          expectMessageIfThrows(() => {
+            entity.put({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop7: uuid(),
+              prop6: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on create`, () => {
+          const message = conditionIsSet ? 'missing prop6 and prop7' : undefined;
+          expectMessageIfThrows(() => {
+            entity.create({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop8: uuid(),
+              prop9: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on update`, () => {
+          const message = conditionIsSet ? 'missing prop8 and prop9' : undefined;
+          expectMessageIfThrows(() => {
+            entity.update({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({prop6: uuid(), prop7: uuid()}).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on patch`, () => {
+          const message = conditionIsSet ? 'missing prop6 and prop7' : undefined;
+          expectMessageIfThrows(() => {
+            entity.patch({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({prop8: uuid(), prop9: uuid()}).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on upsert`, () => {
+          const message = conditionIsSet ? 'missing prop8 and prop9' : undefined;
+          expectMessageIfThrows(() => {
+            entity.upsert({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop6: uuid(),
+              prop7: uuid(),
+            }).params();
+          }, message);
+          expect(collector.invocations.length).to.equal(0);
+        });
+      });
+    }
+  });
 
   it('should throw if condition is added to the main table index', () => {
     expect(() => new Entity({
@@ -3096,8 +3568,8 @@ describe("conditional indexes", () => {
 
   type TestCase = [description: string, index: keyof (ReturnType<typeof createTestEntity>['query'])]
   const tests: TestCase[] = [
-    ["an index with identical pk and sk composite attributes as the main table", 'sparse1'],
-    ["an index with at least the pk and sk composite attributes as the main table", 'sparse2'],
+    ["an index with identical pk and sk composite attributes as the main table index", 'sparse1'],
+    ["an index with at least the pk and sk composite attributes as the main table index", 'sparse2'],
     ["an index with distinct composite attributes", "sparse3"],
   ];
   for (const [description, index] of tests) {

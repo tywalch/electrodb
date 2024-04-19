@@ -217,6 +217,12 @@ const ErrorCodes = {
     name: "InvalidIndexOption",
     sym: ErrorCode,
   },
+  IncompleteIndexCompositesAttributesProvided: {
+    code: 2012,
+    section: 'invalid-index-composite-attributes-provided',
+    name: 'IncompleteIndexCompositesAttributesProvided',
+    sym: ErrorCode,
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",

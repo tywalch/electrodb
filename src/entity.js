@@ -3019,6 +3019,16 @@ class Entity {
         { set },
     );
 
+    let deletedKeys = [];
+    for (const [indexName, condition] of Object.entries(completeFacets.conditions)) {
+      if (!condition) {
+        deletedKeys.push(this.model.translations.keys[indexName][KeyTypes.pk]);
+        if (this.model.translations.keys[indexName][KeyTypes.sk]) {
+          deletedKeys.push(this.model.translations.keys[indexName][KeyTypes.sk]);
+        }
+      }
+    }
+
     // complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
     if (!completeFacets.indexes.includes(updateIndex)) {
       completeFacets.indexes.push(updateIndex);
@@ -3045,7 +3055,7 @@ class Entity {
       }
     }
 
-    return { indexKey, updatedKeys, setAttributes };
+    return { indexKey, updatedKeys, setAttributes, deletedKeys };
   }
 
   _getUpdatedKeys(pk, sk, set, removed) {
@@ -3089,9 +3099,11 @@ class Entity {
         }
       }
     }
+
     for (const keys of Object.values(removedKeyImpact.impactedIndexTypes)) {
       deletedKeys = deletedKeys.concat(Object.values(keys));
     }
+
     for (let [index, keys] of Object.entries(composedKeys)) {
       let { pk, sk } = keyTranslations[index];
       if (index === updateIndex) {
@@ -3203,30 +3215,7 @@ class Entity {
       }
     }
 
-    // skipConditionCheck is being used by update `remove`. If Attributes are being removed then the condition check is
-    // meaningless and ElectroDB should uphold its obligation to keep keys and attributes in sync.
-    if (!skipConditionCheck) {
-      for (const indexName in impactedIndexes) {
-        // this condition is a bit complex. The for loop above will note an index as "impacted" if each composite in a
-        // `pk` or `sk` is in `included` (which is currently being passed main table facets). If the index was only
-        // marked as "impacted" because of this reason, we don't need to invoke the condition check. This is because
-        // a "false" value from the condition check will signal an index must be deleted. It would be unintuitive to the
-        // user to revaluate the condition everytime any update is done; better to only evaluate if they set a value on
-        // a composite attribute for that index.
-        if (impactedIndexTypeSources[indexName][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[indexName][KeyTypes.sk] === ImpactedIndexTypeSource.provided) {
-          const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[indexName];
-          let shouldMakeKeys = this.model.indexes[accessPattern].condition({...attributes, ...included});
-          if (!shouldMakeKeys) {
-            skippedIndexes.add(indexName);
-          }
-          conditions[indexName] = shouldMakeKeys;
-        } else {
-          skippedIndexes.add(indexName);
-        }
-      }
-    }
-
-    let incomplete = Object.entries(this.model.facets.byIndex)
+    let indexesWithMissingCompsites = Object.entries(this.model.facets.byIndex)
       .map(([index, definition]) => {
         const { pk, sk } = definition;
         let impacted = impactedIndexes[index];
@@ -3234,7 +3223,7 @@ class Entity {
           index,
           missing: []
         };
-        if (impacted && !skippedIndexes.has(index)) {
+        if (impacted) {
           let missingPk =
             impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
           let missingSk =
@@ -3266,8 +3255,45 @@ class Entity {
         }
 
         return impact;
-      })
-      .filter(({ missing }) => missing.length);
+      });
+
+      const incomplete = [];
+      for (const { index, missing } of indexesWithMissingCompsites) {
+        if (!missing.length) {
+          continue;
+        }
+
+        const indexConditionIsDefined = this._indexConditionIsDefined(index);
+
+        // - `skipConditionCheck` is being used by update `remove`. If Attributes are being removed then the condition check is
+        // meaningless and ElectroDB should uphold its obligation to keep keys and attributes in sync.
+        // - `index === TableIndex` is a special case where we don't need to check the condition because the main table is immutable
+        // - `!this._indexConditionIsDefined(index)` means the index doesn't have a condition defined, so we can skip the check
+        if (!skipConditionCheck || index === TableIndex || !indexConditionIsDefined) {
+          incomplete.push({ index, missing });
+        }
+
+        if (impactedIndexTypeSources[index][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[index][KeyTypes.sk] === ImpactedIndexTypeSource.provided) {
+          const missingAreProvidedInAttributesOrIncluded = missing
+              .every((attr) => attributes[attr] !== undefined || included[attr] !== undefined);
+
+          if (!missingAreProvidedInAttributesOrIncluded) {
+            throw new e.ElectroError(e.ErrorCodes.IncompleteIndexCompositesAttributesProvided, `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(missing)}`);
+          }
+
+          const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+          let shouldMakeKeys = !!this.model.indexes[accessPattern].condition({...attributes, ...included});
+
+          // this helps identify which conditions were checked (key is present) and what the result was (true/false)
+          conditions[index] = shouldMakeKeys;
+          if (!shouldMakeKeys) {
+            continue;
+          }
+        } else {
+          incomplete.push({ index, missing });
+        }
+      }
+
 
     let isIncomplete = !!incomplete.length;
     let complete = { facets, indexes: completedIndexes, impactedIndexTypes, conditions };
@@ -4040,8 +4066,8 @@ class Entity {
         );
       }
 
+      let conditionDefined = v.isFunction(index.condition);
       let indexCondition = index.condition || (() => true);
-      let conditionDefined = v.isFunction(index.condition)
 
       if (indexType === "clustered") {
         clusteredIndexes.add(accessPattern);
