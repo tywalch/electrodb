@@ -3831,6 +3831,7 @@ describe("index condition", () => {
         it(`${prefix} write index with provided patch attributes`, async () => {
           const {params, logger} = createParamsCollector();
           const {prop1, prop2, ...props} = createTestEntityData();
+          const { prop1: _, prop2: __, initialValues } = createTestEntityData();
           let invocations: ConditionArguments[] = [];
           let allow = false;
           const condition = (args: ConditionArguments) => {
@@ -3838,12 +3839,7 @@ describe("index condition", () => {
             return allow;
           }
 
-
-          const initialValues = {
-            prop3: 'val3',
-            prop4: 'val4',
-            prop5: 'val5',
-          };
+          expect(props).to.not.deep.equal(initialValues);
 
           const entity = createTestEntity(condition);
 

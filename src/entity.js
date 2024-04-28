@@ -3280,35 +3280,13 @@ class Entity {
       const memberAttributeIsImpacted = impactedIndexTypeSources[index] && (impactedIndexTypeSources[index][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[index][KeyTypes.sk] === ImpactedIndexTypeSource.provided);
       const allMemberAttributesAreIncluded = definition.all.every(({name}) => included[name] !== undefined);
 
-      // if any of the indexes were impacted because attributes were provided, then we need to check the condition.
-      // Indexes that were impacted only because of `included` don't need to be checked. An example of this is would be
-      // a secondary index that shares composite attributes with the main table index. These cases don't demonstrate an
-      // intent to recalculate the index. This assumes `included` is really only used by callers to denote values that
-      // are not changing.
-      // if (impactedIndexTypeSources[index] && (allMemberAttributesAreIncluded || impactedIndexTypeSources[index][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[index][KeyTypes.sk] === ImpactedIndexTypeSource.provided)) {
-      // there is truth somewhere in the middle between the above and below conditions
       if (memberAttributeIsImpacted || allMemberAttributesAreIncluded) {
-        // We want to make sure that there is actually at least one member attribute is impacted
-        // const memberAttributeIsBeingMutated = definition.all.find(({name}) => attributes[name] !== undefined);
-
-        // 5:38pm I just commented this out because we _should_ reevaluate the condition if all the attributes are in included
-        // if (memberAttributeIsImpacted || allMemberAttributesAreIncluded) {
-        //   incomplete.push({ index, missing });
-        //   conditions[index] = true;
-        //   continue;
-        // }
-
         // the `missing` array will contain indexes that are partially provided, but that leaves cases where the pk or
         // sk of an index is complete but not both. Both cases are invalid if `indexConditionIsDefined=true`
         const missingAttributes = definition.all
             .filter(({name}) => !attributes[name] && !included[name] || missing.includes(name))
             .map(({name}) => name)
-        // const missingAreProvidedInAttributesOrIncluded = missing.every((attr) => attributes[attr] !== undefined || included[attr] !== undefined);
-        // const missingPk = impactedIndexTypeSources[index][KeyTypes.pk] === undefined;
-        // const hasSkToMiss = !definition.hasSortKeys || (definition.sk && definition.sk.length > 0);
-        // const missingSk = hasSkToMiss && impactedIndexTypeSources[index][KeyTypes.sk] === undefined;
 
-        // if (!missingAreProvidedInAttributesOrIncluded || missingPk || missingSk) {
         if (missingAttributes.length) {
           // const missingAttributes = missing.length ? missing : definition.all.filter(({name}) => !attributes[name] || !included[name]);
           throw new e.ElectroError(e.ErrorCodes.IncompleteIndexCompositesAttributesProvided, `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(missingAttributes)}`);
