@@ -2359,14 +2359,14 @@ class Entity {
     // change, and we also don't want to trigger the setters of any attributes watching these facets because that
     // should only happen when an attribute is changed.
     const attributesAndComposites = {
-      ...update.composites,
+      // ...update.composites,
       ...preparedUpdateValues,
     };
     const {
       indexKey,
       updatedKeys,
       deletedKeys = [],
-    } = this._getUpdatedKeys(pk, sk, attributesAndComposites, removed);
+    } = this._getUpdatedKeys(pk, sk, attributesAndComposites, removed, update.composites);
     const accessPattern =
       this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
     for (const path of Object.keys(preparedUpdateValues)) {
@@ -2961,11 +2961,11 @@ class Entity {
     return complete;
   }
 
-  _makeKeysFromAttributes(indexes, attributes) {
+  _makeKeysFromAttributes(indexes, attributes, conditions) {
     let indexKeys = {};
     for (let [index, keyTypes] of Object.entries(indexes)) {
-      const shouldMakeKeys = this.model.indexes[this.model.translations.indexes.fromIndexToAccessPattern[index]].condition(attributes);
-      if (!shouldMakeKeys) {
+      const shouldMakeKeys = !this._indexConditionIsDefined(index) || conditions[index];
+      if (!shouldMakeKeys && index !== TableIndex) {
         continue;
       }
 
@@ -3058,14 +3058,14 @@ class Entity {
     return { indexKey, updatedKeys, setAttributes, deletedKeys };
   }
 
-  _getUpdatedKeys(pk, sk, set, removed) {
+  _getUpdatedKeys(pk, sk, set, removed, composite = {}) {
     let updateIndex = TableIndex;
     let keyTranslations = this.model.translations.keys;
     let keyAttributes = { ...sk, ...pk };
 
     let completeFacets = this._expectIndexFacets(
       { ...set },
-      { ...keyAttributes },
+      { ...composite, ...keyAttributes },
         { utilizeIncludedOnlyIndexes: true },
     );
 
@@ -3085,7 +3085,8 @@ class Entity {
 
     let composedKeys = this._makeKeysFromAttributes(
       completeFacets.impactedIndexTypes,
-      { ...set, ...keyAttributes },
+      { ...composite, ...set, ...keyAttributes },
+      completeFacets.conditions,
     );
 
     let updatedKeys = {};
@@ -3144,10 +3145,11 @@ class Entity {
 
   /* istanbul ignore next */
   _getIndexImpact(attributes = {}, included = {}, { utilizeIncludedOnlyIndexes, skipConditionCheck } = {}) {
+    // beware: this entire algorithm stinks and needs to be completely refactored. It does redundant loops and fights
+    // itself the whole way through. I'm sorry.
     let includedFacets = Object.keys(included);
     let impactedIndexes = {};
     let conditions = {};
-    let skippedIndexes = new Set();
     let impactedIndexTypes = {};
     let impactedIndexTypeSources = {};
     let completedIndexes = [];
@@ -3172,7 +3174,9 @@ class Entity {
     // this function is used to determine key impact for update `set`, update `delete`, and `put`. This block is currently only used by update `set`
     if (utilizeIncludedOnlyIndexes) {
       for (const [index, { pk, sk }] of Object.entries(this.model.facets.byIndex)) {
-        // The main table index is handled somewhere else (messy I know), and we only want to do this processing if an index condition is defined for backwards compatibility. Backwards compatibility is not required for this change, but I have paranoid concerns of breaking changes around sparse indexes.
+        // The main table index is handled somewhere else (messy I know), and we only want to do this processing if an
+        // index condition is defined for backwards compatibility. Backwards compatibility is not required for this
+        // change, but I have paranoid concerns of breaking changes around sparse indexes.
         if (index === TableIndex || !this._indexConditionIsDefined(index)) {
           continue;
         }
@@ -3215,12 +3219,13 @@ class Entity {
       }
     }
 
-    let indexesWithMissingCompsites = Object.entries(this.model.facets.byIndex)
+    let indexesWithMissingComposites = Object.entries(this.model.facets.byIndex)
       .map(([index, definition]) => {
         const { pk, sk } = definition;
         let impacted = impactedIndexes[index];
         let impact = {
           index,
+          definition,
           missing: []
         };
         if (impacted) {
@@ -3257,43 +3262,72 @@ class Entity {
         return impact;
       });
 
-      const incomplete = [];
-      for (const { index, missing } of indexesWithMissingCompsites) {
-        if (!missing.length) {
-          continue;
-        }
+    let incomplete = [];
+    for (const { index, missing, definition } of indexesWithMissingComposites) {
+      const indexConditionIsDefined = this._indexConditionIsDefined(index);
 
-        const indexConditionIsDefined = this._indexConditionIsDefined(index);
 
-        // - `skipConditionCheck` is being used by update `remove`. If Attributes are being removed then the condition check is
-        // meaningless and ElectroDB should uphold its obligation to keep keys and attributes in sync.
-        // - `index === TableIndex` is a special case where we don't need to check the condition because the main table is immutable
-        // - `!this._indexConditionIsDefined(index)` means the index doesn't have a condition defined, so we can skip the check
-        if (!skipConditionCheck || index === TableIndex || !indexConditionIsDefined) {
-          incomplete.push({ index, missing });
-        }
-
-        if (impactedIndexTypeSources[index][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[index][KeyTypes.sk] === ImpactedIndexTypeSource.provided) {
-          const missingAreProvidedInAttributesOrIncluded = missing
-              .every((attr) => attributes[attr] !== undefined || included[attr] !== undefined);
-
-          if (!missingAreProvidedInAttributesOrIncluded) {
-            throw new e.ElectroError(e.ErrorCodes.IncompleteIndexCompositesAttributesProvided, `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(missing)}`);
-          }
-
-          const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
-          let shouldMakeKeys = !!this.model.indexes[accessPattern].condition({...attributes, ...included});
-
-          // this helps identify which conditions were checked (key is present) and what the result was (true/false)
-          conditions[index] = shouldMakeKeys;
-          if (!shouldMakeKeys) {
-            continue;
-          }
-        } else {
-          incomplete.push({ index, missing });
-        }
+      // `skipConditionCheck` is being used by update `remove`. If Attributes are being removed then the condition check
+      // is meaningless and ElectroDB should uphold its obligation to keep keys and attributes in sync.
+      // `index === TableIndex` is a special case where we don't need to check the condition because the main table is immutable
+      // `!this._indexConditionIsDefined(index)` means the index doesn't have a condition defined, so we can skip the check
+      if (skipConditionCheck || index === TableIndex || !indexConditionIsDefined) {
+        incomplete.push({ index, missing });
+        conditions[index] = true;
+        continue;
       }
 
+      const memberAttributeIsImpacted = impactedIndexTypeSources[index] && (impactedIndexTypeSources[index][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[index][KeyTypes.sk] === ImpactedIndexTypeSource.provided);
+      const allMemberAttributesAreIncluded = definition.all.every(({name}) => included[name] !== undefined);
+
+      // if any of the indexes were impacted because attributes were provided, then we need to check the condition.
+      // Indexes that were impacted only because of `included` don't need to be checked. An example of this is would be
+      // a secondary index that shares composite attributes with the main table index. These cases don't demonstrate an
+      // intent to recalculate the index. This assumes `included` is really only used by callers to denote values that
+      // are not changing.
+      // if (impactedIndexTypeSources[index] && (allMemberAttributesAreIncluded || impactedIndexTypeSources[index][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[index][KeyTypes.sk] === ImpactedIndexTypeSource.provided)) {
+      // there is truth somewhere in the middle between the above and below conditions
+      if (memberAttributeIsImpacted || allMemberAttributesAreIncluded) {
+        // We want to make sure that there is actually at least one member attribute is impacted
+        // const memberAttributeIsBeingMutated = definition.all.find(({name}) => attributes[name] !== undefined);
+
+        // 5:38pm I just commented this out because we _should_ reevaluate the condition if all the attributes are in included
+        // if (memberAttributeIsImpacted || allMemberAttributesAreIncluded) {
+        //   incomplete.push({ index, missing });
+        //   conditions[index] = true;
+        //   continue;
+        // }
+
+        // the `missing` array will contain indexes that are partially provided, but that leaves cases where the pk or
+        // sk of an index is complete but not both. Both cases are invalid if `indexConditionIsDefined=true`
+        const missingAttributes = definition.all
+            .filter(({name}) => !attributes[name] && !included[name] || missing.includes(name))
+            .map(({name}) => name)
+        // const missingAreProvidedInAttributesOrIncluded = missing.every((attr) => attributes[attr] !== undefined || included[attr] !== undefined);
+        // const missingPk = impactedIndexTypeSources[index][KeyTypes.pk] === undefined;
+        // const hasSkToMiss = !definition.hasSortKeys || (definition.sk && definition.sk.length > 0);
+        // const missingSk = hasSkToMiss && impactedIndexTypeSources[index][KeyTypes.sk] === undefined;
+
+        // if (!missingAreProvidedInAttributesOrIncluded || missingPk || missingSk) {
+        if (missingAttributes.length) {
+          // const missingAttributes = missing.length ? missing : definition.all.filter(({name}) => !attributes[name] || !included[name]);
+          throw new e.ElectroError(e.ErrorCodes.IncompleteIndexCompositesAttributesProvided, `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(missingAttributes)}`);
+        }
+
+        const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
+        let shouldMakeKeys = !!this.model.indexes[accessPattern].condition({...attributes, ...included});
+
+        // this helps identify which conditions were checked (key is present) and what the result was (true/false)
+        conditions[index] = shouldMakeKeys;
+        if (!shouldMakeKeys) {
+          continue;
+        }
+      } else {
+        incomplete.push({ index, missing });
+      }
+    }
+
+    incomplete = incomplete.filter(({ missing }) => missing.length);
 
     let isIncomplete = !!incomplete.length;
     let complete = { facets, indexes: completedIndexes, impactedIndexTypes, conditions };

@@ -109,6 +109,7 @@ Update Methods are available **_after_** the `update()` or `patch()` method is c
 | [append](#update-method-append)     | `any` `list`                                                | `object`   |
 | [delete](#update-method-delete)     | `any` `set`                                                 | `object`   |
 | [data](#update-method-data)         | `*`                                                         | `callback` |
+| [composite](#composite)             | `number` `string` `boolean` `enum` `map` `list` `set` `any` | `object`                                                         | `object` |
 
 The methods above can be used (and reused) in a chain to form update parameters, when finished with `.params()` or `.go()` terminal. If your application requires the update method to return values related to the update (e.g. via the `ReturnValues` DocumentClient parameters), you can use the [Execution Option](#execution-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
 

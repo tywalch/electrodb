@@ -2,7 +2,6 @@ import { DocumentClient, PutItemInput } from "aws-sdk/clients/dynamodb";
 import { Entity, EntityRecord, createWriteTransaction, ElectroEvent } from "../";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
-import {listeners} from "cluster";
 const u = require("../src/util");
 
 type ConversionTest = {
@@ -2835,7 +2834,7 @@ describe('index scope', () => {
   });
 });
 
-describe("conditional indexes", () => {
+describe("index condition", () => {
   type IndexName = 'sparse1' | 'sparse2' | 'sparse3';
   type ConditionArguments = {
     index: IndexName;
@@ -2908,7 +2907,7 @@ describe("conditional indexes", () => {
             sparse2: {
               index: 'gsi2pk-gsi2sk-index',
               condition: (attr) => {
-                return fn({index: 'sparse2', attr});
+                return fn({ index: 'sparse2', attr });
               },
               pk: {
                 field: 'gsi2pk',
@@ -2958,7 +2957,7 @@ describe("conditional indexes", () => {
     const condition: TestEntityCondition = (options) => {
       invocations.push(options);
       return result;
-    };
+    }
 
     const clear = () => {
       invocations.length = 0;
@@ -3003,19 +3002,21 @@ describe("conditional indexes", () => {
   const formatShouldStatement = (should: boolean) => `should${should ? ' ' : ' not '}`;
 
   describe('when all composite attributes are not provided', () => {
-    const conditionCases = [
-        ['condition is set and returns true', true],
-        ['condition is set and returns false', false],
-        ['condition is not set', undefined],
-    ];
+    const conditionCases  = [
+        ['index condition is set and returns true', true],
+        ['index condition is set and returns false', false],
+        ['index condition is not set', undefined],
+    ] as const;
     for (const [variation, setCondition] of conditionCases) {
       describe(`when composite attributes are distinct and ${variation}`, () => {
         const collector = createConditionInvocationCollector(!!setCondition);
         const conditionIsSet = setCondition !== undefined;
         const condition = conditionIsSet ? collector.condition : undefined;
+
         afterEach(() => {
           collector.clear();
         });
+
         const entity = new Entity(
             {
               model: {
@@ -3086,6 +3087,7 @@ describe("conditional indexes", () => {
               prop3: uuid(),
             }).params();
           });
+
           if (conditionIsSet) {
             expect(collector.invocations.length).to.not.equal(0);
           }
@@ -3094,10 +3096,12 @@ describe("conditional indexes", () => {
         it(`should not throw when impacting composite attributes on update`, () => {
           expectMessageIfThrows(() => {
             entity.update({ prop1: uuid(), prop2: uuid() })
-                .set({prop3: uuid()})
+                .set({ prop3: uuid() })
                 .params();
           });
+
           if (conditionIsSet) {
+            // when condition is "fixed" this should be changed to "to.not.equal(0)"
             expect(collector.invocations.length).to.not.equal(0);
           }
         });
@@ -3108,7 +3112,9 @@ describe("conditional indexes", () => {
                 .set({ prop3: uuid() })
                 .params();
           });
+
           if (conditionIsSet) {
+            // when condition is "fixed" this should be changed to "to.not.equal(0)"
             expect(collector.invocations.length).to.not.equal(0);
           }
         });
@@ -3121,6 +3127,7 @@ describe("conditional indexes", () => {
               prop3: uuid(),
             }).params();
           });
+
           if (conditionIsSet) {
             expect(collector.invocations.length).to.not.equal(0);
           }
@@ -3131,6 +3138,7 @@ describe("conditional indexes", () => {
         const collector = createConditionInvocationCollector(!!setCondition);
         const conditionIsSet = setCondition !== undefined;
         const condition = conditionIsSet ? collector.condition : undefined;
+
         const entity = new Entity(
             {
               model: {
@@ -3193,7 +3201,10 @@ describe("conditional indexes", () => {
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on put`, () => {
-          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : `Incomplete composite attributes: Without the composite attributes "prop3" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+
           expectMessageIfThrows(() => {
             entity.put({
               prop1: uuid(),
@@ -3202,11 +3213,15 @@ describe("conditional indexes", () => {
               prop5: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on put`, () => {
-          const message = conditionIsSet ? 'Oops!' : undefined;
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : 'Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+
           expectMessageIfThrows(() => {
             entity.put({
               prop1: uuid(),
@@ -3214,11 +3229,15 @@ describe("conditional indexes", () => {
               prop6: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on create`, () => {
-          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : 'Incomplete composite attributes: Without the composite attributes "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+
           expectMessageIfThrows(() => {
             entity.create({
               prop1: uuid(),
@@ -3226,11 +3245,15 @@ describe("conditional indexes", () => {
               prop3: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on create`, () => {
-          const message = conditionIsSet ? 'Oops!' : undefined;
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : `Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+
           expectMessageIfThrows(() => {
             entity.create({
               prop1: uuid(),
@@ -3238,55 +3261,61 @@ describe("conditional indexes", () => {
               prop6: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on update`, () => {
-          const message = conditionIsSet ? 'Oops!' : undefined;
+          // Should remain after condition "fix", why throw when the user isn't trying to mutate prop3, prop4, or prop5.
+          // Throwing would hurt dx because prop1 and prop2 are main table composites (ie immutable) and their presence
+          // in the GSI would cause an undue burden on EVERY update operation.
+          const message = undefined; // conditionIsSet ? 'Oops!' : undefined;
+
           expectMessageIfThrows(() => {
             entity.update({
               prop1: uuid(),
               prop2: uuid(),
             }).set({ prop6: uuid() }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on update`, () => {
-          const message = conditionIsSet ? 'missing prop3' : undefined;
+          // this should throw when a condition cb is set because this would cause a recalculation but is missing prop3 for the index
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : undefined;
+
           expectMessageIfThrows(() => {
             entity.update({
               prop1: uuid(),
               prop2: uuid(),
             }).set({ prop4: uuid(), prop5: uuid() }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on patch`, () => {
-          const message = conditionIsSet ? 'missing prop4 and prop5' : undefined;
-          expectMessageIfThrows(() => {
-            entity.patch({
-              prop1: uuid(),
-              prop2: uuid(),
-            }).set({prop3: uuid()}).params();
-          }, message);
-          expect(collector.invocations.length).to.equal(0);
-        });
+          // this should throw when a condition cb is set because this would cause a recalculation but is missing prop4 and prop5 for the index
+          const message = setCondition === undefined ? undefined : 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided';
 
-        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on patch`, () => {
-          const message = conditionIsSet ? 'Oops!' : undefined;
           expectMessageIfThrows(() => {
             entity.patch({
               prop1: uuid(),
               prop2: uuid(),
-            }).set({prop6: uuid()}).params();
+            }).set({ prop3: uuid() }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on upsert`, () => {
-          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : `Incomplete composite attributes: Without the composite attributes "prop3" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+
           expectMessageIfThrows(() => {
             entity.upsert({
               prop1: uuid(),
@@ -3295,11 +3324,15 @@ describe("conditional indexes", () => {
               prop4: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on upsert`, () => {
-          const message = conditionIsSet ? 'Oops!' : undefined;
+          const message = conditionIsSet
+            ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+            : 'Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+
           expectMessageIfThrows(() => {
             entity.upsert({
               prop1: uuid(),
@@ -3307,6 +3340,7 @@ describe("conditional indexes", () => {
               prop6: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
       });
@@ -3385,8 +3419,29 @@ describe("conditional indexes", () => {
           collector.clear();
         });
 
+        it('should not throw when providing unused composite attributes on update', () => {
+          expectMessageIfThrows(() => {
+            entity.update({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).composite({ prop6: uuid(), prop7: uuid() }).params();
+            expect(collector.invocations.length).to.equal(0);
+          });
+        });
+
+        it('should not throw when providing unused composite attributes on update', () => {
+          expectMessageIfThrows(() => {
+            entity.patch({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).composite({prop8: uuid(), prop9: uuid()}).params();
+            expect(collector.invocations.length).to.equal(0);
+          });
+        });
+
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on put`, () => {
-          const message = conditionIsSet ? 'missing prop8 and prop9' : undefined;
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop8", "prop9" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
           expectMessageIfThrows(() => {
             entity.put({
               prop1: uuid(),
@@ -3395,11 +3450,13 @@ describe("conditional indexes", () => {
               prop6: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on create`, () => {
-          const message = conditionIsSet ? 'missing prop6 and prop7' : undefined;
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop6", "prop7" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
           expectMessageIfThrows(() => {
             entity.create({
               prop1: uuid(),
@@ -3408,33 +3465,77 @@ describe("conditional indexes", () => {
               prop9: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on update`, () => {
-          const message = conditionIsSet ? 'missing prop8 and prop9' : undefined;
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop8", "prop9" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
           expectMessageIfThrows(() => {
             entity.update({
               prop1: uuid(),
               prop2: uuid(),
             }).set({prop6: uuid(), prop7: uuid()}).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
+
+          expectMessageIfThrows(() => {
+            entity.update({ prop1: uuid(), prop2: uuid() })
+                .set({ prop6: uuid(), prop7: uuid() })
+                .composite({ prop8: uuid(), prop9: uuid() })
+                .params();
+          });
+
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.equal(1);
+            for (let i = 0; i < collector.invocations.length; i++) {
+              const prev = collector.invocations[i - 1];
+              const invocation = collector.invocations[i];
+              expect(invocation).to.have.keys('prop1', 'prop2', 'prop6', 'prop7', 'prop8', 'prop9');
+              if (prev) {
+                expect(prev).to.deep.equal(invocation)
+              }
+            }
+          }
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on patch`, () => {
-          const message = conditionIsSet ? 'missing prop6 and prop7' : undefined;
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop6", "prop7" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
           expectMessageIfThrows(() => {
             entity.patch({
               prop1: uuid(),
               prop2: uuid(),
             }).set({prop8: uuid(), prop9: uuid()}).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
+
+          expectMessageIfThrows(() => {
+            entity.patch({ prop1: uuid(), prop2: uuid() })
+                .set({ prop8: uuid(), prop9: uuid() })
+                .composite({ prop6: uuid(), prop7: uuid() })
+                .params();
+          });
+
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.equal(1);
+            for (let i = 0; i <  collector.invocations.length; i++) {
+              const prev = collector.invocations[i - 1];
+              const invocation = collector.invocations[i];
+              expect(invocation).to.have.keys('prop1', 'prop2', 'prop6', 'prop7', 'prop8', 'prop9');
+              if (prev) {
+                expect(prev).to.deep.equal(invocation)
+              }
+            }
+          }
         });
 
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on upsert`, () => {
-          const message = conditionIsSet ? 'missing prop8 and prop9' : undefined;
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop8", "prop9" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
           expectMessageIfThrows(() => {
             entity.upsert({
               prop1: uuid(),
@@ -3443,6 +3544,7 @@ describe("conditional indexes", () => {
               prop7: uuid(),
             }).params();
           }, message);
+
           expect(collector.invocations.length).to.equal(0);
         });
       });
@@ -3538,10 +3640,10 @@ describe("conditional indexes", () => {
     const prop5 = uuid();
 
     conditionValue = false;
-    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).not.to.throw();
+    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).to.throw('Incomplete composite attributes provided for index gsi1pk-gsi1sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided');
 
     conditionValue = true;
-    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).to.throw('Incomplete composite attributes: Without the composite attributes "prop4" the following access patterns cannot be updated: "secondary". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes');
+    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).to.throw('Incomplete composite attributes provided for index gsi1pk-gsi1sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided');
   });
 
   it('should check the index condition individually on the subject entity', () => {
@@ -3736,26 +3838,40 @@ describe("conditional indexes", () => {
             return allow;
           }
 
+
+          const initialValues = {
+            prop3: 'val3',
+            prop4: 'val4',
+            prop5: 'val5',
+          };
+
           const entity = createTestEntity(condition);
-          // don't write for sure on put, but then yield to test; patch requires an existing item
-          await entity.put({prop1, prop2}).go();
+
+          await entity.put({ prop1, prop2, ...initialValues }).go();
 
           // "reset" `allow` and "reset" `invocations`
           allow = shouldWrite;
           invocations = [];
 
-          await entity.patch({prop1, prop2}).set(props).go({logger});
+          // record should exist with temp values
+          const results = await entity.query[index]({ prop1, prop2, ...initialValues }).go();
+          expect(results.data.length).to.equal(1);
+          expect(results.data[0]).to.deep.equal({ prop1, prop2, ...initialValues });
+
+          await entity.patch({ prop1, prop2 }).set(props).go({ logger });
           // @ts-ignore
           const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
           if (shouldWrite) {
+            // patch should have added item to index
             expect(data.length).to.equal(1);
             expect(data[0]).to.deep.equal({prop1, prop2, ...props});
           } else {
+            // patch should have removed item from index
             expect(data.length).to.equal(0);
           }
 
           for (const invocation of invocations) {
-            expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+            expect(invocation.attr).to.deep.equal({ prop1, prop2, ...props });
           }
         });
 
