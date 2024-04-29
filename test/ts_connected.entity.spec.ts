@@ -4025,259 +4025,419 @@ describe("index condition", () => {
     });
   }
 
-  it('should fix gh issue 366', async () => {
-    const entityName = uuid();
-    const updatedAt = new Date().toJSON();
-    const createdAt = new Date().toJSON();
-    const Thing = new Entity(
-        {
-          model: {
-            service: 'test',
-            entity: entityName,
-            version: '1'
-          },
-          attributes: {
-            id: {
-              type: 'string',
-              required: true,
-              readOnly: true
+  describe('github issue 366', () => {
+    it('should recreate exact model from issue', async () => {
+
+      const table = "your_table_name";
+
+      const entry = new Entity(
+          {
+            model: {
+              service: 'test',
+              entity: 'test',
+              version: '1'
             },
-            organizationId: {
-              type: 'string',
-              required: true,
-              readOnly: true
+            attributes: {
+              id: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              organizationId: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              accountId: {
+                type: 'string'
+              },
+              createdAt: {
+                type: 'string',
+                readOnly: true,
+                required: true,
+                default: () => new Date().toJSON(),
+                set: () => new Date().toJSON()
+              },
+              updatedAt: {
+                type: 'string',
+                watch: '*',
+                required: true,
+                default: () => new Date().toJSON(),
+                set: () => new Date().toJSON()
+              },
+              settledAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              effectiveAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              type: {
+                type: 'string',
+                required: true
+              },
+              category: {
+                type: 'string',
+                required: true
+              },
+              amount: {
+                type: 'string',
+                required: true
+              },
+              description: {
+                type: 'string'
+              }
             },
-            accountId: {
-              type: 'string'
-            },
-            createdAt: {
-              type: 'string',
-              readOnly: true,
-              required: true,
-              default: () => createdAt,
-              set: () => createdAt
-            },
-            updatedAt: {
-              type: 'string',
-              watch: '*',
-              required: true,
-              default: () => updatedAt,
-              set: () => updatedAt
-            },
-            settledAt: {
-              type: 'string',
-              default: 'n/a'
-            },
-            effectiveAt: {
-              type: 'string',
-              default: 'n/a'
-            },
-            type: {
-              type: 'string',
-              required: true
-            },
-            category: {
-              type: 'string',
-              required: true
-            },
-            amount: {
-              type: 'string',
-              required: true
-            },
-            description: {
-              type: 'string'
+            indexes: {
+              entries: {
+                pk: {
+                  field: 'pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'sk',
+                  composite: ['id']
+                }
+              },
+              entriesByAccount: {
+                index: 'gsi1pk-gsi1sk-index',
+                pk: {
+                  field: 'gsi1pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi1sk',
+                  composite: ['accountId', 'id']
+                }
+              },
+              entriesBySettledDate: {
+                index: 'gsi2pk-gsi2sk-index',
+                condition: (attr) => attr.settledAt !== 'n/a',
+                pk: {
+                  field: 'gsi2pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi2sk',
+                  composite: ['accountId', 'settledAt']
+                }
+              },
+              entriesByEffectiveDate: {
+                index: 'gsi3pk-gsi3sk-index',
+                condition: (attr) => attr.effectiveAt !== 'n/a',
+                pk: {
+                  field: 'gsi3pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi3sk',
+                  composite: ['accountId', 'effectiveAt']
+                }
+              }
             }
           },
-          indexes: {
-            entries: {
-              pk: {
-                field: 'pk',
-                composite: ['organizationId']
-              },
-              sk: {
-                field: 'sk',
-                composite: ['id']
-              }
-            },
-            entriesByAccount: {
-              index: 'gsi1pk-gsi1sk-index',
-              pk: {
-                field: 'gsi1pk',
-                composite: ['organizationId']
-              },
-              sk: {
-                field: 'gsi1sk',
-                composite: ['accountId', 'id']
-              }
-            },
-            entriesBySettledDate: {
-              index: 'gsi2pk-gsi2sk-index',
-              condition: (attr) => attr.settledAt !== 'n/a',
-              pk: {
-                field: 'gsi2pk',
-                composite: ['organizationId']
-              },
-              sk: {
-                field: 'gsi2sk',
-                composite: ['settledAt']
-              }
-            },
-            entriesByEffectiveDate: {
-              index: 'gsi3pk-gsi3sk-index',
-              condition: (attr) => attr.effectiveAt !== 'n/a',
-              pk: {
-                field: 'gsi3pk',
-                composite: ['organizationId']
-              },
-              sk: {
-                field: 'gsi3sk',
-                composite: ['effectiveAt']
-              }
-            }
-          }
+          { table }
+      );
+
+
+      const params = entry
+          .patch({ id: '123', organizationId: '123' })
+          .set({ effectiveAt: 'n/a', accountId: "123", settledAt: "today" })
+          .params();
+
+      // params set `gsi1sk` and `gsi2pk` fields and remove `gsi3pk` and `gsi3sk` fields
+      expect(params).to.deep.equal({
+        UpdateExpression: 'SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi3pk, #gsi3sk',
+        ExpressionAttributeNames: {
+          '#pk': 'pk',
+          '#sk': 'sk',
+          '#effectiveAt': 'effectiveAt',
+          '#accountId': 'accountId',
+          '#settledAt': 'settledAt',
+          '#updatedAt': 'updatedAt',
+          '#gsi1sk': 'gsi1sk',
+          '#gsi2pk': 'gsi2pk',
+          '#gsi2sk': 'gsi2sk',
+          '#gsi3pk': 'gsi3pk',
+          '#gsi3sk': 'gsi3sk',
+          '#organizationId': 'organizationId',
+          '#id': 'id',
+          '#__edb_e__': '__edb_e__',
+          '#__edb_v__': '__edb_v__'
         },
-        { table, client }
-    );
-
-    // with `effectiveAt` set to 'n/a' and `settledAt` set to 'today' the `entriesByEffectiveDate` index should not be written
-    const params1 = Thing.patch({ id: '123', organizationId: '123' })
-        .set({ effectiveAt: 'n/a', accountId: '123', settledAt: 'today' })
-        .params();
-
-    expect(params1).to.deep.equal({
-      "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi3pk, #gsi3sk",
-      "ExpressionAttributeNames": {
-        "#pk": "pk",
-        "#sk": "sk",
-        "#accountId": "accountId",
-        "#settledAt": "settledAt",
-        "#updatedAt": "updatedAt",
-        "#effectiveAt": "effectiveAt",
-        "#gsi1sk": "gsi1sk",
-        "#gsi2pk": "gsi2pk",
-        "#gsi2sk": "gsi2sk",
-        "#gsi3pk": "gsi3pk",
-        "#gsi3sk": "gsi3sk",
-        "#organizationId": "organizationId",
-        "#id": "id",
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__"
-      },
-      "ExpressionAttributeValues": {
-        ":accountId_u0": "123",
-        ":settledAt_u0": "today",
-        ":updatedAt_u0": updatedAt,
-        ":effectiveAt_u0": "n/a",
-        ":gsi1sk_u0": `$${entityName}_1#accountid_123#id_123`,
-        // gsi2pk_u0 was not set prior to this fix
-        ":gsi2pk_u0": "$test#organizationid_123",
-        ":gsi2sk_u0": `$${entityName}_1#settledat_today`,
-        ":organizationId_u0": "123",
-        ":id_u0": "123",
-        ":__edb_e___u0": `${entityName}`,
-        ":__edb_v___u0": "1"
-      },
-      "TableName": "electro",
-      "Key": {
-        "pk": "$test#organizationid_123",
-        "sk": `$${entityName}_1#id_123`
-      },
-      "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk)"
+        ExpressionAttributeValues: {
+          ':effectiveAt_u0': 'n/a',
+          ':accountId_u0': '123',
+          ':settledAt_u0': 'today',
+          ':updatedAt_u0': '2024-04-29T17:09:30.687Z',
+          ':gsi1sk_u0': '$test_1#accountid_123#id_123',
+          ':gsi2pk_u0': '$test#organizationid_123',
+          ':gsi2sk_u0': '$test_1#accountid_123#settledat_today',
+          ':organizationId_u0': '123',
+          ':id_u0': '123',
+          ':__edb_e___u0': 'test',
+          ':__edb_v___u0': '1'
+        },
+        TableName: 'your_table_name',
+        Key: { pk: '$test#organizationid_123', sk: '$test_1#id_123' },
+        ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)'
+      });
     });
+    it('should fix gh issue 366', async () => {
+      const entityName = uuid();
+      const updatedAt = new Date().toJSON();
+      const createdAt = new Date().toJSON();
+      const Thing = new Entity(
+          {
+            model: {
+              service: 'test',
+              entity: entityName,
+              version: '1'
+            },
+            attributes: {
+              id: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              organizationId: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              accountId: {
+                type: 'string'
+              },
+              createdAt: {
+                type: 'string',
+                readOnly: true,
+                required: true,
+                default: () => createdAt,
+                set: () => createdAt
+              },
+              updatedAt: {
+                type: 'string',
+                watch: '*',
+                required: true,
+                default: () => updatedAt,
+                set: () => updatedAt
+              },
+              settledAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              effectiveAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              type: {
+                type: 'string',
+                required: true
+              },
+              category: {
+                type: 'string',
+                required: true
+              },
+              amount: {
+                type: 'string',
+                required: true
+              },
+              description: {
+                type: 'string'
+              }
+            },
+            indexes: {
+              entries: {
+                pk: {
+                  field: 'pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'sk',
+                  composite: ['id']
+                }
+              },
+              entriesByAccount: {
+                index: 'gsi1pk-gsi1sk-index',
+                pk: {
+                  field: 'gsi1pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi1sk',
+                  composite: ['accountId', 'id']
+                }
+              },
+              entriesBySettledDate: {
+                index: 'gsi2pk-gsi2sk-index',
+                condition: (attr) => attr.settledAt !== 'n/a',
+                pk: {
+                  field: 'gsi2pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi2sk',
+                  composite: ['settledAt']
+                }
+              },
+              entriesByEffectiveDate: {
+                index: 'gsi3pk-gsi3sk-index',
+                condition: (attr) => attr.effectiveAt !== 'n/a',
+                pk: {
+                  field: 'gsi3pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi3sk',
+                  composite: ['effectiveAt']
+                }
+              }
+            }
+          },
+          {table, client}
+      );
 
-    // with `effectiveAt` set to 'today' and `settledAt` set to 'n/a' the `entriesBySettledDate` index should not be written
-    const params2 = Thing.patch({ id: '123', organizationId: '123' })
-        .set({ effectiveAt: 'today', accountId: '123', settledAt: 'n/a' })
-        .params();
+      // with `effectiveAt` set to 'n/a' and `settledAt` set to 'today' the `entriesByEffectiveDate` index should not be written
+      const params1 = Thing.patch({id: '123', organizationId: '123'})
+          .set({effectiveAt: 'n/a', accountId: '123', settledAt: 'today'})
+          .params();
 
-    expect(params2).to.deep.equal({
-      "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi2pk, #gsi2sk",
-      "ExpressionAttributeNames": {
-        "#pk": "pk",
-        "#sk": "sk",
-        "#effectiveAt": "effectiveAt",
-        "#settledAt": "settledAt",
-        "#accountId": "accountId",
-        "#updatedAt": "updatedAt",
-        "#gsi1sk": "gsi1sk",
-        "#gsi2pk": "gsi2pk",
-        "#gsi2sk": "gsi2sk",
-        "#gsi3pk": "gsi3pk",
-        "#gsi3sk": "gsi3sk",
-        "#organizationId": "organizationId",
-        "#id": "id",
-        "#__edb_e__": "__edb_e__",
-        "#__edb_v__": "__edb_v__"
-      },
-      "ExpressionAttributeValues": {
-        ":effectiveAt_u0": "today",
-        ":settledAt_u0": "n/a",
-        ":accountId_u0": "123",
-        ":updatedAt_u0": updatedAt,
-        ":gsi1sk_u0": `$${entityName}_1#accountid_123#id_123`,
-        // gsi3pk_u0 was not set prior to this fix
-        ":gsi3pk_u0": "$test#organizationid_123",
-        ":gsi3sk_u0": `$${entityName}_1#effectiveat_today`,
-        ":organizationId_u0": "123",
-        ":id_u0": "123",
-        ":__edb_e___u0": `${entityName}`,
-        ":__edb_v___u0": "1"
-      },
-      "TableName": "electro",
-      "Key": {
-        "pk": "$test#organizationid_123",
-        "sk": `$${entityName}_1#id_123`
-      },
-      "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk)"
+      expect(params1).to.deep.equal({
+        "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi3pk, #gsi3sk",
+        "ExpressionAttributeNames": {
+          "#pk": "pk",
+          "#sk": "sk",
+          "#accountId": "accountId",
+          "#settledAt": "settledAt",
+          "#updatedAt": "updatedAt",
+          "#effectiveAt": "effectiveAt",
+          "#gsi1sk": "gsi1sk",
+          "#gsi2pk": "gsi2pk",
+          "#gsi2sk": "gsi2sk",
+          "#gsi3pk": "gsi3pk",
+          "#gsi3sk": "gsi3sk",
+          "#organizationId": "organizationId",
+          "#id": "id",
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__"
+        },
+        "ExpressionAttributeValues": {
+          ":accountId_u0": "123",
+          ":settledAt_u0": "today",
+          ":updatedAt_u0": updatedAt,
+          ":effectiveAt_u0": "n/a",
+          ":gsi1sk_u0": `$${entityName}_1#accountid_123#id_123`,
+          // gsi2pk_u0 was not set prior to this fix
+          ":gsi2pk_u0": "$test#organizationid_123",
+          ":gsi2sk_u0": `$${entityName}_1#settledat_today`,
+          ":organizationId_u0": "123",
+          ":id_u0": "123",
+          ":__edb_e___u0": `${entityName}`,
+          ":__edb_v___u0": "1"
+        },
+        "TableName": "electro",
+        "Key": {
+          "pk": "$test#organizationid_123",
+          "sk": `$${entityName}_1#id_123`
+        },
+        "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk)"
+      });
+
+      // with `effectiveAt` set to 'today' and `settledAt` set to 'n/a' the `entriesBySettledDate` index should not be written
+      const params2 = Thing.patch({id: '123', organizationId: '123'})
+          .set({effectiveAt: 'today', accountId: '123', settledAt: 'n/a'})
+          .params();
+
+      expect(params2).to.deep.equal({
+        "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi2pk, #gsi2sk",
+        "ExpressionAttributeNames": {
+          "#pk": "pk",
+          "#sk": "sk",
+          "#effectiveAt": "effectiveAt",
+          "#settledAt": "settledAt",
+          "#accountId": "accountId",
+          "#updatedAt": "updatedAt",
+          "#gsi1sk": "gsi1sk",
+          "#gsi2pk": "gsi2pk",
+          "#gsi2sk": "gsi2sk",
+          "#gsi3pk": "gsi3pk",
+          "#gsi3sk": "gsi3sk",
+          "#organizationId": "organizationId",
+          "#id": "id",
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__"
+        },
+        "ExpressionAttributeValues": {
+          ":effectiveAt_u0": "today",
+          ":settledAt_u0": "n/a",
+          ":accountId_u0": "123",
+          ":updatedAt_u0": updatedAt,
+          ":gsi1sk_u0": `$${entityName}_1#accountid_123#id_123`,
+          // gsi3pk_u0 was not set prior to this fix
+          ":gsi3pk_u0": "$test#organizationid_123",
+          ":gsi3sk_u0": `$${entityName}_1#effectiveat_today`,
+          ":organizationId_u0": "123",
+          ":id_u0": "123",
+          ":__edb_e___u0": `${entityName}`,
+          ":__edb_v___u0": "1"
+        },
+        "TableName": "electro",
+        "Key": {
+          "pk": "$test#organizationid_123",
+          "sk": `$${entityName}_1#id_123`
+        },
+        "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk)"
+      });
+
+      const organizationId = uuid();
+      const accountId = uuid();
+      const id = uuid();
+      const type = 'green'
+      const category = 'liquid'
+      const amount = '200'
+      const description = 'a description';
+
+      await Thing.create({
+        organizationId,
+        accountId,
+        id,
+        type,
+        amount,
+        category,
+        description,
+        settledAt: 'n/a',
+        effectiveAt: 'n/a'
+      }).go();
+
+      // 'gsi1pk-gsi1sk-index' should have been written to
+      const entriesByAccount = await Thing.query.entriesByAccount({organizationId, accountId}).go();
+      expect(entriesByAccount.data.length).to.equal(1);
+      expect(entriesByAccount.data[0].id).to.equal(id);
+      expect(entriesByAccount.data[0].organizationId).to.equal(organizationId);
+
+      // 'gsi2pk-gsi2sk-index' should not have been written to
+      const entriesBySettledDate = await Thing.query.entriesBySettledDate({organizationId}).go();
+      expect(entriesBySettledDate.data.length).to.equal(0);
+
+      // with settledAt set to 'today', 'gsi2pk-gsi2sk-index' should be written to
+      await Thing.patch({id, organizationId}).set({settledAt: 'today'}).go();
+      const entriesBySettledDate2 = await Thing.query.entriesBySettledDate({organizationId}).go();
+      expect(entriesBySettledDate2.data.length).to.equal(1);
+      expect(entriesBySettledDate2.data[0].id).to.equal(id);
+      expect(entriesBySettledDate2.data[0].organizationId).to.equal(organizationId);
+
+      // 'gsi3pk-gsi3sk-index' should not have been written to
+      const entriesByEffectiveDate = await Thing.query.entriesByEffectiveDate({organizationId}).go();
+      expect(entriesByEffectiveDate.data.length).to.equal(0);
+
+      // with effectiveAt set to 'today', 'gsi3pk-gsi3sk-index' should be written to
+      await Thing.patch({id, organizationId}).set({effectiveAt: 'today'}).go();
+      const entriesByEffectiveDate2 = await Thing.query.entriesByEffectiveDate({organizationId}).go();
+      expect(entriesByEffectiveDate2.data.length).to.equal(1);
+      expect(entriesByEffectiveDate2.data[0].id).to.equal(id);
+      expect(entriesByEffectiveDate2.data[0].organizationId).to.equal(organizationId);
     });
-
-    const organizationId = uuid();
-    const accountId = uuid();
-    const id = uuid();
-    const type = 'green'
-    const category = 'liquid'
-    const amount = '200'
-    const description = 'a description';
-
-    await Thing.create({
-      organizationId,
-      accountId,
-      id,
-      type,
-      amount,
-      category,
-      description,
-      settledAt: 'n/a',
-      effectiveAt: 'n/a'
-    }).go();
-
-    // 'gsi1pk-gsi1sk-index' should have been written to
-    const entriesByAccount = await Thing.query.entriesByAccount({ organizationId, accountId }).go();
-    expect(entriesByAccount.data.length).to.equal(1);
-    expect(entriesByAccount.data[0].id).to.equal(id);
-    expect(entriesByAccount.data[0].organizationId).to.equal(organizationId);
-
-    // 'gsi2pk-gsi2sk-index' should not have been written to
-    const entriesBySettledDate = await Thing.query.entriesBySettledDate({ organizationId }).go();
-    expect(entriesBySettledDate.data.length).to.equal(0);
-
-    // with settledAt set to 'today', 'gsi2pk-gsi2sk-index' should be written to
-    await Thing.patch({ id, organizationId }).set({ settledAt: 'today' }).go();
-    const entriesBySettledDate2 = await Thing.query.entriesBySettledDate({ organizationId }).go();
-    expect(entriesBySettledDate2.data.length).to.equal(1);
-    expect(entriesBySettledDate2.data[0].id).to.equal(id);
-    expect(entriesBySettledDate2.data[0].organizationId).to.equal(organizationId);
-
-    // 'gsi3pk-gsi3sk-index' should not have been written to
-    const entriesByEffectiveDate = await Thing.query.entriesByEffectiveDate({ organizationId }).go();
-    expect(entriesByEffectiveDate.data.length).to.equal(0);
-
-    // with effectiveAt set to 'today', 'gsi3pk-gsi3sk-index' should be written to
-    await Thing.patch({ id, organizationId }).set({ effectiveAt: 'today' }).go();
-    const entriesByEffectiveDate2 = await Thing.query.entriesByEffectiveDate({ organizationId }).go();
-    expect(entriesByEffectiveDate2.data.length).to.equal(1);
-    expect(entriesByEffectiveDate2.data[0].id).to.equal(id);
-    expect(entriesByEffectiveDate2.data[0].organizationId).to.equal(organizationId);
   });
 });
 
