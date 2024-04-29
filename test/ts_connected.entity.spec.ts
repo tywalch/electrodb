@@ -3845,15 +3845,25 @@ describe("index condition", () => {
 
           await entity.put({ prop1, prop2, ...initialValues }).go();
 
-          // "reset" `allow` and "reset" `invocations`
-          allow = shouldWrite;
-          invocations = [];
-
-          // record should exist with temp values
+          // record should exist with temp values because `allow=true`
           // @ts-ignore
           const results = await entity.query[index]({ prop1, prop2, ...initialValues }).go();
           expect(results.data.length).to.equal(1);
           expect(results.data[0]).to.deep.equal({ prop1, prop2, ...initialValues });
+
+
+          allow = false;
+          // record should no longer exist on GSIs because `allow=false`
+          await entity.put({ prop1, prop2, ...initialValues }).go();
+          // @ts-ignore
+          const results2 = await entity.query[index]({ prop1, prop2, ...initialValues }).go();
+          // the main table index will always contain the item, but not the other GSIs
+          const expectedLength = index === 'test' ? 1 : 0;
+          expect(results2.data.length).to.equal(expectedLength);
+
+          // "reset" `allow` and "reset" `invocations`
+          allow = shouldWrite;
+          invocations = [];
 
           await entity.patch({ prop1, prop2 }).set(props).go({ logger });
           // @ts-ignore
