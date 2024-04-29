@@ -4184,6 +4184,7 @@ describe("index condition", () => {
         ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)'
       });
     });
+
     it('should fix gh issue 366', async () => {
       const entityName = uuid();
       const updatedAt = new Date().toJSON();
