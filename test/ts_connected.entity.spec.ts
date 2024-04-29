@@ -4055,15 +4055,15 @@ describe("index condition", () => {
                 type: 'string',
                 readOnly: true,
                 required: true,
-                default: () => new Date().toJSON(),
-                set: () => new Date().toJSON()
+                default: () => '2024-02-29',
+                set: () => '2024-02-29'
               },
               updatedAt: {
                 type: 'string',
                 watch: '*',
                 required: true,
-                default: () => new Date().toJSON(),
-                set: () => new Date().toJSON()
+                default: () => '2024-04-29',
+                set: () => '2024-04-29'
               },
               settledAt: {
                 type: 'string',
@@ -4170,7 +4170,7 @@ describe("index condition", () => {
           ':effectiveAt_u0': 'n/a',
           ':accountId_u0': '123',
           ':settledAt_u0': 'today',
-          ':updatedAt_u0': '2024-04-29T17:09:30.687Z',
+          ':updatedAt_u0': '2024-04-29',
           ':gsi1sk_u0': '$test_1#accountid_123#id_123',
           ':gsi2pk_u0': '$test#organizationid_123',
           ':gsi2sk_u0': '$test_1#accountid_123#settledat_today',
