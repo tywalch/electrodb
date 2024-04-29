@@ -4026,6 +4026,179 @@ describe("index condition", () => {
   }
 
   describe('github issue 366', () => {
+    it('should recreate exact model from issue but as an upsert', async () => {
+
+      const table = "your_table_name";
+
+      const entry = new Entity(
+          {
+            model: {
+              service: 'test',
+              entity: 'test',
+              version: '1'
+            },
+            attributes: {
+              id: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              organizationId: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              accountId: {
+                type: 'string'
+              },
+              createdAt: {
+                type: 'string',
+                readOnly: true,
+                required: true,
+                default: () => '2024-02-29',
+                set: () => '2024-02-29'
+              },
+              updatedAt: {
+                type: 'string',
+                watch: '*',
+                required: true,
+                default: () => '2024-04-29',
+                set: () => '2024-04-29'
+              },
+              settledAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              effectiveAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              type: {
+                type: 'string',
+                required: true
+              },
+              category: {
+                type: 'string',
+                required: true
+              },
+              amount: {
+                type: 'string',
+                required: true
+              },
+              description: {
+                type: 'string'
+              }
+            },
+            indexes: {
+              entries: {
+                pk: {
+                  field: 'pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'sk',
+                  composite: ['id']
+                }
+              },
+              entriesByAccount: {
+                index: 'gsi1pk-gsi1sk-index',
+                pk: {
+                  field: 'gsi1pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi1sk',
+                  composite: ['accountId', 'id']
+                }
+              },
+              entriesBySettledDate: {
+                index: 'gsi2pk-gsi2sk-index',
+                condition: (attr) => attr.settledAt !== 'n/a',
+                pk: {
+                  field: 'gsi2pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi2sk',
+                  composite: ['accountId', 'settledAt']
+                }
+              },
+              entriesByEffectiveDate: {
+                index: 'gsi3pk-gsi3sk-index',
+                condition: (attr) => attr.effectiveAt !== 'n/a',
+                pk: {
+                  field: 'gsi3pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi3sk',
+                  composite: ['accountId', 'effectiveAt']
+                }
+              }
+            }
+          },
+          { table }
+      );
+
+      const params = entry
+        .upsert({
+          id: '123',
+          organizationId: '123',
+          effectiveAt: 'n/a',
+          accountId: "123",
+          settledAt: "today",
+          type: 'test-type',
+          category: 'test-category',
+          amount: 'test-amount',
+        })
+        .params();
+
+      // params set `gsi1sk` and `gsi2pk` fields and remove `gsi3pk` and `gsi3sk` fields
+      expect(params).to.deep.equal({
+        TableName: 'your_table_name',
+        UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #id = :id_u0, #organizationId = :organizationId_u0, #accountId = :accountId_u0, #createdAt = if_not_exists(#createdAt, :createdAt_u0), #updatedAt = :updatedAt_u0, #settledAt = :settledAt_u0, #effectiveAt = :effectiveAt_u0, #type = :type_u0, #category = :category_u0, #amount = :amount_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0 REMOVE #gsi3pk, #gsi3sk',
+        ExpressionAttributeNames: {
+          '#__edb_e__': '__edb_e__',
+          '#__edb_v__': '__edb_v__',
+          '#gsi3pk': 'gsi3pk',
+          '#gsi3sk': 'gsi3sk',
+          '#id': 'id',
+          '#organizationId': 'organizationId',
+          '#accountId': 'accountId',
+          '#createdAt': 'createdAt',
+          '#updatedAt': 'updatedAt',
+          '#settledAt': 'settledAt',
+          '#effectiveAt': 'effectiveAt',
+          '#type': 'type',
+          '#category': 'category',
+          '#amount': 'amount',
+          '#gsi1pk': 'gsi1pk',
+          '#gsi1sk': 'gsi1sk',
+          '#gsi2pk': 'gsi2pk',
+          '#gsi2sk': 'gsi2sk'
+        },
+        ExpressionAttributeValues: {
+          ':__edb_e___u0': 'test',
+          ':__edb_v___u0': '1',
+          ':id_u0': '123',
+          ':organizationId_u0': '123',
+          ':accountId_u0': '123',
+          ':createdAt_u0': '2024-02-29',
+          ':updatedAt_u0': '2024-04-29',
+          ':settledAt_u0': 'today',
+          ':effectiveAt_u0': 'n/a',
+          ':type_u0': 'test-type',
+          ':category_u0': 'test-category',
+          ':amount_u0': 'test-amount',
+          ':gsi1pk_u0': '$test#organizationid_123',
+          ':gsi1sk_u0': '$test_1#accountid_123#id_123',
+          ':gsi2pk_u0': '$test#organizationid_123',
+          ':gsi2sk_u0': '$test_1#accountid_123#settledat_today'
+        },
+        Key: { pk: '$test#organizationid_123', sk: '$test_1#id_123' }
+      });
+    });
+
     it('should recreate exact model from issue', async () => {
 
       const table = "your_table_name";
