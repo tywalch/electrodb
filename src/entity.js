@@ -2359,7 +2359,6 @@ class Entity {
     // change, and we also don't want to trigger the setters of any attributes watching these facets because that
     // should only happen when an attribute is changed.
     const attributesAndComposites = {
-      // ...update.composites,
       ...preparedUpdateValues,
     };
     const {
@@ -3016,7 +3015,7 @@ class Entity {
     let completeFacets = this._expectIndexFacets(
       { ...setAttributes, ...validationAssistance },
       { ...keyAttributes },
-        { set },
+      { set },
     );
 
     let deletedKeys = [];
@@ -3066,13 +3065,13 @@ class Entity {
     let completeFacets = this._expectIndexFacets(
       { ...set },
       { ...composite, ...keyAttributes },
-        { utilizeIncludedOnlyIndexes: true },
+      { utilizeIncludedOnlyIndexes: true },
     );
 
     const removedKeyImpact = this._expectIndexFacets(
       { ...removed },
       { ...keyAttributes },
-        { skipConditionCheck: true }
+      { skipConditionCheck: true }
     );
 
     // complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
@@ -3146,7 +3145,7 @@ class Entity {
   /* istanbul ignore next */
   _getIndexImpact(attributes = {}, included = {}, { utilizeIncludedOnlyIndexes, skipConditionCheck } = {}) {
     // beware: this entire algorithm stinks and needs to be completely refactored. It does redundant loops and fights
-    // itself the whole way through. I'm sorry.
+    // itself the whole way through. I am sorry.
     let includedFacets = Object.keys(included);
     let impactedIndexes = {};
     let conditions = {};
@@ -3266,7 +3265,6 @@ class Entity {
     for (const { index, missing, definition } of indexesWithMissingComposites) {
       const indexConditionIsDefined = this._indexConditionIsDefined(index);
 
-
       // `skipConditionCheck` is being used by update `remove`. If Attributes are being removed then the condition check
       // is meaningless and ElectroDB should uphold its obligation to keep keys and attributes in sync.
       // `index === TableIndex` is a special case where we don't need to check the condition because the main table is immutable
@@ -3288,7 +3286,6 @@ class Entity {
             .map(({name}) => name)
 
         if (missingAttributes.length) {
-          // const missingAttributes = missing.length ? missing : definition.all.filter(({name}) => !attributes[name] || !included[name]);
           throw new e.ElectroError(e.ErrorCodes.IncompleteIndexCompositesAttributesProvided, `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(missingAttributes)}`);
         }
 

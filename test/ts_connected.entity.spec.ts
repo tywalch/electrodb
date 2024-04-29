@@ -3925,6 +3925,104 @@ describe("index condition", () => {
         });
       }
     });
+
+    const conditionOptions = [
+      [() => true, 'returns true'] as const,
+      [() => false, 'returns false'] as const,
+      [undefined, 'is not defined'] as const,
+    ] as const;
+    // should not use attributes provided via composite to identify a conditional index requires recalculation
+    // `when performing an update that impacts an index with a condition that ${descripto}`
+    describe(`when performing an update set that impacts an index and the provided composite attributes overlap with another index`, () => {
+      for (const [condition1, description1] of conditionOptions) {
+        for (const [condition2, description2] of conditionOptions) {
+          it(`should not throw because it believes additional attributes need to be provided on the overlapped index, when the impacted index has a condition that ${description1} and the overlapped index has a condtion that ${description2}`, () => {
+            const entityName = uuid();
+            const serviceName = uuid();
+
+            const entity = new Entity({
+              model: {
+                version: '0',
+                entity: entityName,
+                service: serviceName,
+              },
+              attributes: {
+                prop1: {
+                  type: 'string'
+                },
+                prop2: {
+                  type: 'string'
+                },
+                prop3: {
+                  type: 'string'
+                },
+                prop4: {
+                  type: 'string'
+                },
+                prop5: {
+                  type: 'string'
+                },
+                prop6: {
+                  type: 'string'
+                },
+                prop7: {
+                  type: 'string'
+                },
+                prop8: {
+                  type: 'string'
+                },
+              },
+              indexes: {
+                test1: {
+                  pk: {
+                    field: 'pk',
+                    composite: ['prop1']
+                  },
+                  sk: {
+                    field: 'sk',
+                    composite: ['prop2']
+                  }
+                },
+                test2: {
+                  condition: condition1,
+                  index: 'gsi1pk-gsi1sk-index',
+                  pk: {
+                    field: 'gsi1pk',
+                    composite: ['prop3', 'prop5']
+                  },
+                  sk: {
+                    field: 'gsi1sk',
+                    composite: ['prop4', 'prop6']
+                  }
+                },
+                test3: {
+                  condition: condition2,
+                  index: 'gsi2pk-gsi2sk-index',
+                  pk: {
+                    field: 'gsi2pk',
+                    composite: ['prop3', 'prop7']
+                  },
+                  sk: {
+                    field: 'gsi2sk',
+                    composite: ['prop4', 'prop8']
+                  }
+                }
+              }
+            }, {client, table});
+
+            expect(() => {
+              entity.update({ prop1: uuid(), prop2: uuid() })
+                  .set({ prop5: uuid(), prop6: uuid() })
+                  // prop3 and prop4 overlap on both test1 and test2 indexes, this should not cause the ElectroDB to throw
+                  // because it thinks test2 should have prop7 and prop8 provided. test2 is not trying to be recalculated,
+                  // and doesn't need to be because composite doesn't mutate, so throwing would be horrible DX.
+                  .composite({ prop3: uuid(), prop4: uuid() })
+                  .params();
+            }).to.not.throw();
+          });
+        }
+      }
+    });
   }
 
   it('should fix gh issue 366', async () => {
