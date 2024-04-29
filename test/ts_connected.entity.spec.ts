@@ -3850,6 +3850,7 @@ describe("index condition", () => {
           invocations = [];
 
           // record should exist with temp values
+          // @ts-ignore
           const results = await entity.query[index]({ prop1, prop2, ...initialValues }).go();
           expect(results.data.length).to.equal(1);
           expect(results.data[0]).to.deep.equal({ prop1, prop2, ...initialValues });
