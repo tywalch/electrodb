@@ -3831,7 +3831,7 @@ describe("index condition", () => {
         it(`${prefix} write index with provided patch attributes`, async () => {
           const {params, logger} = createParamsCollector();
           const {prop1, prop2, ...props} = createTestEntityData();
-          const { prop1: _, prop2: __, initialValues } = createTestEntityData();
+          const { prop1: _, prop2: __, ...initialValues } = createTestEntityData();
           let invocations: ConditionArguments[] = [];
           let allow = false;
           const condition = (args: ConditionArguments) => {
