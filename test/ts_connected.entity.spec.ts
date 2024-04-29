@@ -3833,7 +3833,7 @@ describe("index condition", () => {
           const {prop1, prop2, ...props} = createTestEntityData();
           const { prop1: _, prop2: __, ...initialValues } = createTestEntityData();
           let invocations: ConditionArguments[] = [];
-          let allow = false;
+          let allow = true;
           const condition = (args: ConditionArguments) => {
             invocations.push(args);
             return allow;

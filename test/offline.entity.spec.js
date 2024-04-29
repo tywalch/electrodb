@@ -1654,7 +1654,11 @@ describe("Entity", () => {
               },
             },
             conditions: {
+              "": true,
+              "gsi1pk-gsi1sk-index": true,
               "gsi2pk-gsi2sk-index": true,
+              "gsi3pk-gsi3sk-index": true,
+              "gsi4pk-gsi4sk-index": true,
             }
           },
         },
@@ -1693,6 +1697,7 @@ describe("Entity", () => {
               },
             },
             conditions: {
+              "": true,
               "gsi1pk-gsi1sk-index": true,
               "gsi2pk-gsi2sk-index": true,
               "gsi3pk-gsi3sk-index": true,
