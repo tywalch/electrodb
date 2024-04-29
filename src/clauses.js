@@ -432,11 +432,15 @@ let clauses = {
             const { pk } = state.query.keys;
             const sk = state.query.keys.sk[0];
 
-            const { updatedKeys, setAttributes, indexKey } = entity._getPutKeys(
+            const { updatedKeys, setAttributes, indexKey, deletedKeys = [] } = entity._getPutKeys(
               pk,
               sk && sk.facets,
               onlySetAppliedData,
             );
+
+            for (const deletedKey of deletedKeys) {
+              state.query.update.remove(deletedKey)
+            }
 
             // calculated here but needs to be used when building the params
             upsert.indexKey = indexKey;

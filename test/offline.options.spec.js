@@ -488,7 +488,7 @@ describe("Query Options", () => {
           },
         },
         {
-          description: "Should not string numbers that are greater than 0",
+          description: "Should allow string numbers that are greater than 0",
           error: false,
           input: {
             options: { concurrent: "1" },

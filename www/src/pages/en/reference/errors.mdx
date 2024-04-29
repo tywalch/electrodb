@@ -371,6 +371,16 @@ When performing a [Query](#building-queries) you can pass an [Execution Option](
 **What to do about it:**
 Expect this error only if you're providing a `limit` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
+### Invalid Index Composite Attributes Provided
+
+**Code: 2012**
+
+**Why this occurred:**
+This error occurs on the mutation operations `put`, `create`, `upsert`, `update`, and `patch` when using the [condition callback](/en/modeling/indexes##sparse-indexes) in your Entity's schema. When a conditional index is defined, all member attributes of the index must be provided if a mutation operation affects one of the attributes. This is to ensure that the index is kept in sync with the item's attributes. More information and the discussion around the reasoning behind this change can be found [here](https://github.com/tywalch/electrodb/issues/366).
+
+**What to do about it:**
+If you need to modify a single composite attribute on a multi-composite attribute GSI, you will need to provide new values for all member composite attributes. In the case of `update`/`patch`, if you are unable to update all member attributes (e.g. because some are readOnly) you can also use the [composite](/en/mutations/patch#composite) method on [update](/en/mutations/update#composite) and [patch](/en/mutations/patch#composite).
+
 ## User Defined Validation
 
 ### Invalid Attribute

@@ -2834,7 +2834,7 @@ describe('index scope', () => {
   });
 });
 
-describe("conditional indexes", () => {
+describe("index condition", () => {
   type IndexName = 'sparse1' | 'sparse2' | 'sparse3';
   type ConditionArguments = {
     index: IndexName;
@@ -2907,7 +2907,7 @@ describe("conditional indexes", () => {
             sparse2: {
               index: 'gsi2pk-gsi2sk-index',
               condition: (attr) => {
-                return fn({index: 'sparse2', attr});
+                return fn({ index: 'sparse2', attr });
               },
               pk: {
                 field: 'gsi2pk',
@@ -2953,13 +2953,18 @@ describe("conditional indexes", () => {
   }
 
   function createConditionInvocationCollector(result: boolean) {
-    const invocations: ConditionArguments[] = [];
+    let invocations: ConditionArguments[] = [];
     const condition: TestEntityCondition = (options) => {
       invocations.push(options);
       return result;
-    };
+    }
+
+    const clear = () => {
+      invocations.length = 0;
+    }
 
     return {
+      clear,
       condition,
       invocations,
     }
@@ -2976,6 +2981,575 @@ describe("conditional indexes", () => {
       }
     }
   }
+
+  function expectMessageIfThrows(fn: () => void, errMessage?: string) {
+    let error: Error | undefined = undefined;
+    try {
+      fn();
+    } catch(err: any) {
+      error = err;
+    }
+
+    if (errMessage && !error) {
+      throw new Error(`Expected error message: ${errMessage}`);
+    } else if (errMessage && error) {
+      expect(error.message).to.equal(errMessage);
+    } else if (error) {
+      throw error;
+    }
+  }
+
+  const formatShouldStatement = (should: boolean) => `should${should ? ' ' : ' not '}`;
+
+  describe('when all composite attributes are not provided', () => {
+    const conditionCases  = [
+        ['index condition is set and returns true', true],
+        ['index condition is set and returns false', false],
+        ['index condition is not set', undefined],
+    ] as const;
+    for (const [variation, setCondition] of conditionCases) {
+      describe(`when composite attributes are distinct and ${variation}`, () => {
+        const collector = createConditionInvocationCollector(!!setCondition);
+        const conditionIsSet = setCondition !== undefined;
+        const condition = conditionIsSet ? collector.condition : undefined;
+
+        afterEach(() => {
+          collector.clear();
+        });
+
+        const entity = new Entity(
+            {
+              model: {
+                entity: uuid(),
+                service: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                },
+                prop2: {
+                  type: "string",
+                },
+                prop3: {
+                  type: "string"
+                },
+              },
+              indexes: {
+                test: {
+                  collection: 'testing',
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+                sparse1: {
+                  index: 'gsi1pk-gsi1sk-index',
+                  // @ts-ignore
+                  condition: condition,
+                  pk: {
+                    field: "gsi1pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "gsi1sk",
+                    composite: ["prop2"],
+                  },
+                }
+              },
+            },
+            {table, client}
+        );
+
+        it(`should not throw when impacting composite attributes on put`, () => {
+          expectMessageIfThrows(() => {
+            entity.put({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop3: uuid(),
+            }).params();
+          });
+
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+
+        it(`should not throw when impacting composite attributes on create`, () => {
+          expectMessageIfThrows(() => {
+            entity.create({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop3: uuid(),
+            }).params();
+          });
+
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+
+        it(`should not throw when impacting composite attributes on update`, () => {
+          expectMessageIfThrows(() => {
+            entity.update({ prop1: uuid(), prop2: uuid() })
+                .set({ prop3: uuid() })
+                .params();
+          });
+
+          if (conditionIsSet) {
+            // when condition is "fixed" this should be changed to "to.not.equal(0)"
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+
+        it(`should not throw when impacting composite attributes on patch`, () => {
+          expectMessageIfThrows(() => {
+            entity.patch({ prop1: uuid(), prop2: uuid() })
+                .set({ prop3: uuid() })
+                .params();
+          });
+
+          if (conditionIsSet) {
+            // when condition is "fixed" this should be changed to "to.not.equal(0)"
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+
+        it(`should not throw when impacting composite attributes on upsert`, () => {
+          expectMessageIfThrows(() => {
+            entity.upsert({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop3: uuid(),
+            }).params();
+          });
+
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.not.equal(0);
+          }
+        });
+      });
+
+      describe(`when composite attributes share main table index composites and ${variation}`, () => {
+        const collector = createConditionInvocationCollector(!!setCondition);
+        const conditionIsSet = setCondition !== undefined;
+        const condition = conditionIsSet ? collector.condition : undefined;
+
+        const entity = new Entity(
+            {
+              model: {
+                entity: uuid(),
+                service: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                },
+                prop2: {
+                  type: "string",
+                },
+                prop3: {
+                  type: "string"
+                },
+                prop4: {
+                  type: "string"
+                },
+                prop5: {
+                  type: "string"
+                },
+                prop6: {
+                  type: "string"
+                },
+              },
+              indexes: {
+                test: {
+                  collection: 'testing',
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+                sparse2: {
+                  index: 'gsi2pk-gsi2sk-index',
+                  // @ts-ignore
+                  condition: condition,
+                  pk: {
+                    field: 'gsi2pk',
+                    composite: ['prop2', 'prop3']
+                  },
+                  sk: {
+                    field: 'gsi2sk',
+                    composite: ['prop1', 'prop4', 'prop5']
+                  }
+                },
+              },
+            },
+            {table, client}
+        );
+
+        beforeEach(() => {
+          collector.clear();
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on put`, () => {
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : `Incomplete composite attributes: Without the composite attributes "prop3" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+
+          expectMessageIfThrows(() => {
+            entity.put({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop4: uuid(),
+              prop5: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on put`, () => {
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : 'Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+
+          expectMessageIfThrows(() => {
+            entity.put({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop6: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on create`, () => {
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : 'Incomplete composite attributes: Without the composite attributes "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+
+          expectMessageIfThrows(() => {
+            entity.create({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop3: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on create`, () => {
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : `Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+
+          expectMessageIfThrows(() => {
+            entity.create({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop6: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on update`, () => {
+          // Should remain after condition "fix", why throw when the user isn't trying to mutate prop3, prop4, or prop5.
+          // Throwing would hurt dx because prop1 and prop2 are main table composites (ie immutable) and their presence
+          // in the GSI would cause an undue burden on EVERY update operation.
+          const message = undefined; // conditionIsSet ? 'Oops!' : undefined;
+
+          expectMessageIfThrows(() => {
+            entity.update({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({ prop6: uuid() }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on update`, () => {
+          // this should throw when a condition cb is set because this would cause a recalculation but is missing prop3 for the index
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : undefined;
+
+          expectMessageIfThrows(() => {
+            entity.update({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({ prop4: uuid(), prop5: uuid() }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on patch`, () => {
+          // this should throw when a condition cb is set because this would cause a recalculation but is missing prop4 and prop5 for the index
+          const message = setCondition === undefined ? undefined : 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided';
+
+          expectMessageIfThrows(() => {
+            entity.patch({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({ prop3: uuid() }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on upsert`, () => {
+          const message = conditionIsSet
+              ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+              : `Incomplete composite attributes: Without the composite attributes "prop3" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+
+          expectMessageIfThrows(() => {
+            entity.upsert({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop5: uuid(),
+              prop4: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on upsert`, () => {
+          const message = conditionIsSet
+            ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
+            : 'Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+
+          expectMessageIfThrows(() => {
+            entity.upsert({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop6: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+      });
+
+      describe(`when composite attributes are identical to main table index and ${variation}`, () => {
+        const collector = createConditionInvocationCollector(!!setCondition);
+        const conditionIsSet = setCondition !== undefined;
+        const condition = conditionIsSet ? collector.condition : undefined;
+        const entity = new Entity(
+            {
+              model: {
+                entity: uuid(),
+                service: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                },
+                prop2: {
+                  type: "string",
+                },
+                prop3: {
+                  type: "string"
+                },
+                prop4: {
+                  type: "string"
+                },
+                prop5: {
+                  type: "string"
+                },
+                prop6: {
+                  type: "string"
+                },
+                prop7: {
+                  type: "string"
+                },
+                prop8: {
+                  type: "string"
+                },
+                prop9: {
+                  type: "string"
+                }
+              },
+              indexes: {
+                test: {
+                  collection: 'testing',
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+                sparse3: {
+                  index: 'gsi3pk-gsi3sk-index',
+                  // @ts-ignore
+                  condition: condition,
+                  pk: {
+                    field: 'gsi3pk',
+                    composite: ['prop6', 'prop7']
+                  },
+                  sk: {
+                    field: 'gsi3sk',
+                    composite: ['prop8', 'prop9']
+                  }
+                }
+              },
+            },
+            {table, client}
+        );
+
+        beforeEach(() => {
+          collector.clear();
+        });
+
+        it('should not throw when providing unused composite attributes on update', () => {
+          expectMessageIfThrows(() => {
+            entity.update({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).composite({ prop6: uuid(), prop7: uuid() }).params();
+            expect(collector.invocations.length).to.equal(0);
+          });
+        });
+
+        it('should not throw when providing unused composite attributes on update', () => {
+          expectMessageIfThrows(() => {
+            entity.patch({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).composite({prop8: uuid(), prop9: uuid()}).params();
+            expect(collector.invocations.length).to.equal(0);
+          });
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on put`, () => {
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop8", "prop9" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
+          expectMessageIfThrows(() => {
+            entity.put({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop7: uuid(),
+              prop6: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on create`, () => {
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop6", "prop7" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
+          expectMessageIfThrows(() => {
+            entity.create({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop8: uuid(),
+              prop9: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on update`, () => {
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop8", "prop9" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
+          expectMessageIfThrows(() => {
+            entity.update({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({prop6: uuid(), prop7: uuid()}).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+
+          expectMessageIfThrows(() => {
+            entity.update({ prop1: uuid(), prop2: uuid() })
+                .set({ prop6: uuid(), prop7: uuid() })
+                .composite({ prop8: uuid(), prop9: uuid() })
+                .params();
+          });
+
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.equal(1);
+            for (let i = 0; i < collector.invocations.length; i++) {
+              const prev = collector.invocations[i - 1];
+              const invocation = collector.invocations[i];
+              expect(invocation).to.have.keys('prop1', 'prop2', 'prop6', 'prop7', 'prop8', 'prop9');
+              if (prev) {
+                expect(prev).to.deep.equal(invocation)
+              }
+            }
+          }
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on patch`, () => {
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop6", "prop7" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
+          expectMessageIfThrows(() => {
+            entity.patch({
+              prop1: uuid(),
+              prop2: uuid(),
+            }).set({prop8: uuid(), prop9: uuid()}).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+
+          expectMessageIfThrows(() => {
+            entity.patch({ prop1: uuid(), prop2: uuid() })
+                .set({ prop8: uuid(), prop9: uuid() })
+                .composite({ prop6: uuid(), prop7: uuid() })
+                .params();
+          });
+
+          if (conditionIsSet) {
+            expect(collector.invocations.length).to.equal(1);
+            for (let i = 0; i <  collector.invocations.length; i++) {
+              const prev = collector.invocations[i - 1];
+              const invocation = collector.invocations[i];
+              expect(invocation).to.have.keys('prop1', 'prop2', 'prop6', 'prop7', 'prop8', 'prop9');
+              if (prev) {
+                expect(prev).to.deep.equal(invocation)
+              }
+            }
+          }
+        });
+
+        it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on upsert`, () => {
+          const message = conditionIsSet ? 'Incomplete composite attributes provided for index gsi3pk-gsi3sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop8", "prop9" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided' : undefined;
+
+          expectMessageIfThrows(() => {
+            entity.upsert({
+              prop1: uuid(),
+              prop2: uuid(),
+              prop6: uuid(),
+              prop7: uuid(),
+            }).params();
+          }, message);
+
+          expect(collector.invocations.length).to.equal(0);
+        });
+      });
+    }
+  });
 
   it('should throw if condition is added to the main table index', () => {
     expect(() => new Entity({
@@ -3066,10 +3640,10 @@ describe("conditional indexes", () => {
     const prop5 = uuid();
 
     conditionValue = false;
-    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).not.to.throw();
+    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).to.throw('Incomplete composite attributes provided for index gsi1pk-gsi1sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided');
 
     conditionValue = true;
-    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).to.throw('Incomplete composite attributes: Without the composite attributes "prop4" the following access patterns cannot be updated: "secondary". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes');
+    expect(() => entity.update({prop1, prop2}).set({prop3, prop5}).params()).to.throw('Incomplete composite attributes provided for index gsi1pk-gsi1sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided');
   });
 
   it('should check the index condition individually on the subject entity', () => {
@@ -3096,8 +3670,8 @@ describe("conditional indexes", () => {
 
   type TestCase = [description: string, index: keyof (ReturnType<typeof createTestEntity>['query'])]
   const tests: TestCase[] = [
-    ["an index with identical pk and sk composite attributes as the main table", 'sparse1'],
-    ["an index with at least the pk and sk composite attributes as the main table", 'sparse2'],
+    ["an index with identical pk and sk composite attributes as the main table index", 'sparse1'],
+    ["an index with at least the pk and sk composite attributes as the main table index", 'sparse2'],
     ["an index with distinct composite attributes", "sparse3"],
   ];
   for (const [description, index] of tests) {
@@ -3203,90 +3777,110 @@ describe("conditional indexes", () => {
           }
         });
 
-        if (index !== 'sparse1') {
-          it(`${prefix} write index with provided update attributes`, async () => {
-            const {condition, invocations} = createConditionInvocationCollector(shouldWrite);
-            const {params, logger} = createParamsCollector();
-            const {prop1, prop2, ...props} = createTestEntityData();
-            const entity = createTestEntity(condition);
-            await entity.update({prop1, prop2}).set(props).go({logger});
-            // @ts-ignore
-            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
-            if (shouldWrite) {
-              expect(data.length).to.equal(1);
-              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
-            } else {
-              expect(data.length).to.equal(0);
-            }
 
-            for (const invocation of invocations) {
-              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
-            }
-          });
+        it(`${prefix} write index with provided update attributes`, async () => {
+          const {condition, invocations} = createConditionInvocationCollector(shouldWrite);
+          const {params, logger} = createParamsCollector();
+          const {prop1, prop2, ...props} = createTestEntityData();
+          const entity = createTestEntity(condition);
+          await entity.update({prop1, prop2}).set(props).go({logger});
+          // @ts-ignore
+          const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+          if (shouldWrite) {
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+          } else {
+            expect(data.length).to.equal(0);
+          }
 
-          it(`${prefix} write index with provided update attributes spread across multiple method calls`, async () => {
-            const {condition, invocations} = createConditionInvocationCollector(shouldWrite);
-            const {params, logger} = createParamsCollector();
-            const {prop1, prop2, ...props} = createTestEntityData();
-            const entity = createTestEntity(condition);
-            await entity.update({prop1, prop2}).set({
-              prop3: props.prop3,
-              prop4: props.prop4,
-            }).set({
-              prop5: props.prop5,
-              prop6: props.prop6,
-            }).set({
-              prop7: props.prop7,
-              prop8: props.prop8,
-              prop9: props.prop9,
-            }).go({logger});
-            // @ts-ignore
-            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
-            if (shouldWrite) {
-              expect(data.length).to.equal(1);
-              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
-            } else {
-              expect(data.length).to.equal(0);
-            }
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+          }
+        });
 
-            for (const invocation of invocations) {
-              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
-            }
-          });
+        it(`${prefix} write index with provided update attributes spread across multiple method calls`, async () => {
+          const {condition, invocations} = createConditionInvocationCollector(shouldWrite);
+          const {params, logger} = createParamsCollector();
+          const {prop1, prop2, ...props} = createTestEntityData();
+          const entity = createTestEntity(condition);
+          await entity.update({prop1, prop2}).set({
+            prop3: props.prop3,
+            prop4: props.prop4,
+          }).set({
+            prop5: props.prop5,
+            prop6: props.prop6,
+          }).set({
+            prop7: props.prop7,
+            prop8: props.prop8,
+            prop9: props.prop9,
+          }).go({logger});
+          // @ts-ignore
+          const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+          if (shouldWrite) {
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+          } else {
+            expect(data.length).to.equal(0);
+          }
 
-          it(`${prefix} write index with provided patch attributes`, async () => {
-            const {params, logger} = createParamsCollector();
-            const {prop1, prop2, ...props} = createTestEntityData();
-            let invocations: ConditionArguments[] = [];
-            let allow = false;
-            const condition = (args: ConditionArguments) => {
-              invocations.push(args);
-              return allow;
-            }
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
+          }
+        });
 
-            const entity = createTestEntity(condition);
-            // don't write for sure on put, but then yield to test; patch requires an existing item
-            await entity.put({prop1, prop2}).go();
+        it(`${prefix} write index with provided patch attributes`, async () => {
+          const {params, logger} = createParamsCollector();
+          const {prop1, prop2, ...props} = createTestEntityData();
+          const { prop1: _, prop2: __, ...initialValues } = createTestEntityData();
+          let invocations: ConditionArguments[] = [];
+          let allow = true;
+          const condition = (args: ConditionArguments) => {
+            invocations.push(args);
+            return allow;
+          }
 
-            // reset "allow" and reset "invocations"
-            allow = shouldWrite;
-            invocations = [];
+          expect(props).to.not.deep.equal(initialValues);
 
-            await entity.patch({prop1, prop2}).set(props).go({logger});
-            // @ts-ignore
-            const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
-            if (shouldWrite) {
-              expect(data.length).to.equal(1);
-              expect(data[0]).to.deep.equal({prop1, prop2, ...props});
-            } else {
-              expect(data.length).to.equal(0);
-            }
+          const entity = createTestEntity(condition);
 
-            for (const invocation of invocations) {
-              expect(invocation.attr).to.deep.equal({prop1, prop2, ...props});
-            }
-          });
-        }
+          await entity.put({ prop1, prop2, ...initialValues }).go();
+
+          // record should exist with temp values because `allow=true`
+          // @ts-ignore
+          const results = await entity.query[index]({ prop1, prop2, ...initialValues }).go();
+          expect(results.data.length).to.equal(1);
+          expect(results.data[0]).to.deep.equal({ prop1, prop2, ...initialValues });
+
+
+          allow = false;
+          // record should no longer exist on GSIs because `allow=false`
+          await entity.put({ prop1, prop2, ...initialValues }).go();
+          // @ts-ignore
+          const results2 = await entity.query[index]({ prop1, prop2, ...initialValues }).go();
+          // the main table index will always contain the item, but not the other GSIs
+          const expectedLength = index === 'test' ? 1 : 0;
+          expect(results2.data.length).to.equal(expectedLength);
+
+          // "reset" `allow` and "reset" `invocations`
+          allow = shouldWrite;
+          invocations = [];
+
+          await entity.patch({ prop1, prop2 }).set(props).go({ logger });
+          // @ts-ignore
+          const {data} = await entity.query[index]({prop1, prop2, ...props}).go();
+          if (shouldWrite) {
+            // patch should have added item to index
+            expect(data.length).to.equal(1);
+            expect(data[0]).to.deep.equal({prop1, prop2, ...props});
+          } else {
+            // patch should have removed item from index
+            expect(data.length).to.equal(0);
+          }
+
+          for (const invocation of invocations) {
+            expect(invocation.attr).to.deep.equal({ prop1, prop2, ...props });
+          }
+        });
 
         it(`${prefix} write index with provided batchPut attributes`, async () => {
           const { condition, invocations } = createConditionInvocationCollector(shouldWrite);
@@ -3331,7 +3925,694 @@ describe("conditional indexes", () => {
         });
       }
     });
+
+    const conditionOptions = [
+      [() => true, 'returns true'] as const,
+      [() => false, 'returns false'] as const,
+      [undefined, 'is not defined'] as const,
+    ] as const;
+    // should not use attributes provided via composite to identify a conditional index requires recalculation
+    // `when performing an update that impacts an index with a condition that ${descripto}`
+    describe(`when performing an update set that impacts an index and the provided composite attributes overlap with another index`, () => {
+      for (const [condition1, description1] of conditionOptions) {
+        for (const [condition2, description2] of conditionOptions) {
+          it(`should not throw because it believes additional attributes need to be provided on the overlapped index, when the impacted index has a condition that ${description1} and the overlapped index has a condtion that ${description2}`, () => {
+            const entityName = uuid();
+            const serviceName = uuid();
+
+            const entity = new Entity({
+              model: {
+                version: '0',
+                entity: entityName,
+                service: serviceName,
+              },
+              attributes: {
+                prop1: {
+                  type: 'string'
+                },
+                prop2: {
+                  type: 'string'
+                },
+                prop3: {
+                  type: 'string'
+                },
+                prop4: {
+                  type: 'string'
+                },
+                prop5: {
+                  type: 'string'
+                },
+                prop6: {
+                  type: 'string'
+                },
+                prop7: {
+                  type: 'string'
+                },
+                prop8: {
+                  type: 'string'
+                },
+              },
+              indexes: {
+                test1: {
+                  pk: {
+                    field: 'pk',
+                    composite: ['prop1']
+                  },
+                  sk: {
+                    field: 'sk',
+                    composite: ['prop2']
+                  }
+                },
+                test2: {
+                  condition: condition1,
+                  index: 'gsi1pk-gsi1sk-index',
+                  pk: {
+                    field: 'gsi1pk',
+                    composite: ['prop3', 'prop5']
+                  },
+                  sk: {
+                    field: 'gsi1sk',
+                    composite: ['prop4', 'prop6']
+                  }
+                },
+                test3: {
+                  condition: condition2,
+                  index: 'gsi2pk-gsi2sk-index',
+                  pk: {
+                    field: 'gsi2pk',
+                    composite: ['prop3', 'prop7']
+                  },
+                  sk: {
+                    field: 'gsi2sk',
+                    composite: ['prop4', 'prop8']
+                  }
+                }
+              }
+            }, {client, table});
+
+            expect(() => {
+              entity.update({ prop1: uuid(), prop2: uuid() })
+                  .set({ prop5: uuid(), prop6: uuid() })
+                  // prop3 and prop4 overlap on both test1 and test2 indexes, this should not cause the ElectroDB to throw
+                  // because it thinks test2 should have prop7 and prop8 provided. test2 is not trying to be recalculated,
+                  // and doesn't need to be because composite doesn't mutate, so throwing would be horrible DX.
+                  .composite({ prop3: uuid(), prop4: uuid() })
+                  .params();
+            }).to.not.throw();
+          });
+        }
+      }
+    });
   }
+
+  describe('github issue 366', () => {
+    it('should recreate exact model from issue but as an upsert', async () => {
+
+      const table = "your_table_name";
+
+      const entry = new Entity(
+          {
+            model: {
+              service: 'test',
+              entity: 'test',
+              version: '1'
+            },
+            attributes: {
+              id: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              organizationId: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              accountId: {
+                type: 'string'
+              },
+              createdAt: {
+                type: 'string',
+                readOnly: true,
+                required: true,
+                default: () => '2024-02-29',
+                set: () => '2024-02-29'
+              },
+              updatedAt: {
+                type: 'string',
+                watch: '*',
+                required: true,
+                default: () => '2024-04-29',
+                set: () => '2024-04-29'
+              },
+              settledAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              effectiveAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              type: {
+                type: 'string',
+                required: true
+              },
+              category: {
+                type: 'string',
+                required: true
+              },
+              amount: {
+                type: 'string',
+                required: true
+              },
+              description: {
+                type: 'string'
+              }
+            },
+            indexes: {
+              entries: {
+                pk: {
+                  field: 'pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'sk',
+                  composite: ['id']
+                }
+              },
+              entriesByAccount: {
+                index: 'gsi1pk-gsi1sk-index',
+                pk: {
+                  field: 'gsi1pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi1sk',
+                  composite: ['accountId', 'id']
+                }
+              },
+              entriesBySettledDate: {
+                index: 'gsi2pk-gsi2sk-index',
+                condition: (attr) => attr.settledAt !== 'n/a',
+                pk: {
+                  field: 'gsi2pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi2sk',
+                  composite: ['accountId', 'settledAt']
+                }
+              },
+              entriesByEffectiveDate: {
+                index: 'gsi3pk-gsi3sk-index',
+                condition: (attr) => attr.effectiveAt !== 'n/a',
+                pk: {
+                  field: 'gsi3pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi3sk',
+                  composite: ['accountId', 'effectiveAt']
+                }
+              }
+            }
+          },
+          { table }
+      );
+
+      const params = entry
+        .upsert({
+          id: '123',
+          organizationId: '123',
+          effectiveAt: 'n/a',
+          accountId: "123",
+          settledAt: "today",
+          type: 'test-type',
+          category: 'test-category',
+          amount: 'test-amount',
+        })
+        .params();
+
+      // params set `gsi1sk` and `gsi2pk` fields and remove `gsi3pk` and `gsi3sk` fields
+      expect(params).to.deep.equal({
+        TableName: 'your_table_name',
+        UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #id = :id_u0, #organizationId = :organizationId_u0, #accountId = :accountId_u0, #createdAt = if_not_exists(#createdAt, :createdAt_u0), #updatedAt = :updatedAt_u0, #settledAt = :settledAt_u0, #effectiveAt = :effectiveAt_u0, #type = :type_u0, #category = :category_u0, #amount = :amount_u0, #gsi1pk = :gsi1pk_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0 REMOVE #gsi3pk, #gsi3sk',
+        ExpressionAttributeNames: {
+          '#__edb_e__': '__edb_e__',
+          '#__edb_v__': '__edb_v__',
+          '#gsi3pk': 'gsi3pk',
+          '#gsi3sk': 'gsi3sk',
+          '#id': 'id',
+          '#organizationId': 'organizationId',
+          '#accountId': 'accountId',
+          '#createdAt': 'createdAt',
+          '#updatedAt': 'updatedAt',
+          '#settledAt': 'settledAt',
+          '#effectiveAt': 'effectiveAt',
+          '#type': 'type',
+          '#category': 'category',
+          '#amount': 'amount',
+          '#gsi1pk': 'gsi1pk',
+          '#gsi1sk': 'gsi1sk',
+          '#gsi2pk': 'gsi2pk',
+          '#gsi2sk': 'gsi2sk'
+        },
+        ExpressionAttributeValues: {
+          ':__edb_e___u0': 'test',
+          ':__edb_v___u0': '1',
+          ':id_u0': '123',
+          ':organizationId_u0': '123',
+          ':accountId_u0': '123',
+          ':createdAt_u0': '2024-02-29',
+          ':updatedAt_u0': '2024-04-29',
+          ':settledAt_u0': 'today',
+          ':effectiveAt_u0': 'n/a',
+          ':type_u0': 'test-type',
+          ':category_u0': 'test-category',
+          ':amount_u0': 'test-amount',
+          ':gsi1pk_u0': '$test#organizationid_123',
+          ':gsi1sk_u0': '$test_1#accountid_123#id_123',
+          ':gsi2pk_u0': '$test#organizationid_123',
+          ':gsi2sk_u0': '$test_1#accountid_123#settledat_today'
+        },
+        Key: { pk: '$test#organizationid_123', sk: '$test_1#id_123' }
+      });
+    });
+
+    it('should recreate exact model from issue', async () => {
+
+      const table = "your_table_name";
+
+      const entry = new Entity(
+          {
+            model: {
+              service: 'test',
+              entity: 'test',
+              version: '1'
+            },
+            attributes: {
+              id: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              organizationId: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              accountId: {
+                type: 'string'
+              },
+              createdAt: {
+                type: 'string',
+                readOnly: true,
+                required: true,
+                default: () => '2024-02-29',
+                set: () => '2024-02-29'
+              },
+              updatedAt: {
+                type: 'string',
+                watch: '*',
+                required: true,
+                default: () => '2024-04-29',
+                set: () => '2024-04-29'
+              },
+              settledAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              effectiveAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              type: {
+                type: 'string',
+                required: true
+              },
+              category: {
+                type: 'string',
+                required: true
+              },
+              amount: {
+                type: 'string',
+                required: true
+              },
+              description: {
+                type: 'string'
+              }
+            },
+            indexes: {
+              entries: {
+                pk: {
+                  field: 'pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'sk',
+                  composite: ['id']
+                }
+              },
+              entriesByAccount: {
+                index: 'gsi1pk-gsi1sk-index',
+                pk: {
+                  field: 'gsi1pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi1sk',
+                  composite: ['accountId', 'id']
+                }
+              },
+              entriesBySettledDate: {
+                index: 'gsi2pk-gsi2sk-index',
+                condition: (attr) => attr.settledAt !== 'n/a',
+                pk: {
+                  field: 'gsi2pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi2sk',
+                  composite: ['accountId', 'settledAt']
+                }
+              },
+              entriesByEffectiveDate: {
+                index: 'gsi3pk-gsi3sk-index',
+                condition: (attr) => attr.effectiveAt !== 'n/a',
+                pk: {
+                  field: 'gsi3pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi3sk',
+                  composite: ['accountId', 'effectiveAt']
+                }
+              }
+            }
+          },
+          { table }
+      );
+
+
+      const params = entry
+          .patch({ id: '123', organizationId: '123' })
+          .set({ effectiveAt: 'n/a', accountId: "123", settledAt: "today" })
+          .params();
+
+      // params set `gsi1sk` and `gsi2pk` fields and remove `gsi3pk` and `gsi3sk` fields
+      expect(params).to.deep.equal({
+        UpdateExpression: 'SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi3pk, #gsi3sk',
+        ExpressionAttributeNames: {
+          '#pk': 'pk',
+          '#sk': 'sk',
+          '#effectiveAt': 'effectiveAt',
+          '#accountId': 'accountId',
+          '#settledAt': 'settledAt',
+          '#updatedAt': 'updatedAt',
+          '#gsi1sk': 'gsi1sk',
+          '#gsi2pk': 'gsi2pk',
+          '#gsi2sk': 'gsi2sk',
+          '#gsi3pk': 'gsi3pk',
+          '#gsi3sk': 'gsi3sk',
+          '#organizationId': 'organizationId',
+          '#id': 'id',
+          '#__edb_e__': '__edb_e__',
+          '#__edb_v__': '__edb_v__'
+        },
+        ExpressionAttributeValues: {
+          ':effectiveAt_u0': 'n/a',
+          ':accountId_u0': '123',
+          ':settledAt_u0': 'today',
+          ':updatedAt_u0': '2024-04-29',
+          ':gsi1sk_u0': '$test_1#accountid_123#id_123',
+          ':gsi2pk_u0': '$test#organizationid_123',
+          ':gsi2sk_u0': '$test_1#accountid_123#settledat_today',
+          ':organizationId_u0': '123',
+          ':id_u0': '123',
+          ':__edb_e___u0': 'test',
+          ':__edb_v___u0': '1'
+        },
+        TableName: 'your_table_name',
+        Key: { pk: '$test#organizationid_123', sk: '$test_1#id_123' },
+        ConditionExpression: 'attribute_exists(#pk) AND attribute_exists(#sk)'
+      });
+    });
+
+    it('should fix gh issue 366', async () => {
+      const entityName = uuid();
+      const updatedAt = new Date().toJSON();
+      const createdAt = new Date().toJSON();
+      const Thing = new Entity(
+          {
+            model: {
+              service: 'test',
+              entity: entityName,
+              version: '1'
+            },
+            attributes: {
+              id: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              organizationId: {
+                type: 'string',
+                required: true,
+                readOnly: true
+              },
+              accountId: {
+                type: 'string'
+              },
+              createdAt: {
+                type: 'string',
+                readOnly: true,
+                required: true,
+                default: () => createdAt,
+                set: () => createdAt
+              },
+              updatedAt: {
+                type: 'string',
+                watch: '*',
+                required: true,
+                default: () => updatedAt,
+                set: () => updatedAt
+              },
+              settledAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              effectiveAt: {
+                type: 'string',
+                default: 'n/a'
+              },
+              type: {
+                type: 'string',
+                required: true
+              },
+              category: {
+                type: 'string',
+                required: true
+              },
+              amount: {
+                type: 'string',
+                required: true
+              },
+              description: {
+                type: 'string'
+              }
+            },
+            indexes: {
+              entries: {
+                pk: {
+                  field: 'pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'sk',
+                  composite: ['id']
+                }
+              },
+              entriesByAccount: {
+                index: 'gsi1pk-gsi1sk-index',
+                pk: {
+                  field: 'gsi1pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi1sk',
+                  composite: ['accountId', 'id']
+                }
+              },
+              entriesBySettledDate: {
+                index: 'gsi2pk-gsi2sk-index',
+                condition: (attr) => attr.settledAt !== 'n/a',
+                pk: {
+                  field: 'gsi2pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi2sk',
+                  composite: ['settledAt']
+                }
+              },
+              entriesByEffectiveDate: {
+                index: 'gsi3pk-gsi3sk-index',
+                condition: (attr) => attr.effectiveAt !== 'n/a',
+                pk: {
+                  field: 'gsi3pk',
+                  composite: ['organizationId']
+                },
+                sk: {
+                  field: 'gsi3sk',
+                  composite: ['effectiveAt']
+                }
+              }
+            }
+          },
+          {table, client}
+      );
+
+      // with `effectiveAt` set to 'n/a' and `settledAt` set to 'today' the `entriesByEffectiveDate` index should not be written
+      const params1 = Thing.patch({id: '123', organizationId: '123'})
+          .set({effectiveAt: 'n/a', accountId: '123', settledAt: 'today'})
+          .params();
+
+      expect(params1).to.deep.equal({
+        "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi2pk = :gsi2pk_u0, #gsi2sk = :gsi2sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi3pk, #gsi3sk",
+        "ExpressionAttributeNames": {
+          "#pk": "pk",
+          "#sk": "sk",
+          "#accountId": "accountId",
+          "#settledAt": "settledAt",
+          "#updatedAt": "updatedAt",
+          "#effectiveAt": "effectiveAt",
+          "#gsi1sk": "gsi1sk",
+          "#gsi2pk": "gsi2pk",
+          "#gsi2sk": "gsi2sk",
+          "#gsi3pk": "gsi3pk",
+          "#gsi3sk": "gsi3sk",
+          "#organizationId": "organizationId",
+          "#id": "id",
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__"
+        },
+        "ExpressionAttributeValues": {
+          ":accountId_u0": "123",
+          ":settledAt_u0": "today",
+          ":updatedAt_u0": updatedAt,
+          ":effectiveAt_u0": "n/a",
+          ":gsi1sk_u0": `$${entityName}_1#accountid_123#id_123`,
+          // gsi2pk_u0 was not set prior to this fix
+          ":gsi2pk_u0": "$test#organizationid_123",
+          ":gsi2sk_u0": `$${entityName}_1#settledat_today`,
+          ":organizationId_u0": "123",
+          ":id_u0": "123",
+          ":__edb_e___u0": `${entityName}`,
+          ":__edb_v___u0": "1"
+        },
+        "TableName": "electro",
+        "Key": {
+          "pk": "$test#organizationid_123",
+          "sk": `$${entityName}_1#id_123`
+        },
+        "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk)"
+      });
+
+      // with `effectiveAt` set to 'today' and `settledAt` set to 'n/a' the `entriesBySettledDate` index should not be written
+      const params2 = Thing.patch({id: '123', organizationId: '123'})
+          .set({effectiveAt: 'today', accountId: '123', settledAt: 'n/a'})
+          .params();
+
+      expect(params2).to.deep.equal({
+        "UpdateExpression": "SET #effectiveAt = :effectiveAt_u0, #accountId = :accountId_u0, #settledAt = :settledAt_u0, #updatedAt = :updatedAt_u0, #gsi1sk = :gsi1sk_u0, #gsi3pk = :gsi3pk_u0, #gsi3sk = :gsi3sk_u0, #organizationId = :organizationId_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #gsi2pk, #gsi2sk",
+        "ExpressionAttributeNames": {
+          "#pk": "pk",
+          "#sk": "sk",
+          "#effectiveAt": "effectiveAt",
+          "#settledAt": "settledAt",
+          "#accountId": "accountId",
+          "#updatedAt": "updatedAt",
+          "#gsi1sk": "gsi1sk",
+          "#gsi2pk": "gsi2pk",
+          "#gsi2sk": "gsi2sk",
+          "#gsi3pk": "gsi3pk",
+          "#gsi3sk": "gsi3sk",
+          "#organizationId": "organizationId",
+          "#id": "id",
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__"
+        },
+        "ExpressionAttributeValues": {
+          ":effectiveAt_u0": "today",
+          ":settledAt_u0": "n/a",
+          ":accountId_u0": "123",
+          ":updatedAt_u0": updatedAt,
+          ":gsi1sk_u0": `$${entityName}_1#accountid_123#id_123`,
+          // gsi3pk_u0 was not set prior to this fix
+          ":gsi3pk_u0": "$test#organizationid_123",
+          ":gsi3sk_u0": `$${entityName}_1#effectiveat_today`,
+          ":organizationId_u0": "123",
+          ":id_u0": "123",
+          ":__edb_e___u0": `${entityName}`,
+          ":__edb_v___u0": "1"
+        },
+        "TableName": "electro",
+        "Key": {
+          "pk": "$test#organizationid_123",
+          "sk": `$${entityName}_1#id_123`
+        },
+        "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk)"
+      });
+
+      const organizationId = uuid();
+      const accountId = uuid();
+      const id = uuid();
+      const type = 'green'
+      const category = 'liquid'
+      const amount = '200'
+      const description = 'a description';
+
+      await Thing.create({
+        organizationId,
+        accountId,
+        id,
+        type,
+        amount,
+        category,
+        description,
+        settledAt: 'n/a',
+        effectiveAt: 'n/a'
+      }).go();
+
+      // 'gsi1pk-gsi1sk-index' should have been written to
+      const entriesByAccount = await Thing.query.entriesByAccount({organizationId, accountId}).go();
+      expect(entriesByAccount.data.length).to.equal(1);
+      expect(entriesByAccount.data[0].id).to.equal(id);
+      expect(entriesByAccount.data[0].organizationId).to.equal(organizationId);
+
+      // 'gsi2pk-gsi2sk-index' should not have been written to
+      const entriesBySettledDate = await Thing.query.entriesBySettledDate({organizationId}).go();
+      expect(entriesBySettledDate.data.length).to.equal(0);
+
+      // with settledAt set to 'today', 'gsi2pk-gsi2sk-index' should be written to
+      await Thing.patch({id, organizationId}).set({settledAt: 'today'}).go();
+      const entriesBySettledDate2 = await Thing.query.entriesBySettledDate({organizationId}).go();
+      expect(entriesBySettledDate2.data.length).to.equal(1);
+      expect(entriesBySettledDate2.data[0].id).to.equal(id);
+      expect(entriesBySettledDate2.data[0].organizationId).to.equal(organizationId);
+
+      // 'gsi3pk-gsi3sk-index' should not have been written to
+      const entriesByEffectiveDate = await Thing.query.entriesByEffectiveDate({organizationId}).go();
+      expect(entriesByEffectiveDate.data.length).to.equal(0);
+
+      // with effectiveAt set to 'today', 'gsi3pk-gsi3sk-index' should be written to
+      await Thing.patch({id, organizationId}).set({effectiveAt: 'today'}).go();
+      const entriesByEffectiveDate2 = await Thing.query.entriesByEffectiveDate({organizationId}).go();
+      expect(entriesByEffectiveDate2.data.length).to.equal(1);
+      expect(entriesByEffectiveDate2.data[0].id).to.equal(id);
+      expect(entriesByEffectiveDate2.data[0].organizationId).to.equal(organizationId);
+    });
+  });
 });
 
 

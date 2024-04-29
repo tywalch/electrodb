@@ -1624,6 +1624,13 @@ describe("Entity", () => {
                 sk: "gsi4sk",
               },
             },
+            conditions: {
+              "": true,
+              "gsi1pk-gsi1sk-index": true,
+              "gsi2pk-gsi2sk-index": true,
+              "gsi3pk-gsi3sk-index": true,
+              "gsi4pk-gsi4sk-index": true,
+            }
           },
         },
       ]);
@@ -1646,6 +1653,13 @@ describe("Entity", () => {
                 sk: "gsi2sk",
               },
             },
+            conditions: {
+              "": true,
+              "gsi1pk-gsi1sk-index": true,
+              "gsi2pk-gsi2sk-index": true,
+              "gsi3pk-gsi3sk-index": true,
+              "gsi4pk-gsi4sk-index": true,
+            }
           },
         },
       ]);
@@ -1682,6 +1696,13 @@ describe("Entity", () => {
                 sk: "gsi4sk",
               },
             },
+            conditions: {
+              "": true,
+              "gsi1pk-gsi1sk-index": true,
+              "gsi2pk-gsi2sk-index": true,
+              "gsi3pk-gsi3sk-index": true,
+              "gsi4pk-gsi4sk-index": true,
+            },
           },
         },
       ]);
@@ -1713,6 +1734,13 @@ describe("Entity", () => {
                 sk: "gsi4sk",
               },
             },
+            conditions: {
+              "": true,
+              "gsi1pk-gsi1sk-index": true,
+              "gsi2pk-gsi2sk-index": true,
+              "gsi3pk-gsi3sk-index": true,
+              "gsi4pk-gsi4sk-index": true,
+            }
           },
         },
       ]);
@@ -1735,6 +1763,13 @@ describe("Entity", () => {
                 sk: "gsi3sk",
               },
             },
+            conditions: {
+              "": true,
+              "gsi1pk-gsi1sk-index": true,
+              "gsi2pk-gsi2sk-index": true,
+              "gsi3pk-gsi3sk-index": true,
+              "gsi4pk-gsi4sk-index": true,
+            }
           },
         },
       ]);
