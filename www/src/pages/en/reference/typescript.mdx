@@ -51,7 +51,7 @@ The `QueryResponse` type is the same type returned by an ElectroDB Query.
 
 ```typescript
 export type QueryResponse<E extends Entity<any, any, any, any>> = {
-  data: EntityItem<E>;
+  data: EntityItem<E>[];
   cursor: string | null;
 };
 ```
