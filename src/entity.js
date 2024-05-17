@@ -3282,7 +3282,7 @@ class Entity {
         // the `missing` array will contain indexes that are partially provided, but that leaves cases where the pk or
         // sk of an index is complete but not both. Both cases are invalid if `indexConditionIsDefined=true`
         const missingAttributes = definition.all
-            .filter(({name}) => !attributes[name] && !included[name] || missing.includes(name))
+            .filter(({name}) => attributes[name] === undefined && included[name] === undefined || missing.includes(name))
             .map(({name}) => name)
 
         if (missingAttributes.length) {

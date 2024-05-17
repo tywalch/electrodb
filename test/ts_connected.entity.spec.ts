@@ -4613,6 +4613,261 @@ describe("index condition", () => {
       expect(entriesByEffectiveDate2.data[0].organizationId).to.equal(organizationId);
     });
   });
+
+  describe('when a falsey value is provided', () => {
+    it('should not consider an attribute with an empty string value to be missing', () => {
+      const entity = new Entity({
+        model: {
+          entity: 'chatConversation',
+          version: '1.0',
+          service: 'chatbot',
+        },
+        attributes: {
+          conversationId: {
+            type: 'string',
+            required: true,
+          },
+          loggedInUserId: {
+            type: 'string',
+            required: false,
+          },
+          messages: {
+            type: 'list',
+            items: {
+              type: 'any',
+            },
+            required: true,
+          },
+        },
+        indexes: {
+          byConversationId: {
+            pk: {
+              field: 'pk',
+              composite: ['conversationId'],
+              casing: 'none',
+            },
+            sk: {
+              field: 'sk',
+              composite: [],
+              casing: 'none',
+            },
+          },
+          byUser: {
+            index: 'gsi1pk-gsi1sk-index',
+            type: 'clustered',
+            condition: (attr: any) => {
+              return !!attr.loggedInUserId;
+            },
+            pk: {
+              field: 'gsi1pk',
+              composite: ['loggedInUserId'],
+              casing: 'none',
+            },
+            sk: {
+              field: 'gsi1sk',
+              composite: ['conversationId'],
+              casing: 'none',
+            },
+          },
+        },
+      }, { table, client });
+
+      const operation = () => {
+        return entity.create({
+          conversationId: '123',
+          loggedInUserId: '', // empty string value
+          messages: []
+        }).params();
+      }
+
+      expect(operation).to.not.throw();
+
+      const params = operation();
+
+      expect(params).to.deep.equal({
+        Item: {
+          conversationId: '123',
+          loggedInUserId: '',
+          messages: [],
+          pk: '$chatbot#conversationId_123',
+          sk: '$chatConversation_1.0',
+          __edb_e__: 'chatConversation',
+          __edb_v__: '1.0'
+        },
+        TableName: table,
+        ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+        ExpressionAttributeNames: { '#pk': 'pk', '#sk': 'sk' }
+      });
+    });
+
+    it('should not consider an attribute with a zero value to be missing', () => {
+      const entity = new Entity({
+        model: {
+          entity: 'chatConversation',
+          version: '1.0',
+          service: 'chatbot',
+        },
+        attributes: {
+          conversationId: {
+            type: 'string',
+            required: true,
+          },
+          loggedInUserId: {
+            type: 'number',
+            required: false,
+          },
+          messages: {
+            type: 'list',
+            items: {
+              type: 'any',
+            },
+            required: true,
+          },
+        },
+        indexes: {
+          byConversationId: {
+            pk: {
+              field: 'pk',
+              composite: ['conversationId'],
+              casing: 'none',
+            },
+            sk: {
+              field: 'sk',
+              composite: [],
+              casing: 'none',
+            },
+          },
+          byUser: {
+            index: 'gsi1pk-gsi1sk-index',
+            type: 'clustered',
+            condition: (attr: any) => {
+              return !!attr.loggedInUserId;
+            },
+            pk: {
+              field: 'gsi1pk',
+              composite: ['loggedInUserId'],
+              casing: 'none',
+            },
+            sk: {
+              field: 'gsi1sk',
+              composite: ['conversationId'],
+              casing: 'none',
+            },
+          },
+        },
+      }, { table, client });
+      const operation = () => {
+        return entity.create({
+          conversationId: '123',
+          loggedInUserId: 0, // zero value
+          messages: []
+        }).params();
+      }
+
+      expect(operation).to.not.throw();
+
+      const params = operation();
+
+      expect(params).to.deep.equal({
+        Item: {
+          conversationId: '123',
+          loggedInUserId: 0,
+          messages: [],
+          pk: '$chatbot#conversationId_123',
+          sk: '$chatConversation_1.0',
+          __edb_e__: 'chatConversation',
+          __edb_v__: '1.0'
+        },
+        TableName: table,
+        ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+        ExpressionAttributeNames: { '#pk': 'pk', '#sk': 'sk' }
+      });
+    });
+
+    it('should not consider an attribute with a boolean false value to be missing', () => {
+      const entity = new Entity({
+        model: {
+          entity: 'chatConversation',
+          version: '1.0',
+          service: 'chatbot',
+        },
+        attributes: {
+          conversationId: {
+            type: 'string',
+            required: true,
+          },
+          isLoggedIn: {
+            type: 'boolean',
+            required: false,
+          },
+          messages: {
+            type: 'list',
+            items: {
+              type: 'any',
+            },
+            required: true,
+          },
+        },
+        indexes: {
+          byConversationId: {
+            pk: {
+              field: 'pk',
+              composite: ['conversationId'],
+              casing: 'none',
+            },
+            sk: {
+              field: 'sk',
+              composite: [],
+              casing: 'none',
+            },
+          },
+          byUser: {
+            index: 'gsi1pk-gsi1sk-index',
+            type: 'clustered',
+            condition: (attr: any) => {
+              return !!attr.isLoggedIn;
+            },
+            pk: {
+              field: 'gsi1pk',
+              composite: ['isLoggedIn'],
+              casing: 'none',
+            },
+            sk: {
+              field: 'gsi1sk',
+              composite: ['conversationId'],
+              casing: 'none',
+            },
+          },
+        },
+      }, { table, client });
+
+      const operation = () => {
+        return entity.create({
+          conversationId: '123',
+          isLoggedIn: false, // boolean false value
+          messages: []
+        }).params();
+      }
+
+      expect(operation).to.not.throw();
+
+      const params = operation();
+      expect(params).to.deep.equal({
+        Item: {
+          conversationId: '123',
+          isLoggedIn: false,
+          messages: [],
+          pk: '$chatbot#conversationId_123',
+          sk: '$chatConversation_1.0',
+          __edb_e__: 'chatConversation',
+          __edb_v__: '1.0'
+        },
+        TableName: table,
+        ConditionExpression: 'attribute_not_exists(#pk) AND attribute_not_exists(#sk)',
+        ExpressionAttributeNames: { '#pk': 'pk', '#sk': 'sk' }
+      });
+    });
+  });
 });
 
 
