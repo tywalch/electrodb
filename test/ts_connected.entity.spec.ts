@@ -4687,7 +4687,7 @@ describe("index condition", () => {
       expect(params).to.deep.equal({
         Item: {
           conversationId: '123',
-          loggedInUserId: 0,
+          loggedInUserId: '',
           messages: [],
           pk: '$chatbot#conversationId_123',
           sk: '$chatConversation_1.0',
