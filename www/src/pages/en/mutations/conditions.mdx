@@ -156,11 +156,11 @@ type GetAnimalOptions = {
   keepers: string[];
 };
 function getAnimals(options: GetAnimalOptions) {
-  const { habitat, keepers } = options;
+  const { habitat, excludeKeepers } = options;
   const query = animals.query.exhibit({ habitat });
 
-  for (const name of keepers) {
-    query.where(({ keeper }, { eq }) => eq(keeper, name));
+  for (const name of excludeKeepers) {
+    query.where(({ keeper }, { ne }) => ne(keeper, name));
   }
 
   return query.go();
