@@ -1786,8 +1786,8 @@ describe("Entity", () => {
       let unit = "B54";
       let leaseEnd = "2020-01-20";
       let rent = "0.00";
-      buildingOne = "BuildingA";
-      buildingTwo = "BuildingF";
+      let buildingOne = "BuildingA";
+      let buildingTwo = "BuildingF";
       let get = MallStores.get({ id });
       expect(get).to.have.keys(
         "commit",
@@ -5438,7 +5438,8 @@ describe("Entity", () => {
     });
     it("Should add filtered fields to the between params", () => {
       let mall = "EastPointe";
-      let building = "BuildingA";
+      let buildingOne = "BuildingA";
+      let buildingTwo = "BuildingF";
       let lowRent = "50.00";
       let beginning = "20200101";
       let end = "20200401";
