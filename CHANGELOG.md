@@ -524,3 +524,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.14.1] - 2024-05-17
 ### Fixed
 - Further fixes in service of [Issue #366](https://github.com/tywalch/electrodb/issues/366). A bug was discovered that the logic to validate the presence of an attribute was a simple falsey check instead of a check that the value was `undefined`. This caused empty strings, zero values, and the boolean value `false` to incorrectly be considered missing.  
+
+## [2.14.2] - 2024-07-07
+### Fixed
+- Raised via [Issue #196](https://github.com/tywalch/electrodb/issues/196), a breaking change was made to the project's dependency `@aws-sdk/lib-dynamodb`. The change resulted in the error `Error: Cannot find module '@aws-sdk/lib-dynamodb/dist-cjs/commands/utils'`. This change updates ElectroDB's dependency version to the static version `3.395.0`, a version known to be compadible. Thank you github users @miyamonz, @kevinlonigro, @srodriki!
