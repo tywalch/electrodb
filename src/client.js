@@ -1,5 +1,5 @@
-const lib = require('@aws-sdk/lib-dynamodb')
-const util = require('@aws-sdk/lib-dynamodb/dist-cjs/commands/utils')
+const lib = require("@aws-sdk/lib-dynamodb");
+const util = require("./unmarshallOutput");
 const { isFunction } = require("./validations");
 const { ElectroError, ErrorCodes } = require("./errors");
 const DocumentClientVersions = {
@@ -7,6 +7,7 @@ const DocumentClientVersions = {
   v3: "v3",
   electro: "electro",
 };
+
 const unmarshallOutput = util.unmarshallOutput || ((val) => val);
 
 const v3Methods = ["send"];
@@ -287,7 +288,6 @@ function normalizeConfig(config = {}) {
 }
 
 module.exports = {
-  util,
   v2Methods,
   v3Methods,
   normalizeClient,

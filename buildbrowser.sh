@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 original_line_lib="const lib = require\('@aws-sdk\/lib-dynamodb'\)"
 safe_line_lib="const lib = {}"
-original_line_unmarshall_output="const util = require\('@aws-sdk\/lib-dynamodb\/dist-cjs\/commands\/utils'\)"
+original_line_unmarshall_output="const util = require\('./unmarshallOutput'\)"
 safe_line_unmarshall_output="const util = {}"
 filePath="./src/client.js"
 
