@@ -2308,7 +2308,7 @@ describe("Entity", () => {
       } catch (err: any) {
         expect(err).to.not.be.null;
         expect(err.message).to.equal(
-          `Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+          `Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
         );
       }
     });
@@ -2322,7 +2322,7 @@ describe("Entity", () => {
       } catch (err: any) {
         expect(err).to.not.be.null;
         expect(err.message).to.equal(
-          `Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+          `Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
         );
       }
     });
@@ -5762,7 +5762,7 @@ describe("upsert", () => {
         })
         .params();
     }).to.throw(
-      `Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+      `Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
     );
   });
 });
