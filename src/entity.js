@@ -3121,8 +3121,16 @@ class Entity {
           indexHasSk && this.model.facets.byIndex[index].sk.length === 0;
         let hasPrefix =
           indexHasSk && this.model.prefixes[index].sk.prefix !== undefined;
-        if (noImpactSk && noAttributeSk && hasPrefix) {
-          keys.sk.push(this.model.prefixes[index].sk.prefix);
+        let hasPostfix =
+            indexHasSk && this.model.prefixes[index].sk.prefix !== undefined;
+        if (noImpactSk && noAttributeSk) {
+          let key = hasPrefix ? this.model.prefixes[index].sk.prefix : '';
+          if (hasPostfix) {
+            key = `${key}${this.model.prefixes[index].sk.postfix}`;
+          }
+          if (key) {
+            keys.sk.push(key);
+          }
         }
       }
 
