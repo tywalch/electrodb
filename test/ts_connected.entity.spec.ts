@@ -4025,6 +4025,51 @@ describe("index condition", () => {
     });
   }
 
+  describe('github issue 412', () => {
+    const MyEntity = new Entity({
+      model: {
+        version: '1',
+        service: 'app',
+        entity: 'myEntity',
+      },
+      attributes: {
+        id: { type: 'string' , required: true },
+        name: { type: 'string' , required: true },
+        date: { type: 'string' , required: true },
+      },
+      indexes: {
+        primary: {
+          pk: { field: 'pk', composite: ['id'] },
+          sk: { field: 'sk', composite: [] }
+        },
+        byName: {
+          collection: 'names',
+          type: 'clustered',
+          index: 'gsic1',
+          pk: { field: 'gsic1pk', composite: ['name'] },
+          sk: { field: 'gsic1sk', composite: [] }
+        }
+      }
+    }, { table });
+
+    it('should correctly format a clustered index sort key without composite attributes when updating', () => {
+      const params = MyEntity.update({ id: '1' }).set({ name: 'qwerty', date: '2024-07-25' }).params();
+      expect(params.ExpressionAttributeValues[':gsic1sk_u0']).to.be.equal("$names#myentity_1");
+      
+    });
+
+    it('should correctly format a clustered index sort key without composite attributes when patching', () => {
+      const params = MyEntity.patch({ id: '1' }).set({ name: 'qwerty', date: '2024-07-25' }).params();
+      expect(params.ExpressionAttributeValues[':gsic1sk_u0']).to.be.equal("$names#myentity_1");
+    
+    });
+
+    it('should correctly format a clustered index sort key without composite attributes when upserting', () => {
+      const params = MyEntity.upsert({ id: '1' }).set({ name: 'qwerty', date: '2024-07-25' }).params();
+      expect(params.ExpressionAttributeValues[':gsic1sk_u0']).to.be.equal("$names#myentity_1");
+    });
+  });
+
   describe('github issue 366', () => {
     it('should recreate exact model from issue but as an upsert', async () => {
 

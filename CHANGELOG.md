@@ -528,3 +528,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.14.2] - 2024-07-07
 ### Fixed
 - Raised via [Issue #196](https://github.com/tywalch/electrodb/issues/196) and [Issue #390](https://github.com/tywalch/electrodb/issues/398), a breaking change was made to the project's dependency `@aws-sdk/lib-dynamodb`. The change resulted in the error `Error: Cannot find module '@aws-sdk/lib-dynamodb/dist-cjs/commands/utils'`. This change updates ElectroDB's dependency version to the static version `3.395.0`, a version known to be compadible. Thank you github users @miyamonz, @kevinlonigro, @srodriki, @pablote, @sargisshahinyan, and @arpadgabor!
+
+## [2.14.3] - 2024-07-29
+### Fixed
+- Raised via [Issue #196](https://github.com/tywalch/electrodb/issues/412) and [Discussion 361](https://github.com/tywalch/electrodb/discussions/361); When using a clustered index with an empty composite array, `update` and `patch` methods would not correctly form the complete sort key value for the index. This would prevent impacted items from being queried via an Entity, though they could be queried via a collection on a Service. Thank you to github users @daniel7byte and @santiagomera for raising this issue!
