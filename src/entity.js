@@ -738,6 +738,9 @@ class Entity {
     let count = 0;
     let hydratedUnprocessed = [];
     const shouldHydrate = config.hydrate && method === MethodTypes.query;
+    let allRawItems = [];
+    let indexHasHiddenComposites = (this.model.lookup.indexHasHiddenComposites[indexName] || this.model.lookup.indexHasHiddenComposites[TableIndex]);
+    let hasCountOption = typeof config.count === "number";
     do {
       let limit = max === undefined ? parameters.Limit : max - count;
       let response = await this._exec(
@@ -752,6 +755,7 @@ class Entity {
         ...config,
         includeKeys: shouldHydrate || config.includeKeys,
         ignoreOwnership: shouldHydrate || config.ignoreOwnership,
+        includeRaw: hasCountOption && indexHasHiddenComposites,
       });
 
       if (config.raw) {
@@ -779,13 +783,16 @@ class Entity {
         }
       } else if (Array.isArray(response.data)) {
         let prevCount = count
-        if (!!max || !!config.count) {
+        if (!!max || hasCountOption) {
           count += response.data.length;
         }
         let items = response.data;
-        const moreItemsThanRequired = !!config.count && count > config.count;
+        const moreItemsThanRequired = hasCountOption && count > config.count;
+        let rawItems = response.raw || [];
         if (moreItemsThanRequired) {
-          items = items.slice(0, config.count - prevCount);
+          const endIndex = config.count - prevCount;
+          items = items.slice(0, endIndex);
+          rawItems = rawItems.slice(0, endIndex);
         }
         if (shouldHydrate) {
           const hydrated = await this.hydrate(
@@ -799,9 +806,10 @@ class Entity {
           );
         }
         results = [...results, ...items];
+        allRawItems = [...allRawItems, ...rawItems];
         if (moreItemsThanRequired || count === config.count) {
-          const lastItem = results[results.length - 1];
-          ExclusiveStartKey = this._fromCompositeToKeysByIndex({ indexName, provided: lastItem });
+          const lastRawItem = rawItems[rawItems.length - 1];
+          ExclusiveStartKey = this._trimKeysToIndex({indexName, provided: lastRawItem});
           break;
         }
       } else {
@@ -960,6 +968,7 @@ class Entity {
       stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
     }
     try {
+      let raw = {};
       let results = {};
       if (validations.isFunction(config.parse)) {
         results = config.parse(config, response);
@@ -985,18 +994,24 @@ class Entity {
               this.ownsKeys(response.Item)) ||
             this.ownsItem(response.Item)
           ) {
+            if (config.includeRaw) {
+              raw = results.Item;
+            }
             results = this.model.schema.formatItemForRetrieval(
               response.Item,
               config,
             );
             if (Object.keys(results).length === 0) {
+              raw = null;
               results = null;
             }
           } else if (!config._objectOnEmpty) {
+            raw = null;
             results = null;
           }
         } else if (response.Items) {
           results = [];
+          raw = [];
           for (let item of response.Items) {
             if (
               (config.ignoreOwnership &&
@@ -1013,6 +1028,9 @@ class Entity {
               );
               if (Object.keys(record).length > 0) {
                 results.push(record);
+                if (config.includeRaw) {
+                  raw.push(item);
+                }
               }
             }
           }
@@ -1022,6 +1040,7 @@ class Entity {
             config,
           );
           if (Object.keys(results).length === 0) {
+            raw = null;
             results = null;
           }
         } else if (config._objectOnEmpty) {
@@ -1032,7 +1051,16 @@ class Entity {
           };
         } else {
           results = null;
+          raw = null;
         }
+      }
+
+      let formatted = {
+        data: results,
+      }
+
+      if (config.includeRaw) {
+        formatted.raw = raw;
       }
 
       if (config._isPagination || response.LastEvaluatedKey) {
@@ -1040,10 +1068,11 @@ class Entity {
           config,
           response.LastEvaluatedKey,
         );
-        return { cursor: nextPage || null, data: results };
+
+        formatted.cursor = nextPage || null;
       }
 
-      return { data: results };
+      return formatted;
     } catch (err) {
       if (
         config.originalErr ||
@@ -4184,7 +4213,7 @@ class Entity {
         }
       }
 
-      let definition= {
+      let definition = {
         pk,
         sk,
         hasSk,
@@ -4639,7 +4668,14 @@ class Entity {
       getClient: () => this.client,
       isRoot: true,
     });
-
+    const indexHasHiddenComposites = {};
+    for (let hiddenAttr of schema.hiddenAttributes.values()) {
+      if (facets.byAttr[hiddenAttr]) {
+        for (const facet of facets.byAttr[hiddenAttr]) {
+          indexHasHiddenComposites[facet.index] = true;
+        }
+      }
+    }
     let filters = this._normalizeFilters(model.filters);
     // todo: consider a rename
     let prefixes = this._normalizeKeyFixings({
@@ -4703,6 +4739,7 @@ class Entity {
         clusteredIndexes,
         indexHasSortKeys,
         indexHasSubCollections,
+        indexHasHiddenComposites,
       },
       translations: {
         keys: indexField,
