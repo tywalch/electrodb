@@ -9,6 +9,7 @@ const {
   KeyTypes,
   IndexTypes,
   UpsertOperations,
+  ComparisonTypes,
 } = require("./types");
 const {
   AttributeOperationProxy,
@@ -204,11 +205,13 @@ let clauses = {
           .whenOptions(({ state, options }) => {
             if (!options.ignoreOwnership && !state.getParams()) {
               state.unsafeApplyFilter(
+                {},
                 FilterOperationNames.eq,
                 entity.identifiers.entity,
                 entity.getName(),
               );
               state.unsafeApplyFilter(
+                {},
                 FilterOperationNames.eq,
                 entity.identifiers.version,
                 entity.getVersion(),
@@ -324,9 +327,9 @@ let clauses = {
         const attributes = state.getCompositeAttributes();
         const filter = state.query.filter[ExpressionTypes.ConditionExpression];
         const { pk, sk } = entity._getPrimaryIndexFieldNames();
-        filter.unsafeSet(FilterOperationNames.exists, pk);
+        filter.unsafeSet({}, FilterOperationNames.exists, pk);
         if (sk) {
-          filter.unsafeSet(FilterOperationNames.exists, sk);
+          filter.unsafeSet({}, FilterOperationNames.exists, sk);
         }
         const pkComposite = entity._expectFacets(facets, attributes.pk);
         state.addOption("_includeOnResponseItem", pkComposite);
@@ -540,9 +543,9 @@ let clauses = {
         const attributes = state.getCompositeAttributes();
         const filter = state.query.filter[ExpressionTypes.ConditionExpression];
         const { pk, sk } = entity._getPrimaryIndexFieldNames();
-        filter.unsafeSet(FilterOperationNames.notExists, pk);
+        filter.unsafeSet({}, FilterOperationNames.notExists, pk);
         if (sk) {
-          filter.unsafeSet(FilterOperationNames.notExists, sk);
+          filter.unsafeSet({}, FilterOperationNames.notExists, sk);
         }
         return state
           .setMethod(MethodTypes.put)
@@ -570,9 +573,9 @@ let clauses = {
         const attributes = state.getCompositeAttributes();
         const filter = state.query.filter[ExpressionTypes.ConditionExpression];
         const { pk, sk } = entity._getPrimaryIndexFieldNames();
-        filter.unsafeSet(FilterOperationNames.exists, pk);
+        filter.unsafeSet({}, FilterOperationNames.exists, pk);
         if (sk) {
-          filter.unsafeSet(FilterOperationNames.exists, sk);
+          filter.unsafeSet({}, FilterOperationNames.exists, sk);
         }
         const pkComposite = entity._expectFacets(facets, attributes.pk);
         state.addOption("_includeOnResponseItem", pkComposite);
@@ -940,11 +943,13 @@ let clauses = {
               ) {
                 state
                   .unsafeApplyFilter(
+                    {},
                     FilterOperationNames.eq,
                     entity.identifiers.entity,
                     entity.getName(),
                   )
                   .unsafeApplyFilter(
+                    {},
                     FilterOperationNames.eq,
                     entity.identifiers.version,
                     entity.getVersion(),
@@ -983,15 +988,22 @@ let clauses = {
             state.query.index
           ];
 
-        if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
-          state.filterProperties(FilterOperationNames.lte, endingSk.composites);
-        }
-
         return state
           .setType(QueryTypes.and)
           .setSK(endingSk.composites)
           .setType(QueryTypes.between)
-          .setSK(startingSk.composites);
+          .setSK(startingSk.composites)
+          .beforeBuildParams(({ options, state }) => {
+            if (options.compare === ComparisonTypes.attributes) {
+              if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                state.filterProperties(
+                  FilterOperationNames.lte,
+                  endingSk.composites,
+                  {asPrefix: true}
+                );
+              }
+            }
+          });
       } catch (err) {
         state.setError(err);
         return state;
@@ -1024,23 +1036,27 @@ let clauses = {
         return state;
       }
       try {
-        return state.setType(QueryTypes.gt).ifSK((state) => {
-          const { pk, sk } = state.getCompositeAttributes();
-          const { composites } = state.identifyCompositeAttributes(
-            facets,
-            sk,
-            pk,
-          );
-          state.setSK(composites);
-          const accessPattern =
-            entity.model.translations.indexes.fromIndexToAccessPattern[
-              state.query.index
-            ];
+        return state
+          .setType(QueryTypes.gt)
+          .ifSK((state) => {
+            const { pk, sk } = state.getCompositeAttributes();
+            const { composites } = state.identifyCompositeAttributes(
+              facets,
+              sk,
+              pk,
+            );
+            state.setSK(composites);
+            state.beforeBuildParams(({ options, state }) => {
+              if (options.compare === ComparisonTypes.attributes) {
+                const accessPattern =
+                  entity.model.translations.indexes.fromIndexToAccessPattern[state.query.index];
 
-          if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
-            state.filterProperties(FilterOperationNames.gt, composites);
-          }
-        });
+                if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                  state.filterProperties(FilterOperationNames.gt, composites, {asPrefix: true});
+                }
+              }
+            });
+          });
       } catch (err) {
         state.setError(err);
         return state;
@@ -1096,22 +1112,25 @@ let clauses = {
         return state;
       }
       try {
-        return state.setType(QueryTypes.lte).ifSK((state) => {
-          const { pk, sk } = state.getCompositeAttributes();
-          const { composites } = state.identifyCompositeAttributes(
-            facets,
-            sk,
-            pk,
-          );
-          state.setSK(composites);
-          const accessPattern =
-            entity.model.translations.indexes.fromIndexToAccessPattern[
-              state.query.index
-            ];
-          if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
-            state.filterProperties(FilterOperationNames.lte, composites);
-          }
-        });
+        return state.setType(QueryTypes.lte)
+          .ifSK((state) => {
+            const { pk, sk } = state.getCompositeAttributes();
+            const { composites } = state.identifyCompositeAttributes(
+              facets,
+              sk,
+              pk,
+            );
+            state.setSK(composites);
+
+            state.beforeBuildParams(({ options, state }) => {
+              if (options.compare === ComparisonTypes.attributes) {
+                const accessPattern = entity.model.translations.indexes.fromIndexToAccessPattern[state.query.index];
+                if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                  state.filterProperties(FilterOperationNames.lte, composites, {asPrefix: true});
+                }
+              }
+            });
+          });
       } catch (err) {
         state.setError(err);
         return state;
@@ -1430,14 +1449,14 @@ class ChainState {
     };
   }
 
-  applyFilter(operation, name, ...values) {
+  applyFilter(operation, name, values, filterOptions) {
     if (
       (FilterOperationNames[operation] !== undefined) & (name !== undefined) &&
       values.length > 0
     ) {
       const attribute = this.attributes[name];
       if (attribute !== undefined) {
-        this.unsafeApplyFilter(operation, attribute.field, ...values);
+        this.unsafeApplyFilter(filterOptions, operation, attribute.field, values);
       }
     }
     return this;
@@ -1452,28 +1471,28 @@ class ChainState {
       const attribute = this.attributes[name];
       if (attribute !== undefined) {
         const filter = this.query.filter[ExpressionTypes.ConditionExpression];
-        filter.unsafeSet(operation, attribute.field, ...values);
+        filter.unsafeSet({}, operation, attribute.field, ...values);
       }
     }
     return this;
   }
 
-  unsafeApplyFilter(operation, name, ...values) {
+  unsafeApplyFilter(filterOptions = {}, operation, name, values) {
     if (
       (FilterOperationNames[operation] !== undefined) & (name !== undefined) &&
       values.length > 0
     ) {
       const filter = this.query.filter[ExpressionTypes.FilterExpression];
-      filter.unsafeSet(operation, name, ...values);
+      filter.unsafeSet(filterOptions, operation, name, values);
     }
     return this;
   }
 
-  filterProperties(operation, obj = {}) {
+  filterProperties(operation, obj = {}, filterOptions = {}) {
     for (const property in obj) {
       const value = obj[property];
       if (value !== undefined) {
-        this.applyFilter(operation, property, value);
+        this.applyFilter(operation, property, value, filterOptions);
       }
     }
     return this;
@@ -1551,8 +1570,11 @@ class ChainState {
         fn({ options, state: this });
       });
     }
+
+    return this;
   }
 
+  // these are ran before "beforeBuildParams"
   applyWithOptions(options = {}) {
     this.applyAfterOptions.forEach((fn) => fn(options));
   }
@@ -1563,6 +1585,7 @@ class ChainState {
         fn({ options, state: this });
       });
     }
+    return this;
   }
 
   applyBeforeBuildParams(options = {}) {

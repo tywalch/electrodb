@@ -2542,6 +2542,8 @@ export interface QueryOptions {
   /** @depricated use 'data=includeKeys' instead */
   includeKeys?: boolean;
   order?: "asc" | "desc";
+
+  consistent?: boolean;
 }
 
 // subset of QueryOptions
@@ -2594,6 +2596,7 @@ export interface ParamOptions {
     | "all_new"
     | "updated_new";
   order?: "asc" | "desc";
+  consistent?: boolean;
 }
 
 export interface BulkOptions extends QueryOptions {
@@ -2626,7 +2629,10 @@ interface GoBatchGetTerminalOptions<Attributes> {
   preserveBatchOrder?: boolean;
   listeners?: Array<ElectroEventListener>;
   logger?: ElectroEventListener;
+  consistent?: boolean;
 }
+
+export type ExecutionOptionCompare = "keys" | "attributes";
 
 interface ServiceQueryGoTerminalOptions {
   cursor?: string | null;
@@ -2635,6 +2641,7 @@ interface ServiceQueryGoTerminalOptions {
   raw?: boolean;
   /** @depricated use 'data=raw' instead */
   includeKeys?: boolean;
+  compare?: ExecutionOptionCompare;
   table?: string;
   limit?: number;
   params?: object;
@@ -2645,6 +2652,7 @@ interface ServiceQueryGoTerminalOptions {
   logger?: ElectroEventListener;
   order?: "asc" | "desc";
   hydrate?: boolean;
+  consistent?: boolean;
 }
 
 interface GoQueryTerminalOptions<Attributes> {
@@ -2654,6 +2662,7 @@ interface GoQueryTerminalOptions<Attributes> {
   raw?: boolean;
   /** @depricated use 'data=raw' instead */
   includeKeys?: boolean;
+  compare?: ExecutionOptionCompare;
   table?: string;
   limit?: number;
   count?: number;
@@ -2666,6 +2675,7 @@ interface GoQueryTerminalOptions<Attributes> {
   logger?: ElectroEventListener;
   order?: "asc" | "desc";
   hydrate?: boolean;
+  consistent?: boolean;
 }
 
 interface TransactWriteQueryOptions {
@@ -2688,6 +2698,7 @@ interface TransactGetQueryOptions<Attributes> {
   attributes?: ReadonlyArray<Attributes>;
   listeners?: Array<ElectroEventListener>;
   logger?: ElectroEventListener;
+  consistent?: boolean;
 }
 
 export interface ParamTerminalOptions<Attributes> {
@@ -2695,6 +2706,7 @@ export interface ParamTerminalOptions<Attributes> {
   limit?: number;
   params?: object;
   originalErr?: boolean;
+  consistent?: boolean;
   attributes?: ReadonlyArray<Attributes>;
   response?:
     | "default"
@@ -2703,6 +2715,7 @@ export interface ParamTerminalOptions<Attributes> {
     | "updated_old"
     | "all_new"
     | "updated_new";
+  compare?: ExecutionOptionCompare;
   order?: "asc" | "desc";
 }
 

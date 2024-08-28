@@ -27,7 +27,8 @@ class FilterExpression extends ExpressionState {
     return !expression.replace(/\n|\r|\w/g, "").trim();
   }
 
-  add(newExpression) {
+  add(newExpression, filterOptions = {}) {
+    const asPrefix = !!filterOptions.asPrefix;
     let expression = "";
     let existingExpression = this.expression;
     if (
@@ -39,13 +40,15 @@ class FilterExpression extends ExpressionState {
       if (isEmpty) {
         return existingExpression;
       }
-      let existingNeedsParens =
-        !existingExpression.startsWith("(") &&
-        !existingExpression.endsWith(")");
-      if (existingNeedsParens) {
+
+      if (!asPrefix && !existingExpression.startsWith("(") && !existingExpression.endsWith(")")) {
         existingExpression = `(${existingExpression})`;
       }
-      expression = `${existingExpression} AND ${newExpression}`;
+      if (asPrefix) {
+        expression = `(${newExpression}) AND ${existingExpression}`;
+      } else {
+        expression = `${existingExpression} AND ${newExpression}`;
+      }
     } else {
       expression = this._trim(newExpression);
     }
@@ -53,7 +56,8 @@ class FilterExpression extends ExpressionState {
   }
 
   // applies operations without verifying them against known attributes. Used internally for key conditions.
-  unsafeSet(operation, name, ...values) {
+  unsafeSet(filterOptions, operation, name, ...values) {
+
     const { template } = FilterOperations[operation] || {};
     if (template === undefined) {
       throw new Error(
@@ -68,7 +72,7 @@ class FilterExpression extends ExpressionState {
       names.prop,
       ...valueExpressions,
     );
-    this.add(condition);
+    this.add(condition, filterOptions);
   }
 
   build() {

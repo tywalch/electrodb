@@ -6409,3 +6409,68 @@ describe("conversion use cases: pagination", () => {
     );
   });
 });
+
+describe('consistent read', () => {
+    const entity = new Entity({
+      model: {
+        version: '1',
+        service: 'tests',
+        entity: 'consistent-read',
+      },
+      attributes: {
+        name: {
+          type: 'string'
+        },
+        type: {
+          type: 'string'
+        }
+      },
+      indexes: {
+        record: {
+          pk: {
+            field: 'pk',
+            composite: ['name']
+          },
+          sk: {
+            field: 'sk',
+            composite: ['type']
+          }
+        }
+      }
+    }, { table });
+
+    const name = 'dr. strangelove';
+    const type = 'satire';
+
+    async function resolves(promise: Promise<any>) {
+      return promise.then(() => true).catch(() => false);
+    }
+
+    it('should apply consistent read options to dynamodb parameters to a get request', async () => {
+      const getParams = entity.get({name, type}).params({consistent: true});
+      expect(getParams.ConsistentRead).to.be.true;
+      // dynamodb does not cry
+      expect(await resolves(entity.get({name, type}).go({consistent: true})));
+    });
+
+    it('should apply consistent read options to dynamodb parameters to a batchGet request', async () => {
+      const batchGetParams = entity.get([{ name, type }]).params({consistent: true});
+      expect(batchGetParams[0].RequestItems.electro.ConsistentRead).to.be.true;
+      // dynamodb does not cry
+      expect(await resolves(entity.get([{ name, type }]).go({consistent: true})));
+    });
+
+    it('should apply consistent read options to dynamodb parameters to a query request', async () => {
+      const queryParams = entity.query.record({name}).params({consistent: true});
+      expect(queryParams.ConsistentRead).to.be.true;
+      // dynamodb does not cry
+      expect(await resolves(entity.query.record({name}).go({consistent: true})));
+    });
+
+    it('should apply consistent read options to dynamodb parameters to a scan request', async () => {
+      const scanParams = entity.scan.params({consistent: true});
+      expect(scanParams.ConsistentRead).to.be.true;
+      // dynamodb does not cry
+      expect(await resolves(entity.scan.go({consistent: true})));
+    });
+})

@@ -16,14 +16,21 @@ const {
   ElectroAttributeValidationError,
 } = require("./src/errors");
 
+const {
+  ComparisonTypes
+} = require('./src/types');
+
 module.exports = {
   Entity,
   Service,
   ElectroError,
   createSchema,
+  ComparisonTypes,
   CustomAttributeType,
   createCustomAttribute,
   ElectroValidationError,
   createGetTransaction,
   createWriteTransaction,
+  ElectroUserValidationError,
+  ElectroAttributeValidationError,
 };

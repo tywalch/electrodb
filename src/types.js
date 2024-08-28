@@ -8,6 +8,11 @@ const BatchWriteTypes = {
   concurrent: "concurrent",
 };
 
+const ComparisonTypes = {
+  keys: 'keys',
+  attributes: 'attributes',
+}
+
 const QueryTypes = {
   and: "and",
   gte: "gte",
@@ -86,7 +91,7 @@ const Comparisons = {
   gt: ">",
 };
 
-const PartialComparisons = {
+const KeyAttributesComparisons = {
   lt: "<",
   gte: ">=",
 
@@ -341,6 +346,7 @@ module.exports = {
   AttributeTypes,
   EntityVersions,
   CastKeyOptions,
+  ComparisonTypes,
   ServiceVersions,
   ExpressionTypes,
   ElectroInstance,
@@ -348,13 +354,13 @@ module.exports = {
   UnprocessedTypes,
   AttributeWildCard,
   TerminalOperation,
-  PartialComparisons,
   FormatToReturnValues,
   AttributeProxySymbol,
   ElectroInstanceTypes,
   MethodTypeTranslation,
   EventSubscriptionTypes,
   DynamoDBAttributeTypes,
+  KeyAttributesComparisons,
   AttributeMutationMethods,
   AllPages,
   ResultOrderOption,

@@ -23,10 +23,11 @@ const {
   ResultOrderOption,
   ResultOrderParam,
   IndexTypes,
-  PartialComparisons,
+  KeyAttributesComparisons,
   MethodTypeTranslation,
   TransactionCommitSymbol,
   CastKeyOptions,
+  ComparisonTypes,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -1683,6 +1684,8 @@ class Entity {
       response: "default",
       cursor: null,
       data: "attributes",
+      consistent: undefined,
+      compare: ComparisonTypes.attributes,
       ignoreOwnership: false,
       _providedIgnoreOwnership: false,
       _isPagination: false,
@@ -1714,6 +1717,18 @@ class Entity {
               e.ErrorCodes.InvalidOptions,
               `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc, received: "${option.order}"`,
             );
+        }
+      }
+
+      if (typeof option.compare === 'string') {
+        const type = ComparisonTypes[option.compare.toLowerCase()];
+        if (type) {
+          config.compare = type;
+        } else {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Invalid value for query option "compare" provided. Valid options include ${u.commaSeparatedString(Object.keys(ComparisonTypes))}, received: "${option.compare}"`,
+          );
         }
       }
 
@@ -1817,6 +1832,11 @@ class Entity {
           throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Query option 'count' must be of type 'number' and greater than zero.`);
         }
         config.count = option.count;
+      }
+
+      if (option.consistent === true) {
+        config.consistent = true;
+        config.params.ConsistentRead = true;
       }
 
       if (option.limit !== undefined) {
@@ -2645,7 +2665,7 @@ class Entity {
     return expressions;
   }
 
-  _makeQueryKeys(state) {
+  _makeQueryKeys(state, options) {
     let consolidatedQueryFacets = this._consolidateQueryFacets(
       state.query.keys.sk,
     );
@@ -2660,13 +2680,13 @@ class Entity {
           isCollection: state.query.options._isCollectionQuery,
         });
       default:
-        return this._makeIndexKeysWithoutTail(state, consolidatedQueryFacets);
+        return this._makeIndexKeysWithoutTail(state, consolidatedQueryFacets, options);
     }
   }
 
   /* istanbul ignore next */
   _queryParams(state = {}, options = {}) {
-    const indexKeys = this._makeQueryKeys(state);
+    const indexKeys = this._makeQueryKeys(state, options);
     let parameters = {};
     switch (state.query.type) {
       case QueryTypes.is:
@@ -2722,6 +2742,7 @@ class Entity {
           state.query.type,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys,
+          options,
         );
         break;
       default:
@@ -2881,25 +2902,32 @@ class Entity {
     return merged;
   }
 
+  _getComparisonOperator(comparison, skType, comparisonType) {
+    if (skType === "number") {
+      return Comparisons[comparison];
+    } else if (comparisonType === ComparisonTypes.attributes) {
+      return KeyAttributesComparisons[comparison];
+    } else {
+      return Comparisons[comparison];
+    }
+  }
+
   /* istanbul ignore next */
   _makeComparisonQueryParams(
     index = TableIndex,
     comparison = "",
     filter = {},
     indexKeys = {},
+    options = {},
   ) {
     const { pk } = indexKeys;
     const sk = indexKeys.sk[0];
 
-    let operator =
-      typeof sk === "number"
-        ? Comparisons[comparison]
-        : PartialComparisons[comparison];
-
+    let operator = this._getComparisonOperator(comparison, typeof sk, options.compare);
     if (!operator) {
       throw new Error(
         `Unexpected comparison operator "${comparison}", expected ${u.commaSeparatedString(
-          Object.values(PartialComparisons),
+          Object.keys(KeyAttributesComparisons),
         )}`,
       );
     }
@@ -3555,34 +3583,33 @@ class Entity {
     return prefix;
   }
 
-  _makeKeyTransforms(queryType) {
+  _makeKeyTransforms(queryType, options = {}) {
     const transforms = [];
     const shiftUp = (val) => u.shiftSortOrder(val, 1);
     const noop = (val) => val;
-    switch (queryType) {
-      case QueryTypes.between:
-        transforms.push(noop, shiftUp);
-        break;
-      case QueryTypes.lte:
-      case QueryTypes.gt:
-        transforms.push(shiftUp);
-        break;
-      default:
-        transforms.push(noop);
-        break;
+
+    if (options.compare === ComparisonTypes.keys) {
+      transforms.push(noop);
+    } else if (queryType === QueryTypes.between) {
+      transforms.push(noop, shiftUp);
+    } else if (queryType === QueryTypes.lte || queryType === QueryTypes.gt) {
+      transforms.push(shiftUp);
+    } else {
+      transforms.push(noop);
     }
+
     return transforms;
   }
 
   /* istanbul ignore next */
-  _makeIndexKeysWithoutTail(state = {}, skFacets = []) {
+  _makeIndexKeysWithoutTail(state = {}, skFacets = [], options) {
     const index = state.query.index || TableIndex;
     this._validateIndex(index);
     const pkFacets = state.query.keys.pk || {};
     const excludePostfix =
       state.query.options.indexType === IndexTypes.clustered &&
       state.query.options._isCollectionQuery;
-    const transforms = this._makeKeyTransforms(state.query.type);
+    const transforms = this._makeKeyTransforms(state.query.type, options);
     if (!skFacets.length) {
       skFacets.push({});
     }

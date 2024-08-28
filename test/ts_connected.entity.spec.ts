@@ -4915,4 +4915,137 @@ describe("index condition", () => {
   });
 });
 
+describe('execution option compare', () => {
+  const Attraction = new Entity({
+    model: {
+      entity: 'attraction',
+      service: 'comparison',
+      version: '1'
+    },
+    attributes: {
+      name: {
+        type: 'string'
+      },
+      country: {
+        type: 'string'
+      },
+      state: {
+        type: 'string'
+      },
+      county: {
+        type: 'string'
+      },
+      city: {
+        type: 'string'
+      },
+      zip: {
+        type: 'string'
+      }
+    },
+    indexes: {
+      location: {
+        pk: {
+          field: 'pk',
+          composite: ['country', 'state']
+        },
+        sk: {
+          field: 'sk',
+          composite: ['county', 'city', 'zip', 'name']
+        }
+      }
+    }
+  }, { table });
 
+  describe('when using compare option keys', () => {
+    const country = 'USA';
+    const state = 'Wisconsin';
+    const county = 'Dane';
+    const city = 'Madison';
+    const zip = '53713';
+    const name = 'Veterans Memorial Coliseum';
+
+    it('should parameters that only compare keys and lack filters when using gt', () => {
+      const params = Attraction.query.location({country, state}).gt({county, city}).params({ compare: 'keys' });
+      expect(params).to.deep.equal({
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+          "#pk": "pk",
+          "#sk1": "sk"
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$attraction_1#county_dane#city_madison"
+        },
+        "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1"
+      });
+    });
+
+    it('should parameters that only compare keys and lack filters when using lte', () => {
+      const params = Attraction.query.location({country, state}).lte({county, city}).params({ compare: 'keys' });
+      expect(params).to.deep.equal({
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+          "#pk": "pk",
+          "#sk1": "sk"
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$attraction_1#county_dane#city_madison"
+        },
+        "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1"
+      });
+    });
+
+    it('should parameters that only compare keys and lack filters when using between', () => {
+      const params = Attraction.query.location({country, state}).between(
+        { county, city: "Madison" },
+        { county, city: "Marshall" },
+      ).params({ compare: 'keys' });
+      expect(params).to.deep.equal({
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+          "#pk": "pk",
+          "#sk1": "sk"
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$attraction_1#county_dane#city_madison",
+          ":sk2": "$attraction_1#county_dane#city_marshall"
+        },
+        "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2"
+      });
+    });
+
+    it('should not impact parameters for gte', () => {
+      const defaultParameters = Attraction.query.location({country, state}).gte({county, city}).params()
+      const attributesParams = Attraction.query.location({country, state}).gte({county, city}).params({ compare: 'attributes' });
+      const keysParams = Attraction.query.location({country, state}).gte({county, city}).params({ compare: 'keys' });
+      expect(defaultParameters).to.deep.equal(attributesParams);
+      expect(attributesParams).to.deep.equal(keysParams);
+    });
+
+    it('should not impact parameters for lt', () => {
+      const defaultParameters = Attraction.query.location({country, state}).lt({county, city}).params();
+      const attributesParams = Attraction.query.location({country, state}).lt({county, city}).params({ compare: 'attributes' });
+      const keysParams = Attraction.query.location({country, state}).lt({county, city}).params({ compare: 'keys' });
+      expect(defaultParameters).to.deep.equal(attributesParams);
+      expect(attributesParams).to.deep.equal(keysParams);
+    });
+
+    it('should not impact parameters for begins', () => {
+      const defaultParameters = Attraction.query.location({country, state}).begins({county, city}).params();
+      const attributesParams = Attraction.query.location({country, state}).begins({county, city}).params({ compare: 'attributes' });
+      const keysParams = Attraction.query.location({country, state}).begins({county, city}).params({ compare: 'keys' });
+      expect(defaultParameters).to.deep.equal(attributesParams);
+      expect(attributesParams).to.deep.equal(keysParams);
+    });
+
+    it('should not impact parameters for implicit begins', () => {
+      const defaultParameters = Attraction.query.location({country, state, county, city}).params();
+      const attributesParams = Attraction.query.location({country, state, county, city}).params({ compare: 'attributes' });
+      const keysParams = Attraction.query.location({country, state, county, city}).params({ compare: 'keys' });
+      expect(defaultParameters).to.deep.equal(attributesParams);
+      expect(attributesParams).to.deep.equal(keysParams);
+    });
+  });
+})
