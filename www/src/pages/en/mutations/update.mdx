@@ -440,7 +440,7 @@ await StoreLocations.update({ cityId, mallId, storeId, buildingId })
 
 ### Data
 
-The `data()` allows for different approach to updating your item, by accepting a callback with a similar argument signature to the [where clause](/en/mutations/conditionals).
+The `data()` allows for different approach to updating your item, by accepting a callback with a similar argument signature to the [where clause](/en/mutations/conditions).
 
 The callback provided to the `data` method is injected with an `attributes` object as the first parameter, and an `operations` object as the second parameter. All operations accept an attribute from the `attributes` object as a first parameter, and optionally accept a second `value` parameter.
 
