@@ -219,8 +219,8 @@ const ErrorCodes = {
   },
   IncompleteIndexCompositesAttributesProvided: {
     code: 2012,
-    section: 'invalid-index-composite-attributes-provided',
-    name: 'IncompleteIndexCompositesAttributesProvided',
+    section: "invalid-index-composite-attributes-provided",
+    name: "IncompleteIndexCompositesAttributesProvided",
     sym: ErrorCode,
   },
   InvalidAttribute: {

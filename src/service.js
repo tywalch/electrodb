@@ -634,11 +634,11 @@ class Service {
 
     if (!scopeMatch) {
       collectionDifferences.push(
-          `The index scope value provided "${
-              providedIndex.scope || "undefined"
-          }" does not match established index scope value "${
-              definition.scope || "undefined"
-          }" on index "${providedIndexName}". Index scope options must match across all entities participating in a collection`,
+        `The index scope value provided "${
+          providedIndex.scope || "undefined"
+        }" does not match established index scope value "${
+          definition.scope || "undefined"
+        }" on index "${providedIndexName}". Index scope options must match across all entities participating in a collection`,
       );
     }
 

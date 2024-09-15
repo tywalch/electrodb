@@ -9,9 +9,9 @@ const BatchWriteTypes = {
 };
 
 const ComparisonTypes = {
-  keys: 'keys',
-  attributes: 'attributes',
-}
+  keys: "keys",
+  attributes: "attributes",
+};
 
 const QueryTypes = {
   and: "and",

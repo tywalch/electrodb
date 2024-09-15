@@ -41,7 +41,11 @@ class FilterExpression extends ExpressionState {
         return existingExpression;
       }
 
-      if (!asPrefix && !existingExpression.startsWith("(") && !existingExpression.endsWith(")")) {
+      if (
+        !asPrefix &&
+        !existingExpression.startsWith("(") &&
+        !existingExpression.endsWith(")")
+      ) {
         existingExpression = `(${existingExpression})`;
       }
       if (asPrefix) {
@@ -57,7 +61,6 @@ class FilterExpression extends ExpressionState {
 
   // applies operations without verifying them against known attributes. Used internally for key conditions.
   unsafeSet(filterOptions, operation, name, ...values) {
-
     const { template } = FilterOperations[operation] || {};
     if (template === undefined) {
       throw new Error(
