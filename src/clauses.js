@@ -928,12 +928,16 @@ let clauses = {
             );
             state.setSK(state.buildQueryComposites(facets, sk));
             // we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
-            if (sk.length > 1) {
-              state.filterProperties(FilterOperationNames.eq, {
-                ...unused,
-                ...composites,
-              });
-            }
+            state.beforeBuildParams(({ options, state }) => {
+              if (options.compare === ComparisonTypes.attributes) {
+                if (sk.length > 1) {
+                  state.filterProperties(FilterOperationNames.eq, {
+                    ...unused,
+                    ...composites,
+                  });
+                }
+              }
+            });
 
             state.whenOptions(({ options, state }) => {
               if (

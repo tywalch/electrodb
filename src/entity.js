@@ -1690,7 +1690,7 @@ class Entity {
       cursor: null,
       data: "attributes",
       consistent: undefined,
-      compare: ComparisonTypes.attributes,
+      compare: ComparisonTypes.keys,
       ignoreOwnership: false,
       _providedIgnoreOwnership: false,
       _isPagination: false,
@@ -3681,7 +3681,7 @@ class Entity {
     const transforms = [];
     const shiftUp = (val) => u.shiftSortOrder(val, 1);
     const noop = (val) => val;
-
+    console.log({queryType});
     if (options.compare === ComparisonTypes.keys) {
       transforms.push(noop);
     } else if (queryType === QueryTypes.between) {
