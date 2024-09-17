@@ -1519,14 +1519,6 @@ describe("index types and operations", () => {
               ? loaded.clusteredEntity1Items.filter(filterByOperation)
               : loaded.isolatedEntity1Items.filter(filterByOperation);
 
-          console.log('items', JSON.stringify({
-            entity1Items,
-            indexType,
-            loaded: indexType === "clustered"
-              ? loaded.clusteredEntity1Items
-              : loaded.isolatedEntity1Items,
-          }, null, 4));
-
           const entity1PrimaryQuery =
             indexType === "clustered"
               ? services.clusteredService.entities.entity1.query.primary({
@@ -1541,11 +1533,7 @@ describe("index types and operations", () => {
               case "between":
                 return entity1PrimaryQuery
                   .between({ prop2: first }, { prop2: last })
-                  .go({ compare: 'attributes', logger: (event) => {
-                    if (event.type === 'query') {
-                      console.log('paramz', JSON.stringify({ params: event.params, first, last }, null, 4))
-                    }
-                  }});
+                  .go({ compare: 'attributes' });
               case "gte":
                 return entity1PrimaryQuery.gte({ prop2: first }).go({ compare: 'attributes' });
               case "gt":
@@ -1558,10 +1546,6 @@ describe("index types and operations", () => {
           })();
 
           expect(entity1PrimaryQueryResults.cursor).to.be.null;
-          console.log('result', {
-            data: entity1PrimaryQueryResults.data,
-            entity1Items,
-          })
           compareItems(entity1PrimaryQueryResults.data, entity1Items);
 
           const entity1SecondaryQuery =
@@ -1574,20 +1558,11 @@ describe("index types and operations", () => {
                 });
 
           const entity1SecondaryQueryResults = await (async function () {
-            console.log('wot?', {operation})
             switch (operation) {
               case "between":
                 return entity1SecondaryQuery
                   .between({ prop5: first }, { prop5: last })
-                  .go({ compare: 'attributes', logger: (event) => {
-                    if (event.type === 'query') {
-                      const { params } = event;
-                      console.log('BETWEENz', {params})
-                    } else {
-                      const { results } = event;
-                      console.log('BETWEENs', {results})
-                    }
-                    } });
+                  .go({ compare: 'attributes' });
               case "gte":
                 return entity1SecondaryQuery.gte({ prop5: first }).go({ compare: 'attributes' });
               case "gt":

@@ -1461,9 +1461,13 @@ class ChainState {
   }
 
   applyFilter(operation, name, values, filterOptions) {
+    if (Array.isArray(values)) {
+      console.log('AHHHH', {operation, name, values});
+      throw new Error('THIS IS AN ARRAY')
+    }
     if (
-      (FilterOperationNames[operation] !== undefined) & (name !== undefined) &&
-      values.length > 0
+      (FilterOperationNames[operation] !== undefined) && (name !== undefined) &&
+      values !== undefined
     ) {
       const attribute = this.attributes[name];
       if (attribute !== undefined) {
@@ -1496,7 +1500,7 @@ class ChainState {
   unsafeApplyFilter(filterOptions = {}, operation, name, values) {
     if (
       (FilterOperationNames[operation] !== undefined) & (name !== undefined) &&
-      values.length > 0
+      values !== undefined
     ) {
       const filter = this.query.filter[ExpressionTypes.FilterExpression];
       filter.unsafeSet(filterOptions, operation, name, values);

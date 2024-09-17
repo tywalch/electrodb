@@ -2357,19 +2357,11 @@ describe("Entity", () => {
         ExpressionAttributeNames: {
           "#pk": "gsi2pk",
           "#sk1": "gsi2sk",
-          "#prop6": "prop6",
-          "#prop7": "prop7",
-          "#prop8": "prop8",
         },
         ExpressionAttributeValues: {
-          ":prop60": record.prop6,
-          ":prop70": record.prop7,
-          ":prop80": record.prop8,
           ":pk": `$test#prop5_${record.prop5}`,
           ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
         },
-        FilterExpression:
-          "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
         IndexName: "gsi2pk-gsi2sk-index",
       });
       let beforeUpdate = await Dummy.query
@@ -2404,19 +2396,11 @@ describe("Entity", () => {
         ExpressionAttributeNames: {
           "#pk": "gsi2pk",
           "#sk1": "gsi2sk",
-          "#prop6": "prop6",
-          "#prop7": "prop7",
-          "#prop8": "prop8",
         },
         ExpressionAttributeValues: {
-          ":prop60": record.prop6,
-          ":prop70": record.prop7,
-          ":prop80": record.prop8,
           ":pk": `$test#prop5_${prop5}`,
           ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
         },
-        FilterExpression:
-          "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
         IndexName: "gsi2pk-gsi2sk-index",
       });
       let afterUpdate = await Dummy.query
@@ -2464,19 +2448,11 @@ describe("Entity", () => {
         ExpressionAttributeNames: {
           "#pk": "gsi2pk",
           "#sk1": "gsi2sk",
-          "#prop6": "prop6",
-          "#prop7": "prop7",
-          "#prop8": "prop8",
         },
         ExpressionAttributeValues: {
           ":pk": `$test#prop5_${record.prop5}`,
           ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
-          ":prop60": record.prop6,
-          ":prop70": record.prop7,
-          ":prop80": record.prop8,
         },
-        FilterExpression:
-          "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
         IndexName: "gsi2pk-gsi2sk-index",
       });
       let beforeUpdate = await Dummy.query
@@ -2510,19 +2486,11 @@ describe("Entity", () => {
         ExpressionAttributeNames: {
           "#pk": "gsi2pk",
           "#sk1": "gsi2sk",
-          "#prop6": "prop6",
-          "#prop7": "prop7",
-          "#prop8": "prop8",
         },
         ExpressionAttributeValues: {
           ":pk": `$test#prop5_${prop5}`,
           ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
-          ":prop60": record.prop6,
-          ":prop70": record.prop7,
-          ":prop80": record.prop8,
         },
-        FilterExpression:
-          "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
         IndexName: "gsi2pk-gsi2sk-index",
       });
       let afterUpdate = await Dummy.query
@@ -4622,7 +4590,7 @@ describe("attributes query option", () => {
       },
     ]);
     expect(params.ProjectionExpression).to.equal(
-      "#attr5, #attr4, #pk, #sk1, #attr2, #prop9, #attr10, #__edb_e__, #__edb_v__",
+      "#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__",
     );
   });
 
@@ -4668,7 +4636,7 @@ describe("attributes query option", () => {
       },
     ]);
     expect(params.ProjectionExpression).to.equal(
-      "#attr5, #attr4, #pk, #sk1, #attr2, #prop9, #attr10, #__edb_e__, #__edb_v__",
+      "#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__",
     );
   });
 
@@ -5528,6 +5496,8 @@ describe("upsert", () => {
 
     expect(typeof put.data.createdAt).to.equal("number");
     expect(typeof put.data.updatedAt).to.equal("number");
+
+    await sleep(1);
 
     const upserted = await entity
       .upsert({

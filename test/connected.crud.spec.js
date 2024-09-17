@@ -4364,19 +4364,11 @@ for (const [clientVersion, client] of [
             ExpressionAttributeNames: {
               "#pk": "gsi2pk",
               "#sk1": "gsi2sk",
-              "#prop6": "prop6",
-              "#prop7": "prop7",
-              "#prop8": "prop8",
             },
             ExpressionAttributeValues: {
-              ":prop60": record.prop6,
-              ":prop70": record.prop7,
-              ":prop80": record.prop8,
               ":pk": `$test#prop5_${record.prop5}`,
               ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
             },
-            FilterExpression:
-              "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
             IndexName: "gsi2pk-gsi2sk-index",
           });
           let beforeUpdate = await Dummy.query
@@ -4411,19 +4403,11 @@ for (const [clientVersion, client] of [
             ExpressionAttributeNames: {
               "#pk": "gsi2pk",
               "#sk1": "gsi2sk",
-              "#prop6": "prop6",
-              "#prop7": "prop7",
-              "#prop8": "prop8",
             },
             ExpressionAttributeValues: {
-              ":prop60": record.prop6,
-              ":prop70": record.prop7,
-              ":prop80": record.prop8,
               ":pk": `$test#prop5_${prop5}`,
               ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
             },
-            FilterExpression:
-              "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
             IndexName: "gsi2pk-gsi2sk-index",
           });
           let afterUpdate = await Dummy.query
@@ -4474,19 +4458,11 @@ for (const [clientVersion, client] of [
             ExpressionAttributeNames: {
               "#pk": "gsi2pk",
               "#sk1": "gsi2sk",
-              "#prop6": "prop6",
-              "#prop7": "prop7",
-              "#prop8": "prop8",
             },
             ExpressionAttributeValues: {
-              ":prop60": record.prop6,
-              ":prop70": record.prop7,
-              ":prop80": record.prop8,
               ":pk": `$test#prop5_${record.prop5}`,
               ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
             },
-            FilterExpression:
-              "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
             IndexName: "gsi2pk-gsi2sk-index",
           });
           let beforeUpdate = await Dummy.query
@@ -4521,19 +4497,11 @@ for (const [clientVersion, client] of [
             ExpressionAttributeNames: {
               "#pk": "gsi2pk",
               "#sk1": "gsi2sk",
-              "#prop6": "prop6",
-              "#prop7": "prop7",
-              "#prop8": "prop8",
             },
             ExpressionAttributeValues: {
-              ":prop60": record.prop6,
-              ":prop70": record.prop7,
-              ":prop80": record.prop8,
               ":pk": `$test#prop5_${prop5}`,
               ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
             },
-            FilterExpression:
-              "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
             IndexName: "gsi2pk-gsi2sk-index",
           });
           let afterUpdate = await Dummy.query
@@ -4885,17 +4853,11 @@ for (const [clientVersion, client] of [
             ExpressionAttributeNames: {
               "#pk": "gsi1pk",
               "#sk1": "gsi1sk",
-              "#unitId": "unitId",
-              "#buildingId": "buildingId",
             },
             ExpressionAttributeValues: {
               ":pk": "mallz_eastpointe",
               ":sk1": "b_buildingz#u_g1#s_",
-              ":buildingId0": "BuildingZ",
-              ":unitId0": "G1",
             },
-            FilterExpression:
-              "(#buildingId = :buildingId0) AND #unitId = :unitId0",
             IndexName: "gsi1pk-gsi1sk-index",
           });
           expect(leasesParams).to.deep.equal({
@@ -4904,17 +4866,11 @@ for (const [clientVersion, client] of [
             ExpressionAttributeNames: {
               "#pk": "gsi2pk",
               "#sk1": "gsi2sk",
-              "#leaseEnd": "leaseEnd",
-              "#storeId": "storeId",
             },
             ExpressionAttributeValues: {
               ":pk": "m_eastpointe",
               ":sk1": "l_2020-01-20#s_lattelarrys#b_",
-              ":leaseEnd0": "2020-01-20",
-              ":storeId0": "LatteLarrys",
             },
-            FilterExpression:
-              "(#leaseEnd = :leaseEnd0) AND #storeId = :storeId0",
             IndexName: "gsi2pk-gsi2sk-index",
           });
           expect(shopParams).to.deep.equal({
@@ -4923,17 +4879,11 @@ for (const [clientVersion, client] of [
             ExpressionAttributeNames: {
               "#pk": "gsi4pk",
               "#sk1": "gsi4sk",
-              "#buildingId": "buildingId",
-              "#mallId": "mallId",
             },
             ExpressionAttributeValues: {
-              ":buildingId0": "BuildingZ",
-              ":mallId0": "EastPointe",
               ":pk": "$facettest_1#store_lattelarrys",
               ":sk1": `$${ENTITY}#mall_eastpointe#building_buildingz#unit_`,
             },
-            FilterExpression:
-              "(#mallId = :mallId0) AND #buildingId = :buildingId0",
             IndexName: "gsi4pk-gsi4sk-index",
           });
           expect(createParams).to.deep.equal({
