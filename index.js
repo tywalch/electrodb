@@ -15,6 +15,7 @@ const {
   ElectroUserValidationError,
   ElectroAttributeValidationError,
 } = require("./src/errors");
+const { createConversions } = require("./src/conversions");
 
 const {
   ComparisonTypes
@@ -33,4 +34,5 @@ module.exports = {
   createWriteTransaction,
   ElectroUserValidationError,
   ElectroAttributeValidationError,
+  createConversions,
 };

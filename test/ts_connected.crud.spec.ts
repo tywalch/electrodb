@@ -6,6 +6,7 @@ import {
   EntityItem,
   QueryResponse,
   Service,
+  createConversions,
 } from "../index";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
@@ -6327,6 +6328,7 @@ describe("conversion use cases: pagination", () => {
   });
 
   it("should let you use a entity level toCursor conversion to create a cursor based on the last item returned", async () => {
+    const conversions = createConversions(entity);
     const { items, accountId } = await loadItems();
     const limit = 10;
     let iterations = 0;
@@ -6338,7 +6340,7 @@ describe("conversion use cases: pagination", () => {
         .go({ cursor, limit });
       results = results.concat(response.data);
       if (response.data[response.data.length - 1]) {
-        cursor = entity.conversions.fromComposite.toCursor(
+        cursor = conversions.fromComposite.toCursor(
           response.data[response.data.length - 1],
         );
       } else {
@@ -6353,6 +6355,7 @@ describe("conversion use cases: pagination", () => {
   });
 
   it("should let you use the index specific toCursor conversion to create a cursor based on the last item returned", async () => {
+    const conversions = createConversions(entity);
     const { items, accountId } = await loadItems();
     const limit = 10;
     let iterations = 0;
@@ -6365,7 +6368,7 @@ describe("conversion use cases: pagination", () => {
       results = results.concat(response.data);
       if (response.data[response.data.length - 1]) {
         cursor =
-          entity.conversions.byAccessPattern.records.fromComposite.toCursor(
+          conversions.byAccessPattern.records.fromComposite.toCursor(
             response.data[response.data.length - 1],
           );
       } else {

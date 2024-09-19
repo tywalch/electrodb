@@ -5380,7 +5380,6 @@ export class Entity<
     TableIndexCompositeAttributes<A, F, C, S>
   >;
   query: Queries<A, F, C, S>;
-  conversions: Conversions<A, F, C, S>;
 
   parse<Options extends ParseOptions<keyof ResponseItem<A, F, C, S>>>(
     item: ParseSingleInput,
@@ -5416,6 +5415,13 @@ export class Entity<
   setClient(client: DocumentClient): void;
   client: any;
 }
+
+declare function createConversions<
+  A extends string,
+  F extends string,
+  C extends string,
+  S extends Schema<A, F, C>,
+>(entity: E): Conversions<A, F, C, S>;
 
 export class TransactWriteEntity<
   A extends string,

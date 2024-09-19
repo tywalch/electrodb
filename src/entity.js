@@ -77,27 +77,6 @@ class Entity {
     );
 
     this.query = {};
-    this.conversions = {
-      fromComposite: {
-        toKeys: (composite, options = {}) =>
-          this._fromCompositeToKeys({ provided: composite }, options),
-        toCursor: (composite) =>
-          this._fromCompositeToCursor(
-            { provided: composite },
-            { strict: "all" },
-          ),
-      },
-      fromKeys: {
-        toCursor: (keys) => this._fromKeysToCursor({ provided: keys }, {}),
-        toComposite: (keys) => this._fromKeysToComposite({ provided: keys }),
-      },
-      fromCursor: {
-        toKeys: (cursor) => this._fromCursorToKeys({ provided: cursor }),
-        toComposite: (cursor) =>
-          this._fromCursorToComposite({ provided: cursor }),
-      },
-      byAccessPattern: {},
-    };
     for (let accessPattern in this.model.indexes) {
       let index = this.model.indexes[accessPattern].index;
       this.query[accessPattern] = (...values) => {
