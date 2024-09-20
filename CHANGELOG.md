@@ -532,3 +532,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.14.3] - 2024-07-29
 ### Fixed
 - Raised via [Issue #196](https://github.com/tywalch/electrodb/issues/412) and [Discussion 361](https://github.com/tywalch/electrodb/discussions/361); When using a clustered index with an empty composite array, `update` and `patch` methods would not correctly form the complete sort key value for the index. This would prevent impacted items from being queried via an Entity, though they could be queried via a collection on a Service. Thank you to github users @daniel7byte and @santiagomera for raising this issue!
+
+## [2.15.0] - 2024-09-19
+### Updated
+- Updated `@aws-sdk/lib-dynamodb` dependency from pinned version `3.395.0` to latest release `^3.654.0`. This impacts users using the v3 aws-sdk.
+- Adds dependency `@aws-sdk/util-dynamodb` for unmarshalling functionality.
