@@ -5435,6 +5435,8 @@ describe("upsert", () => {
   });
 
   it("should allow calculated field createdAt/updatedAt pattern with upsert", async () => {
+    let createdAt = Date.now();
+    let updatedAt = Date.now();
     const entity = new Entity(
       {
         model: {
@@ -5456,15 +5458,15 @@ describe("upsert", () => {
             type: "number",
             readOnly: true,
             required: true,
-            default: () => Date.now(),
-            set: () => Date.now(),
+            default: () => createdAt++,
+            set: () => createdAt++,
           },
           updatedAt: {
             type: "number",
             watch: "*",
             required: true,
-            default: () => Date.now(),
-            set: () => Date.now(),
+            default: () => updatedAt++,
+            set: () => updatedAt++,
           },
         },
         indexes: {

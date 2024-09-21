@@ -1,5 +1,5 @@
-const lib = require("@aws-sdk/lib-dynamodb");
-const util = require("@aws-sdk/lib-dynamodb/dist-cjs/commands/utils");
+const lib = require('@aws-sdk/lib-dynamodb')
+const util = require('@aws-sdk/util-dynamodb')
 const { isFunction } = require("./validations");
 const { ElectroError, ErrorCodes } = require("./errors");
 const DocumentClientVersions = {
@@ -7,7 +7,16 @@ const DocumentClientVersions = {
   v3: "v3",
   electro: "electro",
 };
-const unmarshallOutput = util.unmarshallOutput || ((val) => val);
+const unmarshallItem = (value) => {
+  const unmarshall = util.unmarshall || ((val) => val);
+  try {
+    value.Item = unmarshall(value.Item);
+  } catch(err) {
+    console.error('Internal Error: Failed to unmarshal input', err);
+  }
+
+  return value;
+}
 
 const v3Methods = ["send"];
 const v2Methods = [
@@ -89,7 +98,7 @@ class DocumentClientV2Wrapper {
               return {
                 canceled: cancellationReasons.map((reason) => {
                   if (reason.Item) {
-                    return unmarshallOutput(reason, [{ key: "Item" }]);
+                    return unmarshallItem(reason);
                   }
                   return reason;
                 }),
@@ -202,7 +211,7 @@ class DocumentClientV3Wrapper {
             return {
               canceled: err.CancellationReasons.map((reason) => {
                 if (reason.Item) {
-                  return unmarshallOutput(reason, [{ key: "Item" }]);
+                  return unmarshallItem(reason);
                 }
                 return reason;
               }),
@@ -225,7 +234,7 @@ class DocumentClientV3Wrapper {
             return {
               canceled: err.CancellationReasons.map((reason) => {
                 if (reason.Item) {
-                  return unmarshallOutput(reason, [{ key: "Item" }]);
+                  return unmarshallItem(reason);
                 }
                 return reason;
               }),

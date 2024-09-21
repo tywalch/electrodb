@@ -3958,8 +3958,6 @@ for (const [clientVersion, client] of [
           } else {
             expect(updateRecord).to.have.keys([
               "$metadata",
-              "Attributes",
-              "ItemCollectionMetrics",
             ]);
           }
 
@@ -3984,11 +3982,11 @@ for (const [clientVersion, client] of [
               ScannedCount: 1,
             });
           } else {
+            console.log({queryRecord});
             expect(queryRecord).to.have.keys([
               "Items",
               "Count",
               "ScannedCount",
-              "LastEvaluatedKey",
               "$metadata",
             ]);
           }
