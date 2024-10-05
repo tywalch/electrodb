@@ -2632,7 +2632,7 @@ interface GoBatchGetTerminalOptions<Attributes> {
   consistent?: boolean;
 }
 
-export type ExecutionOptionCompare = "keys" | "attributes";
+export type ExecutionOptionCompare = "keys" | "attributes" | "v2";
 
 interface ServiceQueryGoTerminalOptions {
   cursor?: string | null;
@@ -5421,7 +5421,7 @@ declare function createConversions<
   F extends string,
   C extends string,
   S extends Schema<A, F, C>,
->(entity: E): Conversions<A, F, C, S>;
+>(entity: Entity<A,F,C,S>): Conversions<A, F, C, S>;
 
 export class TransactWriteEntity<
   A extends string,

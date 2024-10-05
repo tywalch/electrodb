@@ -233,6 +233,8 @@ describe("conversions", () => {
     { table, client },
   );
 
+  const conversions = createConversions(entity);
+
   const validateMatchingCorrespondence = (options: {
     label: string;
     pkComposite: string[];
@@ -279,8 +281,6 @@ describe("conversions", () => {
       throw err;
     }
   };
-
-  const conversions = createConversions(entity);
 
   const evaluateFromComposite = (item: typeof record) => {
     const cursor = conversions.fromComposite.toCursor(item);
@@ -348,7 +348,7 @@ describe("conversions", () => {
     }
   };
 
-  const conversions = createConversions(entity);
+  // const conversions = createConversions(entity);
 
   const evaluateFromKeys = (keys: any) => {
     const item = conversions.fromKeys.toComposite(keys);
@@ -426,8 +426,6 @@ describe("conversions", () => {
       }
     }
   };
-
-  const conversions = createConversions(entity);
 
   const evaluateAccessPattern = (
     accessPattern: keyof typeof entity.schema.indexes,
@@ -507,8 +505,6 @@ describe("conversions", () => {
       throw err;
     }
   };
-
-  const conversions = createConversions(entity);
 
   const evaluateAccessPatternFromKeys = (
     accessPattern: keyof typeof entity.schema.indexes,
@@ -2734,7 +2730,7 @@ describe('index scope', () => {
     const batchPutParams = withScope.put([{prop1: 'abc', prop2: 'def'}]).params();
     expect(batchPutParams[0].RequestItems.electro[0].PutRequest.Item.pk).to.equal('$test_scope1#prop1_abc');
 
-    const conversions = conversions(withScope);
+    const conversions = createConversions(withScope);
 
     const keys = conversions.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
     expect(keys.pk).to.equal('$test_scope1#prop1_abc');

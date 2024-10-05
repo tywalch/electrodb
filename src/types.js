@@ -11,6 +11,7 @@ const BatchWriteTypes = {
 const ComparisonTypes = {
   keys: "keys",
   attributes: "attributes",
+  v2: "v2",
 };
 
 const QueryTypes = {

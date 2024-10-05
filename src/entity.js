@@ -91,42 +91,6 @@ class Entity {
           options,
         ).query(...values);
       };
-
-      this.conversions.byAccessPattern[accessPattern] = {
-        fromKeys: {
-          toCursor: (keys) =>
-            this._fromKeysToCursorByIndex({ indexName: index, provided: keys }),
-          toComposite: (keys) =>
-            this._fromKeysToCompositeByIndex({
-              indexName: index,
-              provided: keys,
-            }),
-        },
-        fromCursor: {
-          toKeys: (cursor) =>
-            this._fromCursorToKeysByIndex({
-              indexName: index,
-              provided: cursor,
-            }),
-          toComposite: (cursor) =>
-            this._fromCursorToCompositeByIndex({
-              indexName: index,
-              provided: cursor,
-            }),
-        },
-        fromComposite: {
-          toCursor: (composite) =>
-            this._fromCompositeToCursorByIndex(
-              { indexName: index, provided: composite },
-              { strict: "all" },
-            ),
-          toKeys: (composite, options = {}) =>
-            this._fromCompositeToKeysByIndex(
-              { indexName: index, provided: composite },
-              options,
-            ),
-        },
-      };
     }
 
     this.config.identifiers = config.identifiers || {};
@@ -1670,6 +1634,7 @@ class Entity {
       data: "attributes",
       consistent: undefined,
       compare: ComparisonTypes.keys,
+      complete: false,
       ignoreOwnership: false,
       _providedIgnoreOwnership: false,
       _isPagination: false,
@@ -1708,6 +1673,9 @@ class Entity {
         const type = ComparisonTypes[option.compare.toLowerCase()];
         if (type) {
           config.compare = type;
+          if (type === ComparisonTypes.v2 && option.complete === undefined) {
+            config.complete = true;
+          }
         } else {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidOptions,
@@ -2901,7 +2869,7 @@ class Entity {
   _getComparisonOperator(comparison, skType, comparisonType) {
     if (skType === "number") {
       return Comparisons[comparison];
-    } else if (comparisonType === ComparisonTypes.attributes) {
+    } else if (comparisonType === ComparisonTypes.attributes || comparisonType === ComparisonTypes.v2) {
       return KeyAttributesComparisons[comparison];
     } else {
       return Comparisons[comparison];
@@ -3660,7 +3628,7 @@ class Entity {
     const transforms = [];
     const shiftUp = (val) => u.shiftSortOrder(val, 1);
     const noop = (val) => val;
-    if (options.compare === ComparisonTypes.keys) {
+    if (options.compare !== ComparisonTypes.v2) {
       transforms.push(noop);
     } else if (queryType === QueryTypes.between) {
       transforms.push(noop, shiftUp);

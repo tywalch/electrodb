@@ -120,13 +120,19 @@ let clauses = {
               pk,
             );
             state.setSK(composites);
-            // we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
-            if (sk.length > 1) {
-              state.filterProperties(FilterOperationNames.eq, {
-                ...unused,
-                ...composites,
-              });
-            }
+            state.beforeBuildParams(({ options, state }) => {
+              const accessPattern =
+                entity.model.translations.indexes.fromIndexToAccessPattern[state.query.index];
+
+              if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
+                if (!entity.model.indexes[accessPattern].sk.isFieldRef && sk.length > 1) {
+                  state.filterProperties(FilterOperationNames.eq, {
+                    ...unused,
+                    ...composites,
+                  });
+                }
+              }
+            });
           })
           .whenOptions(({ options, state }) => {
             if (!options.ignoreOwnership && !state.getParams()) {
@@ -929,7 +935,7 @@ let clauses = {
             state.setSK(state.buildQueryComposites(facets, sk));
             // we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
             state.beforeBuildParams(({ options, state }) => {
-              if (options.compare === ComparisonTypes.attributes) {
+              if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
                 if (sk.length > 1) {
                   state.filterProperties(FilterOperationNames.eq, {
                     ...unused,
@@ -999,13 +1005,22 @@ let clauses = {
           .setType(QueryTypes.between)
           .setSK(startingSk.composites)
           .beforeBuildParams(({ options, state }) => {
-            if (options.compare === ComparisonTypes.attributes) {
+            if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
               if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
                 state.filterProperties(
                   FilterOperationNames.lte,
                   endingSk.composites,
                   { asPrefix: true },
                 );
+              }
+              if (options.compare === ComparisonTypes.attributes) {
+                if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                  state.filterProperties(
+                    FilterOperationNames.gte,
+                    startingSk.composites,
+                    { asPrefix: true },
+                  );
+                }
               }
             }
           });
@@ -1050,7 +1065,7 @@ let clauses = {
           );
           state.setSK(composites);
           state.beforeBuildParams(({ options, state }) => {
-            if (options.compare === ComparisonTypes.attributes) {
+            if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
               const accessPattern =
                 entity.model.translations.indexes.fromIndexToAccessPattern[
                   state.query.index
@@ -1081,6 +1096,22 @@ let clauses = {
         return state.setType(QueryTypes.gte).ifSK((state) => {
           const attributes = state.getCompositeAttributes();
           state.setSK(state.buildQueryComposites(facets, attributes.sk));
+          state.beforeBuildParams(({ options, state }) => {
+            const { composites } = state.identifyCompositeAttributes(
+              facets,
+              attributes.sk,
+              attributes.pk,
+            );
+            if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
+              const accessPattern =
+                entity.model.translations.indexes.fromIndexToAccessPattern[state.query.index];
+              if (!entity.model.indexes[accessPattern].sk.isFieldRef && attributes.sk.length > 1) {
+                state.filterProperties(FilterOperationNames.gte, composites, {
+                  asPrefix: true,
+                });
+              }
+            }
+          });
         });
       } catch (err) {
         state.setError(err);
@@ -1104,6 +1135,17 @@ let clauses = {
             pk,
           );
           state.setSK(composites);
+          state.beforeBuildParams(({ options, state }) => {
+            if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
+              const accessPattern =
+                entity.model.translations.indexes.fromIndexToAccessPattern[state.query.index];
+              if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                state.filterProperties(FilterOperationNames.lt, composites, {
+                  asPrefix: true,
+                });
+              }
+            }
+          });
         });
       } catch (err) {
         state.setError(err);
@@ -1129,7 +1171,7 @@ let clauses = {
           state.setSK(composites);
 
           state.beforeBuildParams(({ options, state }) => {
-            if (options.compare === ComparisonTypes.attributes) {
+            if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
               const accessPattern =
                 entity.model.translations.indexes.fromIndexToAccessPattern[
                   state.query.index
