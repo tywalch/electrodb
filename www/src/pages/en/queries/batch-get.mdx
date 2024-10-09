@@ -18,13 +18,13 @@ Provide all Table Index composite attributes in an array of objects to the `get`
 
 > When performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet allows queries larger than the docClient's limit of 100 records
 
-If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Execution Option](#execution-options) `concurrent`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
+If the number of records you are requesting is above the BatchGet threshold of 100 records, ElectroDB will make multiple requests to DynamoDB and return the results in a single array. By default, ElectroDB will make these requests in series, one after another. If you are confident your table can handle the throughput, you can use the [Execution Option](#execution-options) `concurrency`. This value can be set to any number greater than zero, and will execute that number of requests simultaneously.
 
 For example, 150 records (50 records over the DynamoDB maximum):
 
-The default value of `concurrent` will be `1`. ElectroDB will execute a BatchGet request of 100, then after that request has responded, make another BatchGet request for 50 records.
+The default value of `concurrency` will be `1`. ElectroDB will execute a BatchGet request of 100, then after that request has responded, make another BatchGet request for 50 records.
 
-If you set the [Execution Option](#execution-options) `concurrent` to `2`, ElectroDB will execute a BatchGet request of 100 records, and another BatchGet request for 50 records without waiting for the first request to finish.
+If you set the [Execution Option](#execution-options) `concurrency` to `2`, ElectroDB will execute a BatchGet request of 100 records, and another BatchGet request for 50 records without waiting for the first request to finish.
 
 It is important to consider your Table's throughput considerations when setting this value.
 
@@ -48,7 +48,7 @@ const { data, unprocessed } = await StoreLocations.get([
     buildingId: "A21",
     cityId: "Madison2",
   },
-]).go({ concurrent: 1 }); // `concurrent` value is optional and default's to `1`
+]).go({ concurrency: 1 }); // `concurrency` value is optional and default's to `1`
 ```
 
 ## Response Format
@@ -99,7 +99,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   table?: string;
   data?: 'raw' | 'includeKeys' | 'attributes';
   originalErr?: boolean;
-  concurrent?: number;
+  concurrency?: number;
   unprocessed?: "raw" | "item";
   response?: "default" | "none" | "all_old" | "updated_old" | "all_new" | "updated_new";
   ignoreOwnership?: boolean;
@@ -117,7 +117,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 | attributes         |  _(all attributes)_  | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.                                                                                                                                                                                                     |
 | data               |    `"attributes"`    | Accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`. Use `'raw'` to return query results as they were returned by the docClient. Use `'includeKeys'` to include item partition and sort key values in your return object. By default, **ElectroDB** does not return partition, sort, or global keys in its response.                                                   |
 | originalErr        |       `false`        | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.                                                                                                                                                     |
-| concurrent         |         `1`          | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations.                                                                                                                                                                                                    |
+| concurrency         |         `1`          | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations.                                                                                                                                                                                                    |
 | unprocessed        |       `"item"`       | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](/en/queries/batch-get), [BatchDelete](/en/mutations/batch-delete), and [BatchPut](/en/mutations/batch-put).                                                                             |
 | response           |     `"default"`      | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.                                                           |
 | ignoreOwnership    |       `false`        | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.                                        |
