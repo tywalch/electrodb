@@ -2588,6 +2588,7 @@ export interface ParamOptions {
   params?: object;
   table?: string;
   limit?: number;
+  compare?: ExecutionOptionCompare;
   response?:
     | "default"
     | "none"

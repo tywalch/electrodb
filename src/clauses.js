@@ -933,8 +933,8 @@ let clauses = {
               pk,
             );
             state.setSK(state.buildQueryComposites(facets, sk));
-            // we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
-            state.beforeBuildParams(({ options, state }) => {
+
+            state.whenOptions(({ options, state }) => {
               if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
                 if (sk.length > 1) {
                   state.filterProperties(FilterOperationNames.eq, {
@@ -943,9 +943,7 @@ let clauses = {
                   });
                 }
               }
-            });
 
-            state.whenOptions(({ options, state }) => {
               if (
                 state.query.options.indexType === IndexTypes.clustered &&
                 Object.keys(composites).length < sk.length &&
@@ -1102,7 +1100,7 @@ let clauses = {
               attributes.sk,
               attributes.pk,
             );
-            if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
+            if (options.compare === ComparisonTypes.attributes) {
               const accessPattern =
                 entity.model.translations.indexes.fromIndexToAccessPattern[state.query.index];
               if (!entity.model.indexes[accessPattern].sk.isFieldRef && attributes.sk.length > 1) {
@@ -1136,7 +1134,7 @@ let clauses = {
           );
           state.setSK(composites);
           state.beforeBuildParams(({ options, state }) => {
-            if (options.compare === ComparisonTypes.attributes || options.compare === ComparisonTypes.v2) {
+            if (options.compare === ComparisonTypes.attributes) {
               const accessPattern =
                 entity.model.translations.indexes.fromIndexToAccessPattern[state.query.index];
               if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
@@ -1503,10 +1501,6 @@ class ChainState {
   }
 
   applyFilter(operation, name, values, filterOptions) {
-    if (Array.isArray(values)) {
-      console.log('AHHHH', {operation, name, values});
-      throw new Error('THIS IS AN ARRAY')
-    }
     if (
       (FilterOperationNames[operation] !== undefined) && (name !== undefined) &&
       values !== undefined

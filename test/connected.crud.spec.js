@@ -3982,7 +3982,6 @@ for (const [clientVersion, client] of [
               ScannedCount: 1,
             });
           } else {
-            console.log({queryRecord});
             expect(queryRecord).to.have.keys([
               "Items",
               "Count",

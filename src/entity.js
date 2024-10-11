@@ -2691,6 +2691,7 @@ class Entity {
         break;
       case QueryTypes.between:
         parameters = this._makeBetweenQueryParams(
+          state.query.options,
           state.query.index,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys.pk,
@@ -2707,6 +2708,7 @@ class Entity {
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys,
           options,
+          state.query.options,
         );
         break;
       default:
@@ -2724,31 +2726,48 @@ class Entity {
     });
   }
 
-  _makeBetweenQueryParams(index, filter, pk, ...sk) {
+  _makeBetweenQueryParams(queryOptions, index, filter, pk, ...sk) {
     let keyExpressions = this._queryKeyExpressionAttributeBuilder(
       index,
       pk,
       ...sk,
     );
+
     delete keyExpressions.ExpressionAttributeNames["#sk2"];
+
+    const customExpressions = {
+      names: (queryOptions.expressions && queryOptions.expressions.names) || {},
+      values: (queryOptions.expressions && queryOptions.expressions.values) || {},
+      expression: (queryOptions.expressions && queryOptions.expressions.expression) || "",
+    };
+
     let params = {
       TableName: this.getTableName(),
       ExpressionAttributeNames: this._mergeExpressionsAttributes(
         filter.getNames(),
         keyExpressions.ExpressionAttributeNames,
+        customExpressions.names,
       ),
       ExpressionAttributeValues: this._mergeExpressionsAttributes(
         filter.getValues(),
         keyExpressions.ExpressionAttributeValues,
+        customExpressions.values,
       ),
       KeyConditionExpression: `#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2`,
     };
+
     if (index) {
       params["IndexName"] = index;
     }
-    if (filter.build()) {
-      params.FilterExpression = filter.build();
+
+    let expressions = [customExpressions.expression, filter.build()]
+      .filter(Boolean)
+      .join(" AND ");
+
+    if (expressions.length) {
+      params.FilterExpression = expressions;
     }
+
     return params;
   }
 
@@ -2883,6 +2902,7 @@ class Entity {
     filter = {},
     indexKeys = {},
     options = {},
+    queryOptions = {},
   ) {
     const { pk } = indexKeys;
     const sk = indexKeys.sk[0];
@@ -2899,6 +2919,13 @@ class Entity {
         )}`,
       );
     }
+
+    let customExpressions = {
+      names: (queryOptions.expressions && queryOptions.expressions.names) || {},
+      values: (queryOptions.expressions && queryOptions.expressions.values) || {},
+      expression: (queryOptions.expressions && queryOptions.expressions.expression) || "",
+    };
+
     let keyExpressions = this._queryKeyExpressionAttributeBuilder(
       index,
       pk,
@@ -2910,19 +2937,28 @@ class Entity {
       ExpressionAttributeNames: this._mergeExpressionsAttributes(
         filter.getNames(),
         keyExpressions.ExpressionAttributeNames,
+        customExpressions.names,
       ),
       ExpressionAttributeValues: this._mergeExpressionsAttributes(
         filter.getValues(),
         keyExpressions.ExpressionAttributeValues,
+        customExpressions.values,
       ),
       KeyConditionExpression: `#pk = :pk and #sk1 ${operator} :sk1`,
     };
+
     if (index) {
       params["IndexName"] = index;
     }
-    if (filter.build()) {
-      params.FilterExpression = filter.build();
+
+    let expressions = [customExpressions.expression, filter.build()]
+      .filter(Boolean)
+      .join(" AND ");
+
+    if (expressions.length) {
+      params.FilterExpression = expressions;
     }
+
     return params;
   }
 
