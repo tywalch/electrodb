@@ -3016,10 +3016,7 @@ export interface NestedBooleanAttribute {
   readonly get?: (val: boolean, item: any) => boolean | undefined | void;
   readonly set?: (val?: boolean, item?: any) => boolean | undefined | void;
   readonly default?: boolean | (() => boolean);
-  readonly validate?:
-    | ((val: boolean) => boolean)
-    | ((val: boolean) => void)
-    | ((val: boolean) => string | void);
+  readonly validate?: ((val: boolean) => boolean)
   readonly field?: string;
 }
 
@@ -3031,10 +3028,7 @@ export interface BooleanAttribute {
   readonly get?: (val: boolean, item: any) => boolean | undefined | void;
   readonly set?: (val?: boolean, item?: any) => boolean | undefined | void;
   readonly default?: boolean | (() => boolean);
-  readonly validate?:
-    | ((val: boolean) => boolean)
-    | ((val: boolean) => void)
-    | ((val: boolean) => string | void);
+  readonly validate?: ((val: boolean) => boolean)
   readonly field?: string;
   readonly label?: string;
   readonly watch?: ReadonlyArray<string> | "*";
@@ -3052,10 +3046,7 @@ export interface NestedNumberAttribute {
   readonly get?: (val: number, item: any) => number | undefined | void;
   readonly set?: (val?: number, item?: any) => number | undefined | void;
   readonly default?: number | (() => number);
-  readonly validate?:
-    | ((val: number) => boolean)
-    | ((val: number) => void)
-    | ((val: number) => string | void);
+  readonly validate?: ((val: number) => boolean)
   readonly field?: string;
 }
 
@@ -3067,10 +3058,7 @@ export interface NumberAttribute {
   readonly get?: (val: number, item: any) => number | undefined | void;
   readonly set?: (val?: number, item?: any) => number | undefined | void;
   readonly default?: number | (() => number);
-  readonly validate?:
-    | ((val: number) => boolean)
-    | ((val: number) => void)
-    | ((val: number) => string | void);
+  readonly validate?: ((val: number) => boolean)
   readonly field?: string;
   readonly label?: string;
   readonly watch?: ReadonlyArray<string> | "*";
@@ -3090,8 +3078,6 @@ export interface NestedStringAttribute {
   readonly default?: string | (() => string);
   readonly validate?:
     | ((val: string) => boolean)
-    | ((val: string) => void)
-    | ((val: string) => string | void)
     | RegExp;
   readonly field?: string;
 }
@@ -3106,8 +3092,6 @@ export interface StringAttribute {
   readonly default?: string | (() => string);
   readonly validate?:
     | ((val: string) => boolean)
-    | ((val: string) => void)
-    | ((val: string) => string | void)
     | RegExp;
   readonly field?: string;
   readonly label?: string;
@@ -3126,10 +3110,7 @@ export interface NestedEnumAttribute {
   readonly get?: (val: any, item: any) => any | undefined | void;
   readonly set?: (val?: any, item?: any) => any | undefined | void;
   readonly default?: string | (() => string);
-  readonly validate?:
-    | ((val: any) => boolean)
-    | ((val: any) => void)
-    | ((val: any) => string | void);
+  readonly validate?: ((val: any) => boolean)
   readonly field?: string;
   readonly label?: string;
 }
@@ -3142,10 +3123,7 @@ export interface EnumAttribute {
   readonly get?: (val: any, item: any) => any | undefined | void;
   readonly set?: (val?: any, item?: any) => any | undefined | void;
   readonly default?: string | (() => string);
-  readonly validate?:
-    | ((val: any) => boolean)
-    | ((val: any) => void)
-    | ((val: any) => string | void);
+  readonly validate?: ((val: any) => boolean)
   readonly field?: string;
   readonly label?: string;
   readonly watch?: ReadonlyArray<string> | "*";
@@ -3159,10 +3137,7 @@ export interface NestedAnyAttribute {
   readonly get?: (val: any, item: any) => any | undefined | void;
   readonly set?: (val?: any, item?: any) => any | undefined | void;
   readonly default?: any | (() => any);
-  readonly validate?:
-    | ((val: any) => boolean)
-    | ((val: any) => void)
-    | ((val: any) => string | void);
+  readonly validate?: ((val: any) => boolean)
   readonly field?: string;
 }
 
@@ -3174,10 +3149,7 @@ export interface AnyAttribute {
   readonly get?: (val: any, item: any) => any | undefined | void;
   readonly set?: (val?: any, item?: any) => any | undefined | void;
   readonly default?: any | (() => any);
-  readonly validate?:
-    | ((val: any) => boolean)
-    | ((val: any) => void)
-    | ((val: any) => string | void);
+  readonly validate?: ((val: any) => boolean)
   readonly field?: string;
   readonly label?: string;
   readonly watch?: ReadonlyArray<string> | "*";
@@ -3200,10 +3172,7 @@ export interface NestedMapAttribute {
     item?: any,
   ) => Record<string, any> | undefined | void;
   readonly default?: Record<string, any> | (() => Record<string, any>);
-  readonly validate?:
-    | ((val: Record<string, any>) => boolean)
-    | ((val: Record<string, any>) => void)
-    | ((val: Record<string, any>) => string | void);
+  readonly validate?: ((val: Record<string, any>) => boolean)
   readonly field?: string;
 }
 
@@ -3224,10 +3193,7 @@ export interface MapAttribute {
     item?: any,
   ) => Record<string, any> | undefined | void;
   readonly default?: Record<string, any> | (() => Record<string, any>);
-  readonly validate?:
-    | ((val: Record<string, any>) => boolean)
-    | ((val: Record<string, any>) => void)
-    | ((val: Record<string, any>) => string | void);
+  readonly validate?: ((val: Record<string, any>) => boolean)
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 }
@@ -3247,10 +3213,7 @@ export interface NestedCustomListAttribute {
       item?: any,
   ) => Array<any> | undefined | void;
   readonly default?: Array<any> | (() => Array<any>);
-  readonly validate?:
-      | ((val: Array<any>) => boolean)
-      | ((val: Array<any>) => void)
-      | ((val: Array<any>) => string | void);
+  readonly validate?: ((val: Array<any>) => boolean)
 }
 
 export interface NestedStringListAttribute {
@@ -3265,8 +3228,6 @@ export interface NestedStringListAttribute {
     readonly default?: string | (() => string);
     readonly validate?:
       | ((val: string) => boolean)
-      | ((val: string) => void)
-      | ((val: string) => string | void)
       | RegExp;
     readonly field?: string;
   };
@@ -3282,10 +3243,7 @@ export interface NestedStringListAttribute {
     item?: any,
   ) => Array<string> | undefined | void;
   readonly default?: Array<string> | (() => Array<string>);
-  readonly validate?:
-    | ((val: Array<string>) => boolean)
-    | ((val: Array<string>) => void)
-    | ((val: Array<string>) => string | void);
+  readonly validate?: ((val: Array<string>) => boolean)
 }
 
 export interface StringListAttribute {
@@ -3300,8 +3258,6 @@ export interface StringListAttribute {
     readonly default?: string | (() => string);
     readonly validate?:
       | ((val: string) => boolean)
-      | ((val: string) => void)
-      | ((val: string) => string | void)
       | RegExp;
     readonly field?: string;
   };
@@ -3317,10 +3273,7 @@ export interface StringListAttribute {
     item?: any,
   ) => Array<string> | undefined | void;
   readonly default?: Array<string> | (() => Array<string>);
-  readonly validate?:
-    | ((val: Array<string>) => boolean)
-    | ((val: Array<string>) => void)
-    | ((val: Array<string>) => string | void);
+  readonly validate?: ((val: Array<string>) => boolean)
   readonly watch?: ReadonlyArray<string> | "*";
 }
 
@@ -3339,10 +3292,7 @@ export interface NestedNumberListAttribute {
     item?: any,
   ) => Array<number> | undefined | void;
   readonly default?: Array<number> | (() => Array<number>);
-  readonly validate?:
-    | ((val: Array<number>) => boolean)
-    | ((val: Array<number>) => void)
-    | ((val: Array<number>) => string | void);
+  readonly validate?: ((val: Array<number>) => boolean)
   readonly field?: string;
 }
 
@@ -3361,10 +3311,7 @@ export interface NumberListAttribute {
     item?: any,
   ) => Array<number> | undefined | void;
   readonly default?: Array<number> | (() => Array<number>);
-  readonly validate?:
-    | ((val: Array<number>) => boolean)
-    | ((val: Array<number>) => void)
-    | ((val: Array<number>) => string | void);
+  readonly validate?: ((val: Array<number>) => boolean)
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 }
@@ -3384,10 +3331,7 @@ export interface NestedMapListAttribute {
     item?: any,
   ) => Record<string, any>[] | undefined | void;
   readonly default?: Record<string, any>[] | (() => Record<string, any>[]);
-  readonly validate?:
-    | ((val: Record<string, any>[]) => boolean)
-    | ((val: Record<string, any>[]) => void)
-    | ((val: Record<string, any>[]) => string | void);
+  readonly validate?: ((val: Record<string, any>[]) => boolean)
   readonly field?: string;
 }
 
@@ -3406,10 +3350,7 @@ export interface NestedAnyListAttribute {
       item?: any,
   ) => Record<string, any>[] | undefined | void;
   readonly default?: Record<string, any>[] | (() => Record<string, any>[]);
-  readonly validate?:
-      | ((val: Record<string, any>[]) => boolean)
-      | ((val: Record<string, any>[]) => void)
-      | ((val: Record<string, any>[]) => string | void);
+  readonly validate?: ((val: Record<string, any>[]) => boolean)
   readonly field?: string;
 }
 
@@ -3428,10 +3369,7 @@ export interface MapListAttribute {
     item?: any,
   ) => Record<string, any>[] | undefined | void;
   readonly default?: Record<string, any>[] | (() => Record<string, any>[]);
-  readonly validate?:
-    | ((val: Record<string, any>[]) => boolean)
-    | ((val: Record<string, any>[]) => void)
-    | ((val: Record<string, any>[]) => string | void);
+  readonly validate?: ((val: Record<string, any>[]) => boolean)
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 }
@@ -3451,10 +3389,7 @@ export interface CustomListAttribute {
       item?: any,
   ) => Array<any> | undefined | void;
   readonly default?: Array<any> | (() => Array<any>);
-  readonly validate?:
-      | ((val: Array<any>) => boolean)
-      | ((val: Array<any>) => void)
-      | ((val: Array<any>) => string | void);
+  readonly validate?: ((val: Array<any>) => boolean);
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 }
@@ -3474,10 +3409,7 @@ export interface AnyListAttribute {
       item?: any,
   ) => Array<any> | undefined | void;
   readonly default?: Array<any> | (() => Array<any>);
-  readonly validate?:
-      | ((val: Array<any>) => boolean)
-      | ((val: Array<any>) => void)
-      | ((val: Array<any>) => string | void);
+  readonly validate?: ((val: Array<any>) => boolean)
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 }
@@ -3499,8 +3431,6 @@ export interface NestedStringSetAttribute {
   readonly default?: Array<string> | (() => Array<string>);
   readonly validate?:
     | ((val: Array<string>) => boolean)
-    | ((val: Array<string>) => void)
-    | ((val: Array<string>) => string | void)
     | RegExp;
   readonly field?: string;
 }
@@ -3520,11 +3450,7 @@ export interface NestedEnumNumberSetAttribute {
     item?: any,
   ) => Array<number> | undefined | void;
   readonly default?: Array<number> | (() => Array<number>);
-  readonly validate?:
-    | ((val: Array<number>) => boolean)
-    | ((val: Array<number>) => void)
-    | ((val: Array<number>) => string | void)
-    | RegExp;
+  readonly validate?: ((val: Array<number>) => boolean)
   readonly field?: string;
 }
 
@@ -3543,11 +3469,7 @@ export interface EnumNumberSetAttribute {
     item?: any,
   ) => Array<number> | undefined | void;
   readonly default?: Array<number> | (() => Array<number>);
-  readonly validate?:
-    | ((val: Array<number>) => boolean)
-    | ((val: Array<number>) => void)
-    | ((val: Array<number>) => string | void)
-    | RegExp;
+  readonly validate?: ((val: Array<number>) => boolean)
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 }
@@ -3569,8 +3491,6 @@ export interface NestedEnumStringSetAttribute {
   readonly default?: Array<string> | (() => Array<string>);
   readonly validate?:
     | ((val: Array<string>) => boolean)
-    | ((val: Array<string>) => void)
-    | ((val: Array<string>) => string | void)
     | RegExp;
   readonly field?: string;
 }
@@ -3592,8 +3512,6 @@ export interface EnumStringSetAttribute {
   readonly default?: Array<string> | (() => Array<string>);
   readonly validate?:
     | ((val: Array<string>) => boolean)
-    | ((val: Array<string>) => void)
-    | ((val: Array<string>) => string | void)
     | RegExp;
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
@@ -3616,8 +3534,6 @@ export interface StringSetAttribute {
   readonly default?: Array<string> | (() => Array<string>);
   readonly validate?:
     | ((val: Array<string>) => boolean)
-    | ((val: Array<string>) => void)
-    | ((val: Array<string>) => string | void)
     | RegExp;
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
@@ -3638,10 +3554,7 @@ export interface NestedNumberSetAttribute {
     item?: any,
   ) => Array<number> | undefined | void;
   readonly default?: Array<number> | (() => Array<number>);
-  readonly validate?:
-    | ((val: Array<number>) => boolean)
-    | ((val: Array<number>) => void)
-    | ((val: Array<number>) => string | void);
+  readonly validate?: ((val: Array<number>) => boolean)
   readonly field?: string;
 }
 
@@ -3660,10 +3573,7 @@ export interface NumberSetAttribute {
     item?: any,
   ) => Array<number> | undefined | void;
   readonly default?: Array<number> | (() => Array<number>);
-  readonly validate?:
-    | ((val: Array<number>) => boolean)
-    | ((val: Array<number>) => void)
-    | ((val: Array<number>) => string | void);
+  readonly validate?: ((val: Array<number>) => boolean)
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 }
@@ -3687,10 +3597,7 @@ type CustomAttribute = {
   readonly get?: (val: any, item: any) => any | undefined | void;
   readonly set?: (val?: any, item?: any) => any | undefined | void;
   readonly default?: any | (() => any);
-  readonly validate?:
-    | ((val: any) => boolean)
-    | ((val: any) => void)
-    | ((val: any) => string | void);
+  readonly validate?: ((val: any) => boolean)
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 };
@@ -3703,10 +3610,7 @@ type NestedCustomAttribute = {
   readonly get?: (val: any, item: any) => any | undefined | void;
   readonly set?: (val?: any, item?: any) => any | undefined | void;
   readonly default?: any | (() => any);
-  readonly validate?:
-      | ((val: any) => boolean)
-      | ((val: any) => void)
-      | ((val: any) => string | void);
+  readonly validate?: ((val: any) => boolean)
   readonly field?: string;
 };
 
@@ -5798,10 +5702,7 @@ type CustomAttributeDefinition<T> = {
   readonly get?: (val: T, item: any) => T | undefined | void;
   readonly set?: (val?: T, item?: any) => T | undefined | void;
   readonly default?: T | (() => T);
-  readonly validate?:
-    | ((val: T) => boolean)
-    | ((val: T) => void)
-    | ((val: T) => string | void);
+  readonly validate?: ((val: T) => boolean)
   readonly field?: string;
   readonly watch?: ReadonlyArray<string> | "*";
 };

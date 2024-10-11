@@ -4267,6 +4267,7 @@ describe("Update Item", () => {
             cityId: {
               validate: () => {
                 counter.cityId++;
+                return true;
               },
               type: "string",
               required: true,
@@ -4274,6 +4275,7 @@ describe("Update Item", () => {
             mallId: {
               validate: () => {
                 counter.mallId++;
+                return true;
               },
               type: "string",
               required: true,
@@ -4281,6 +4283,7 @@ describe("Update Item", () => {
             storeId: {
               validate: () => {
                 counter.storeId++;
+                return true;
               },
               type: "string",
               required: true,
@@ -4288,6 +4291,7 @@ describe("Update Item", () => {
             buildingId: {
               validate: () => {
                 counter.buildingId++;
+                return true;
               },
               type: "string",
               required: true,
@@ -4295,6 +4299,7 @@ describe("Update Item", () => {
             unitId: {
               validate: () => {
                 counter.unitId++;
+                return true;
               },
               type: "string",
               required: true,
@@ -4302,6 +4307,7 @@ describe("Update Item", () => {
             category: {
               validate: () => {
                 counter.category++;
+                return true;
               },
               type: [
                 "spite store",
@@ -4317,6 +4323,7 @@ describe("Update Item", () => {
             leaseEndDate: {
               validate: () => {
                 counter.leaseEndDate++;
+                return true;
               },
               type: "string",
               required: true,
@@ -4324,6 +4331,7 @@ describe("Update Item", () => {
             rent: {
               validate: () => {
                 counter.rent++;
+                return true;
               },
               type: "number",
               required: true,
@@ -4331,6 +4339,7 @@ describe("Update Item", () => {
             discount: {
               validate: () => {
                 counter.discount++;
+                return true;
               },
               type: "number",
               required: false,
@@ -4339,6 +4348,7 @@ describe("Update Item", () => {
             tenant: {
               validate: () => {
                 counter.tenant++;
+                return true;
               },
               type: "set",
               items: "string",
@@ -4346,12 +4356,14 @@ describe("Update Item", () => {
             deposit: {
               validate: () => {
                 counter.deposit++;
+                return true;
               },
               type: "number",
             },
             rentalAgreement: {
               validate: () => {
                 counter.rentalAgreement++;
+                return true;
               },
               type: "list",
               items: {
@@ -4360,6 +4372,7 @@ describe("Update Item", () => {
                   type: {
                     validate: () => {
                       counter.rentalAgreementChildren.type++;
+                      return true;
                     },
                     type: "string",
                     required: true,
@@ -4367,6 +4380,7 @@ describe("Update Item", () => {
                   detail: {
                     validate: () => {
                       counter.rentalAgreementChildren.detail++;
+                      return true;
                     },
                     type: "string",
                     required: true,
@@ -4377,6 +4391,7 @@ describe("Update Item", () => {
             tags: {
               validate: () => {
                 counter.tags++;
+                return true;
               },
               type: "set",
               items: "string",
@@ -4384,6 +4399,7 @@ describe("Update Item", () => {
             contact: {
               validate: () => {
                 counter.contact++;
+                return true;
               },
               type: "set",
               items: "string",
@@ -4391,6 +4407,7 @@ describe("Update Item", () => {
             leaseHolders: {
               validate: () => {
                 counter.leaseHolders++;
+                return true;
               },
               type: "set",
               items: "string",
@@ -4398,18 +4415,21 @@ describe("Update Item", () => {
             petFee: {
               validate: () => {
                 counter.petFee++;
+                return true;
               },
               type: "number",
             },
             totalFees: {
               validate: () => {
                 counter.totalFees++;
+                return true;
               },
               type: "number",
             },
             listAttribute: {
               validate: () => {
                 counter.listAttribute++;
+                return true;
               },
               type: "list",
               items: {
@@ -4418,6 +4438,7 @@ describe("Update Item", () => {
                   setAttribute: {
                     validate: () => {
                       counter.listAttributeChildren.setAttribute++;
+                      return true;
                     },
                     type: "set",
                     items: "string",
@@ -4428,12 +4449,14 @@ describe("Update Item", () => {
             mapAttribute: {
               validate: () => {
                 counter.mapAttribute++;
+                return true;
               },
               type: "map",
               properties: {
                 mapProperty: {
                   validate: () => {
                     counter.mapAttributeChildren.mapProperty++;
+                    return true;
                   },
                   type: "string",
                 },

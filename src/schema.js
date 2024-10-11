@@ -466,26 +466,16 @@ class Attribute {
     if (typeof definition === "function") {
       return (val) => {
         try {
-          let reason = definition(val);
-          const isValid = !reason;
-          if (isValid) {
-            return [isValid, []];
-          } else if (typeof reason === "boolean") {
-            return [
-              isValid,
-              [
-                new e.ElectroUserValidationError(
-                  this.path,
-                  "Invalid value provided",
-                ),
-              ],
-            ];
-          } else {
-            return [
-              isValid,
-              [new e.ElectroUserValidationError(this.path, reason)],
-            ];
-          }
+          let isValid = !!definition(val);
+          return [
+            isValid,
+            isValid ? [] : [
+              new e.ElectroUserValidationError(
+                this.path,
+                "Invalid value provided",
+              ),
+            ]
+          ];
         } catch (err) {
           return [false, [new e.ElectroUserValidationError(this.path, err)]];
         }

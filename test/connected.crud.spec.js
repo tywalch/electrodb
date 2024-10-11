@@ -75,7 +75,7 @@ const createModel = (entityName) => {
         type: "string",
         required: true,
         validate: (date) =>
-          moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
+          moment(date, "YYYY-MM-DD").isValid()
       },
       rent: {
         type: "string",
@@ -496,8 +496,6 @@ for (const [clientVersion, client] of [
                 required: true,
                 validate: (date) =>
                   moment(date, "YYYY-MM-DD").isValid()
-                    ? ""
-                    : "Invalid date format",
               },
               rent: {
                 type: "string",
@@ -4731,8 +4729,6 @@ for (const [clientVersion, client] of [
                 required: true,
                 validate: (date) =>
                   moment(date, "YYYY-MM-DD").isValid()
-                    ? ""
-                    : "Invalid date format",
               },
               rent: {
                 type: "string",
