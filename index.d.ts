@@ -2536,11 +2536,6 @@ export interface QueryOptions {
   listeners?: Array<ElectroEventListener>;
   logger?: ElectroEventListener;
   data?: "raw" | "includeKeys" | "attributes";
-
-  /** @depricated use 'data=raw' instead */
-  raw?: boolean;
-  /** @depricated use 'data=includeKeys' instead */
-  includeKeys?: boolean;
   order?: "asc" | "desc";
 
   consistent?: boolean;
@@ -2583,12 +2578,11 @@ export interface PutQueryOptions extends QueryOptions {
   response?: "default" | "none" | "all_old" | "all_new";
 }
 
-export interface ParamOptions {
+export type ParamOptions = {
   cursor?: string | null;
   params?: object;
   table?: string;
   limit?: number;
-  compare?: ExecutionOptionCompare;
   response?:
     | "default"
     | "none"
@@ -2598,7 +2592,7 @@ export interface ParamOptions {
     | "updated_new";
   order?: "asc" | "desc";
   consistent?: boolean;
-}
+} & QueryExecutionComparisonParts;
 
 export interface BulkOptions extends QueryOptions {
   unprocessed?: "raw" | "item";
@@ -2613,11 +2607,6 @@ export type OptionalDefaultEntityIdentifiers = {
 
 interface GoBatchGetTerminalOptions<Attributes> {
   data?: "raw" | "includeKeys" | "attributes";
-  /** @depricated use 'data=raw' instead */
-  raw?: boolean;
-  /** @depricated use 'data=raw' instead */
-  includeKeys?: boolean;
-
   table?: string;
   limit?: number;
   params?: object;
@@ -2635,14 +2624,18 @@ interface GoBatchGetTerminalOptions<Attributes> {
 
 export type ExecutionOptionCompare = "keys" | "attributes" | "v2";
 
-interface ServiceQueryGoTerminalOptions {
+export type QueryExecutionComparisonParts = {
+  compare?: "keys" | "attributes"
+} | {
+  /**
+   * @deprecated 'v2' exists to ease user migration to ElectroDB v3. Support for this option will eventually be dropped.
+   */
+  compare?: "v2"
+}
+
+type ServiceQueryGoTerminalOptions = {
   cursor?: string | null;
   data?: "raw" | "includeKeys" | "attributes";
-  /** @depricated use 'data=raw' instead */
-  raw?: boolean;
-  /** @depricated use 'data=raw' instead */
-  includeKeys?: boolean;
-  compare?: ExecutionOptionCompare;
   table?: string;
   limit?: number;
   params?: object;
@@ -2654,16 +2647,11 @@ interface ServiceQueryGoTerminalOptions {
   order?: "asc" | "desc";
   hydrate?: boolean;
   consistent?: boolean;
-}
+} & QueryExecutionComparisonParts;
 
-interface GoQueryTerminalOptions<Attributes> {
+type GoQueryTerminalOptions<Attributes> = {
   cursor?: string | null;
   data?: "raw" | "includeKeys" | "attributes";
-  /** @depricated use 'data=raw' instead */
-  raw?: boolean;
-  /** @depricated use 'data=raw' instead */
-  includeKeys?: boolean;
-  compare?: ExecutionOptionCompare;
   table?: string;
   limit?: number;
   count?: number;
@@ -2677,7 +2665,7 @@ interface GoQueryTerminalOptions<Attributes> {
   order?: "asc" | "desc";
   hydrate?: boolean;
   consistent?: boolean;
-}
+} & QueryExecutionComparisonParts;
 
 interface TransactWriteQueryOptions {
   data?: "raw" | "includeKeys" | "attributes";
@@ -2702,7 +2690,7 @@ interface TransactGetQueryOptions<Attributes> {
   consistent?: boolean;
 }
 
-export interface ParamTerminalOptions<Attributes> {
+export type ParamTerminalOptions<Attributes> = {
   table?: string;
   limit?: number;
   params?: object;
@@ -2716,9 +2704,8 @@ export interface ParamTerminalOptions<Attributes> {
     | "updated_old"
     | "all_new"
     | "updated_new";
-  compare?: ExecutionOptionCompare;
   order?: "asc" | "desc";
-}
+} & QueryExecutionComparisonParts;
 
 type GoBatchGetTerminal<
   A extends string,

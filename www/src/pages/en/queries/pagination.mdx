@@ -29,8 +29,7 @@ The terminal method `go()` accepts a `cursor` when executing a `query` or `scan`
 ```typescript
 const results1 = await MallStores.query.leases({ mallId }).go(); // no "cursor" passed to `.go()`
 
-const results2 = await MallStores.query
-  .leases({ mallId })
+const results2 = await MallStores.query.leases({ mallId })
   .go({ cursor: results1.cursor }); // Paginate by querying with the "cursor" from your first query
 ```
 
@@ -78,6 +77,35 @@ type GoResults = {
   };
 };
 ```
+
+## Execution Options
+
+### Count
+The execution option `count` allows you to specify a specific number of items to be returned. This is often a difficult task with DynamoDB because queries do not always return a consistent number of items. If your query includes filters, and requires pagination, it can be even harder to return a specific number of items reliably.
+When using `count`, ElectroDB will paginate your query against DynamoDB until the number of items matches the supplied `count`, create a custom cursor, and return the items found. This option is recommend for queries with numerous and/or strict attribute filters where end-user or external pagination is necessary.
+
+```typescript
+
+type GetItemsOptions = {
+  mallId: string;
+  cursor: string;
+  limit?: number;
+}
+
+async function getLeases(options: GetItemsOptions) {
+  const { mallId, cursor, limit } = options;
+
+  if (limit < 1 || limit >= 200) {
+    throw new Error('Limit must be at least 1 and at most 200');
+  }
+
+  return MallStores.query.leases({ mallId })
+    .go({ cursor, count: limit });
+}
+```
+
+### Pages
+The execution option `pages` allows you to automatically perform multiple queries against DynamoDB. By default, ElectroDB queries will perform one request against DynamoDB. With `pages`, you can specify the number of queries you'd like to occur under the hood before returning. Furthermore, if you would like ElectroDB to return all results for a given query (i.e., exhausting pagination for a given query automatically) you can use the option `{pages: "all"}`. Note that while option is convenient, it may not performant for some workflows.
 
 ## Example
 

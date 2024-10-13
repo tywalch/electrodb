@@ -12,7 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-Queries are the _**most efficient**_ way to retrieve items from DynamoDB, which is why it is recommend to be very thoughtful when modeling your indexes.
+Queries are the _**most efficient**_ way to retrieve items from DynamoDB, which is why it is recommended that you be very thoughtful when modeling your indexes.
 
 import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
@@ -22,11 +22,11 @@ import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 ElectroDB queries use DynamoDB's `query` method to retrieve items based on your table's indexes.
 
-Forming a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is crucial to consider the order in which they are _composed_. As of the time of writing this documentation, **DynamoDB** has the following constraints that should be taken into account when planning your **Access Patterns**:
+Designing a composite **Partition Key** and **Sort Key** is a critical step in planning **Access Patterns** in **DynamoDB**. When planning composite keys, it is crucial to consider the order in which they are _composed_. As of the time of writing this documentation, **DynamoDB** has the following constraints that should be taken into account when planning your **Access Patterns**:
 
 1. You must always supply the **Partition Key** in full for all queries to **DynamoDB**.
 2. You currently have the following operators available to narrow results via your [**Sort Key**](#sort-key-operations)
-3. To act on single record, you will need to know the full **Partition Key** and **Sort Key** for that record.
+3. To act on a single record, you must know the full **Partition Key** and **Sort Key** for that record.
 
 ### Providing composite attributes to queries
 
@@ -90,7 +90,7 @@ await StoreLocations.query
 
 #### Bad: Composite Attributes not included in order
 
-This example will \_not throw, but will it ignore `unitId` because `storeId` was not supplied and because ElectroDB cannot logically build a valid sort key string without the all values being provided left to right.
+This example will not throw, but will it ignore `unitId` because `storeId` was not supplied ElectroDB cannot logically build a valid sort key string without the all values being provided left to right.
 
 ```typescript
 await StoreLocations.query
@@ -120,7 +120,7 @@ Unlike Partition Keys, Sort Keys can be partially provided. We can leverage this
 
 All queries require (_at minimum_) the **Composite Attributes** included in its defined **Partition Key**. **Composite Attributes** you define on the **Sort Key** can be partially supplied, but must be supplied in the order they are defined.
 
-> Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern\***. This is because composite attributes are used to form a concatenated key string, and if attributes supplied out of order, it is not possible to fill the gaps in that concatenation.
+> Composite Attributes must be supplied in the order they are composed when invoking the **Access Pattern\***. This is because composite attributes are used to form a concatenated key string, and if attributes are supplied out of order, it is not possible to fill the gaps in that concatenation.
 
 ### Sort Key Operations
 
@@ -135,7 +135,7 @@ All queries require (_at minimum_) the **Composite Attributes** included in its 
 
 #### Begins With Queries
 
-One important consideration when using Sort Key Operations to make is when to use and not to use "begins".
+One important consideration when using Sort Key Operations is when to use and not to use "begins".
 
 It is possible to supply partially supply Sort Key composite attributes. Sort Key attributes must be provided in the order they are defined, but it's possible to provide only a subset of the Sort Key Composite Attributes to ElectroDB. By default, when you supply a partial Sort Key in the Access Pattern method, ElectroDB will create a `beginsWith` query. The difference between that and using `.begins()` is that, with a `.begins()` query, ElectroDB will not post-pend the next composite attribute's label onto the query.
 
@@ -216,7 +216,7 @@ await StoreLocations.query
 ```typescript
 await StoreLocations.query
   .leases({ storeId: "LatteLarrys" })
-  .begins({ leaseEndDate: "2020" })
+  .begins({ leaseEndDate: "2020-00-00" })
   .go();
 ```
 
@@ -225,7 +225,7 @@ await StoreLocations.query
 ```typescript
 await StoreLocations.query
   .leases({ storeId: "LatteLarrys" })
-  .gt({ leaseEndDate: "2020-03" })
+  .gt({ leaseEndDate: "2020-04-00" })
   .go();
 ```
 
@@ -234,7 +234,7 @@ await StoreLocations.query
 ```typescript
 await StoreLocations.query
   .leases({ storeId: "LatteLarrys" })
-  .gte({ leaseEndDate: "2020-03" })
+  .gte({ leaseEndDate: "2020-03-00" })
   .go();
 ```
 
@@ -243,7 +243,7 @@ await StoreLocations.query
 ```typescript
 await StoreLocations.query
   .leases({ storeId: "LatteLarrys" })
-  .lt({ leaseEndDate: "2021-01" })
+  .lt({ leaseEndDate: "2021-00-00" })
   .go();
 ```
 
@@ -252,7 +252,7 @@ await StoreLocations.query
 ```typescript
 await StoreLocations.query
   .leases({ storeId: "LatteLarrys" })
-  .lte({ leaseEndDate: "2021-02" })
+  .lte({ leaseEndDate: "2021-02-00" })
   .go();
 ```
 
@@ -261,7 +261,7 @@ await StoreLocations.query
 ```typescript
 await StoreLocations.query
   .leases({ storeId: "LatteLarrys" })
-  .between({ leaseEndDate: "2010" }, { leaseEndDate: "2020" })
+  .between({ leaseEndDate: "2010-00-00" }, { leaseEndDate: "2020-99-99" })
   .go();
 ```
 
@@ -270,7 +270,7 @@ await StoreLocations.query
 ```typescript
 await StoreLocations.query
   .leases({ storeId: "LatteLarrys" })
-  .gte({ leaseEndDate: "2010" })
+  .gte({ leaseEndDate: "2010-00-00" })
   .where(
     (attr, op) => `
       ${op.eq(attr.cityId, "Atlanta1")} AND ${op.contains(
@@ -281,6 +281,13 @@ await StoreLocations.query
   )
   .go();
 ```
+
+## Comparison Queries
+When performing comparison queries (e.g. `gt`, `gte`, `lte`, `lt`, `between`) it is often necessary to add additional filters. Understanding how a comparison query will impact the items returned can be challenging due to the unintuitive nature of sorting and multi-composite attribute Sort Keys.
+
+By default (`{comparison: "keys"}`), ElectroDB builds comparison queries without applying attribute filters. In this way, the query's comparison applies to the item's "keys". This approach gives you complete control of your indexes, though your query may return unexpected data if you are not careful with item sorting.
+
+When using `{comparison: "attributes"}`, the `comparison` option instructs ElectroDB to apply attribute filters on each Sort Key composite attribute provided. In this way, the query comparison applies to the item's "attributes."
 
 ## Execution Options
 

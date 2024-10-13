@@ -18,6 +18,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   listeners Array<(event) => void>;
   attributes?: string[];
   order?: 'asc' | 'desc';
+  compare?: 'attributes' | 'keys' | 'v2';
 };
 ```
 
@@ -76,3 +77,11 @@ An array of callbacks that are invoked when [internal ElectroDB events](#events)
 ### logger
 **Default Value:** _none_
 A convenience option for a single event listener that semantically can be used for logging.
+
+### compare
+**Default Value:** 'keys'
+When performing comparison queries (e.g. `gt`, `gte`, `lte`, `lt`, `between`) it is often necessary to add additional filters. Understanding how a comparison query will impact the items returned can be challenging due to the unintuitive nature of sorting and multi-composite attribute Sort Keys.
+
+By default (`comparison: "keys"`), ElectroDB builds comparison queries without applying attribute filters. In this way, the query's comparison applies to the item's "keys". This approach gives you complete control of your indexes, though your query may return unexpected data if you are not careful with item sorting.
+
+When set to `attributes`, the `comparison` option instructs ElectroDB to apply attribute filters on each Sort Key composite attribute provided. In this way, the query comparison applies to the item's "attributes."

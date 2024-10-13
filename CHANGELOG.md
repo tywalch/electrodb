@@ -537,3 +537,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Updated
 - Updated `@aws-sdk/lib-dynamodb` dependency from pinned version `3.395.0` to latest release `^3.654.0`. This impacts users using the v3 aws-sdk.
 - Adds dependency `@aws-sdk/util-dynamodb` for unmarshalling functionality.
+
+## [3.0.0] 
+### Removed
+- `includeKeys` and `raw` execution options
+- `validate` attribute callback
