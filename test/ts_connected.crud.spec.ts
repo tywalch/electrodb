@@ -2698,6 +2698,20 @@ describe("Entity", () => {
       { client, table: "electro" },
     );
 
+    it('should return the correct response deleting an item that does not exist', async () => {
+      const id = uuid();
+      const sub = uuid();
+
+      const noneResponse = await db.delete({ id, sub }).go({ response: 'none' });
+      expect(noneResponse.data).to.be.null;
+      const allOldResponse = await db.delete({ id, sub }).go({ response: 'all_old' });
+      expect(allOldResponse.data).to.be.null;
+
+      const unspecifiedResponse = await db.delete({ id, sub }).go();
+      const defaultResponse = await db.delete({ id, sub }).go({ response: 'default' });
+      expect(unspecifiedResponse.data).to.deep.equal(defaultResponse.data).and.to.deep.equal({ id, sub });
+    });
+
     for (const method of ["update", "patch"] as const) {
       it(`should return just the new results when using ${method}`, async () => {
         const id = uuid();

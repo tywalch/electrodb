@@ -2916,7 +2916,7 @@ export type DeleteRecordOperationGo<ResponseType, Keys> = <
     ? O["response"] extends "all_new"
       ? Promise<{ data: T }>
       : O["response"] extends "all_old"
-      ? Promise<{ data: T }>
+      ? Promise<{ data: T | null }>
       : O["response"] extends "default"
       ? Promise<{ data: Keys }>
       : O["response"] extends "none"

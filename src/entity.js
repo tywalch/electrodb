@@ -1688,13 +1688,14 @@ class Entity {
               Object.keys(ReturnValues),
             )}.`,
           );
-        }
-        config.response = format;
-        if (context.operation === MethodTypes.transactWrite) {
-          config.params.ReturnValuesOnConditionCheckFailure =
-            FormatToReturnValues[format];
-        } else {
-          config.params.ReturnValues = FormatToReturnValues[format];
+        } else if (format !== ReturnValues.default) {
+          config.response = format;
+          if (context.operation === MethodTypes.transactWrite) {
+            config.params.ReturnValuesOnConditionCheckFailure =
+              FormatToReturnValues[format];
+          } else {
+            config.params.ReturnValues = FormatToReturnValues[format];
+          }
         }
       }
 
