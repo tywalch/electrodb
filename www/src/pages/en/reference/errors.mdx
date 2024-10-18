@@ -450,7 +450,7 @@ By default ElectroDB tries to keep the stack trace close to your code, ideally t
 When using pagination with a Service, ElectroDB will try to identify which Entity is associated with the supplied pager. This error can occur when you supply an invalid pager, or when you are using a different [pager option](/en/queries/pagination#pager) to a pager than what was used when retrieving it. Consult the section on [Pagination](/en/queries/pagination) to learn more.
 
 **What to do about it:**
-If you are sure the pager you are passing to `.page()` is the same you received from `.page()` this could be an unexpected error. To mitigate the issue use the Query Option `{pager: "raw"}` and please open a support issue.
+If you are sure the pager you are passing to `.page()` is the same you received from `.page()` this could be an unexpected error. To mitigate the issue use the Query Option `{ pager: "raw" }` and please open a support issue.
 
 ### Pager Not Unique
 

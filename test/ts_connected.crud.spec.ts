@@ -6,6 +6,7 @@ import {
   EntityItem,
   QueryResponse,
   Service,
+  createConversions,
 } from "../index";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
@@ -80,7 +81,7 @@ describe("Entity", () => {
           type: "string",
           required: true,
           validate: (date: string) =>
-            moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
+            moment(date, "YYYY-MM-DD").isValid()
         },
         rent: {
           type: "string",
@@ -1060,7 +1061,7 @@ describe("Entity", () => {
             type: "string",
             required: true,
             validate: (date) =>
-              moment(date, "YYYY-MM-DD").isValid() ? "" : "Invalid date format",
+              moment(date, "YYYY-MM-DD").isValid()
           },
           rent: {
             type: "string",
@@ -1967,12 +1968,12 @@ describe("Entity", () => {
       let someValue = "ABDEF";
       let putRecord = await db
         .put({ id, date, someValue })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
       expect(putRecord).to.deep.equal({});
       let getRecord = await db
         .get({ id, date })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
       expect(getRecord).to.deep.equal({
         Item: {
@@ -1988,12 +1989,12 @@ describe("Entity", () => {
       let updateRecord = await db
         .update({ id, date })
         .set({ someValue })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
       expect(updateRecord).to.deep.equal({});
       let queryRecord = await db.query
         .record({ id, date })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
       expect(queryRecord).to.deep.equal({
         Items: [
@@ -2012,7 +2013,7 @@ describe("Entity", () => {
       });
       let recordWithKeys = await db
         .get({ id, date })
-        .go({ includeKeys: true })
+        .go({ data: 'includeKeys' })
         .then((res) => res.data);
       expect(recordWithKeys).to.deep.equal({
         id,
@@ -2357,19 +2358,11 @@ describe("Entity", () => {
         ExpressionAttributeNames: {
           "#pk": "gsi2pk",
           "#sk1": "gsi2sk",
-          "#prop6": "prop6",
-          "#prop7": "prop7",
-          "#prop8": "prop8",
         },
         ExpressionAttributeValues: {
-          ":prop60": record.prop6,
-          ":prop70": record.prop7,
-          ":prop80": record.prop8,
           ":pk": `$test#prop5_${record.prop5}`,
           ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
         },
-        FilterExpression:
-          "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
         IndexName: "gsi2pk-gsi2sk-index",
       });
       let beforeUpdate = await Dummy.query
@@ -2404,19 +2397,11 @@ describe("Entity", () => {
         ExpressionAttributeNames: {
           "#pk": "gsi2pk",
           "#sk1": "gsi2sk",
-          "#prop6": "prop6",
-          "#prop7": "prop7",
-          "#prop8": "prop8",
         },
         ExpressionAttributeValues: {
-          ":prop60": record.prop6,
-          ":prop70": record.prop7,
-          ":prop80": record.prop8,
           ":pk": `$test#prop5_${prop5}`,
           ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
         },
-        FilterExpression:
-          "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
         IndexName: "gsi2pk-gsi2sk-index",
       });
       let afterUpdate = await Dummy.query
@@ -2464,19 +2449,11 @@ describe("Entity", () => {
         ExpressionAttributeNames: {
           "#pk": "gsi2pk",
           "#sk1": "gsi2sk",
-          "#prop6": "prop6",
-          "#prop7": "prop7",
-          "#prop8": "prop8",
         },
         ExpressionAttributeValues: {
           ":pk": `$test#prop5_${record.prop5}`,
           ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
-          ":prop60": record.prop6,
-          ":prop70": record.prop7,
-          ":prop80": record.prop8,
         },
-        FilterExpression:
-          "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
         IndexName: "gsi2pk-gsi2sk-index",
       });
       let beforeUpdate = await Dummy.query
@@ -2510,19 +2487,11 @@ describe("Entity", () => {
         ExpressionAttributeNames: {
           "#pk": "gsi2pk",
           "#sk1": "gsi2sk",
-          "#prop6": "prop6",
-          "#prop7": "prop7",
-          "#prop8": "prop8",
         },
         ExpressionAttributeValues: {
           ":pk": `$test#prop5_${prop5}`,
           ":sk1": `$dummy_1#prop6_${record.prop6}#prop7_${record.prop7}#prop8_${record.prop8}`,
-          ":prop60": record.prop6,
-          ":prop70": record.prop7,
-          ":prop80": record.prop8,
         },
-        FilterExpression:
-          "(#prop6 = :prop60) AND #prop7 = :prop70 AND #prop8 = :prop80",
         IndexName: "gsi2pk-gsi2sk-index",
       });
       let afterUpdate = await Dummy.query
@@ -2728,6 +2697,20 @@ describe("Entity", () => {
       },
       { client, table: "electro" },
     );
+
+    it('should return the correct response deleting an item that does not exist', async () => {
+      const id = uuid();
+      const sub = uuid();
+
+      const noneResponse = await db.delete({ id, sub }).go({ response: 'none' });
+      expect(noneResponse.data).to.be.null;
+      const allOldResponse = await db.delete({ id, sub }).go({ response: 'all_old' });
+      expect(allOldResponse.data).to.be.null;
+
+      const unspecifiedResponse = await db.delete({ id, sub }).go();
+      const defaultResponse = await db.delete({ id, sub }).go({ response: 'default' });
+      expect(unspecifiedResponse.data).to.deep.equal(defaultResponse.data).and.to.deep.equal({ id, sub });
+    });
 
     for (const method of ["update", "patch"] as const) {
       it(`should return just the new results when using ${method}`, async () => {
@@ -4363,7 +4346,7 @@ describe("attributes query option", () => {
         attr1: item.attr1,
         attr2: item.attr2,
       })
-      .go({ raw: true, attributes: ["attr2", "attr9", "attr5", "attr10"] })
+      .go({ data: 'raw', attributes: ["attr2", "attr9", "attr5", "attr10"] })
       .then((res) => res.data);
     expect(getRaw).to.deep.equal({
       Item: {
@@ -4378,7 +4361,7 @@ describe("attributes query option", () => {
         attr1: item.attr1,
         attr2: item.attr2,
       })
-      .go({ raw: true, attributes: ["attr2", "attr9", "attr5", "attr10"] })
+      .go({ data: 'raw', attributes: ["attr2", "attr9", "attr5", "attr10"] })
       .then((res) => res.data);
     expect(queryRawGo).to.deep.equal({
       Items: [
@@ -4401,7 +4384,7 @@ describe("attributes query option", () => {
       })
       .go({
         cursor: null,
-        raw: true,
+        data: 'raw',
         attributes: ["attr2", "attr9", "attr5", "attr10"],
       });
 
@@ -4622,7 +4605,7 @@ describe("attributes query option", () => {
       },
     ]);
     expect(params.ProjectionExpression).to.equal(
-      "#attr5, #attr4, #pk, #sk1, #attr2, #prop9, #attr10, #__edb_e__, #__edb_v__",
+      "#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__",
     );
   });
 
@@ -4668,7 +4651,7 @@ describe("attributes query option", () => {
       },
     ]);
     expect(params.ProjectionExpression).to.equal(
-      "#attr5, #attr4, #pk, #sk1, #attr2, #prop9, #attr10, #__edb_e__, #__edb_v__",
+      "#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__",
     );
   });
 
@@ -5531,6 +5514,8 @@ describe("upsert", () => {
     expect(typeof put.data.createdAt).to.equal("number");
     expect(typeof put.data.updatedAt).to.equal("number");
 
+    await sleep(1);
+
     const upserted = await entity
       .upsert({
         accountNumber,
@@ -6359,6 +6344,7 @@ describe("conversion use cases: pagination", () => {
   });
 
   it("should let you use a entity level toCursor conversion to create a cursor based on the last item returned", async () => {
+    const conversions = createConversions(entity);
     const { items, accountId } = await loadItems();
     const limit = 10;
     let iterations = 0;
@@ -6370,7 +6356,7 @@ describe("conversion use cases: pagination", () => {
         .go({ cursor, limit });
       results = results.concat(response.data);
       if (response.data[response.data.length - 1]) {
-        cursor = entity.conversions.fromComposite.toCursor(
+        cursor = conversions.fromComposite.toCursor(
           response.data[response.data.length - 1],
         );
       } else {
@@ -6385,6 +6371,7 @@ describe("conversion use cases: pagination", () => {
   });
 
   it("should let you use the index specific toCursor conversion to create a cursor based on the last item returned", async () => {
+    const conversions = createConversions(entity);
     const { items, accountId } = await loadItems();
     const limit = 10;
     let iterations = 0;
@@ -6397,7 +6384,7 @@ describe("conversion use cases: pagination", () => {
       results = results.concat(response.data);
       if (response.data[response.data.length - 1]) {
         cursor =
-          entity.conversions.byAccessPattern.records.fromComposite.toCursor(
+          conversions.byAccessPattern.records.fromComposite.toCursor(
             response.data[response.data.length - 1],
           );
       } else {
@@ -6411,3 +6398,68 @@ describe("conversion use cases: pagination", () => {
     );
   });
 });
+
+describe('consistent read', () => {
+    const entity = new Entity({
+      model: {
+        version: '1',
+        service: 'tests',
+        entity: 'consistent-read',
+      },
+      attributes: {
+        name: {
+          type: 'string'
+        },
+        type: {
+          type: 'string'
+        }
+      },
+      indexes: {
+        record: {
+          pk: {
+            field: 'pk',
+            composite: ['name']
+          },
+          sk: {
+            field: 'sk',
+            composite: ['type']
+          }
+        }
+      }
+    }, { table });
+
+    const name = 'dr. strangelove';
+    const type = 'satire';
+
+    async function resolves(promise: Promise<any>) {
+      return promise.then(() => true).catch(() => false);
+    }
+
+    it('should apply consistent read options to dynamodb parameters to a get request', async () => {
+      const getParams = entity.get({name, type}).params({consistent: true});
+      expect(getParams.ConsistentRead).to.be.true;
+      // dynamodb does not cry
+      expect(await resolves(entity.get({name, type}).go({consistent: true})));
+    });
+
+    it('should apply consistent read options to dynamodb parameters to a batchGet request', async () => {
+      const batchGetParams = entity.get([{ name, type }]).params({consistent: true});
+      expect(batchGetParams[0].RequestItems.electro.ConsistentRead).to.be.true;
+      // dynamodb does not cry
+      expect(await resolves(entity.get([{ name, type }]).go({consistent: true})));
+    });
+
+    it('should apply consistent read options to dynamodb parameters to a query request', async () => {
+      const queryParams = entity.query.record({name}).params({consistent: true});
+      expect(queryParams.ConsistentRead).to.be.true;
+      // dynamodb does not cry
+      expect(await resolves(entity.query.record({name}).go({consistent: true})));
+    });
+
+    it('should apply consistent read options to dynamodb parameters to a scan request', async () => {
+      const scanParams = entity.scan.params({consistent: true});
+      expect(scanParams.ConsistentRead).to.be.true;
+      // dynamodb does not cry
+      expect(await resolves(entity.scan.go({consistent: true})));
+    });
+})

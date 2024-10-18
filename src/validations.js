@@ -122,7 +122,7 @@ const Index = {
         scope: {
           type: "string",
           required: false,
-        }
+        },
       },
     },
     sk: {
@@ -178,7 +178,7 @@ const Index = {
       type: "any",
       required: false,
       format: "isFunction",
-    }
+    },
   },
 };
 

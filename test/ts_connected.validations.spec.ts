@@ -99,7 +99,7 @@ describe("padding validation", () => {
 
 describe("user attribute validation", () => {
   describe("root primitives user validation", () => {
-    it("should interpret a true response value as an invalid attribute value", async () => {
+    it("should interpret a false response value as an invalid attribute value", async () => {
       const prop1 = uuid();
       const prop2 = "value2";
       const invalidProp2 = "invalid_value";
@@ -116,7 +116,7 @@ describe("user attribute validation", () => {
             },
             prop2: {
               type: "string",
-              validate: (value) => value === invalidProp2,
+              validate: (value) => value !== invalidProp2,
             },
           },
           indexes: {
@@ -157,7 +157,7 @@ describe("user attribute validation", () => {
       expect(updateResult.fields).to.have.length(1);
     });
 
-    it("should interpret a string return value as a validation error message", async () => {
+    it.skip("should interpret a string return value as a validation error message", async () => {
       const prop1 = uuid();
       const prop2 = "value2";
       const invalidProp2 = "invalid_value";
@@ -177,8 +177,9 @@ describe("user attribute validation", () => {
               type: "string",
               validate: (value) => {
                 if (value === invalidProp2) {
-                  return invalidValueMessage;
+                  return false;
                 }
+                return true;
               },
             },
           },
@@ -245,6 +246,7 @@ describe("user attribute validation", () => {
                 if (value === invalidProp2) {
                   throw error;
                 }
+                return true;
               },
             },
           },
@@ -291,7 +293,7 @@ describe("user attribute validation", () => {
     });
   });
   describe("root maps user validation", () => {
-    it("should interpret a true response value as an invalid attribute value", async () => {
+    it("should interpret a false response value as an invalid attribute value", async () => {
       const prop1 = uuid();
       const prop2 = {
         prop4: "value4",
@@ -327,7 +329,7 @@ describe("user attribute validation", () => {
               validate: (value = {}) => {
                 const value3PresentButValue5IsNot =
                   value.prop3 !== undefined && value.prop5 === undefined;
-                return value3PresentButValue5IsNot;
+                return !value3PresentButValue5IsNot;
               },
             },
           },
@@ -413,6 +415,7 @@ describe("user attribute validation", () => {
                 if (value.prop3 !== undefined && value.prop5 === undefined) {
                   throw new MyCustomError(message);
                 }
+                return true;
               },
             },
           },
@@ -460,7 +463,7 @@ describe("user attribute validation", () => {
       expect(updateResult.fields[0].field).to.equal("prop2");
     });
 
-    it("should interpret a string return value as a validation error message", async () => {
+    it.skip("should interpret a string return value as a validation error message", async () => {
       const prop1 = uuid();
       const prop2 = {
         prop4: "value4",
@@ -498,8 +501,9 @@ describe("user attribute validation", () => {
                 const value3PresentButValue5IsNot =
                   value.prop3 !== undefined && value.prop5 === undefined;
                 if (value3PresentButValue5IsNot) {
-                  return invalidValueMessage;
+                  return false;
                 }
+                return true;
               },
             },
           },
@@ -569,6 +573,7 @@ describe("user attribute validation", () => {
                   validate: (value) => {
                     validationExecutions.push("property");
                     validationExecutionTypes.push(typeof value);
+                    return true;
                   },
                 },
                 prop4: {
@@ -576,6 +581,7 @@ describe("user attribute validation", () => {
                   validate: (value) => {
                     validationExecutions.push("property");
                     validationExecutionTypes.push(typeof value);
+                    return true;
                   },
                 },
                 prop5: {
@@ -583,12 +589,14 @@ describe("user attribute validation", () => {
                   validate: (value) => {
                     validationExecutions.push("property");
                     validationExecutionTypes.push(typeof value);
+                    return true;
                   },
                 },
               },
               validate: (value) => {
                 validationExecutions.push("map");
                 validationExecutionTypes.push(typeof value);
+                return true;
               },
             },
           },
@@ -627,7 +635,7 @@ describe("user attribute validation", () => {
       ]);
     });
 
-    it("should interpret a true response value as an invalid attribute value on individual property values", async () => {
+    it("should interpret a false response value as an invalid attribute value on individual property values", async () => {
       const prop1 = uuid();
       const prop2 = {
         prop3: "value4",
@@ -656,19 +664,19 @@ describe("user attribute validation", () => {
                 prop3: {
                   type: "string",
                   validate: (value) => {
-                    return value !== prop2.prop3;
+                    return value === prop2.prop3;
                   },
                 },
                 prop4: {
                   type: "number",
                   validate: (value) => {
-                    return value !== prop2.prop4;
+                    return value === prop2.prop4;
                   },
                 },
                 prop5: {
                   type: "boolean",
                   validate: (value) => {
-                    return !value;
+                    return !!value;
                   },
                 },
               },
@@ -712,7 +720,7 @@ describe("user attribute validation", () => {
       expect(updateResult.fields).to.have.length(3);
     });
 
-    it("should interpret a string return value as a validation error message on individual property values", async () => {
+    it.skip("should interpret a string return value as a validation error message on individual property values", async () => {
       const prop1 = uuid();
       const prop2 = {
         prop3: "value4",
@@ -743,24 +751,27 @@ describe("user attribute validation", () => {
                   type: "string",
                   validate: (value) => {
                     if (value !== prop2.prop3) {
-                      return invalidValueMessage;
+                      return false;
                     }
+                    return true;
                   },
                 },
                 prop4: {
                   type: "number",
                   validate: (value) => {
                     if (value !== prop2.prop4) {
-                      return invalidValueMessage;
+                      return false;
                     }
+                    return true;
                   },
                 },
                 prop5: {
                   type: "boolean",
                   validate: (value) => {
                     if (value !== prop2.prop5) {
-                      return invalidValueMessage;
+                      return false;
                     }
+                    return true;
                   },
                 },
               },
@@ -844,6 +855,7 @@ describe("user attribute validation", () => {
                     if (value !== prop2.prop3) {
                       throw error;
                     }
+                    return true;
                   },
                 },
                 prop4: {
@@ -852,6 +864,7 @@ describe("user attribute validation", () => {
                     if (value !== prop2.prop4) {
                       throw error;
                     }
+                    return true;
                   },
                 },
                 prop5: {
@@ -860,6 +873,7 @@ describe("user attribute validation", () => {
                     if (value !== prop2.prop5) {
                       throw error;
                     }
+                    return true;
                   },
                 },
               },
@@ -916,7 +930,7 @@ describe("user attribute validation", () => {
     });
   });
   describe("root lists user validation", () => {
-    it("should interpret a true response value as an invalid attribute value", async () => {
+    it("should interpret a false response value as an invalid attribute value", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value1"];
@@ -937,7 +951,7 @@ describe("user attribute validation", () => {
                 type: "string",
               },
               validate: (value: string[] = []) => {
-                return value.length === 1;
+                return value.length !== 1;
               },
             },
           },
@@ -979,7 +993,7 @@ describe("user attribute validation", () => {
       expect(updateResult.fields).to.have.length(1);
     });
 
-    it("should interpret a string return value as a validation error message", async () => {
+    it.skip("should interpret a string return value as a validation error message", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value1"];
@@ -1002,8 +1016,9 @@ describe("user attribute validation", () => {
               },
               validate: (value: string[] = []) => {
                 if (value.length === 1) {
-                  return invalidValueMessage;
+                  return false;
                 }
+                return true;
               },
             },
           },
@@ -1070,6 +1085,7 @@ describe("user attribute validation", () => {
                 validate: (value: string) => {
                   validationExecutions.push("property");
                   validationExecutionTypes.push(typeof value);
+                  return true;
                 },
               },
               validate: (value: string[] | undefined) => {
@@ -1077,6 +1093,7 @@ describe("user attribute validation", () => {
                 validationExecutionTypes.push(
                   Array.isArray(value) ? "array" : typeof value,
                 );
+                return true;
               },
             },
           },
@@ -1111,7 +1128,7 @@ describe("user attribute validation", () => {
       ]);
     });
 
-    it("should interpret a true response value as an invalid attribute value on individual item values", async () => {
+    it("should interpret a false response value as an invalid attribute value on individual item values", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value3", "value4", "value5"];
@@ -1131,7 +1148,7 @@ describe("user attribute validation", () => {
               items: {
                 type: "string",
                 validate: (value: string) => {
-                  return !prop2.find((val) => val === value);
+                  return !!prop2.find((val) => val === value);
                 },
               },
             },
@@ -1197,7 +1214,7 @@ describe("user attribute validation", () => {
       expect(updateResult.fields).to.have.length(3);
     });
 
-    it("should interpret a string return value as a validation error message on individual item values", async () => {
+    it.skip("should interpret a string return value as a validation error message on individual item values", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value3", "value4", "value5"];
@@ -1224,8 +1241,9 @@ describe("user attribute validation", () => {
                 type: "string",
                 validate: (value: string) => {
                   if (!prop2.find((val) => val === value)) {
-                    return invalidValueMessage;
+                    return false;
                   }
+                  return true;
                 },
               },
             },
@@ -1293,6 +1311,7 @@ describe("user attribute validation", () => {
                 validationExecutionTypes.push(
                   Array.isArray(value) ? "array" : typeof value,
                 );
+                return true;
               },
             },
           },
@@ -1319,14 +1338,18 @@ describe("user attribute validation", () => {
       expect(validationExecutions).to.deep.equal([
         "property",
         "property",
+        "list",
         "property",
         "property",
+        "list",
       ]);
       expect(validationExecutionTypes).to.deep.equal([
         "string",
         "string",
+        "array",
         "string",
         "string",
+        "array",
       ]);
     });
 
@@ -1381,6 +1404,7 @@ describe("user attribute validation", () => {
               validate: (value) => {
                 validationExecutions.push("map");
                 validationExecutionTypes.push(typeof value);
+                return true;
               },
             },
           },
@@ -1408,17 +1432,21 @@ describe("user attribute validation", () => {
         "property",
         "property",
         "property",
+        "map",
         "property",
         "property",
         "property",
+        "map",
       ]);
       expect(validationExecutionTypes).to.deep.equal([
         "string",
         "number",
         "boolean",
+        "object",
         "string",
         "number",
         "boolean",
+        "object",
       ]);
     });
 
@@ -1448,6 +1476,7 @@ describe("user attribute validation", () => {
                 if (value.length === 1) {
                   throw error;
                 }
+                return true;
               },
             },
           },
@@ -1493,7 +1522,7 @@ describe("user attribute validation", () => {
   });
 
   describe("root set user validation", () => {
-    it("should interpret a true response value as an invalid attribute value", async () => {
+    it("should interpret a false response value as an invalid attribute value", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value1"];
@@ -1512,7 +1541,7 @@ describe("user attribute validation", () => {
               type: "set",
               items: "string",
               validate: (value: string[] = []) => {
-                return value.length === 1;
+                return value.length !== 1;
               },
             },
           },
@@ -1552,7 +1581,7 @@ describe("user attribute validation", () => {
       );
     });
 
-    it("should interpret a string return value as a validation error message", async () => {
+    it.skip("should interpret a string return value as a validation error message", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value1"];
@@ -1573,8 +1602,9 @@ describe("user attribute validation", () => {
               items: "string",
               validate: (value: string[] = []) => {
                 if (value.length === 1) {
-                  return invalidValueMessage;
+                  return false;
                 }
+                return true;
               },
             },
           },
@@ -1640,6 +1670,7 @@ describe("user attribute validation", () => {
                 if (value.length === 1) {
                   throw error;
                 }
+                return true;
               },
             },
           },
@@ -1685,7 +1716,7 @@ describe("user attribute validation", () => {
       expect(updateResult.fields[0].cause).to.equal(error);
     });
 
-    it("should interpret a string return value as a validation error message", async () => {
+    it.skip("should interpret a string return value as a validation error message", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value1"];
@@ -1706,8 +1737,9 @@ describe("user attribute validation", () => {
               items: "string",
               validate: (value: string[] = []) => {
                 if (value.length === 1) {
-                  return invalidValueMessage;
+                  return false;
                 }
+                return true;
               },
             },
           },

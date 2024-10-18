@@ -266,6 +266,7 @@ const schemaWithCustomAttribute = createSchema({
       },
       validate: (attr) => {
         expectType<MyCustomAttributeType>(attr);
+        return true;
       },
     }),
   },

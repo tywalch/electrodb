@@ -1,4 +1,4 @@
-const { TableIndex, TransactionMethods } = require("./types");
+const { TableIndex, TransactionMethods, DataOptions } = require("./types");
 const { getEntityIdentifiers, matchToEntityAlias } = require("./entity");
 
 function cleanseCanceledData(
@@ -7,7 +7,7 @@ function cleanseCanceledData(
   data = {},
   config = {},
 ) {
-  if (config.raw) {
+  if (config.data === DataOptions.raw) {
     return data;
   }
   const identifiers = getEntityIdentifiers(entities);
@@ -52,7 +52,7 @@ function cleanseTransactionData(
   data = {},
   config = {},
 ) {
-  if (config.raw) {
+  if (config.data === DataOptions.raw) {
     return data;
   }
   const identifiers = getEntityIdentifiers(entities);
@@ -139,7 +139,7 @@ function createTransaction(options) {
       const response = await driver.go(method, params, {
         ...options,
         parse: (options, data) => {
-          if (options.raw) {
+          if (options.data === DataOptions.raw) {
             return data;
           } else if (data.canceled) {
             canceled = true;

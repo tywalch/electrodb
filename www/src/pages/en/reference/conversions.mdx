@@ -23,7 +23,7 @@ All conversion functions can be found on your entity under the `conversions` nam
 ### Example Entity
 
 ```typescript
-import { Entity } from "electrodb";
+import { Entity, createConversions } from "electrodb";
 
 const thing = new Entity(
   {
@@ -79,16 +79,18 @@ const composite = {
 #### From Composite
 
 ```typescript
+const conversions = createConversions(thing);
+
 // from Composite to all possible index Keys
-thing.conversions.fromComposite.toKeys(item);
+conversions.fromComposite.toKeys(item);
 
 // from Composite to Cursor
-thing.conversions.fromComposite.toCursor(item);
+conversions.fromComposite.toCursor(item);
 
 // from Composite to Keys for a specific access pattern
-thing.conversions.byAccessPattern.records.fromComposite.toKeys(item);
+conversions.byAccessPattern.records.fromComposite.toKeys(item);
 // from Composite to Cursor for a specific access pattern
-thing.conversions.byAccessPattern.records.fromComposite.toCursor(item);
+conversions.byAccessPattern.records.fromComposite.toCursor(item);
 ```
 
 #### To Keys Options
@@ -96,18 +98,21 @@ thing.conversions.byAccessPattern.records.fromComposite.toCursor(item);
 When converting `composite` items to `keys`, you may also specify a `strict` mode which is passed as a second argument:
 
 ```typescript
+const conversions = createConversions(thing);
+
 // from Composite to all possible index Keys
-thing.conversions.fromComposite.toKeys(item, { strict: "all" });
+conversions.fromComposite.toKeys(item, { strict: "all" });
 
 // from Composite to Cursor
-thing.conversions.fromComposite.toCursor(item, { strict: "all" });
+conversions.fromComposite.toCursor(item, { strict: "all" });
 
 // from Composite to Keys for a specific access pattern
-thing.conversions.byAccessPattern.records.fromComposite.toKeys(item, {
+conversions.byAccessPattern.records.fromComposite.toKeys(item, {
   strict: "all",
 });
+
 // from Composite to Cursor for a specific access pattern
-thing.conversions.byAccessPattern.records.fromComposite.toCursor(item, {
+conversions.byAccessPattern.records.fromComposite.toCursor(item, {
   strict: "all",
 });
 ```
@@ -117,7 +122,9 @@ thing.conversions.byAccessPattern.records.fromComposite.toCursor(item, {
 The following is a table explaining how the `strict` option impacts key creation. the `at root` option below refers to usage directly on the `conversions` namespace. For example:
 
 ```typescript
-thing.conversions.fromComposite.toKeys(item, { strict: "all" });
+const conversions = createConversions(thing);
+
+conversions.fromComposite.toKeys(item, { strict: "all" });
 ```
 
 | strict |    variation    | access pattern type | description                                                                                                                                               |
@@ -150,6 +157,7 @@ const keys = {
 > Note: when converting Keys to Composite values, ElectroDB will destructure keys into individual attributes, but the casing of your keys will match that of your keys. Be mindful when using the composite values you receive when using case-sensitive functionality like `filter` if casing is not consistent between your keys and your attributes.
 
 ```typescript
+const conv
 // from Keys to Composite attribute values
 thing.conversions.fromKeys.toComposite(keys);
 // from Keys to Cursor

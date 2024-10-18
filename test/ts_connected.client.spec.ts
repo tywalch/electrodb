@@ -303,6 +303,7 @@ describe("dynamodb sdk client compatibility", () => {
                       expect(val).to.be.an("array").and.have.length(1);
                       expect(val).to.deep.equal(prop3);
                       called.validate = true;
+                      return true;
                     },
                     type: "set",
                     items: "string",

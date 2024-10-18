@@ -362,7 +362,7 @@ function createMembersCountFn(options: CreateCountFnOptions): CountFn {
       .members({ accountId })
       .go({
         // `raw` allows you return the unprocess results directly from DynamoDB (escape hatch)
-        raw: true,
+        data: 'raw',
         // paginate through the results using the cursor
         cursor: next,
         // `params` allows you to append additional parameters to the DynamoDB query (escape hatch)
@@ -379,7 +379,7 @@ function createUsersCountFn(options: CreateCountFnOptions): CountFn {
     return User.query.account({ accountId })
       .go({
         // `raw` allows you return the unprocess results directly from DynamoDB (escape hatch)
-        raw: true,
+        data: 'raw',
         // paginate through the results using the cursor
         cursor: next,
         // `params` allows you to append additional parameters to the DynamoDB query (escape hatch)
@@ -396,7 +396,7 @@ function createUsersScanCountFn(options: CreateCountFnOptions): CountFn {
       .where((attr, op) => op.eq(attr.accountId, accountId))
       .go({
         // `raw` allows you return the unprocess results directly from DynamoDB (escape hatch)
-        raw: true,
+        data: 'raw',
         // paginate through the results using the cursor
         cursor: next,
         // `params` allows you to append additional parameters to the DynamoDB query (escape hatch)

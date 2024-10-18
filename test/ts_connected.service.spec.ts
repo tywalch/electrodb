@@ -1020,7 +1020,7 @@ describe("index types and operations", () => {
           .primaryCollection({
             prop1: keys.isolatedPrimaryPkKey,
           })
-          .go();
+          .go({ compare: 'v2' });
 
       expect(isolatedPrimaryCollectionData.cursor).to.be.null;
       compareItems(
@@ -1037,7 +1037,7 @@ describe("index types and operations", () => {
           .secondaryCollection({
             prop4: keys.isolatedSecondaryPkKey,
           })
-          .go();
+          .go({ compare: 'v2' });
 
       expect(isolatedSecondaryCollectionData.cursor).to.be.null;
       compareItems(
@@ -1054,7 +1054,7 @@ describe("index types and operations", () => {
           .primaryCollection({
             prop1: keys.clusteredPrimaryPkKey,
           })
-          .go();
+          .go({ compare: 'v2' });
 
       expect(clusteredPrimaryCollectionData.cursor).to.be.null;
       compareItems(
@@ -1071,7 +1071,7 @@ describe("index types and operations", () => {
           .secondaryCollection({
             prop4: keys.clusteredSecondaryPkKey,
           })
-          .go();
+          .go({ compare: 'v2' });
 
       expect(clusteredSecondaryCollectionData.cursor).to.be.null;
       compareItems(
@@ -1092,7 +1092,7 @@ describe("index types and operations", () => {
             prop1: keys.clusteredPrimaryPkKey,
             prop2: 5,
           })
-          .go();
+          .go({ compare: 'v2' });
 
       expect(clusteredPrimaryCollectionPartialSKData.cursor).to.be.null;
       compareItems(clusteredPrimaryCollectionPartialSKData.data.entity1, [
@@ -1108,7 +1108,7 @@ describe("index types and operations", () => {
             prop4: keys.clusteredSecondaryPkKey,
             prop5: 5,
           })
-          .go();
+          .go({ compare: 'v2' });
 
       expect(clusteredSecondaryCollectionPartialSKData.cursor).to.be.null;
       compareItems(clusteredSecondaryCollectionPartialSKData.data.entity1, [
@@ -1166,23 +1166,23 @@ describe("index types and operations", () => {
                 case "between":
                   return clusteredPrimaryCollectionPartialSKOperation
                     .between({ prop2: first }, { prop2: last })
-                    .go();
+                    .go({ compare: 'v2' });
                 case "gte":
                   return clusteredPrimaryCollectionPartialSKOperation
                     .gte({ prop2: first })
-                    .go();
+                    .go({ compare: 'v2' });
                 case "gt":
                   return clusteredPrimaryCollectionPartialSKOperation
                     .gt({ prop2: first })
-                    .go();
+                    .go({ compare: 'v2' });
                 case "lte":
                   return clusteredPrimaryCollectionPartialSKOperation
                     .lte({ prop2: first })
-                    .go();
+                    .go({ compare: 'v2' });
                 case "lt":
                   return clusteredPrimaryCollectionPartialSKOperation
                     .lt({ prop2: first })
-                    .go();
+                    .go({ compare: 'v2' });
               }
             })();
 
@@ -1207,23 +1207,23 @@ describe("index types and operations", () => {
                 case "between":
                   return clusteredSecondaryCollectionPartialSKOperation
                     .between({ prop5: first }, { prop5: last })
-                    .go();
+                    .go({ compare: 'v2' });
                 case "gte":
                   return clusteredSecondaryCollectionPartialSKOperation
                     .gte({ prop5: first })
-                    .go();
+                    .go({ compare: 'v2' });
                 case "gt":
                   return clusteredSecondaryCollectionPartialSKOperation
                     .gt({ prop5: first })
-                    .go();
+                    .go({ compare: 'v2' });
                 case "lte":
                   return clusteredSecondaryCollectionPartialSKOperation
                     .lte({ prop5: first })
-                    .go();
+                    .go({ compare: 'v2' });
                 case "lt":
                   return clusteredSecondaryCollectionPartialSKOperation
                     .lt({ prop5: first })
-                    .go();
+                    .go({ compare: 'v2' });
               }
             })();
 
@@ -1287,15 +1287,15 @@ describe("index types and operations", () => {
               case "between":
                 return entity1PrimaryQuery
                   .between({ prop2: first }, { prop2: last })
-                  .go();
+                  .go({ compare: 'v2' });
               case "gte":
-                return entity1PrimaryQuery.gte({ prop2: first }).go();
+                return entity1PrimaryQuery.gte({ prop2: first }).go({ compare: 'v2' });
               case "gt":
-                return entity1PrimaryQuery.gt({ prop2: first }).go();
+                return entity1PrimaryQuery.gt({ prop2: first }).go({ compare: 'v2' });
               case "lte":
-                return entity1PrimaryQuery.lte({ prop2: first }).go();
+                return entity1PrimaryQuery.lte({ prop2: first }).go({ compare: 'v2' });
               case "lt":
-                return entity1PrimaryQuery.lt({ prop2: first }).go();
+                return entity1PrimaryQuery.lt({ prop2: first }).go({ compare: 'v2' });
             }
           })();
 
@@ -1312,15 +1312,15 @@ describe("index types and operations", () => {
               case "between":
                 return entity1SecondaryQuery
                   .between({ prop5: first }, { prop5: last })
-                  .go();
+                  .go({ compare: 'v2' });
               case "gte":
-                return entity1SecondaryQuery.gte({ prop5: first }).go();
+                return entity1SecondaryQuery.gte({ prop5: first }).go({ compare: 'v2' });
               case "gt":
-                return entity1SecondaryQuery.gt({ prop5: first }).go();
+                return entity1SecondaryQuery.gt({ prop5: first }).go({ compare: 'v2' });
               case "lte":
-                return entity1SecondaryQuery.lte({ prop5: first }).go();
+                return entity1SecondaryQuery.lte({ prop5: first }).go({ compare: 'v2' });
               case "lt":
-                return entity1SecondaryQuery.lt({ prop5: first }).go();
+                return entity1SecondaryQuery.lt({ prop5: first }).go({ compare: 'v2' });
             }
           })();
 
@@ -1370,15 +1370,15 @@ describe("index types and operations", () => {
               case "between":
                 return entity1PrimaryQuery
                   .between({ prop2: first }, { prop2: last })
-                  .go();
+                  .go({ compare: 'v2' });
               case "gte":
-                return entity1PrimaryQuery.gte({ prop2: first }).go();
+                return entity1PrimaryQuery.gte({ prop2: first }).go({ compare: 'v2' });
               case "gt":
-                return entity1PrimaryQuery.gt({ prop2: first }).go();
+                return entity1PrimaryQuery.gt({ prop2: first }).go({ compare: 'v2' });
               case "lte":
-                return entity1PrimaryQuery.lte({ prop2: first }).go();
+                return entity1PrimaryQuery.lte({ prop2: first }).go({ compare: 'v2' });
               case "lt":
-                return entity1PrimaryQuery.lt({ prop2: first }).go();
+                return entity1PrimaryQuery.lt({ prop2: first }).go({ compare: 'v2' });
             }
           })();
 
@@ -1399,15 +1399,15 @@ describe("index types and operations", () => {
               case "between":
                 return entity1SecondaryQuery
                   .between({ prop5: first }, { prop5: last })
-                  .go();
+                  .go({ compare: 'v2' });
               case "gte":
-                return entity1SecondaryQuery.gte({ prop5: first }).go();
+                return entity1SecondaryQuery.gte({ prop5: first }).go({ compare: 'v2' });
               case "gt":
-                return entity1SecondaryQuery.gt({ prop5: first }).go();
+                return entity1SecondaryQuery.gt({ prop5: first }).go({ compare: 'v2' });
               case "lte":
-                return entity1SecondaryQuery.lte({ prop5: first }).go();
+                return entity1SecondaryQuery.lte({ prop5: first }).go({ compare: 'v2' });
               case "lt":
-                return entity1SecondaryQuery.lt({ prop5: first }).go();
+                return entity1SecondaryQuery.lt({ prop5: first }).go({ compare: 'v2' });
             }
           })();
 
@@ -1450,15 +1450,15 @@ describe("index types and operations", () => {
               case "between":
                 return entity1PrimaryQuery
                   .between({ prop2: first }, { prop2: last })
-                  .go();
+                  .go({ compare: 'v2' });
               case "gte":
-                return entity1PrimaryQuery.gte({ prop2: first }).go();
+                return entity1PrimaryQuery.gte({ prop2: first }).go({ compare: 'v2' });
               case "gt":
-                return entity1PrimaryQuery.gt({ prop2: first }).go();
+                return entity1PrimaryQuery.gt({ prop2: first }).go({ compare: 'v2' });
               case "lte":
-                return entity1PrimaryQuery.lte({ prop2: first }).go();
+                return entity1PrimaryQuery.lte({ prop2: first }).go({ compare: 'v2' });
               case "lt":
-                return entity1PrimaryQuery.lt({ prop2: first }).go();
+                return entity1PrimaryQuery.lt({ prop2: first }).go({ compare: 'v2' });
             }
           })();
 
@@ -1475,15 +1475,15 @@ describe("index types and operations", () => {
               case "between":
                 return entity1SecondaryQuery
                   .between({ prop5: first }, { prop5: last })
-                  .go();
+                  .go({ compare: 'v2' });
               case "gte":
-                return entity1SecondaryQuery.gte({ prop5: first }).go();
+                return entity1SecondaryQuery.gte({ prop5: first }).go({ compare: 'v2' });
               case "gt":
-                return entity1SecondaryQuery.gt({ prop5: first }).go();
+                return entity1SecondaryQuery.gt({ prop5: first }).go({ compare: 'v2' });
               case "lte":
-                return entity1SecondaryQuery.lte({ prop5: first }).go();
+                return entity1SecondaryQuery.lte({ prop5: first }).go({ compare: 'v2' });
               case "lt":
-                return entity1SecondaryQuery.lt({ prop5: first }).go();
+                return entity1SecondaryQuery.lt({ prop5: first }).go({ compare: 'v2' });
             }
           })();
 
@@ -1491,7 +1491,7 @@ describe("index types and operations", () => {
           compareItems(entity1SecondaryQueryResults.data, entity1Items);
         });
 
-        it(`should iterate through only the specified entity regardless of type using a sort key the ${operation} sort key operation on a single attribute sort key`, async () => {
+        it(`should iterate through only the specified entity regardless of type using a sort key the ${operation} sort key operation on a single attribute sort key on ${indexType} index type`, async () => {
           const { loaded, keys, services } = await initSingleSKTests();
           const filterByOperation = (item: {
             prop5: number;
@@ -1533,15 +1533,15 @@ describe("index types and operations", () => {
               case "between":
                 return entity1PrimaryQuery
                   .between({ prop2: first }, { prop2: last })
-                  .go();
+                  .go({ compare: 'v2' });
               case "gte":
-                return entity1PrimaryQuery.gte({ prop2: first }).go();
+                return entity1PrimaryQuery.gte({ prop2: first }).go({ compare: 'v2' });
               case "gt":
-                return entity1PrimaryQuery.gt({ prop2: first }).go();
+                return entity1PrimaryQuery.gt({ prop2: first }).go({ compare: 'v2' });
               case "lte":
-                return entity1PrimaryQuery.lte({ prop2: first }).go();
+                return entity1PrimaryQuery.lte({ prop2: first }).go({ compare: 'v2' });
               case "lt":
-                return entity1PrimaryQuery.lt({ prop2: first }).go();
+                return entity1PrimaryQuery.lt({ prop2: first }).go({ compare: 'v2' });
             }
           })();
 
@@ -1562,15 +1562,15 @@ describe("index types and operations", () => {
               case "between":
                 return entity1SecondaryQuery
                   .between({ prop5: first }, { prop5: last })
-                  .go();
+                  .go({ compare: 'v2' });
               case "gte":
-                return entity1SecondaryQuery.gte({ prop5: first }).go();
+                return entity1SecondaryQuery.gte({ prop5: first }).go({ compare: 'v2' });
               case "gt":
-                return entity1SecondaryQuery.gt({ prop5: first }).go();
+                return entity1SecondaryQuery.gt({ prop5: first }).go({ compare: 'v2' });
               case "lte":
-                return entity1SecondaryQuery.lte({ prop5: first }).go();
+                return entity1SecondaryQuery.lte({ prop5: first }).go({ compare: 'v2' });
               case "lt":
-                return entity1SecondaryQuery.lt({ prop5: first }).go();
+                return entity1SecondaryQuery.lt({ prop5: first }).go({ compare: 'v2' });
             }
           })();
 
@@ -1920,21 +1920,19 @@ it("should add entity filter when clustered index is partially provided on entit
     KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
     TableName: "electro",
     ExpressionAttributeNames: {
-      "#prop2": "prop2",
       "#__edb_e__": "__edb_e__",
       "#__edb_v__": "__edb_v__",
       "#pk": "pk",
       "#sk1": "sk",
     },
     ExpressionAttributeValues: {
-      ":prop20": 123,
       ":__edb_e__0": entity1Name,
       ":__edb_v__0": "1",
       ":pk": `$${serviceName}#prop1_abc`,
       ":sk1": "$primarycollection#prop2_123#prop3_",
     },
     FilterExpression:
-      "(#prop2 = :prop20) AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0",
+      "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
   });
 });
 

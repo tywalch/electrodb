@@ -1,0 +1,4830 @@
+[
+  {
+    "id": "attributes::hasCollection:true|index:clusteredLocation|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison#zip_"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#county = :county0) AND #city = :city0 AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:isolatedLocation|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison#zip_"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#county = :county0) AND #city = :city0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:false|index:location|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison#zip_"
+      },
+      "FilterExpression": "(#county = :county0) AND #city = :city0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::collection:clusteredRegion|hasCollection:true|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "",
+      "compare": "attributes",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#county = :county0) AND #city = :city0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:clusteredLocation|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "gte",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#city >= :city0) AND (#county >= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:isolatedLocation|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "gte",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#city >= :city0) AND #county >= :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:false|index:location|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "gte",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "FilterExpression": "(#city >= :city0) AND #county >= :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::collection:clusteredRegion|hasCollection:true|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "gte",
+      "compare": "attributes",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city >= :city0) AND #county >= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:clusteredLocation|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "gt",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#city > :city0) AND (#county > :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:isolatedLocation|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "gt",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#city > :city0) AND #county > :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:false|index:location|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "gt",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "FilterExpression": "(#city > :city0) AND #county > :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::collection:clusteredRegion|hasCollection:true|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "gt",
+      "compare": "attributes",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city > :city0) AND #county > :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:clusteredLocation|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "lt",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#city < :city0) AND (#county < :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:isolatedLocation|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "lt",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#city < :city0) AND #county < :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:false|index:location|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "lt",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "FilterExpression": "(#city < :city0) AND #county < :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::collection:clusteredRegion|hasCollection:true|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "lt",
+      "compare": "attributes",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city < :city0) AND #county < :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:clusteredLocation|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "lte",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:isolatedLocation|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "lte",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:false|index:location|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "lte",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "FilterExpression": "(#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 1
+      }
+    ]
+  },
+  {
+    "id": "attributes::collection:clusteredRegion|hasCollection:true|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "lte",
+      "compare": "attributes",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:clusteredLocation|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "between",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":county0": "Dane",
+        ":city0": "Marshall",
+        ":county1": "Dane",
+        ":city1": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":sk2": "$clusteredregion#county_dane#city_marshall"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#city >= :city1) AND (#county >= :county1) AND (#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 2
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:isolatedLocation|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "between",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Marshall",
+        ":county1": "Dane",
+        ":city1": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison",
+        ":sk2": "$isolatedregion#attraction_1#county_dane#city_marshall"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#city >= :city1) AND (#county >= :county1) AND (#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 2
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:false|index:location|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "between",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Marshall",
+        ":county1": "Dane",
+        ":city1": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison",
+        ":sk2": "$attraction_1#county_dane#city_marshall"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "FilterExpression": "(#city >= :city1) AND (#county >= :county1) AND (#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all",
+        "occurrences": 2
+      }
+    ]
+  },
+  {
+    "id": "attributes::collection:clusteredRegion|hasCollection:true|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "between",
+      "compare": "attributes",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Marshall",
+        ":county1": "Dane",
+        ":city1": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":sk2": "$clusteredregion#county_dane#city_marshall",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city >= :city1) AND (#county >= :county1) AND (#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:clusteredLocation|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "begins",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:true|index:isolatedLocation|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "begins",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      }
+    ]
+  },
+  {
+    "id": "attributes::hasCollection:false|index:location|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "begins",
+      "compare": "attributes",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      }
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      }
+    ]
+  },
+  {
+    "id": "attributes::collection:clusteredRegion|hasCollection:true|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "begins",
+      "compare": "attributes",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "attributes::collection:isolatedRegion|hasCollection:true|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Service|type:isolated",
+    "input": {
+      "target": "Service",
+      "hasCollection": true,
+      "collection": "isolatedRegion",
+      "operator": "",
+      "compare": "attributes",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:clusteredLocation|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison#zip_"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:isolatedLocation|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison#zip_"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:false|index:location|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison#zip_"
+      }
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::collection:clusteredRegion|hasCollection:true|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "",
+      "compare": "keys",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:clusteredLocation|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "gte",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:isolatedLocation|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "gte",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:false|index:location|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "gte",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::collection:clusteredRegion|hasCollection:true|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "gte",
+      "compare": "keys",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:clusteredLocation|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "gt",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:isolatedLocation|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "gt",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:false|index:location|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "gt",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::collection:clusteredRegion|hasCollection:true|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "gt",
+      "compare": "keys",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:clusteredLocation|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "lt",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:isolatedLocation|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "lt",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:false|index:location|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "lt",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::collection:clusteredRegion|hasCollection:true|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "lt",
+      "compare": "keys",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:clusteredLocation|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "lte",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:isolatedLocation|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "lte",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:false|index:location|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "lte",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::collection:clusteredRegion|hasCollection:true|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "lte",
+      "compare": "keys",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:clusteredLocation|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "between",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":sk2": "$clusteredregion#county_dane#city_marshall"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:isolatedLocation|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "between",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison",
+        ":sk2": "$isolatedregion#attraction_1#county_dane#city_marshall"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:false|index:location|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "between",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison",
+        ":sk2": "$attraction_1#county_dane#city_marshall"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::collection:clusteredRegion|hasCollection:true|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "between",
+      "compare": "keys",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":sk2": "$clusteredregion#county_dane#city_marshall",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:clusteredLocation|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "begins",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:true|index:isolatedLocation|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "begins",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::hasCollection:false|index:location|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "begins",
+      "compare": "keys",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      }
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": false
+      }
+    ]
+  },
+  {
+    "id": "keys::collection:clusteredRegion|hasCollection:true|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "begins",
+      "compare": "keys",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "keys::collection:isolatedRegion|hasCollection:true|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Service|type:isolated",
+    "input": {
+      "target": "Service",
+      "hasCollection": true,
+      "collection": "isolatedRegion",
+      "operator": "",
+      "compare": "keys",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "attributes": [
+          "country",
+          "state",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "none",
+        "occurrences": 0
+      },
+      {
+        "name": "filterExpressionPresent",
+        "isPresent": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:clusteredLocation|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison#zip_"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#county = :county0) AND #city = :city0 AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:isolatedLocation|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison#zip_"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#county = :county0) AND #city = :city0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:false|index:location|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison#zip_"
+      },
+      "FilterExpression": "(#county = :county0) AND #city = :city0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      }
+    ]
+  },
+  {
+    "id": "v2::collection:clusteredRegion|hasCollection:true|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "",
+      "compare": "v2",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#county = :county0) AND #city = :city0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:clusteredLocation|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "gte",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:isolatedLocation|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "gte",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:false|index:location|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "gte",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1"
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      }
+    ]
+  },
+  {
+    "id": "v2::collection:clusteredRegion|hasCollection:true|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "gte",
+      "compare": "v2",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:clusteredLocation|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "gt",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madisoo"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#city > :city0) AND (#county > :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:isolatedLocation|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "gt",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madisoo"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#city > :city0) AND #county > :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:false|index:location|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "gt",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madisoo"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "FilterExpression": "(#city > :city0) AND #county > :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      }
+    ]
+  },
+  {
+    "id": "v2::collection:clusteredRegion|hasCollection:true|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "gt",
+      "compare": "v2",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madisoo",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city > :city0) AND #county > :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:clusteredLocation|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "lt",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:isolatedLocation|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "lt",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:false|index:location|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "lt",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1"
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      }
+    ]
+  },
+  {
+    "id": "v2::collection:clusteredRegion|hasCollection:true|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "lt",
+      "compare": "v2",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:clusteredLocation|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "lte",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madisoo"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:isolatedLocation|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "lte",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madisoo"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:false|index:location|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "lte",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madisoo"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "FilterExpression": "(#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      }
+    ]
+  },
+  {
+    "id": "v2::collection:clusteredRegion|hasCollection:true|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "lte",
+      "compare": "v2",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Madison",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madisoo",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:clusteredLocation|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "between",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":county0": "Dane",
+        ":city0": "Marshall",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":sk2": "$clusteredregion#county_dane#city_marshalm"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:isolatedLocation|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "between",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Marshall",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison",
+        ":sk2": "$isolatedregion#attraction_1#county_dane#city_marshalm"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:false|index:location|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "between",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Marshall",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison",
+        ":sk2": "$attraction_1#county_dane#city_marshalm"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "FilterExpression": "(#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "attributes": [
+          "county",
+          "city",
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "name": "bitShift",
+        "isShifted": true
+      }
+    ]
+  },
+  {
+    "id": "v2::collection:clusteredRegion|hasCollection:true|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "between",
+      "compare": "v2",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        },
+        {
+          "county": "Dane",
+          "city": "Marshall"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#county": "county",
+        "#city": "city",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":county0": "Dane",
+        ":city0": "Marshall",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":sk2": "$clusteredregion#county_dane#city_marshalm",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city <= :city0) AND #county <= :county0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:clusteredLocation|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "operator": "begins",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "clusteredLocation",
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk"
+      },
+      "ExpressionAttributeValues": {
+        ":__edb_e__0": "attraction",
+        ":__edb_v__0": "1",
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      },
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:true|index:isolatedLocation|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": true,
+      "operator": "begins",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "isolatedLocation",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index"
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      }
+    ]
+  },
+  {
+    "id": "v2::hasCollection:false|index:location|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated",
+    "input": {
+      "hasCollection": false,
+      "operator": "begins",
+      "compare": "v2",
+      "target": "Entity",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "index": "location",
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "pk",
+        "#sk1": "sk"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$attraction_1#county_dane#city_madison"
+      }
+    },
+    "evaluations": [
+      {
+        "occurrences": 0,
+        "attributes": [
+          "county",
+          "city"
+        ],
+        "name": "attributeFilters",
+        "presence": "all"
+      }
+    ]
+  },
+  {
+    "id": "v2::collection:clusteredRegion|hasCollection:true|operator:begins|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered",
+    "input": {
+      "hasCollection": true,
+      "target": "Service",
+      "collection": "clusteredRegion",
+      "operator": "begins",
+      "compare": "v2",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin"
+        },
+        {
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "clustered"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi1pk",
+        "#sk1": "gsi1sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$clusteredregion#county_dane#city_madison",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "v2::collection:isolatedRegion|hasCollection:true|operator:|parts:city:Madison|country:USA|county:Dane|state:Wisconsin|target:Service|type:isolated",
+    "input": {
+      "target": "Service",
+      "hasCollection": true,
+      "collection": "isolatedRegion",
+      "operator": "",
+      "compare": "v2",
+      "parts": [
+        {
+          "country": "USA",
+          "state": "Wisconsin",
+          "county": "Dane",
+          "city": "Madison"
+        }
+      ],
+      "type": "isolated"
+    },
+    "output": {
+      "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+      "TableName": "electro",
+      "ExpressionAttributeNames": {
+        "#pk": "gsi2pk",
+        "#sk1": "gsi2sk",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__"
+      },
+      "ExpressionAttributeValues": {
+        ":pk": "$comparison#country_usa#state_wisconsin",
+        ":sk1": "$isolatedregion",
+        ":__edb_e___Attraction": "attraction",
+        ":__edb_v___Attraction": "1"
+      },
+      "IndexName": "gsi2pk-gsi2sk-index",
+      "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction)"
+    },
+    "evaluations": [
+      {
+        "occurrences": 1,
+        "presence": "all",
+        "name": "attributeFilters",
+        "attributes": [
+          "__edb_v__",
+          "__edb_e__"
+        ]
+      }
+    ]
+  }
+]

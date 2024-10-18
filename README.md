@@ -16,15 +16,19 @@
 
 _Please submit issues/feedback or reach out on Twitter [@tinkertamper](https://twitter.com/tinkertamper)._
 
----
+<a href="https://electrodb.dev/en/core-concepts/v3-migration/"><h1 align="center">ElectroDB v3 now released</h1></a>
 
-<a href="https://electrodb.dev"><h1 align="center">New: Documentation now found at ElectroDB.dev</h1></a>
-
-<p align="center">ElectroDB's new website for Documentation is now live at <a href="https://electrodb.dev">www.ElectroDB.dev</a>.</p>
+<p align="center">Visit the <a href="https://electrodb.dev/en/core-concepts/v3-migration/">v3 migration page</a> to learn more about this new update.</p>
 
 ---
 
-<a href="https://electrodb.fun"><h1 align="center">Introducing: The NEW ElectroDB Playground</h1></a>
+<a href="https://electrodb.dev"><h1 align="center">Documentation now found at ElectroDB.dev</h1></a>
+
+<p align="center">ElectroDB's new website for Documentation is now live at <a href="https://electrodb.dev">electrodb.dev</a>.</p>
+
+---
+
+<a href="https://electrodb.fun"><h1 align="center">The NEW ElectroDB Playground</h1></a>
 
 <p align="center">
   <a href="https://electrodb.fun"><img width="400" src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true"></a>

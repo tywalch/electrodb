@@ -522,11 +522,11 @@ const { data, cursor } = await book.query.releases({ bookTitle: "it" }).go();
 Queries can be provided partially like just the year, the year and month, etc.
 
 ```typescript
-book.query.releases({ bookTitle: "it" }).gte({ releaseDate: "1990" }).go();
+book.query.releases({ bookTitle: "it" }).gte({ releaseDate: "1990-00-00" }).go();
 
 book.query
   .releases({ bookTitle: "it" })
-  .between({ releaseDate: "1990" }, { releaseDate: "2019" })
+  .between({ releaseDate: "1990-00-00" }, { releaseDate: "2019-99-99" })
   .go();
 ```
 

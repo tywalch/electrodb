@@ -85,7 +85,7 @@ The `results` array are records that were returned DynamoDB as `Responses` on th
 
 > By default, ElectroDB will return items without concern for order. If the order returned by ElectroDB must match the order provided, the [execution option](#execution-options) `preserveBatchOrder` can be used. When enabled, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index.
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [execution option](#execution-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [execution option](#execution-options) `{ unprocessed:"raw" }` override this behavior and return the Keys as they came from DynamoDB.
 
 ## Execution Options
 

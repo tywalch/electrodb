@@ -537,3 +537,13 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Updated
 - Updated `@aws-sdk/lib-dynamodb` dependency from pinned version `3.395.0` to latest release `^3.654.0`. This impacts users using the v3 aws-sdk.
 - Adds dependency `@aws-sdk/util-dynamodb` for unmarshalling functionality.
+
+## [3.0.0] 
+### Changed
+- `{ compare?: 'keys' | 'attributes' }`
+- `validate` attribute callback now must return boolean. Return `true` for "valid" and `false` for "invalid"
+- `limit` now only applies a `Limit` parameter and does not play a role in pagination
+### Removed
+- `includeKeys` and `raw` execution options removed
+### Fixed
+- Response typing and formatting logic for `delete` 

@@ -229,7 +229,7 @@ describe("Model Validation", () => {
         ExpressionAttributeValues: {
           ":pk": "$#id_abc",
           ":sk1": "$user_1#id_abc",
-          ":sk2": "$user_1#id_abd",
+          ":sk2": "$user_1#id_abc",
         },
         KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
       },
@@ -253,9 +253,9 @@ describe("Model Validation", () => {
         },
         ExpressionAttributeValues: {
           ":pk": "$#id_abc",
-          ":sk1": "$user_1#id_abd",
+          ":sk1": "$user_1#id_abc",
         },
-        KeyConditionExpression: "#pk = :pk and #sk1 >= :sk1",
+        KeyConditionExpression: "#pk = :pk and #sk1 > :sk1",
       },
       queryLte: {
         TableName: "electro",
@@ -265,9 +265,9 @@ describe("Model Validation", () => {
         },
         ExpressionAttributeValues: {
           ":pk": "$#id_abc",
-          ":sk1": "$user_1#id_abd",
+          ":sk1": "$user_1#id_abc",
         },
-        KeyConditionExpression: "#pk = :pk and #sk1 < :sk1",
+        KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
       },
       queryLt: {
         TableName: "electro",
@@ -457,7 +457,7 @@ describe("Model Validation", () => {
         ExpressionAttributeValues: {
           ":pk": "$#accountid_acct1#id_abc",
           ":sk1": "$user_1#id_abc",
-          ":sk2": "$user_1#id_abd",
+          ":sk2": "$user_1#id_abc",
         },
         KeyConditionExpression: "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
       },
@@ -481,9 +481,9 @@ describe("Model Validation", () => {
         },
         ExpressionAttributeValues: {
           ":pk": "$#accountid_acct1#id_abc",
-          ":sk1": "$user_1#id_abd",
+          ":sk1": "$user_1#id_abc",
         },
-        KeyConditionExpression: "#pk = :pk and #sk1 >= :sk1",
+        KeyConditionExpression: "#pk = :pk and #sk1 > :sk1",
       },
       queryLte: {
         TableName: "electro",
@@ -493,9 +493,9 @@ describe("Model Validation", () => {
         },
         ExpressionAttributeValues: {
           ":pk": "$#accountid_acct1#id_abc",
-          ":sk1": "$user_1#id_abd",
+          ":sk1": "$user_1#id_abc",
         },
-        KeyConditionExpression: "#pk = :pk and #sk1 < :sk1",
+        KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
       },
       queryLt: {
         TableName: "electro",
