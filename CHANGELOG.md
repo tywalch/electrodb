@@ -543,6 +543,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 - `{ compare?: 'keys' | 'attributes' }`
 - `validate` attribute callback now must return boolean. Return `true` for "valid" and `false` for "invalid"
 - `limit` now only applies a `Limit` parameter and does not play a role in pagination
-- 
 ### Removed
 - `includeKeys` and `raw` execution options removed
+### Fixed
+- Response typing and formatting logic for `delete` 
