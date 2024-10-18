@@ -122,7 +122,7 @@ const unprocessed = await StoreLocations.put([
 }
 ```
 
-Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [execution option](#execution-options) `{unprocessed:"raw"}` override this behavior and return the Keys as they came from DynamoDB.
+Elements of the `unprocessed` array are unlike results received from a query. Instead of containing all the attributes of a record, an unprocessed record only includes the composite attributes defined in the Table Index. This is in keeping with DynamoDB's practice of returning only Keys in the case of unprocessed records. For convenience, ElectroDB will return these keys as composite attributes, but you can pass the [execution option](#execution-options) `{ unprocessed:"raw" }` override this behavior and return the Keys as they came from DynamoDB.
 
 ## Execution Options
 
