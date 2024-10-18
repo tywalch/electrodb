@@ -54,9 +54,7 @@ By default, **ElectroDB** interrogates items returned from a query for the prese
 
 ### limit
 **Default Value:** _none_
-Used a convenience wrapper for the DynamoDB parameter `Limit` [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-Limit)]. When `limit` is paired option `pages:"all"`, ElectroDB will paginate DynamoDB until the limit is _at least_ reached or all items for that query have been returned; this means you may receive _more_ items than your specified `limit` but never less.
-
-> Note: If your use case requires returning a specific number of items at a time, the `count` option is the better option.
+Used a convenience wrapper for the DynamoDB parameter `Limit` [[read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-Limit)].
 
 ### count
 **Default Value:** _none_
