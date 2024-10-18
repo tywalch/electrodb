@@ -1968,12 +1968,12 @@ describe("Entity", () => {
       let someValue = "ABDEF";
       let putRecord = await db
         .put({ id, date, someValue })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
       expect(putRecord).to.deep.equal({});
       let getRecord = await db
         .get({ id, date })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
       expect(getRecord).to.deep.equal({
         Item: {
@@ -1989,12 +1989,12 @@ describe("Entity", () => {
       let updateRecord = await db
         .update({ id, date })
         .set({ someValue })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
       expect(updateRecord).to.deep.equal({});
       let queryRecord = await db.query
         .record({ id, date })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
       expect(queryRecord).to.deep.equal({
         Items: [
@@ -2013,7 +2013,7 @@ describe("Entity", () => {
       });
       let recordWithKeys = await db
         .get({ id, date })
-        .go({ includeKeys: true })
+        .go({ data: 'includeKeys' })
         .then((res) => res.data);
       expect(recordWithKeys).to.deep.equal({
         id,
@@ -4332,7 +4332,7 @@ describe("attributes query option", () => {
         attr1: item.attr1,
         attr2: item.attr2,
       })
-      .go({ raw: true, attributes: ["attr2", "attr9", "attr5", "attr10"] })
+      .go({ data: 'raw', attributes: ["attr2", "attr9", "attr5", "attr10"] })
       .then((res) => res.data);
     expect(getRaw).to.deep.equal({
       Item: {
@@ -4347,7 +4347,7 @@ describe("attributes query option", () => {
         attr1: item.attr1,
         attr2: item.attr2,
       })
-      .go({ raw: true, attributes: ["attr2", "attr9", "attr5", "attr10"] })
+      .go({ data: 'raw', attributes: ["attr2", "attr9", "attr5", "attr10"] })
       .then((res) => res.data);
     expect(queryRawGo).to.deep.equal({
       Items: [
@@ -4370,7 +4370,7 @@ describe("attributes query option", () => {
       })
       .go({
         cursor: null,
-        raw: true,
+        data: 'raw',
         attributes: ["attr2", "attr9", "attr5", "attr10"],
       });
 

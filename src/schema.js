@@ -8,6 +8,7 @@ const {
   PathTypes,
   TableIndex,
   ItemOperations,
+  DataOptions,
 } = require("./types");
 const AttributeTypeNames = Object.keys(AttributeTypes);
 const ValidFacetTypes = [
@@ -1677,14 +1678,13 @@ class Schema {
   }
 
   translateFromFields(item = {}, options = {}) {
-    let { includeKeys } = options;
     let data = {};
     let names = this.translationForRetrieval;
     for (let [attr, value] of Object.entries(item)) {
       let name = names[attr];
       if (name) {
         data[name] = value;
-      } else if (includeKeys) {
+      } else if (options.data === DataOptions.includeKeys) {
         data[attr] = value;
       }
     }

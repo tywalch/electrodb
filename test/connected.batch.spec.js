@@ -510,7 +510,7 @@ describe("BatchGet", () => {
       response,
       resultsAll: [],
       unprocessedAll: [],
-      config: { includeKeys: true },
+      config: { data: 'includeKeys' },
       orderMaintainer: {
         getOrder: () => -1,
       },

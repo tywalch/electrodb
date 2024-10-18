@@ -28,6 +28,7 @@ const {
   TransactionCommitSymbol,
   CastKeyOptions,
   ComparisonTypes,
+  DataOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -677,16 +678,14 @@ class Entity {
       ExclusiveStartKey = undefined;
     }
     let pages = this._normalizePagesValue(config.pages);
-    let max = this._normalizeLimitValue(config.limit);
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
     const shouldHydrate = config.hydrate && method === MethodTypes.query;
     do {
-      let limit = max === undefined ? parameters.Limit : max - count;
       let response = await this._exec(
         method,
-        { ExclusiveStartKey, ...parameters, Limit: limit },
+        { ExclusiveStartKey, ...parameters },
         config,
       );
 
@@ -694,17 +693,13 @@ class Entity {
 
       response = this.formatResponse(response, parameters.IndexName, {
         ...config,
-        includeKeys: shouldHydrate || config.includeKeys,
+        data: shouldHydrate && (!config.data || config.data === DataOptions.attributes) ? 'includeKeys' : config.data,
         ignoreOwnership: shouldHydrate || config.ignoreOwnership,
       });
-
-      if (config.raw) {
+      if (config.data === DataOptions.raw) {
         return response;
       } else if (config._isCollectionQuery) {
         for (const entity in response.data) {
-          if (max) {
-            count += response.data[entity].length;
-          }
           let items = response.data[entity];
           if (shouldHydrate && items.length) {
             const hydrated = await config.hydrator(
@@ -723,7 +718,7 @@ class Entity {
         }
       } else if (Array.isArray(response.data)) {
         let prevCount = count;
-        if (!!max || !!config.count) {
+        if (config.count) {
           count += response.data.length;
         }
         let items = response.data;
@@ -760,7 +755,6 @@ class Entity {
       (pages === AllPages ||
         config.count !== undefined ||
         iterations < pages) &&
-      (max === undefined || count < max) &&
       (config.count === undefined || count < config.count)
     );
 
@@ -818,14 +812,13 @@ class Entity {
   }
 
   cleanseRetrievedData(item = {}, options = {}) {
-    let { includeKeys } = options;
     let data = {};
     let names = this.model.schema.translationForRetrieval;
     for (let [attr, value] of Object.entries(item)) {
       let name = names[attr];
       if (name) {
         data[name] = value;
-      } else if (includeKeys) {
+      } else if (options.data === DataOptions.includeKeys) {
         data[attr] = value;
       }
     }
@@ -912,14 +905,14 @@ class Entity {
       let results = {};
       if (validations.isFunction(config.parse)) {
         results = config.parse(config, response);
-      } else if (config.raw && !config._isPagination) {
+      } else if (config.data === DataOptions.raw && !config._isPagination) {
         if (response.TableName) {
           results = {};
         } else {
           results = response;
         }
       } else if (
-        config.raw &&
+        config.data === DataOptions.raw &&
         (config._isPagination || config.lastEvaluatedKeyRaw)
       ) {
         results = response;
@@ -1321,7 +1314,7 @@ class Entity {
 
   _formatReturnPager(config, lastEvaluatedKey) {
     let page = lastEvaluatedKey || null;
-    if (config.raw || config.pager === Pager.raw) {
+    if (config.data === DataOptions.raw || config.pager === Pager.raw) {
       return page;
     }
     return config.formatCursor.serialize(page) || null;
@@ -1329,7 +1322,7 @@ class Entity {
 
   _formatExclusiveStartKey({ config, indexName = TableIndex }) {
     let exclusiveStartKey = config.cursor;
-    if (config.raw || config.pager === Pager.raw) {
+    if (config.data === DataOptions.raw || config.pager === Pager.raw) {
       return (
         this._trimKeysToIndex({ provided: exclusiveStartKey, indexName }) ||
         null
@@ -1768,12 +1761,18 @@ class Entity {
       }
 
       if (option.data) {
+        if (!DataOptions[option.data]) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Query option 'data' must be one of ${u.commaSeparatedString(Object.keys(DataOptions))}.`,
+          );
+        }
         config.data = option.data;
         switch (option.data) {
-          case "raw":
+          case DataOptions.raw:
             config.raw = true;
             break;
-          case "includeKeys":
+          case  DataOptions.includeKeys:
             config.includeKeys = true;
             break;
         }
@@ -2039,7 +2038,7 @@ class Entity {
       return parameters;
     }
 
-    const requiresRawResponse = !!config.raw;
+    const requiresRawResponse = config.data === DataOptions.raw;
     const enforcesOwnership = !config.ignoreOwnership;
     const requiresUserInvolvedPagination =
       TerminalOperation[config.terminalOperation] === TerminalOperation.page;

@@ -898,7 +898,7 @@ describe("Entities with custom identifiers and versions", () => {
     let collectionA = await service.collections
       .collectionA({ prop1 })
       .where(({ prop2 }, { eq }) => eq(prop2, "prop2Value"))
-      .go({ raw: true })
+      .go({ data: 'raw' })
       .then((res) => res.data)
       .then((data) => ({ success: true, data }))
       .catch((err) => ({ success: false, err }));

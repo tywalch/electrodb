@@ -3,6 +3,12 @@ const KeyTypes = {
   sk: "sk",
 };
 
+const DataOptions = {
+  raw: "raw",
+  includeKeys: "includeKeys",
+  attributes: "attributes",
+}
+
 const BatchWriteTypes = {
   batch: "batch",
   concurrent: "concurrent",
@@ -338,6 +344,7 @@ module.exports = {
   ValueTypes,
   TableIndex,
   MethodTypes,
+  DataOptions,
   Comparisons,
   BuilderTypes,
   ReturnValues,

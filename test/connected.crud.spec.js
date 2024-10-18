@@ -3924,12 +3924,12 @@ for (const [clientVersion, client] of [
           let someValue = "ABDEF";
           let putRecord = await db
             .put({ id, date, someValue })
-            .go({ raw: true })
+            .go({ data: 'raw' })
             .then((res) => res.data);
           expect(putRecord).to.deep.equal({});
           let getRecord = await db
             .get({ id, date })
-            .go({ raw: true })
+            .go({ data: 'raw' })
             .then((res) => res.data);
           if (clientVersion === c.DocumentClientVersions.v2) {
             expect(getRecord).to.deep.equal({
@@ -3949,7 +3949,7 @@ for (const [clientVersion, client] of [
           let updateRecord = await db
             .update({ id, date })
             .set({ someValue })
-            .go({ raw: true })
+            .go({ data: 'raw' })
             .then((res) => res.data);
           if (clientVersion === c.DocumentClientVersions.v2) {
             expect(updateRecord).to.deep.equal({});
@@ -3961,7 +3961,7 @@ for (const [clientVersion, client] of [
 
           let queryRecord = await db.query
             .record({ id, date })
-            .go({ raw: true })
+            .go({ data: 'raw' })
             .then((res) => res.data);
           if (clientVersion === c.DocumentClientVersions.v2) {
             expect(queryRecord).to.deep.equal({
@@ -3989,7 +3989,7 @@ for (const [clientVersion, client] of [
           }
           let recordWithKeys = await db
             .get({ id, date })
-            .go({ includeKeys: true })
+            .go({ data: 'includeKeys' })
             .then((res) => res.data);
           expect(recordWithKeys).to.deep.equal({
             id,
@@ -4653,7 +4653,7 @@ for (const [clientVersion, client] of [
           // THIS IS A FOOLISH TEST: IT ONLY FULLY WORKS WHEN THE TABLE USED FOR TESTING IS FULL OF RECORDS. THIS WILL HAVE TO DO UNTIL I HAVE TIME TO FIGURE OUT A PROPER WAY MOCK DDB.
           let MallStores = new Entity(model, { client });
           let results = await MallStores.scan
-            .go({ raw: true })
+            .go({ data: 'raw' })
             .then((res) => [res.cursor, res.data]);
           expect(results).to.be.an("array").and.have.length(2);
           // Scan may not return records, dont force a bad test then
@@ -4665,7 +4665,7 @@ for (const [clientVersion, client] of [
             expect(stores.Items[0]).to.have.a.property("pk");
             expect(stores.Items[0]).to.have.a.property("sk");
             let [nextIndex, nextStores] = await MallStores.scan
-              .go({ cursor: index, raw: true })
+              .go({ cursor: index, data: 'raw' })
               .then((res) => [res.cursor, res.data]);
             expect(nextIndex).to.not.deep.equal(index);
             expect(nextStores.Items).to.be.an("array");
