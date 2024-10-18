@@ -2913,16 +2913,14 @@ export type DeleteRecordOperationGo<ResponseType, Keys> = <
   options?: Options,
 ) => Options extends infer O
   ? "response" extends keyof O
-    ? O["response"] extends "all_new"
-      ? Promise<{ data: T }>
-      : O["response"] extends "all_old"
+    ? O["response"] extends "all_old"
       ? Promise<{ data: T | null }>
       : O["response"] extends "default"
-      ? Promise<{ data: Keys }>
-      : O["response"] extends "none"
-      ? Promise<{ data: null }>
-      : Promise<{ data: Partial<T> }>
-    : Promise<{ data: Keys }>
+        ? Promise<{ data: Keys }>
+        : O["response"] extends "none"
+          ? Promise<{ data: null }>
+          : Promise<{ data: Keys | null }>
+    : Promise<{ data: Keys  }>
   : never;
 
 export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(
