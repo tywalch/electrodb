@@ -12,9 +12,7 @@ import {
   expectError,
   expectAssignable,
   expectNotAssignable,
-  expectNotType,
 } from "tsd";
-import * as tests from "./test/tests.test-d";
 
 type Resolve<T> = T extends Function | string | number | boolean
   ? T

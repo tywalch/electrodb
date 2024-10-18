@@ -1,6 +1,5 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity } = require("../src/entity");
-const { Service } = require("../src/service");
 const { expect } = require("chai");
 const uuid = require("uuid").v4;
 const moment = require("moment");

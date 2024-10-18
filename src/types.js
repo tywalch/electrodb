@@ -377,4 +377,5 @@ module.exports = {
   TransactionOperations,
   TransactionMethods,
   UpsertOperations,
+  BatchWriteTypes,
 };

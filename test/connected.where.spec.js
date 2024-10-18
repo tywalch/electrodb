@@ -1,8 +1,7 @@
 const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
-const { Entity, clauses } = require("../src/entity");
+const { Entity } = require("../src/entity");
 const { expect } = require("chai");
-const moment = require("moment");
 const uuidV4 = require("uuid").v4;
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const client = new DynamoDB.DocumentClient({
@@ -72,7 +71,7 @@ describe("Where Clause Queries", () => {
   ];
   let penRows = [];
   before(async () => {
-    let results = await Promise.all(
+    await Promise.all(
       animals.map((animal) => {
         let row = uuidV4();
         penRows.push({ pen, row, animal });

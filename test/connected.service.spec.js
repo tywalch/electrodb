@@ -1,9 +1,8 @@
 const sleep = async (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
-const { Entity, clauses } = require("../src/entity");
+const { Entity } = require("../src/entity");
 const { Service } = require("../src/service");
 const { expect } = require("chai");
-const moment = require("moment");
 const uuid = require("uuid").v4;
 const DynamoDB = require("aws-sdk/clients/dynamodb");
 const table = "electro";
@@ -501,6 +500,11 @@ describe("Service Connected", () => {
     });
 
     expect(collectionE).to.deep.equal({
+      entityTwo: [recordTwo],
+      entityThree: [recordThree],
+    });
+
+    expect(collectionF).to.deep.equal({
       entityTwo: [recordTwo],
       entityThree: [recordThree],
     });

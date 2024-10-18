@@ -9,7 +9,6 @@ const {
   TransactionMethods,
   KeyCasing,
   ServiceVersions,
-  Pager,
   ElectroInstance,
   ElectroInstanceTypes,
   ModelVersions,

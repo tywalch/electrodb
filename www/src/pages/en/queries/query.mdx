@@ -285,9 +285,11 @@ await StoreLocations.query
 ## Comparison Queries
 When performing comparison queries (e.g. `gt`, `gte`, `lte`, `lt`, `between`) it is often necessary to add additional filters. Understanding how a comparison query will impact the items returned can be challenging due to the unintuitive nature of sorting and multi-composite attribute Sort Keys.
 
-By default (`{comparison: "keys"}`), ElectroDB builds comparison queries without applying attribute filters. In this way, the query's comparison applies to the item's "keys". This approach gives you complete control of your indexes, though your query may return unexpected data if you are not careful with item sorting.
+By default, ElectroDB builds comparison queries without applying attribute filters; the execution option `{ compare: "keys" }` and not specifying `compare` are functionally equivalent. In this way, the query's comparison applies to the item's "keys". This approach gives you complete control of your indexes, though your query may return unexpected data if you are not careful with item sorting.
 
-When using `{comparison: "attributes"}`, the `comparison` option instructs ElectroDB to apply attribute filters on each Sort Key composite attribute provided. In this way, the query comparison applies to the item's "attributes."
+When using `{ compare: "attributes" }`, the `compare` option instructs ElectroDB to apply attribute filters on each Sort Key composite attribute provided. In this way, the query comparison applies to the item's "attributes."
+
+The option `{ compare: "v2" }` offers backwards compatibility with the ElectroDB `v2` API. This option exists to assist in migration, should be avoided for greenfield projects, and will be removed in the near future.
 
 ## Execution Options
 
