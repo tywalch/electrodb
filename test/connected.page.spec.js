@@ -738,7 +738,7 @@ describe("Query Pagination", () => {
   //         page: {task: "1234", project: undefined}
   //       },
   //       output: {
-  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes'
   //       },
   //     }, {
   //       type: "query",
@@ -748,7 +748,7 @@ describe("Query Pagination", () => {
   //         page: {task: "1234", project: "anc"}
   //       },
   //       output: {
-  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "employee" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "employee" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes'
   //       },
   //     }, {
   //       type: "scan",
@@ -756,7 +756,7 @@ describe("Query Pagination", () => {
   //         page: {task: "1234", project: undefined}
   //       },
   //       output: {
-  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes'
+  //         error: 'Incomplete or invalid key composite attributes supplied. Missing properties: "project", "employee" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes'
   //       },
   //     }
   //   ];
