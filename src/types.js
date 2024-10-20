@@ -7,7 +7,7 @@ const DataOptions = {
   raw: "raw",
   includeKeys: "includeKeys",
   attributes: "attributes",
-}
+};
 
 const BatchWriteTypes = {
   batch: "batch",

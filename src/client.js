@@ -1,5 +1,5 @@
-const lib = require('@aws-sdk/lib-dynamodb')
-const util = require('@aws-sdk/util-dynamodb')
+const lib = require("@aws-sdk/lib-dynamodb");
+const util = require("@aws-sdk/util-dynamodb");
 const { isFunction } = require("./validations");
 const { ElectroError, ErrorCodes } = require("./errors");
 const DocumentClientVersions = {
@@ -11,12 +11,12 @@ const unmarshallItem = (value) => {
   const unmarshall = util.unmarshall || ((val) => val);
   try {
     value.Item = unmarshall(value.Item);
-  } catch(err) {
-    console.error('Internal Error: Failed to unmarshal input', err);
+  } catch (err) {
+    console.error("Internal Error: Failed to unmarshal input", err);
   }
 
   return value;
-}
+};
 
 const v3Methods = ["send"];
 const v2Methods = [

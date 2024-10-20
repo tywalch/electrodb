@@ -3,7 +3,7 @@ function createConversions(entity) {
     fromComposite: {
       toKeys: (composite, options = {}) =>
         entity._fromCompositeToKeys({ provided: composite }, options),
-        toCursor: (composite) =>
+      toCursor: (composite) =>
         entity._fromCompositeToCursor(
           { provided: composite },
           { strict: "all" },
@@ -11,15 +11,15 @@ function createConversions(entity) {
     },
     fromKeys: {
       toCursor: (keys) => entity._fromKeysToCursor({ provided: keys }, {}),
-        toComposite: (keys) => entity._fromKeysToComposite({ provided: keys }),
+      toComposite: (keys) => entity._fromKeysToComposite({ provided: keys }),
     },
     fromCursor: {
       toKeys: (cursor) => entity._fromCursorToKeys({ provided: cursor }),
-        toComposite: (cursor) =>
+      toComposite: (cursor) =>
         entity._fromCursorToComposite({ provided: cursor }),
     },
     byAccessPattern: {},
-  }
+  };
 
   for (let accessPattern in entity.model.indexes) {
     let index = entity.model.indexes[accessPattern].index;
@@ -65,4 +65,4 @@ function createConversions(entity) {
 
 module.exports = {
   createConversions,
-}
+};

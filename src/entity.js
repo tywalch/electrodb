@@ -693,7 +693,11 @@ class Entity {
 
       response = this.formatResponse(response, parameters.IndexName, {
         ...config,
-        data: shouldHydrate && (!config.data || config.data === DataOptions.attributes) ? 'includeKeys' : config.data,
+        data:
+          shouldHydrate &&
+          (!config.data || config.data === DataOptions.attributes)
+            ? "includeKeys"
+            : config.data,
         ignoreOwnership: shouldHydrate || config.ignoreOwnership,
       });
       if (config.data === DataOptions.raw) {
@@ -1672,7 +1676,9 @@ class Entity {
         } else {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidOptions,
-            `Invalid value for query option "compare" provided. Valid options include ${u.commaSeparatedString(Object.keys(ComparisonTypes))}, received: "${option.compare}"`,
+            `Invalid value for query option "compare" provided. Valid options include ${u.commaSeparatedString(
+              Object.keys(ComparisonTypes),
+            )}, received: "${option.compare}"`,
           );
         }
       }
@@ -1765,7 +1771,9 @@ class Entity {
         if (!DataOptions[option.data]) {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidOptions,
-            `Query option 'data' must be one of ${u.commaSeparatedString(Object.keys(DataOptions))}.`,
+            `Query option 'data' must be one of ${u.commaSeparatedString(
+              Object.keys(DataOptions),
+            )}.`,
           );
         }
         config.data = option.data;
@@ -1773,7 +1781,7 @@ class Entity {
           case DataOptions.raw:
             config.raw = true;
             break;
-          case  DataOptions.includeKeys:
+          case DataOptions.includeKeys:
             config.includeKeys = true;
             break;
         }
@@ -2737,8 +2745,10 @@ class Entity {
 
     const customExpressions = {
       names: (queryOptions.expressions && queryOptions.expressions.names) || {},
-      values: (queryOptions.expressions && queryOptions.expressions.values) || {},
-      expression: (queryOptions.expressions && queryOptions.expressions.expression) || "",
+      values:
+        (queryOptions.expressions && queryOptions.expressions.values) || {},
+      expression:
+        (queryOptions.expressions && queryOptions.expressions.expression) || "",
     };
 
     let params = {
@@ -2888,7 +2898,10 @@ class Entity {
   _getComparisonOperator(comparison, skType, comparisonType) {
     if (skType === "number") {
       return Comparisons[comparison];
-    } else if (comparisonType === ComparisonTypes.attributes || comparisonType === ComparisonTypes.v2) {
+    } else if (
+      comparisonType === ComparisonTypes.attributes ||
+      comparisonType === ComparisonTypes.v2
+    ) {
       return KeyAttributesComparisons[comparison];
     } else {
       return Comparisons[comparison];
@@ -2922,8 +2935,10 @@ class Entity {
 
     let customExpressions = {
       names: (queryOptions.expressions && queryOptions.expressions.names) || {},
-      values: (queryOptions.expressions && queryOptions.expressions.values) || {},
-      expression: (queryOptions.expressions && queryOptions.expressions.expression) || "",
+      values:
+        (queryOptions.expressions && queryOptions.expressions.values) || {},
+      expression:
+        (queryOptions.expressions && queryOptions.expressions.expression) || "",
     };
 
     let keyExpressions = this._queryKeyExpressionAttributeBuilder(
@@ -3389,7 +3404,9 @@ class Entity {
         if (missingAttributes.length) {
           throw new e.ElectroError(
             e.ErrorCodes.IncompleteIndexCompositesAttributesProvided,
-            `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(missingAttributes)}`,
+            `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(
+              missingAttributes,
+            )}`,
           );
         }
 

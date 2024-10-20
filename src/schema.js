@@ -470,12 +470,14 @@ class Attribute {
           let isValid = !!definition(val);
           return [
             isValid,
-            isValid ? [] : [
-              new e.ElectroUserValidationError(
-                this.path,
-                "Invalid value provided",
-              ),
-            ]
+            isValid
+              ? []
+              : [
+                  new e.ElectroUserValidationError(
+                    this.path,
+                    "Invalid value provided",
+                  ),
+                ],
           ];
         } catch (err) {
           return [false, [new e.ElectroUserValidationError(this.path, err)]];
