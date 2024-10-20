@@ -13,20 +13,20 @@ layout: ../../../layouts/MainLayout.astro
 
 ElectroDB v3 is the next major update after v2. You can also join the discussion or ask questions [here](https://github.com/tywalch/electrodb/discussions/424).
 
-### Breaking changes
+## Breaking changes
 
-#### Removes execution options `includeKeys` and `raw`
+### Removes execution options `includeKeys` and `raw`
 
 The execution options `includeKeys` and `raw` were deprecated in version `2.0.0` and have now been removed in favor of the execution option `data`. To migrate from `v2`, use the options `{ data: "includeKeys" }` and `{ data: "raw" }` respectively.
 
-#### The `limit` execution option no longer plays a role in pagination
+### The `limit` execution option no longer plays a role in pagination
 
 Providing the execution option `limit` on queries now _only_ applies a `Limit` parameter to its request to DynamoDB. Previously, the `limit` option would cause ElectroDB to effectively "seek" DynamoDB until the limit was _at least_ reached. The execution option `count` can be used in similar cases where `limit` was used, but performance may vary depending on your data and use case.
 
-#### Changes to `validate` callback on attributes
+### Changes to `validate` callback on attributes
 The `validate` callback on attributes now expects a strict return type of `boolean`. Additionally, the semantic meaning of a boolean response has _flipped_. The callback should return `true` for "valid" values and `false` for "invalid" values. If your validation function throws an error, ElectroDB will still behave as it previously did in `v2`, by catching and wrapping the error.
 
-#### Significant changes to default behavior when performing `gt`, `lte`, and `between` queries
+### Significant changes to default behavior when performing `gt`, `lte`, and `between` queries
 
 ElectroDB is changing how it generates query parameters to give more control to users. Prior to `v3`, query operations that used the `gt`, `lte`, or `between` methods would incur additional post-processing, including additional filter expressions and some sort key hacks. The post-processing was an attempt to bridge an interface gap between attribute-level considerations and key-level considerations. Checkout the GitHub issue championed by @rcoundon and @PaulJNewell77 [here](https://github.com/tywalch/electrodb/issues/228) to learn more.
 
