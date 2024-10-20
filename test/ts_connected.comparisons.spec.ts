@@ -1,5 +1,10 @@
 import { expect } from "chai";
-import { generateParams, assertsIsTestEvaluation, TestCase, evaluateTestCase } from './generation/comparisonTests/testCaseGenerators';
+import {
+  generateParams,
+  assertsIsTestEvaluation,
+  TestCase,
+  evaluateTestCase,
+} from "./generation/comparisonTests/testCaseGenerators";
 import testCases from './generation/comparisonTests/testCases.json';
 import v2TestCases from './generation/comparisonTests/versionTwoTestCases.json';
 
@@ -16,7 +21,7 @@ function assertsIsTestCase(item: unknown): asserts item is TestCase {
 
 describe('when using the comparison execution option', () => {
   for (const testCase of testCases) {
-    assertsIsTestCase(testCase)
+    assertsIsTestCase(testCase);
     describe(`when executing a comparison query with the ${testCase.input.operator === '' ? 'starts_with' : testCase.input.operator} operator against a ${testCase.input.type} ${testCase.input.target === 'Entity' ? 'index' : 'collection'} with the comparison option ${testCase.input.compare}`, () => {
       for (const evaluation of testCase.evaluations) {
         it(`should evaluate ${evaluation.name} with the options: ${JSON.stringify(evaluation)}`, () => {
@@ -25,47 +30,41 @@ describe('when using the comparison execution option', () => {
             const params = generateParams(testCase.input);
             evaluateTestCase(testCase, evaluation, params);
             expect(params).to.deep.equal(testCase.output);
+
+            // if "keys" also try it undefined (because keys is the default)
+            if (testCase.input.compare === "keys") {
+              assertsIsTestEvaluation(evaluation);
+              const defaultParams = generateParams({ ...testCase.input, compare: undefined });
+              evaluateTestCase(testCase, evaluation, defaultParams);
+              expect(defaultParams).to.deep.equal(testCase.output);
+              expect(defaultParams).to.deep.equal(params);
+            }
           } catch(err: any) {
             err.message = `error on test case ${testCase.id}: ${err.message}`;
             throw err;
           }
         });
       }
+
       if (testCase.input.compare === 'v2') {
         // each exception has been verified
         const exceptions = {
           nowHasIdentifierFilters: [
-            // now has identifier filters
             'v2::collection:clusteredRegion|hasCollection:true|operator:gte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered',
-            // now has identifier filters
             'v2::collection:clusteredRegion|hasCollection:true|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered',
-            // now has identifier filters
             'v2::collection:clusteredRegion|hasCollection:true|operator:lt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered',
-            // now has identifier filters
             'v2::collection:clusteredRegion|hasCollection:true|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Service|type:clustered',
-            // now has identifier filters
             'v2::collection:clusteredRegion|hasCollection:true|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Service|type:clustered',
           ],
           minorFilterOrderChanges: [
-            // minor changes to filter order
             'v2::hasCollection:true|index:clusteredLocation|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered',
-            // minor changes to filter order
             'v2::hasCollection:true|index:isolatedLocation|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated',
-            // minor changes to filter order
             'v2::hasCollection:false|index:location|operator:gt|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated',
-
-            // minor changes to filter order
             'v2::hasCollection:true|index:clusteredLocation|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:clustered',
-            // minor changes to filter order
             'v2::hasCollection:true|index:isolatedLocation|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated',
-            // minor changes to filter order
             'v2::hasCollection:false|index:location|operator:lte|parts:country:USA|state:Wisconsin,city:Madison|county:Dane|target:Entity|type:isolated',
-
-            // minor changes to filter order
             'v2::hasCollection:true|index:clusteredLocation|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:clustered',
-            // minor changes to filter order
             'v2::hasCollection:true|index:isolatedLocation|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:isolated',
-            // minor changes to filter order
             'v2::hasCollection:false|index:location|operator:between|parts:country:USA|state:Wisconsin,city:Madison|county:Dane,city:Marshall|county:Dane|target:Entity|type:isolated',
           ]
         }

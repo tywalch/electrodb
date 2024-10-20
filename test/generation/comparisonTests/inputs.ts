@@ -168,7 +168,7 @@ export type ConfigurationItem =
     operator: Operators;
     parts: ValuesOf<OperatorParts>;
     type: 'clustered' | 'isolated';
-    compare: ExecutionOptionCompare;
+    compare?: ExecutionOptionCompare;
   } & ({
   target: "Entity";
   index: AttractionIndexes;

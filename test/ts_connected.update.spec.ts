@@ -4626,9 +4626,9 @@ describe("Update Item", () => {
         .go()
         .then(() => false)
         .catch((err) => err.message);
-      expect(error).to.be.string(
-        'Invalid value for attribute "stringVal": Failed model defined regex',
-      );
+        expect(error).to.be.string(
+          'Invalid value for attribute "stringVal": Failed model defined regex',
+        );
     });
     it("should validate string sets", async () => {
       const stringVal = `abc${uuid()}`;

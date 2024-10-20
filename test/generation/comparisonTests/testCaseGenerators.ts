@@ -52,27 +52,27 @@ export type TestCase = {
   id: string;
 };
 
-export function generateParams(config: ConfigurationItem): QueryInput {
-  const [ first, second, third ] = config.parts;
-  if (config.target === 'Entity') {
-    if (!config.operator) {
-      return Attraction.query[config.index](first).params({ compare: config.compare });
-    } else if (config.operator === 'between') {
-      return Attraction.query[config.index](first).between(second ?? {}, third ?? {}).params({ compare: config.compare });
+export function generateParams(options: ConfigurationItem): QueryInput {
+  const [ first, second, third ] = options.parts;
+  if (options.target === 'Entity') {
+    if (!options.operator) {
+      return Attraction.query[options.index](first).params({ compare: options.compare });
+    } else if (options.operator === 'between') {
+      return Attraction.query[options.index](first).between(second ?? {}, third ?? {}).params({ compare: options.compare });
     } else {
-      return Attraction.query[config.index](first)[config.operator](second ?? {}).params({ compare: config.compare });
+      return Attraction.query[options.index](first)[options.operator](second ?? {}).params({ compare: options.compare });
     }
   } else {
-    if (config.collection === 'clusteredRegion') {
-      if (config.operator === '') {
-        return AttractionService.collections.clusteredRegion(first).params({ compare: config.compare });
-      } else if (config.operator === 'between') {
-        return AttractionService.collections.clusteredRegion(first).between(second ?? {}, third ?? {}).params({ compare: config.compare })
+    if (options.collection === 'clusteredRegion') {
+      if (options.operator === '') {
+        return AttractionService.collections.clusteredRegion(first).params({ compare: options.compare });
+      } else if (options.operator === 'between') {
+        return AttractionService.collections.clusteredRegion(first).between(second ?? {}, third ?? {}).params({ compare: options.compare })
       } else {
-        return AttractionService.collections.clusteredRegion(first)[config.operator](second ?? {}).params({ compare: config.compare });
+        return AttractionService.collections.clusteredRegion(first)[options.operator](second ?? {}).params({ compare: options.compare });
       }
     } else {
-      return AttractionService.collections.isolatedRegion(first).params({ compare: config.compare });
+      return AttractionService.collections.isolatedRegion(first).params({ compare: options.compare });
     }
   }
 }
