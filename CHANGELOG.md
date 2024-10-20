@@ -547,3 +547,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 - The execution options `includeKeys` and `raw` were deprecated in version `2.0.0` and have now been removed in favor of the execution option `data`. To migrate from `v2`, use the options `{ data: "includeKeys" }` and `{ data: "raw" }` respectively.
 ### Fixed
 - Response typing and formatting logic for `delete` 
+
+## [3.0.1]
+### Fixed
+- The execution option `{ compare: "attributes" }` used incorrect expression comparisons that impacted `lte` queries on indexes with a single composite key.   

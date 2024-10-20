@@ -461,7 +461,7 @@
         ":pk": "$comparison#country_usa#state_wisconsin",
         ":sk1": "$clusteredregion#county_dane#city_madison"
       },
-      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1",
       "IndexName": "gsi1pk-gsi1sk-index",
       "FilterExpression": "(#city > :city0) AND (#county > :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
     },
@@ -520,7 +520,7 @@
         ":pk": "$comparison#country_usa#state_wisconsin",
         ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
       },
-      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1",
       "IndexName": "gsi2pk-gsi2sk-index",
       "FilterExpression": "(#city > :city0) AND #county > :county0"
     },
@@ -570,7 +570,7 @@
         ":pk": "$comparison#country_usa#state_wisconsin",
         ":sk1": "$attraction_1#county_dane#city_madison"
       },
-      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1",
       "FilterExpression": "(#city > :city0) AND #county > :county0"
     },
     "evaluations": [
@@ -623,7 +623,7 @@
         ":__edb_e___Attraction": "attraction",
         ":__edb_v___Attraction": "1"
       },
-      "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+      "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1",
       "IndexName": "gsi1pk-gsi1sk-index",
       "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city > :city0) AND #county > :county0"
     },
@@ -893,7 +893,7 @@
         ":pk": "$comparison#country_usa#state_wisconsin",
         ":sk1": "$clusteredregion#county_dane#city_madison"
       },
-      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1",
       "IndexName": "gsi1pk-gsi1sk-index",
       "FilterExpression": "(#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0"
     },
@@ -952,7 +952,7 @@
         ":pk": "$comparison#country_usa#state_wisconsin",
         ":sk1": "$isolatedregion#attraction_1#county_dane#city_madison"
       },
-      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1",
       "IndexName": "gsi2pk-gsi2sk-index",
       "FilterExpression": "(#city <= :city0) AND #county <= :county0"
     },
@@ -1002,7 +1002,7 @@
         ":pk": "$comparison#country_usa#state_wisconsin",
         ":sk1": "$attraction_1#county_dane#city_madison"
       },
-      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1",
       "FilterExpression": "(#city <= :city0) AND #county <= :county0"
     },
     "evaluations": [
@@ -1055,7 +1055,7 @@
         ":__edb_e___Attraction": "attraction",
         ":__edb_v___Attraction": "1"
       },
-      "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+      "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1",
       "IndexName": "gsi1pk-gsi1sk-index",
       "FilterExpression": "(#__edb_e__ = :__edb_e___Attraction AND #__edb_v__ = :__edb_v___Attraction) AND (#city <= :city0) AND #county <= :county0"
     },

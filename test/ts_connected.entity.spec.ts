@@ -5015,7 +5015,7 @@ describe('execution option compare', () => {
           ":sk1": "$inregion#county_dane#city_madison",
         },
         "FilterExpression": "(#city > :city0) AND (#county > :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
-        "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+        "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1",
         "TableName": "electro"
       });
       expect(v2Params).to.deep.equal({
@@ -5082,7 +5082,7 @@ describe('execution option compare', () => {
           ":sk1": "$inregion#county_dane#city_madison",
         },
         "FilterExpression": "(#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
-        "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+        "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1",
         "TableName": "electro"
       });
       expect(v2Params).to.deep.equal({
