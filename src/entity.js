@@ -2898,9 +2898,7 @@ class Entity {
   _getComparisonOperator(comparison, skType, comparisonType) {
     if (skType === "number") {
       return Comparisons[comparison];
-    } else if (
-      comparisonType === ComparisonTypes.v2
-    ) {
+    } else if (comparisonType === ComparisonTypes.v2) {
       return KeyAttributesComparisons[comparison];
     } else {
       return Comparisons[comparison];
