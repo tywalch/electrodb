@@ -11,11 +11,11 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-Building thoughtful indexes can make queries simple and performant. Sometimes you need to filter results down further or add conditions to an update/patch/upsert/put/create/delete/remove action.
+Building thoughtful indexes can make queries simple and performant, though sometimes you need to apply further filters to your query.
 
 ## FilterExpressions
 
-Below is the traditional way you would add a `FilterExpression` to Dynamo's DocumentClient directly alongside how you would accomplish the same using the `where` method.
+Below demonstrates how to add a `FilterExpression` to Dynamo's DocumentClient directly alongside how you would accomplish the same using the `where` method.
 
 ### Example
 
@@ -98,11 +98,9 @@ animals.query
 ```typescript
 animals.query
   .habitats({ habitat: "Africa", enclosure: "5b" })
-  .where(
-    (attr, op) => `
+  .where((attr, op) => `
     ${op.eq(attr.dangerous, true)} OR ${op.notExists(attr.lastFed)}
-  `,
-  )
+  `)
   .where(({ birthday }, { between }) => {
     const today = Date.now();
     const lastMonth = today - 1000 * 60 * 60 * 24 * 30;
@@ -118,15 +116,13 @@ type GetAnimalOptions = {
   habitat: string;
   keepers: string[];
 };
+
 function getAnimals(options: GetAnimalOptions) {
   const { habitat, keepers } = options;
-  const query = animals.query.exhibit({ habitat });
-
-  for (const name of keepers) {
-    query.where(({ keeper }, { eq }) => eq(keeper, name));
-  }
-
-  return query.go();
+  return animals.query.exhibit({ habitat })
+  .where(({ keeper }, { eq }) => {
+    return keepers.map((name) => eq(keeper, name)).join(' AND ');
+  }).go()
 }
 
 const { data, cursor } = await getAnimals({
@@ -137,7 +133,7 @@ const { data, cursor } = await getAnimals({
 
 ## Operations
 
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoAWQgoAzvAAWAQ14ZpMMXAC8cANpMAgnXLSmuLVE7l9zAErTgKAGLQCEpgF040pSPEwA3AKxgCcAAlZeXhVXwIIGjgZORgFMTUUAFcQXiJHb2FRCRcUUGlWJVUUAgB3OFR0LAAKBAE4OBAIbjYALkR6hq6xIlIKdqYALwgIfU6uuAI0DEwB6TyQArExiYbiIjFgUQGARhW4SmxOhS5gXiSYe3a6iZiQ6-Gu8Pa7uMUj1bgoAgBHJOBvtx2lwkgQPl1Do8pmRWBAxElvg9Ps9mBIoFYAOb7BqQibzfKsJGrFFMNGY7Fdb5-AEEIFwEFgx64rooaQgAhEiYkskoLFM8ENbjzDFECBJMScp6YPwDXgjdjzCnMhrAMQABW+GNZaElDRJcogCpQggmyrgclgkiFsw6yOlHOYyVSRBNEIFcG4wAIMF19PtAx6MApKsuIAlqNOvNdOPdAGsCAQ-FBfdzI3zTe71pd0az0fMU-6Izn027HpEaGIwMWCzLmKxVUH3SGCGHfXrC0xFmBg10qxAk+grrbPiy2Q6biOuR2eSXJ2bPhaYFbpDaJ5P27XSWnoyP56sUBBLm3idPt49PpRzxCr5eM49WK4YNZaTWHVvizuzQ+JM-uAAhVcr1TD9+XvR8kGIAokgULYUFfAMzzvCZvxgCCoJg0QAPgotySZTpmSsFoAA8hzXOBKw4UApl9MBY2PBoaC9Vg6SYWiewmERwDhDAHQ0fFFlYJwmwOYSxDo4dJ0YtgWLE9iuk4yBNiPdQmFZdknBvUCJgIIjJDODBfUInSBgxTYdlogBaUzgB2MSLKMoie1o+jaCYljrPM2M5IaBTuOUjRXgUISb1E8SyM+KTmJMszZOEjiGEUnj2g0aFYXhb5TCYFDfw0i8tJEgRDkQOJeHYAZhggAB9RY8hoewg0oABKTIAHoACo2vqNq4AANWkPN0GyOBRGiCBykwMU4DIeY4HFfwl38AADUpJCIAhFqmh85q6lqhBalq4E0cjMXYVzWGzYakwwlA4AEfilgAOiSMAhUuWp7sJZh0BFKBTDUt8ACt5m9JgmoEABIB7A1qeNEyIAYACkIH8JAiMPEwwYaB6VrW6pqhOKBcH7RqVAAPkuh7fnxmAuAeoVeVFcVcAZRrGs6B6MQgapmr2g6js2XlTsY86iEuohrrgUoDpaNEkk4BFMTuhZHue16CHe5XPqYb6XVwf6BiBkoGrZyHoYQWGk0R5GKjR9AyFBtmsZx748YQemfrFMQioQX4mrJyYfmqd3GbEZmoFBVn2c57nWoOgBZJJzuAMBTvcT1BvEOALLgRb+0WpWCTEJ6XoUdWEA+gYdd+vWxwN4HjYhqHvRhhNLeYJGUdtjHHbgbHVpd6muCJsASeUcn84mAASBB+0pwOCbp4UQ7DiPqE0AA5AAROBp9ng9UKIhsxEHqAHuy2lGtvHOe45rmeYEfa4ATpOU-8cVpBFJRIhz531rgapQAp3IBgQ6W82YfSLqrUuGsCSV2AD9P6tdmCGxBmDU2zdzat3hu3a2qN0b20xr3X+eMCbD1HuPR4u8wBzxPovBm9Amb0nDgQS+cAADyZgd4z2ofvVGR9aHn24JfToi0b7ENqIuZcmBvZpBgKUBMKA-ZjwklNbI8AYDNBXCoOAm9S4PQPKUGOjx3A5BQnHUQS5tEaOtFnOAOwAAMji4DdQAGz2OcXANxHiABMAAWDxABmex3gJjfBgAiG6sj5FTGqJI60uAzEWMkMzTRmAeY4hvtHe+j8mDcEwGpEwZ1syKxoEkFAxgRoihgJoTWx9Ao+kCMEN4uALYbHaDONQjgSYThMfAP4RBMDaIgQ9fpUBMCU10vpGAtR6lNRCbQaA-9elwH+sNKIrSoBiG6Y8UZ4zxGYLhlAb2vtyEB2qBsmu7JWbzKvmEiJcBdm3yMZeLIHg4AbKKOoToTAO423wfsJgABhfqho4B-lcLGKwggMhCCqTUwu1QmAWCsLYb4DgWlYM2c1IAA)
+[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwL5wGZQQhwBEApgDZkDGMhAJgEYkBQL1EKAzvABYCGjDPxhc4AXjgBtEgEECwavxIAaUrKi1Fq0gCV+wFADFoZHiQC6cfmI7cYAbhZYwZOAAlBw+JJdkIeHACQjAiXFIoAK4gjGRQFk7snDzWKKD8FGKSKGQA7nCo6FgAFAgscHAgEPSUAFyI5RVNXHEAbopk9SQAXhAQqo1NcGRoGJhd-GkgGVwDQxWtcVzAnF0AjHNw2CqNInTAjJEwZvVlQ8Hep4NNfvUXoaI783BQZACOkcCv9PV0kWRPJrba4jagUCBcSKvK7PW6kHhQQwAc02FWBQ0m6QoMPmcJICORqKarw+XzIPzgfwB13RTRQ-BAnQasMwri6BJQKJpgIq9EmSLiEEiXBxQzxjD6VEmRNpFWAXAACq8kfS0KKbqymSQJRApShWENZXAhLBeHzxszcZqulEYnEDUCeXB6MAyDB1RU8S0YES5ccQCL4ftOQ60U6ANZkMiuKAeynWoOIkPc66LY5J-iIyZxr3BrmGp0BPBcMBJpE5hMkCjyn1Ov1kANxz2V6ZgX1NUsQGPoE6W54VemMptWtmJwnXZ5G54mmBm-gWs79sWVjn5pdbOvzFAQY7D5ej-F50P97AToFn08F64UGwwIzkisH1fHo03nj3+gAIQXZ9zZZfTpvjASCtBkkQiCsKCPlqz4pkMQEgWBEGcN+0HskeNKNLShg1AAHr2i4VCWNCgCMcZgOGe74K6FAUiQFHtkMHDgBCGBMjImLTBQliblOcBcJRfb9ngNF0QJjFNMxkDLLu0gkIOZCWBecFNGQuG8AcGBxjhaldEiyxrBRAC0+nAGsAlGTpuHthRVEiZQdGmYZ4YSRUUmsbJMj3CIPEXpuAl2aJekGeJm5MUQ0lsfUMiguCkKvDoVa3h+SmTipwLbIgoSMFQXS9BAAD60xpHgZg+tgACUiR+HAADibqyFMGQAPJgOgyQSJa3nuh4XgPE4FSRtGSz1KuUgJCw2CJHgkQoFonBwAKMCNViXDFF27XcPU9XLU1FCtZtXAVZadgpAgQR9SIahDTGYi4JIG2QVwA0vG6UIoKkq0AHQfHEmBfWpGkhKUF0hCIWwVY0X25LwcRkMUIM3XEG6IMMbwQxIAB8QmvDA71wEjUBcF9rYIwpx3iNj7zFITajkxVX0AFYQIYxQAORwM1uhwGzVVYQzSIQMUkOniwS0rVxa2Lt1XT6IYJivOYgKE4GUjXCQABSEBuEguE7toTokAAwpmupwJ+NjhoYDoWDslUOEAA)
 
 The `attributes` object contains every Attribute defined in the Entity's Model. The `operations` object contains the following methods:
 

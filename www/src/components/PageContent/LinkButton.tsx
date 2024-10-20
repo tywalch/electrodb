@@ -13,7 +13,7 @@ type Props = {
 };
 
 const LinkButton: FunctionComponent<Props> = ({ href, text, alt }) => {
-  const style = alt ? { backgroundColor: "#4a82b5" } : {};
+  const style = alt ? { backgroundColor: "#f9bd00" } : {};
   return (
     <a className="link-button" href={href} style={style}>
       {text}

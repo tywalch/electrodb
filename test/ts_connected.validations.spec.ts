@@ -99,7 +99,7 @@ describe("padding validation", () => {
 
 describe("user attribute validation", () => {
   describe("root primitives user validation", () => {
-    it("should interpret a true response value as an invalid attribute value", async () => {
+    it("should interpret a false response value as an invalid attribute value", async () => {
       const prop1 = uuid();
       const prop2 = "value2";
       const invalidProp2 = "invalid_value";
@@ -116,7 +116,7 @@ describe("user attribute validation", () => {
             },
             prop2: {
               type: "string",
-              validate: (value) => value === invalidProp2,
+              validate: (value) => value !== invalidProp2,
             },
           },
           indexes: {
@@ -154,71 +154,6 @@ describe("user attribute validation", () => {
       expect(updateResult.message).to.equal(
         "Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
       );
-      expect(updateResult.fields).to.have.length(1);
-    });
-
-    it("should interpret a string return value as a validation error message", async () => {
-      const prop1 = uuid();
-      const prop2 = "value2";
-      const invalidProp2 = "invalid_value";
-      const invalidValueMessage = "Oh no! invalid value!";
-      const entity = new Entity(
-        {
-          model: {
-            service: "MallStoreDirectory",
-            entity: "MallStores",
-            version: "1",
-          },
-          attributes: {
-            prop1: {
-              type: "string",
-            },
-            prop2: {
-              type: "string",
-              validate: (value) => {
-                if (value === invalidProp2) {
-                  return invalidValueMessage;
-                }
-              },
-            },
-          },
-          indexes: {
-            record: {
-              pk: {
-                field: "partition_key",
-                composite: ["prop1"],
-              },
-            },
-          },
-        },
-        { table, client },
-      );
-      await entity.put({ prop1, prop2 }).go();
-      await entity.update({ prop1 }).set({ prop2 }).go({ response: "all_new" });
-      const [putSuccess, putResult] = await entity
-        .put({ prop1, prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      const [updateSuccess, updateResult] = await entity
-        .update({ prop1 })
-        .set({ prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      expect(putSuccess).to.be.false;
-      expect(putResult.message).to.equal(
-        invalidValueMessage +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(updateSuccess).to.be.false;
-      expect(updateResult.message).to.equal(
-        invalidValueMessage +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(putResult.fields).to.have.length(1);
       expect(updateResult.fields).to.have.length(1);
     });
 
@@ -245,6 +180,7 @@ describe("user attribute validation", () => {
                 if (value === invalidProp2) {
                   throw error;
                 }
+                return true;
               },
             },
           },
@@ -291,7 +227,7 @@ describe("user attribute validation", () => {
     });
   });
   describe("root maps user validation", () => {
-    it("should interpret a true response value as an invalid attribute value", async () => {
+    it("should interpret a false response value as an invalid attribute value", async () => {
       const prop1 = uuid();
       const prop2 = {
         prop4: "value4",
@@ -327,7 +263,7 @@ describe("user attribute validation", () => {
               validate: (value = {}) => {
                 const value3PresentButValue5IsNot =
                   value.prop3 !== undefined && value.prop5 === undefined;
-                return value3PresentButValue5IsNot;
+                return !value3PresentButValue5IsNot;
               },
             },
           },
@@ -413,6 +349,7 @@ describe("user attribute validation", () => {
                 if (value.prop3 !== undefined && value.prop5 === undefined) {
                   throw new MyCustomError(message);
                 }
+                return true;
               },
             },
           },
@@ -460,87 +397,6 @@ describe("user attribute validation", () => {
       expect(updateResult.fields[0].field).to.equal("prop2");
     });
 
-    it("should interpret a string return value as a validation error message", async () => {
-      const prop1 = uuid();
-      const prop2 = {
-        prop4: "value4",
-      };
-      const invalidProp2 = {
-        prop3: "value3",
-        prop4: "value4",
-      };
-      const invalidValueMessage = "Oh no! invalid value!";
-      const entity = new Entity(
-        {
-          model: {
-            service: "MallStoreDirectory",
-            entity: "MallStores",
-            version: "1",
-          },
-          attributes: {
-            prop1: {
-              type: "string",
-            },
-            prop2: {
-              type: "map",
-              properties: {
-                prop3: {
-                  type: "string",
-                },
-                prop4: {
-                  type: "string",
-                },
-                prop5: {
-                  type: "string",
-                },
-              },
-              validate: (value = {}) => {
-                const value3PresentButValue5IsNot =
-                  value.prop3 !== undefined && value.prop5 === undefined;
-                if (value3PresentButValue5IsNot) {
-                  return invalidValueMessage;
-                }
-              },
-            },
-          },
-          indexes: {
-            record: {
-              pk: {
-                field: "partition_key",
-                composite: ["prop1"],
-              },
-            },
-          },
-        },
-        { table, client },
-      );
-      await entity.put({ prop1, prop2 }).go();
-      await entity.update({ prop1 }).set({ prop2 }).go({ response: "all_new" });
-      const [putSuccess, putResult] = await entity
-        .put({ prop1, prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      const [updateSuccess, updateResult] = await entity
-        .update({ prop1 })
-        .set({ prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      expect(putSuccess).to.be.false;
-      expect(putResult.message).to.equal(
-        "Oh no! invalid value! - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(updateSuccess).to.be.false;
-      expect(updateResult.message).to.equal(
-        "Oh no! invalid value! - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(putResult.fields).to.have.length(1);
-      expect(updateResult.fields).to.have.length(1);
-    });
-
     it("should validate a maps properties before itself", async () => {
       const prop1 = uuid();
       const prop2 = {
@@ -569,6 +425,7 @@ describe("user attribute validation", () => {
                   validate: (value) => {
                     validationExecutions.push("property");
                     validationExecutionTypes.push(typeof value);
+                    return true;
                   },
                 },
                 prop4: {
@@ -576,6 +433,7 @@ describe("user attribute validation", () => {
                   validate: (value) => {
                     validationExecutions.push("property");
                     validationExecutionTypes.push(typeof value);
+                    return true;
                   },
                 },
                 prop5: {
@@ -583,12 +441,14 @@ describe("user attribute validation", () => {
                   validate: (value) => {
                     validationExecutions.push("property");
                     validationExecutionTypes.push(typeof value);
+                    return true;
                   },
                 },
               },
               validate: (value) => {
                 validationExecutions.push("map");
                 validationExecutionTypes.push(typeof value);
+                return true;
               },
             },
           },
@@ -627,7 +487,7 @@ describe("user attribute validation", () => {
       ]);
     });
 
-    it("should interpret a true response value as an invalid attribute value on individual property values", async () => {
+    it("should interpret a false response value as an invalid attribute value on individual property values", async () => {
       const prop1 = uuid();
       const prop2 = {
         prop3: "value4",
@@ -656,19 +516,19 @@ describe("user attribute validation", () => {
                 prop3: {
                   type: "string",
                   validate: (value) => {
-                    return value !== prop2.prop3;
+                    return value === prop2.prop3;
                   },
                 },
                 prop4: {
                   type: "number",
                   validate: (value) => {
-                    return value !== prop2.prop4;
+                    return value === prop2.prop4;
                   },
                 },
                 prop5: {
                   type: "boolean",
                   validate: (value) => {
-                    return !value;
+                    return !!value;
                   },
                 },
               },
@@ -707,104 +567,6 @@ describe("user attribute validation", () => {
       expect(updateSuccess).to.be.false;
       expect(updateResult.message).to.equal(
         "Invalid value provided, Invalid value provided, Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(putResult.fields).to.have.length(3);
-      expect(updateResult.fields).to.have.length(3);
-    });
-
-    it("should interpret a string return value as a validation error message on individual property values", async () => {
-      const prop1 = uuid();
-      const prop2 = {
-        prop3: "value4",
-        prop4: 12345,
-        prop5: true,
-      };
-      const invalidProp2 = {
-        prop3: "value3",
-        prop4: 12346,
-        prop5: false,
-      };
-      const invalidValueMessage = "Oh no! invalid value!";
-      const entity = new Entity(
-        {
-          model: {
-            service: "MallStoreDirectory",
-            entity: "MallStores",
-            version: "1",
-          },
-          attributes: {
-            prop1: {
-              type: "string",
-            },
-            prop2: {
-              type: "map",
-              properties: {
-                prop3: {
-                  type: "string",
-                  validate: (value) => {
-                    if (value !== prop2.prop3) {
-                      return invalidValueMessage;
-                    }
-                  },
-                },
-                prop4: {
-                  type: "number",
-                  validate: (value) => {
-                    if (value !== prop2.prop4) {
-                      return invalidValueMessage;
-                    }
-                  },
-                },
-                prop5: {
-                  type: "boolean",
-                  validate: (value) => {
-                    if (value !== prop2.prop5) {
-                      return invalidValueMessage;
-                    }
-                  },
-                },
-              },
-            },
-          },
-          indexes: {
-            record: {
-              pk: {
-                field: "partition_key",
-                composite: ["prop1"],
-              },
-            },
-          },
-        },
-        { table, client },
-      );
-      await entity.put({ prop1, prop2 }).go();
-      await entity.update({ prop1 }).set({ prop2 }).go({ response: "all_new" });
-      const [putSuccess, putResult] = await entity
-        .put({ prop1, prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      const [updateSuccess, updateResult] = await entity
-        .update({ prop1 })
-        .set({ prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      expect(putSuccess).to.be.false;
-      expect(putResult.message).to.equal(
-        [invalidValueMessage, invalidValueMessage, invalidValueMessage].join(
-          ", ",
-        ) +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(updateSuccess).to.be.false;
-      expect(updateResult.message).to.equal(
-        [invalidValueMessage, invalidValueMessage, invalidValueMessage].join(
-          ", ",
-        ) +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
       );
       expect(putResult.fields).to.have.length(3);
       expect(updateResult.fields).to.have.length(3);
@@ -844,6 +606,7 @@ describe("user attribute validation", () => {
                     if (value !== prop2.prop3) {
                       throw error;
                     }
+                    return true;
                   },
                 },
                 prop4: {
@@ -852,6 +615,7 @@ describe("user attribute validation", () => {
                     if (value !== prop2.prop4) {
                       throw error;
                     }
+                    return true;
                   },
                 },
                 prop5: {
@@ -860,6 +624,7 @@ describe("user attribute validation", () => {
                     if (value !== prop2.prop5) {
                       throw error;
                     }
+                    return true;
                   },
                 },
               },
@@ -916,7 +681,7 @@ describe("user attribute validation", () => {
     });
   });
   describe("root lists user validation", () => {
-    it("should interpret a true response value as an invalid attribute value", async () => {
+    it("should interpret a false response value as an invalid attribute value", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value1"];
@@ -937,7 +702,7 @@ describe("user attribute validation", () => {
                 type: "string",
               },
               validate: (value: string[] = []) => {
-                return value.length === 1;
+                return value.length !== 1;
               },
             },
           },
@@ -974,74 +739,6 @@ describe("user attribute validation", () => {
       expect(updateSuccess).to.be.false;
       expect(updateResult.message).to.equal(
         "Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(putResult.fields).to.have.length(1);
-      expect(updateResult.fields).to.have.length(1);
-    });
-
-    it("should interpret a string return value as a validation error message", async () => {
-      const prop1 = uuid();
-      const prop2 = ["value1", "value2"];
-      const invalidProp2 = ["value1"];
-      const invalidValueMessage = "Oh no! invalid value!";
-      const entity = new Entity(
-        {
-          model: {
-            service: "MallStoreDirectory",
-            entity: "MallStores",
-            version: "1",
-          },
-          attributes: {
-            prop1: {
-              type: "string",
-            },
-            prop2: {
-              type: "list",
-              items: {
-                type: "string",
-              },
-              validate: (value: string[] = []) => {
-                if (value.length === 1) {
-                  return invalidValueMessage;
-                }
-              },
-            },
-          },
-          indexes: {
-            record: {
-              pk: {
-                field: "partition_key",
-                composite: ["prop1"],
-              },
-            },
-          },
-        },
-        { table, client },
-      );
-      await entity.put({ prop1, prop2 }).go();
-      await entity.update({ prop1 }).set({ prop2 }).go({ response: "all_new" });
-      const [putSuccess, putResult] = await entity
-        .put({ prop1, prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      const [updateSuccess, updateResult] = await entity
-        .update({ prop1 })
-        .set({ prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      expect(putSuccess).to.be.false;
-      expect(putResult.message).to.equal(
-        invalidValueMessage +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(updateSuccess).to.be.false;
-      expect(updateResult.message).to.equal(
-        invalidValueMessage +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
       );
       expect(putResult.fields).to.have.length(1);
       expect(updateResult.fields).to.have.length(1);
@@ -1070,6 +767,7 @@ describe("user attribute validation", () => {
                 validate: (value: string) => {
                   validationExecutions.push("property");
                   validationExecutionTypes.push(typeof value);
+                  return true;
                 },
               },
               validate: (value: string[] | undefined) => {
@@ -1077,6 +775,7 @@ describe("user attribute validation", () => {
                 validationExecutionTypes.push(
                   Array.isArray(value) ? "array" : typeof value,
                 );
+                return true;
               },
             },
           },
@@ -1111,7 +810,7 @@ describe("user attribute validation", () => {
       ]);
     });
 
-    it("should interpret a true response value as an invalid attribute value on individual item values", async () => {
+    it("should interpret a false response value as an invalid attribute value on individual item values", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value3", "value4", "value5"];
@@ -1131,7 +830,7 @@ describe("user attribute validation", () => {
               items: {
                 type: "string",
                 validate: (value: string) => {
-                  return !prop2.find((val) => val === value);
+                  return !!prop2.find((val) => val === value);
                 },
               },
             },
@@ -1197,71 +896,6 @@ describe("user attribute validation", () => {
       expect(updateResult.fields).to.have.length(3);
     });
 
-    it("should interpret a string return value as a validation error message on individual item values", async () => {
-      const prop1 = uuid();
-      const prop2 = ["value1", "value2"];
-      const invalidProp2 = ["value3", "value4", "value5"];
-      const invalidValueMessage = "Oh no! invalid value!";
-      const invalidValueError =
-        [invalidValueMessage, invalidValueMessage, invalidValueMessage].join(
-          ", ",
-        ) +
-        " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute";
-      const entity = new Entity(
-        {
-          model: {
-            service: "MallStoreDirectory",
-            entity: "MallStores",
-            version: "1",
-          },
-          attributes: {
-            prop1: {
-              type: "string",
-            },
-            prop2: {
-              type: "list",
-              items: {
-                type: "string",
-                validate: (value: string) => {
-                  if (!prop2.find((val) => val === value)) {
-                    return invalidValueMessage;
-                  }
-                },
-              },
-            },
-          },
-          indexes: {
-            record: {
-              pk: {
-                field: "partition_key",
-                composite: ["prop1"],
-              },
-            },
-          },
-        },
-        { table, client },
-      );
-      await entity.put({ prop1, prop2 }).go();
-      await entity.update({ prop1 }).set({ prop2 }).go({ response: "all_new" });
-      const [putSuccess, putResult] = await entity
-        .put({ prop1, prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      const [updateSuccess, updateResult] = await entity
-        .update({ prop1 })
-        .set({ prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      expect(putSuccess).to.be.false;
-      expect(putResult.message.trim()).to.equal(invalidValueError);
-      expect(updateSuccess).to.be.false;
-      expect(updateResult.message).to.equal(invalidValueError);
-    });
-
     it("should not validate a parent list of a nested property if the property fails", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
@@ -1293,6 +927,7 @@ describe("user attribute validation", () => {
                 validationExecutionTypes.push(
                   Array.isArray(value) ? "array" : typeof value,
                 );
+                return true;
               },
             },
           },
@@ -1319,14 +954,18 @@ describe("user attribute validation", () => {
       expect(validationExecutions).to.deep.equal([
         "property",
         "property",
+        "list",
         "property",
         "property",
+        "list",
       ]);
       expect(validationExecutionTypes).to.deep.equal([
         "string",
         "string",
+        "array",
         "string",
         "string",
+        "array",
       ]);
     });
 
@@ -1381,6 +1020,7 @@ describe("user attribute validation", () => {
               validate: (value) => {
                 validationExecutions.push("map");
                 validationExecutionTypes.push(typeof value);
+                return true;
               },
             },
           },
@@ -1408,17 +1048,21 @@ describe("user attribute validation", () => {
         "property",
         "property",
         "property",
+        "map",
         "property",
         "property",
         "property",
+        "map",
       ]);
       expect(validationExecutionTypes).to.deep.equal([
         "string",
         "number",
         "boolean",
+        "object",
         "string",
         "number",
         "boolean",
+        "object",
       ]);
     });
 
@@ -1448,6 +1092,7 @@ describe("user attribute validation", () => {
                 if (value.length === 1) {
                   throw error;
                 }
+                return true;
               },
             },
           },
@@ -1493,7 +1138,7 @@ describe("user attribute validation", () => {
   });
 
   describe("root set user validation", () => {
-    it("should interpret a true response value as an invalid attribute value", async () => {
+    it("should interpret a false response value as an invalid attribute value", async () => {
       const prop1 = uuid();
       const prop2 = ["value1", "value2"];
       const invalidProp2 = ["value1"];
@@ -1512,7 +1157,7 @@ describe("user attribute validation", () => {
               type: "set",
               items: "string",
               validate: (value: string[] = []) => {
-                return value.length === 1;
+                return value.length !== 1;
               },
             },
           },
@@ -1549,70 +1194,6 @@ describe("user attribute validation", () => {
       expect(updateSuccess).to.be.false;
       expect(updateResult.message).to.equal(
         "Invalid value provided - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-    });
-
-    it("should interpret a string return value as a validation error message", async () => {
-      const prop1 = uuid();
-      const prop2 = ["value1", "value2"];
-      const invalidProp2 = ["value1"];
-      const invalidValueMessage = "Oh no! invalid value!";
-      const entity = new Entity(
-        {
-          model: {
-            service: "MallStoreDirectory",
-            entity: "MallStores",
-            version: "1",
-          },
-          attributes: {
-            prop1: {
-              type: "string",
-            },
-            prop2: {
-              type: "set",
-              items: "string",
-              validate: (value: string[] = []) => {
-                if (value.length === 1) {
-                  return invalidValueMessage;
-                }
-              },
-            },
-          },
-          indexes: {
-            record: {
-              pk: {
-                field: "partition_key",
-                composite: ["prop1"],
-              },
-            },
-          },
-        },
-        { table, client },
-      );
-      await entity.put({ prop1, prop2 }).go();
-      await entity.update({ prop1 }).set({ prop2 }).go({ response: "all_new" });
-      const [putSuccess, putResult] = await entity
-        .put({ prop1, prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      const [updateSuccess, updateResult] = await entity
-        .update({ prop1 })
-        .set({ prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      expect(putSuccess).to.be.false;
-      expect(putResult.message).to.equal(
-        invalidValueMessage +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(updateSuccess).to.be.false;
-      expect(updateResult.message).to.equal(
-        invalidValueMessage +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
       );
     });
 
@@ -1640,6 +1221,7 @@ describe("user attribute validation", () => {
                 if (value.length === 1) {
                   throw error;
                 }
+                return true;
               },
             },
           },
@@ -1683,70 +1265,6 @@ describe("user attribute validation", () => {
       );
       expect(updateResult.fields).to.be.an("array").with.length(1);
       expect(updateResult.fields[0].cause).to.equal(error);
-    });
-
-    it("should interpret a string return value as a validation error message", async () => {
-      const prop1 = uuid();
-      const prop2 = ["value1", "value2"];
-      const invalidProp2 = ["value1"];
-      const invalidValueMessage = "Oh no! invalid value!";
-      const entity = new Entity(
-        {
-          model: {
-            service: "MallStoreDirectory",
-            entity: "MallStores",
-            version: "1",
-          },
-          attributes: {
-            prop1: {
-              type: "string",
-            },
-            prop2: {
-              type: "set",
-              items: "string",
-              validate: (value: string[] = []) => {
-                if (value.length === 1) {
-                  return invalidValueMessage;
-                }
-              },
-            },
-          },
-          indexes: {
-            record: {
-              pk: {
-                field: "partition_key",
-                composite: ["prop1"],
-              },
-            },
-          },
-        },
-        { table, client },
-      );
-      await entity.put({ prop1, prop2 }).go();
-      await entity.update({ prop1 }).set({ prop2 }).go({ response: "all_new" });
-      const [putSuccess, putResult] = await entity
-        .put({ prop1, prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      const [updateSuccess, updateResult] = await entity
-        .update({ prop1 })
-        .set({ prop2: invalidProp2 })
-        .go()
-        .then((res) => res.data)
-        .then((data) => [true, data])
-        .catch((err) => [false, err]);
-      expect(putSuccess).to.be.false;
-      expect(putResult.message).to.equal(
-        invalidValueMessage +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
-      expect(updateSuccess).to.be.false;
-      expect(updateResult.message).to.equal(
-        invalidValueMessage +
-          " - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute",
-      );
     });
   });
 });

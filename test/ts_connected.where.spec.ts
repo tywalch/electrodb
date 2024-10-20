@@ -433,7 +433,7 @@ describe("Where Clause Queries", () => {
 				${name(animal)} = ${value(animal, penRow.animal)} AND ${notExists(dangerous)}
 			`,
       )
-      .go({ raw: true })
+      .go({ data: 'raw' })
       .then((res) => res.data);
     expect(results).to.be.empty;
     let after = await WhereTests.get(penRow)
@@ -476,7 +476,7 @@ describe("Where Clause Queries", () => {
     let doesExist = await WhereTests.patch(penRow)
       .set({ dangerous: true })
       .where(({ dangerous }, { notExists }) => notExists(dangerous))
-      .go({ raw: true })
+      .go({ data: 'raw' })
       .then((res) => res.data)
       .then(() => false)
       .catch(() => true);

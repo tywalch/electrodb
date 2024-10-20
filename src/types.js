@@ -3,9 +3,21 @@ const KeyTypes = {
   sk: "sk",
 };
 
+const DataOptions = {
+  raw: "raw",
+  includeKeys: "includeKeys",
+  attributes: "attributes",
+};
+
 const BatchWriteTypes = {
   batch: "batch",
   concurrent: "concurrent",
+};
+
+const ComparisonTypes = {
+  keys: "keys",
+  attributes: "attributes",
+  v2: "v2",
 };
 
 const QueryTypes = {
@@ -86,7 +98,7 @@ const Comparisons = {
   gt: ">",
 };
 
-const PartialComparisons = {
+const KeyAttributesComparisons = {
   lt: "<",
   gte: ">=",
 
@@ -332,6 +344,7 @@ module.exports = {
   ValueTypes,
   TableIndex,
   MethodTypes,
+  DataOptions,
   Comparisons,
   BuilderTypes,
   ReturnValues,
@@ -341,6 +354,7 @@ module.exports = {
   AttributeTypes,
   EntityVersions,
   CastKeyOptions,
+  ComparisonTypes,
   ServiceVersions,
   ExpressionTypes,
   ElectroInstance,
@@ -348,13 +362,13 @@ module.exports = {
   UnprocessedTypes,
   AttributeWildCard,
   TerminalOperation,
-  PartialComparisons,
   FormatToReturnValues,
   AttributeProxySymbol,
   ElectroInstanceTypes,
   MethodTypeTranslation,
   EventSubscriptionTypes,
   DynamoDBAttributeTypes,
+  KeyAttributesComparisons,
   AttributeMutationMethods,
   AllPages,
   ResultOrderOption,
@@ -363,4 +377,5 @@ module.exports = {
   TransactionOperations,
   TransactionMethods,
   UpsertOperations,
+  BatchWriteTypes,
 };

@@ -175,7 +175,7 @@ If you do not wish to "hydrate" your query response, you still have ways you can
 
 ### Include Keys
 
-The query execution options `{ ignoreOwnership: true, data: 'includeKeys' }` allow you to return keys on the `data` array. The option `ignoreOwnership` is also used here to limit filters applied to query. ElectroDB filters items that it cannot identify as belonging to an Entity; `KEYS_ONLY` items are then indistinguishable from unidentifiable items.
+The query execution options `{ ignoreOwnership: true, data: 'includeKeys' }` allow you to return keys on the `data` array. The option `ignoreOwnership` is also used here to limit filters applied to query to identify item types. ElectroDB filters out items that it cannot identify as belonging to an Entity using identifier attributes (`__edb_e__`, and `__edb_v__`); `KEYS_ONLY` items are then indistinguishable from unidentifiable items.
 
 ```typescript
 // The elements in the `data` array are just the keys of the index, despite the typing saying otherwise.

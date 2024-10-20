@@ -1,5 +1,5 @@
 import { DocumentClient, PutItemInput } from "aws-sdk/clients/dynamodb";
-import { Entity, EntityRecord, createWriteTransaction, ElectroEvent } from "../";
+import { Entity, EntityRecord, createWriteTransaction, ElectroEvent, createConversions, Service } from "../";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
 const u = require("../src/util");
@@ -233,6 +233,8 @@ describe("conversions", () => {
     { table, client },
   );
 
+  const conversions = createConversions(entity);
+
   const validateMatchingCorrespondence = (options: {
     label: string;
     pkComposite: string[];
@@ -281,25 +283,25 @@ describe("conversions", () => {
   };
 
   const evaluateFromComposite = (item: typeof record) => {
-    const cursor = entity.conversions.fromComposite.toCursor(item);
+    const cursor = conversions.fromComposite.toCursor(item);
     expect(cursor).not.to.be.null;
 
-    const keys = entity.conversions.fromComposite.toKeys(item);
+    const keys = conversions.fromComposite.toKeys(item);
     expect(keys).not.to.be.null;
 
-    const cursorFromKeys = entity.conversions.fromKeys.toCursor(keys!);
+    const cursorFromKeys = conversions.fromKeys.toCursor(keys!);
     expect(cursorFromKeys).not.to.be.null;
     expect(cursor).to.equal(cursorFromKeys);
 
-    const keysFromCursor = entity.conversions.fromCursor.toKeys(cursor!);
+    const keysFromCursor = conversions.fromCursor.toKeys(cursor!);
     expect(keysFromCursor).not.to.be.null;
 
-    const compositeFromCursor = entity.conversions.fromCursor.toComposite(
+    const compositeFromCursor = conversions.fromCursor.toComposite(
       cursor!,
     );
     expect(compositeFromCursor).not.to.be.null;
 
-    const compositeFromKeys = entity.conversions.fromKeys.toComposite(keys!);
+    const compositeFromKeys = conversions.fromKeys.toComposite(keys!);
     expect(compositeFromKeys).not.to.be.null;
     expect(keys).to.deep.equal(keysFromCursor);
 
@@ -346,35 +348,37 @@ describe("conversions", () => {
     }
   };
 
+  // const conversions = createConversions(entity);
+
   const evaluateFromKeys = (keys: any) => {
-    const item = entity.conversions.fromKeys.toComposite(keys);
+    const item = conversions.fromKeys.toComposite(keys);
     if (!item) {
       throw new Error("Item not defined!");
     }
     // @ts-ignore
-    const cursor = entity.conversions.fromComposite.toCursor(item);
+    const cursor = conversions.fromComposite.toCursor(item);
     expect(cursor).not.to.be.null;
 
-    const keysFromCursor = entity.conversions.fromCursor.toKeys(cursor!);
+    const keysFromCursor = conversions.fromCursor.toKeys(cursor!);
     expect(keysFromCursor).not.to.be.null;
 
-    const cursorFromKeys = entity.conversions.fromKeys.toCursor(
+    const cursorFromKeys = conversions.fromKeys.toCursor(
       keysFromCursor!,
     );
     expect(cursorFromKeys).not.to.be.null;
     expect(cursor).to.equal(cursorFromKeys);
 
-    const compositeFromCursor = entity.conversions.fromCursor.toComposite(
+    const compositeFromCursor = conversions.fromCursor.toComposite(
       cursor!,
     );
     expect(compositeFromCursor).not.to.be.null;
 
     // @ts-ignore
-    const keysFromComposite = entity.conversions.fromComposite.toKeys(item);
+    const keysFromComposite = conversions.fromComposite.toKeys(item);
     expect(keysFromComposite).not.to.be.null;
     expect(keysFromCursor).to.deep.equal(keysFromComposite);
 
-    const compositeFromKeys = entity.conversions.fromKeys.toComposite(
+    const compositeFromKeys = conversions.fromKeys.toComposite(
       keysFromComposite!,
     );
 
@@ -428,34 +432,34 @@ describe("conversions", () => {
     item: typeof record,
   ) => {
     const cursor =
-      entity.conversions.byAccessPattern[accessPattern].fromComposite.toCursor(
+      conversions.byAccessPattern[accessPattern].fromComposite.toCursor(
         item,
       );
     expect(cursor).not.to.be.null;
 
     const keys =
-      entity.conversions.byAccessPattern[accessPattern].fromComposite.toKeys(
+      conversions.byAccessPattern[accessPattern].fromComposite.toKeys(
         item,
       );
     expect(keys).not.to.be.null;
 
-    const cursorFromKeys = entity.conversions.byAccessPattern[
+    const cursorFromKeys = conversions.byAccessPattern[
       accessPattern
     ].fromKeys.toCursor(keys!);
     expect(cursorFromKeys).not.to.be.null;
     expect(cursor).to.equal(cursorFromKeys);
 
-    const keysFromCursor = entity.conversions.byAccessPattern[
+    const keysFromCursor = conversions.byAccessPattern[
       accessPattern
     ].fromCursor.toKeys(cursor!);
     expect(keysFromCursor).not.to.be.null;
 
-    const compositeFromCursor = entity.conversions.byAccessPattern[
+    const compositeFromCursor = conversions.byAccessPattern[
       accessPattern
     ].fromCursor.toComposite(cursor!);
     expect(compositeFromCursor).not.to.be.null;
 
-    const compositeFromKeys = entity.conversions.byAccessPattern[
+    const compositeFromKeys = conversions.byAccessPattern[
       accessPattern
     ].fromKeys.toComposite(keys!);
     expect(compositeFromKeys).not.to.be.null;
@@ -507,39 +511,39 @@ describe("conversions", () => {
     keys: any,
   ) => {
     const item =
-      entity.conversions.byAccessPattern[accessPattern].fromKeys.toComposite(
+      conversions.byAccessPattern[accessPattern].fromKeys.toComposite(
         keys,
       );
     if (!item) {
       throw new Error("Item not defined!");
     }
     // @ts-ignore
-    const cursor = entity.conversions.byAccessPattern[accessPattern].fromComposite.toCursor(item);
+    const cursor = conversions.byAccessPattern[accessPattern].fromComposite.toCursor(item);
     expect(cursor).not.to.be.null;
 
-    const keysFromCursor = entity.conversions.byAccessPattern[
+    const keysFromCursor = conversions.byAccessPattern[
       accessPattern
     ].fromCursor.toKeys(cursor!);
     expect(keysFromCursor).not.to.be.null;
 
-    const cursorFromKeys = entity.conversions.byAccessPattern[
+    const cursorFromKeys = conversions.byAccessPattern[
       accessPattern
     ].fromKeys.toCursor(keysFromCursor!);
     expect(cursorFromKeys).not.to.be.null;
     expect(cursor).to.equal(cursorFromKeys);
 
-    const compositeFromCursor = entity.conversions.byAccessPattern[
+    const compositeFromCursor = conversions.byAccessPattern[
       accessPattern
     ].fromCursor.toComposite(cursor!);
     expect(compositeFromCursor).not.to.be.null;
 
     // @ts-ignore
-    const keysFromComposite =entity.conversions.byAccessPattern[accessPattern].fromComposite.toKeys(item);
+    const keysFromComposite =conversions.byAccessPattern[accessPattern].fromComposite.toKeys(item);
     expect(keysFromComposite).not.to.be.null;
     expect(keysFromCursor).to.deep.equal(keysFromComposite);
 
     expect(Object.entries(compositeFromCursor!).length).to.be.greaterThan(0);
-    const compositeFromKeys = entity.conversions.byAccessPattern[
+    const compositeFromKeys = conversions.byAccessPattern[
       accessPattern
     ].fromKeys.toComposite(keysFromComposite!);
     expect(!!compositeFromKeys).to.be.true;
@@ -672,6 +676,8 @@ describe("conversions", () => {
         { table },
       );
 
+      const conversions = createConversions(entity);
+
       function getConversion(
         target: ConversionTest["target"],
         strict?: "all" | "pk" | "none",
@@ -679,19 +685,19 @@ describe("conversions", () => {
         switch (target) {
           case "byCategory":
             return (composite: any) =>
-              entity.conversions.byAccessPattern.byCategory.fromComposite.toKeys(
+              conversions.byAccessPattern.byCategory.fromComposite.toKeys(
                 composite,
                 { strict },
               );
           case "byOrganization":
             return (composite: any) =>
-              entity.conversions.byAccessPattern.byOrganization.fromComposite.toKeys(
+              conversions.byAccessPattern.byOrganization.fromComposite.toKeys(
                 composite,
                 { strict },
               );
           case "top":
             return (composite: any) =>
-              entity.conversions.fromComposite.toKeys(composite, { strict });
+              conversions.fromComposite.toKeys(composite, { strict });
           default:
             throw new Error(`Unknown target: "${target}"`);
         }
@@ -2724,24 +2730,26 @@ describe('index scope', () => {
     const batchPutParams = withScope.put([{prop1: 'abc', prop2: 'def'}]).params();
     expect(batchPutParams[0].RequestItems.electro[0].PutRequest.Item.pk).to.equal('$test_scope1#prop1_abc');
 
-    const keys = withScope.conversions.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    const conversions = createConversions(withScope);
+
+    const keys = conversions.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
     expect(keys.pk).to.equal('$test_scope1#prop1_abc');
     expect(keys.gsi1pk).to.equal('$test_scope2#prop2_def');
 
-    const keysComposite = withScope.conversions.fromKeys.toComposite(keys);
+    const keysComposite = conversions.fromKeys.toComposite(keys);
     expect(keysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
 
-    const indexKeys = withScope.conversions.byAccessPattern.test.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    const indexKeys = conversions.byAccessPattern.test.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
     expect(indexKeys.pk).to.equal('$test_scope1#prop1_abc');
 
-    const indexKeysComposite = withScope.conversions.byAccessPattern.test.fromKeys.toComposite(indexKeys);
+    const indexKeysComposite = conversions.byAccessPattern.test.fromKeys.toComposite(indexKeys);
     expect(indexKeysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
 
-    const reverseKeys = withScope.conversions.byAccessPattern.reverse.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
+    const reverseKeys = conversions.byAccessPattern.reverse.fromComposite.toKeys({prop1: 'abc', prop2: 'def'});
     expect(reverseKeys.gsi1pk).to.equal('$test_scope2#prop2_def');
     expect(keys.pk).to.equal('$test_scope1#prop1_abc');
 
-    const reverseKeysComposite = withScope.conversions.byAccessPattern.reverse.fromKeys.toComposite(reverseKeys);
+    const reverseKeysComposite = conversions.byAccessPattern.reverse.fromKeys.toComposite(reverseKeys);
     expect(reverseKeysComposite).to.deep.equal({prop1: 'abc', prop2: 'def'});
   });
 
@@ -4915,4 +4923,526 @@ describe("index condition", () => {
   });
 });
 
+describe('execution option compare', () => {
+  const Attraction = new Entity({
+    model: {
+      entity: 'attraction',
+      service: 'comparison',
+      version: '1'
+    },
+    attributes: {
+      name: {
+        type: 'string'
+      },
+      country: {
+        type: 'string'
+      },
+      state: {
+        type: 'string'
+      },
+      county: {
+        type: 'string'
+      },
+      city: {
+        type: 'string'
+      },
+      zip: {
+        type: 'string'
+      }
+    },
+    indexes: {
+      location: {
+        collection: ['inRegion'],
+        type: 'clustered',
+        pk: {
+          field: 'pk',
+          composite: ['country', 'state']
+        },
+        sk: {
+          field: 'sk',
+          composite: ['county', 'city', 'zip', 'name']
+        }
+      }
+    }
+  }, { table });
 
+  describe('when using compare option keys', () => {
+    const country = 'USA';
+    const state = 'Wisconsin';
+    const county = 'Dane';
+    const city = 'Madison';
+    const zip = '53713';
+    const name = 'Veterans Memorial Coliseum';
+
+    it('should impact entity parameters that when using gt', () => {
+      const defaultParams = Attraction.query.location({country, state}).gt({county, city}).params();
+      const keyParams = Attraction.query.location({country, state}).gt({county, city}).params({ compare: 'keys' });
+      const attributeParams = Attraction.query.location({country, state}).gt({county, city}).params({ compare: 'attributes' });
+      const v2Params = Attraction.query.location({country, state}).gt({county, city}).params({ compare: 'v2' });
+      expect(defaultParams).to.deep.equal(keyParams);
+      expect(keyParams).to.deep.equal({
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk"
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 > :sk1"
+      });
+      expect(attributeParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Madison",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+        },
+        "FilterExpression": "(#city > :city0) AND (#county > :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+        "TableName": "electro"
+      });
+      expect(v2Params).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Madison",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madisoo",
+        },
+        "FilterExpression": "(#city > :city0) AND (#county > :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+        "TableName": "electro"
+      });
+    });
+
+    it('should impact entity parameters when using lte', () => {
+      const defaultParams = Attraction.query.location({country, state}).lte({county, city}).params();
+      const keyParams = Attraction.query.location({country, state}).lte({county, city}).params({ compare: 'keys' });
+      const attributeParams = Attraction.query.location({country, state}).lte({county, city}).params({ compare: 'attributes' });
+      const v2Params = Attraction.query.location({country, state}).lte({county, city}).params({ compare: 'v2' });
+      expect(defaultParams).to.deep.equal(keyParams);
+      expect(keyParams).to.deep.equal({
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk"
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 <= :sk1"
+      });
+      expect(attributeParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Madison",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+        },
+        "FilterExpression": "(#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+        "TableName": "electro"
+      });
+      expect(v2Params).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Madison",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madisoo",
+        },
+        "FilterExpression": "(#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+        "TableName": "electro",
+      });
+    });
+
+    it('should impact entity parameters when using between', () => {
+      const defaultParams = Attraction.query.location({country, state}).between(
+        { county, city: "Madison" },
+        { county, city: "Marshall" },
+      ).params();
+      const keyParams = Attraction.query.location({country, state}).between(
+        { county, city: "Madison" },
+        { county, city: "Marshall" },
+      ).params({ compare: 'keys' });
+      const attributeParams = Attraction.query.location({country, state}).between(
+        { county, city: "Madison" },
+        { county, city: "Marshall" },
+      ).params({ compare: 'attributes' });
+      const v2Params = Attraction.query.location({country, state}).between(
+        { county, city: "Madison" },
+        { county, city: "Marshall" },
+      ).params({ compare: 'v2' });
+      expect(defaultParams).to.deep.equal(keyParams);
+      expect(keyParams).to.deep.equal({
+        "TableName": "electro",
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk"
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+          ":sk2": "$inregion#county_dane#city_marshall",
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+        },
+        "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2"
+      });
+      expect(attributeParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Marshall",
+          ":city1": "Madison",
+          ":county0": "Dane",
+          ":county1": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+          ":sk2": "$inregion#county_dane#city_marshall"
+        },
+        "FilterExpression": "(#city >= :city1) AND (#county >= :county1) AND (#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+        "TableName": "electro"
+      });
+      expect(v2Params).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Marshall",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+          ":sk2": "$inregion#county_dane#city_marshalm",
+        },
+        "FilterExpression": "(#city <= :city0) AND (#county <= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
+        "TableName": "electro",
+      });
+    });
+
+    it('should impact entity parameters for gte', () => {
+      const defaultParameters = Attraction.query.location({country, state}).gte({county, city}).params()
+      const keysParams = Attraction.query.location({country, state}).gte({county, city}).params({ compare: 'keys' });
+      const attributesParams = Attraction.query.location({country, state}).gte({county, city}).params({ compare: 'attributes' });
+      const v2Params = Attraction.query.location({country, state}).gte({county, city}).params({ compare: 'v2' });
+      expect(defaultParameters).to.deep.equal(keysParams);
+      expect(keysParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+        "TableName": "electro"
+      });
+      expect(attributesParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Madison",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+        },
+        "FilterExpression": "(#city >= :city0) AND (#county >= :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+        "TableName": "electro"
+      });
+      expect(v2Params).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 >= :sk1",
+        "TableName": "electro",
+      });
+    });
+
+    it('should impact entity parameters for lt', () => {
+      const defaultParameters = Attraction.query.location({country, state}).lt({county, city}).params();
+      const keysParams = Attraction.query.location({country, state}).lt({county, city}).params({ compare: 'keys' });
+      const attributesParams = Attraction.query.location({country, state}).lt({county, city}).params({ compare: 'attributes' });
+      const v2Params = Attraction.query.location({country, state}).lt({county, city}).params({ compare: 'v2' });
+      expect(defaultParameters).to.deep.equal(keysParams);
+      expect(keysParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+        "TableName": "electro"
+      });
+      expect(attributesParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Madison",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+        },
+        "FilterExpression": "(#city < :city0) AND (#county < :county0) AND (#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+        "TableName": "electro",
+      });
+      expect(v2Params).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and #sk1 < :sk1",
+        "TableName": "electro"
+      });
+    });
+
+    it('should impact entity parameters for begins', () => {
+      const defaultParameters = Attraction.query.location({country, state}).begins({county, city}).params();
+      const keysParams = Attraction.query.location({country, state}).begins({county, city}).params({ compare: 'keys' });
+      const attributesParams = Attraction.query.location({country, state}).begins({county, city}).params({ compare: 'attributes' });
+      const v2Params = Attraction.query.location({country, state}).begins({county, city}).params({ compare: 'v2' });
+      expect(defaultParameters).to.deep.equal(keysParams);
+      expect(keysParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+        "TableName": "electro"
+      });
+      expect(attributesParams).to.deep.equal(keysParams);
+      expect(attributesParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+        "TableName": "electro",
+      });
+      expect(v2Params).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+        "TableName": "electro"
+      });
+    });
+
+    it('should impact entity parameters for implicit begins', () => {
+      const defaultParameters = Attraction.query.location({country, state, county, city}).params();
+      const keysParams = Attraction.query.location({country, state, county, city}).params({ compare: 'keys' });
+      const attributesParams = Attraction.query.location({country, state, county, city}).params({ compare: 'attributes' });
+      const v2Params = Attraction.query.location({country, state, county, city}).params({ compare: 'v2' });
+      expect(defaultParameters).to.deep.equal(keysParams);
+      expect(keysParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison#zip_",
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+        },
+        "FilterExpression": "(#__edb_e__ = :__edb_e__0) AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+        "TableName": "electro"
+      });
+      expect(attributesParams).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Madison",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison#zip_",
+        },
+        "FilterExpression": "(#county = :county0) AND #city = :city0 AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+        "TableName": "electro"
+      });
+      expect(v2Params).to.deep.equal({
+        "ExpressionAttributeNames": {
+          "#__edb_e__": "__edb_e__",
+          "#__edb_v__": "__edb_v__",
+          "#city": "city",
+          "#county": "county",
+          "#pk": "pk",
+          "#sk1": "sk",
+        },
+        "ExpressionAttributeValues": {
+          ":__edb_e__0": "attraction",
+          ":__edb_v__0": "1",
+          ":city0": "Madison",
+          ":county0": "Dane",
+          ":pk": "$comparison#country_usa#state_wisconsin",
+          ":sk1": "$inregion#county_dane#city_madison#zip_"
+        },
+        "FilterExpression": "(#county = :county0) AND #city = :city0 AND #__edb_e__ = :__edb_e__0 AND #__edb_v__ = :__edb_v__0",
+        "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
+        "TableName": "electro"
+      });
+    });
+  });
+})

@@ -12,9 +12,7 @@ import {
   expectError,
   expectAssignable,
   expectNotAssignable,
-  expectNotType,
 } from "tsd";
-import * as tests from "./test/tests.test-d";
 
 type Resolve<T> = T extends Function | string | number | boolean
   ? T
@@ -582,19 +580,17 @@ expectError<GetSingleParamsParamsWithoutSK>({
 });
 
 expectAssignable<GetBatchGoParamsWithSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
 });
 expectAssignable<GetBatchGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
@@ -614,20 +610,18 @@ expectAssignable<GetBatchParamsParamsWithoutSK>({
 });
 
 expectNotAssignable<GetBatchParamsParamsWithSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
   attributes: ["attrz1"],
 });
 expectNotAssignable<GetBatchParamsParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
@@ -850,66 +844,58 @@ type DeleteBatchParamsParamsWithoutSK = Parameter<
 >;
 
 expectAssignable<DeleteSingleGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "all_old",
 });
 expectAssignable<DeleteSingleGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "all_old",
 });
 
 expectAssignable<DeleteSingleGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
 });
 expectAssignable<DeleteSingleGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
 });
 
 expectAssignable<DeleteSingleParamsParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "all_old",
 });
 expectAssignable<DeleteSingleParamsParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "all_old",
 });
 
 expectAssignable<DeleteSingleParamsParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
 });
 expectAssignable<DeleteSingleParamsParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
 });
 
@@ -934,38 +920,34 @@ expectNotAssignable<DeleteSingleParamsParamsWithoutSK>({
 });
 
 expectAssignable<DeleteBatchGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
 });
 expectAssignable<DeleteBatchGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
 });
 
 expectAssignable<DeleteBatchParamsParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
 });
 expectAssignable<DeleteBatchParamsParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
@@ -987,16 +969,59 @@ entityWithoutSK.delete({ attr1: "asbc" }).where((attr, op) => {
 });
 
 // Results
-expectAssignable<Promise<Item>>(
+expectAssignable<Promise<Item | null>>(
   entityWithSK
     .delete({ attr1: "abc", attr2: "def" })
     .go({ response: "all_old" })
     .then((res) => res.data),
 );
-expectAssignable<Promise<ItemWithoutSK>>(
+
+expectAssignable<Promise<{attr1: string; attr2: string} | null>>(
+  entityWithSK
+    .delete({ attr1: "abc", attr2: "def" })
+    .go({ response: "default" })
+    .then((res) => res.data),
+);
+
+expectAssignable<Promise<{attr1: string; attr2: string} | null>>(
+  entityWithSK
+    .delete({ attr1: "abc", attr2: "def" })
+    .go()
+    .then((res) => res.data),
+);
+
+expectAssignable<Promise<null>>(
+  entityWithSK
+    .delete({ attr1: "abc", attr2: "def" })
+    .go({ response: "none" })
+    .then((res) => res.data),
+);
+
+expectAssignable<Promise<ItemWithoutSK | null>>(
   entityWithoutSK
     .delete({ attr1: "abc" })
     .go({ response: "all_old" })
+    .then((res) => res.data),
+);
+
+expectAssignable<Promise<null>>(
+  entityWithoutSK
+    .delete({ attr1: "abc" })
+    .go({ response: "none" })
+    .then((res) => res.data),
+);
+
+expectAssignable<Promise<{ attr1: string } | null>>(
+  entityWithoutSK
+    .delete({ attr1: "abc" })
+    .go({ response: "default" })
+    .then((res) => res.data),
+);
+
+expectAssignable<Promise<{ attr1: string } | null>>(
+  entityWithoutSK
+    .delete({ attr1: "abc" })
+    .go()
     .then((res) => res.data),
 );
 
@@ -1153,35 +1178,31 @@ type PutBatchParamsParamsWithoutSK = Parameter<
 >;
 
 expectAssignable<PutSingleGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "all_old",
 });
 expectAssignable<PutSingleGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "all_old",
 });
 
 expectAssignable<PutSingleParamsParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "all_old",
 });
 expectAssignable<PutSingleParamsParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "all_old",
 });
@@ -1205,39 +1226,35 @@ expectError<PutSingleParamsParamsWithoutSK>({
 });
 
 expectAssignable<PutBatchGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
 });
 expectAssignable<PutBatchGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
 });
 
 expectNotAssignable<PutBatchGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
   response: "all_old",
 });
 expectNotAssignable<PutBatchGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
@@ -1245,39 +1262,35 @@ expectNotAssignable<PutBatchGoParamsWithoutSK>({
 });
 
 expectAssignable<PutBatchParamsParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
 });
 expectAssignable<PutBatchParamsParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
 });
 
 expectNotAssignable<PutBatchParamsParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
   response: "all_old",
 });
 expectNotAssignable<PutBatchParamsParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   concurrency: 10,
   unprocessed: "raw",
@@ -1431,32 +1444,28 @@ type CreateParamsParams = Parameter<typeof createItem.params>;
 type CreateParamsParamsWithoutSK = Parameter<typeof createItemWithoutSK.params>;
 
 expectAssignable<CreateGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
 });
 expectAssignable<CreateGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
 });
 
 expectAssignable<CreateParamsParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
 });
 expectAssignable<CreateParamsParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
 });
 
@@ -1608,18 +1617,16 @@ type UpdateParamsParams = Parameter<typeof updateParams>;
 type UpdateParamsParamsWithoutSK = Parameter<typeof updateParamsWithoutSK>;
 
 expectAssignable<UpdateGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "updated_new",
 });
 expectAssignable<UpdateGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "updated_new",
 });
@@ -1761,18 +1768,16 @@ type PatchParamsParams = Parameter<typeof patchParams>;
 type PatchParamsParamsWithoutSK = Parameter<typeof patchParamsWithoutSK>;
 
 expectAssignable<PatchGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "updated_new",
 });
 expectAssignable<PatchGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   response: "updated_new",
 });
@@ -1876,34 +1881,30 @@ type MatchParamsParams = Parameter<typeof matchParams>;
 type MatchParamsParamsWithoutSK = Parameter<typeof matchParamsWithoutSK>;
 
 expectAssignable<FindGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   pages: 123,
 });
 expectAssignable<FindGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   pages: 123,
 });
 expectAssignable<MatchGoParams>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   pages: 123,
 });
 expectAssignable<MatchGoParamsWithoutSK>({
-  includeKeys: true,
+  data: 'includeKeys',
   originalErr: true,
   params: {},
-  raw: true,
   table: "abc",
   pages: 123,
 });
@@ -2635,10 +2636,9 @@ expectType<AfterQueryChainMethods>(expectedAfterQueryChainMethods);
 type GoParams = Parameter<typeof chainMethods.go>;
 expectAssignable<GoParams>({
   table: "df",
-  raw: true,
   params: {},
   originalErr: true,
-  includeKeys: true,
+  data: 'includeKeys',
   pages: 123,
 });
 complexService.collections

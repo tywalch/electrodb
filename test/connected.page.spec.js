@@ -394,59 +394,11 @@ describe("Query Pagination", () => {
       } while (cursor !== null);
     }).timeout(10000);
 
-    it(`should continue to query until '${limitOption}' option is reached`, async () => {
-      const ExclusiveStartKey = { key: "hi" };
-      const [one, two, three, four, five, six] = tasks.data;
-      const { client, calls } = createClient({
-        mockResponses: [
-          {
-            Items: [one, two, three],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [four, five, six],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: undefined,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-        ],
-      });
-      const pages = 3;
-      const limit = 5;
-      const entity = new Tasks(TasksModel, { client, table });
-      const results = await entity.query
-          .task({ task: "my_task" })
-          .go({ pages, [limitOption]: limit })
-          .then((res) => res.data);
-      expect(results).to.be.an("array").with.length(limitOption === 'count' ? 5 : 6);
-      expect(calls).to.have.length(2);
-      for (let i = 0; i < calls.length; i++) {
-        const call = calls[i];
-        if (i === 0) {
-          expect(call.ExclusiveStartKey).to.be.undefined;
-        } else {
-          expect(call.ExclusiveStartKey.key).to.equal("hi");
-          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be
-              .true;
-        }
-      }
-    });
-
     it(`should throw if '${limitOption}' option is less than one or not a valid number`, async () => {
       const employee = "employee";
       const project = "project";
       const message = limitOption === 'limit'
-          ? "Query option 'limit' must be of type 'number' and greater than zero. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-limit-option"
+          ? "Error thrown by DynamoDB client: \"Limit must be greater than or equal to 1\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error"
           : "Query option 'count' must be of type 'number' and greater than zero. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-options"
       const result1 = await service.collections
           .assignments({ employee })
@@ -464,14 +416,6 @@ describe("Query Pagination", () => {
       expect(result2.success).to.be.false;
       expect(result2.message).to.equal(message);
 
-      const result3 = await service.collections
-          .assignments({ employee })
-          .go({ [limitOption]: "weasel" })
-          .then(() => ({ success: true }))
-          .catch((err) => ({ success: false, message: err.message }));
-      expect(result3.success).to.be.false;
-      expect(result3.message).to.equal(message);
-
       const result4 = await tasks.query
           .projects({ project })
           .go({ [limitOption]: -1 })
@@ -487,14 +431,6 @@ describe("Query Pagination", () => {
           .catch((err) => ({ success: false, message: err.message }));
       expect(result5.success).to.be.false;
       expect(result5.message).to.equal(message);
-
-      const result6 = await tasks.query
-          .projects({ project })
-          .go({ [limitOption]: "weasel" })
-          .then(() => ({ success: true }))
-          .catch((err) => ({ success: false, message: err.message }));
-      expect(result6.success).to.be.false;
-      expect(result6.message).to.equal(message);
     });
   }
 
@@ -517,7 +453,7 @@ describe("Query Pagination", () => {
     expect(limit).to.be.lessThan(occurrences);
     const results = await tasks.query
         .projects({ project })
-        .go({ limit, raw: true })
+        .go({ limit, data: 'raw' })
         .then((res) => res.data);
     expect(results.Items).to.be.an("array").and.have.length(limit);
     expect(created.calls).to.be.an("array").and.have.length(1);
@@ -534,7 +470,7 @@ describe("Query Pagination", () => {
       let keys = new Set();
       let [next, results] = await tasks.query
           .projects({ project: Tasks.projects[0] })
-          .go({ cursor, raw: true, limit })
+          .go({ cursor, data: 'raw', limit })
           .then((res) => [res.cursor, res.data]);
       if (next !== null && count > 1) {
         expect(next).to.have.keys(["sk", "pk", "gsi1sk", "gsi1pk"]);
@@ -698,24 +634,24 @@ describe("Query Pagination", () => {
     const id = uuid();
     const queries = [
       ['query operation using default execution options', () => entity1.query.record({ id }).go()],
-      ['query operation with raw flag', () => entity1.query.record({ id }).go({ raw: true })],
-      ['query operation with includeKeys flag', () => entity1.query.record({ id }).go({ includeKeys: true })],
+      ['query operation with raw flag', () => entity1.query.record({ id }).go({ data: 'raw' })],
+      ['query operation with includeKeys flag', () => entity1.query.record({ id }).go({ data: 'includeKeys' })],
       ['query operation with ignoreOwnership flag', () => entity1.query.record({ id }).go({ ignoreOwnership: true })],
       // ['scan query using default execution options', () => entity1.scan.go()],
-      // ['scan query with raw flag', () => entity1.scan.go({ raw: true })],
-      // ['scan query with includeKeys flag', () => entity1.scan.go({ includeKeys: true })],
+      // ['scan query with raw flag', () => entity1.scan.go({ data: 'raw' })],
+      // ['scan query with includeKeys flag', () => entity1.scan.go({ data: 'includeKeys' })],
       // ['scan query with ignoreOwnership flag', () => entity1.scan.go({ ignoreOwnership: true })],
       ['match query using default execution options', () => entity1.match({ id }).go()],
-      ['match query with raw flag', () => entity1.match({ id }).go({ raw: true })],
-      ['match query with includeKeys flag', () => entity1.match({ id }).go({ includeKeys: true })],
+      ['match query with raw flag', () => entity1.match({ id }).go({ data: 'raw' })],
+      ['match query with includeKeys flag', () => entity1.match({ id }).go({ data: 'includeKeys' })],
       ['match query with ignoreOwnership flag', () => entity1.match({ id }).go({ ignoreOwnership: true })],
       ['find query using default execution options', () => entity1.find({ id }).go()],
-      ['find query with raw flag', () => entity1.find({ id }).go({ raw: true })],
-      ['find query with includeKeys flag', () => entity1.find({ id }).go({ includeKeys: true })],
+      ['find query with raw flag', () => entity1.find({ id }).go({ data: 'raw' })],
+      ['find query with includeKeys flag', () => entity1.find({ id }).go({ data: 'includeKeys' })],
       ['find query with ignoreOwnership flag', () => entity1.find({ id }).go({ ignoreOwnership: true })],
       ['collection query using default execution options', () => service.collections.test({ id }).go()],
-      ['collection query with raw flag', () => service.collections.test({ id }).go({ raw: true })],
-      ['collection query with includeKeys flag', () => service.collections.test({ id }).go({ includeKeys: true })],
+      ['collection query with raw flag', () => service.collections.test({ id }).go({ data: 'raw' })],
+      ['collection query with includeKeys flag', () => service.collections.test({ id }).go({ data: 'includeKeys' })],
       ['collection query with ignoreOwnership flag', () => service.collections.test({ id }).go({ ignoreOwnership: true })],
     ];
 
@@ -774,7 +710,7 @@ describe("Query Pagination", () => {
   // }).timeout(10000);
 
   it("Should paginate and return raw results", async () => {
-    let results = await tasks.scan.go({ raw: true });
+    let results = await tasks.scan.go({ data: 'raw' });
     expect(results).to.have.keys(["cursor", "data"]);
     expect(results.data.Items).to.not.be.undefined;
     expect(results.data.Items).to.be.an("array");
@@ -954,7 +890,7 @@ describe("Query Pagination", () => {
           },
         ],
       });
-      const pages = 3;
+      const pages = 'all';
       const limit = 5;
       const entity = new Tasks(TasksModel, { client, table });
       const results = await entity.query
@@ -962,7 +898,7 @@ describe("Query Pagination", () => {
         .go({ pages, limit })
         .then((res) => res.data);
       expect(results).to.be.an("array").with.length(6);
-      expect(calls).to.have.length(2);
+      expect(calls).to.have.length(4);
       for (let i = 0; i < calls.length; i++) {
         const call = calls[i];
         if (i === 0) {
@@ -1120,65 +1056,6 @@ describe("Query Pagination", () => {
       }
     });
 
-    it("collection query should continue to query until 'limit' option is reached", async () => {
-      const ExclusiveStartKey = { key: "hi" };
-      const tasks = new Tasks(makeTasksModel(), { client, table });
-      const tasks2 = new Tasks(makeTasksModel(), { client, table });
-
-      await tasks.load(10);
-      await tasks2.load(10);
-      const [one, two, three, four, five, six] = tasks.data;
-      const [seven, eight, nine, ten] = tasks2.data;
-      const created = createClient({
-        mockResponses: [
-          {
-            Items: [one, two, three, seven, eight, nine],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [four, five, six, ten],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: undefined,
-          },
-          {
-            Items: [],
-            LastEvaluatedKey: ExclusiveStartKey,
-          },
-        ],
-      });
-      const service = new Service(
-        { tasks, tasks2 },
-        { client: created.client, table },
-      );
-      const pages = 3;
-      const limit = 9;
-      const employee = "my_employee";
-      const results = await service.collections
-        .assignments({ employee })
-        .go({ pages, limit })
-        .then((res) => res.data);
-      expect(results.tasks).to.be.an("array").with.length(6);
-      expect(results.tasks2).to.be.an("array").with.length(4);
-      expect(created.calls).to.have.length(2);
-      for (let i = 0; i < created.calls.length; i++) {
-        const call = created.calls[i];
-        if (i === 0) {
-          expect(call.ExclusiveStartKey).to.be.undefined;
-        } else {
-          expect(call.ExclusiveStartKey.key).to.equal("hi");
-          expect(call.ExclusiveStartKey.key === ExclusiveStartKey.key).to.be
-            .true;
-        }
-      }
-    });
-
     it("collection query should only count entities belonging to the collection entities to fulfill 'limit' option requirements", async () => {
       const ExclusiveStartKey = { key: "hi" };
       const tasks = new Tasks(makeTasksModel(), { client, table });
@@ -1216,7 +1093,7 @@ describe("Query Pagination", () => {
         { tasks, tasks2 },
         { client: created.client, table },
       );
-      const pages = 3;
+      const pages = 'all' // 3;
       const limit = 6;
       const employee = "my_employee";
       const results = await service.collections
@@ -1225,7 +1102,7 @@ describe("Query Pagination", () => {
         .then((res) => res.data);
       expect(results.tasks).to.be.an("array").with.length(4);
       expect(results.tasks2).to.be.an("array").with.length(3);
-      expect(created.calls).to.have.length(2);
+      expect(created.calls).to.have.length(4);
       for (let i = 0; i < created.calls.length; i++) {
         const call = created.calls[i];
         if (i === 0) {

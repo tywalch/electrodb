@@ -9,6 +9,7 @@ const {
   KeyTypes,
   IndexTypes,
   UpsertOperations,
+  ComparisonTypes,
 } = require("./types");
 const {
   AttributeOperationProxy,
@@ -119,13 +120,27 @@ let clauses = {
               pk,
             );
             state.setSK(composites);
-            // we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
-            if (sk.length > 1) {
-              state.filterProperties(FilterOperationNames.eq, {
-                ...unused,
-                ...composites,
-              });
-            }
+            state.beforeBuildParams(({ options, state }) => {
+              const accessPattern =
+                entity.model.translations.indexes.fromIndexToAccessPattern[
+                  state.query.index
+                ];
+
+              if (
+                options.compare === ComparisonTypes.attributes ||
+                options.compare === ComparisonTypes.v2
+              ) {
+                if (
+                  !entity.model.indexes[accessPattern].sk.isFieldRef &&
+                  sk.length > 1
+                ) {
+                  state.filterProperties(FilterOperationNames.eq, {
+                    ...unused,
+                    ...composites,
+                  });
+                }
+              }
+            });
           })
           .whenOptions(({ options, state }) => {
             if (!options.ignoreOwnership && !state.getParams()) {
@@ -204,11 +219,13 @@ let clauses = {
           .whenOptions(({ state, options }) => {
             if (!options.ignoreOwnership && !state.getParams()) {
               state.unsafeApplyFilter(
+                {},
                 FilterOperationNames.eq,
                 entity.identifiers.entity,
                 entity.getName(),
               );
               state.unsafeApplyFilter(
+                {},
                 FilterOperationNames.eq,
                 entity.identifiers.version,
                 entity.getVersion(),
@@ -324,9 +341,9 @@ let clauses = {
         const attributes = state.getCompositeAttributes();
         const filter = state.query.filter[ExpressionTypes.ConditionExpression];
         const { pk, sk } = entity._getPrimaryIndexFieldNames();
-        filter.unsafeSet(FilterOperationNames.exists, pk);
+        filter.unsafeSet({}, FilterOperationNames.exists, pk);
         if (sk) {
-          filter.unsafeSet(FilterOperationNames.exists, sk);
+          filter.unsafeSet({}, FilterOperationNames.exists, sk);
         }
         const pkComposite = entity._expectFacets(facets, attributes.pk);
         state.addOption("_includeOnResponseItem", pkComposite);
@@ -432,14 +449,15 @@ let clauses = {
             const { pk } = state.query.keys;
             const sk = state.query.keys.sk[0];
 
-            const { updatedKeys, setAttributes, indexKey, deletedKeys = [] } = entity._getPutKeys(
-              pk,
-              sk && sk.facets,
-              onlySetAppliedData,
-            );
+            const {
+              updatedKeys,
+              setAttributes,
+              indexKey,
+              deletedKeys = [],
+            } = entity._getPutKeys(pk, sk && sk.facets, onlySetAppliedData);
 
             for (const deletedKey of deletedKeys) {
-              state.query.update.remove(deletedKey)
+              state.query.update.remove(deletedKey);
             }
 
             // calculated here but needs to be used when building the params
@@ -540,9 +558,9 @@ let clauses = {
         const attributes = state.getCompositeAttributes();
         const filter = state.query.filter[ExpressionTypes.ConditionExpression];
         const { pk, sk } = entity._getPrimaryIndexFieldNames();
-        filter.unsafeSet(FilterOperationNames.notExists, pk);
+        filter.unsafeSet({}, FilterOperationNames.notExists, pk);
         if (sk) {
-          filter.unsafeSet(FilterOperationNames.notExists, sk);
+          filter.unsafeSet({}, FilterOperationNames.notExists, sk);
         }
         return state
           .setMethod(MethodTypes.put)
@@ -570,9 +588,9 @@ let clauses = {
         const attributes = state.getCompositeAttributes();
         const filter = state.query.filter[ExpressionTypes.ConditionExpression];
         const { pk, sk } = entity._getPrimaryIndexFieldNames();
-        filter.unsafeSet(FilterOperationNames.exists, pk);
+        filter.unsafeSet({}, FilterOperationNames.exists, pk);
         if (sk) {
-          filter.unsafeSet(FilterOperationNames.exists, sk);
+          filter.unsafeSet({}, FilterOperationNames.exists, sk);
         }
         const pkComposite = entity._expectFacets(facets, attributes.pk);
         state.addOption("_includeOnResponseItem", pkComposite);
@@ -923,15 +941,20 @@ let clauses = {
               pk,
             );
             state.setSK(state.buildQueryComposites(facets, sk));
-            // we must apply eq on filter on all provided because if the user then does a sort key operation, it'd actually then unexpect results
-            if (sk.length > 1) {
-              state.filterProperties(FilterOperationNames.eq, {
-                ...unused,
-                ...composites,
-              });
-            }
 
             state.whenOptions(({ options, state }) => {
+              if (
+                options.compare === ComparisonTypes.attributes ||
+                options.compare === ComparisonTypes.v2
+              ) {
+                if (sk.length > 1) {
+                  state.filterProperties(FilterOperationNames.eq, {
+                    ...unused,
+                    ...composites,
+                  });
+                }
+              }
+
               if (
                 state.query.options.indexType === IndexTypes.clustered &&
                 Object.keys(composites).length < sk.length &&
@@ -940,11 +963,13 @@ let clauses = {
               ) {
                 state
                   .unsafeApplyFilter(
+                    {},
                     FilterOperationNames.eq,
                     entity.identifiers.entity,
                     entity.getName(),
                   )
                   .unsafeApplyFilter(
+                    {},
                     FilterOperationNames.eq,
                     entity.identifiers.version,
                     entity.getVersion(),
@@ -983,15 +1008,34 @@ let clauses = {
             state.query.index
           ];
 
-        if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
-          state.filterProperties(FilterOperationNames.lte, endingSk.composites);
-        }
-
         return state
           .setType(QueryTypes.and)
           .setSK(endingSk.composites)
           .setType(QueryTypes.between)
-          .setSK(startingSk.composites);
+          .setSK(startingSk.composites)
+          .beforeBuildParams(({ options, state }) => {
+            if (
+              options.compare === ComparisonTypes.attributes ||
+              options.compare === ComparisonTypes.v2
+            ) {
+              if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                state.filterProperties(
+                  FilterOperationNames.lte,
+                  endingSk.composites,
+                  { asPrefix: true },
+                );
+              }
+              if (options.compare === ComparisonTypes.attributes) {
+                if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                  state.filterProperties(
+                    FilterOperationNames.gte,
+                    startingSk.composites,
+                    { asPrefix: true },
+                  );
+                }
+              }
+            }
+          });
       } catch (err) {
         state.setError(err);
         return state;
@@ -1032,14 +1076,23 @@ let clauses = {
             pk,
           );
           state.setSK(composites);
-          const accessPattern =
-            entity.model.translations.indexes.fromIndexToAccessPattern[
-              state.query.index
-            ];
+          state.beforeBuildParams(({ options, state }) => {
+            if (
+              options.compare === ComparisonTypes.attributes ||
+              options.compare === ComparisonTypes.v2
+            ) {
+              const accessPattern =
+                entity.model.translations.indexes.fromIndexToAccessPattern[
+                  state.query.index
+                ];
 
-          if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
-            state.filterProperties(FilterOperationNames.gt, composites);
-          }
+              if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                state.filterProperties(FilterOperationNames.gt, composites, {
+                  asPrefix: true,
+                });
+              }
+            }
+          });
         });
       } catch (err) {
         state.setError(err);
@@ -1058,6 +1111,27 @@ let clauses = {
         return state.setType(QueryTypes.gte).ifSK((state) => {
           const attributes = state.getCompositeAttributes();
           state.setSK(state.buildQueryComposites(facets, attributes.sk));
+          state.beforeBuildParams(({ options, state }) => {
+            const { composites } = state.identifyCompositeAttributes(
+              facets,
+              attributes.sk,
+              attributes.pk,
+            );
+            if (options.compare === ComparisonTypes.attributes) {
+              const accessPattern =
+                entity.model.translations.indexes.fromIndexToAccessPattern[
+                  state.query.index
+                ];
+              if (
+                !entity.model.indexes[accessPattern].sk.isFieldRef &&
+                attributes.sk.length > 1
+              ) {
+                state.filterProperties(FilterOperationNames.gte, composites, {
+                  asPrefix: true,
+                });
+              }
+            }
+          });
         });
       } catch (err) {
         state.setError(err);
@@ -1081,6 +1155,19 @@ let clauses = {
             pk,
           );
           state.setSK(composites);
+          state.beforeBuildParams(({ options, state }) => {
+            if (options.compare === ComparisonTypes.attributes) {
+              const accessPattern =
+                entity.model.translations.indexes.fromIndexToAccessPattern[
+                  state.query.index
+                ];
+              if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                state.filterProperties(FilterOperationNames.lt, composites, {
+                  asPrefix: true,
+                });
+              }
+            }
+          });
         });
       } catch (err) {
         state.setError(err);
@@ -1104,13 +1191,23 @@ let clauses = {
             pk,
           );
           state.setSK(composites);
-          const accessPattern =
-            entity.model.translations.indexes.fromIndexToAccessPattern[
-              state.query.index
-            ];
-          if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
-            state.filterProperties(FilterOperationNames.lte, composites);
-          }
+
+          state.beforeBuildParams(({ options, state }) => {
+            if (
+              options.compare === ComparisonTypes.attributes ||
+              options.compare === ComparisonTypes.v2
+            ) {
+              const accessPattern =
+                entity.model.translations.indexes.fromIndexToAccessPattern[
+                  state.query.index
+                ];
+              if (!entity.model.indexes[accessPattern].sk.isFieldRef) {
+                state.filterProperties(FilterOperationNames.lte, composites, {
+                  asPrefix: true,
+                });
+              }
+            }
+          });
         });
       } catch (err) {
         state.setError(err);
@@ -1430,14 +1527,20 @@ class ChainState {
     };
   }
 
-  applyFilter(operation, name, ...values) {
+  applyFilter(operation, name, values, filterOptions) {
     if (
-      (FilterOperationNames[operation] !== undefined) & (name !== undefined) &&
-      values.length > 0
+      FilterOperationNames[operation] !== undefined &&
+      name !== undefined &&
+      values !== undefined
     ) {
       const attribute = this.attributes[name];
       if (attribute !== undefined) {
-        this.unsafeApplyFilter(operation, attribute.field, ...values);
+        this.unsafeApplyFilter(
+          filterOptions,
+          operation,
+          attribute.field,
+          values,
+        );
       }
     }
     return this;
@@ -1452,28 +1555,28 @@ class ChainState {
       const attribute = this.attributes[name];
       if (attribute !== undefined) {
         const filter = this.query.filter[ExpressionTypes.ConditionExpression];
-        filter.unsafeSet(operation, attribute.field, ...values);
+        filter.unsafeSet({}, operation, attribute.field, ...values);
       }
     }
     return this;
   }
 
-  unsafeApplyFilter(operation, name, ...values) {
+  unsafeApplyFilter(filterOptions = {}, operation, name, values) {
     if (
       (FilterOperationNames[operation] !== undefined) & (name !== undefined) &&
-      values.length > 0
+      values !== undefined
     ) {
       const filter = this.query.filter[ExpressionTypes.FilterExpression];
-      filter.unsafeSet(operation, name, ...values);
+      filter.unsafeSet(filterOptions, operation, name, values);
     }
     return this;
   }
 
-  filterProperties(operation, obj = {}) {
+  filterProperties(operation, obj = {}, filterOptions = {}) {
     for (const property in obj) {
       const value = obj[property];
       if (value !== undefined) {
-        this.applyFilter(operation, property, value);
+        this.applyFilter(operation, property, value, filterOptions);
       }
     }
     return this;
@@ -1551,8 +1654,11 @@ class ChainState {
         fn({ options, state: this });
       });
     }
+
+    return this;
   }
 
+  // these are ran before "beforeBuildParams"
   applyWithOptions(options = {}) {
     this.applyAfterOptions.forEach((fn) => fn(options));
   }
@@ -1563,6 +1669,7 @@ class ChainState {
         fn({ options, state: this });
       });
     }
+    return this;
   }
 
   applyBeforeBuildParams(options = {}) {

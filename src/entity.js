@@ -23,10 +23,12 @@ const {
   ResultOrderOption,
   ResultOrderParam,
   IndexTypes,
-  PartialComparisons,
+  KeyAttributesComparisons,
   MethodTypeTranslation,
   TransactionCommitSymbol,
   CastKeyOptions,
+  ComparisonTypes,
+  DataOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -40,9 +42,9 @@ const e = require("./errors");
 const v = require("./validations");
 
 const ImpactedIndexTypeSource = {
-  composite: 'composite',
-  provided: 'provided',
-}
+  composite: "composite",
+  provided: "provided",
+};
 
 class Entity {
   constructor(model, config = {}) {
@@ -76,27 +78,6 @@ class Entity {
     );
 
     this.query = {};
-    this.conversions = {
-      fromComposite: {
-        toKeys: (composite, options = {}) =>
-          this._fromCompositeToKeys({ provided: composite }, options),
-        toCursor: (composite) =>
-          this._fromCompositeToCursor(
-            { provided: composite },
-            { strict: "all" },
-          ),
-      },
-      fromKeys: {
-        toCursor: (keys) => this._fromKeysToCursor({ provided: keys }, {}),
-        toComposite: (keys) => this._fromKeysToComposite({ provided: keys }),
-      },
-      fromCursor: {
-        toKeys: (cursor) => this._fromCursorToKeys({ provided: cursor }),
-        toComposite: (cursor) =>
-          this._fromCursorToComposite({ provided: cursor }),
-      },
-      byAccessPattern: {},
-    };
     for (let accessPattern in this.model.indexes) {
       let index = this.model.indexes[accessPattern].index;
       this.query[accessPattern] = (...values) => {
@@ -110,42 +91,6 @@ class Entity {
           clauses.index,
           options,
         ).query(...values);
-      };
-
-      this.conversions.byAccessPattern[accessPattern] = {
-        fromKeys: {
-          toCursor: (keys) =>
-            this._fromKeysToCursorByIndex({ indexName: index, provided: keys }),
-          toComposite: (keys) =>
-            this._fromKeysToCompositeByIndex({
-              indexName: index,
-              provided: keys,
-            }),
-        },
-        fromCursor: {
-          toKeys: (cursor) =>
-            this._fromCursorToKeysByIndex({
-              indexName: index,
-              provided: cursor,
-            }),
-          toComposite: (cursor) =>
-            this._fromCursorToCompositeByIndex({
-              indexName: index,
-              provided: cursor,
-            }),
-        },
-        fromComposite: {
-          toCursor: (composite) =>
-            this._fromCompositeToCursorByIndex(
-              { indexName: index, provided: composite },
-              { strict: "all" },
-            ),
-          toKeys: (composite, options = {}) =>
-            this._fromCompositeToKeysByIndex(
-              { indexName: index, provided: composite },
-              options,
-            ),
-        },
       };
     }
 
@@ -633,7 +578,7 @@ class Entity {
   _safeMinimum(...values) {
     let eligibleNumbers = [];
     for (let value of values) {
-      if (typeof value === 'number') {
+      if (typeof value === "number") {
         eligibleNumbers.push(value);
       }
     }
@@ -733,16 +678,14 @@ class Entity {
       ExclusiveStartKey = undefined;
     }
     let pages = this._normalizePagesValue(config.pages);
-    let max = this._normalizeLimitValue(config.limit);
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
     const shouldHydrate = config.hydrate && method === MethodTypes.query;
     do {
-      let limit = max === undefined ? parameters.Limit : max - count;
       let response = await this._exec(
         method,
-        { ExclusiveStartKey, ...parameters, Limit: limit },
+        { ExclusiveStartKey, ...parameters },
         config,
       );
 
@@ -750,17 +693,17 @@ class Entity {
 
       response = this.formatResponse(response, parameters.IndexName, {
         ...config,
-        includeKeys: shouldHydrate || config.includeKeys,
+        data:
+          shouldHydrate &&
+          (!config.data || config.data === DataOptions.attributes)
+            ? "includeKeys"
+            : config.data,
         ignoreOwnership: shouldHydrate || config.ignoreOwnership,
       });
-
-      if (config.raw) {
+      if (config.data === DataOptions.raw) {
         return response;
       } else if (config._isCollectionQuery) {
         for (const entity in response.data) {
-          if (max) {
-            count += response.data[entity].length;
-          }
           let items = response.data[entity];
           if (shouldHydrate && items.length) {
             const hydrated = await config.hydrator(
@@ -778,8 +721,8 @@ class Entity {
           results[entity] = [...results[entity], ...items];
         }
       } else if (Array.isArray(response.data)) {
-        let prevCount = count
-        if (!!max || !!config.count) {
+        let prevCount = count;
+        if (config.count) {
           count += response.data.length;
         }
         let items = response.data;
@@ -801,7 +744,10 @@ class Entity {
         results = [...results, ...items];
         if (moreItemsThanRequired || count === config.count) {
           const lastItem = results[results.length - 1];
-          ExclusiveStartKey = this._fromCompositeToKeysByIndex({ indexName, provided: lastItem });
+          ExclusiveStartKey = this._fromCompositeToKeysByIndex({
+            indexName,
+            provided: lastItem,
+          });
           break;
         }
       } else {
@@ -810,8 +756,9 @@ class Entity {
       iterations++;
     } while (
       ExclusiveStartKey &&
-      (pages === AllPages || (config.count !== undefined || iterations < pages)) &&
-      (max === undefined || count < max) &&
+      (pages === AllPages ||
+        config.count !== undefined ||
+        iterations < pages) &&
       (config.count === undefined || count < config.count)
     );
 
@@ -869,14 +816,13 @@ class Entity {
   }
 
   cleanseRetrievedData(item = {}, options = {}) {
-    let { includeKeys } = options;
     let data = {};
     let names = this.model.schema.translationForRetrieval;
     for (let [attr, value] of Object.entries(item)) {
       let name = names[attr];
       if (name) {
         data[name] = value;
-      } else if (includeKeys) {
+      } else if (options.data === DataOptions.includeKeys) {
         data[attr] = value;
       }
     }
@@ -963,14 +909,14 @@ class Entity {
       let results = {};
       if (validations.isFunction(config.parse)) {
         results = config.parse(config, response);
-      } else if (config.raw && !config._isPagination) {
+      } else if (config.data === DataOptions.raw && !config._isPagination) {
         if (response.TableName) {
           results = {};
         } else {
           results = response;
         }
       } else if (
-        config.raw &&
+        config.data === DataOptions.raw &&
         (config._isPagination || config.lastEvaluatedKeyRaw)
       ) {
         results = response;
@@ -1372,7 +1318,7 @@ class Entity {
 
   _formatReturnPager(config, lastEvaluatedKey) {
     let page = lastEvaluatedKey || null;
-    if (config.raw || config.pager === Pager.raw) {
+    if (config.data === DataOptions.raw || config.pager === Pager.raw) {
       return page;
     }
     return config.formatCursor.serialize(page) || null;
@@ -1380,7 +1326,7 @@ class Entity {
 
   _formatExclusiveStartKey({ config, indexName = TableIndex }) {
     let exclusiveStartKey = config.cursor;
-    if (config.raw || config.pager === Pager.raw) {
+    if (config.data === DataOptions.raw || config.pager === Pager.raw) {
       return (
         this._trimKeysToIndex({ provided: exclusiveStartKey, indexName }) ||
         null
@@ -1683,6 +1629,9 @@ class Entity {
       response: "default",
       cursor: null,
       data: "attributes",
+      consistent: undefined,
+      compare: ComparisonTypes.keys,
+      complete: false,
       ignoreOwnership: false,
       _providedIgnoreOwnership: false,
       _isPagination: false,
@@ -1717,6 +1666,23 @@ class Entity {
         }
       }
 
+      if (typeof option.compare === "string") {
+        const type = ComparisonTypes[option.compare.toLowerCase()];
+        if (type) {
+          config.compare = type;
+          if (type === ComparisonTypes.v2 && option.complete === undefined) {
+            config.complete = true;
+          }
+        } else {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Invalid value for query option "compare" provided. Valid options include ${u.commaSeparatedString(
+              Object.keys(ComparisonTypes),
+            )}, received: "${option.compare}"`,
+          );
+        }
+      }
+
       if (typeof option.response === "string" && option.response.length) {
         const format = ReturnValues[option.response];
         if (format === undefined) {
@@ -1728,13 +1694,14 @@ class Entity {
               Object.keys(ReturnValues),
             )}.`,
           );
-        }
-        config.response = format;
-        if (context.operation === MethodTypes.transactWrite) {
-          config.params.ReturnValuesOnConditionCheckFailure =
-            FormatToReturnValues[format];
-        } else {
-          config.params.ReturnValues = FormatToReturnValues[format];
+        } else if (format !== ReturnValues.default) {
+          config.response = format;
+          if (context.operation === MethodTypes.transactWrite) {
+            config.params.ReturnValuesOnConditionCheckFailure =
+              FormatToReturnValues[format];
+          } else {
+            config.params.ReturnValues = FormatToReturnValues[format];
+          }
         }
       }
 
@@ -1801,12 +1768,20 @@ class Entity {
       }
 
       if (option.data) {
+        if (!DataOptions[option.data]) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Query option 'data' must be one of ${u.commaSeparatedString(
+              Object.keys(DataOptions),
+            )}.`,
+          );
+        }
         config.data = option.data;
         switch (option.data) {
-          case "raw":
+          case DataOptions.raw:
             config.raw = true;
             break;
-          case "includeKeys":
+          case DataOptions.includeKeys:
             config.includeKeys = true;
             break;
         }
@@ -1814,9 +1789,17 @@ class Entity {
 
       if (option.count !== undefined) {
         if (typeof option.count !== "number" || option.count < 1) {
-          throw new e.ElectroError(e.ErrorCodes.InvalidOptions, `Query option 'count' must be of type 'number' and greater than zero.`);
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Query option 'count' must be of type 'number' and greater than zero.`,
+          );
         }
         config.count = option.count;
+      }
+
+      if (option.consistent === true) {
+        config.consistent = true;
+        config.params.ConsistentRead = true;
       }
 
       if (option.limit !== undefined) {
@@ -2064,7 +2047,7 @@ class Entity {
       return parameters;
     }
 
-    const requiresRawResponse = !!config.raw;
+    const requiresRawResponse = config.data === DataOptions.raw;
     const enforcesOwnership = !config.ignoreOwnership;
     const requiresUserInvolvedPagination =
       TerminalOperation[config.terminalOperation] === TerminalOperation.page;
@@ -2258,7 +2241,7 @@ class Entity {
     let keys = this._makeParameterKey(indexBase, pk, ...sk);
     // trim empty key values (this can occur when keys are defined by users)
     for (let key in keys) {
-      if (keys[key] === undefined || keys[key] === '') {
+      if (keys[key] === undefined || keys[key] === "") {
         delete keys[key];
       }
     }
@@ -2266,26 +2249,25 @@ class Entity {
     let keyExpressions = this._expressionAttributeBuilder(keys);
 
     const expressionAttributeNames = this._mergeExpressionsAttributes(
-        filter.getNames(),
-        keyExpressions.ExpressionAttributeNames,
+      filter.getNames(),
+      keyExpressions.ExpressionAttributeNames,
     );
 
     const expressionAttributeValues = this._mergeExpressionsAttributes(
-        filter.getValues(),
-        keyExpressions.ExpressionAttributeValues,
+      filter.getValues(),
+      keyExpressions.ExpressionAttributeValues,
     );
-
 
     let params = {
       TableName: this.getTableName(),
     };
 
     if (Object.keys(expressionAttributeNames).length) {
-      params['ExpressionAttributeNames'] = expressionAttributeNames;
+      params["ExpressionAttributeNames"] = expressionAttributeNames;
     }
 
     if (Object.keys(expressionAttributeValues).length) {
-      params['ExpressionAttributeValues'] = expressionAttributeValues;
+      params["ExpressionAttributeValues"] = expressionAttributeValues;
     }
 
     let filterExpressions = [];
@@ -2306,7 +2288,7 @@ class Entity {
     }
 
     if (filterExpressions.length) {
-      params.FilterExpression = filterExpressions.join(' AND ');
+      params.FilterExpression = filterExpressions.join(" AND ");
     }
 
     return params;
@@ -2365,7 +2347,13 @@ class Entity {
       indexKey,
       updatedKeys,
       deletedKeys = [],
-    } = this._getUpdatedKeys(pk, sk, attributesAndComposites, removed, update.composites);
+    } = this._getUpdatedKeys(
+      pk,
+      sk,
+      attributesAndComposites,
+      removed,
+      update.composites,
+    );
     const accessPattern =
       this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
     for (const path of Object.keys(preparedUpdateValues)) {
@@ -2645,7 +2633,7 @@ class Entity {
     return expressions;
   }
 
-  _makeQueryKeys(state) {
+  _makeQueryKeys(state, options) {
     let consolidatedQueryFacets = this._consolidateQueryFacets(
       state.query.keys.sk,
     );
@@ -2660,13 +2648,17 @@ class Entity {
           isCollection: state.query.options._isCollectionQuery,
         });
       default:
-        return this._makeIndexKeysWithoutTail(state, consolidatedQueryFacets);
+        return this._makeIndexKeysWithoutTail(
+          state,
+          consolidatedQueryFacets,
+          options,
+        );
     }
   }
 
   /* istanbul ignore next */
   _queryParams(state = {}, options = {}) {
-    const indexKeys = this._makeQueryKeys(state);
+    const indexKeys = this._makeQueryKeys(state, options);
     let parameters = {};
     switch (state.query.type) {
       case QueryTypes.is:
@@ -2707,6 +2699,7 @@ class Entity {
         break;
       case QueryTypes.between:
         parameters = this._makeBetweenQueryParams(
+          state.query.options,
           state.query.index,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys.pk,
@@ -2722,6 +2715,8 @@ class Entity {
           state.query.type,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys,
+          options,
+          state.query.options,
         );
         break;
       default:
@@ -2739,31 +2734,50 @@ class Entity {
     });
   }
 
-  _makeBetweenQueryParams(index, filter, pk, ...sk) {
+  _makeBetweenQueryParams(queryOptions, index, filter, pk, ...sk) {
     let keyExpressions = this._queryKeyExpressionAttributeBuilder(
       index,
       pk,
       ...sk,
     );
+
     delete keyExpressions.ExpressionAttributeNames["#sk2"];
+
+    const customExpressions = {
+      names: (queryOptions.expressions && queryOptions.expressions.names) || {},
+      values:
+        (queryOptions.expressions && queryOptions.expressions.values) || {},
+      expression:
+        (queryOptions.expressions && queryOptions.expressions.expression) || "",
+    };
+
     let params = {
       TableName: this.getTableName(),
       ExpressionAttributeNames: this._mergeExpressionsAttributes(
         filter.getNames(),
         keyExpressions.ExpressionAttributeNames,
+        customExpressions.names,
       ),
       ExpressionAttributeValues: this._mergeExpressionsAttributes(
         filter.getValues(),
         keyExpressions.ExpressionAttributeValues,
+        customExpressions.values,
       ),
       KeyConditionExpression: `#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2`,
     };
+
     if (index) {
       params["IndexName"] = index;
     }
-    if (filter.build()) {
-      params.FilterExpression = filter.build();
+
+    let expressions = [customExpressions.expression, filter.build()]
+      .filter(Boolean)
+      .join(" AND ");
+
+    if (expressions.length) {
+      params.FilterExpression = expressions;
     }
+
     return params;
   }
 
@@ -2881,28 +2895,52 @@ class Entity {
     return merged;
   }
 
+  _getComparisonOperator(comparison, skType, comparisonType) {
+    if (skType === "number") {
+      return Comparisons[comparison];
+    } else if (
+      comparisonType === ComparisonTypes.attributes ||
+      comparisonType === ComparisonTypes.v2
+    ) {
+      return KeyAttributesComparisons[comparison];
+    } else {
+      return Comparisons[comparison];
+    }
+  }
+
   /* istanbul ignore next */
   _makeComparisonQueryParams(
     index = TableIndex,
     comparison = "",
     filter = {},
     indexKeys = {},
+    options = {},
+    queryOptions = {},
   ) {
     const { pk } = indexKeys;
     const sk = indexKeys.sk[0];
 
-    let operator =
-      typeof sk === "number"
-        ? Comparisons[comparison]
-        : PartialComparisons[comparison];
-
+    let operator = this._getComparisonOperator(
+      comparison,
+      typeof sk,
+      options.compare,
+    );
     if (!operator) {
       throw new Error(
         `Unexpected comparison operator "${comparison}", expected ${u.commaSeparatedString(
-          Object.values(PartialComparisons),
+          Object.keys(KeyAttributesComparisons),
         )}`,
       );
     }
+
+    let customExpressions = {
+      names: (queryOptions.expressions && queryOptions.expressions.names) || {},
+      values:
+        (queryOptions.expressions && queryOptions.expressions.values) || {},
+      expression:
+        (queryOptions.expressions && queryOptions.expressions.expression) || "",
+    };
+
     let keyExpressions = this._queryKeyExpressionAttributeBuilder(
       index,
       pk,
@@ -2914,27 +2952,40 @@ class Entity {
       ExpressionAttributeNames: this._mergeExpressionsAttributes(
         filter.getNames(),
         keyExpressions.ExpressionAttributeNames,
+        customExpressions.names,
       ),
       ExpressionAttributeValues: this._mergeExpressionsAttributes(
         filter.getValues(),
         keyExpressions.ExpressionAttributeValues,
+        customExpressions.values,
       ),
       KeyConditionExpression: `#pk = :pk and #sk1 ${operator} :sk1`,
     };
+
     if (index) {
       params["IndexName"] = index;
     }
-    if (filter.build()) {
-      params.FilterExpression = filter.build();
+
+    let expressions = [customExpressions.expression, filter.build()]
+      .filter(Boolean)
+      .join(" AND ");
+
+    if (expressions.length) {
+      params.FilterExpression = expressions;
     }
+
     return params;
   }
 
-  _expectIndexFacets(attributes, facets, { utilizeIncludedOnlyIndexes, skipConditionCheck } = {}) {
+  _expectIndexFacets(
+    attributes,
+    facets,
+    { utilizeIncludedOnlyIndexes, skipConditionCheck } = {},
+  ) {
     let [isIncomplete, { incomplete, complete }] = this._getIndexImpact(
       attributes,
       facets,
-        { utilizeIncludedOnlyIndexes, skipConditionCheck },
+      { utilizeIncludedOnlyIndexes, skipConditionCheck },
     );
 
     if (isIncomplete) {
@@ -2963,7 +3014,8 @@ class Entity {
   _makeKeysFromAttributes(indexes, attributes, conditions) {
     let indexKeys = {};
     for (let [index, keyTypes] of Object.entries(indexes)) {
-      const shouldMakeKeys = !this._indexConditionIsDefined(index) || conditions[index];
+      const shouldMakeKeys =
+        !this._indexConditionIsDefined(index) || conditions[index];
       if (!shouldMakeKeys && index !== TableIndex) {
         continue;
       }
@@ -2994,7 +3046,10 @@ class Entity {
   _makePutKeysFromAttributes(indexes, attributes) {
     let indexKeys = {};
     for (let index of indexes) {
-      const shouldMakeKeys = this.model.indexes[this.model.translations.indexes.fromIndexToAccessPattern[index]].condition(attributes);
+      const shouldMakeKeys =
+        this.model.indexes[
+          this.model.translations.indexes.fromIndexToAccessPattern[index]
+        ].condition(attributes);
       if (!shouldMakeKeys) {
         continue;
       }
@@ -3019,11 +3074,15 @@ class Entity {
     );
 
     let deletedKeys = [];
-    for (const [indexName, condition] of Object.entries(completeFacets.conditions)) {
+    for (const [indexName, condition] of Object.entries(
+      completeFacets.conditions,
+    )) {
       if (!condition) {
         deletedKeys.push(this.model.translations.keys[indexName][KeyTypes.pk]);
         if (this.model.translations.keys[indexName][KeyTypes.sk]) {
-          deletedKeys.push(this.model.translations.keys[indexName][KeyTypes.sk]);
+          deletedKeys.push(
+            this.model.translations.keys[indexName][KeyTypes.sk],
+          );
         }
       }
     }
@@ -3071,7 +3130,7 @@ class Entity {
     const removedKeyImpact = this._expectIndexFacets(
       { ...removed },
       { ...keyAttributes },
-      { skipConditionCheck: true }
+      { skipConditionCheck: true },
     );
 
     // complete facets, only includes impacted facets which likely does not include the updateIndex which then needs to be added here.
@@ -3091,11 +3150,15 @@ class Entity {
     let updatedKeys = {};
     let deletedKeys = [];
     let indexKey = {};
-    for (const [indexName, condition] of Object.entries(completeFacets.conditions)) {
+    for (const [indexName, condition] of Object.entries(
+      completeFacets.conditions,
+    )) {
       if (!condition) {
         deletedKeys.push(this.model.translations.keys[indexName][KeyTypes.pk]);
         if (this.model.translations.keys[indexName][KeyTypes.sk]) {
-            deletedKeys.push(this.model.translations.keys[indexName][KeyTypes.sk]);
+          deletedKeys.push(
+            this.model.translations.keys[indexName][KeyTypes.sk],
+          );
         }
       }
     }
@@ -3122,9 +3185,9 @@ class Entity {
         let hasPrefix =
           indexHasSk && this.model.prefixes[index].sk.prefix !== undefined;
         let hasPostfix =
-            indexHasSk && this.model.prefixes[index].sk.prefix !== undefined;
+          indexHasSk && this.model.prefixes[index].sk.prefix !== undefined;
         if (noImpactSk && noAttributeSk) {
-          let key = hasPrefix ? this.model.prefixes[index].sk.prefix : '';
+          let key = hasPrefix ? this.model.prefixes[index].sk.prefix : "";
           if (hasPostfix) {
             key = `${key}${this.model.prefixes[index].sk.postfix}`;
           }
@@ -3146,12 +3209,19 @@ class Entity {
   }
 
   _indexConditionIsDefined(index) {
-    const definition = this.model.indexes[this.model.translations.indexes.fromIndexToAccessPattern[index]];
+    const definition =
+      this.model.indexes[
+        this.model.translations.indexes.fromIndexToAccessPattern[index]
+      ];
     return definition && definition.conditionDefined;
   }
 
   /* istanbul ignore next */
-  _getIndexImpact(attributes = {}, included = {}, { utilizeIncludedOnlyIndexes, skipConditionCheck } = {}) {
+  _getIndexImpact(
+    attributes = {},
+    included = {},
+    { utilizeIncludedOnlyIndexes, skipConditionCheck } = {},
+  ) {
     // beware: this entire algorithm stinks and needs to be completely refactored. It does redundant loops and fights
     // itself the whole way through. I am sorry.
     let includedFacets = Object.keys(included);
@@ -3166,21 +3236,26 @@ class Entity {
         facets[attribute] = attributes[attribute];
         indexes.forEach((definition) => {
           const { index, type } = definition;
-            impactedIndexes[index] = impactedIndexes[index] || {};
-            impactedIndexes[index][type] = impactedIndexes[index][type] || [];
-            impactedIndexes[index][type].push(attribute);
-            impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-            impactedIndexTypes[index][type] = this.model.translations.keys[index][type];
+          impactedIndexes[index] = impactedIndexes[index] || {};
+          impactedIndexes[index][type] = impactedIndexes[index][type] || [];
+          impactedIndexes[index][type].push(attribute);
+          impactedIndexTypes[index] = impactedIndexTypes[index] || {};
+          impactedIndexTypes[index][type] =
+            this.model.translations.keys[index][type];
 
-            impactedIndexTypeSources[index] = impactedIndexTypeSources[index] || {};
-            impactedIndexTypeSources[index][type] = ImpactedIndexTypeSource.provided;
+          impactedIndexTypeSources[index] =
+            impactedIndexTypeSources[index] || {};
+          impactedIndexTypeSources[index][type] =
+            ImpactedIndexTypeSource.provided;
         });
       }
     }
 
     // this function is used to determine key impact for update `set`, update `delete`, and `put`. This block is currently only used by update `set`
     if (utilizeIncludedOnlyIndexes) {
-      for (const [index, { pk, sk }] of Object.entries(this.model.facets.byIndex)) {
+      for (const [index, { pk, sk }] of Object.entries(
+        this.model.facets.byIndex,
+      )) {
         // The main table index is handled somewhere else (messy I know), and we only want to do this processing if an
         // index condition is defined for backwards compatibility. Backwards compatibility is not required for this
         // change, but I have paranoid concerns of breaking changes around sparse indexes.
@@ -3188,24 +3263,36 @@ class Entity {
           continue;
         }
 
-        if (pk && pk.length && pk.every(attr => included[attr] !== undefined)) {
+        if (
+          pk &&
+          pk.length &&
+          pk.every((attr) => included[attr] !== undefined)
+        ) {
           pk.forEach((attr) => {
             facets[attr] = included[attr];
           });
           impactedIndexes[index] = impactedIndexes[index] || {};
           impactedIndexes[index][KeyTypes.pk] = [...pk];
           impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-          impactedIndexTypes[index][KeyTypes.pk] = this.model.translations.keys[index][KeyTypes.pk];
+          impactedIndexTypes[index][KeyTypes.pk] =
+            this.model.translations.keys[index][KeyTypes.pk];
 
           // flagging the impactedIndexTypeSource as `composite` means the entire key is only being impacted because
           // all composites are in `included`. This will help us determine if we need to evaluate the `condition`
           // callback for the index. If both the `sk` and `pk` were impacted because of `included` then we can skip
           // the condition check because the index doesn't need to be recalculated;
-          impactedIndexTypeSources[index] = impactedIndexTypeSources[index] || {};
-          impactedIndexTypeSources[index][KeyTypes.pk] = impactedIndexTypeSources[index][KeyTypes.pk] || ImpactedIndexTypeSource.composite;
+          impactedIndexTypeSources[index] =
+            impactedIndexTypeSources[index] || {};
+          impactedIndexTypeSources[index][KeyTypes.pk] =
+            impactedIndexTypeSources[index][KeyTypes.pk] ||
+            ImpactedIndexTypeSource.composite;
         }
 
-        if (sk && sk.length && sk.every(attr => included[attr] !== undefined)) {
+        if (
+          sk &&
+          sk.length &&
+          sk.every((attr) => included[attr] !== undefined)
+        ) {
           if (this.model.translations.keys[index][KeyTypes.sk]) {
             sk.forEach((attr) => {
               facets[attr] = included[attr];
@@ -3213,61 +3300,66 @@ class Entity {
             impactedIndexes[index] = impactedIndexes[index] || {};
             impactedIndexes[index][KeyTypes.sk] = [...sk];
             impactedIndexTypes[index] = impactedIndexTypes[index] || {};
-            impactedIndexTypes[index][KeyTypes.sk] = this.model.translations.keys[index][KeyTypes.sk];
+            impactedIndexTypes[index][KeyTypes.sk] =
+              this.model.translations.keys[index][KeyTypes.sk];
 
             // flagging the impactedIndexTypeSource as `composite` means the entire key is only being impacted because
             // all composites are in `included`. This will help us determine if we need to evaluate the `condition`
             // callback for the index. If both the `sk` and `pk` were impacted because of `included` then we can skip
             // the condition check because the index doesn't need to be recalculated;
-            impactedIndexTypeSources[index] = impactedIndexTypeSources[index] || {};
-            impactedIndexTypeSources[index][KeyTypes.sk] = impactedIndexTypeSources[index][KeyTypes.sk] || ImpactedIndexTypeSource.composite;
+            impactedIndexTypeSources[index] =
+              impactedIndexTypeSources[index] || {};
+            impactedIndexTypeSources[index][KeyTypes.sk] =
+              impactedIndexTypeSources[index][KeyTypes.sk] ||
+              ImpactedIndexTypeSource.composite;
           }
         }
       }
     }
 
-    let indexesWithMissingComposites = Object.entries(this.model.facets.byIndex)
-      .map(([index, definition]) => {
-        const { pk, sk } = definition;
-        let impacted = impactedIndexes[index];
-        let impact = {
-          index,
-          definition,
-          missing: []
-        };
-        if (impacted) {
-          let missingPk =
-            impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
-          let missingSk =
-            impacted[KeyTypes.sk] && impacted[KeyTypes.sk].length !== sk.length;
-          if (missingPk) {
-              impact.missing = [
-                ...impact.missing,
-                ...pk.filter((attr) => {
-                  return (
-                    !impacted[KeyTypes.pk].includes(attr) &&
-                    !includedFacets.includes(attr)
-                  );
-                }),
-              ];
-          }
-          if (missingSk) {
-            impact.missing = [
-              ...impact.missing,
-              ...sk.filter(
-                (attr) =>
-                  !impacted[KeyTypes.sk].includes(attr) &&
-                  !includedFacets.includes(attr),
-              ),
-            ];
-          }
-          if (!missingPk && !missingSk) {
-            completedIndexes.push(index);
-          }
+    let indexesWithMissingComposites = Object.entries(
+      this.model.facets.byIndex,
+    ).map(([index, definition]) => {
+      const { pk, sk } = definition;
+      let impacted = impactedIndexes[index];
+      let impact = {
+        index,
+        definition,
+        missing: [],
+      };
+      if (impacted) {
+        let missingPk =
+          impacted[KeyTypes.pk] && impacted[KeyTypes.pk].length !== pk.length;
+        let missingSk =
+          impacted[KeyTypes.sk] && impacted[KeyTypes.sk].length !== sk.length;
+        if (missingPk) {
+          impact.missing = [
+            ...impact.missing,
+            ...pk.filter((attr) => {
+              return (
+                !impacted[KeyTypes.pk].includes(attr) &&
+                !includedFacets.includes(attr)
+              );
+            }),
+          ];
         }
+        if (missingSk) {
+          impact.missing = [
+            ...impact.missing,
+            ...sk.filter(
+              (attr) =>
+                !impacted[KeyTypes.sk].includes(attr) &&
+                !includedFacets.includes(attr),
+            ),
+          ];
+        }
+        if (!missingPk && !missingSk) {
+          completedIndexes.push(index);
+        }
+      }
 
-        return impact;
-      });
+      return impact;
+    });
 
     let incomplete = [];
     for (const { index, missing, definition } of indexesWithMissingComposites) {
@@ -3277,28 +3369,53 @@ class Entity {
       // is meaningless and ElectroDB should uphold its obligation to keep keys and attributes in sync.
       // `index === TableIndex` is a special case where we don't need to check the condition because the main table is immutable
       // `!this._indexConditionIsDefined(index)` means the index doesn't have a condition defined, so we can skip the check
-      if (skipConditionCheck || index === TableIndex || !indexConditionIsDefined) {
+      if (
+        skipConditionCheck ||
+        index === TableIndex ||
+        !indexConditionIsDefined
+      ) {
         incomplete.push({ index, missing });
         conditions[index] = true;
         continue;
       }
 
-      const memberAttributeIsImpacted = impactedIndexTypeSources[index] && (impactedIndexTypeSources[index][KeyTypes.pk] === ImpactedIndexTypeSource.provided || impactedIndexTypeSources[index][KeyTypes.sk] === ImpactedIndexTypeSource.provided);
-      const allMemberAttributesAreIncluded = definition.all.every(({name}) => included[name] !== undefined);
+      const memberAttributeIsImpacted =
+        impactedIndexTypeSources[index] &&
+        (impactedIndexTypeSources[index][KeyTypes.pk] ===
+          ImpactedIndexTypeSource.provided ||
+          impactedIndexTypeSources[index][KeyTypes.sk] ===
+            ImpactedIndexTypeSource.provided);
+      const allMemberAttributesAreIncluded = definition.all.every(
+        ({ name }) => included[name] !== undefined,
+      );
 
       if (memberAttributeIsImpacted || allMemberAttributesAreIncluded) {
         // the `missing` array will contain indexes that are partially provided, but that leaves cases where the pk or
         // sk of an index is complete but not both. Both cases are invalid if `indexConditionIsDefined=true`
         const missingAttributes = definition.all
-            .filter(({name}) => attributes[name] === undefined && included[name] === undefined || missing.includes(name))
-            .map(({name}) => name)
+          .filter(
+            ({ name }) =>
+              (attributes[name] === undefined &&
+                included[name] === undefined) ||
+              missing.includes(name),
+          )
+          .map(({ name }) => name);
 
         if (missingAttributes.length) {
-          throw new e.ElectroError(e.ErrorCodes.IncompleteIndexCompositesAttributesProvided, `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(missingAttributes)}`);
+          throw new e.ElectroError(
+            e.ErrorCodes.IncompleteIndexCompositesAttributesProvided,
+            `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(
+              missingAttributes,
+            )}`,
+          );
         }
 
-        const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[index];
-        let shouldMakeKeys = !!this.model.indexes[accessPattern].condition({...attributes, ...included});
+        const accessPattern =
+          this.model.translations.indexes.fromIndexToAccessPattern[index];
+        let shouldMakeKeys = !!this.model.indexes[accessPattern].condition({
+          ...attributes,
+          ...included,
+        });
 
         // this helps identify which conditions were checked (key is present) and what the result was (true/false)
         conditions[index] = shouldMakeKeys;
@@ -3313,7 +3430,12 @@ class Entity {
     incomplete = incomplete.filter(({ missing }) => missing.length);
 
     let isIncomplete = !!incomplete.length;
-    let complete = { facets, indexes: completedIndexes, impactedIndexTypes, conditions };
+    let complete = {
+      facets,
+      indexes: completedIndexes,
+      impactedIndexTypes,
+      conditions,
+    };
     return [isIncomplete, { incomplete, complete }];
   }
 
@@ -3555,34 +3677,32 @@ class Entity {
     return prefix;
   }
 
-  _makeKeyTransforms(queryType) {
+  _makeKeyTransforms(queryType, options = {}) {
     const transforms = [];
     const shiftUp = (val) => u.shiftSortOrder(val, 1);
     const noop = (val) => val;
-    switch (queryType) {
-      case QueryTypes.between:
-        transforms.push(noop, shiftUp);
-        break;
-      case QueryTypes.lte:
-      case QueryTypes.gt:
-        transforms.push(shiftUp);
-        break;
-      default:
-        transforms.push(noop);
-        break;
+    if (options.compare !== ComparisonTypes.v2) {
+      transforms.push(noop);
+    } else if (queryType === QueryTypes.between) {
+      transforms.push(noop, shiftUp);
+    } else if (queryType === QueryTypes.lte || queryType === QueryTypes.gt) {
+      transforms.push(shiftUp);
+    } else {
+      transforms.push(noop);
     }
+
     return transforms;
   }
 
   /* istanbul ignore next */
-  _makeIndexKeysWithoutTail(state = {}, skFacets = []) {
+  _makeIndexKeysWithoutTail(state = {}, skFacets = [], options) {
     const index = state.query.index || TableIndex;
     this._validateIndex(index);
     const pkFacets = state.query.keys.pk || {};
     const excludePostfix =
       state.query.options.indexType === IndexTypes.clustered &&
       state.query.options._isCollectionQuery;
-    const transforms = this._makeKeyTransforms(state.query.type);
+    const transforms = this._makeKeyTransforms(state.query.type, options);
     if (!skFacets.length) {
       skFacets.push({});
     }
@@ -4078,8 +4198,8 @@ class Entity {
       let indexScope = index.scope || "";
       if (index.index === undefined && v.isFunction(index.condition)) {
         throw new e.ElectroError(
-            e.ErrorCodes.InvalidIndexCondition,
-            `The index option 'condition' is only allowed on secondary indexes`,
+          e.ErrorCodes.InvalidIndexCondition,
+          `The index option 'condition' is only allowed on secondary indexes`,
         );
       }
 
@@ -4184,7 +4304,7 @@ class Entity {
         }
       }
 
-      let definition= {
+      let definition = {
         pk,
         sk,
         hasSk,

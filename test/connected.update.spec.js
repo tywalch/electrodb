@@ -1,6 +1,5 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 const { Entity } = require("../src/entity");
-const { Service } = require("../src/service");
 const { expect } = require("chai");
 const uuid = require("uuid").v4;
 const moment = require("moment");
@@ -1705,7 +1704,7 @@ describe("Update Item", () => {
 
       const itemBefore = await users
         .get({ username })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
 
       expect(itemBefore).to.deep.equal({
@@ -1758,7 +1757,7 @@ describe("Update Item", () => {
 
       const itemAfter = await users
         .get({ username })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
 
       expect(itemAfter).to.deep.equal({
@@ -1852,7 +1851,7 @@ describe("Update Item", () => {
 
       const itemBefore = await users
         .get({ username })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
 
       expect(itemBefore).to.deep.equal({
@@ -1904,7 +1903,7 @@ describe("Update Item", () => {
 
       const itemAfter = await users
         .get({ username })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
 
       expect(itemAfter).to.deep.equal({
@@ -1999,7 +1998,7 @@ describe("Update Item", () => {
 
       const itemBefore = await users
         .get({ username })
-        .go({ raw: true })
+        .go({ data: 'raw' })
         .then((res) => res.data);
 
       expect(itemBefore).to.deep.equal({

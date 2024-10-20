@@ -57,6 +57,7 @@ export const SIDEBAR: Sidebar = {
         text: "Single-Table Relationships",
         link: "en/core-concepts/single-table-relationships",
       },
+      { text: "Upgrade to v3", link: "en/core-concepts/v3-migration" }
     ],
     "Data Modeling": [
       { text: "Entities", link: "en/modeling/entities" },

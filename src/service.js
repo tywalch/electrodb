@@ -9,11 +9,11 @@ const {
   TransactionMethods,
   KeyCasing,
   ServiceVersions,
-  Pager,
   ElectroInstance,
   ElectroInstanceTypes,
   ModelVersions,
   IndexTypes,
+  DataOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -345,7 +345,7 @@ class Service {
   }
 
   cleanseRetrievedData(index = TableIndex, entities, data = {}, config = {}) {
-    if (config.raw) {
+    if (config.data === DataOptions.raw) {
       return data;
     }
     const identifiers = getEntityIdentifiers(entities);
@@ -462,7 +462,7 @@ class Service {
     let options = {
       // expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
       parse: (options, data) => {
-        if (options.raw) {
+        if (options.data === DataOptions.raw) {
           return data;
         }
         return this.cleanseRetrievedData(index, entities, data, options);
@@ -634,11 +634,11 @@ class Service {
 
     if (!scopeMatch) {
       collectionDifferences.push(
-          `The index scope value provided "${
-              providedIndex.scope || "undefined"
-          }" does not match established index scope value "${
-              definition.scope || "undefined"
-          }" on index "${providedIndexName}". Index scope options must match across all entities participating in a collection`,
+        `The index scope value provided "${
+          providedIndex.scope || "undefined"
+        }" does not match established index scope value "${
+          definition.scope || "undefined"
+        }" on index "${providedIndexName}". Index scope options must match across all entities participating in a collection`,
       );
     }
 

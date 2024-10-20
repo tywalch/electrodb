@@ -53,7 +53,7 @@ function getEntity(helper: Helper) {
           default: () => "abc",
           validate: (value) => {
             helper.triggerValidate(value);
-            return undefined;
+            return true;
           },
           get: (value) => {
             helper.triggerGetter("stringVal", value);
@@ -69,7 +69,7 @@ function getEntity(helper: Helper) {
           default: () => "abc",
           validate: (value) => {
             helper.triggerValidate(value);
-            return undefined;
+            return true;
           },
           get: (value) => {
             helper.triggerGetter("stringVal2", value);
@@ -82,7 +82,7 @@ function getEntity(helper: Helper) {
         },
         enumVal: {
           type: ["abc", "def"] as const,
-          validate: (value: "abc" | "def") => undefined,
+          validate: (value: "abc" | "def") => true,
           default: () => "abc",
           get: (value: "abc" | "def") => {
             helper.triggerGetter("enumVal", value);
@@ -97,7 +97,7 @@ function getEntity(helper: Helper) {
           type: "number",
           validate: (value) => {
             helper.triggerValidate(value);
-            return undefined;
+            return true;
           },
           default: () => 123,
           get: (value) => {
@@ -113,7 +113,7 @@ function getEntity(helper: Helper) {
           type: "boolean",
           validate: (value) => {
             helper.triggerValidate(value);
-            return undefined;
+            return true;
           },
           default: () => true,
           get: (value) => {
@@ -130,7 +130,7 @@ function getEntity(helper: Helper) {
           items: "string",
           validate: (value) => {
             helper.triggerValidate(value);
-            return undefined;
+            return true;
           },
           get: (value) => {
             helper.triggerGetter("stringSetValue", "items", value);
@@ -148,7 +148,7 @@ function getEntity(helper: Helper) {
             default: "def",
             validate: (value) => {
               helper.triggerValidate(value);
-              return undefined;
+              return true;
             },
             get: (value) => {
               helper.triggerGetter("stringListValue", "items", value);
@@ -162,7 +162,7 @@ function getEntity(helper: Helper) {
           default: () => {
             return [];
           },
-          validate: (value: string[]) => undefined,
+          validate: (value: string[]) => true,
           get: (value: string[]) => {
             helper.triggerGetter("stringListValue", value);
             return value;
@@ -178,7 +178,7 @@ function getEntity(helper: Helper) {
             type: "number",
             validate: (value) => {
               helper.triggerValidate(value);
-              return undefined;
+              return true;
             },
             default: 0,
             get: (value) => {
@@ -191,7 +191,7 @@ function getEntity(helper: Helper) {
             },
           },
           default: [],
-          validate: (value: number[]) => undefined,
+          validate: (value: number[]) => true,
           get: (value: number[]) => {
             helper.triggerGetter("numberListValue", value);
             return value;
@@ -211,7 +211,7 @@ function getEntity(helper: Helper) {
                 default: "def",
                 validate: (value) => {
                   helper.triggerValidate(value);
-                  return undefined;
+                  return true;
                 },
                 get: (value) => {
                   helper.triggerGetter("stringVal", value);
@@ -227,7 +227,7 @@ function getEntity(helper: Helper) {
                 default: 5,
                 validate: (value) => {
                   helper.triggerValidate(value);
-                  return undefined;
+                  return true;
                 },
                 get: (value) => {
                   helper.triggerGetter("numVal", value);
@@ -243,7 +243,7 @@ function getEntity(helper: Helper) {
                 default: false,
                 validate: (value) => {
                   helper.triggerValidate(value);
-                  return undefined;
+                  return true;
                 },
                 get: (value) => {
                   helper.triggerGetter("boolValue", value);
@@ -256,7 +256,7 @@ function getEntity(helper: Helper) {
               },
               enumVal: {
                 type: ["abc", "def"] as const,
-                validate: (value: "abc" | "def") => undefined,
+                validate: (value: "abc" | "def") => true,
                 default: () => "abc",
                 get: (value: "abc" | "def") => {
                   helper.triggerGetter("enumVal", value);
@@ -270,7 +270,7 @@ function getEntity(helper: Helper) {
             },
             validate: (value) => {
               helper.triggerValidate(value);
-              return undefined;
+              return true;
             },
             default: {
               numVal: 123,
@@ -302,7 +302,7 @@ function getEntity(helper: Helper) {
               default: () => "abc",
               validate: (value) => {
                 helper.triggerValidate(value);
-                return undefined;
+                return true;
               },
               get: (value) => {
                 helper.triggerGetter("stringVal", value);
@@ -318,7 +318,7 @@ function getEntity(helper: Helper) {
               default: () => 10,
               validate: (value) => {
                 helper.triggerValidate(value);
-                return undefined;
+                return true;
               },
               get: (value) => {
                 helper.triggerGetter("numVal", value);
@@ -334,7 +334,7 @@ function getEntity(helper: Helper) {
               default: () => false,
               validate: (value) => {
                 helper.triggerValidate(value);
-                return undefined;
+                return true;
               },
               get: (value) => {
                 helper.triggerGetter("boolValue", value);
@@ -347,7 +347,7 @@ function getEntity(helper: Helper) {
             },
             enumVal: {
               type: ["abc", "def"] as const,
-              validate: (value: "abc" | "def") => undefined,
+              validate: (value: "abc" | "def") => true,
               default: () => "abc",
               get: (value: "abc" | "def") => {
                 helper.triggerGetter("enumVal", value);
@@ -365,7 +365,7 @@ function getEntity(helper: Helper) {
                 default: "abc",
                 validate: (value) => {
                   helper.triggerValidate(value);
-                  return undefined;
+                  return true;
                 },
                 get: (value) => {
                   helper.triggerGetter("stringListValue", "string", value);
@@ -377,7 +377,7 @@ function getEntity(helper: Helper) {
                 },
               },
               default: ["xyz"],
-              validate: (value: string[]) => undefined,
+              validate: (value: string[]) => true,
               get: (value: string[]) => {
                 helper.triggerGetter("stringListValue", value);
                 return value;
@@ -394,7 +394,7 @@ function getEntity(helper: Helper) {
                 default: () => 100,
                 validate: (value) => {
                   helper.triggerValidate(value);
-                  return undefined;
+                  return true;
                 },
                 get: (value) => {
                   helper.triggerGetter("numberListValue", "items", value);
@@ -406,7 +406,7 @@ function getEntity(helper: Helper) {
                 },
               },
               default: [123, 123],
-              validate: (value: number[]) => undefined,
+              validate: (value: number[]) => true,
               get: (value: number[]) => {
                 helper.triggerGetter("mapValue", value);
                 return value;
@@ -426,7 +426,7 @@ function getEntity(helper: Helper) {
                     default: "def",
                     validate: (value) => {
                       helper.triggerValidate(value);
-                      return undefined;
+                      return true;
                     },
                     get: (value) => {
                       helper.triggerGetter("stringVal", value);
@@ -442,7 +442,7 @@ function getEntity(helper: Helper) {
                     default: 100,
                     validate: (value) => {
                       helper.triggerValidate(value);
-                      return undefined;
+                      return true;
                     },
                     get: (value) => {
                       helper.triggerGetter("numVal", value);
@@ -458,7 +458,7 @@ function getEntity(helper: Helper) {
                     default: () => false,
                     validate: (value) => {
                       helper.triggerValidate(value);
-                      return undefined;
+                      return true;
                     },
                     get: (value) => {
                       helper.triggerGetter("boolValue", value);
@@ -471,7 +471,7 @@ function getEntity(helper: Helper) {
                   },
                   enumVal: {
                     type: ["abc", "def"] as const,
-                    validate: (value: "abc" | "def") => undefined,
+                    validate: (value: "abc" | "def") => true,
                     default: () => "abc",
                     get: (value: "abc" | "def") => {
                       helper.triggerGetter("enumVal", value);
@@ -486,7 +486,7 @@ function getEntity(helper: Helper) {
                 default: {},
                 validate: (value) => {
                   helper.triggerValidate(value);
-                  return undefined;
+                  return true;
                 },
                 get: (value) => {
                   helper.triggerGetter("map", "mapListValue", "map", value);
@@ -498,7 +498,7 @@ function getEntity(helper: Helper) {
                 },
               },
               default: [{ stringVal: "xyz" }, {}],
-              validate: (value: Record<string, any>[]) => undefined,
+              validate: (value: Record<string, any>[]) => true,
               get: (value: Record<string, any>[]) => {
                 helper.triggerGetter("map", "mapListValue", value);
                 return value;
@@ -512,7 +512,7 @@ function getEntity(helper: Helper) {
           default: {},
           validate: (value) => {
             helper.triggerValidate(value);
-            return undefined;
+            return true;
           },
           get: (value) => {
             helper.triggerGetter("map", value);
@@ -685,7 +685,7 @@ describe("Simple Crud On Complex Entity", () => {
                   type: "string",
                   default: "def",
                   validate: (value) => {
-                    return undefined;
+                    return true;
                   },
                   get: (value) => {
                     return value;
@@ -698,7 +698,7 @@ describe("Simple Crud On Complex Entity", () => {
                   type: "number",
                   default: 5,
                   validate: (value) => {
-                    return undefined;
+                    return true;
                   },
                   get: (value) => {
                     return value;
@@ -711,7 +711,7 @@ describe("Simple Crud On Complex Entity", () => {
                   type: "boolean",
                   default: false,
                   validate: (value) => {
-                    return undefined;
+                    return true;
                   },
                   get: (value) => {
                     return value;
@@ -722,7 +722,7 @@ describe("Simple Crud On Complex Entity", () => {
                 },
                 enumVal: {
                   type: ["abc", "def"] as const,
-                  validate: (value: "abc" | "def") => undefined,
+                  validate: (value: "abc" | "def") => true,
                   default: () => "abc",
                   get: (value: "abc" | "def") => {
                     return value;
@@ -733,7 +733,7 @@ describe("Simple Crud On Complex Entity", () => {
                 },
               },
               validate: (value) => {
-                return undefined;
+                return true;
               },
               default: {
                 stringVal: "abc",

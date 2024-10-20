@@ -272,14 +272,14 @@ This option changes how ElectroDB formats your keys for storage, so it is an imp
 By default, and when omitted, ElectroDB will create your index as an `isolated` index. Isolated indexes optimizes your index structure for faster and more efficient retrieval of items within an individual Entity.
 
 _Choose_ `isolated` if you have strong access pattern requirements to retrieve only records for only your entity on that index. While an `isolated` index is more limited in its ability to be used in a [collection](/en/modeling/collections), it can perform better than a `clustered` index if a collection contains a highly unequal distribution of entities within a collection.
-_Don't choose_ `isolated` if the primary use-cases for your index is to query across entities -- this index type does limit the extent to which indexes can be leveraged to improve query efficiency.
+_Do not choose_ `isolated` if the primary use-cases for your index is to query across entities -- this index type does limit the extent to which indexes can be leveraged to improve query efficiency.
 
 ### Clustered Indexes
 
 When your index type is defined as `clustered`, ElectroDB will optimize your index for relationships within a partition. Clustered indexes optimize your index structure for more homogenous partitions, which allows for more efficient queries across multiple entities.
 
 _Choose_ `clustered` if you have a high degree of grouped or similar data that needs to be frequently accessed together. This index works best in [collections](/en/modeling/collections) when member entities are more evenly distributed within a partition.
-_Don't choose_ `clustered` if your need to query across entities is secondary to its primary purpose -- this index type limits the efficiency of querying your individual entity.
+_Do not choose_ `clustered` if your need to query across entities is secondary to its primary purpose -- this index type limits the efficiency of querying your individual entity.
 
 ### Isolated vs Clustered
 
