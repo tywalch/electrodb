@@ -3316,7 +3316,7 @@ describe("Update Item", () => {
           .set({ deleted: true })
           .params(),
       ).to.throw(
-        `Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "all". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        `Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "all". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       );
 
       const params = Organization.patch({ id: "2Tz0fHi80CE3dqA6bMIehSvTryv" })
@@ -3419,7 +3419,7 @@ describe("Update Item", () => {
           .set({ deleted: true })
           .params(),
       ).to.throw(
-        `Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "all". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        `Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "all". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       );
 
       const params = Organization.update({ id: "2Tz0fHi80CE3dqA6bMIehSvTryv" })
@@ -3555,7 +3555,7 @@ describe("Update Item", () => {
         users.update({ username }).remove(["device"]).params();
 
       expect(error).to.throw(
-        `Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        `Incomplete composite attributes: Without the composite attributes "location" the following access patterns cannot be updated: "approved". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       );
 
       const error2 = await users
@@ -3564,7 +3564,7 @@ describe("Update Item", () => {
         .go()
         .catch((err) => err);
       expect(error2.message).to.equal(
-        `Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        `Incomplete composite attributes: Without the composite attributes "device" the following access patterns cannot be updated: "approved". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       );
     });
 
