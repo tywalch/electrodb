@@ -1631,7 +1631,7 @@ class Entity {
       consistent: undefined,
       compare: ComparisonTypes.keys,
       complete: false,
-      ignoreOwnership: false,
+      ignoreOwnership: !!this.config.ignoreOwnership,
       _providedIgnoreOwnership: false,
       _isPagination: false,
       _isCollectionQuery: false,
