@@ -19,6 +19,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   attributes?: string[];
   order?: 'asc' | 'desc';
   compare?: 'attributes' | 'keys' | 'v2';
+  consistent?: boolean;
 };
 ```
 
@@ -83,3 +84,7 @@ When performing comparison queries (e.g. `gt`, `gte`, `lte`, `lt`, `between`) it
 By default (`comparison: "keys"`), ElectroDB builds comparison queries without applying attribute filters. In this way, the query's comparison applies to the item's "keys". This approach gives you complete control of your indexes, though your query may return unexpected data if you are not careful with item sorting.
 
 When set to `attributes`, the `comparison` option instructs ElectroDB to apply attribute filters on each Sort Key composite attribute provided. In this way, the query comparison applies to the item's "attributes."
+
+### consistent
+**Default Value:** _none_
+When set to `true`, DynamoDB will return the most up-to-date data reflecting updates from all prior write operations using DynamoDB's [`ConsistentRead`](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html#HowItWorks.ReadConsistency.Strongly) parameter. Strongly consistent reads are only supported on tables and local secondary indexes.
