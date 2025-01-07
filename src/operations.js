@@ -41,8 +41,8 @@ class ExpressionState {
       formattedName = `p${formattedName}`;
     }
 
+    const originalFormattedName = formattedName;
     let nameSuffix = 1;
-    let originalFormattedName = formattedName;
 
     while (
       this.formattedNameToOriginalNameMap.has(formattedName) &&
