@@ -48,8 +48,7 @@ class ExpressionState {
       this.formattedNameToOriginalNameMap.has(formattedName) &&
       this.formattedNameToOriginalNameMap.get(formattedName) !== originalName
     ) {
-      nameSuffix++;
-      formattedName = `${originalFormattedName}_${nameSuffix}`;
+      formattedName = `${originalFormattedName}_${++nameSuffix}`;
     }
 
     this.formattedNameToOriginalNameMap.set(formattedName, originalName);
