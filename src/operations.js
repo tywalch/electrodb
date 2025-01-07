@@ -41,20 +41,15 @@ class ExpressionState {
       formattedName = `p${formattedName}`;
     }
 
-    // Check if we've seen this stripped name before
-    if (this.formattedNameToOriginalNameMap.has(formattedName)) {
-      const existing = this.formattedNameToOriginalNameMap.get(formattedName);
-      if (existing !== originalName) {
-        // If we have a collision (e.g., "user-name" and "username" both become "username"),
-        // append a numeric suffix (username_2, username_3, etc.)
-        let suffix = 2;
-        while (
-          this.formattedNameToOriginalNameMap.has(`${formattedName}_${suffix}`)
-        ) {
-          suffix++;
-        }
-        formattedName = `${formattedName}_${suffix}`;
-      }
+    let nameSuffix = 1;
+    let originalFormattedName = formattedName;
+
+    while (
+      this.formattedNameToOriginalNameMap.has(formattedName) &&
+      this.formattedNameToOriginalNameMap.get(formattedName) !== originalName
+    ) {
+      nameSuffix++;
+      formattedName = `${originalFormattedName}_${nameSuffix}`;
     }
 
     this.formattedNameToOriginalNameMap.set(formattedName, originalName);
