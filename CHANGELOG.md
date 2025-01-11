@@ -551,3 +551,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.0.1]
 ### Fixed
 - The execution option `{ compare: "attributes" }` used incorrect expression comparisons that impacted `lte` queries on indexes with a single composite key.   
+
+## [3.0.2]
+### Fixed
+
+- Add attributes to scan query options
