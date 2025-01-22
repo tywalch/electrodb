@@ -466,8 +466,10 @@ class Entity {
         if (err.__isAWSError) {
           stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
           stackTrace.cause = err;
+          e.applyParamsFn(stackTrace, err.__edb_params);
           return Promise.reject(stackTrace);
         } else if (err.isElectroError) {
+          e.applyParamsFn(err, err.__edb_params);
           return Promise.reject(err);
         } else {
           stackTrace.message = new e.ElectroError(
@@ -475,6 +477,7 @@ class Entity {
             err.message,
             err,
           ).message;
+          e.applyParamsFn(stackTrace, err.__edb_params);
           return Promise.reject(stackTrace);
         }
       }
@@ -516,6 +519,10 @@ class Entity {
       .catch((err) => {
         notifyQuery();
         notifyResults(err, false);
+        Object.defineProperty(err, '__edb_params', {
+          enumerable: false,
+          value: params,
+        })
         err.__isAWSError = true;
         throw err;
       });
@@ -935,7 +942,7 @@ class Entity {
               response.Item,
               config,
             );
-            if (Object.keys(results).length === 0) {
+            if (Object.keys(results).length === 0 && !config._objectOnEmpty) {
               results = null;
             }
           } else if (!config._objectOnEmpty) {
@@ -957,7 +964,7 @@ class Entity {
                 item,
                 config,
               );
-              if (Object.keys(record).length > 0) {
+              if (Object.keys(record).length > 0 || config._objectOnEmpty) {
                 results.push(record);
               }
             }
@@ -967,7 +974,7 @@ class Entity {
             response.Attributes,
             config,
           );
-          if (Object.keys(results).length === 0) {
+          if (Object.keys(results).length === 0 && !config._objectOnEmpty) {
             results = null;
           }
         } else if (config._objectOnEmpty) {
@@ -1646,6 +1653,7 @@ class Entity {
       order: undefined,
       hydrate: false,
       hydrator: (_entity, _indexName, items) => items,
+      _objectOnEmpty: false,
       _includeOnResponseItem: {},
     };
 
@@ -1727,6 +1735,9 @@ class Entity {
 
       if (Array.isArray(option.attributes)) {
         config.attributes = config.attributes.concat(option.attributes);
+        if (config.attributes.length > 0) {
+          config._objectOnEmpty = true;
+        }
       }
 
       if (option.preserveBatchOrder === true) {

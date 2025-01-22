@@ -2935,9 +2935,10 @@ export class ElectroError<E extends Error = Error> extends Error {
   readonly name: "ElectroError";
   readonly code: number;
   readonly date: number;
-  readonly isElectroError: boolean;
   readonly cause: E | undefined;
-  ref: {
+  readonly isElectroError: boolean;
+  readonly params: () => Record<string, unknown> | null;
+  readonly ref: {
     readonly code: number;
     readonly section: string;
     readonly name: string;
