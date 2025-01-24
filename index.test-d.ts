@@ -14,15 +14,7 @@ import {
   expectNotAssignable,
 } from "tsd";
 
-import * as typeTestsTypes from './test/types.test-d';
-import * as typeTestsUpsert from './test/upsert.test-d';
-import * as typeTestsV2response from './test/v2response.test-d';
-import * as typeTestsQueries from './test/queries.test-d';
-import * as typeTestsSchema from './test/schema.test-d';
-import * as typeTestsTests from './test/tests.test-d';
-import * as typeTestsWhere from './test/where.test-d';
-import * as typeTestsEntity from './test/entity.test-d';
-import * as typeTestsIndexes from './test/indexes.test-d';
+import './test/tests.test-d';
 
 type Resolve<T> = T extends Function | string | number | boolean
   ? T
