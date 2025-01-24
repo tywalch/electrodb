@@ -280,7 +280,7 @@ function makeMessage(message, section) {
 }
 
 class ElectroError extends Error {
-  constructor(code, message, cause) {
+  constructor(code, message, cause, params = null) {
     super(message, { cause });
     let detail = ErrorCodes.UnknownError;
     if (code && code.sym === ErrorCode) {
@@ -298,7 +298,19 @@ class ElectroError extends Error {
     this.code = detail.code;
     this.date = Date.now();
     this.isElectroError = true;
+    applyParamsFn(this, params);
   }
+}
+
+function applyParamsFn(error, params = null) {
+  Object.defineProperty(error, 'params', {
+    enumerable: false,
+    writable: true,
+    configurable: true,
+    value: () => {
+      return params;
+    }
+  });
 }
 
 class ElectroValidationError extends ElectroError {
@@ -389,6 +401,7 @@ class ElectroAttributeValidationError extends ElectroError {
 module.exports = {
   ErrorCodes,
   ElectroError,
+  applyParamsFn,
   ElectroValidationError,
   ElectroUserValidationError,
   ElectroAttributeValidationError,

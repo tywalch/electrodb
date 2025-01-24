@@ -551,3 +551,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.0.1]
 ### Fixed
 - The execution option `{ compare: "attributes" }` used incorrect expression comparisons that impacted `lte` queries on indexes with a single composite key.   
+
+## [3.1.0]
+### Fixed
+- [Issue #464](https://github.com/tywalch/electrodb/issues/464); When specifing return attributes on retrieval methods, ElectroDB would unexpectly return null or missing values if the options chosen resulted in an empty object being returned. This behavor could be confused with no results being found. ElectroDB now returns the empty object in these cases.
+
+### Added
+- ElectroDB Error objects no contain a `params()` method. If your operation resulted in an error thrown by the DynamoDB client, you can call the `params()` method to get the compiled parameters sent to DynamoDB. This can be helpful for debugging. Note, that if the error was thrown prior to parameter creation (validation errors, invalid query errors, etc) then the `params()` method will return the value `null`. 

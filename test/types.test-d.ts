@@ -1,5 +1,6 @@
-import { expectType } from "tsd";
-import { Entity, EntityItem } from "../";
+import { expectType, expectAssignable } from "tsd";
+import { Entity, EntityItem, ElectroError } from "../";
+import { QueryCommandOutput } from '@aws-sdk/client-dynamodb';
 
 export type Resolve<T> = T extends Function | string | number | boolean
   ? T
@@ -149,3 +150,17 @@ expectType<{
 }>(get<EntityWithSKEntityItem>());
 
 expectType<{ supposedly: "can" }>(get<EntitySchema>());
+
+const error = new ElectroError('test');
+
+expectAssignable<{
+  params: () => Record<string, unknown> | null;
+}>(error);
+
+const defaultErrorParams = error.params();
+
+expectType<Record<string, unknown> | null>(defaultErrorParams);
+
+const queryErrorParams = error.params<QueryCommandOutput>();
+
+expectType<QueryCommandOutput | null>(queryErrorParams);

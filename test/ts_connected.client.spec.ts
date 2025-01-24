@@ -190,6 +190,202 @@ describe("dynamodb sdk client compatibility", () => {
         expect(results).to.be.an("array");
       });
 
+      describe('electro error params', () => {
+        it('the params function should not be visible in console logs', async () => {
+          const entity = new Entity(
+            {
+              model: {
+                service: "tests",
+                entity: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                  default: () => uuid(),
+                  field: "p",
+                },
+                prop2: {
+                  type: "string",
+                  required: true,
+                  field: "r",
+                },
+                prop3: {
+                  type: "string",
+                  required: true,
+                  field: "a",
+                },
+              },
+              indexes: {
+                farm: {
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+              },
+            },
+            {client, table: "electro"},
+          );
+
+          const prop1 = uuid();
+          const prop2 = uuid();
+          const prop3 = "abc";
+
+          let params: Record<string, unknown> | undefined = undefined;
+          await entity.create({prop1, prop2, prop3}).go();
+          const results = await entity.create({prop1, prop2, prop3}).go()
+            .then(() => null)
+            .catch((err: ElectroError) => err);
+
+          expect(results).to.not.be.null;
+
+          if (results) {
+            expect(JSON.parse(JSON.stringify(results))).to.not.have.keys('params');
+            expect(Object.keys(results).find(key => key === 'params')).to.be.undefined;
+            console.log(results);
+          }  
+        });
+
+        it('should return null parameters if error occurs prior to compiling parameters', async () => {
+          const entity = new Entity(
+            {
+              model: {
+                service: "tests",
+                entity: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                  default: () => uuid(),
+                  field: "p",
+                },
+                prop2: {
+                  type: "string",
+                  required: true,
+                  field: "r",
+                },
+                prop3: {
+                  type: "string",
+                  required: true,
+                  field: "a",
+                  validate: (val) => {
+                    return val !== "abc";
+                  }
+                },
+              },
+              indexes: {
+                farm: {
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+              },
+            },
+            {client, table: "electro"},
+          );
+
+          const prop1 = uuid();
+          const prop2 = uuid();
+          const prop3 = "abc";
+
+          let params: Record<string, unknown> | undefined = undefined;
+          
+          
+          const results = await entity.create({prop1, prop2, prop3}).go({
+              logger: (event) => {
+                if (event.type === 'query') {
+                  params = event.params;
+                }
+              }
+            })
+            .then(() => null)
+            .catch((err: ElectroError) => err);
+
+          expect(params).to.be.undefined;  
+          expect(results).to.not.be.null;
+
+          if (results) {
+            expect(results.params()).to.be.null;
+          } 
+        });
+
+        it('should return the parameters sent to DynamoDB if available', async () => {
+          const entity = new Entity(
+            {
+              model: {
+                service: "tests",
+                entity: uuid(),
+                version: "1",
+              },
+              attributes: {
+                prop1: {
+                  type: "string",
+                  default: () => uuid(),
+                  field: "p",
+                },
+                prop2: {
+                  type: "string",
+                  required: true,
+                  field: "r",
+                },
+                prop3: {
+                  type: "string",
+                  required: true,
+                  field: "a",
+                },
+              },
+              indexes: {
+                farm: {
+                  pk: {
+                    field: "pk",
+                    composite: ["prop1"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["prop2"],
+                  },
+                },
+              },
+            },
+            {client, table: "electro"},
+          );
+
+          const prop1 = uuid();
+          const prop2 = uuid();
+          const prop3 = "abc";
+
+          let params: Record<string, unknown> | undefined = undefined;
+          await entity.create({prop1, prop2, prop3}).go();
+          const results = await entity.create({prop1, prop2, prop3}).go({
+            logger: (event) => {
+              if (event.type === 'query') {
+                params = event.params;
+              }
+            }
+          })
+            .then(() => null)
+            .catch((err: ElectroError) => err);
+
+          expect(results).to.not.be.null;
+
+          if (results) {
+            expect(results.params()).to.not.be.undefined.and.not.to.be.null;
+            expect(results.params()).to.deep.equal(params);
+          }
+        });
+      });
+
       it('should include original aws error as cause on thrown ElectroError', async () => {
         const entity = new Entity(
             {

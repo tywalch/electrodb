@@ -166,7 +166,7 @@ entityOne
   .delete({ prop1, prop2, prop4 })
   .go()
   .then((res) => {
-    expectType<string>(res.data.prop1);
+    expectType<string | undefined>(res.data?.prop1);
   });
 
 entityOne

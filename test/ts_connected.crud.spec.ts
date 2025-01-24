@@ -4240,6 +4240,56 @@ describe("attributes query option", () => {
     { table, client },
   );
 
+  describe('when attribues result in empty objects on response', () => {
+    const User = new Entity({
+      model: {
+        entity: 'user',
+        version: '1',
+        service: 'missing-attributes',
+      },
+      attributes: {
+        id: { type: 'string', required: true, readOnly: true },
+        name: { type: 'string' },
+      },
+      indexes: {
+        byId: {
+          pk: { field: 'pk', composite: ['id'] },
+          sk: { field: 'sk', composite: [] },
+        },
+      },
+    }, { table, client });
+
+    const id = uuid();
+
+    before(async () => {
+      await User.put({ id }).go();
+    });
+
+    it('should return an array with an empty object on query', async () => {
+      const { data } = await User.query.byId({ id }).go({ 
+        attributes: ['name']
+      });
+
+      expect(data).to.deep.equal([{}]);
+    });
+
+    it('should return an empty object on get', async () => {
+      const { data } = await User.get({ id }).go({
+        attributes: ['name'],
+      });
+
+      expect(data).to.deep.equal({});
+    });
+
+    it('should return an array with an empty object on batch get', async () => {
+      const { data } = await User.get([{ id }]).go({
+        attributes: ['name'],
+      });
+
+      expect(data).to.deep.equal([{}]);
+    });
+  });
+
   it("should return only the attributes specified in query options", async () => {
     const item: EntityItem<typeof entityWithSK> = {
       attr1: uuid(),
