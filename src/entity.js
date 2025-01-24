@@ -522,7 +522,7 @@ class Entity {
         Object.defineProperty(err, '__edb_params', {
           enumerable: false,
           value: params,
-        })
+        });
         err.__isAWSError = true;
         throw err;
       });
