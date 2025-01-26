@@ -14,6 +14,8 @@ import {
   expectNotAssignable,
 } from "tsd";
 
+import './test/tests.test-d';
+
 type Resolve<T> = T extends Function | string | number | boolean
   ? T
   : { [Key in keyof T]: Resolve<T[Key]> };
