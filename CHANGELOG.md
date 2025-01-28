@@ -558,3 +558,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Added
 - ElectroDB Error objects no contain a `params()` method. If your operation resulted in an error thrown by the DynamoDB client, you can call the `params()` method to get the compiled parameters sent to DynamoDB. This can be helpful for debugging. Note, that if the error was thrown prior to parameter creation (validation errors, invalid query errors, etc) then the `params()` method will return the value `null`. 
+
+## [3.2.0]
+### Fixed
+- When updating an item with a map attribute, if you attempt to set multiple keys that are identical after removing non-word characters `(\w)`, Electro will generate the same expression attribute name for both keys. This occurs even though the original keys are different, leading to conflicts in the update operation. This update introduces a new change that ensures that each key will generate a unique expression attribute name. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #461](https://github.com/tywalch/electrodb/pull/461). Thank you for your contribution!
