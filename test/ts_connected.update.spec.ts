@@ -2715,7 +2715,7 @@ describe("Update Item", () => {
 
     expect(params).to.deep.equal({
       UpdateExpression: 
-        "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(if_not_exists(#files, :files_default_value_u0), :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
+        "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(if_not_exists(#files, :files_default_value_u0), :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #custom.#prop1_2 = :custom_u1, #custom.#prop1_3 = :custom_u2, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
       ExpressionAttributeNames: {
         "#followers": "followers",
         "#stars": "stars",
