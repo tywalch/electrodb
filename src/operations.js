@@ -19,6 +19,7 @@ class ExpressionState {
     this.expression = "";
     this.prefix = prefix || "";
     this.refs = {};
+    this.formattedNameToOriginalNameMap = new Map();
   }
 
   incrementName(name) {
@@ -30,14 +31,28 @@ class ExpressionState {
 
   formatName(name = "") {
     const nameWasNotANumber = isNaN(name);
-    name = `${name}`.replaceAll(/[^\w]/g, "");
-    if (name.length === 0) {
-      name = "p";
-    } else if (nameWasNotANumber !== isNaN(name)) {
+    const originalName = `${name}`;
+    let formattedName = originalName.replaceAll(/[^\w]/g, "");
+
+    if (formattedName.length === 0) {
+      formattedName = "p";
+    } else if (nameWasNotANumber !== isNaN(formattedName)) {
       // name became number due to replace
-      name = `p${name}`;
+      formattedName = `p${formattedName}`;
     }
-    return name;
+
+    const originalFormattedName = formattedName;
+    let nameSuffix = 1;
+
+    while (
+      this.formattedNameToOriginalNameMap.has(formattedName) &&
+      this.formattedNameToOriginalNameMap.get(formattedName) !== originalName
+    ) {
+      formattedName = `${originalFormattedName}_${++nameSuffix}`;
+    }
+
+    this.formattedNameToOriginalNameMap.set(formattedName, originalName);
+    return formattedName;
   }
 
   // todo: make the structure: name, value, paths
