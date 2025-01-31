@@ -580,3 +580,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.1]
 ### Fixed
 - [Issue #475](https://github.com/tywalch/electrodb/issues/475); Fixes issue where some users reported errors exporting entities and/or types when using the `CustomAttributeType` function. They would receive an error similar to `Exported variable '...' has or is using name 'OpaquePrimitiveSymbol' from external module "..." but cannot be named.`.  
+
+## [3.4.2]
+### Fixed
+- [Issue #439](https://github.com/tywalch/electrodb/issues/439); Fixed missing TypeScript types for `attributes` property on `scan`, `find`, and `match` methods.
