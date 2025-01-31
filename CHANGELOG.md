@@ -558,3 +558,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Added
 - ElectroDB Error objects no contain a `params()` method. If your operation resulted in an error thrown by the DynamoDB client, you can call the `params()` method to get the compiled parameters sent to DynamoDB. This can be helpful for debugging. Note, that if the error was thrown prior to parameter creation (validation errors, invalid query errors, etc) then the `params()` method will return the value `null`. 
+
+## [3.1.1]
+### Fixed
+- [Issue #439](https://github.com/tywalch/electrodb/issues/439); Fixed missing TypeScript types for `attributes` property on `scan`, `find`, and `match` methods.

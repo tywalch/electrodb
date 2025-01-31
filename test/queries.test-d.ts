@@ -6,6 +6,7 @@ import {
   GoQueryTerminal,
   // PageQueryTerminal,
   Queries,
+  QueryRecordsGo,
 } from "../";
 import { expectType, expectError, expectNotType } from "tsd";
 
@@ -46,6 +47,10 @@ class MockEntity<
 
   getGoQueryTerminal(): GoQueryTerminal<A, F, C, S, ResponseItem<A, F, C, S>> {
     return {} as GoQueryTerminal<A, F, C, S, ResponseItem<A, F, C, S>>;
+  }
+
+  getScanTerminal(): QueryRecordsGo<ResponseItem<A, F, C, S>> {
+    return {} as QueryRecordsGo<ResponseItem<A, F, C, S>>;
   }
 
   // getPageQueryTerminal(): PageQueryTerminal<A,F,C,S, ResponseItem<A,F,C,S>, {abc: string}> {
@@ -440,7 +445,23 @@ const entityWithoutSKE = new Entity({
 });
 
 const entityWithSKGo = entityWithSK.getGoQueryTerminal();
+const entityWithSKScan = entityWithSK.getScanTerminal();
+
 entityWithSKGo({
+  attributes: ["attr2", "attr3", "attr4", "attr6", "attr8"],
+}).then((results) => {
+  expectType<
+    {
+      attr2: string;
+      attr3?: "123" | "def" | "ghi" | undefined;
+      attr4: "abc" | "ghi";
+      attr6?: number | undefined;
+      attr8: boolean;
+    }[]
+  >(results.data);
+});
+
+entityWithSKScan({
   attributes: ["attr2", "attr3", "attr4", "attr6", "attr8"],
 }).then((results) => {
   expectType<
@@ -472,7 +493,23 @@ entityWithSKGo({
 // });
 
 const entityWithoutSKGo = entityWithoutSK.getGoQueryTerminal();
+const entityWithoutSKScan = entityWithoutSK.getScanTerminal();
+
 entityWithoutSKGo({
+  attributes: ["attr2", "attr3", "attr4", "attr6", "attr8"],
+}).then((results) => {
+  expectType<
+    {
+      attr2?: string | undefined;
+      attr3?: "123" | "def" | "ghi" | undefined;
+      attr4: "abc" | "def";
+      attr6?: number | undefined;
+      attr8: boolean;
+    }[]
+  >(magnify(results.data));
+});
+
+entityWithoutSKScan({
   attributes: ["attr2", "attr3", "attr4", "attr6", "attr8"],
 }).then((results) => {
   expectType<

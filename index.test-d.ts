@@ -650,6 +650,23 @@ expectAssignable<"paramtest">(
 expectAssignable<"paramtest">(
   entityWithoutSK.get({ attr1: "abc" }).params<"paramtest">(),
 );
+expectAssignable<Promise<{ attr1: string; attr2: string }[]>>(
+  entityWithSK.scan
+    .go({ attributes: ["attr1", "attr2"] })
+    .then((res) => res.data),
+);
+expectAssignable<Promise<{ attr1: string; attr7?: any; attr6?: number }[]>>(
+  entityWithSK
+    .find({ attr10: true })
+    .go({ attributes: ["attr1", "attr7", "attr6"] })
+    .then((res) => res.data),
+);
+expectAssignable<Promise<{ attr4: "abc" | "ghi"; attr5?: string }[]>>(
+  entityWithSK
+    .match({ attr3: "def" })
+    .go({ attributes: ["attr4", "attr5"] })
+    .then((res) => res.data),
+);
 entityWithSK
   .get([{ attr1: "abc", attr2: "def" }])
   .go()
