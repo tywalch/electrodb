@@ -4363,6 +4363,59 @@ describe("attributes query option", () => {
         attr10: item.attr10,
       },
     ]);
+
+    const scanItem = await entityWithSK.scan
+      .go({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      })
+      .then((res) => res.data);
+
+    expect(scanItem).to.deep.equal([
+      {
+        attr2: item.attr2,
+        attr9: item.attr9,
+        attr5: item.attr5,
+        attr10: item.attr10,
+      },
+    ]);
+
+    const matchItem = await entityWithSK
+      .match({
+        attr1: item.attr1,
+        attr2: item.attr2,
+      })
+      .go({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      })
+      .then((res) => res.data);
+
+    expect(matchItem).to.deep.equal([
+      {
+        attr2: item.attr2,
+        attr9: item.attr9,
+        attr5: item.attr5,
+        attr10: item.attr10,
+      },
+    ]);
+
+    const findItem = await entityWithSK
+      .find({
+        attr1: item.attr1,
+        attr2: item.attr2,
+      })
+      .go({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      })
+      .then((res) => res.data);
+
+    expect(findItem).to.deep.equal([
+      {
+        attr2: item.attr2,
+        attr9: item.attr9,
+        attr5: item.attr5,
+        attr10: item.attr10,
+      },
+    ]);
   });
 
   it("should not add entity identifiers", async () => {
