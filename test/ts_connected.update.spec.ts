@@ -2705,6 +2705,8 @@ describe("Update Item", () => {
       .delete({ tags: [updates.tags] })
       .data((attr, op) => {
         op.set(attr.custom.prop1, updates.prop1);
+        op.set(attr.custom["prop1 "], updates.prop1);
+        op.set(attr.custom["prop1  "], updates.prop1);
         op.add(attr.views, op.name(attr.custom.prop3));
         op.add(attr.recentCommits[0].views, updates.recentCommitsViews);
         op.remove(attr.recentCommits[1].message);
@@ -2712,8 +2714,8 @@ describe("Update Item", () => {
       .params();
 
     expect(params).to.deep.equal({
-      UpdateExpression:
-        "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(if_not_exists(#files, :files_default_value_u0), :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
+      UpdateExpression: 
+        "SET #stars = (if_not_exists(#stars, :stars_default_value_u0) - :stars_u0), #files = list_append(if_not_exists(#files, :files_default_value_u0), :files_u0), #description = :description_u0, #custom.#prop1 = :custom_u0, #custom.#prop1_2 = :custom_u1, #custom.#prop1_3 = :custom_u2, #views = #views + #custom.#prop3, #repoOwner = :repoOwner_u0, #repoName = :repoName_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #about, #recentCommits[1].#message ADD #followers :followers_u0, #recentCommits[0].#views :views_u0 DELETE #tags :tags_u0",
       ExpressionAttributeNames: {
         "#followers": "followers",
         "#stars": "stars",
@@ -2723,6 +2725,8 @@ describe("Update Item", () => {
         "#tags": "tags",
         "#custom": "custom",
         "#prop1": "prop1",
+        "#prop1_2": "prop1 ",
+        "#prop1_3": "prop1  ",
         "#views": "views",
         "#prop3": "prop3",
         "#recentCommits": "recentCommits",
@@ -2741,6 +2745,8 @@ describe("Update Item", () => {
         ":description_u0": "updated description",
         ":tags_u0": params.ExpressionAttributeValues[":tags_u0"],
         ":custom_u0": "def",
+        ":custom_u1": "def",
+        ":custom_u2": "def",
         ":views_u0": 3,
         ":repoName_u0": repoName,
         ":repoOwner_u0": repoOwner,
