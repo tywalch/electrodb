@@ -566,6 +566,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.2.0]
 ### Fixed
 - When updating an item with a map attribute, if you attempt to set multiple keys that are identical after removing non-word characters `(\w)`, Electro will generate the same expression attribute name for both keys. This occurs even though the original keys are different, leading to conflicts in the update operation. This update introduces a new change that ensures that each key will generate a unique expression attribute name. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #461](https://github.com/tywalch/electrodb/pull/461). Thank you for your contribution!
+
+## [3.3.0]
 - Fixed typing for "batchGet" where return type was not defined as a Promise in some cases.
 
 ### Changed
