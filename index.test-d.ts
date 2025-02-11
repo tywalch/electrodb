@@ -905,6 +905,7 @@ expectAssignable<DeleteSingleParamsParams>({
   raw: true,
   table: "abc",
 });
+
 expectAssignable<DeleteSingleParamsParamsWithoutSK>({
   includeKeys: true,
   originalErr: true,
@@ -942,6 +943,7 @@ expectAssignable<DeleteBatchGoParams>({
   concurrency: 10,
   unprocessed: "raw",
 });
+
 expectAssignable<DeleteBatchGoParamsWithoutSK>({
   includeKeys: true,
   originalErr: true,
@@ -961,6 +963,7 @@ expectAssignable<DeleteBatchParamsParams>({
   concurrency: 10,
   unprocessed: "raw",
 });
+
 expectAssignable<DeleteBatchParamsParamsWithoutSK>({
   includeKeys: true,
   originalErr: true,
@@ -987,13 +990,14 @@ entityWithoutSK.delete({ attr1: "asbc" }).where((attr, op) => {
 });
 
 // Results
-expectAssignable<Promise<Item>>(
+expectAssignable<Promise<Item | null>>(
   entityWithSK
     .delete({ attr1: "abc", attr2: "def" })
     .go({ response: "all_old" })
     .then((res) => res.data),
 );
-expectAssignable<Promise<ItemWithoutSK>>(
+
+expectAssignable<Promise<ItemWithoutSK | null>>(
   entityWithoutSK
     .delete({ attr1: "abc" })
     .go({ response: "all_old" })

@@ -536,4 +536,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [2.15.0] - 2024-09-19
 ### Updated
 - Updated `@aws-sdk/lib-dynamodb` dependency from pinned version `3.395.0` to latest release `^3.654.0`. This impacts users using the v3 aws-sdk.
-- Adds dependency `@aws-sdk/util-dynamodb` for unmarshalling functionality.
+- Adds dependency `@aws-sdk/util-dynamodb` for unmarshalling functionality. 
+
+## [2.15.1] - 2025-02-11
+### Hotfix
+- Fixed typing for "batchGet" where return type was not defined as a Promise in some cases.
