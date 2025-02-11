@@ -2716,23 +2716,23 @@ type GoBatchGetTerminal<
 > = <Options extends GoBatchGetTerminalOptions<keyof ResponseItem>>(
   options?: Options,
 ) => Options extends GoBatchGetTerminalOptions<infer Attr>
-  ? "preserveBatchOrder" extends keyof Options
-    ? Options["preserveBatchOrder"] extends true
-      ? Promise<{
-          data: Array<
-            Resolve<
-              | {
-                  [Name in keyof ResponseItem as Name extends Attr
-                    ? Name
-                    : never]: ResponseItem[Name];
-                }
-              | null
-            >
-          >;
-          unprocessed: Array<
-            Resolve<AllTableIndexCompositeAttributes<A, F, C, S>>
-          >;
-        }>
+    ? "preserveBatchOrder" extends keyof Options
+      ? Options["preserveBatchOrder"] extends true
+        ? Promise<{
+            data: Array<
+              Resolve<
+                | {
+                    [Name in keyof ResponseItem as Name extends Attr
+                      ? Name
+                      : never]: ResponseItem[Name];
+                  }
+                | null
+              >
+            >;
+            unprocessed: Array<
+              Resolve<AllTableIndexCompositeAttributes<A, F, C, S>>
+            >;
+          }>
       : Promise<{
           data: Array<
             Resolve<{
@@ -2758,23 +2758,23 @@ type GoBatchGetTerminal<
         >;
       }>
   : "preserveBatchOrder" extends keyof Options
-  ? Options["preserveBatchOrder"] extends true
-    ? {
-        data: Array<Resolve<ResponseItem | null>>;
-        unprocessed: Array<
-          Resolve<AllTableIndexCompositeAttributes<A, F, C, S>>
-        >;
-      }
-    : {
+    ? Options["preserveBatchOrder"] extends true
+      ? Promise<{
+          data: Array<Resolve<ResponseItem | null>>;
+          unprocessed: Array<
+            Resolve<AllTableIndexCompositeAttributes<A, F, C, S>>
+          >;
+        }>
+      : Promise<{
+          data: Array<Resolve<ResponseItem>>;
+          unprocessed: Array<
+            Resolve<AllTableIndexCompositeAttributes<A, F, C, S>>
+          >;
+        }>
+    : Promise<{
         data: Array<Resolve<ResponseItem>>;
-        unprocessed: Array<
-          Resolve<AllTableIndexCompositeAttributes<A, F, C, S>>
-        >;
-      }
-  : {
-      data: Array<Resolve<ResponseItem>>;
-      unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A, F, C, S>>>;
-    };
+        unprocessed: Array<Resolve<AllTableIndexCompositeAttributes<A, F, C, S>>>;
+      }>;
 
 type GoGetTerminal<
   A extends string,

@@ -11,6 +11,7 @@ const troubleshoot = <Params extends any[], Response>(
   fn: (...params: Params) => Response,
   response: Response,
 ) => {};
+
 const magnify = <T>(value: T): Resolve<T> => {
   return {} as Resolve<T>;
 };
@@ -254,3 +255,63 @@ type CustomAttributeEntityItemType = EntityItem<typeof customAttributeEntity>;
 const unionEntityItem = {} as CustomAttributeEntityItemType["union"];
 
 expectType<UnionType>(magnify(unionEntityItem));
+
+const batchGetWithoutAttributesNoPreserve = entityWithSK.get([{attr1: 'abc', attr2: 'def'}]).go();
+expectType<Promise<{
+  data: {
+    attr1: string;
+    attr2: string;
+    attr3?: "def" | "123" | "ghi" | undefined;
+    attr4: "abc" | "ghi";
+    attr5?: string | undefined;
+    attr6?: number | undefined;
+    attr7?: any;
+    attr8: boolean;
+    attr9?: number | undefined;
+    attr10?: boolean | undefined;
+    attr11?: string[] | undefined;
+  }[];
+  unprocessed: {
+    attr1: string;
+    attr2: string;
+  }[];
+}>>(batchGetWithoutAttributesNoPreserve);
+
+const batchGetWithoutAttributesPreserve = entityWithSK.get([{attr1: 'abc', attr2: 'def'}]).go({ preserveBatchOrder: true });
+expectType<Promise<{
+  data: ({
+    attr1: string
+    attr2: string
+    attr3?: "123" | "def" | "ghi" | undefined
+    attr4: "abc" | "ghi"
+    attr5?: string | undefined
+    attr6?: number | undefined
+    attr7?: any
+    attr8: boolean
+    attr9?: number | undefined
+    attr10?: boolean | undefined
+    attr11?: string[] | undefined
+  } | null)[];
+  unprocessed: {
+    attr1: string;
+    attr2: string;
+  }[];
+}>>(batchGetWithoutAttributesPreserve);
+
+const batchGetWithAttributesNoPreserve = entityWithSK.get([{attr1: 'abc', attr2: 'def'}]).go({ attributes: ['attr5', 'attr10'] });
+expectType<Promise<{
+  data: Array<{
+    attr5?: string | undefined;
+    attr10?: boolean | undefined;
+  }>;
+  unprocessed: { attr1: string; attr2: string; }[];
+}>>(magnify(batchGetWithAttributesNoPreserve));
+
+const batchGetWithAttributesPreserve = entityWithSK.get([{attr1: 'abc', attr2: 'def'}]).go({ attributes: ['attr5', 'attr10'], preserveBatchOrder: true });
+expectType<Promise<{
+  data: Array<{
+    attr5?: string | undefined;
+    attr10?: boolean | undefined;
+  } | null>;
+  unprocessed: { attr1: string; attr2: string; }[];
+}>>(magnify(batchGetWithAttributesPreserve));

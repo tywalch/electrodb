@@ -554,7 +554,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.1.0]
 ### Fixed
-- [Issue #464](https://github.com/tywalch/electrodb/issues/464); When specifing return attributes on retrieval methods, ElectroDB would unexpectly return null or missing values if the options chosen resulted in an empty object being returned. This behavor could be confused with no results being found. ElectroDB now returns the empty object in these cases.
+- [Issue #464](https://github.com/tywalch/electrodb/issues/464); When specifying return attributes on retrieval methods, ElectroDB would unexpectedly return null or missing values if the options chosen resulted in an empty object being returned. This behavior could be confused with no results being found. ElectroDB now returns the empty object in these cases.
 
 ### Added
 - ElectroDB Error objects no contain a `params()` method. If your operation resulted in an error thrown by the DynamoDB client, you can call the `params()` method to get the compiled parameters sent to DynamoDB. This can be helpful for debugging. Note, that if the error was thrown prior to parameter creation (validation errors, invalid query errors, etc) then the `params()` method will return the value `null`. 
@@ -562,3 +562,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.2.0]
 ### Fixed
 - When updating an item with a map attribute, if you attempt to set multiple keys that are identical after removing non-word characters `(\w)`, Electro will generate the same expression attribute name for both keys. This occurs even though the original keys are different, leading to conflicts in the update operation. This update introduces a new change that ensures that each key will generate a unique expression attribute name. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #461](https://github.com/tywalch/electrodb/pull/461). Thank you for your contribution!
+- Fixed typing for "batchGet" where return type was not defined as a Promise in some cases.
+
+### Changed
+- [Issue #416](https://github.com/tywalch/electrodb/issues/416); You can now use reverse indexes on keys defined with a `template`. Previously, ElectroDB would throw if your entity definition used a `pk` field as an `sk` field (and vice versa) across two indexes. This constraint has been lifted _if_ the impacted keys are defined with a `template`. Eventually I would like to allow this for indexes without the use of `template`, but until then, this change should help some users who have been impacted by this constraint.

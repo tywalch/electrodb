@@ -1514,7 +1514,7 @@ describe("Index definition validations", function () {
       );
 
     expect(createEntity).to.throw(
-      "The Sort Key (sk) on Access Pattern 'global2' references the field 'gsi2pk' which is already referenced by the Access Pattern(s) 'global1' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition",
+      "The Sort Key (sk) on Access Pattern 'global2' references the field 'gsi2pk' which is already referenced by the Access Pattern(s) 'global1' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys unless their format is defined with a 'template'. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition",
     );
   });
 
