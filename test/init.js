@@ -10,7 +10,7 @@ const leadingUnderscoreKeys = require("./definitions/leadingunderscorekeys.json"
 const localSecondaryIndexes = require("./definitions/localsecondaryindexes.json");
 const keysOnly = require("./definitions/keysonly.json");
 const castKeys = require("./definitions/castkeys.json");
-
+const reverseIndex = require("./definitions/reverseindex.json");
 const shouldDestroy = process.argv.includes("--recreate");
 
 if (
@@ -79,6 +79,7 @@ async function main() {
     createTable(dynamodb, "electro_localsecondaryindex", localSecondaryIndexes),
     createTable(dynamodb, "electro_keysonly", keysOnly),
     createTable(dynamodb, "electro_castkeys", castKeys),
+    createTable(dynamodb, "electro_reverseindex", reverseIndex),
   ]);
 }
 

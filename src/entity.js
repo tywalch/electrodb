@@ -4276,6 +4276,7 @@ class Entity {
         facets: parsedPKAttributes.attributes,
         isCustom: parsedPKAttributes.isCustom,
         facetLabels: parsedPKAttributes.labels,
+        template: index.pk.template,
       };
       let sk = {};
       let parsedSKAttributes = {};
@@ -4294,6 +4295,7 @@ class Entity {
           facets: parsedSKAttributes.attributes,
           isCustom: parsedSKAttributes.isCustom,
           facetLabels: parsedSKAttributes.labels,
+          template: index.sk.template,
         };
         facets.fields.push(sk.field);
       }
@@ -4409,10 +4411,12 @@ class Entity {
         const definition = Object.values(facets.byField[pk.field]).find(
           (definition) => definition.index !== indexName,
         );
+
         const definitionsMatch = validations.stringArrayMatch(
           pk.facets,
           definition.facets,
         );
+
         if (!definitionsMatch) {
           throw new e.ElectroError(
             e.ErrorCodes.InconsistentIndexDefinition,
@@ -4427,6 +4431,20 @@ class Entity {
             )}'. Key fields must have the same composite attribute definitions across all indexes they are involved with`,
           );
         }
+
+        const keyTemplatesMatch = pk.template === definition.template
+
+        if (!keyTemplatesMatch) {
+          throw new e.ElectroError(
+            e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate,
+            `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
+              accessPattern,
+            )}' is defined with the template ${pk.template || '(undefined)'}, but the accessPattern '${u.formatIndexNameForDisplay(
+              definition.index,
+            )}' defines this field with the key labels ${definition.template || '(undefined)'}'. Key fields must have the same template definitions across all indexes they are involved with`,
+          );
+        }
+
         seenIndexFields[pk.field].push({ accessPattern, type: "pk" });
       } else {
         seenIndexFields[pk.field] = [];
@@ -4447,7 +4465,8 @@ class Entity {
           const isAlsoDefinedAsPK = seenIndexFields[sk.field].find(
             (field) => field.type === "pk",
           );
-          if (isAlsoDefinedAsPK) {
+
+          if (isAlsoDefinedAsPK && !sk.isCustom) {
             throw new e.ElectroError(
               e.ErrorCodes.InconsistentIndexDefinition,
               `The Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
@@ -4456,16 +4475,19 @@ class Entity {
                 pk.field
               }' which is already referenced by the Access Pattern(s) '${u.formatIndexNameForDisplay(
                 isAlsoDefinedAsPK.accessPattern,
-              )}' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys.`,
+              )}' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys unless their format is defined with a 'template'.`,
             );
           }
+
           const definition = Object.values(facets.byField[sk.field]).find(
             (definition) => definition.index !== indexName,
           );
+
           const definitionsMatch = validations.stringArrayMatch(
             sk.facets,
             definition.facets,
-          );
+          )
+
           if (!definitionsMatch) {
             throw new e.ElectroError(
               e.ErrorCodes.DuplicateIndexFields,
@@ -4480,6 +4502,20 @@ class Entity {
               )}'. Key fields must have the same composite attribute definitions across all indexes they are involved with`,
             );
           }
+
+          const keyTemplatesMatch = sk.template === definition.template
+
+          if (!keyTemplatesMatch) {
+            throw new e.ElectroError(
+              e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate,
+              `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
+                accessPattern,
+              )}' is defined with the template ${sk.template || '(undefined)'}, but the accessPattern '${u.formatIndexNameForDisplay(
+                definition.index,
+              )}' defines this field with the key labels ${definition.template || '(undefined)'}'. Key fields must have the same template definitions across all indexes they are involved with`,
+            );
+          }
+
           seenIndexFields[sk.field].push({ accessPattern, type: "sk" });
         } else {
           seenIndexFields[sk.field] = [];
