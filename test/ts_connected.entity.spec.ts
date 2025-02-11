@@ -1,8 +1,17 @@
 import { DocumentClient, PutItemInput } from "aws-sdk/clients/dynamodb";
-import { Entity, EntityRecord, EntityItem, createWriteTransaction, ElectroEvent, createConversions, Service } from "../";
+import {
+  Entity,
+  EntityRecord,
+  EntityItem,
+  createWriteTransaction,
+  ElectroEvent,
+  createConversions,
+  KeyCasingOption,
+} from "../";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
 const u = require("../src/util");
+const { KeyCasing } = require('../src/types.js')
 
 type ConversionTest = {
   item: any;
@@ -5457,652 +5466,713 @@ describe('execution option compare', () => {
   });
 });
 
-describe('when using reverse indexes', () => {
-  function expectToThrowMessage(fn: Function, message?: string) {
-    let err: any = null;
-    try {
-      fn();
-    } catch(e) {
-      err = e;
-    }
-    expect(err).to.not.be.null;
-    if (message) {
-      expect(err?.message).to.be.equal(message);
-    }
-  }
 
-  function expectNotToThrow(fn: Function) {
-    let err: any = null;
-    try {
-      fn();
-    } catch(e) {
-      err = e;
-    }
-    expect(err).to.be.null;
-  }
-
-  const entityName = uuid();
-  const serviceName = uuid();
-  const Thing = new Entity({
-    model: {
-      entity: entityName,
-      service: serviceName,
-      version: '1',
-    },
-    attributes: {
-      thingId: {
-        type: "string",
-        required: true
-      },
-      locationId: {
-        type: "string",
-        required: true
-      },
-      groupNumber: {
-        type: "number",
-        padding: {
-          length: 2,
-          char: '0',
-        },
-      },
-      count: {
-        type: 'number'
-      },
-      color: {
-        type: ['green', 'yellow', 'blue'] as const,
+  describe(`when using reverse indexes`, () => {
+    function expectNotToThrow(fn: Function) {
+      let err: any = null;
+      try {
+        fn();
+      } catch (e) {
+        err = e;
       }
-    },
-    indexes: {
-      sectors: {
-        pk: {
-          field: "pk",
-          composite: ["locationId", "groupNumber"],
-          template: `$${serviceName}#location_id\${locationId}#groupnumber_\${groupNumber}`,
-        },
-        sk: {
-          field: "sk",
-          composite: ["thingId"],
-          template: `${entityName}_1#thing_id_\${thingId}`,
-        }
-      },
-      things: {
-        index: 'reverse-index',
-        pk: {
-          field: "sk",
-          composite: ["thingId"],
-          template: `${entityName}_1#thing_id_\${thingId}`,
-        },
-        sk: {
-          field: "pk",
-          composite: ["locationId", "groupNumber"],
-          template: `$${serviceName}#location_id\${locationId}#groupnumber_\${groupNumber}`,
-        }
-      },
-    }
-  }, { table: 'electro_reverseindex', client });
-
-  type ThingItem = EntityItem<typeof Thing>;
-
-  async function expectItems(thingId: string, locationId: string, items: ThingItem[]) {
-    const things = await Thing.query.things({ thingId, locationId }).go();
-    expect(things.data).to.deep.equal(items);
-
-    const sectors = await Thing.query.sectors({ locationId, groupNumber: 2 }).go();
-    expect(sectors.data).to.deep.equal([items[2]]);
-
-    const gte = await Thing.query.things({ thingId, locationId }).gte({ groupNumber: 2 }).go();
-    expect(gte.data).to.deep.equal(items.slice(2));
-
-    const lte = await Thing.query.things({ thingId, locationId }).lte({ groupNumber: 2 }).go();
-    expect(lte.data).to.deep.equal(items.slice(0, 3));
-
-    const between = await Thing.query.things({ thingId, locationId }).between({ groupNumber: 1 }, { groupNumber: 3 }).go();
-    expect(between.data).to.deep.equal(items.slice(1, 4));
-
-    const begins = await Thing.query.things({ thingId, locationId }).begins({ groupNumber: 1 }).go();
-    expect(begins.data).to.deep.equal([items[1]]);
-
-    const lt = await Thing.query.things({ thingId, locationId }).lt({ groupNumber: 2 }).go();
-    expect(lt.data).to.deep.equal(items.slice(0, 2));
-
-    const gt = await Thing.query.things({ thingId, locationId }).gt({ groupNumber: 2 }).go();
-    expect(gt.data).to.deep.equal(items.slice(3));
-
-    const eq = await Thing.query.things({ thingId, locationId, groupNumber: 2 }).go();
-    expect(eq.data).to.deep.equal([items[2]]);
-  }
-
-  it('should perform full crud cycle', async () => {
-    const thingId = uuid();
-    const locationId = uuid();
-    const colors = ['green', 'green', 'yellow', 'blue', 'yellow'] as const;
-    const items = Array
-      .from({ length: 5 }, () => ({ thingId, locationId }))
-      .map((item, groupNumber) => ({
-        ...item,
-        groupNumber,
-        color: colors[groupNumber]
-      }));
-
-    await Thing.put(items).go();
-    await expectItems(thingId, locationId, items);
-
-    const updated = await Thing.update({ thingId, locationId, groupNumber: 2 }).add({ count: 100 }).go({response: 'all_new'});
-    expect(updated.data.count).to.equal(100);
-    const updatedItems = items.map(item => item.groupNumber === 2 ? { ...item, count: 100 } : item);
-    await expectItems(thingId, locationId, updatedItems);
-
-    await Thing.delete({ thingId, locationId, groupNumber: 5 }).go();
-    const deletedItems = updatedItems.filter(item => item.groupNumber !== 5);
-    await expectItems(thingId, locationId, deletedItems);
-  });
-
-  it('should not allow updates to key attributes', async () => {
-    const thingId = uuid();
-    const locationId = uuid();
-    const groupNumber = 2;
-    const item: ThingItem = {
-      thingId,
-      locationId,
-      groupNumber,
-      color: 'green'
-    };
-    await Thing.put(item).go();
-
-    const update = await Thing.update({ thingId, locationId, groupNumber })
-      // @ts-expect-error
-      .set({ thingId: uuid() })
-      .go()
-      .then(() => null)
-      .catch((err) => err);
-
-    expect(update).to.be.instanceOf(Error);
-    expect(update.message).to.equal('Attribute "thingId" is Read-Only and cannot be updated - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute');
-  });
-
-  it('should validate the that the composites between reverse indexes match', () => {
-    function createMismatchedSortKey() {
-      const entityName = uuid();
-      const serviceName = uuid();
-      return new Entity({
-        model: {
-          entity: entityName,
-          service: serviceName,
-          version: '1',
-        },
-        attributes: {
-          thingId: {
-            type: "string",
-            required: true
-          },
-          locationId: {
-            type: "string",
-            required: true
-          },
-          groupNumber: {
-            type: "number",
-            padding: {
-              length: 2,
-              char: '0',
-            },
-          },
-          count: {
-            type: 'number'
-          },
-          color: {
-            type: ['green', 'yellow', 'blue'] as const,
-          }
-        },
-        indexes: {
-          sectors: {
-            pk: {
-              field: "pk",
-              composite: ["locationId", "groupNumber"]
-            },
-            sk: {
-              field: "sk",
-              composite: []
-            }
-          },
-          things: {
-            index: 'reverse-index',
-            pk: {
-              field: "sk",
-              composite: ["thingId"]
-            },
-            sk: {
-              field: "pk",
-              composite: ["locationId", "groupNumber"]
-            }
-          },
-        }
-      }, { table: 'electro_reverseindex', client });
+      expect(err).to.be.null;
     }
 
-    function createMisMatchedPartitionKey() {
-      const entityName = uuid();
-      const serviceName = uuid();
-      const Thing = new Entity({
-        model: {
-          entity: entityName,
-          service: serviceName,
-          version: '1',
-        },
-        attributes: {
-          thingId: {
-            type: "string",
-            required: true
-          },
-          locationId: {
-            type: "string",
-            required: true
-          },
-          groupNumber: {
-            type: "number",
-            padding: {
-              length: 2,
-              char: '0',
-            },
-          },
-          count: {
-            type: 'number'
-          },
-          color: {
-            type: ['green', 'yellow', 'blue'] as const,
-          }
-        },
-        indexes: {
-          sectors: {
-            pk: {
-              field: "pk",
-              composite: ["locationId"],
-              template: "locationId#${locationId}"
-            },
-            sk: {
-              field: "sk",
-              composite: ["thingId"],
-              template: "thingId#${thingId}"
-            }
-          },
-          things: {
-            index: 'reverse-index',
-            pk: {
-              field: "sk",
-              composite: ["thingId"],
-              template: "thingId#${thingId}"
-            },
-            sk: {
-              field: "pk",
-              composite: ["locationId", "groupNumber"],
-              template: "locationId#${locationId}#groupNumber#${groupNumber}"
-            }
-          },
-        }
-      }, { table: 'electro_reverseindex', client });
+    function expectToThrowMessage(fn: Function, message?: string) {
+      let err: any = null;
+      try {
+        fn();
+      } catch (e) {
+        err = e;
+      }
+
+      if (message) {
+        expect(err?.message).to.be.equal(message);
+      }
     }
 
-    expect(createMismatchedSortKey).to.throw("Partition Key (pk) on Access Pattern 'things' is defined with the composite attribute(s) \"thingId\", but the accessPattern '(Primary Index)' defines this field with the composite attributes '. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition");
-    expect(createMisMatchedPartitionKey).to.throw("Sort Key (sk) on Access Pattern 'things' is defined with the composite attribute(s) \"locationId\", \"groupNumber\", but the accessPattern '(Primary Index)' defines this field with the composite attributes \"locationId\"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-fields");
-  });
+    function expectToThrowCode(fn: Function, code: number) {
+      let err: any = null;
+      try {
+        fn();
+      } catch (e) {
+        err = e;
+      }
 
-  describe("when key templates do not match across usages", () => {
-    it('should throw when a pk does not match', () => {
-      expectToThrowMessage(() => {
-        new Entity({
-          model: {
-            entity: 'test',
-            service: 'test',
-            version: '1',
-          },
-          attributes: {
-            attr1: {
-              type: "string",
-              required: true
-            },
-            attr2: {
-              type: "string",
-              required: true
-            },
-            attr3: {
-              type: "string",
-              required: true
-            },
-          },
-          indexes: {
-            followers: {
-              pk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "attr1#${attr1}"
-              },
-              sk: {
-                field: "sk",
-                composite: ["attr2"],
-              }
-            },
-            followings: {
-              index: 'pk-gsi1sk-index',
-              pk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "attr2#${attr1}"
-              },
-              sk: {
-                field: "gsi1sk",
-                composite: ["attr3"]
-              }
-            },
+      expect(err?.code).to.be.equal(code);
+    }
+
+    for (const useTemplate of [true, false]) {
+      describe(`when templates ${useTemplate ? 'are' : 'arent'} used`, () => {
+        function expectNotToThrow(fn: Function) {
+          let err: any = null;
+          try {
+            fn();
+          } catch (e) {
+            err = e;
           }
-        });
-      }, "Partition Key (pk) on Access Pattern 'followings' is defined with the template attr2#${attr1}, but the accessPattern '(Primary Index)' defines this field with the key labels attr1#${attr1}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
-    });
+          expect(err).to.be.null;
+        }
 
-    it('should throw when an sk does not match', () => {
-      expectToThrowMessage(() => {
-        new Entity({
+        const entityName = uuid();
+        const serviceName = uuid();
+        const createThing = (e = entityName, s = serviceName) => new Entity({
           model: {
-            entity: 'test',
-            service: 'test',
+            entity: e,
+            service: s,
             version: '1',
           },
           attributes: {
-            attr1: {
+            thingId: {
               type: "string",
               required: true
             },
-            attr2: {
+            locationId: {
               type: "string",
               required: true
             },
-            attr3: {
-              type: "string",
-              required: true
+            groupNumber: {
+              type: "number",
+              padding: {
+                length: 2,
+                char: '0',
+              },
             },
+            count: {
+              type: 'number'
+            },
+            color: {
+              type: ['green', 'yellow', 'blue'] as const,
+            }
           },
           indexes: {
-            followers: {
+            sectors: {
               pk: {
                 field: "pk",
-                composite: ["attr1"],
+                composite: ["locationId", "groupNumber"],
+                template: useTemplate ? `$${serviceName}#location_id\${locationId}#groupnumber_\${groupNumber}` : undefined,
               },
               sk: {
                 field: "sk",
-                composite: ["attr2"],
-                template: "attr2#${attr2}"
+                composite: ["thingId"],
+                template: useTemplate ? `${entityName}_1#thing_id_\${thingId}` : undefined,
               }
             },
-            followings: {
-              index: 'gsi1pk-sk-index',
-              pk: {
-                field: "gsi1pk",
-                composite: ["attr1"],
-              },
-              sk: {
-                field: "sk",
-                composite: ["attr2"],
-                template: "attr3#${attr2}"
-              }
-            },
-          }
-        });
-      }, 'Sort Key (sk) on Access Pattern \'followings\' is defined with the template attr3#${attr2}, but the accessPattern \'(Primary Index)\' defines this field with the key labels attr2#${attr2}\'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template');
-    });
-  });
-
-  describe('given reverse index template requirements', () => {
-    it('should throw when a reverse index is defined without using the template syntax', () => {
-      expectToThrowMessage(() => {
-        new Entity({
-          model: {
-            entity: 'test',
-            service: 'test',
-            version: '1',
-          },
-          attributes: {
-            attr1: {
-              type: "string",
-              required: true
-            },
-            attr2: {
-              type: "string",
-              required: true
-            },
-            attr3: {
-              type: "string",
-              required: true
-            },
-          },
-          indexes: {
-            followers: {
-              pk: {
-                field: "pk",
-                composite: ["attr1"],
-              },
-              sk: {
-                field: "sk",
-                composite: ["attr2"],
-              }
-            },
-            followings: {
-              index: 'gsi1pk-pk-index',
-              pk: {
-                field: "gsi1pk",
-                composite: ["attr3"]
-              },
-              sk: {
-                field: "pk",
-                composite: ["attr1"],
-              },
-            },
-          }
-        });
-      }, "The Sort Key (sk) on Access Pattern 'followings' references the field 'gsi1pk' which is already referenced by the Access Pattern(s) 'followers' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys unless their format is defined with a 'template'. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition");
-    });
-
-    it('should not throw when only a single key is reversed and the other doesnt use the template syntax', () => {
-      expectNotToThrow(() => {
-        new Entity({
-          model: {
-            entity: 'test',
-            service: 'test',
-            version: '1',
-          },
-          attributes: {
-            attr1: {
-              type: "string",
-              required: true
-            },
-            attr2: {
-              type: "string",
-              required: true
-            },
-            attr3: {
-              type: "string",
-              required: true
-            },
-          },
-          indexes: {
-            followers: {
-              pk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "attr1#${attr1}"
-              },
-              sk: {
-                field: "sk",
-                composite: ["attr2"],
-              }
-            },
-            followings: {
-              index: 'gsi1pk-pk-index',
-              pk: {
-                field: "gsi1pk",
-                composite: ["attr3"]
-              },
-              sk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "attr1#${attr1}"
-              },
-            },
-          }
-        });
-      });
-    });
-
-    it('should not throw when both keys are reversed but they appropriately use the template syntax', () => {
-      expectNotToThrow(() => {
-        new Entity({
-          model: {
-            entity: 'test',
-            service: 'test',
-            version: '1',
-          },
-          attributes: {
-            attr1: {
-              type: "string",
-              required: true
-            },
-            attr2: {
-              type: "string",
-              required: true
-            },
-            attr3: {
-              type: "string",
-              required: true
-            },
-          },
-          indexes: {
-            followers: {
-              pk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "attr1#${attr1}"
-              },
-              sk: {
-                field: "sk",
-                composite: ["attr2"],
-                template: "attr2#${attr2}"
-              }
-            },
-            followings: {
+            things: {
               index: 'reverse-index',
               pk: {
                 field: "sk",
-                composite: ["attr2"],
-                template: "attr2#${attr2}"
+                composite: ["thingId"],
+                template: useTemplate ? `${entityName}_1#thing_id_\${thingId}` : undefined,
               },
               sk: {
                 field: "pk",
-                composite: ["attr1"],
-                template: "attr1#${attr1}"
-              },
+                composite: ["locationId", "groupNumber"],
+                template: useTemplate ? `$${serviceName}#location_id\${locationId}#groupnumber_\${groupNumber}` : undefined,
+              }
             },
           }
+        }, { table: 'electro_reverseindex', client });
+
+        type Thing = ReturnType<typeof createThing>;
+        type ThingItem = EntityItem<Thing>;
+
+        async function expectItems(thing: Thing, thingId: string, locationId: string, items: ThingItem[]) {
+          const things = await thing.query.things({ thingId, locationId }).go();
+          expect(things.data).to.deep.equal(items);
+
+          const sectors = await thing.query.sectors({ locationId, groupNumber: 2 }).go();
+          expect(sectors.data).to.deep.equal([items[2]]);
+
+          const gte = await thing.query.things({ thingId, locationId }).gte({ groupNumber: 2 }).go();
+          expect(gte.data).to.deep.equal(items.slice(2));
+
+          const lte = await thing.query.things({ thingId, locationId }).lte({ groupNumber: 2 }).go();
+          expect(lte.data).to.deep.equal(items.slice(0, 3));
+
+          const between = await thing.query.things({
+            thingId,
+            locationId
+          }).between({ groupNumber: 1 }, { groupNumber: 3 }).go();
+          expect(between.data).to.deep.equal(items.slice(1, 4));
+
+          const begins = await thing.query.things({ thingId, locationId }).begins({ groupNumber: 1 }).go();
+          expect(begins.data).to.deep.equal([items[1]]);
+
+          const lt = await thing.query.things({ thingId, locationId }).lt({ groupNumber: 2 }).go();
+          expect(lt.data).to.deep.equal(items.slice(0, 2));
+
+          const gt = await thing.query.things({ thingId, locationId }).gt({ groupNumber: 2 }).go();
+          expect(gt.data).to.deep.equal(items.slice(3));
+
+          const eq = await thing.query.things({ thingId, locationId, groupNumber: 2 }).go();
+          expect(eq.data).to.deep.equal([items[2]]);
+        }
+
+        it('should perform full crud cycle', async () => {
+          const thingId = uuid();
+          const locationId = uuid();
+          const colors = ['green', 'green', 'yellow', 'blue', 'yellow'] as const;
+          const items = Array
+            .from({ length: 5 }, () => ({ thingId, locationId }))
+            .map((item, groupNumber) => ({
+              ...item,
+              groupNumber,
+              color: colors[groupNumber]
+            }));
+          const thing = createThing();
+          await thing.put(items).go();
+          await expectItems(thing, thingId, locationId, items);
+
+          const updated = await thing.update({
+            thingId,
+            locationId,
+            groupNumber: 2
+          }).add({ count: 100 }).go({ response: 'all_new' });
+          expect(updated.data.count).to.equal(100);
+          const updatedItems = items.map(item => item.groupNumber === 2 ? { ...item, count: 100 } : item);
+          await expectItems(thing, thingId, locationId, updatedItems);
+
+          await thing.delete({ thingId, locationId, groupNumber: 5 }).go();
+          const deletedItems = updatedItems.filter(item => item.groupNumber !== 5);
+          await expectItems(thing, thingId, locationId, deletedItems);
+        });
+
+        it('should not allow updates to key attributes', async () => {
+          const thingId = uuid();
+          const locationId = uuid();
+          const groupNumber = 2;
+          const item: ThingItem = {
+            thingId,
+            locationId,
+            groupNumber,
+            color: 'green'
+          };
+
+          const thing = createThing();
+
+          await thing.put(item).go();
+
+          const update = await thing.update({ thingId, locationId, groupNumber })
+            // @ts-expect-error
+            .set({ thingId: uuid() })
+            .go()
+            .then(() => null)
+            .catch((err) => err);
+
+          expect(update).to.be.instanceOf(Error);
+          expect(update.message).to.equal('Attribute "thingId" is Read-Only and cannot be updated - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-attribute');
+        });
+
+        it('should validate the that the composites between reverse indexes match', () => {
+          function createMismatchedSortKey() {
+            const entityName = uuid();
+            const serviceName = uuid();
+            return new Entity({
+              model: {
+                entity: entityName,
+                service: serviceName,
+                version: '1',
+              },
+              attributes: {
+                thingId: {
+                  type: "string",
+                  required: true
+                },
+                locationId: {
+                  type: "string",
+                  required: true
+                },
+                groupNumber: {
+                  type: "number",
+                  padding: {
+                    length: 2,
+                    char: '0',
+                  },
+                },
+                count: {
+                  type: 'number'
+                },
+                color: {
+                  type: ['green', 'yellow', 'blue'] as const,
+                }
+              },
+              indexes: {
+                sectors: {
+                  pk: {
+                    field: "pk",
+                    composite: ["locationId", "groupNumber"]
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: []
+                  }
+                },
+                things: {
+                  index: 'reverse-index',
+                  pk: {
+                    field: "sk",
+                    composite: ["thingId"]
+                  },
+                  sk: {
+                    field: "pk",
+                    composite: ["locationId", "groupNumber"]
+                  }
+                },
+              }
+            }, { table: 'electro_reverseindex', client });
+          }
+
+          function createMisMatchedPartitionKey() {
+            const entityName = uuid();
+            const serviceName = uuid();
+            const Thing = new Entity({
+              model: {
+                entity: entityName,
+                service: serviceName,
+                version: '1',
+              },
+              attributes: {
+                thingId: {
+                  type: "string",
+                  required: true
+                },
+                locationId: {
+                  type: "string",
+                  required: true
+                },
+                groupNumber: {
+                  type: "number",
+                  padding: {
+                    length: 2,
+                    char: '0',
+                  },
+                },
+                count: {
+                  type: 'number'
+                },
+                color: {
+                  type: ['green', 'yellow', 'blue'] as const,
+                }
+              },
+              indexes: {
+                sectors: {
+                  pk: {
+                    field: "pk",
+                    composite: ["locationId"],
+                    template: useTemplate ? "locationId#${locationId}" : undefined,
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: ["thingId"],
+                    template: useTemplate ? "thingId#${thingId}" : undefined,
+                  }
+                },
+                things: {
+                  index: 'reverse-index',
+                  pk: {
+                    field: "sk",
+                    composite: ["thingId"],
+                    template: useTemplate ? "thingId#${thingId}" : undefined,
+                  },
+                  sk: {
+                    field: "pk",
+                    composite: ["locationId", "groupNumber"],
+                    template: useTemplate ? "locationId#${locationId}#groupNumber#${groupNumber}" : undefined,
+                  }
+                },
+              }
+            }, { table: 'electro_reverseindex', client });
+          }
+
+          expect(createMismatchedSortKey).to.throw("Partition Key (pk) on Access Pattern 'things' is defined with the composite attribute(s) \"thingId\", but the accessPattern '(Primary Index)' defines this field with the composite attributes '. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition");
+          expect(createMisMatchedPartitionKey).to.throw("Sort Key (sk) on Access Pattern 'things' is defined with the composite attribute(s) \"locationId\", \"groupNumber\", but the accessPattern '(Primary Index)' defines this field with the composite attributes \"locationId\"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-fields");
+        });
+
+      });
+    }
+
+    describe("when key templates do not match across usages", () => {
+      it('should not throw when only a single key is reversed and the other doesnt use the template syntax', () => {
+        expectNotToThrow(() => {
+          new Entity({
+            model: {
+              entity: 'test',
+              service: 'test',
+              version: '1',
+            },
+            attributes: {
+              attr1: {
+                type: "string",
+                required: true
+              },
+              attr2: {
+                type: "string",
+                required: true
+              },
+              attr3: {
+                type: "string",
+                required: true
+              },
+            },
+            indexes: {
+              followers: {
+                pk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "attr1#${attr1}"
+                },
+                sk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                }
+              },
+              followings: {
+                index: 'gsi1pk-pk-index',
+                pk: {
+                  field: "gsi1pk",
+                  composite: ["attr3"]
+                },
+                sk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "attr1#${attr1}"
+                },
+              },
+            }
+          });
         });
       });
-    });
+
+      it('should not throw when both keys are reversed but they appropriately use the template syntax', () => {
+        expectNotToThrow(() => {
+          new Entity({
+            model: {
+              entity: 'test',
+              service: 'test',
+              version: '1',
+            },
+            attributes: {
+              attr1: {
+                type: "string",
+                required: true
+              },
+              attr2: {
+                type: "string",
+                required: true
+              },
+              attr3: {
+                type: "string",
+                required: true
+              },
+            },
+            indexes: {
+              followers: {
+                pk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "attr1#${attr1}"
+                },
+                sk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                  template: "attr2#${attr2}"
+                }
+              },
+              followings: {
+                index: 'reverse-index',
+                pk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                  template: "attr2#${attr2}"
+                },
+                sk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "attr1#${attr1}"
+                },
+              },
+            }
+          });
+        });
+      });
+
+      it('should throw if reverse index with template syntax does not match across index definitions', () => {
+        expectToThrowMessage(() => {
+          new Entity({
+            model: {
+              entity: 'test',
+              service: 'test',
+              version: '1',
+            },
+            attributes: {
+              attr1: {
+                type: "string",
+                required: true
+              },
+              attr2: {
+                type: "string",
+                required: true
+              },
+              attr3: {
+                type: "string",
+                required: true
+              },
+            },
+            indexes: {
+              followers: {
+                pk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "attr1#${attr1}"
+                },
+                sk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                }
+              },
+              followings: {
+                index: 'gsi1pk-pk-index',
+                pk: {
+                  field: "gsi1pk",
+                  composite: ["attr3"]
+                },
+                sk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "field1#${attr1}"
+                },
+              },
+            }
+          });
+        }, "Sort Key (sk) on Access Pattern 'followings' is defined with the template field1#${attr1}, but the accessPattern '(Primary Index)' defines this field with the key labels attr1#${attr1}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
+
+        expectToThrowMessage(() => {
+          new Entity({
+            model: {
+              entity: 'test',
+              service: 'test',
+              version: '1',
+            },
+            attributes: {
+              attr1: {
+                type: "string",
+                required: true
+              },
+              attr2: {
+                type: "string",
+                required: true
+              },
+              attr3: {
+                type: "string",
+                required: true
+              },
+            },
+            indexes: {
+              followers: {
+                pk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "field1#${attr1}"
+                },
+                sk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                  template: "field2#${attr2}"
+                }
+              },
+              followings: {
+                index: 'reverse-index',
+                pk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                  template: "attr2#${attr2}"
+                },
+                sk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "attr1#${attr1}"
+                },
+              },
+            }
+          });
+        }, "Partition Key (pk) on Access Pattern 'followings' is defined with the template attr2#${attr2}, but the accessPattern '(Primary Index)' defines this field with the key labels field2#${attr2}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
+      });
+
+      it('should throw when a pk does not match', () => {
+        expectToThrowMessage(() => {
+          new Entity({
+            model: {
+              entity: 'test',
+              service: 'test',
+              version: '1',
+            },
+            attributes: {
+              attr1: {
+                type: "string",
+                required: true
+              },
+              attr2: {
+                type: "string",
+                required: true
+              },
+              attr3: {
+                type: "string",
+                required: true
+              },
+            },
+            indexes: {
+              followers: {
+                pk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "attr1#${attr1}",
+                },
+                sk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                }
+              },
+              followings: {
+                index: 'pk-gsi1sk-index',
+                pk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                  template: "attr2#${attr1}",
+                },
+                sk: {
+                  field: "gsi1sk",
+                  composite: ["attr3"]
+                }
+              },
+            }
+          });
+        }, "Partition Key (pk) on Access Pattern 'followings' is defined with the template attr2#${attr1}, but the accessPattern '(Primary Index)' defines this field with the key labels attr1#${attr1}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
+      });
 
     it('should throw if reverse index with template syntax does not match across index definitions', () => {
-      expectToThrowMessage(() => {
-        new Entity({
-          model: {
-            entity: 'test',
-            service: 'test',
-            version: '1',
-          },
-          attributes: {
-            attr1: {
-              type: "string",
-              required: true
+        expectToThrowMessage(() => {
+          new Entity({
+            model: {
+              entity: 'test',
+              service: 'test',
+              version: '1',
             },
-            attr2: {
-              type: "string",
-              required: true
-            },
-            attr3: {
-              type: "string",
-              required: true
-            },
-          },
-          indexes: {
-            followers: {
-              pk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "attr1#${attr1}"
+            attributes: {
+              attr1: {
+                type: "string",
+                required: true
               },
-              sk: {
-                field: "sk",
-                composite: ["attr2"],
-              }
-            },
-            followings: {
-              index: 'gsi1pk-pk-index',
-              pk: {
-                field: "gsi1pk",
-                composite: ["attr3"]
+              attr2: {
+                type: "string",
+                required: true
               },
-              sk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "field1#${attr1}"
+              attr3: {
+                type: "string",
+                required: true
               },
             },
-          }
-        });
-      }, "Sort Key (sk) on Access Pattern 'followings' is defined with the template field1#${attr1}, but the accessPattern '(Primary Index)' defines this field with the key labels attr1#${attr1}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
-
-      expectToThrowMessage(() => {
-        new Entity({
-          model: {
-            entity: 'test',
-            service: 'test',
-            version: '1',
-          },
-          attributes: {
-            attr1: {
-              type: "string",
-              required: true
-            },
-            attr2: {
-              type: "string",
-              required: true
-            },
-            attr3: {
-              type: "string",
-              required: true
-            },
-          },
-          indexes: {
-            followers: {
-              pk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "field1#${attr1}"
+            indexes: {
+              followers: {
+                pk: {
+                  field: "pk",
+                  composite: ["attr1"],
+                },
+                sk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                  template: "attr2#${attr2}",
+                }
               },
-              sk: {
-                field: "sk",
-                composite: ["attr2"],
-                template: "field2#${attr2}"
-              }
-            },
-            followings: {
-              index: 'reverse-index',
-              pk: {
-                field: "sk",
-                composite: ["attr2"],
-                template: "attr2#${attr2}"
+              followings: {
+                index: 'gsi1pk-sk-index',
+                pk: {
+                  field: "gsi1pk",
+                  composite: ["attr1"],
+                },
+                sk: {
+                  field: "sk",
+                  composite: ["attr2"],
+                  template: "attr3#${attr2}",
+                }
               },
-              sk: {
-                field: "pk",
-                composite: ["attr1"],
-                template: "attr1#${attr1}"
-              },
-            },
-          }
-        });
-      }, "Partition Key (pk) on Access Pattern 'followings' is defined with the template attr2#${attr2}, but the accessPattern '(Primary Index)' defines this field with the key labels field2#${attr2}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
+            }
+          });
+        }, 'Sort Key (sk) on Access Pattern \'followings\' is defined with the template attr3#${attr2}, but the accessPattern \'(Primary Index)\' defines this field with the key labels attr2#${attr2}\'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template');
+      });
     });
+
+    describe('when reused index definitions are not compatible', () => {
+      const casingOptions = [...Object.keys(KeyCasing), undefined] as Array<KeyCasingOption | undefined>;
+
+      function keyCasingMatches(left: string | undefined, right: string | undefined): boolean {
+        const leftOption = u.toKeyCasingOption(left);
+        const rightOption = u.toKeyCasingOption(right);
+        return leftOption === rightOption;
+      }
+
+      describe('when casing options are not compatible', () => {
+        for (const leftCasing of casingOptions) {
+          for (const rightCasing of casingOptions) {
+            it(`should enforce matching casing when the primary index defines an sk with a case of ${leftCasing} a GSI defines a pk with the same field name but with casing defined with the casing ${rightCasing}`, () => {
+              const create = () => {
+                new Entity({
+                  model: {
+                    entity: 'test',
+                    service: 'test',
+                    version: '1',
+                  },
+                  attributes: {
+                    attr1: {
+                      type: "string",
+                      required: true
+                    },
+                    attr2: {
+                      type: "string",
+                      required: true
+                    },
+                    attr3: {
+                      type: "string",
+                      required: true
+                    },
+                  },
+                  indexes: {
+                    followers: {
+                      pk: {
+                        field: "pk",
+
+                        composite: ["attr1"],
+                      },
+                      sk: {
+                        field: 'sk',
+                        composite: ["attr2"],
+                        casing: leftCasing,
+                      }
+                    },
+                    followings: {
+                      index: 'reverse-index',
+                      pk: {
+                        field: "sk",
+                        composite: ["attr2"],
+                        casing: rightCasing
+                      },
+                      sk: {
+                        field: 'pk',
+                        composite: ["attr1"],
+                      }
+                    },
+                  }
+                });
+              }
+
+              if (keyCasingMatches(leftCasing, rightCasing)) {
+                expectNotToThrow(create);
+              } else {
+                expectToThrowCode(create, 1020);
+              }
+            });
+          }
+        }
+      });
+    })
   });
-});

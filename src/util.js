@@ -1,5 +1,4 @@
 const t = require("./types");
-const e = require("./errors");
 const v = require("./validations");
 
 function parseJSONPath(path = "") {
@@ -105,8 +104,24 @@ function formatStringCasing(str, casing, defaultCase) {
   }
 }
 
+function toKeyCasingOption(casing) {
+  switch(casing) {
+    case t.KeyCasing.upper:
+      return t.KeyCasing.upper;
+    case t.KeyCasing.none:
+      return t.KeyCasing.none;
+    case t.KeyCasing.lower:
+      return t.KeyCasing.lower;
+    case t.KeyCasing.default:
+    case undefined:
+      return t.DefaultKeyCasing;
+    default:
+      throw new Error(`Unknown casing option: ${casing}`);
+  }
+}
+
 function formatKeyCasing(str, casing) {
-  return formatStringCasing(str, casing, t.KeyCasing.lower);
+  return formatStringCasing(str, casing, t.DefaultKeyCasing);
 }
 
 function formatAttributeCasing(str, casing) {
@@ -268,6 +283,7 @@ module.exports = {
   getModelVersion,
   formatKeyCasing,
   cursorFormatter,
+  toKeyCasingOption,
   genericizeJSONPath,
   commaSeparatedString,
   formatAttributeCasing,

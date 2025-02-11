@@ -295,6 +295,8 @@ const KeyCasing = {
   default: "default",
 };
 
+const DefaultKeyCasing = KeyCasing.lower;
+
 const EventSubscriptionTypes = ["query", "results"];
 
 const TerminalOperation = {
@@ -378,4 +380,5 @@ module.exports = {
   TransactionMethods,
   UpsertOperations,
   BatchWriteTypes,
+  DefaultKeyCasing,
 };
