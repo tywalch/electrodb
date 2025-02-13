@@ -127,6 +127,12 @@ const ErrorCodes = {
     name: "InvalidIndexCompositeWithAttributeName",
     sym: ErrorCode,
   },
+  IncompatibleKeyCasing: {
+    code: 1020,
+    section: "incompatible-key-casing",
+    name: "IncompatibleKeyCasing",
+    sym: ErrorCode,
+  },
   InvalidListenerProvided: {
     code: 1020,
     section: "invalid-listener-provided",

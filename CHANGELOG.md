@@ -570,5 +570,9 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.3.0]
 - Fixed typing for "batchGet" where return type was not defined as a Promise in some cases.
 
-### Changed
+### Added
 - [Issue #416](https://github.com/tywalch/electrodb/issues/416); You can now use reverse indexes on keys defined with a `template`. Previously, ElectroDB would throw if your entity definition used a `pk` field as an `sk` field (and vice versa) across two indexes. This constraint has been lifted _if_ the impacted keys are defined with a `template`. Eventually I would like to allow this for indexes without the use of `template`, but until then, this change should help some users who have been impacted by this constraint.
+
+## [3.4.0]
+### Added
+- [Issue #416](https://github.com/tywalch/electrodb/issues/416); You can now use reverse indexes without the use of `template`.

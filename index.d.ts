@@ -3648,6 +3648,8 @@ export type AccessPatternCollection<C extends string> = C | ReadonlyArray<C>;
 
 export type KeyCastOption = "string" | "number";
 
+export type KeyCasingOption = "upper" | "lower" | "none" | "default";
+
 export interface Schema<A extends string, F extends string, C extends string> {
   readonly model: {
     readonly entity: string;
@@ -3666,14 +3668,14 @@ export interface Schema<A extends string, F extends string, C extends string> {
       readonly collection?: AccessPatternCollection<C>;
       readonly condition?: (composite: Record<string, unknown>) => boolean;
       readonly pk: {
-        readonly casing?: "upper" | "lower" | "none" | "default";
+        readonly casing?: KeyCasingOption;
         readonly field: string;
         readonly composite: ReadonlyArray<F>;
         readonly template?: string;
         readonly cast?: KeyCastOption;
       };
       readonly sk?: {
-        readonly casing?: "upper" | "lower" | "none" | "default";
+        readonly casing?: KeyCasingOption;
         readonly field: string;
         readonly composite: ReadonlyArray<F>;
         readonly template?: string;

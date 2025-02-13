@@ -3,6 +3,7 @@ const { Schema } = require("./schema");
 const {
   AllPages,
   KeyCasing,
+  DefaultKeyCasing,
   TableIndex,
   FormatToReturnValues,
   ReturnValues,
@@ -1363,10 +1364,6 @@ class Entity {
 
   setTableName(tableName) {
     this.config.table = tableName;
-  }
-
-  getTableName() {
-    return this.config.table;
   }
 
   getTableName() {
@@ -3519,6 +3516,7 @@ class Entity {
     modelVersion,
     isClustered,
     schema,
+    prefixes = {},
   }) {
     /*
 			Collections will prefix the sort key so they can be queried with
@@ -3527,7 +3525,6 @@ class Entity {
 			of a customKey AND a collection, the collection is ignored to favor
 			the custom key.
 		*/
-
     let keys = {
       pk: {
         prefix: "",
@@ -3544,6 +3541,28 @@ class Entity {
         cast: tableIndex.sk ? tableIndex.sk.cast : undefined,
       },
     };
+
+    let previouslyDefinedPk = null;
+    let previouslyDefinedSk = null;
+    for (const [indexName, definition] of Object.entries(prefixes)) {
+      if (definition.pk.field === tableIndex.pk.field) {
+        previouslyDefinedPk = { indexName, definition: definition.pk };
+      } else if (definition.sk && definition.sk.field === tableIndex.pk.field) {
+        previouslyDefinedPk  = { indexName, definition: definition.sk };
+      }
+
+      if (tableIndex.sk) {
+        if (definition.pk.field === tableIndex.sk.field) {
+          previouslyDefinedSk = { indexName, definition: definition.pk };
+        } else if (definition.sk && definition.sk.field === tableIndex.sk.field) {
+          previouslyDefinedSk = { indexName, definition: definition.sk };
+        }
+      }
+
+      if (previouslyDefinedPk && (previouslyDefinedSk || !tableIndex.sk)) {
+        break;
+      }
+    }
 
     let pk = `$${service}`;
     let sk = "";
@@ -3634,6 +3653,37 @@ class Entity {
       } else {
         keys[castKey.type].cast = CastKeyOptions.string;
       }
+    }
+
+    if (previouslyDefinedPk) {
+      const casingMatch = u.toKeyCasingOption(keys.pk.casing) === u.toKeyCasingOption(previouslyDefinedPk.definition.casing);
+      if (!casingMatch) {
+        throw new e.ElectroError(
+          e.ErrorCodes.IncompatibleKeyCasing,
+          `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
+            tableIndex.index,
+          )}' is defined with the casing ${keys.pk.casing}, but the accessPattern '${u.formatIndexNameForDisplay(
+            previouslyDefinedPk.indexName,
+          )}' defines the same index field with the ${previouslyDefinedPk.definition.casing === DefaultKeyCasing ? '(default)' : ''} casing ${previouslyDefinedPk.definition.casing}. Key fields must have the same casing definitions across all indexes they are involved with.`,
+        );
+      }
+
+      keys.pk = previouslyDefinedPk.definition;
+    }
+
+    if (previouslyDefinedSk) {
+      const casingMatch = u.toKeyCasingOption(keys.sk.casing) === u.toKeyCasingOption(previouslyDefinedSk.definition.casing);
+      if (!casingMatch) {
+        throw new e.ElectroError(
+          e.ErrorCodes.IncompatibleKeyCasing,
+          `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
+            tableIndex.index,
+          )}' is defined with the casing ${keys.sk.casing}, but the accessPattern '${u.formatIndexNameForDisplay(
+            previouslyDefinedSk.indexName,
+          )}' defines the same index field with the ${previouslyDefinedSk.definition.casing === DefaultKeyCasing ? '(default)' : ''} casing ${previouslyDefinedSk.definition.casing}. Key fields must have the same casing definitions across all indexes they are involved with.`,
+        );
+      }
+      keys.sk = previouslyDefinedSk.definition;
     }
 
     return keys;
@@ -3772,17 +3822,21 @@ class Entity {
     if (!skAttributes.length) {
       skAttributes.push({});
     }
+
     let facets = this.model.facets.byIndex[index];
+
     let prefixes = this.model.prefixes[index];
     if (!prefixes) {
       throw new Error(`Invalid index: ${index}`);
     }
+
     let pk = this._makeKey(
       prefixes.pk,
       facets.pk,
       pkAttributes,
       this.model.facets.labels[index].pk,
     );
+
     let sk = [];
     let fulfilled = false;
     if (this.model.lookup.indexHasSortKeys[index]) {
@@ -3805,6 +3859,7 @@ class Entity {
         }
       }
     }
+
     return {
       pk: pk.key,
       sk,
@@ -3866,8 +3921,9 @@ class Entity {
     for (let i = 0; i < labels.length; i++) {
       const { name, label } = labels[i];
       const attribute = this.model.schema.getAttribute(name);
+
       let value = supplied[name];
-      if (supplied[name] === undefined && excludeLabelTail) {
+      if (value === undefined && excludeLabelTail) {
         break;
       }
 
@@ -3880,11 +3936,14 @@ class Entity {
       } else {
         key = `${key}#${label}_`;
       }
+
       // Undefined facet value means we cant build any more of the key
       if (supplied[name] === undefined) {
         break;
       }
+
       foundCount++;
+
       key = `${key}${value}`;
     }
 
@@ -4248,6 +4307,7 @@ class Entity {
         pk: false,
         sk: false,
       };
+
       const pkCasing =
         KeyCasing[index.pk.casing] === undefined
           ? KeyCasing.default
@@ -4462,23 +4522,6 @@ class Entity {
             }' as the field name for both the PK and SK. Fields used for indexes need to be unique to avoid conflicts.`,
           );
         } else if (seenIndexFields[sk.field] !== undefined) {
-          const isAlsoDefinedAsPK = seenIndexFields[sk.field].find(
-            (field) => field.type === "pk",
-          );
-
-          if (isAlsoDefinedAsPK && !sk.isCustom) {
-            throw new e.ElectroError(
-              e.ErrorCodes.InconsistentIndexDefinition,
-              `The Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
-                accessPattern,
-              )}' references the field '${
-                pk.field
-              }' which is already referenced by the Access Pattern(s) '${u.formatIndexNameForDisplay(
-                isAlsoDefinedAsPK.accessPattern,
-              )}' as a Partition Key. Fields mapped to Partition Keys cannot be also mapped to Sort Keys unless their format is defined with a 'template'.`,
-            );
-          }
-
           const definition = Object.values(facets.byField[sk.field]).find(
             (definition) => definition.index !== indexName,
           );
@@ -4640,6 +4683,7 @@ class Entity {
         modelVersion,
         isClustered: clusteredIndexes.has(accessPattern),
         schema,
+        prefixes,
       });
     }
     return prefixes;

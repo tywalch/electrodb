@@ -319,6 +319,16 @@ Collections allow for unique access patterns to be modeled between entities. It 
 **What to do about it:**
 Checkout the section [Collections](/en/modeling/collections) to learn more about collections, as well as the section [Using ElectroDB with existing data](/en/core-concepts/use-electrodb-with-existing-table) to learn more about considerations to make when using attributes as index fields.
 
+### Invalid Key Casing
+
+**Code: 1020**
+
+**Why this occurred:**
+The casing between instances of the same key field in your model is inconsistent. DynamoDB is case-sensitive, and ElectroDB will enforce this.
+
+**What to do about it:**
+Ensure that the casing of your key fields is consistent across your model.
+
 ## Invalid Query Errors
 
 ### Missing Composite Attributes
