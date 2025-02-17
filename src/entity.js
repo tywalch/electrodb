@@ -375,9 +375,8 @@ class Entity {
   }
 
   upsert(attributes = {}) {
-    let index = TableIndex;
     return this._makeChain(
-      index,
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
     ).upsert(attributes);
@@ -395,9 +394,8 @@ class Entity {
   }
 
   update(facets = {}) {
-    let index = TableIndex;
     return this._makeChain(
-      index,
+      TableIndex
       this._clausesWithFilters,
       clauses.index,
     ).update(facets);
@@ -426,21 +424,19 @@ class Entity {
   }
 
   async transactWrite(parameters, config) {
-    let response = await this._exec(
+    return this._exec(
       MethodTypes.transactWrite,
       parameters,
       config,
     );
-    return response;
   }
 
   async transactGet(parameters, config) {
-    let response = await this._exec(
+    return this._exec(
       MethodTypes.transactGet,
       parameters,
       config,
     );
-    return response;
   }
 
   async go(method, parameters = {}, config = {}) {
@@ -689,6 +685,7 @@ class Entity {
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
+    let morePaginationRequired = false;
     const shouldHydrate = config.hydrate && method === MethodTypes.query;
     do {
       let response = await this._exec(
@@ -761,14 +758,29 @@ class Entity {
       } else {
         return response;
       }
+
       iterations++;
-    } while (
-      ExclusiveStartKey &&
-      (pages === AllPages ||
-        config.count !== undefined ||
-        iterations < pages) &&
-      (config.count === undefined || count < config.count)
-    );
+
+      const countOptionRequiresMorePagination = (
+        config.count !== undefined && count < config.count
+      );
+
+      const pagesOptionRequiresMorePagination =
+        pages === AllPages || iterations < pages;
+
+      const atleastOptionRequiresMorePagination =
+        config.atleast !== undefined && !config._isCollectionQuery && results.length < config.atleast;
+
+      const seekOptionRequiresMorePagination =
+        config.seek && !config._isCollectionQuery && results.length === 0;
+
+      morePaginationRequired =
+        atleastOptionRequiresMorePagination ||
+        countOptionRequiresMorePagination ||
+        pagesOptionRequiresMorePagination ||
+        seekOptionRequiresMorePagination;
+
+    } while (ExclusiveStartKey && morePaginationRequired);
 
     const cursor = this._formatReturnPager(config, ExclusiveStartKey);
 
@@ -1641,6 +1653,8 @@ class Entity {
       _isPagination: false,
       _isCollectionQuery: false,
       pages: 1,
+      seek: false,
+      atleast: 0,
       count: undefined,
       listeners: [],
       preserveBatchOrder: false,
@@ -1669,6 +1683,21 @@ class Entity {
               `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc, received: "${option.order}"`,
             );
         }
+      }
+
+      if (option.atleast !== undefined) {
+        if (isNaN(option.atleast)) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Invalid value for query option "atleast" provided. Unable to parse integer value.`,
+          );
+        }
+
+        config.atleast = parseInt(option.atleast);
+      }
+
+      if (option.seek) {
+        config.seek = option.seek;
       }
 
       if (typeof option.compare === "string") {

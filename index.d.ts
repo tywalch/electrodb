@@ -19,21 +19,27 @@ type TransactGetCommandInput = {
   TransactItems: TransactGetItem[];
 };
 
+export type DocumentClientV2 = {
+  get: DocumentClientMethod;
+  put: DocumentClientMethod;
+  delete: DocumentClientMethod;
+  update: DocumentClientMethod;
+  batchWrite: DocumentClientMethod;
+  batchGet: DocumentClientMethod;
+  scan: DocumentClientMethod;
+  transactGet: DocumentClientMethod;
+  transactWrite: DocumentClientMethod;
+  query: DocumentClientMethod;
+  createSet: (...params: any[]) => any;
+};
+
+export type DocumentClientV3 = {
+  send: (command: any) => Promise<any>;
+};
+
 export type DocumentClient =
-  | {
-      get: DocumentClientMethod;
-      put: DocumentClientMethod;
-      delete: DocumentClientMethod;
-      update: DocumentClientMethod;
-      batchWrite: DocumentClientMethod;
-      batchGet: DocumentClientMethod;
-      scan: DocumentClientMethod;
-      transactGet: DocumentClientMethod;
-      transactWrite: DocumentClientMethod;
-    }
-  | {
-      send: (command: any) => Promise<any>;
-    };
+  | DocumentClientV2
+  | DocumentClientV3;
 
 export type AllCollectionNames<
   E extends { [name: string]: Entity<any, any, any, any> },
@@ -2530,6 +2536,8 @@ export interface QueryOptions {
   table?: string;
   limit?: number;
   count?: number;
+  seek?: boolean;
+  atleast?: number;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
   pages?: number | "all";
@@ -2537,7 +2545,6 @@ export interface QueryOptions {
   logger?: ElectroEventListener;
   data?: "raw" | "includeKeys" | "attributes";
   order?: "asc" | "desc";
-
   consistent?: boolean;
 }
 
@@ -2638,6 +2645,8 @@ type ServiceQueryGoTerminalOptions = {
   data?: "raw" | "includeKeys" | "attributes";
   table?: string;
   limit?: number;
+  atleast?: number;
+  seek?: boolean;
   params?: object;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
@@ -2655,6 +2664,8 @@ type GoQueryTerminalOptions<Attributes> = {
   table?: string;
   limit?: number;
   count?: number;
+  atleast?: number;
+  seek?: boolean;
   params?: object;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
