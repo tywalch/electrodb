@@ -579,4 +579,10 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.4.1]
 ### Fixed
-- [Issue #475](https://github.com/tywalch/electrodb/issues/475); Fixes issue where some users reported errors exporting entities and/or types when using the `CustomAttributeType` function. They would receive an error similar to `Exported variable '...' has or is using name 'OpaquePrimitiveSymbol' from external module "..." but cannot be named.`.  
+- [Issue #475](https://github.com/tywalch/electrodb/issues/475); Fixes issue where some users reported errors exporting entities and/or types when using the `CustomAttributeType` function. They would receive an error similar to `Exported variable '...' has or is using name 'OpaquePrimitiveSymbol' from external module "..." but cannot be named.`.
+
+## [3.5.0]
+### Added
+- New `seek` execution option instructs ElectroDB to continue querying DynamoDB until at least one item is returned. This is useful when the circumstances of a table, model, and/or query request results in an empty return.
+- New `until` execution option instructs ElectroDB to continue querying DynamoDB until at least the number of items specified is returned. Unlike `count`, this option will not guarantee the exact number of items returned, but will ensure at least the number specified is returned. This option has fewer post-processing steps than `count` and is more performant in cases where the exact number of items is not critical.
+- Adds `params` parameter to `ElectroResultsEvent` event. This is useful for debugging, specifically correlating the request and response from DynamoDB.

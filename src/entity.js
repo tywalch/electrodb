@@ -395,17 +395,16 @@ class Entity {
 
   update(facets = {}) {
     return this._makeChain(
-      TableIndex
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
     ).update(facets);
   }
 
   patch(facets = {}) {
-    let index = TableIndex;
     let options = {};
     return this._makeChain(
-      index,
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
       options,
@@ -501,6 +500,7 @@ class Entity {
           config,
           success,
           results,
+          params,
         },
         config.listeners,
       );
@@ -768,14 +768,14 @@ class Entity {
       const pagesOptionRequiresMorePagination =
         pages === AllPages || iterations < pages;
 
-      const atleastOptionRequiresMorePagination =
-        config.atleast !== undefined && !config._isCollectionQuery && results.length < config.atleast;
+      const untilOptionRequiresMorePagination =
+        config.until !== undefined && !config._isCollectionQuery && results.length < config.until;
 
       const seekOptionRequiresMorePagination =
         config.seek && !config._isCollectionQuery && results.length === 0;
 
       morePaginationRequired =
-        atleastOptionRequiresMorePagination ||
+        untilOptionRequiresMorePagination ||
         countOptionRequiresMorePagination ||
         pagesOptionRequiresMorePagination ||
         seekOptionRequiresMorePagination;
@@ -1654,7 +1654,7 @@ class Entity {
       _isCollectionQuery: false,
       pages: 1,
       seek: false,
-      atleast: 0,
+      until: 0,
       count: undefined,
       listeners: [],
       preserveBatchOrder: false,
@@ -1685,15 +1685,15 @@ class Entity {
         }
       }
 
-      if (option.atleast !== undefined) {
-        if (isNaN(option.atleast)) {
+      if (option.until !== undefined) {
+        if (isNaN(option.until)) {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidOptions,
-            `Invalid value for query option "atleast" provided. Unable to parse integer value.`,
+            `Invalid value for query option "until" provided. Unable to parse integer value.`,
           );
         }
 
-        config.atleast = parseInt(option.atleast);
+        config.until = parseInt(option.until);
       }
 
       if (option.seek) {

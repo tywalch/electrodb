@@ -1034,11 +1034,12 @@ export interface ElectroQueryEvent<P extends any = any> {
   params: P;
 }
 
-export interface ElectroResultsEvent<R extends any = any> {
+export interface ElectroResultsEvent<R extends any = any, P extends any = any> {
   type: "results";
   method: ElectroDBMethodTypes;
   config: any;
   results: R;
+  params: P;
   success: boolean;
 }
 
@@ -2537,7 +2538,7 @@ export interface QueryOptions {
   limit?: number;
   count?: number;
   seek?: boolean;
-  atleast?: number;
+  until?: number;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
   pages?: number | "all";
@@ -2645,7 +2646,7 @@ type ServiceQueryGoTerminalOptions = {
   data?: "raw" | "includeKeys" | "attributes";
   table?: string;
   limit?: number;
-  atleast?: number;
+  until?: number;
   seek?: boolean;
   params?: object;
   originalErr?: boolean;
@@ -2664,7 +2665,7 @@ type GoQueryTerminalOptions<Attributes> = {
   table?: string;
   limit?: number;
   count?: number;
-  atleast?: number;
+  until?: number;
   seek?: boolean;
   params?: object;
   originalErr?: boolean;

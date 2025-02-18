@@ -24,7 +24,7 @@ import {
 
 import {
   DynamoDBClient as V3Client
-} from "@aws-sdk/client-dynamodb/dist-types/DynamoDBClient";
+} from "@aws-sdk/client-dynamodb";
 
 export const DYNAMODB_ENDPOINT = process.env.LOCAL_DYNAMO_ENDPOINT || 'http://loalhost:8000';
 
@@ -176,23 +176,30 @@ export function createDebugLogger(label: string, filters: ElectroDBMethodTypes[]
   }
 }
 
+export type EventCollectorCall = {
+  request: ElectroQueryEvent;
+  response: ElectroResultsEvent;
+}
+
 export type EventCollector = ElectroEventListener & {
   queries: ElectroQueryEvent[],
   results: ElectroResultsEvent[],
-  calls: ElectroEvent[];
+  calls: EventCollectorCall[];
 }
 
 export function createEventCollector(): EventCollector {
-  const calls: ElectroEvent[] = [];
+  const calls: EventCollectorCall[] = [];
   const queries: ElectroQueryEvent[] = []
   const results: ElectroResultsEvent[] = [];
+  let current = {} as EventCollectorCall;
   const collector = (event: ElectroEvent) => {
-    calls.push(event);
-
     if (event.type === 'query') {
       queries.push(event);
+      current.request = event;
     } else {
+      current.response = event;
       results.push(event);
+      calls.push({...current});
     }
   }
 

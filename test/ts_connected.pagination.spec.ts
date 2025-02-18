@@ -3,6 +3,7 @@ import DynamoDB from "aws-sdk/clients/dynamodb";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
 import { Entity, DocumentClient, EntityItem } from "../index";
+import { createEventCollector } from './test-utils';
 
 const table = 'electro';
 
@@ -180,17 +181,17 @@ describe('entity pagination', () => {
     });
   });
 
-  describe('when using atleast', () => {
-    it('should throw if the atleast option cannot be parsed as a number', async () => {
+  describe('when using until', () => {
+    it('should throw if the until option cannot be parsed as a number', async () => {
       const entity = createEntity(table, client);
       const result = await entity.query
         .record({ id: 'unknown', run: 'unknown' })
         // @ts-expect-error
-        .go({ atleast: 'abc' })
+        .go({ until: 'abc' })
         .then(() => null)
         .catch((err: any) => err);
 
-      expect(result.message).to.equal('Invalid value for query option "atleast" provided. Unable to parse integer value. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-options');
+      expect(result.message).to.equal('Invalid value for query option "until" provided. Unable to parse integer value. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-options');
     });
 
     it('should continue to paginate until at least the number of request items are returned', async () => {
@@ -200,12 +201,31 @@ describe('entity pagination', () => {
       const result = await entity.query
         .record({ id })
         .go({
-          atleast: 11,
+          until: 11,
           params: { Limit: 5 },
         });
 
       expect(result.data.length).to.be.greaterThan(10);
       expect(clientSpy.calls.length).to.be.greaterThan(2);
+    });
+
+    it('should abandon until directive when there are no more results', async () => {
+      const clientSpy = createDocumentClientSpy(client);
+      const entity = createEntity(table, clientSpy);
+
+      const collector = createEventCollector();
+
+      const result = await entity.query
+        .record({ id })
+        .go({
+          until: items.length + 100,
+          params: { Limit: 5 },
+          logger: collector,
+        });
+
+      console.log(JSON.stringify(events, null, 2));
+      expect(result.data).to.have.length(items.length);
+      expect(clientSpy.calls.length).to.be.equal(items.length / 5 + 1);
     });
   });
 
