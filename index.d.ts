@@ -3575,15 +3575,21 @@ export interface NumberSetAttribute {
   readonly watch?: ReadonlyArray<string> | "*";
 }
 
-type CustomAttributeTypeName<T> = { readonly [CustomAttributeSymbol]: T };
+interface CustomAttributeTypeName<T> {
+  readonly [CustomAttributeSymbol]: T;
+}
 
-type OpaquePrimitiveTypeName<T extends string | number | boolean> =
+interface CustomPrimitiveTypeName<T> {
+  readonly [OpaquePrimitiveSymbol]: T;
+}
+
+export type OpaquePrimitiveTypeName<T extends string | number | boolean> =
   T extends string
-    ? "string" & { readonly [OpaquePrimitiveSymbol]: T }
+    ? "string" & CustomPrimitiveTypeName<T>
     : T extends number
-    ? "number" & { readonly [OpaquePrimitiveSymbol]: T }
+    ? "number" & CustomPrimitiveTypeName<T>
     : T extends boolean
-    ? "boolean" & { readonly [OpaquePrimitiveSymbol]: T }
+    ? "boolean" & CustomPrimitiveTypeName<T>
     : never;
 
 type CustomAttribute = {
