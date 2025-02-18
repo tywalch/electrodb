@@ -576,3 +576,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.0]
 ### Added
 - [Issue #416](https://github.com/tywalch/electrodb/issues/416); You can now use reverse indexes without the use of `template`.
+
+## [3.4.1]
+### Fixed
+- [Issue #475](https://github.com/tywalch/electrodb/issues/475); Fixes issue where some users reported errors exporting entities and/or types when using the `CustomAttributeType` function. They would receive an error similar to `Exported variable '...' has or is using name 'OpaquePrimitiveSymbol' from external module "..." but cannot be named.`.  
