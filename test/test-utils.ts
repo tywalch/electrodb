@@ -176,36 +176,24 @@ export function createDebugLogger(label: string, filters: ElectroDBMethodTypes[]
   }
 }
 
-export type EventCollectorCall = {
-  request: ElectroQueryEvent;
-  response: ElectroResultsEvent;
-}
-
 export type EventCollector = ElectroEventListener & {
   queries: ElectroQueryEvent[],
   results: ElectroResultsEvent[],
-  calls: EventCollectorCall[];
 }
 
 export function createEventCollector(): EventCollector {
-  const calls: EventCollectorCall[] = [];
   const queries: ElectroQueryEvent[] = []
   const results: ElectroResultsEvent[] = [];
-  let current = {} as EventCollectorCall;
   const collector = (event: ElectroEvent) => {
     if (event.type === 'query') {
       queries.push(event);
-      current.request = event;
     } else {
-      current.response = event;
       results.push(event);
-      calls.push({...current});
     }
   }
 
   collector.queries = queries;
   collector.results = results;
-  collector.calls = calls;
 
   return collector;
 }

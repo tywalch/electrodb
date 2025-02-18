@@ -223,7 +223,6 @@ describe('entity pagination', () => {
           logger: collector,
         });
 
-      console.log(JSON.stringify(events, null, 2));
       expect(result.data).to.have.length(items.length);
       expect(clientSpy.calls.length).to.be.equal(items.length / 5 + 1);
     });
