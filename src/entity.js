@@ -375,9 +375,8 @@ class Entity {
   }
 
   upsert(attributes = {}) {
-    let index = TableIndex;
     return this._makeChain(
-      index,
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
     ).upsert(attributes);
@@ -395,19 +394,17 @@ class Entity {
   }
 
   update(facets = {}) {
-    let index = TableIndex;
     return this._makeChain(
-      index,
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
     ).update(facets);
   }
 
   patch(facets = {}) {
-    let index = TableIndex;
     let options = {};
     return this._makeChain(
-      index,
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
       options,
@@ -426,21 +423,19 @@ class Entity {
   }
 
   async transactWrite(parameters, config) {
-    let response = await this._exec(
+    return this._exec(
       MethodTypes.transactWrite,
       parameters,
       config,
     );
-    return response;
   }
 
   async transactGet(parameters, config) {
-    let response = await this._exec(
+    return this._exec(
       MethodTypes.transactGet,
       parameters,
       config,
     );
-    return response;
   }
 
   async go(method, parameters = {}, config = {}) {
@@ -505,6 +500,7 @@ class Entity {
           config,
           success,
           results,
+          params,
         },
         config.listeners,
       );
@@ -689,6 +685,7 @@ class Entity {
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
+    let morePaginationRequired = false;
     const shouldHydrate = config.hydrate && method === MethodTypes.query;
     do {
       let response = await this._exec(
@@ -727,6 +724,9 @@ class Entity {
           }
           results[entity] = results[entity] || [];
           results[entity] = [...results[entity], ...items];
+          if (config.count) {
+            count += items.length;
+          }
         }
       } else if (Array.isArray(response.data)) {
         let prevCount = count;
@@ -761,14 +761,29 @@ class Entity {
       } else {
         return response;
       }
+
       iterations++;
-    } while (
-      ExclusiveStartKey &&
-      (pages === AllPages ||
-        config.count !== undefined ||
-        iterations < pages) &&
-      (config.count === undefined || count < config.count)
-    );
+
+      const countOptionRequiresMorePagination = (
+        config.count !== undefined && !config._isCollectionQuery && count < config.count
+      );
+
+      const pagesOptionRequiresMorePagination =
+        pages === AllPages || iterations < pages;
+
+      const untilOptionRequiresMorePagination =
+        config.until !== undefined && count < config.until;
+
+      const seekOptionRequiresMorePagination =
+        config.seek && count === 0;
+
+      morePaginationRequired =
+        untilOptionRequiresMorePagination ||
+        countOptionRequiresMorePagination ||
+        pagesOptionRequiresMorePagination ||
+        seekOptionRequiresMorePagination;
+
+    } while (ExclusiveStartKey && morePaginationRequired);
 
     const cursor = this._formatReturnPager(config, ExclusiveStartKey);
 
@@ -1641,6 +1656,8 @@ class Entity {
       _isPagination: false,
       _isCollectionQuery: false,
       pages: 1,
+      seek: false,
+      until: 0,
       count: undefined,
       listeners: [],
       preserveBatchOrder: false,
@@ -1669,6 +1686,21 @@ class Entity {
               `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc, received: "${option.order}"`,
             );
         }
+      }
+
+      if (option.until !== undefined) {
+        if (isNaN(option.until)) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Invalid value for query option "until" provided. Unable to parse integer value.`,
+          );
+        }
+
+        config.until = parseInt(option.until);
+      }
+
+      if (option.seek) {
+        config.seek = option.seek;
       }
 
       if (typeof option.compare === "string") {
