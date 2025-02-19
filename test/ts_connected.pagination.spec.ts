@@ -2,8 +2,8 @@ process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 import DynamoDB from "aws-sdk/clients/dynamodb";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
-import { Entity, DocumentClient, EntityItem } from "../index";
-import { createEventCollector } from './test-utils';
+import { Entity, Service, DocumentClient, EntityItem } from "../index";
+import { createEventCollector, createDebugLogger } from './test-utils';
 
 const table = 'electro';
 
@@ -62,10 +62,10 @@ function createObjectOfSize(kb: number): object {
   return obj;
 }
 
-function createEntity(table: string, client: DocumentClient) {
+function createEntity(entityName: string, client: DocumentClient) {
   return new Entity({
     model: {
-      entity: 'paginator',
+      entity: entityName,
       version: '0',
       service: 'pagination-test'
     },
@@ -83,6 +83,7 @@ function createEntity(table: string, client: DocumentClient) {
     },
     indexes: {
       record: {
+        collection: 'pager',
         pk: {
           field: 'pk',
           composite: ['id'],
@@ -109,20 +110,26 @@ function createItems(count: number, size: number, id: string = uuid()): Paginato
   }));
 }
 
-describe('entity pagination', () => {
+describe('entity and service pagination', () => {
+  const thing1Name = 'thing1';
+  const thing2Name = 'thing2';
   const id = uuid();
   // 100 items of 100 KB each
-  const items = createItems(100, 100, id)
+  const items = createItems(100, 100, id);
+  const thing1 = createEntity(thing1Name, client);
+  const thing2 = createEntity(thing2Name, client);
 
   before(async () => {
-    const entity = createEntity(table, client);
-    await entity.put(items).go();
+    await Promise.all([
+      thing1.put(items).go(),
+      thing2.put(items).go(),
+    ]);
   });
 
   describe('when using seek', () => {
     it('should only paginate once if there are no results', async () => {
       const clientSpy = createDocumentClientSpy(client);
-      const entity = createEntity(table, clientSpy);
+      const entity = createEntity(uuid(), clientSpy);
 
       // use an id that doesn't exist
       const result = await entity.query
@@ -138,7 +145,7 @@ describe('entity pagination', () => {
     it('should only paginate once if there is only one page of results', async () => {
       const id = uuid();
       const clientSpy = createDocumentClientSpy(client);
-      const entity = createEntity(table, clientSpy);
+      const entity = createEntity(uuid(), clientSpy);
       // 20 items of 1 KB each
       const items = createItems(20, 1, id);
       await entity.put(items).go();
@@ -155,7 +162,7 @@ describe('entity pagination', () => {
 
     it('should paginate multiple times if a cursor is returned but results are not', async () => {
       const clientSpy = createDocumentClientSpy(client);
-      const entity = createEntity(table, clientSpy);
+      const entity = createEntity(thing1Name, clientSpy);
 
       // the items actually returned from DynamoDB
       const returned: any[][] = [];
@@ -183,8 +190,7 @@ describe('entity pagination', () => {
 
   describe('when using until', () => {
     it('should throw if the until option cannot be parsed as a number', async () => {
-      const entity = createEntity(table, client);
-      const result = await entity.query
+      const result = await thing1.query
         .record({ id: 'unknown', run: 'unknown' })
         // @ts-expect-error
         .go({ until: 'abc' })
@@ -196,7 +202,7 @@ describe('entity pagination', () => {
 
     it('should continue to paginate until at least the number of request items are returned', async () => {
       const clientSpy = createDocumentClientSpy(client);
-      const entity = createEntity(table, clientSpy);
+      const entity = createEntity(thing1Name, clientSpy);
 
       const result = await entity.query
         .record({ id })
@@ -209,9 +215,26 @@ describe('entity pagination', () => {
       expect(clientSpy.calls.length).to.be.greaterThan(2);
     });
 
+    it('should continue to paginate until at least the number of request items are returned on a service', async () => {
+      const clientSpy = createDocumentClientSpy(client);
+      const thing1 = createEntity(thing1Name, clientSpy);
+      const thing2 = createEntity(thing2Name, clientSpy);
+      const paginator = new Service({ thing1, thing2 });
+
+      const result = await paginator.collections
+        .pager({ id })
+        .go({
+          until: 11,
+          params: { Limit: 5 },
+        });
+
+      expect(result.data.thing1.length + result.data.thing2.length).to.be.greaterThan(10);
+      expect(clientSpy.calls.length).to.be.greaterThan(2);
+    });
+
     it('should abandon until directive when there are no more results', async () => {
       const clientSpy = createDocumentClientSpy(client);
-      const entity = createEntity(table, clientSpy);
+      const entity = createEntity(thing1Name, clientSpy);
 
       const collector = createEventCollector();
 
@@ -226,12 +249,33 @@ describe('entity pagination', () => {
       expect(result.data).to.have.length(items.length);
       expect(clientSpy.calls.length).to.be.equal(items.length / 5 + 1);
     });
+
+    it('should abandon until directive when there are no more results with service', async () => {
+      const clientSpy = createDocumentClientSpy(client);
+      const thing1 = createEntity(thing1Name, clientSpy);
+      const thing2 = createEntity(thing2Name, clientSpy);
+      const paginator = new Service({ thing1, thing2 });
+
+      const collector = createEventCollector();
+
+      const result = await paginator.collections
+        .pager({ id })
+        .go({
+          until: items.length + 100,
+          params: { Limit: 5 },
+          logger: collector,
+        });
+
+      expect(result.data.thing1).to.have.length(items.length);
+      expect(result.data.thing2).to.have.length(items.length);
+      expect(clientSpy.calls.length).to.be.equal((items.length * 2) / 5 + 1);
+    });
   });
 
   describe('when using count', () => {
     it('should only return 10 items to the user', async () => {
       const clientSpy = createDocumentClientSpy(client);
-      const entity = createEntity(table, clientSpy);
+      const entity = createEntity(thing1Name, clientSpy);
       let returned: any = null;
       const result = await entity.query
         .record({ id })
@@ -253,7 +297,7 @@ describe('entity pagination', () => {
   describe('when using pages', () => {
     it('should query all items when using pages all', async () => {
       const clientSpy = createDocumentClientSpy(client);
-      const entity = createEntity(table, clientSpy);
+      const entity = createEntity(thing1Name, clientSpy);
 
       const result = await entity.query
         .record({ id })
@@ -261,6 +305,23 @@ describe('entity pagination', () => {
 
       expect(result.data.sort((a, z) => a.index - z.index)).to.deep.equal(items.sort((a, z) => a.index - z.index));
       expect(clientSpy.calls).to.have.length(10);
+    });
+
+    it('should query all items when using pages all with a service', async () => {
+      const clientSpy = createDocumentClientSpy(client);
+      const thing1 = createEntity(thing1Name, clientSpy);
+      const thing2 = createEntity(thing2Name, clientSpy);
+      const paginator = new Service({ thing1, thing2 });
+
+      const result = await paginator.collections
+        .pager({ id })
+        .go({ pages: 'all' });
+
+      const received = [...result.data.thing1, ...result.data.thing2].sort((a, z) => a.index - z.index);
+      const expected = [...items, ...items].sort((a, z) => a.index - z.index);
+
+      expect(received).to.deep.equal(expected);
+      expect(clientSpy.calls).to.have.length(19);
     });
   })
 });

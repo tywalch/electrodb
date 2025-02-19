@@ -724,6 +724,9 @@ class Entity {
           }
           results[entity] = results[entity] || [];
           results[entity] = [...results[entity], ...items];
+          if (config.count) {
+            count += items.length;
+          }
         }
       } else if (Array.isArray(response.data)) {
         let prevCount = count;
@@ -762,17 +765,17 @@ class Entity {
       iterations++;
 
       const countOptionRequiresMorePagination = (
-        config.count !== undefined && count < config.count
+        config.count !== undefined && !config._isCollectionQuery && count < config.count
       );
 
       const pagesOptionRequiresMorePagination =
         pages === AllPages || iterations < pages;
 
       const untilOptionRequiresMorePagination =
-        config.until !== undefined && !config._isCollectionQuery && results.length < config.until;
+        config.until !== undefined && count < config.until;
 
       const seekOptionRequiresMorePagination =
-        config.seek && !config._isCollectionQuery && results.length === 0;
+        config.seek && count === 0;
 
       morePaginationRequired =
         untilOptionRequiresMorePagination ||
