@@ -3,7 +3,8 @@ import { DocumentClient as V2Client } from "aws-sdk/clients/dynamodb";
 import { DynamoDBClient as V3Client } from "@aws-sdk/client-dynamodb";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
-import { Entity, Service, CreateEntityItem } from "../index";
+import { Entity, Service, CreateEntityItem, createWriteTransaction } from "../index";
+import { createEventCollector } from './test-utils';
 
 type CreateServiceOptions = {
   client: V2Client | V3Client;
@@ -1006,6 +1007,137 @@ describe("service transactions", () => {
           expect(result1).to.deep.equal(result2);
         });
 
+        it('should return the item written to DynamoDB', async () => {
+          const collector = createEventCollector();
+          const entityName = uuid();
+          const serviceName = uuid();
+          const entity = new Entity({
+            model: {
+              entity: entityName,
+              service: serviceName,
+              version: '1',
+            },
+            attributes: {
+              id: {
+                type: "string",
+              },
+              name: {
+                type: "string",
+                // tests whether `hidden` is respected
+                hidden: true,
+              },
+              description: {
+                type: "string",
+                // tests field name remapping
+                field: 'd',
+              },
+              data: {
+                type: "any",
+                // tests getter and setter calls
+                get: (data) => {
+                  return {
+                    ...data,
+                    fromGetter,
+                  };
+                },
+                set: (data) => {
+                  return {
+                    value: data,
+                    fromSetter,
+                  }
+                }
+              }
+            },
+            indexes: {
+              record: {
+                pk: {
+                  field: 'pk',
+                  composite: ['id'],
+                },
+                sk: {
+                  field: 'sk',
+                  composite: ['name'],
+                },
+              },
+            },
+          }, { table, client, logger: collector });
+
+          const service = new Service({ entity });
+
+          const id = uuid();
+          const description = 'this is a test entity';
+          const data = {
+            [uuid()]: uuid(),
+          };
+
+          const fromGetter = uuid();
+          const fromSetter = uuid();
+
+          const expected = {
+            id,
+            description,
+            data: {
+              value: data,
+              fromSetter,
+              fromGetter,
+            }
+          }
+
+          // ensure parity with put
+          const item1 = await entity.put({ id, description, data, name: 'item1' }).go();
+          expect(item1.data).to.deep.equal(expected);
+
+          // ensure parity with create
+          const item2 = await entity.create({ id, description, data, name: 'item2' }).go();
+          expect(item2.data).to.deep.equal(expected);
+
+          const { data: [ item3, item4 ] } = await service.transaction.write(({ entity }) => [
+            entity.put({ id, description, data, name: 'item3' }).commit(),
+            entity.create({ id, description, data, name: 'item4' }).commit(),
+          ]).go();
+
+          expect(item3.item).to.deep.equal(expected);
+          expect(item4.item).to.deep.equal(expected);
+
+          const { data: [ item5, item6 ] } = await createWriteTransaction({ entity }, ({ entity }) => [
+            entity.put({ id, description, data, name: 'item5' }).commit(),
+            entity.create({ id, description, data, name: 'item6' }).commit(),
+          ]).go();
+
+          expect(item5.item).to.deep.equal(expected);
+          expect(item6.item).to.deep.equal(expected);
+
+          const toExpectedWrittenItem = (name: string) => {
+            return {
+              id,
+              name,
+              d: description,
+              __edb_v__: "1",
+              __edb_e__: entityName,
+              pk: `$${serviceName}#id_${id}`,
+              sk: `$${entityName}_1#name_${name}`,
+              data: {
+                value: data,
+                fromSetter,
+              },
+            };
+          }
+
+          const [ write1, write2, write3, write4 ] = collector.queries;
+
+          expect(write1.params.Item).to.deep.equal(toExpectedWrittenItem('item1'));
+
+          expect(write2.params.Item).to.deep.equal(toExpectedWrittenItem('item2'));
+
+          expect(write3.params.TransactItems[0].Put.Item).to.deep.equal(toExpectedWrittenItem('item3'));
+
+          expect(write3.params.TransactItems[1].Put.Item).to.deep.equal(toExpectedWrittenItem('item4'));
+
+          expect(write4.params.TransactItems[0].Put.Item).to.deep.equal(toExpectedWrittenItem('item5'));
+
+          expect(write4.params.TransactItems[1].Put.Item).to.deep.equal(toExpectedWrittenItem('item6'));
+        });
+
         it("should perform transaction operation", async () => {
           const serviceName = uuid();
           const { service, agent } = createUniqueConstraintService({
@@ -1065,13 +1197,17 @@ describe("service transactions", () => {
                 rejected: false,
                 code: "None",
                 message: undefined,
-                item: null,
+                item: doubleOhSeven,
               },
               {
                 rejected: false,
                 code: "None",
                 message: undefined,
-                item: null,
+                item: {
+                  entity: 'agent',
+                  name: 'callSign',
+                  value: 'eagle',
+                },
               },
             ],
             canceled: false,

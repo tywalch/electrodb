@@ -116,6 +116,7 @@ describe('entity and service pagination', () => {
   const id = uuid();
   // 100 items of 100 KB each
   const items = createItems(100, 100, id);
+
   const thing1 = createEntity(thing1Name, client);
   const thing2 = createEntity(thing2Name, client);
 
