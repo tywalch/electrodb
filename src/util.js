@@ -105,7 +105,7 @@ function formatStringCasing(str, casing, defaultCase) {
 }
 
 function toKeyCasingOption(casing) {
-  switch(casing) {
+  switch (casing) {
     case t.KeyCasing.upper:
       return t.KeyCasing.upper;
     case t.KeyCasing.none:

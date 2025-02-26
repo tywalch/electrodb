@@ -309,13 +309,13 @@ class ElectroError extends Error {
 }
 
 function applyParamsFn(error, params = null) {
-  Object.defineProperty(error, 'params', {
+  Object.defineProperty(error, "params", {
     enumerable: false,
     writable: true,
     configurable: true,
     value: () => {
       return params;
-    }
+    },
   });
 }
 

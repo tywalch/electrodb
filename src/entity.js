@@ -375,9 +375,8 @@ class Entity {
   }
 
   upsert(attributes = {}) {
-    let index = TableIndex;
     return this._makeChain(
-      index,
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
     ).upsert(attributes);
@@ -395,19 +394,17 @@ class Entity {
   }
 
   update(facets = {}) {
-    let index = TableIndex;
     return this._makeChain(
-      index,
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
     ).update(facets);
   }
 
   patch(facets = {}) {
-    let index = TableIndex;
     let options = {};
     return this._makeChain(
-      index,
+      TableIndex,
       this._clausesWithFilters,
       clauses.index,
       options,
@@ -426,21 +423,11 @@ class Entity {
   }
 
   async transactWrite(parameters, config) {
-    let response = await this._exec(
-      MethodTypes.transactWrite,
-      parameters,
-      config,
-    );
-    return response;
+    return this._exec(MethodTypes.transactWrite, parameters, config);
   }
 
   async transactGet(parameters, config) {
-    let response = await this._exec(
-      MethodTypes.transactGet,
-      parameters,
-      config,
-    );
-    return response;
+    return this._exec(MethodTypes.transactGet, parameters, config);
   }
 
   async go(method, parameters = {}, config = {}) {
@@ -505,6 +492,7 @@ class Entity {
           config,
           success,
           results,
+          params,
         },
         config.listeners,
       );
@@ -520,7 +508,7 @@ class Entity {
       .catch((err) => {
         notifyQuery();
         notifyResults(err, false);
-        Object.defineProperty(err, '__edb_params', {
+        Object.defineProperty(err, "__edb_params", {
           enumerable: false,
           value: params,
         });
@@ -689,6 +677,7 @@ class Entity {
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
+    let morePaginationRequired = false;
     const shouldHydrate = config.hydrate && method === MethodTypes.query;
     do {
       let response = await this._exec(
@@ -727,6 +716,9 @@ class Entity {
           }
           results[entity] = results[entity] || [];
           results[entity] = [...results[entity], ...items];
+          if (config.count) {
+            count += items.length;
+          }
         }
       } else if (Array.isArray(response.data)) {
         let prevCount = count;
@@ -761,14 +753,28 @@ class Entity {
       } else {
         return response;
       }
+
       iterations++;
-    } while (
-      ExclusiveStartKey &&
-      (pages === AllPages ||
-        config.count !== undefined ||
-        iterations < pages) &&
-      (config.count === undefined || count < config.count)
-    );
+
+      const countOptionRequiresMorePagination =
+        config.count !== undefined &&
+        !config._isCollectionQuery &&
+        count < config.count;
+
+      const pagesOptionRequiresMorePagination =
+        pages === AllPages || iterations < pages;
+
+      const untilOptionRequiresMorePagination =
+        config.until !== undefined && count < config.until;
+
+      const seekOptionRequiresMorePagination = config.seek && count === 0;
+
+      morePaginationRequired =
+        untilOptionRequiresMorePagination ||
+        countOptionRequiresMorePagination ||
+        pagesOptionRequiresMorePagination ||
+        seekOptionRequiresMorePagination;
+    } while (ExclusiveStartKey && morePaginationRequired);
 
     const cursor = this._formatReturnPager(config, ExclusiveStartKey);
 
@@ -1641,6 +1647,8 @@ class Entity {
       _isPagination: false,
       _isCollectionQuery: false,
       pages: 1,
+      seek: false,
+      until: 0,
       count: undefined,
       listeners: [],
       preserveBatchOrder: false,
@@ -1669,6 +1677,21 @@ class Entity {
               `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc, received: "${option.order}"`,
             );
         }
+      }
+
+      if (option.until !== undefined) {
+        if (isNaN(option.until)) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Invalid value for query option "until" provided. Unable to parse integer value.`,
+          );
+        }
+
+        config.until = parseInt(option.until);
+      }
+
+      if (option.seek) {
+        config.seek = option.seek;
       }
 
       if (typeof option.compare === "string") {
@@ -3548,13 +3571,16 @@ class Entity {
       if (definition.pk.field === tableIndex.pk.field) {
         previouslyDefinedPk = { indexName, definition: definition.pk };
       } else if (definition.sk && definition.sk.field === tableIndex.pk.field) {
-        previouslyDefinedPk  = { indexName, definition: definition.sk };
+        previouslyDefinedPk = { indexName, definition: definition.sk };
       }
 
       if (tableIndex.sk) {
         if (definition.pk.field === tableIndex.sk.field) {
           previouslyDefinedSk = { indexName, definition: definition.pk };
-        } else if (definition.sk && definition.sk.field === tableIndex.sk.field) {
+        } else if (
+          definition.sk &&
+          definition.sk.field === tableIndex.sk.field
+        ) {
           previouslyDefinedSk = { indexName, definition: definition.sk };
         }
       }
@@ -3656,15 +3682,25 @@ class Entity {
     }
 
     if (previouslyDefinedPk) {
-      const casingMatch = u.toKeyCasingOption(keys.pk.casing) === u.toKeyCasingOption(previouslyDefinedPk.definition.casing);
+      const casingMatch =
+        u.toKeyCasingOption(keys.pk.casing) ===
+        u.toKeyCasingOption(previouslyDefinedPk.definition.casing);
       if (!casingMatch) {
         throw new e.ElectroError(
           e.ErrorCodes.IncompatibleKeyCasing,
           `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
             tableIndex.index,
-          )}' is defined with the casing ${keys.pk.casing}, but the accessPattern '${u.formatIndexNameForDisplay(
+          )}' is defined with the casing ${
+            keys.pk.casing
+          }, but the accessPattern '${u.formatIndexNameForDisplay(
             previouslyDefinedPk.indexName,
-          )}' defines the same index field with the ${previouslyDefinedPk.definition.casing === DefaultKeyCasing ? '(default)' : ''} casing ${previouslyDefinedPk.definition.casing}. Key fields must have the same casing definitions across all indexes they are involved with.`,
+          )}' defines the same index field with the ${
+            previouslyDefinedPk.definition.casing === DefaultKeyCasing
+              ? "(default)"
+              : ""
+          } casing ${
+            previouslyDefinedPk.definition.casing
+          }. Key fields must have the same casing definitions across all indexes they are involved with.`,
         );
       }
 
@@ -3672,15 +3708,25 @@ class Entity {
     }
 
     if (previouslyDefinedSk) {
-      const casingMatch = u.toKeyCasingOption(keys.sk.casing) === u.toKeyCasingOption(previouslyDefinedSk.definition.casing);
+      const casingMatch =
+        u.toKeyCasingOption(keys.sk.casing) ===
+        u.toKeyCasingOption(previouslyDefinedSk.definition.casing);
       if (!casingMatch) {
         throw new e.ElectroError(
           e.ErrorCodes.IncompatibleKeyCasing,
           `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
             tableIndex.index,
-          )}' is defined with the casing ${keys.sk.casing}, but the accessPattern '${u.formatIndexNameForDisplay(
+          )}' is defined with the casing ${
+            keys.sk.casing
+          }, but the accessPattern '${u.formatIndexNameForDisplay(
             previouslyDefinedSk.indexName,
-          )}' defines the same index field with the ${previouslyDefinedSk.definition.casing === DefaultKeyCasing ? '(default)' : ''} casing ${previouslyDefinedSk.definition.casing}. Key fields must have the same casing definitions across all indexes they are involved with.`,
+          )}' defines the same index field with the ${
+            previouslyDefinedSk.definition.casing === DefaultKeyCasing
+              ? "(default)"
+              : ""
+          } casing ${
+            previouslyDefinedSk.definition.casing
+          }. Key fields must have the same casing definitions across all indexes they are involved with.`,
         );
       }
       keys.sk = previouslyDefinedSk.definition;
@@ -4492,16 +4538,20 @@ class Entity {
           );
         }
 
-        const keyTemplatesMatch = pk.template === definition.template
+        const keyTemplatesMatch = pk.template === definition.template;
 
         if (!keyTemplatesMatch) {
           throw new e.ElectroError(
             e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate,
             `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
               accessPattern,
-            )}' is defined with the template ${pk.template || '(undefined)'}, but the accessPattern '${u.formatIndexNameForDisplay(
+            )}' is defined with the template ${
+              pk.template || "(undefined)"
+            }, but the accessPattern '${u.formatIndexNameForDisplay(
               definition.index,
-            )}' defines this field with the key labels ${definition.template || '(undefined)'}'. Key fields must have the same template definitions across all indexes they are involved with`,
+            )}' defines this field with the key labels ${
+              definition.template || "(undefined)"
+            }'. Key fields must have the same template definitions across all indexes they are involved with`,
           );
         }
 
@@ -4529,7 +4579,7 @@ class Entity {
           const definitionsMatch = validations.stringArrayMatch(
             sk.facets,
             definition.facets,
-          )
+          );
 
           if (!definitionsMatch) {
             throw new e.ElectroError(
@@ -4546,16 +4596,20 @@ class Entity {
             );
           }
 
-          const keyTemplatesMatch = sk.template === definition.template
+          const keyTemplatesMatch = sk.template === definition.template;
 
           if (!keyTemplatesMatch) {
             throw new e.ElectroError(
               e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate,
               `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
                 accessPattern,
-              )}' is defined with the template ${sk.template || '(undefined)'}, but the accessPattern '${u.formatIndexNameForDisplay(
+              )}' is defined with the template ${
+                sk.template || "(undefined)"
+              }, but the accessPattern '${u.formatIndexNameForDisplay(
                 definition.index,
-              )}' defines this field with the key labels ${definition.template || '(undefined)'}'. Key fields must have the same template definitions across all indexes they are involved with`,
+              )}' defines this field with the key labels ${
+                definition.template || "(undefined)"
+              }'. Key fields must have the same template definitions across all indexes they are involved with`,
             );
           }
 
