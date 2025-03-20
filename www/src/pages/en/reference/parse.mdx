@@ -30,13 +30,13 @@ const formattedQueryResults = myEntity.parse(formattedQueryResults);
 The parse method can also help handle events that come through dynamo events (`DynamoDBStreamEvent`). In order to do this, you must first unmarshal the response from dynamo using the DynamoDB `Converter` and then call `parse()`
 
 ```typescript
-import DynamoDB from "aws-sdk/clients/dynamodb";
+import { unmarshall } from '@aws-sdk/util-dynamodb';
 import { DynamoDBStreamEvent } from "aws-lambda";
 import { MyEntity } from "./my-entity";
 
 function main(event: DynamoDBStreamEvent) {
   const parsed = event.Records.map((record) =>
-    DynamoDB.Converter.unmarshall(record.dynamodb.NewImage),
+    unmarshall(record.dynamodb.NewImage),
   ).map((item) => MyEntity.parse({ Item: item }));
 
   console.log(parsed);
