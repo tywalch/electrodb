@@ -95,7 +95,7 @@ The `results` event occurs when results are returned from DynamoDB. The event in
 _Type::_
 
 ```typescript
-interface ElectroResultsEvent<R extends any = any> {
+interface ElectroResultsEvent<R extends any = any, R extends any = any> {
   type: "results";
   method:
     | "put"
@@ -112,6 +112,7 @@ interface ElectroResultsEvent<R extends any = any> {
   config: any;
   results: R;
   success: boolean;
+  params: P;
 }
 ```
 
@@ -142,7 +143,29 @@ _Example Output:_
       "__edb_v__": "1",
       "pk": "$test_1#prop1_22874c81-27c4-4264-92c3-b280aa79aa30"
     }
-  }
+  },
+  "params": {
+    "UpdateExpression": "SET #prop3 = :prop3_u0, #prop1 = :prop1_u0, #prop2 = :prop2_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+    "ExpressionAttributeNames": {
+      "#prop3": "prop3",
+      "#prop1": "prop1",
+      "#prop2": "prop2",
+      "#__edb_e__": "__edb_e__",
+      "#__edb_v__": "__edb_v__"
+    },
+    "ExpressionAttributeValues": {
+      ":prop3_u0": "3ec9ed0c-7497-4d05-bdb8-86c09a618047",
+      ":prop1_u0": "22874c81-27c4-4264-92c3-b280aa79aa30",
+      ":prop2_u0": "366aade8-a7c0-4328-8e14-0331b185de4e",
+      ":__edb_e___u0": "entity",
+      ":__edb_v___u0": "1"
+    },
+    "TableName": "electro",
+    "Key": {
+      "pk": "$test_1#prop1_22874c81-27c4-4264-92c3-b280aa79aa30",
+      "sk": "$testcollection#entity_1#prop2_366aade8-a7c0-4328-8e14-0331b185de4e"
+    }
+  },
 }
 ```
 
