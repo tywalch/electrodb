@@ -1529,10 +1529,12 @@ class Entity {
     if (pk === undefined) {
       return null;
     }
+
     const pkComposites = deconstructors.pk({ key: pk });
     if (pkComposites === null) {
       return null;
     }
+
     let skComposites = {};
     if (indexHasSortKey) {
       const sk = keys[skName];
@@ -3005,6 +3007,31 @@ class Entity {
     return params;
   }
 
+  _getPutIndexImpact(attributes, facets) {
+    let [_, { incomplete, complete }] = this._getIndexImpact(
+      attributes,
+      facets,
+      { conditionOnIncomplete: true },
+    );
+
+    const tableIndexIncomplete = incomplete.find(({ index }) => index === TableIndex);
+    if (tableIndexIncomplete) {
+      const accessPattern = this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
+      throw new e.ElectroError(
+        e.ErrorCodes.IncompleteCompositeAttributes,
+        `Incomplete composite attributes: Without the composite attributes ${u.commaSeparatedString(
+          tableIndexIncomplete.missing,
+        )} the following access patterns cannot be updated: ${u.commaSeparatedString(
+          [accessPattern],
+        )}. If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes.`,
+      );
+    }
+
+    complete.indexes = [...complete.indexes, ...incomplete.map(({ index }) => index)];
+
+    return complete;
+  }
+
   _expectIndexFacets(
     attributes,
     facets,
@@ -3015,12 +3042,13 @@ class Entity {
       facets,
       { utilizeIncludedOnlyIndexes, skipConditionCheck },
     );
-
+    
     if (isIncomplete) {
       let incompleteAccessPatterns = incomplete.map(
         ({ index }) =>
           this.model.translations.indexes.fromIndexToAccessPattern[index],
       );
+
       let missingFacets = incomplete.reduce(
         (result, { missing }) => [...result, ...missing],
         [],
@@ -3081,7 +3109,8 @@ class Entity {
       if (!shouldMakeKeys) {
         continue;
       }
-      indexKeys[index] = this._makeIndexKeys({
+
+      indexKeys[index] = this._makeFulfilledKeys({
         index,
         pkAttributes: attributes,
         skAttributes: [attributes],
@@ -3095,10 +3124,9 @@ class Entity {
     let updateIndex = TableIndex;
     let keyTranslations = this.model.translations.keys;
     let keyAttributes = { ...sk, ...pk };
-    let completeFacets = this._expectIndexFacets(
+    let completeFacets = this._getPutIndexImpact(
       { ...setAttributes, ...validationAssistance },
       { ...keyAttributes },
-      { set },
     );
 
     let deletedKeys = [];
@@ -3119,10 +3147,12 @@ class Entity {
     if (!completeFacets.indexes.includes(updateIndex)) {
       completeFacets.indexes.push(updateIndex);
     }
+
     let composedKeys = this._makePutKeysFromAttributes(completeFacets.indexes, {
       ...keyAttributes,
       ...setAttributes,
     });
+
     let updatedKeys = {};
     let indexKey = {};
     for (let [index, keys] of Object.entries(composedKeys)) {
@@ -3248,7 +3278,7 @@ class Entity {
   _getIndexImpact(
     attributes = {},
     included = {},
-    { utilizeIncludedOnlyIndexes, skipConditionCheck } = {},
+    { utilizeIncludedOnlyIndexes, skipConditionCheck, conditionOnIncomplete } = {},
   ) {
     // beware: this entire algorithm stinks and needs to be completely refactored. It does redundant loops and fights
     // itself the whole way through. I am sorry.
@@ -3413,7 +3443,8 @@ class Entity {
           ImpactedIndexTypeSource.provided ||
           impactedIndexTypeSources[index][KeyTypes.sk] ===
             ImpactedIndexTypeSource.provided);
-      const allMemberAttributesAreIncluded = definition.all.every(
+
+      const allMemberAttributesAreIncluded = conditionOnIncomplete || definition.all.every(
         ({ name }) => included[name] !== undefined,
       );
 
@@ -3429,7 +3460,15 @@ class Entity {
           )
           .map(({ name }) => name);
 
-        if (missingAttributes.length) {
+        const accessPattern =
+          this.model.translations.indexes.fromIndexToAccessPattern[index];
+
+        let shouldMakeKeys = !!this.model.indexes[accessPattern].condition({
+          ...attributes,
+          ...included,
+        });
+
+        if (!conditionOnIncomplete && missingAttributes.length && shouldMakeKeys) {
           throw new e.ElectroError(
             e.ErrorCodes.IncompleteIndexCompositesAttributesProvided,
             `Incomplete composite attributes provided for index ${index}. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: ${u.commaSeparatedString(
@@ -3437,13 +3476,6 @@ class Entity {
             )}`,
           );
         }
-
-        const accessPattern =
-          this.model.translations.indexes.fromIndexToAccessPattern[index];
-        let shouldMakeKeys = !!this.model.indexes[accessPattern].condition({
-          ...attributes,
-          ...included,
-        });
 
         // this helps identify which conditions were checked (key is present) and what the result was (true/false)
         conditions[index] = shouldMakeKeys;
@@ -3853,8 +3885,7 @@ class Entity {
     };
   }
 
-  /* istanbul ignore next */
-  _makeIndexKeys({
+  _buildIndexKeys({
     index = TableIndex,
     pkAttributes = {},
     skAttributes = [],
@@ -3907,10 +3938,36 @@ class Entity {
     }
 
     return {
-      pk: pk.key,
+      pk,
       sk,
       fulfilled,
     };
+  }
+
+  /* istanbul ignore next */
+  _makeIndexKeys(options) {
+    // Almost everywhere uses `_makeIndexKeys` but the function was lossy with regard to whether or not the `pk` key was
+    // actually "fulfilled". I broke out the logic of this function into `_buildIndexKeys` so I could expose `fulfilled`
+    // insights at one call site while maintaining backwards compatibility with `_makeIndexKeys`.
+    const {pk, sk, fulfilled} = this._buildIndexKeys(options);
+
+    return {
+      pk: pk.key,
+      sk,
+      fulfilled,
+    }
+  }
+
+  _makeFulfilledKeys(options) {
+    // An alternative to `_makeIndexKeys` that will only return keys that have been fulfilled
+    const { pk, sk} = this._buildIndexKeys(options);
+
+    let results = { sk };
+    if (pk.fulfilled) {
+      results.pk = pk.key;
+    }
+
+    return results;
   }
 
   _formatNumericCastKey(attributeName, key) {
@@ -3952,12 +4009,14 @@ class Entity {
 
   /* istanbul ignore next */
   _makeKey(
-    { prefix, isCustom, casing, postfix, cast } = {},
+    definition = {},
     facets = [],
     supplied = {},
     labels = [],
     { excludeLabelTail, excludePostfix, transform = (val) => val } = {},
   ) {
+
+    let { prefix, isCustom, casing, postfix, cast } = definition;
     if (cast === CastKeyOptions.number) {
       return this._formatNumericCastKey(facets[0], supplied[facets[0]]);
     }
@@ -3995,7 +4054,14 @@ class Entity {
 
     // when sort keys are fulfilled we need to add the entity postfix
     // this is used for cluster indexes
-    const fulfilled = foundCount === labels.length;
+    const fulfilled = foundCount === labels.length ||
+      // This second condition captures how postfixes are sometimes applied, in
+      // at least the case I am troubleshooting now. An investigation is needed
+      // to understand why the "postfix" logic below is not used.
+      labels.length - foundCount === 1 && labels[labels.length - 1].name === "";
+
+    // This doesn't seem to be the only way postfixes are applied. This is code
+    // is either dead or inconsistently used. Investigation needed.
     const shouldApplyPostfix = typeof postfix === "string" && !excludePostfix;
     if (fulfilled && shouldApplyPostfix) {
       key += postfix;

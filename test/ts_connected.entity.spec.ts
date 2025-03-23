@@ -3026,7 +3026,7 @@ describe("index condition", () => {
     }
   }
 
-  const formatShouldStatement = (should: boolean) => `should${should ? ' ' : ' not '}`;
+  const formatShouldStatement = (should: boolean, create?: boolean) => `should${should && !create ? ' ' : ' not '}`;
 
   describe('when all composite attributes are not provided', () => {
     const conditionCases  = [
