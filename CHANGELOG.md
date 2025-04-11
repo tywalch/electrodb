@@ -580,3 +580,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.1]
 ### Fixed
 - [Issue #475](https://github.com/tywalch/electrodb/issues/475); Fixes issue where some users reported errors exporting entities and/or types when using the `CustomAttributeType` function. They would receive an error similar to `Exported variable '...' has or is using name 'OpaquePrimitiveSymbol' from external module "..." but cannot be named.`.  
+
+## [3.4.2]
+### Fixed
+- [Issue #483](https://github.com/tywalch/electrodb/issues/483): This fix addresses the problem where ElectroDB returned an empty object when the get method was called for a non-existent item and the `attributes` parameter was specified. It now correctly returns `null` as expected.

@@ -4288,6 +4288,30 @@ describe("attributes query option", () => {
 
       expect(data).to.deep.equal([{}]);
     });
+
+    it('should return null if item does not exist', async () => {
+      const { data } = await User.get({ id: 'does-not-exist' }).go({
+        attributes: ['name'],
+      });
+
+      expect(data).to.deep.equal(null);
+    });
+
+    it('should return an empty array if item does not exist on batch get', async () => {
+      const { data } = await User.get([{ id: 'does-not-exist' }]).go({
+        attributes: ['name'],
+      });
+
+      expect(data).to.deep.equal([]);
+    });
+
+    it('should return an empty array on query for non-existent item', async () => {
+      const { data } = await User.query.byId({ id: 'does-not-exist' }).go({
+        attributes: ['name'],
+      });
+
+      expect(data).to.deep.equal([]);
+    });
   });
 
   it("should return only the attributes specified in query options", async () => {

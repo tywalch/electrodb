@@ -5079,8 +5079,6 @@ for (const [clientVersion, client] of [
             prop4: "def",
           };
 
-          let data = null;
-
           let putResult = await entity
             .put(item)
             .go()
@@ -5097,9 +5095,9 @@ for (const [clientVersion, client] of [
             .go()
             .then((res) => res.data);
 
-          expect(putResult).to.deep.equal(data);
-          expect(getResponse).to.deep.equal(data);
-          expect(queryResponse).to.deep.equal([]);
+          expect(putResult).to.deep.equal({});
+          expect(getResponse).to.deep.equal({});
+          expect(queryResponse).to.deep.equal([{}]);
         });
       });
       describe("Numeric and boolean keys", () => {
