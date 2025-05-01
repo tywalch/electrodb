@@ -2537,7 +2537,6 @@ export interface QueryOptions {
   logger?: ElectroEventListener;
   data?: "raw" | "includeKeys" | "attributes";
   order?: "asc" | "desc";
-
   consistent?: boolean;
 }
 
