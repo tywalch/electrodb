@@ -13,6 +13,8 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   ignoreOwnership?: boolean;
   limit?: number;
   count?: number;
+  seek?: boolean;
+  atleast?: number;
   pages?: number | 'all';
   logger?: (event) => void;
   listeners Array<(event) => void>;
@@ -60,6 +62,14 @@ Used a convenience wrapper for the DynamoDB parameter `Limit` [[read more](https
 ### count
 **Default Value:** _none_
 A target for the number of items to return from DynamoDB. If this option is passed, Queries on entities will paginate DynamoDB until the items found match the count is reached or all items for that query have been returned. It is important to understand that this option may result in ElectroDB making multiple calls to DynamoDB to satisfy the count. For this reason, you should also consider using the `pages` option to limit the number of requests (or "pages") made to DynamoDB.
+
+### until
+**Default Value:** _none_
+Instructs ElectroDB to continue querying DynamoDB until at least the number of items specified is returned. Unlike [count](#count), this option will not guarantee the exact number of items returned, but will ensure at least the number specified is returned. This option has fewer post-processing steps than `count` and is more performant in cases where the exact number of items is not critical.
+
+### seek
+**Default Value:** `false`
+Instructs ElectroDB to continue querying DynamoDB until at least one item is returned. This is useful when the circumstances of a table, model, and/or query request results in an empty return.
 
 ### pages
 **Default Value:** 1

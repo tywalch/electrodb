@@ -19,21 +19,27 @@ type TransactGetCommandInput = {
   TransactItems: TransactGetItem[];
 };
 
+export type DocumentClientV2 = {
+  get: DocumentClientMethod;
+  put: DocumentClientMethod;
+  delete: DocumentClientMethod;
+  update: DocumentClientMethod;
+  batchWrite: DocumentClientMethod;
+  batchGet: DocumentClientMethod;
+  scan: DocumentClientMethod;
+  transactGet: DocumentClientMethod;
+  transactWrite: DocumentClientMethod;
+  query: DocumentClientMethod;
+  createSet: (...params: any[]) => any;
+};
+
+export type DocumentClientV3 = {
+  send: (command: any) => Promise<any>;
+};
+
 export type DocumentClient =
-  | {
-      get: DocumentClientMethod;
-      put: DocumentClientMethod;
-      delete: DocumentClientMethod;
-      update: DocumentClientMethod;
-      batchWrite: DocumentClientMethod;
-      batchGet: DocumentClientMethod;
-      scan: DocumentClientMethod;
-      transactGet: DocumentClientMethod;
-      transactWrite: DocumentClientMethod;
-    }
-  | {
-      send: (command: any) => Promise<any>;
-    };
+  | DocumentClientV2
+  | DocumentClientV3;
 
 export type AllCollectionNames<
   E extends { [name: string]: Entity<any, any, any, any> },
@@ -1028,11 +1034,12 @@ export interface ElectroQueryEvent<P extends any = any> {
   params: P;
 }
 
-export interface ElectroResultsEvent<R extends any = any> {
+export interface ElectroResultsEvent<R extends any = any, P extends any = any> {
   type: "results";
   method: ElectroDBMethodTypes;
   config: any;
   results: R;
+  params: P;
   success: boolean;
 }
 
@@ -2530,6 +2537,8 @@ export interface QueryOptions {
   table?: string;
   limit?: number;
   count?: number;
+  seek?: boolean;
+  until?: number;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
   pages?: number | "all";
@@ -2637,6 +2646,8 @@ type ServiceQueryGoTerminalOptions = {
   data?: "raw" | "includeKeys" | "attributes";
   table?: string;
   limit?: number;
+  until?: number;
+  seek?: boolean;
   params?: object;
   originalErr?: boolean;
   ignoreOwnership?: boolean;
@@ -2654,6 +2665,8 @@ type GoQueryTerminalOptions<Attributes> = {
   table?: string;
   limit?: number;
   count?: number;
+  until?: number;
+  seek?: boolean;
   params?: object;
   originalErr?: boolean;
   ignoreOwnership?: boolean;

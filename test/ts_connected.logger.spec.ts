@@ -177,7 +177,7 @@ type EventProperties = {
 
 const eventProperties: EventProperties = {
   query: ["config", "method", "params", "type"],
-  results: ["config", "method", "results", "success", "type"],
+  results: ["config", "method", "params", "results", "success", "type"],
 };
 
 async function testListeners(fn: TestListenerCallback) {
@@ -524,6 +524,13 @@ describe("listener functions", () => {
           method: "get",
           success: true,
           results: {},
+          params: {
+            Key: {
+              pk: `$service#prop1_${prop1}`,
+              sk: `$entity1_version#prop2_${prop2}`,
+            },
+            TableName: "electro",
+          },
         },
       ]);
     });
@@ -560,6 +567,13 @@ describe("listener functions", () => {
           method: "get",
           success: true,
           results: {},
+          params: {
+            Key: {
+              pk: `$service#prop1_${prop1}`,
+              sk: `$entity1_version#prop2_${prop2}`,
+            },
+            TableName: "electro",
+          },
         },
       ]);
     });
