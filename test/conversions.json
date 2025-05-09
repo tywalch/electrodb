@@ -475,7 +475,7 @@
       "organizationId": "c47f4be7-c549-4337-8e86-06ef98342a74"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "all",
     "success": true,
     "target": "top",
@@ -488,7 +488,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle all partition keys on byOrganization conversion level with strict=all"
@@ -500,7 +500,7 @@
       "organizationId": "c47f4be7-c549-4337-8e86-06ef98342a74"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"createdAt\", \"name\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"createdAt\", \"name\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all partition keys on byCategory conversion level with strict=all"
@@ -646,7 +646,7 @@
       "accountId": "8ef26ffb-e807-4ed5-9bf3-04ae7e068542",
       "organizationId": "3b54c2d0-ddfd-4043-9fc2-ee4e1d8d9da8"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "all",
     "success": true,
     "target": "top",
@@ -675,7 +675,7 @@
       "organizationId": "3b54c2d0-ddfd-4043-9fc2-ee4e1d8d9da8"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all primary index composites on byCategory conversion level with strict=all"
@@ -686,7 +686,7 @@
       "accountId": "8ef26ffb-e807-4ed5-9bf3-04ae7e068542",
       "organizationId": "3b54c2d0-ddfd-4043-9fc2-ee4e1d8d9da8"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -715,7 +715,7 @@
       "organizationId": "3b54c2d0-ddfd-4043-9fc2-ee4e1d8d9da8"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all primary index composites on byCategory conversion level with strict=pk"
@@ -819,7 +819,7 @@
     "item": {
       "organizationId": "4991a5b2-1184-4728-b071-73ab246a9f0a"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "all",
     "success": true,
     "target": "top",
@@ -831,7 +831,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle all primary index partition keys on byOrganization conversion level with strict=all"
@@ -842,7 +842,7 @@
       "organizationId": "4991a5b2-1184-4728-b071-73ab246a9f0a"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all primary index partition keys on byCategory conversion level with strict=all"
@@ -851,7 +851,7 @@
     "item": {
       "organizationId": "4991a5b2-1184-4728-b071-73ab246a9f0a"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -876,7 +876,7 @@
       "organizationId": "4991a5b2-1184-4728-b071-73ab246a9f0a"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all primary index partition keys on byCategory conversion level with strict=pk"
@@ -971,7 +971,7 @@
       "createdAt": 1685906199440
     },
     "strict": "all",
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "top",
     "description": "should handle all secondary index composites at top-level with strict=all"
@@ -984,7 +984,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle all secondary index composites on byOrganization conversion level with strict=all"
@@ -997,7 +997,7 @@
       "createdAt": 1685906199440
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all secondary index composites on byCategory conversion level with strict=all"
@@ -1008,7 +1008,7 @@
       "category": "a5c66177-a97f-4784-8f98-2b015a0b2456",
       "createdAt": 1685906199440
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -1022,7 +1022,7 @@
     },
     "strict": "pk",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle all secondary index composites on byOrganization conversion level with strict=pk"
@@ -1035,7 +1035,7 @@
       "createdAt": 1685906199440
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all secondary index composites on byCategory conversion level with strict=pk"
@@ -1140,7 +1140,7 @@
       "category": "b42145f3-9907-42f7-9694-7baf5941da11"
     },
     "strict": "all",
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "top",
     "description": "should handle all secondary index partition keys at top-level with strict=all"
@@ -1151,7 +1151,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle all secondary index partition keys on byOrganization conversion level with strict=all"
@@ -1162,7 +1162,7 @@
       "category": "b42145f3-9907-42f7-9694-7baf5941da11"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"createdAt\", \"name\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"createdAt\", \"name\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all secondary index partition keys on byCategory conversion level with strict=all"
@@ -1171,7 +1171,7 @@
     "item": {
       "category": "b42145f3-9907-42f7-9694-7baf5941da11"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -1183,7 +1183,7 @@
     },
     "strict": "pk",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle all secondary index partition keys on byOrganization conversion level with strict=pk"
@@ -1194,7 +1194,7 @@
       "category": "b42145f3-9907-42f7-9694-7baf5941da11"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle all secondary index partition keys on byCategory conversion level with strict=pk"
@@ -1287,7 +1287,7 @@
       "accountId": "6782797b-9dee-460a-9101-f01ac9f8b475",
       "organizationId": "147c7832-1e99-46ad-b22f-3f7478dcbc49"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "all",
     "success": true,
     "target": "top",
@@ -1300,7 +1300,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle primary index partial sort key on byOrganization conversion level with strict=all"
@@ -1312,7 +1312,7 @@
       "organizationId": "147c7832-1e99-46ad-b22f-3f7478dcbc49"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle primary index partial sort key on byCategory conversion level with strict=all"
@@ -1355,7 +1355,7 @@
       "organizationId": "147c7832-1e99-46ad-b22f-3f7478dcbc49"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle primary index partial sort key on byCategory conversion level with strict=pk"
@@ -1455,7 +1455,7 @@
       "createdAt": 1685906199440
     },
     "strict": "all",
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "top",
     "description": "should handle secondary index partial sort key at top-level with strict=all"
@@ -1467,7 +1467,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle secondary index partial sort key on byOrganization conversion level with strict=all"
@@ -1479,7 +1479,7 @@
       "createdAt": 1685906199440
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"name\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"name\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle secondary index partial sort key on byCategory conversion level with strict=all"
@@ -1489,7 +1489,7 @@
       "category": "4bcc4b0b-0a37-4be3-84fb-d57909743f69",
       "createdAt": 1685906199440
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -1502,7 +1502,7 @@
     },
     "strict": "pk",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle secondary index partial sort key on byOrganization conversion level with strict=pk"
@@ -1514,7 +1514,7 @@
       "createdAt": 1685906199440
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle secondary index partial sort key on byCategory conversion level with strict=pk"
@@ -1613,7 +1613,7 @@
       "id": "d650eca5-66e3-49ab-9134-e2765b7cfcfd",
       "organizationId": "1f1c8373-76c1-49f2-b983-7f963d67e8a5"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "all",
     "success": true,
     "target": "top",
@@ -1626,7 +1626,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle out of order primary index partial sort key on byOrganization conversion level with strict=all"
@@ -1638,7 +1638,7 @@
       "organizationId": "1f1c8373-76c1-49f2-b983-7f963d67e8a5"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle out of order primary index partial sort key on byCategory conversion level with strict=all"
@@ -1648,7 +1648,7 @@
       "id": "d650eca5-66e3-49ab-9134-e2765b7cfcfd",
       "organizationId": "1f1c8373-76c1-49f2-b983-7f963d67e8a5"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -1675,7 +1675,7 @@
       "organizationId": "1f1c8373-76c1-49f2-b983-7f963d67e8a5"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle out of order primary index partial sort key on byCategory conversion level with strict=pk"
@@ -1775,7 +1775,7 @@
       "category": "02d9177f-ce83-45d9-ad6f-6d533d2279c2",
       "organizationId": "5a95c5f8-6bbe-4560-a07d-9957337e593f"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "all",
     "success": true,
     "target": "top",
@@ -1789,7 +1789,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"accountId\", \"id\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle out of order secondary index partial sort key on byOrganization conversion level with strict=all"
@@ -1802,7 +1802,7 @@
       "organizationId": "5a95c5f8-6bbe-4560-a07d-9957337e593f"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"createdAt\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"createdAt\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle out of order secondary index partial sort key on byCategory conversion level with strict=all"
@@ -1956,7 +1956,7 @@
       "description": "b5a44862-d747-4229-a7ef-e445e2b732af"
     },
     "strict": "all",
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "top",
     "description": "should handle no composites at top-level with strict=all"
@@ -1967,7 +1967,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle no composites on byOrganization conversion level with strict=all"
@@ -1978,7 +1978,7 @@
       "description": "b5a44862-d747-4229-a7ef-e445e2b732af"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle no composites on byCategory conversion level with strict=all"
@@ -1987,7 +1987,7 @@
     "item": {
       "description": "b5a44862-d747-4229-a7ef-e445e2b732af"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -1999,7 +1999,7 @@
     },
     "strict": "pk",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle no composites on byOrganization conversion level with strict=pk"
@@ -2010,7 +2010,7 @@
       "description": "b5a44862-d747-4229-a7ef-e445e2b732af"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle no composites on byCategory conversion level with strict=pk"
@@ -2108,7 +2108,7 @@
       "createdAt": 1685906199440
     },
     "strict": "all",
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "top",
     "description": "should handle missing partition key primary index at top-level with strict=all"
@@ -2124,7 +2124,7 @@
     },
     "strict": "all",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle missing partition key primary index on byOrganization conversion level with strict=all"
@@ -2140,7 +2140,7 @@
       "createdAt": 1685906199440
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle missing partition key primary index on byCategory conversion level with strict=all"
@@ -2154,7 +2154,7 @@
       "description": "32c37878-b88e-4d62-97c5-c9e4f4b9827e",
       "createdAt": 1685906199440
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -2171,7 +2171,7 @@
     },
     "strict": "pk",
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byOrganization",
     "description": "should handle missing partition key primary index on byOrganization conversion level with strict=pk"
@@ -2187,7 +2187,7 @@
       "createdAt": 1685906199440
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"organizationId\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle missing partition key primary index on byCategory conversion level with strict=pk"
@@ -2314,7 +2314,7 @@
       "createdAt": 1685906199440,
       "organizationId": "a060003f-8826-4d8d-8402-bcd8f93adebf"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "all",
     "success": true,
     "target": "top",
@@ -2349,7 +2349,7 @@
       "organizationId": "a060003f-8826-4d8d-8402-bcd8f93adebf"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle missing partition key secondary index on byCategory conversion level with strict=all"
@@ -2363,7 +2363,7 @@
       "createdAt": 1685906199440,
       "organizationId": "a060003f-8826-4d8d-8402-bcd8f93adebf"
     },
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "strict": "pk",
     "success": true,
     "target": "top",
@@ -2398,7 +2398,7 @@
       "organizationId": "a060003f-8826-4d8d-8402-bcd8f93adebf"
     },
     "keys": {},
-    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes",
+    "error": "Incomplete or invalid key composite attributes supplied. Missing properties: \"category\" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes",
     "success": false,
     "target": "byCategory",
     "description": "should handle missing partition key secondary index on byCategory conversion level with strict=pk"
