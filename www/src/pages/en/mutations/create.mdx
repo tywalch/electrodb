@@ -16,7 +16,7 @@ import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 
 <ExampleSetup />
 
-In DynamoDB, `put` operations by default will overwrite a record if record being updated does not exist. In **_ElectroDB_**, the `create` method will utilize the `attribute_not_exists()` parameter to ensure records are only "created" and not overwritten when inserting new records into the table.
+In DynamoDB, `put` operations by default will insert a new record if the record attempting to be updated does not exist. In **_ElectroDB_**, the `create` method will utilize the `attribute_not_exists()` parameter to ensure records are only "created" and not overwritten when inserting new records into the table.
 
 The `create()` operation will trigger the `default`, and `set` attribute callbacks when writing to DynamoDB. By default, after writing to DynamoDB, ElectroDB will format and return the record through the same process as a Get/Query, which will invoke the `get` callback on all included attributes. If this behaviour is not desired, use the [Execution Option](#execution-options) `response:"none"` to return a null value.
 
