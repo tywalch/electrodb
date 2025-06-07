@@ -943,9 +943,6 @@ class Entity {
               response.Item,
               config,
             );
-            if (Object.keys(results).length === 0 && !config._objectOnEmpty) {
-              results = null;
-            }
           } else if (!config._objectOnEmpty) {
             results = null;
           }
@@ -965,9 +962,7 @@ class Entity {
                 item,
                 config,
               );
-              if (Object.keys(record).length > 0 || config._objectOnEmpty) {
-                results.push(record);
-              }
+              results.push(record);
             }
           }
         } else if (response.Attributes) {
@@ -1732,9 +1727,6 @@ class Entity {
 
       if (Array.isArray(option.attributes)) {
         config.attributes = config.attributes.concat(option.attributes);
-        if (config.attributes.length > 0) {
-          config._objectOnEmpty = true;
-        }
       }
 
       if (option.preserveBatchOrder === true) {
