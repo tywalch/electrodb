@@ -4367,6 +4367,7 @@ describe("attributes query option", () => {
     const scanItem = await entityWithSK.scan
       .go({
         attributes: ["attr2", "attr9", "attr5", "attr10"],
+        pages: 'all',
       })
       .then((res) => res.data);
 
