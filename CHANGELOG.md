@@ -584,3 +584,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.2]
 ### Fixed
 - [Issue #483](https://github.com/tywalch/electrodb/issues/483): This fix addresses the problem where ElectroDB returned an empty object when the get method was called for a non-existent item and the `attributes` parameter was specified. It now correctly returns `null` as expected.
+
+## [3.4.3]
+### Fixed
+- [Issue #439](https://github.com/tywalch/electrodb/issues/439); Fixed missing TypeScript types for `attributes` property on `scan`, `find`, and `match` methods.

@@ -1236,10 +1236,10 @@ export interface RecordsActionOptions<
   F extends string,
   C extends string,
   S extends Schema<A, F, C>,
-  Items,
+  ResponseItem,
   IndexCompositeAttributes,
 > {
-  go: QueryRecordsGo<Items>;
+  go: QueryRecordsGo<ResponseItem>;
   params: ParamRecord;
   where: WhereClause<
     A,
@@ -1247,7 +1247,7 @@ export interface RecordsActionOptions<
     C,
     S,
     Item<A, F, C, S, S["attributes"]>,
-    RecordsActionOptions<A, F, C, S, Items, IndexCompositeAttributes>
+    RecordsActionOptions<A, F, C, S, ResponseItem, IndexCompositeAttributes>
   >;
 }
 
@@ -2854,11 +2854,16 @@ export type ServiceQueryRecordsGo<
   options?: Options,
 ) => Promise<{ data: T; cursor: string | null }>;
 
-export type QueryRecordsGo<ResponseType, Options = QueryOptions> = <
-  T = ResponseType,
->(
+export type QueryRecordsGo<Item> = <Options extends GoQueryTerminalOptions<keyof Item>>(
   options?: Options,
-) => Promise<{ data: T; cursor: string | null }>;
+) => Options extends GoQueryTerminalOptions<infer Attr>
+  ? Promise<{
+      data: Array<{
+        [Name in keyof Item as Name extends Attr ? Name : never]: Item[Name];
+      }>;
+      cursor: string | null;
+    }>
+  : Promise<{ data: Array<Item>; cursor: string | null }>;
 
 export type UpdateRecordGo<ResponseType, Keys> = <
   T = ResponseType,
@@ -5254,7 +5259,7 @@ export class Entity<
     F,
     C,
     S,
-    ResponseItem<A, F, C, S>[],
+    ResponseItem<A, F, C, S>,
     AllTableIndexCompositeAttributes<A, F, C, S>
   >;
 
@@ -5265,7 +5270,7 @@ export class Entity<
     F,
     C,
     S,
-    ResponseItem<A, F, C, S>[],
+    ResponseItem<A, F, C, S>,
     AllTableIndexCompositeAttributes<A, F, C, S>
   >;
 
@@ -5274,7 +5279,7 @@ export class Entity<
     F,
     C,
     S,
-    ResponseItem<A, F, C, S>[],
+    ResponseItem<A, F, C, S>,
     TableIndexCompositeAttributes<A, F, C, S>
   >;
   query: Queries<A, F, C, S>;
