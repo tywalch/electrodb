@@ -132,6 +132,10 @@ export const SIDEBAR: Sidebar = {
         text: "Using KEYS_ONLY Global Secondary Indexes",
         link: "en/recipes/keys-only-gsi",
       },
+      {
+        text: "Using INCLUDE Projection Global Secondary Indexes",
+        link: "en/recipes/include-projection-gsi",
+      },
     ],
   },
 };
