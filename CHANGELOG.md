@@ -619,3 +619,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### [3.5.3]
 ### Fixed
 - [Issue #540](https://github.com/tywalch/electrodb/issues/540) Rolls back a change introduced in 3.5.0 (via [533](https://github.com/tywalch/electrodb/pull/533/)) that caused over-filtering in collection queries, resulting in some collection members not being returned.   
+
+## [3.6.0]
+### Added
+- [Issue #507](https://github.com/tywalch/electrodb/issues/507); You can now scan an index. [See docs](https://electrodb.dev/en/queries/scan/#scanning-an-index)
+- [Issue #508](https://github.com/tywalch/electrodb/issues/508); Added support for INCLUDE projection type in index definitions, allowing selective attribute projection for optimized query performance and cost reduction. [See docs](https://electrodb.dev/en/recipes/include-projection-gsi)
