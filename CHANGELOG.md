@@ -588,3 +588,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.3]
 ### Fixed
 - [Issue #439](https://github.com/tywalch/electrodb/issues/439); Fixed missing TypeScript types for `attributes` property on `scan`, `find`, and `match` methods.
+
+## [3.5.0]
+### Added
+- [Issue #507](https://github.com/tywalch/electrodb/issues/507); You can now scan an index. [See docs](https://electrodb.dev/en/queries/scan/#scanning-an-index)
+- [Issue #508](https://github.com/tywalch/electrodb/issues/508); Added support for INCLUDE projection type in index definitions, allowing selective attribute projection for optimized query performance and cost reduction. [See docs](https://electrodb.dev/en/recipes/include-projection-gsi)
