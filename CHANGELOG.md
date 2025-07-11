@@ -607,3 +607,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.5.0]
 ### Adds
 - Adds option to pass ignoreOwnership during entity creation. We are migrating our codebase to use electrodb. Devs sometimes forget to include this flag and it fails silently because types are not narrowed down from the flags passed inside the .go({...}). It will be convenient if there was an option to pass in ignoreOwnership when creating entities so that errors are minimized. Contribution provided by [@xamogh](https://github.com/xamogh) via [PR #457](https://github.com/tywalch/electrodb/pull/457). Thank you for your contribution!
+
+## [3.6.0]
+### Added
+- [Issue #507](https://github.com/tywalch/electrodb/issues/507); You can now scan an index. [See docs](https://electrodb.dev/en/queries/scan/#scanning-an-index)
+- [Issue #508](https://github.com/tywalch/electrodb/issues/508); Added support for INCLUDE projection type in index definitions, allowing selective attribute projection for optimized query performance and cost reduction. [See docs](https://electrodb.dev/en/recipes/include-projection-gsi)
