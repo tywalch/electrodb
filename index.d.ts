@@ -1211,6 +1211,20 @@ export type CollectionResponse<
   cursor: string | null;
 };
 
+export type IndexSpecificSchema<
+  A extends string,
+  F extends string,
+  C extends string,
+  S extends Schema<A, F, C>,
+  I extends keyof S["indexes"],
+> = Omit<S, "attributes" | "indexes"> & {
+  attributes: Pick<
+    S["attributes"],
+    IndexProjectedAttributeNames<A, F, C, S, I>
+  >;
+  indexes: Pick<S["indexes"], I>;
+};
+
 export interface QueryBranches<
   A extends string,
   F extends string,
@@ -1218,17 +1232,31 @@ export interface QueryBranches<
   S extends Schema<A, F, C>,
   ResponseItem,
   IndexCompositeAttributes,
+  I extends keyof S["indexes"],
 > {
-  go: GoQueryTerminal<A, F, C, S, ResponseItem>;
+  go: GoQueryTerminal<A, F, C, S, ResponseItem, I>;
   params: ParamTerminal<A, F, C, S, ResponseItem>;
-  where: WhereClause<
-    A,
-    F,
-    C,
-    S,
-    Item<A, F, C, S, S["attributes"]>,
-    QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes>
-  >;
+  where: IndexSpecificSchema<A, F, C, S, I> extends Schema<
+    infer A2,
+    infer F2,
+    infer C2
+  >
+    ? WhereClause<
+        A2,
+        F2,
+        C2,
+        Schema<A2, F2, C2>,
+        Item<A2, F2, C2, Schema<A2, F2, C2>, Schema<A2, F2, C2>["attributes"]>,
+        QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>
+      >
+    : WhereClause<
+        A,
+        F,
+        C,
+        S,
+        Item<A, F, C, S, S["attributes"]>,
+        QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>
+      >;
 }
 
 export interface RecordsActionOptions<
@@ -1239,7 +1267,7 @@ export interface RecordsActionOptions<
   ResponseItem,
   IndexCompositeAttributes,
 > {
-  go: QueryRecordsGo<ResponseItem>;
+  go: QueryRecordsGo<ResponseItem, S>;
   params: ParamRecord;
   where: WhereClause<
     A,
@@ -1299,7 +1327,7 @@ type GoGetTerminalTransaction<
   Params,
 > = <Options extends TransactGetQueryOptions<keyof ResponseItem>>(
   options?: Options,
-) => Options extends GoQueryTerminalOptions<infer Attr>
+) => Options extends GoQueryTerminalOptions<infer Attr, S>
   ? CommittedTransactionResult<
       {
         [Name in keyof ResponseItem as Name extends Attr
@@ -2300,27 +2328,28 @@ interface QueryOperations<
   CompositeAttributes,
   ResponseItem,
   IndexCompositeAttributes,
+  I extends keyof S["indexes"],
 > {
   between: (
     skCompositeAttributesStart: CompositeAttributes,
     skCompositeAttributesEnd: CompositeAttributes,
-  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes>;
+  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>;
   gt: (
     skCompositeAttributes: CompositeAttributes,
-  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes>;
+  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>;
   gte: (
     skCompositeAttributes: CompositeAttributes,
-  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes>;
+  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>;
   lt: (
     skCompositeAttributes: CompositeAttributes,
-  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes>;
+  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>;
   lte: (
     skCompositeAttributes: CompositeAttributes,
-  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes>;
+  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>;
   begins: (
     skCompositeAttributes: CompositeAttributes,
-  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes>;
-  go: GoQueryTerminal<A, F, C, S, ResponseItem>;
+  ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>;
+  go: GoQueryTerminal<A, F, C, S, ResponseItem, I>;
   params: ParamTerminal<A, F, C, S, ResponseItem>;
   where: WhereClause<
     A,
@@ -2328,7 +2357,7 @@ interface QueryOperations<
     C,
     S,
     Item<A, F, C, S, S["attributes"]>,
-    QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes>
+    QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>
   >;
 }
 
@@ -2451,6 +2480,23 @@ export type Conversions<
   };
 };
 
+export type IndexScans<
+  A extends string,
+  F extends string,
+  C extends string,
+  S extends Schema<A, F, C>,
+> = {
+  [I in keyof S["indexes"]]: QueryBranches<
+    A,
+    F,
+    C,
+    S,
+    ResponseItem<A, F, C, S>,
+    AllTableIndexCompositeAttributes<A, F, C, S>,
+    I
+  >;
+};
+
 export type Queries<
   A extends string,
   F extends string,
@@ -2471,7 +2517,8 @@ export type Queries<
           S,
           ResponseItem<A, F, C, S>,
           AllTableIndexCompositeAttributes<A, F, C, S> &
-            Required<CompositeAttributes>
+            Required<CompositeAttributes>,
+          I
         >
       : // If there is no SK, dont show query operations (When no PK is specified)
       S["indexes"][I] extends IndexWithSortKey
@@ -2488,7 +2535,8 @@ export type Queries<
           ResponseItem<A, F, C, S>,
           AllTableIndexCompositeAttributes<A, F, C, S> &
             Required<CompositeAttributes> &
-            SK
+            SK,
+            I
         >
       : QueryBranches<
           A,
@@ -2498,7 +2546,8 @@ export type Queries<
           ResponseItem<A, F, C, S>,
           AllTableIndexCompositeAttributes<A, F, C, S> &
             Required<CompositeAttributes> &
-            SK
+            SK,
+          I
         >
     : never;
 };
@@ -2648,7 +2697,11 @@ type ServiceQueryGoTerminalOptions = {
   consistent?: boolean;
 } & QueryExecutionComparisonParts;
 
-type GoQueryTerminalOptions<Attributes> = {
+type GoQueryTerminalOptions<
+  Attributes,
+  S extends Schema<any, any, any>,
+  I extends keyof S["indexes"] | undefined = undefined,
+> = {
   cursor?: string | null;
   data?: "raw" | "includeKeys" | "attributes";
   table?: string;
@@ -2658,13 +2711,28 @@ type GoQueryTerminalOptions<Attributes> = {
   originalErr?: boolean;
   ignoreOwnership?: boolean;
   pages?: number | "all";
-  attributes?: ReadonlyArray<Attributes>;
   listeners?: Array<ElectroEventListener>;
   logger?: ElectroEventListener;
   order?: "asc" | "desc";
   hydrate?: boolean;
   consistent?: boolean;
-} & QueryExecutionComparisonParts;
+} & QueryExecutionComparisonParts &
+  (
+    | {
+        // if should hydrate, all attributes will be available from the main table
+        hydrate: true;
+        attributes?: ReadonlyArray<Attributes>;
+      }
+    | {
+        // if should not hydrate, the only available attributes are the ones that are projected to the index
+        hydrate?: false | undefined;
+        attributes?: S extends Schema<infer A, infer F, infer C>
+          ? ReadonlyArray<
+              Extract<IndexProjectedAttributeNames<A, F, C, S, I>, Attributes>
+            >
+          : ReadonlyArray<Attributes>;
+      }
+  );
 
 interface TransactWriteQueryOptions {
   data?: "raw" | "includeKeys" | "attributes";
@@ -2781,9 +2849,9 @@ type GoGetTerminal<
   C extends string,
   S extends Schema<A, F, C>,
   ResponseItem,
-> = <Options extends GoQueryTerminalOptions<keyof ResponseItem>>(
+> = <Options extends GoQueryTerminalOptions<keyof ResponseItem, S>>(
   options?: Options,
-) => Options extends GoQueryTerminalOptions<infer Attr>
+) => Options extends GoQueryTerminalOptions<infer Attr, S>
   ? Promise<{
       data:
         | {
@@ -2801,16 +2869,13 @@ export type GoQueryTerminal<
   C extends string,
   S extends Schema<A, F, C>,
   Item,
-> = <Options extends GoQueryTerminalOptions<keyof Item>>(
-  options?: Options,
-) => Options extends GoQueryTerminalOptions<infer Attr>
-  ? Promise<{
-      data: Array<{
-        [Name in keyof Item as Name extends Attr ? Name : never]: Item[Name];
-      }>;
-      cursor: string | null;
-    }>
-  : Promise<{ data: Array<Item>; cursor: string | null }>;
+  I extends keyof S["indexes"] | undefined = undefined,
+> = {
+  <Options extends GoQueryTerminalOptions<keyof Item, S, I>>(
+    options: Options,
+  ): Promise<IndexResponse<Options, Item, S, I>>;
+  (): Promise<IndexResponse<{}, Item, S, I>>;
+}
 
 export type EntityParseMultipleItems<
   A extends string,
@@ -2854,9 +2919,44 @@ export type ServiceQueryRecordsGo<
   options?: Options,
 ) => Promise<{ data: T; cursor: string | null }>;
 
-export type QueryRecordsGo<Item> = <Options extends GoQueryTerminalOptions<keyof Item>>(
+export type IndexResponse<
+  Options extends GoQueryTerminalOptions<keyof Item, S, any>,
+  Item,
+  S extends Schema<string, string, string>,
+  I extends keyof S["indexes"] | undefined = undefined,
+> = Options extends GoQueryTerminalOptions<infer Attr, S>
+  ? {
+      data: Array<{
+        [Name in keyof Item as Name extends Attr
+          ? Options["hydrate"] extends true
+            ? Name
+            : I extends keyof S["indexes"]
+            ? "project" extends keyof S["indexes"][I]
+              ? S["indexes"][I]["project"] extends ReadonlyArray<
+                  infer P
+                >
+                ? Name extends P
+                  ? Name
+                  : never
+                : S["indexes"][I]["project"] extends 'keys_only'
+                  ? never
+                  : Name
+              : Name
+            : Name
+          : never]: Item[Name];
+      }>;
+      cursor: string | null;
+    }
+  : {
+      data: Array<Item>;
+      cursor: string | null;
+    };
+
+export type QueryRecordsGo<Item, S extends Schema<string, string, string>> = <
+  Options extends GoQueryTerminalOptions<keyof Item, S>,
+>(
   options?: Options,
-) => Options extends GoQueryTerminalOptions<infer Attr>
+) => Options extends GoQueryTerminalOptions<infer Attr, any>
   ? Promise<{
       data: Array<{
         [Name in keyof Item as Name extends Attr ? Name : never]: Item[Name];
@@ -3660,7 +3760,7 @@ export type KeyCastOption = "string" | "number";
 
 export type KeyCasingOption = "upper" | "lower" | "none" | "default";
 
-export interface Schema<A extends string, F extends string, C extends string> {
+export interface Schema<A extends string, F extends string, C extends string, P extends string = string> {
   readonly model: {
     readonly entity: string;
     readonly service: string;
@@ -3671,7 +3771,7 @@ export interface Schema<A extends string, F extends string, C extends string> {
   };
   readonly indexes: {
     [accessPattern: string]: {
-      readonly project?: "keys_only";
+      readonly project?: "keys_only" | ReadonlyArray<P>;
       readonly index?: string;
       readonly scope?: string;
       readonly type?: "clustered" | "isolated";
@@ -3696,6 +3796,20 @@ export interface Schema<A extends string, F extends string, C extends string> {
 }
 
 export type Attributes<A extends string> = Record<A, Attribute>;
+
+export type IndexProjectedAttributeNames<
+  A extends string,
+  F extends string,
+  C extends string,
+  S extends Schema<A, F, C>,
+  I extends keyof S["indexes"] | undefined,
+> = I extends keyof S["indexes"]
+  ? S["indexes"][I]["project"] extends ReadonlyArray<infer R extends A>
+    ? R
+    : S["indexes"][I]["project"] extends "keys_only"
+    ? never
+    : A
+  : A;
 
 export type IndexCollections<
   A extends string,
@@ -5013,7 +5127,8 @@ export class Entity<
   A extends string,
   F extends string,
   C extends string,
-  S extends Schema<A, F, C>,
+  S extends Schema<A, F, C, P>,
+  P extends string = string,
 > {
   readonly schema: S;
   private config?: EntityConfiguration;
@@ -5281,7 +5396,9 @@ export class Entity<
     S,
     ResponseItem<A, F, C, S>,
     TableIndexCompositeAttributes<A, F, C, S>
-  >;
+  > &
+    IndexScans<A, F, C, S>;
+
   query: Queries<A, F, C, S>;
 
   parse<Options extends ParseOptions<keyof ResponseItem<A, F, C, S>>>(

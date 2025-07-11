@@ -106,12 +106,25 @@ class Entity {
   }
 
   get scan() {
-    return this._makeChain(
+    const result = this._makeChain(
       TableIndex,
       this._clausesWithFilters,
       clauses.index,
       { _isPagination: true },
     ).scan();
+
+    for (const accessPattern in this.model.indexes) {
+      const index = this.model.indexes[accessPattern].index;
+
+      result[accessPattern] = this._makeChain(
+        index,
+        this._clausesWithFilters,
+        clauses.index,
+        { _isPagination: true },
+      ).scan();
+    }
+
+    return result;
   }
 
   setIdentifier(type = "", identifier = "") {
@@ -689,7 +702,9 @@ class Entity {
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
-    const shouldHydrate = config.hydrate && method === MethodTypes.query;
+    const shouldHydrate =
+      config.hydrate &&
+      (method === MethodTypes.query || method === MethodTypes.scan);
     do {
       let response = await this._exec(
         method,
@@ -2012,7 +2027,10 @@ class Entity {
         );
         break;
       case MethodTypes.scan:
-        params = this._makeScanParam(filter[ExpressionTypes.FilterExpression]);
+        params = this._makeScanParam(
+          filter[ExpressionTypes.FilterExpression],
+          state.query.index,
+        );
         break;
       /* istanbul ignore next */
       default:
@@ -2228,17 +2246,16 @@ class Entity {
   }
 
   /* istanbul ignore next */
-  _makeScanParam(filter = {}) {
-    let indexBase = TableIndex;
-    let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
+  _makeScanParam(filter = {}, index = TableIndex) {
+    let hasSortKey = this.model.lookup.indexHasSortKeys[index];
     let accessPattern =
-      this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
+      this.model.translations.indexes.fromIndexToAccessPattern[index];
     let pkField = this.model.indexes[accessPattern].pk.field;
     let { pk, sk } = this._makeIndexKeys({
-      index: indexBase,
+      index,
     });
 
-    let keys = this._makeParameterKey(indexBase, pk, ...sk);
+    let keys = this._makeParameterKey(index, pk, ...sk);
     // trim empty key values (this can occur when keys are defined by users)
     for (let key in keys) {
       if (keys[key] === undefined || keys[key] === "") {
@@ -2289,6 +2306,10 @@ class Entity {
 
     if (filterExpressions.length) {
       params.FilterExpression = filterExpressions.join(" AND ");
+    }
+
+    if (index) {
+      params.IndexName = index;
     }
 
     return params;
