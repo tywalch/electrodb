@@ -603,3 +603,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.7]
 ### Fixed
 - [Issue #530]((https://github.com/tywalch/electrodb/issues/530)); Fixed issue where ElectroDB would attempt to set a table index field's value on `upsert` if an index key used an attribute's name as it's field name. This would cause the `upsert` to fail because DyanmoDB prevents set operations on table index fields.
+
+## [3.5.0]
+### Added
+- [Issue #507](https://github.com/tywalch/electrodb/issues/507); You can now scan an index. [See docs](https://electrodb.dev/en/queries/scan/#scanning-an-index)
+- [Issue #508](https://github.com/tywalch/electrodb/issues/508); Added support for INCLUDE projection type in index definitions, allowing selective attribute projection for optimized query performance and cost reduction. [See docs](https://electrodb.dev/en/recipes/include-projection-gsi)
