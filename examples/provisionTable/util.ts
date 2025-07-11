@@ -49,7 +49,7 @@ export type TableIndexDefinition = {
 export type GlobalSecondaryIndexDefinition = {
   type: "GlobalSecondaryIndex";
   indexName: string;
-  keysOnly: boolean;
+  projection: "all" | "keys_only" | string[];
   partitionKey: IndexKey;
   sortKey?: IndexKey;
 };
@@ -57,7 +57,7 @@ export type GlobalSecondaryIndexDefinition = {
 export type LocalSecondaryIndexDefinition = {
   type: "LocalSecondaryIndex";
   indexName: string;
-  keysOnly: boolean;
+  projection: "all" | "keys_only" | string[];
   sortKey: IndexKey;
 };
 
@@ -105,7 +105,10 @@ export function createSecondaryIndexDefinition(
     indexName: indexDefinition.index!,
     sortKey: toSortKey(indexDefinition.sk),
     partitionKey: toPartitionKey(indexDefinition.pk),
-    keysOnly: indexDefinition.project === "keys_only",
+    projection:
+      typeof indexDefinition.project === "object"
+        ? [...indexDefinition.project, "__edb_e__", "__edb_v__"]
+        : indexDefinition.project ?? "all",
   };
 }
 
@@ -120,7 +123,10 @@ export function createLocalSecondaryIndexDefinition(
     sortKey,
     type: "LocalSecondaryIndex",
     indexName: indexDefinition.index!,
-    keysOnly: indexDefinition.project === "keys_only",
+    projection:
+      typeof indexDefinition.project === "object"
+        ? [...indexDefinition.project, "__edb_e__", "__edb_v__"]
+        : indexDefinition.project ?? "all",
   };
 }
 
