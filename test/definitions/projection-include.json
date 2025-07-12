@@ -90,8 +90,7 @@
         }
       ],
       "Projection": {
-        "ProjectionType": "INCLUDE",
-        "NonKeyAttributes": ["exclude1", "exclude2", "exclude3", "__edb_e__", "__edb_v__"]
+        "ProjectionType": "KEYS_ONLY"
       }
     }
   ],
