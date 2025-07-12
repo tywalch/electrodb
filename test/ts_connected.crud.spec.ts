@@ -6698,7 +6698,7 @@ describe("scanning an index", () => {
   });
 });
 
-describe("project include attributes", () => {
+describe("index projection", () => {
   const entity = new Entity(
     {
       model: {
@@ -6749,6 +6749,18 @@ describe("project include attributes", () => {
             composite: [],
           },
         },
+        keysOnly: {
+          index: "gsi4pk-gsi4sk-index",
+          project: "keys_only",
+          pk: {
+            field: "gsi4pk",
+            composite: ["id"],
+          },
+          sk: {
+            field: "gsi4sk",
+            composite: [],
+          },
+        },
       },
     },
     { table: "electro_projectioninclude", client },
@@ -6791,6 +6803,36 @@ describe("project include attributes", () => {
         include1: item.include1,
         include2: item.include2,
         include3: item.include3,
+      },
+    ]);
+  });
+
+  it("scans index with projected attributes and hydrate and non-projected attributes", async () => {
+    const { data: resp } = await entity.scan.includeIndex.go({
+      pages: "all",
+      hydrate: true,
+      attributes: ["include1", "exclude1"],
+    });
+
+    expect(resp).to.deep.equal([
+      {
+        include1: item.include1,
+        exclude1: item.exclude1,
+      },
+    ]);
+  });
+
+  it("queries index with projected attributes and hydrate and non-projected attributes", async () => {
+    const { data: resp } = await entity.query.includeIndex({ id: item.id }).go({
+      pages: "all",
+      hydrate: true,
+      attributes: ["include1", "exclude1"],
+    });
+
+    expect(resp).to.deep.equal([
+      {
+        include1: item.include1,
+        exclude1: item.exclude1,
       },
     ]);
   });
@@ -6849,6 +6891,79 @@ describe("project include attributes", () => {
         include1: item.include1,
         include2: item.include2,
         include3: item.include3,
+      },
+    ]);
+  });
+
+  it("queries index with keys only", async () => {
+    const { data: resp } = await entity.query.keysOnly({ id: item.id }).go();
+    // we return an empty array because ElectroDB can't verify entity ownership
+    // for a keys only index
+    expect(resp).to.deep.equal([]);
+  });
+
+  it("scans index with keys only", async () => {
+    const { data: resp } = await entity.scan.keysOnly.go({
+      pages: "all",
+    });
+    // we return an empty array because ElectroDB can't verify entity ownership
+    // for a keys only index
+    expect(resp).to.deep.equal([]);
+  });
+
+  it("queries index with keys only and ignoreOwnership", async () => {
+    const { data: resp } = await entity.query.keysOnly({ id: item.id }).go({
+      ignoreOwnership: true,
+    });
+    expect(resp).to.deep.equal([{}]);
+  });
+
+  it("scans index with keys only and ignoreOwnership", async () => {
+    const { data: resp } = await entity.scan.keysOnly.go({
+      pages: "all",
+      ignoreOwnership: true,
+    });
+    expect(resp).to.deep.equal([{}]);
+  });
+
+  it("queries index with keys only and hydrate", async () => {
+    const { data: resp } = await entity.query.keysOnly({ id: item.id }).go({
+      hydrate: true,
+    });
+    expect(resp).to.deep.equal([item]);
+  });
+
+  it("scans index with keys only and hydrate", async () => {
+    const { data: resp } = await entity.scan.keysOnly.go({
+      pages: "all",
+      hydrate: true,
+    });
+    expect(resp).to.deep.equal([item]);
+  });
+
+  it("queries index with keys only and hydrate and non-projected attributes", async () => {
+    const { data: resp } = await entity.query.keysOnly({ id: item.id }).go({
+      hydrate: true,
+      attributes: ["include1", "exclude1"],
+    });
+    expect(resp).to.deep.equal([
+      {
+        include1: item.include1,
+        exclude1: item.exclude1,
+      },
+    ]);
+  });
+
+  it("scans index with keys only and hydrate and non-projected attributes", async () => {
+    const { data: resp } = await entity.scan.keysOnly.go({
+      pages: "all",
+      hydrate: true,
+      attributes: ["include1", "exclude1"],
+    });
+    expect(resp).to.deep.equal([
+      {
+        include1: item.include1,
+        exclude1: item.exclude1,
       },
     ]);
   });
