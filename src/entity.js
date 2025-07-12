@@ -665,6 +665,7 @@ class Entity {
       _isCollectionQuery: false,
       preserveBatchOrder: true,
       ignoreOwnership: config._providedIgnoreOwnership,
+      attributes: config._providedAttributes,
     });
 
     const unprocessed = [];
@@ -1655,6 +1656,7 @@ class Entity {
       listeners: [],
       preserveBatchOrder: false,
       attributes: [],
+      _providedAttributes: [],
       terminalOperation: undefined,
       formatCursor: u.cursorFormatter,
       order: undefined,
@@ -1742,6 +1744,7 @@ class Entity {
 
       if (Array.isArray(option.attributes)) {
         config.attributes = config.attributes.concat(option.attributes);
+        config._providedAttributes = option.attributes;
       }
 
       if (option.preserveBatchOrder === true) {
@@ -1890,6 +1893,10 @@ class Entity {
       if (option.hydrate) {
         config.hydrate = true;
         config.ignoreOwnership = true;
+        // if we will hydrate later, we don't want to provide a ProjectionExpression since the attributes
+        // may contain non-projected attributes that the user expects to receive from the main table
+        // after hydration
+        config.attributes = [];
       }
 
       if (validations.isFunction(option.hydrator)) {
