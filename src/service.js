@@ -497,6 +497,7 @@ class Service {
             hydrator: undefined,
             _isCollectionQuery: false,
             ignoreOwnership: config._providedIgnoreOwnership,
+            attributes: config._providedAttributes,
           });
         }
 
@@ -536,6 +537,7 @@ class Service {
             hydrator: undefined,
             _isCollectionQuery: false,
             ignoreOwnership: config._providedIgnoreOwnership,
+            attributes: config._providedAttributes,
           });
           unprocessed = unprocessed.concat(results.unprocessed);
           if (results.data.length !== itemRefs.length) {
