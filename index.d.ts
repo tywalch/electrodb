@@ -1218,11 +1218,20 @@ export type IndexSpecificSchema<
   S extends Schema<A, F, C>,
   I extends keyof S["indexes"],
 > = Omit<S, "attributes" | "indexes"> & {
-  attributes: Pick<
-    S["attributes"],
-    IndexProjectedAttributeNames<A, F, C, S, I>
-  >;
-  indexes: Pick<S["indexes"], I>;
+  attributes: {
+    [a in keyof S["attributes"] as a extends IndexProjectedAttributeNames<
+      A,
+      F,
+      C,
+      S,
+      I
+    >
+      ? a
+      : never]: S["attributes"][a];
+  };
+  indexes: {
+    [i in keyof S["indexes"] as i extends I ? i : never]: S["indexes"][i];
+  };
 };
 
 export interface QueryBranches<
