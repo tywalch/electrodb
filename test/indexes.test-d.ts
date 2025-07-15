@@ -351,6 +351,7 @@ projectionEntity.scan.includeIndex.go().then((resp) => {
 projectionEntity.scan.includeIndex
   .where((attrs, ops) => {
     expectError(() => ops.eq(attrs.id, "1"));
+    expectError(() => ops.eq(attrs.include1, 123));
     return ops.eq(attrs.include1, "abc");
   })
   .go()
@@ -368,6 +369,7 @@ projectionEntity.scan.includeIndex
 projectionEntity.scan.includeIndex
   .where((attrs, ops) => {
     expectError(() => ops.eq(attrs.id, "1"));
+    expectError(() => ops.eq(attrs.include1, 123));
     return ops.eq(attrs.include1, "abc");
   })
   .where((attrs, ops) => ops.eq(attrs.include2, true))
@@ -441,6 +443,7 @@ projectionEntity.query
   .includeIndex({ id: "1" })
   .where((attrs, ops) => {
     expectError(() => ops.eq(attrs.id, "1"));
+    expectError(() => ops.eq(attrs.include1, 123));
     return ops.eq(attrs.include1, "abc");
   })
   .where((attrs, ops) => ops.eq(attrs.include2, true))
@@ -461,7 +464,10 @@ expectError(() =>
 // querying index with projected items and hydrate should allow to specify non-projected attributes
 projectionEntity.query
   .includeIndex({ id: "1" })
-  .where((attrs, ops) => ops.eq(attrs.include2, true))
+  .where((attrs, ops) => {
+    expectError(() => ops.eq(attrs.include1, 123));
+    return ops.eq(attrs.include2, true);
+  })
   .go({ hydrate: true, attributes: ["id", "include1"] })
   .then((resp) => {
     expectType<

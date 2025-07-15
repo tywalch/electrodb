@@ -1254,8 +1254,14 @@ export interface QueryBranches<
         A2,
         F2,
         C2,
-        Schema<A2, F2, C2>,
-        Item<A2, F2, C2, Schema<A2, F2, C2>, Schema<A2, F2, C2>["attributes"]>,
+        IndexSpecificSchema<A, F, C, S, I>,
+        Item<
+          A2,
+          F2,
+          C2,
+          IndexSpecificSchema<A, F, C, S, I>,
+          IndexSpecificSchema<A, F, C, S, I>["attributes"]
+        >,
         QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>
       >
     : WhereClause<
