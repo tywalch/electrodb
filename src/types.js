@@ -335,6 +335,11 @@ const CastKeyOptions = {
   number: "number",
 };
 
+const IndexProjectionOptions = {
+  all: 'all',
+  keys_only: 'keys_only',
+};
+
 module.exports = {
   Pager,
   KeyTypes,
@@ -381,4 +386,5 @@ module.exports = {
   UpsertOperations,
   BatchWriteTypes,
   DefaultKeyCasing,
+  IndexProjectionOptions,
 };

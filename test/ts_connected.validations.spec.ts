@@ -1,8 +1,9 @@
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
-import { Entity } from "../index";
+import { Entity, Service } from "../index";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
 import DynamoDB from "aws-sdk/clients/dynamodb";
+const { IndexProjectionOptions } = require('../src/types');
 const client = new DynamoDB.DocumentClient({
   region: "us-east-1",
   endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
@@ -1644,3 +1645,279 @@ describe("index casting model validation", () => {
     }
   });
 });
+
+describe("index projection validation", () => {
+  describe('when the projection value is a string', () => {
+    const validValues = [...Object.values(IndexProjectionOptions), undefined];
+    const invalidValues = ['', 'invalid'];
+    const values = [
+      ...validValues.map((value) => [true, value] as [isValid: boolean, value: string | undefined]),
+      ...invalidValues.map((value) => [false, value] as [isValid: boolean, value: string | undefined]),
+    ];
+    for (const [isValid, projection] of values) {
+      it(`should ${isValid ? 'not throw' : 'throw'} when the projection value "${projection}" is provided`, () => {
+        function createEntity() {
+          return new Entity({
+            model: {
+              entity: 'projection-validation',
+              service: 'test',
+              version: '1',
+            },
+            attributes: {
+              id: { type: "string" },
+              value: { type: 'string' }
+            },
+            indexes: {
+              main: {
+                pk: {
+                  field: 'pk',
+                  composite: ['id']
+                }
+              },
+              secondary: {
+                index: 'gsi1',
+                // @ts-ignore
+                projection,
+                pk: {
+                  field: 'gsi1pk',
+                  composite: ['id']
+                }
+              }
+            }
+          })
+        }
+
+        if (isValid) {
+          createEntity();
+        } else {
+          expect(() => createEntity()).to.throw('error')
+        }
+      });
+    }
+  });
+
+  describe('when the projection value is an array', () => {
+    it('should require an array have at least one element', () => {
+      expect(() => new Entity({
+        model: {
+          entity: 'projection-validation',
+          service: 'test',
+          version: '1',
+        },
+        attributes: {
+          id: { type: "string" },
+          value: { type: 'string' }
+        },
+        indexes: {
+          main: {
+            pk: {
+              field: 'pk',
+              composite: ['id']
+            }
+          },
+          secondary: {
+            index: 'gsi1',
+            projection: [],
+            pk: {
+              field: 'gsi1pk',
+              composite: ['id']
+            }
+          }
+        }
+      })).to.throw(/^The Access Pattern 'secondary' contains an invalid "projection" value.*/);
+    });
+
+    describe('when projection array does not contain strings', () => {
+      const invalidArrayTypes: [type: string, projection: any[]][] = [
+        ['numeric', [1, 2, 3]],
+        ['boolean', [true, true, false]],
+        ['object', [{}, {}, {}]],
+        ['array', [[], [], []]],
+      ];
+
+      for (const [type, projection] of invalidArrayTypes) {
+        it(`should throw when provided with an array of ${type} elements`, () => {
+          expect(() => new Entity({
+            model: {
+              entity: 'projection-validation',
+              service: 'test',
+              version: '1',
+            },
+            attributes: {
+              id: { type: "string" },
+              value: { type: 'string' }
+            },
+            indexes: {
+              main: {
+                pk: {
+                  field: 'pk',
+                  composite: ['id']
+                }
+              },
+              secondary: {
+                index: 'gsi1',
+                projection,
+                pk: {
+                  field: 'gsi1pk',
+                  composite: ['id']
+                }
+              }
+            }
+          })).to.throw('instance.indexes.secondary.projection[0] is not of a type(s) string, instance.indexes.secondary.projection[1] is not of a type(s) string, instance.indexes.secondary.projection[2] is not of a type(s) string - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model');
+        });
+      }
+    });
+
+    it('should verify that the projection definition contain a known attribute names', () => {
+      expect(() => new Entity({
+        model: {
+          entity: 'projection-validation',
+          service: 'test',
+          version: '1',
+        },
+        attributes: {
+          id: { type: "string" },
+          value: { type: 'string' }
+        },
+        indexes: {
+          main: {
+            pk: {
+              field: 'pk',
+              composite: ['id']
+            }
+          },
+          secondary: {
+            index: 'gsi1',
+            projection: ['value'],
+            pk: {
+              field: 'gsi1pk',
+              composite: ['id']
+            }
+          }
+        }
+      })).not.to.throw();
+    });
+
+    it('should throw when the projection definition does not contain a known attribute name', () => {
+      expect(() => new Entity({
+        model: {
+          entity: 'projection-validation',
+          service: 'test',
+          version: '1',
+        },
+        attributes: {
+          id: { type: "string" },
+          value: { type: 'string' }
+        },
+        indexes: {
+          main: {
+            pk: {
+              field: 'pk',
+              composite: ['id']
+            }
+          },
+          secondary: {
+            index: 'gsi1',
+            projection: ['unknown'],
+            pk: {
+              field: 'gsi1pk',
+              composite: ['id']
+            }
+          }
+        }
+      })).to.throw('Unknown index projection attributes provided. The following access patterns were defined with unknown attributes: secondary: "unknown" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-projection-definition');
+    });
+  });
+
+  describe('when joining entities on a collection that is defined with projection', () => {
+    const projections = [['value'], ...Object.values(IndexProjectionOptions), undefined];
+    const testCases: [isMatch: boolean, left: any, right: any][] = [];
+    for (const p1 of projections) {
+      for (const p2 of projections) {
+        const isMatch = p1 === p2 ||
+            (p1 === undefined && p2 === IndexProjectionOptions.all) ||
+            (p2 === undefined && p1 === IndexProjectionOptions.all);
+
+        testCases.push([isMatch, p1, p2]);
+      }
+    }
+
+    for (const [isMatch, left, right] of testCases) {
+      const leftFallback = left === undefined ? '<undefined>' : left;
+      const rightFallback = right === undefined ? '<undefined>' : right;
+      it(`should ${isMatch ? 'not throw' : 'throw'} when validating the projection values ${JSON.stringify(left || leftFallback)} and ${JSON.stringify(right || rightFallback)}`, () => {
+        const e1 = new Entity({
+          model: {
+            entity: 'projection-validation',
+            service: 'test',
+            version: '1',
+          },
+          attributes: {
+            id: { type: "string" },
+            value: { type: 'string' }
+          },
+          indexes: {
+            main: {
+              pk: {
+                field: 'pk',
+                composite: ['id']
+              }
+            },
+            secondary: {
+              index: 'gsi1',
+              collection: 'test',
+              projection: left,
+              pk: {
+                field: 'gsi1pk',
+                composite: ['id']
+              },
+              sk: {
+                field: 'gsi1sk',
+                composite: [],
+              }
+            }
+          },
+        }, { table });
+
+        const e2 = new Entity({
+          model: {
+            entity: 'projection-validation',
+            service: 'test',
+            version: '1',
+          },
+          attributes: {
+            id: { type: "string" },
+            value: { type: 'string' }
+          },
+          indexes: {
+            main: {
+              pk: {
+                field: 'pk',
+                composite: ['id']
+              }
+            },
+            secondary: {
+              index: 'gsi1',
+              collection: 'test',
+              projection: right,
+              pk: {
+                field: 'gsi1pk',
+                composite: ['id']
+              },
+              sk: {
+                field: 'gsi1sk',
+                composite: [],
+              }
+            }
+          },
+        }, { table });
+
+        if (isMatch) {
+          expect(() => new Service({e1, e2})).not.to.throw();
+        } else {
+          expect(() => new Service({e1, e2})).to.throw(/^Validation Error while joining entity.*/);
+        }
+      });
+    }
+  });
+})

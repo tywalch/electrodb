@@ -73,7 +73,7 @@ describe("Model Validation", () => {
       },
     };
     expect(() => new Entity(schema)).to.throw(
-      `The Access Pattern 'record' contains duplicate references the composite attribute(s): "id", "prop3". Composite attributes can only be used more than once in an index if your sort key is limitted to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-composite-attributes`,
+      `The Access Pattern 'record' contains duplicate references the composite attribute(s): "id", "prop3". Composite attributes can only be used more than once in an index if your sort key is limited to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-composite-attributes`,
     );
   });
 

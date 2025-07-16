@@ -20,6 +20,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   order?: 'asc' | 'desc';
   compare?: 'attributes' | 'keys' | 'v2';
   consistent?: boolean;
+  projection?: 'all' | 'keys_only' | string[];
 };
 ```
 
@@ -88,3 +89,7 @@ When set to `attributes`, the `comparison` option instructs ElectroDB to apply a
 ### consistent
 **Default Value:** _none_
 When set to `true`, DynamoDB will return the most up-to-date data reflecting updates from all prior write operations using DynamoDB's [`ConsistentRead`](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html#HowItWorks.ReadConsistency.Strongly) parameter. Strongly consistent reads are only supported on tables and local secondary indexes.
+
+### projection
+**Default Value:** 'all'
+The `projection` option maps to the DynamoDB table index definition [Projection](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Projection.html).

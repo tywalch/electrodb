@@ -6784,7 +6784,7 @@ describe("index projection", () => {
         },
         includeIndex: {
           index: "gsi1pk-gsi1sk-index",
-          project: ["include1", "include2", "include3"],
+          projection: ["include1", "include2", "include3"],
           pk: {
             field: "gsi1pk",
             composite: ["id"],
@@ -6807,7 +6807,7 @@ describe("index projection", () => {
         },
         keysOnly: {
           index: "gsi4pk-gsi4sk-index",
-          project: "keys_only",
+          projection: "keys_only",
           pk: {
             field: "gsi4pk",
             composite: ["id"],

@@ -2954,14 +2954,14 @@ export type IndexResponse<
           ? Options["hydrate"] extends true
             ? Name
             : I extends keyof S["indexes"]
-            ? "project" extends keyof S["indexes"][I]
-              ? S["indexes"][I]["project"] extends ReadonlyArray<
+            ? "projection" extends keyof S["indexes"][I]
+              ? S["indexes"][I]["projection"] extends ReadonlyArray<
                   infer P
                 >
                 ? Name extends P
                   ? Name
                   : never
-                : S["indexes"][I]["project"] extends 'keys_only'
+                : S["indexes"][I]["projection"] extends 'keys_only'
                   ? never
                   : Name
               : Name
@@ -3794,7 +3794,12 @@ export interface Schema<A extends string, F extends string, C extends string, P 
   };
   readonly indexes: {
     [accessPattern: string]: {
-      readonly project?: "keys_only" | ReadonlyArray<P>;
+      /**
+       *  @deprecated use "projection" instead
+       */
+      readonly project?: "keys_only";
+
+      readonly projection?: "all" | "keys_only" | ReadonlyArray<P>;
       readonly index?: string;
       readonly scope?: string;
       readonly type?: "clustered" | "isolated";
@@ -3827,11 +3832,11 @@ export type IndexProjectedAttributeNames<
   S extends Schema<A, F, C>,
   I extends keyof S["indexes"] | undefined,
 > = I extends keyof S["indexes"]
-  ? S["indexes"][I]["project"] extends ReadonlyArray<infer R extends A>
+  ? S["indexes"][I]["projection"] extends ReadonlyArray<infer R extends A>
     ? R
-    : S["indexes"][I]["project"] extends "keys_only"
-    ? never
-    : A
+    : S["indexes"][I]["projection"] extends "keys_only"
+      ? never
+      : A
   : A;
 
 export type IndexCollections<

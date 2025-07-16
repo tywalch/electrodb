@@ -141,7 +141,7 @@ The `INCLUDE` projection type allows you to specify exactly which attributes are
                 },
                 statusIndex: {
                     index: 'gsi1pk-gsi1sk-index',
-                    project: ['name', 'status', 'createdAt'],
+                    projection: ['name', 'status', 'createdAt'],
                     pk: {
                         field: 'gsi1pk',
                         composite: ['status'],
@@ -167,7 +167,7 @@ When defining an index with an `INCLUDE` projection, you can use the `project` p
 indexes: {
     statusIndex: {
         index: 'gsi1pk-gsi1sk-index',
-        project: ['name', 'status', 'createdAt'], // Only these attributes are included
+        projection: ['name', 'status', 'createdAt'], // Only these attributes are included
         pk: {
             field: 'gsi1pk',
             composite: ['status'],

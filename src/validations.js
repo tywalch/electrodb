@@ -1,5 +1,5 @@
 const e = require("./errors");
-const { KeyCasing } = require("./types");
+const { KeyCasing, IndexProjectionOptions } = require("./types");
 
 const Validator = require("jsonschema").Validator;
 Validator.prototype.customFormats.isFunction = function (input) {
@@ -178,6 +178,12 @@ const Index = {
       type: "any",
       required: false,
       format: "isFunction",
+    },
+    projection: {
+      type: ["array", "string"],
+      items: {
+        type: "string",
+      }
     },
   },
 };
@@ -398,10 +404,25 @@ function isMatchingCasing(casing1, casing2) {
   }
 }
 
+function isValueOrUndefined(received, expected) {
+  return expected === received || received === undefined;
+}
+
+function isMatchingProjection(received, expected) {
+  if (isStringHasLength(received) && isStringHasLength(expected)) {
+    return received === expected;
+  } else if (Array.isArray(received) && Array.isArray(expected)) {
+    return received.length === expected.length && expected.every((attribute) => received.includes(attribute));
+  } else {
+    return isValueOrUndefined(received, IndexProjectionOptions.all) && isValueOrUndefined(expected, IndexProjectionOptions.all)
+  }
+}
+
 module.exports = {
   testModel,
   isFunction,
   stringArrayMatch,
+  isMatchingProjection,
   isMatchingCasing,
   isArrayHasLength,
   isStringHasLength,

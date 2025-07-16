@@ -106,9 +106,9 @@ export function createSecondaryIndexDefinition(
     sortKey: toSortKey(indexDefinition.sk),
     partitionKey: toPartitionKey(indexDefinition.pk),
     projection:
-      typeof indexDefinition.project === "object"
-        ? [...indexDefinition.project, "__edb_e__", "__edb_v__"]
-        : indexDefinition.project ?? "all",
+      typeof indexDefinition.projection === "object"
+        ? [...indexDefinition.projection, "__edb_e__", "__edb_v__"]
+        : indexDefinition.projection ?? "all",
   };
 }
 
@@ -124,9 +124,9 @@ export function createLocalSecondaryIndexDefinition(
     type: "LocalSecondaryIndex",
     indexName: indexDefinition.index!,
     projection:
-      typeof indexDefinition.project === "object"
-        ? [...indexDefinition.project, "__edb_e__", "__edb_v__"]
-        : indexDefinition.project ?? "all",
+      typeof indexDefinition.projection === "object"
+        ? [...indexDefinition.projection, "__edb_e__", "__edb_v__"]
+        : indexDefinition.projection ?? "all",
   };
 }
 

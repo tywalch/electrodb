@@ -329,6 +329,16 @@ The casing between instances of the same key field in your model is inconsistent
 **What to do about it:**
 Ensure that the casing of your key fields is consistent across your model.
 
+### Invalid Projection Definition
+
+**Code: 1025**
+
+**Why this occurred:**
+The "projection" property defined on an index of your model is not a valid value. Valid values include `all`, `keys_only`, or a string list of attribute names with a length greater than one. When an Entity is part of a Service, the service also validates that all collection members have the same configuration. Note that an undefined value for projection is functionally equivalent to a value of `all`.
+
+**What to do about it:**
+Ensure that the values you provided match the expected values listed above, and/or that the value is identical across indexes that share a collection.
+
 ## Invalid Query Errors
 
 ### Missing Composite Attributes
