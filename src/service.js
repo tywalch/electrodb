@@ -13,7 +13,7 @@ const {
   ElectroInstanceTypes,
   ModelVersions,
   IndexTypes,
-  DataOptions,
+  DataOptions, IndexProjectionOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -577,6 +577,12 @@ class Service {
     };
   }
 
+  _validateIndexProjectionsMatch(definition = {}, providedIndex = {}) {
+    const definitionProjection = definition.projection;
+    const providedProjection = providedIndex.projection;
+    return v.isMatchingProjection(providedIndex.projection, definition.projection)
+  }
+
   _validateCollectionDefinition(definition = {}, providedIndex = {}) {
     let isCustomMatchPK = definition.pk.isCustom === providedIndex.pk.isCustom;
     let isCustomMatchSK =
@@ -595,6 +601,11 @@ class Service {
       definition,
       providedIndex,
     );
+
+    const matchingProjection = v.isMatchingProjection(
+      providedIndex.projection,
+      definition.projection
+    )
 
     for (
       let i = 0;
@@ -698,6 +709,12 @@ class Service {
         }" does not match established casing "${
           definition.pk.casing || KeyCasing.default
         }" on index "${providedIndexName}". Index casing options must match across all entities participating in a collection`,
+      );
+    }
+
+    if (!matchingProjection) {
+      collectionDifferences.push(
+        `The provided projection definition ${u.commaSeparatedString(providedIndex.projection ?? '<undefined>')} does not match the established projection definition ${u.commaSeparatedString(definition.projection)} on index ${providedIndexName}. Index projection definitions must match across all entities participating in a collection`
       );
     }
 
