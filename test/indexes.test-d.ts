@@ -1,4 +1,4 @@
-import { expectType, expectError, expectNotType } from "tsd";
+import { expectType, expectError } from "tsd";
 import { Entity, Service } from "../index";
 const table = "electro";
 const hold = new Entity(
@@ -288,7 +288,7 @@ const projectionEntity = new Entity({
     },
     includeIndex: {
       index: "gsi1pk-gsi1sk-index",
-      project: ["include1", "include2", "include3"],
+      projection: ["include1", "include2", "include3"],
       pk: {
         field: "gsi1pk",
         composite: ["id"],
@@ -311,7 +311,7 @@ const projectionEntity = new Entity({
     },
     excludeIndex: {
       index: "gsi4pk-gsi4sk-index",
-      project: ["exclude1", "exclude2", "exclude3"],
+      projection: ["exclude1", "exclude2", "exclude3"],
       pk: {
         field: "gsi4pk",
         composite: ["id"],
@@ -324,6 +324,7 @@ const projectionEntity = new Entity({
     keysOnly: {
       index: "gsi1pk-gsi1sk-index",
       project: "keys_only",
+      projection: "keys_only",
       pk: {
         field: "gsi1pk",
         composite: ["id"],
@@ -335,6 +336,7 @@ const projectionEntity = new Entity({
     },
   },
 });
+
 
 // scanning index with projected attributes should only return the projected attributes
 projectionEntity.scan.includeIndex.go().then((resp) => {
