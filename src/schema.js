@@ -1526,11 +1526,33 @@ class Schema {
       );
     }
 
+    let missingProjectionAttributes = Array.isArray(facets.projections)
+      ? facets.projections.filter(({ name }) => !normalized[name])
+      : [];
+
+    if (missingProjectionAttributes.length > 0) {
+      const byAccessPattern = facets.projections.reduce((groups, { name, accessPattern }) => {
+        groups[accessPattern] = groups[accessPattern] || [];
+        groups[accessPattern].push(name);
+        return groups;
+      }, {});
+
+      const invalidDefinitionsByAccessPattern = Object.entries(byAccessPattern).map(([accessPattern, attributes]) => {
+        return `${accessPattern}: ${u.commaSeparatedString(attributes)}`
+      });
+
+      throw new e.ElectroError(
+        e.ErrorCodes.InvalidProjectionDefinition,
+        `Unknown index projection attributes provided. The following access patterns were defined with unknown attributes: ${u.commaSeparatedString(invalidDefinitionsByAccessPattern, '', '')}`,
+      );
+    }
+
     let missingFacetAttributes = Array.isArray(facets.attributes)
       ? facets.attributes
           .filter(({ name }) => !normalized[name])
           .map((facet) => `"${facet.type}: ${facet.name}"`)
       : [];
+
     if (missingFacetAttributes.length > 0) {
       throw new e.ElectroError(
         e.ErrorCodes.InvalidKeyCompositeAttributeTemplate,

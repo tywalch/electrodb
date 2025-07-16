@@ -30,6 +30,7 @@ const {
   CastKeyOptions,
   ComparisonTypes,
   DataOptions,
+  IndexProjectionOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -4271,6 +4272,7 @@ class Entity {
       fields: [],
       attributes: [],
       labels: {},
+      projections: [],
     };
     let seenIndexes = {};
     let seenIndexFields = {};
@@ -4388,7 +4390,7 @@ class Entity {
               e.ErrorCodes.DuplicateIndexCompositeAttributes,
               `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${u.commaSeparatedString(
                 duplicates,
-              )}. Composite attributes can only be used more than once in an index if your sort key is limitted to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys.`,
+              )}. Composite attributes can only be used more than once in an index if your sort key is limited to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys.`,
             );
           }
         }
@@ -4405,7 +4407,30 @@ class Entity {
         scope: indexScope,
         condition: indexCondition,
         conditionDefined: conditionDefined,
+        projection: index.projection,
       };
+
+      let projections = [];
+
+      if (index.projection !== undefined) {
+        if (typeof index.projection === "string" && (
+            index.projection.toLowerCase() === IndexProjectionOptions.keys_only ||
+            index.projection.toLowerCase() === IndexProjectionOptions.all
+        )) {
+          definition.projection = index.projection.toLowerCase();
+        } else if (Array.isArray(index.projection) && index.projection.length > 0 && index.projection.every((attr) => typeof attr === "string")) {
+          definition.projection = index.projection;
+          projections = definition.projection.map((name) => ({
+            name,
+            accessPattern,
+          }));
+        } else {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidProjectionDefinition,
+            `The Access Pattern '${accessPattern}' contains an invalid "projection" value: ${u.toDisplayString(index.projection)}. Valid projection values include ${u.commaSeparatedString(Object.values(IndexProjectionOptions))}, or an array of attribute names with a length greater than one.`
+          )
+        }
+      }
 
       indexHasSubCollections[indexName] =
         inCollection && Array.isArray(collection);
@@ -4462,6 +4487,7 @@ class Entity {
       };
 
       facets.attributes = [...facets.attributes, ...attributes];
+      facets.projections = [...facets.projections, ...projections];
 
       facets.fields.push(pk.field);
 
