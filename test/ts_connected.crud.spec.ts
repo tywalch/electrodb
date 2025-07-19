@@ -6785,6 +6785,7 @@ describe("index projection", () => {
         includeIndex: {
           index: "gsi1pk-gsi1sk-index",
           projection: ["include1", "include2", "include3"],
+          collection: "includeIndexCollection",
           pk: {
             field: "gsi1pk",
             composite: ["id"],
@@ -6808,6 +6809,7 @@ describe("index projection", () => {
         keysOnly: {
           index: "gsi4pk-gsi4sk-index",
           projection: "keys_only",
+          collection: "keysOnlyCollection",
           pk: {
             field: "gsi4pk",
             composite: ["id"],
@@ -6822,7 +6824,71 @@ describe("index projection", () => {
     { table: "electro_projectioninclude", client },
   );
 
+  const entity2 = new Entity(
+    {
+      model: {
+        version: "1",
+        service: "tests",
+        entity: "projection-include-2",
+      },
+      attributes: {
+        id: { type: "string", required: true },
+        include1: { type: "boolean", required: true },
+        include2: { type: "boolean", required: true },
+        include3: { type: "number", required: true },
+        some1: { type: "string", required: true },
+        some2: { type: "number", required: true },
+        some3: { type: "boolean", required: true },
+      },
+      indexes: {
+        primary: {
+          pk: {
+            field: "pk",
+            composite: ["id"],
+          },
+          sk: {
+            field: "sk",
+            composite: [],
+          },
+        },
+        includeIndex: {
+          index: "gsi1pk-gsi1sk-index",
+          projection: ["include1", "include2", "include3"],
+          collection: "includeIndexCollection",
+          pk: {
+            field: "gsi1pk",
+            composite: ["id"],
+          },
+          sk: {
+            field: "gsi1sk",
+            composite: ["include1"],
+          },
+        },
+        keysOnly: {
+          index: "gsi4pk-gsi4sk-index",
+          projection: "keys_only",
+          collection: "keysOnlyCollection",
+          pk: {
+            field: "gsi4pk",
+            composite: ["id"],
+          },
+          sk: {
+            field: "gsi4sk",
+            composite: [],
+          },
+        },
+      },
+    },
+    { table: "electro_projectioninclude", client },
+  );
+
+  const service = new Service({
+    entity,
+    entity2,
+  });
+
   let item: EntityItem<typeof entity>;
+  let item2: EntityItem<typeof entity2>;
 
   before(async () => {
     await entity
@@ -6840,7 +6906,25 @@ describe("index projection", () => {
         item = data;
       });
 
+    await entity2
+      .create({
+        id: item.id,
+        include1: true,
+        include2: true,
+        include3: 1,
+        some1: "some1",
+        some2: 2,
+        some3: true,
+      })
+      .go()
+      .then(({ data }) => {
+        item2 = data;
+      });
+
     await entity.put(item).go({ table: "electro_projectionincludewithoutedb" });
+    await entity2
+      .put(item2)
+      .go({ table: "electro_projectionincludewithoutedb" });
   });
 
   it("scans primary index", async () => {
@@ -7022,6 +7106,116 @@ describe("index projection", () => {
         exclude1: item.exclude1,
       },
     ]);
+  });
+
+  it("queries collection with projected attributes", async () => {
+    const params = service.collections.includeIndexCollection({ id: item.id }).params({
+      // @ts-expect-error - the params type does not include `attributes` but this works in runtime
+      attributes: ["include1", "include2"],
+    });
+    expect(params.ProjectionExpression).to.equal("#pk, #sk1, #__edb_e__, #__edb_v__, #include1, #include2");
+
+    const { data } = await service.collections.includeIndexCollection({ id: item.id }).go({
+      pages: "all",
+      attributes: ["include1", "include2"],
+    });
+
+    expect(data).to.deep.equal({
+      entity: [
+        {
+          include1: item.include1,
+          include2: item.include2,
+        },
+      ],
+      entity2: [
+        {
+          include1: item2.include1,
+          include2: item2.include2,
+        },
+      ],
+    });
+  });
+
+  it("queries collection with projected attributes and hydrate and non-projected attributes", async () => {
+    const { data } = await service.collections.includeIndexCollection({ id: item.id }).go({
+      pages: "all",
+      hydrate: true,
+      attributes: ["include1", "exclude1", "some1"],
+    });
+
+    expect(data).to.deep.equal({
+      entity: [
+        {
+          include1: item.include1,
+          exclude1: item.exclude1,
+        },
+      ],
+      entity2: [
+        {
+          include1: item2.include1,
+          some1: item2.some1,
+        },
+      ],
+    });
+  });
+
+  it("queries collection with projected attributes and hydrate", async () => {
+    const { data } = await service.collections.includeIndexCollection({ id: item.id }).go({
+      pages: "all",
+      hydrate: true,
+    });
+
+    expect(data).to.deep.equal({
+      entity: [item],
+      entity2: [item2],
+    });
+  });
+
+  it("queries keys_only collection", async () => {
+    const { data } = await service.collections.keysOnlyCollection({ id: item.id }).go({
+      pages: "all",
+      ignoreOwnership: true,
+    });
+
+    expect(data).to.deep.equal({
+      entity: [{}],
+      entity2: [{}],
+    });
+  });
+
+  it("queries keys_only collection with hydrate", async () => {
+    const { data } = await service.collections.keysOnlyCollection({ id: item.id }).go({
+      pages: "all",
+      hydrate: true,
+      attributes: ["include1", "exclude1", "some1"],
+    });
+
+    expect(data).to.deep.equal({
+      entity: [
+        {
+          include1: item.include1,
+          exclude1: item.exclude1,
+        },
+      ],
+      entity2: [
+        {
+          include1: item2.include1,
+          some1: item2.some1,
+        },
+      ],
+    });
+  });
+
+  it("queries keys_only collection with hydrate", async () => {
+    const { data } = await service.collections.keysOnlyCollection({ id: item.id }).go({
+      pages: "all",
+      hydrate: true,
+    });
+
+    expect(data).to.deep.equal({
+      entity: [item],
+      entity2: [item2],
+    });
   });
 });
 
