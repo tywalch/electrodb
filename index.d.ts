@@ -258,8 +258,8 @@ export interface CollectionWhereOperations {
 export type CollectionWhereCallback<
   E extends { [name: string]: Entity<any, any, any, any> },
   I extends Partial<AllEntityAttributes<E>>,
-> = <W extends { [A in keyof I]: WhereAttributeSymbol<I[A]> }>(
-  attributes: W,
+> = (
+  attributes: { [A in keyof I]: WhereAttributeSymbol<I[A]> },
   operations: CollectionWhereOperations,
 ) => string;
 
@@ -270,8 +270,20 @@ export type CollectionWhereClause<
   C extends string,
   S extends Schema<A, F, C>,
   I extends Partial<AllEntityAttributes<E>>,
+  Collections extends CollectionAssociations<E>,
+  Collection extends keyof Collections,
   T,
-> = (where: CollectionWhereCallback<E, I>) => T;
+> = (
+  where: Pick<
+    I,
+    CollectionProjectedAttributeNames<E, Collections, Collection>
+  > extends Partial<AllEntityAttributes<E>>
+    ? CollectionWhereCallback<
+        E,
+        Pick<I, CollectionProjectedAttributeNames<E, Collections, Collection>>
+      >
+    : never,
+) => T;
 
 export interface ServiceWhereRecordsActionOptions<
   E extends { [name: string]: Entity<any, any, any, any> },
@@ -280,10 +292,11 @@ export interface ServiceWhereRecordsActionOptions<
   C extends string,
   S extends Schema<A, F, C>,
   I extends Partial<AllEntityAttributes<E>>,
-  Items,
+  Collections extends CollectionAssociations<E>,
+  Collection extends keyof Collections,
   IndexCompositeAttributes,
 > {
-  go: ServiceQueryRecordsGo<Items>;
+  go: ServiceQueryRecordsGo<E, Collections, Collection, keyof I>;
   params: ParamRecord;
   where: CollectionWhereClause<
     E,
@@ -292,6 +305,8 @@ export interface ServiceWhereRecordsActionOptions<
     C,
     S,
     I,
+    Collections,
+    Collection,
     ServiceWhereRecordsActionOptions<
       E,
       A,
@@ -299,7 +314,8 @@ export interface ServiceWhereRecordsActionOptions<
       C,
       S,
       I,
-      Items,
+      Collections,
+      Collection,
       IndexCompositeAttributes
     >
   >;
@@ -574,96 +590,96 @@ export type CollectionQueries<
             >[0]
           >,
         ) => {
-          go: ServiceQueryRecordsGo<{
-            [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-              ? E[EntityResultName] extends Entity<
-                  infer A,
-                  infer F,
-                  infer C,
-                  infer S
-                >
-                ? ResponseItem<A, F, C, S>[]
-                : never
-              : never;
-          }>;
+          go: ServiceQueryRecordsGo<
+            E,
+            Collections,
+            Collection,
+            keyof Pick<
+              AllEntityAttributes<E>,
+              Extract<
+                AllEntityAttributeNames<E>,
+                CollectionAttributes<E, Collections>[Collection]
+              >
+            >
+          >;
           params: ParamRecord;
           where: {
             [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-              ? E[EntityResultName] extends Entity<
-                  infer A,
-                  infer F,
-                  infer C,
-                  infer S
-                >
-                ? Pick<
-                    AllEntityAttributes<E>,
-                    Extract<
-                      AllEntityAttributeNames<E>,
-                      CollectionAttributes<E, Collections>[Collection]
-                    >
-                  > extends Partial<AllEntityAttributes<E>>
-                  ? CollectionWhereClause<
-                      E,
+              ? E[EntityResultName] extends Entity<any, any, any, any>
+                ? E[EntityResultName]["schema"] extends Schema<
+                    infer A,
+                    infer F,
+                    infer C
+                  >
+                  ? Collection extends keyof EntityCollections<
                       A,
                       F,
                       C,
-                      S,
-                      Pick<
+                      E[EntityResultName]["schema"]
+                    >
+                    ? Pick<
                         AllEntityAttributes<E>,
                         Extract<
                           AllEntityAttributeNames<E>,
                           CollectionAttributes<E, Collections>[Collection]
                         >
-                      >,
-                      ServiceWhereRecordsActionOptions<
-                        E,
-                        A,
-                        F,
-                        C,
-                        S,
-                        Pick<
-                          AllEntityAttributes<E>,
-                          Extract<
-                            AllEntityAttributeNames<E>,
-                            CollectionAttributes<E, Collections>[Collection]
-                          >
-                        >,
-                        {
-                          [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-                            ? E[EntityResultName] extends Entity<
-                                infer A,
-                                infer F,
-                                infer C,
-                                infer S
+                      > extends Partial<AllEntityAttributes<E>>
+                      ? CollectionWhereClause<
+                          E,
+                          A,
+                          F,
+                          C,
+                          E[EntityResultName]["schema"],
+                          Pick<
+                            AllEntityAttributes<E>,
+                            Extract<
+                              AllEntityAttributeNames<E>,
+                              CollectionAttributes<E, Collections>[Collection]
+                            >
+                          >,
+                          Collections,
+                          Collection,
+                          ServiceWhereRecordsActionOptions<
+                            E,
+                            A,
+                            F,
+                            C,
+                            E[EntityResultName]["schema"],
+                            Pick<
+                              AllEntityAttributes<E>,
+                              Extract<
+                                AllEntityAttributeNames<E>,
+                                CollectionAttributes<E, Collections>[Collection]
                               >
-                              ? ResponseItem<A, F, C, S>[]
-                              : never
-                            : never;
-                        },
-                        Partial<
-                          Spread<
-                            Collection extends keyof CollectionPageAttributes<
-                              E,
-                              Collections
-                            >
-                              ? CollectionPageAttributes<
+                            >,
+                            Collections,
+                            Collection,
+                            Partial<
+                              Spread<
+                                Collection extends keyof CollectionPageAttributes<
                                   E,
                                   Collections
-                                >[Collection]
-                              : {},
-                            Collection extends keyof CollectionIndexAttributes<
-                              E,
-                              Collections
-                            >
-                              ? CollectionIndexAttributes<
+                                >
+                                  ? CollectionPageAttributes<
+                                      E,
+                                      Collections
+                                    >[Collection]
+                                  : {},
+                                Collection extends keyof CollectionIndexAttributes<
                                   E,
                                   Collections
-                                >[Collection]
-                              : {}
+                                >
+                                  ? CollectionIndexAttributes<
+                                      E,
+                                      Collections
+                                    >[Collection]
+                                  : {}
+                              >
+                            >
                           >
                         >
-                      >
-                    >
+                      : never
+                    : never
                   : never
                 : never
               : never;
@@ -680,99 +696,102 @@ type ClusteredCollectionOperations<
   EntityName extends keyof E,
 > = EntityName extends Collections[Collection]
   ? {
-      go: ServiceQueryRecordsGo<{
-        [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-          ? E[EntityResultName] extends Entity<
-              infer A,
-              infer F,
-              infer C,
-              infer S
-            >
-            ? ResponseItem<A, F, C, S>[]
-            : never
-          : never;
-      }>;
+      go: ServiceQueryRecordsGo<
+        E,
+        Collections,
+        Collection,
+        keyof Pick<
+          AllEntityAttributes<E>,
+          Extract<
+            AllEntityAttributeNames<E>,
+            ClusteredCollectionAttributes<E, Collections>[Collection]
+          >
+        >
+      >;
       params: ParamRecord;
       where: {
         [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-          ? E[EntityResultName] extends Entity<
-              infer A,
-              infer F,
-              infer C,
-              infer S
-            >
-            ? Pick<
-                AllEntityAttributes<E>,
-                Extract<
-                  AllEntityAttributeNames<E>,
-                  ClusteredCollectionAttributes<E, Collections>[Collection]
-                >
-              > extends Partial<AllEntityAttributes<E>>
-              ? CollectionWhereClause<
-                  E,
+          ? E[EntityResultName] extends Entity<any, any, any, any>
+            ? E[EntityResultName]["schema"] extends Schema<
+                infer A,
+                infer F,
+                infer C
+              >
+              ? Collection extends keyof ClusteredEntityCollections<
                   A,
                   F,
                   C,
-                  S,
-                  Pick<
+                  E[EntityResultName]["schema"]
+                >
+                ? Pick<
                     AllEntityAttributes<E>,
                     Extract<
                       AllEntityAttributeNames<E>,
                       ClusteredCollectionAttributes<E, Collections>[Collection]
                     >
-                  >,
-                  ServiceWhereRecordsActionOptions<
-                    E,
-                    A,
-                    F,
-                    C,
-                    S,
-                    Pick<
-                      AllEntityAttributes<E>,
-                      Extract<
-                        AllEntityAttributeNames<E>,
-                        ClusteredCollectionAttributes<
-                          E,
-                          Collections
-                        >[Collection]
-                      >
-                    >,
-                    {
-                      [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-                        ? E[EntityResultName] extends Entity<
-                            infer A,
-                            infer F,
-                            infer C,
-                            infer S
+                  > extends Partial<AllEntityAttributes<E>>
+                  ? CollectionWhereClause<
+                      E,
+                      A,
+                      F,
+                      C,
+                      E[EntityResultName]["schema"],
+                      Pick<
+                        AllEntityAttributes<E>,
+                        Extract<
+                          AllEntityAttributeNames<E>,
+                          ClusteredCollectionAttributes<
+                            E,
+                            Collections
+                          >[Collection]
+                        >
+                      >,
+                      Collections,
+                      Collection,
+                      ServiceWhereRecordsActionOptions<
+                        E,
+                        A,
+                        F,
+                        C,
+                        E[EntityResultName]["schema"],
+                        Pick<
+                          AllEntityAttributes<E>,
+                          Extract<
+                            AllEntityAttributeNames<E>,
+                            ClusteredCollectionAttributes<
+                              E,
+                              Collections
+                            >[Collection]
                           >
-                          ? ResponseItem<A, F, C, S>[]
-                          : never
-                        : never;
-                    },
-                    Partial<
-                      Spread<
-                        Collection extends keyof ClusteredCollectionPageAttributes<
-                          E,
-                          Collections
-                        >
-                          ? ClusteredCollectionPageAttributes<
+                        >,
+                        Collections,
+                        Collection,
+                        Partial<
+                          Spread<
+                            Collection extends keyof ClusteredCollectionPageAttributes<
                               E,
                               Collections
-                            >[Collection]
-                          : {},
-                        Collection extends keyof ClusteredCollectionIndexAttributes<
-                          E,
-                          Collections
-                        >
-                          ? ClusteredCollectionIndexAttributes<
+                            >
+                              ? ClusteredCollectionPageAttributes<
+                                  E,
+                                  Collections
+                                >[Collection]
+                              : {},
+                            Collection extends keyof ClusteredCollectionIndexAttributes<
                               E,
                               Collections
-                            >[Collection]
-                          : {}
+                            >
+                              ? ClusteredCollectionIndexAttributes<
+                                  E,
+                                  Collections
+                                >[Collection]
+                              : {}
+                          >
+                        >
                       >
                     >
-                  >
-                >
+                  : never
+                : never
               : never
             : never
           : never;
@@ -903,41 +922,34 @@ export type IsolatedCollectionQueries<
             >[0]
           >,
         ) => {
-          go: ServiceQueryRecordsGo<{
-            [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-              ? E[EntityResultName] extends Entity<
-                  infer A,
-                  infer F,
-                  infer C,
-                  infer S
-                >
-                ? ResponseItem<A, F, C, S>[]
-                : never
-              : never;
-          }>;
+          go: ServiceQueryRecordsGo<
+            E,
+            Collections,
+            Collection,
+            keyof Pick<
+              AllEntityAttributes<E>,
+              Extract<
+                AllEntityAttributeNames<E>,
+                IsolatedCollectionAttributes<E, Collections>[Collection]
+              >
+            >
+          >;
           params: ParamRecord;
           where: {
             [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-              ? E[EntityResultName] extends Entity<
-                  infer A,
-                  infer F,
-                  infer C,
-                  infer S
-                >
-                ? Pick<
-                    AllEntityAttributes<E>,
-                    Extract<
-                      AllEntityAttributeNames<E>,
-                      IsolatedCollectionAttributes<E, Collections>[Collection]
-                    >
-                  > extends Partial<AllEntityAttributes<E>>
-                  ? CollectionWhereClause<
-                      E,
+              ? E[EntityResultName] extends Entity<any, any, any, any>
+                ? E[EntityResultName]["schema"] extends Schema<
+                    infer A,
+                    infer F,
+                    infer C
+                  >
+                  ? Collection extends keyof IsolatedEntityCollections<
                       A,
                       F,
                       C,
-                      S,
-                      Pick<
+                      E[EntityResultName]["schema"]
+                    >
+                    ? Pick<
                         AllEntityAttributes<E>,
                         Extract<
                           AllEntityAttributeNames<E>,
@@ -946,59 +958,69 @@ export type IsolatedCollectionQueries<
                             Collections
                           >[Collection]
                         >
-                      >,
-                      ServiceWhereRecordsActionOptions<
-                        E,
-                        A,
-                        F,
-                        C,
-                        S,
-                        Pick<
-                          AllEntityAttributes<E>,
-                          Extract<
-                            AllEntityAttributeNames<E>,
-                            IsolatedCollectionAttributes<
-                              E,
-                              Collections
-                            >[Collection]
-                          >
-                        >,
-                        {
-                          [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-                            ? E[EntityResultName] extends Entity<
-                                infer A,
-                                infer F,
-                                infer C,
-                                infer S
+                      > extends Partial<AllEntityAttributes<E>>
+                      ? CollectionWhereClause<
+                          E,
+                          A,
+                          F,
+                          C,
+                          E[EntityResultName]["schema"],
+                          Pick<
+                            AllEntityAttributes<E>,
+                            Extract<
+                              AllEntityAttributeNames<E>,
+                              IsolatedCollectionAttributes<
+                                E,
+                                Collections
+                              >[Collection]
+                            >
+                          >,
+                          Collections,
+                          Collection,
+                          ServiceWhereRecordsActionOptions<
+                            E,
+                            A,
+                            F,
+                            C,
+                            E[EntityResultName]["schema"],
+                            Pick<
+                              AllEntityAttributes<E>,
+                              Extract<
+                                AllEntityAttributeNames<E>,
+                                IsolatedCollectionAttributes<
+                                  E,
+                                  Collections
+                                >[Collection]
                               >
-                              ? ResponseItem<A, F, C, S>[]
-                              : never
-                            : never;
-                        },
-                        Partial<
-                          Spread<
-                            Collection extends keyof IsolatedCollectionPageAttributes<
-                              E,
-                              Collections
-                            >
-                              ? IsolatedCollectionPageAttributes<
+                            >,
+                            Collections,
+                            Collection,
+                            Partial<
+                              Spread<
+                                Collection extends keyof IsolatedCollectionPageAttributes<
                                   E,
                                   Collections
-                                >[Collection]
-                              : {},
-                            Collection extends keyof IsolatedCollectionIndexAttributes<
-                              E,
-                              Collections
-                            >
-                              ? IsolatedCollectionIndexAttributes<
+                                >
+                                  ? IsolatedCollectionPageAttributes<
+                                      E,
+                                      Collections
+                                    >[Collection]
+                                  : {},
+                                Collection extends keyof IsolatedCollectionIndexAttributes<
                                   E,
                                   Collections
-                                >[Collection]
-                              : {}
+                                >
+                                  ? IsolatedCollectionIndexAttributes<
+                                      E,
+                                      Collections
+                                    >[Collection]
+                                  : {}
+                              >
+                            >
                           >
                         >
-                      >
-                    >
+                      : never
+                    : never
                   : never
                 : never
               : never;
@@ -2704,7 +2726,12 @@ export type QueryExecutionComparisonParts = {
   compare?: "v2"
 }
 
-type ServiceQueryGoTerminalOptions = {
+type ServiceQueryGoTerminalOptions<
+  E extends { [entity: string]: Entity<any, any, any, any> },
+  Collections extends { [collection: string]: keyof E },
+  Collection extends keyof Collections,
+  Attributes,
+> = {
   cursor?: string | null;
   data?: "raw" | "includeKeys" | "attributes";
   table?: string;
@@ -2716,9 +2743,55 @@ type ServiceQueryGoTerminalOptions = {
   listeners?: Array<ElectroEventListener>;
   logger?: ElectroEventListener;
   order?: "asc" | "desc";
-  hydrate?: boolean;
   consistent?: boolean;
-} & QueryExecutionComparisonParts;
+} & QueryExecutionComparisonParts &
+  (
+    | {
+        // if should hydrate, all attributes will be available from the main table
+        hydrate: true;
+        attributes?: ReadonlyArray<Attributes>;
+      }
+    | {
+        // if should not hydrate, the only available attributes are the ones that are projected to the index
+        hydrate?: false | undefined;
+        attributes?: ReadonlyArray<
+          {
+            [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+              ? E[EntityResultName] extends Entity<any, any, any, any>
+                ? E[EntityResultName]["schema"] extends Schema<
+                    infer A,
+                    infer F,
+                    infer C
+                  >
+                  ? Collection extends keyof EntityCollections<
+                      A,
+                      F,
+                      C,
+                      E[EntityResultName]["schema"]
+                    >
+                    ? Extract<
+                        IndexProjectedAttributeNames<
+                          A,
+                          F,
+                          C,
+                          E[EntityResultName]["schema"],
+                          EntityCollections<
+                            A,
+                            F,
+                            C,
+                            E[EntityResultName]["schema"]
+                          >[Collection]
+                        >,
+                        Attributes
+                      >
+                    : never
+                  : never
+                : never
+              : never;
+          }[Collections[Collection]]
+        >;
+      }
+  );
 
 type GoQueryTerminalOptions<
   Attributes,
@@ -2935,12 +3008,118 @@ export type ParamTerminal<
   options?: Options,
 ) => P;
 
+export type EntityCollectionResponse<
+  S extends Schema<string, string, string>,
+  ResponseItem,
+  Attr,
+  Index extends keyof S["indexes"],
+  Options extends ServiceQueryGoTerminalOptions<any, any, any, Attr>,
+> = Array<{
+  [Name in keyof ResponseItem as Name extends Attr
+    ? Options["hydrate"] extends true
+      ? Name
+      : Index extends keyof S["indexes"]
+      ? "projection" extends keyof S["indexes"][Index]
+        ? S["indexes"][Index]["projection"] extends ReadonlyArray<infer P>
+          ? Name extends P
+            ? Name
+            : never
+          : S["indexes"][Index]["projection"] extends "keys_only"
+          ? never
+          : Name
+        : Name
+      : Name
+    : never]: ResponseItem[Name];
+}>;
+
 export type ServiceQueryRecordsGo<
-  ResponseType,
-  Options = ServiceQueryGoTerminalOptions,
-> = <T = ResponseType>(
-  options?: Options,
-) => Promise<{ data: T; cursor: string | null }>;
+  E extends { [name: string]: Entity<any, any, any, any> },
+  Collections extends CollectionAssociations<E>,
+  Collection extends keyof Collections,
+  Attributes,
+> = {
+  <
+    Options extends ServiceQueryGoTerminalOptions<
+      E,
+      Collections,
+      Collection,
+      Attributes
+    >,
+  >(
+    options: Options,
+  ): Promise<
+    Options extends ServiceQueryGoTerminalOptions<
+      E,
+      Collections,
+      Collection,
+      infer Attr
+    >
+      ? {
+          data: {
+            [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+              ? E[EntityResultName] extends Entity<
+                  infer A,
+                  infer F,
+                  infer C,
+                  infer S
+                >
+                ? Collection extends keyof EntityCollections<A, F, C, S>
+                  ? EntityCollectionResponse<
+                      S,
+                      ResponseItem<A, F, C, S>,
+                      Attr,
+                      EntityCollections<A, F, C, S>[Collection],
+                      Options
+                    >
+                  : never
+                : never
+              : never;
+          };
+          cursor: string | null;
+        }
+      : {
+          data: {
+            [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+              ? E[EntityResultName] extends Entity<
+                  infer A,
+                  infer F,
+                  infer C,
+                  infer S
+                >
+                ? Collection extends keyof EntityCollections<A, F, C, S>
+                  ? EntityCollectionResponse<
+                      S,
+                      ResponseItem<A, F, C, S>,
+                      Attributes,
+                      EntityCollections<A, F, C, S>[Collection],
+                      {}
+                    >
+                  : never
+                : never
+              : never;
+          };
+          cursor: string | null;
+        }
+  >;
+  (): Promise<{
+    data: {
+      [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+        ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
+          ? Collection extends keyof EntityCollections<A, F, C, S>
+            ? EntityCollectionResponse<
+                S,
+                ResponseItem<A, F, C, S>,
+                Attributes,
+                EntityCollections<A, F, C, S>[Collection],
+                {}
+              >
+            : never
+          : never
+        : never;
+    };
+    cursor: string | null;
+  }>;
+};
 
 export type IndexResponse<
   Options extends GoQueryTerminalOptions<keyof Item, S, any>,
@@ -3838,6 +4017,33 @@ export type IndexProjectedAttributeNames<
       ? never
       : A
   : A;
+
+export type CollectionProjectedAttributeNames<
+  E extends { [entityName: string]: Entity<any, any, any, any> },
+  Collections extends CollectionAssociations<E>,
+  Collection extends keyof Collections,
+> = {
+  [EntityName in keyof E]: EntityName extends Collections[Collection]
+    ? E[EntityName] extends Entity<any, any, any, any>
+      ? E[EntityName]["schema"] extends Schema<infer A, infer F, infer C>
+        ? Collection extends keyof EntityCollections<
+            A,
+            F,
+            C,
+            E[EntityName]["schema"]
+          >
+          ? IndexProjectedAttributeNames<
+              A,
+              F,
+              C,
+              E[EntityName]["schema"],
+              EntityCollections<A, F, C, E[EntityName]["schema"]>[Collection]
+            >
+          : never
+        : never
+      : never
+    : never;
+}[keyof E];
 
 export type IndexCollections<
   A extends string,
@@ -5875,5 +6081,6 @@ declare function createSchema<
   A extends string,
   F extends string,
   C extends string,
-  S extends Schema<A, F, C>,
+  S extends Schema<A, F, C, P>,
+  P extends string,
 >(schema: S): S;
