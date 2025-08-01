@@ -588,3 +588,6 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.3]
 ### Fixed
 - [Issue #439](https://github.com/tywalch/electrodb/issues/439); Fixed missing TypeScript types for `attributes` property on `scan`, `find`, and `match` methods.
+
+## [3.4.4]
+- Reduced ElectroDB's pre/post-processing overhead before/after DynamoDB requests by as much as 85% in some cases.
