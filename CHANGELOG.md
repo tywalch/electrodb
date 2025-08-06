@@ -588,3 +588,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.3]
 ### Fixed
 - [Issue #439](https://github.com/tywalch/electrodb/issues/439); Fixed missing TypeScript types for `attributes` property on `scan`, `find`, and `match` methods.
+
+## [3.4.4]
+### Fixed
+- [Issue #519](https://github.com/tywalch/electrodb/issues/519); The `concurrency` option has been deprecated in the TS types, which did not affect any runtime behavior, in favor of the `concurrent` option.
