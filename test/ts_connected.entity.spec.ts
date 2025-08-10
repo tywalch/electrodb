@@ -3230,7 +3230,7 @@ describe("index condition", () => {
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on put`, () => {
           const message = conditionIsSet
               ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
-              : `Incomplete composite attributes: Without the composite attributes "prop3" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+              : `Incomplete composite attributes: Without the composite attributes "prop3" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`;
 
           expectMessageIfThrows(() => {
             entity.put({
@@ -3247,7 +3247,7 @@ describe("index condition", () => {
         it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on put`, () => {
           const message = conditionIsSet
               ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
-              : 'Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+              : 'Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes';
 
           expectMessageIfThrows(() => {
             entity.put({
@@ -3263,7 +3263,7 @@ describe("index condition", () => {
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on create`, () => {
           const message = conditionIsSet
               ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
-              : 'Incomplete composite attributes: Without the composite attributes "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+              : 'Incomplete composite attributes: Without the composite attributes "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes';
 
           expectMessageIfThrows(() => {
             entity.create({
@@ -3279,7 +3279,7 @@ describe("index condition", () => {
         it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on create`, () => {
           const message = conditionIsSet
               ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
-              : `Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+              : `Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`;
 
           expectMessageIfThrows(() => {
             entity.create({
@@ -3341,7 +3341,7 @@ describe("index condition", () => {
         it(`${formatShouldStatement(conditionIsSet)}throw when partially providing composite attributes on upsert`, () => {
           const message = conditionIsSet
               ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
-              : `Incomplete composite attributes: Without the composite attributes "prop3" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`;
+              : `Incomplete composite attributes: Without the composite attributes "prop3" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`;
 
           expectMessageIfThrows(() => {
             entity.upsert({
@@ -3358,7 +3358,7 @@ describe("index condition", () => {
         it(`${formatShouldStatement(conditionIsSet)}throw when missing composite attributes on upsert`, () => {
           const message = conditionIsSet
             ? 'Incomplete composite attributes provided for index gsi2pk-gsi2sk-index. Write operations that include composite attributes, for indexes with a condition callback defined, must always provide values for every index composite. This is to ensure consistency between index values and attribute values. Missing composite attributes identified: "prop3", "prop4", "prop5" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-composite-attributes-provided'
-            : 'Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes';
+            : 'Incomplete composite attributes: Without the composite attributes "prop3", "prop4", "prop5" the following access patterns cannot be updated: "sparse2". If a composite attribute is readOnly and cannot be set, use the \'composite\' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes';
 
           expectMessageIfThrows(() => {
             entity.upsert({
