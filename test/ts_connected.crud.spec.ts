@@ -4380,6 +4380,16 @@ describe("attributes query option", () => {
       },
     ]);
 
+
+    const scanParams = entityWithSK.scan.params({
+      // @ts-ignore - the ParamOptions type does not accept attributes
+      // but this is valid in runtime
+      attributes: ["attr2", "attr9", "attr5", "attr10"],
+    });
+    expect(scanParams.ProjectionExpression).to.equal(
+      "#__edb_e__, #__edb_v__, #pk, #sk, #attr2, #prop9, #attr5, #attr10",
+    );
+
     const matchItem = await entityWithSK
       .match({
         attr1: item.attr1,
