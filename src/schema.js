@@ -268,19 +268,23 @@ class Attribute {
 
   _makeGet(get) {
     this._checkGetSet(get, "get");
-    const getter = get || ((attr) => attr);
-    return (value, siblings) => {
+    const getter = get
+      ? (value, getSiblings) => get(value, getSiblings())
+      : (attr) => attr;
+    return (value, getSiblings) => {
       if (this.hidden) {
         return;
       }
       value = this.unformat(value);
-      return getter(value, siblings);
+      return getter(value, getSiblings);
     };
   }
 
   _makeSet(set) {
     this._checkGetSet(set, "set");
-    return set || ((attr) => attr);
+    return set
+      ? (value, getSiblings) => set(value, getSiblings())
+      : (attr) => attr;
   }
 
   _makeApplyFixings({
@@ -664,19 +668,19 @@ class MapAttribute extends Attribute {
 
   _makeGet(get, properties) {
     this._checkGetSet(get, "get");
-    const getter =
-      get ||
-      ((val) => {
-        const isEmpty = !val || Object.keys(val).length === 0;
-        const isNotRequired = !this.required;
-        const doesNotHaveDefault = this.default === undefined;
-        const isRoot = this.isRoot;
-        if (isEmpty && isRoot && isNotRequired && doesNotHaveDefault) {
-          return undefined;
-        }
-        return val;
-      });
-    return (values, siblings) => {
+    const getter = get
+      ? (value, getSiblings) => get(value, getSiblings())
+      : (val) => {
+          const isEmpty = !val || Object.keys(val).length === 0;
+          const isNotRequired = !this.required;
+          const doesNotHaveDefault = this.default === undefined;
+          const isRoot = this.isRoot;
+          if (isEmpty && isRoot && isNotRequired && doesNotHaveDefault) {
+            return undefined;
+          }
+          return val;
+        };
+    return (values, getSiblings) => {
       const data = {};
 
       if (this.hidden) {
@@ -687,60 +691,62 @@ class MapAttribute extends Attribute {
         if (!get) {
           return undefined;
         }
-        return getter(data, siblings);
+        return getter(data, getSiblings);
       }
 
       for (const name of Object.keys(properties.attributes)) {
         const attribute = properties.attributes[name];
         if (values[attribute.field] !== undefined) {
-          let results = attribute.get(values[attribute.field], { ...values });
+          let results = attribute.get(values[attribute.field], () => ({
+            ...values,
+          }));
           if (results !== undefined) {
             data[name] = results;
           }
         }
       }
 
-      return getter(data, siblings);
+      return getter(data, getSiblings);
     };
   }
 
   _makeSet(set, properties) {
     this._checkGetSet(set, "set");
-    const setter =
-      set ||
-      ((val) => {
-        const isEmpty = !val || Object.keys(val).length === 0;
-        const isNotRequired = !this.required;
-        const doesNotHaveDefault = this.default === undefined;
-        const defaultIsValue = this.default === val;
-        const isRoot = this.isRoot;
-        if (defaultIsValue) {
-          return val;
-        } else if (isEmpty && isRoot && isNotRequired && doesNotHaveDefault) {
-          return undefined;
-        } else {
-          return val;
-        }
-      });
+    const setter = set
+      ? (val, getSiblings) => set(val, getSiblings())
+      : (val) => {
+          const isEmpty = !val || Object.keys(val).length === 0;
+          const isNotRequired = !this.required;
+          const doesNotHaveDefault = this.default === undefined;
+          const defaultIsValue = this.default === val;
+          const isRoot = this.isRoot;
+          if (defaultIsValue) {
+            return val;
+          } else if (isEmpty && isRoot && isNotRequired && doesNotHaveDefault) {
+            return undefined;
+          } else {
+            return val;
+          }
+        };
 
-    return (values, siblings) => {
+    return (values, getSiblings) => {
       const data = {};
       if (values === undefined) {
         if (!set) {
           return undefined;
         }
-        return setter(values, siblings);
+        return setter(values, getSiblings);
       }
       for (const name of Object.keys(properties.attributes)) {
         const attribute = properties.attributes[name];
         if (values[name] !== undefined) {
-          const results = attribute.set(values[name], { ...values });
+          const results = attribute.set(values[name], () => ({ ...values }));
           if (results !== undefined) {
             data[attribute.field] = results;
           }
         }
       }
-      return setter(data, siblings);
+      return setter(data, getSiblings);
     };
   }
 
@@ -876,9 +882,11 @@ class ListAttribute extends Attribute {
   _makeGet(get, items) {
     this._checkGetSet(get, "get");
 
-    const getter = get || ((attr) => attr);
+    const getter = get
+      ? (value, getSiblings) => get(value, getSiblings())
+      : (attr) => attr;
 
-    return (values, siblings) => {
+    return (values, getSiblings) => {
       const data = [];
 
       if (this.hidden) {
@@ -886,38 +894,40 @@ class ListAttribute extends Attribute {
       }
 
       if (values === undefined) {
-        return getter(data, siblings);
+        return getter(data, getSiblings);
       }
 
       for (let value of values) {
-        const results = items.get(value, [...values]);
+        const results = items.get(value, () => [...values]);
         if (results !== undefined) {
           data.push(results);
         }
       }
 
-      return getter(data, siblings);
+      return getter(data, getSiblings);
     };
   }
 
   _makeSet(set, items) {
     this._checkGetSet(set, "set");
-    const setter = set || ((attr) => attr);
-    return (values, siblings) => {
+    const setter = set
+      ? (value, getSiblings) => set(value, getSiblings())
+      : (attr) => attr;
+    return (values, getSiblings) => {
       const data = [];
 
       if (values === undefined) {
-        return setter(values, siblings);
+        return setter(values, getSiblings);
       }
 
       for (const value of values) {
-        const results = items.set(value, [...values]);
+        const results = items.set(value, () => [...values]);
         if (results !== undefined) {
           data.push(results);
         }
       }
 
-      return setter(data, siblings);
+      return setter(data, getSiblings);
     };
   }
 
@@ -1111,14 +1121,16 @@ class SetAttribute extends Attribute {
 
   _makeGet(get, items) {
     this._checkGetSet(get, "get");
-    const getter = get || ((attr) => attr);
-    return (values, siblings) => {
+    const getter = get
+      ? (value, getSiblings) => get(value, getSiblings())
+      : (attr) => attr;
+    return (values, getSiblings) => {
       if (values !== undefined) {
         const data = this.fromDDBSet(values);
-        return getter(data, siblings);
+        return getter(data, getSiblings);
       }
       const data = this.fromDDBSet(values);
-      const results = getter(data, siblings);
+      const results = getter(data, getSiblings);
       if (results !== undefined) {
         // if not undefined, try to convert, else no need to return
         return this.fromDDBSet(results);
@@ -1128,9 +1140,11 @@ class SetAttribute extends Attribute {
 
   _makeSet(set, items) {
     this._checkGetSet(set, "set");
-    const setter = set || ((attr) => attr);
-    return (values, siblings) => {
-      const results = setter(this.fromDDBSet(values), siblings);
+    const setter = set
+      ? (value, getSiblings) => set(value, getSiblings())
+      : (attr) => attr;
+    return (values, getSiblings) => {
+      const results = setter(this.fromDDBSet(values), getSiblings);
       if (results !== undefined) {
         return this.toDDBSet(results);
       }
@@ -1616,12 +1630,13 @@ class Schema {
 
   _applyAttributeMutation(method, include, avoid, payload) {
     let data = { ...payload };
+    const getSiblings = () => ({ ...payload });
     for (let path of Object.keys(include)) {
       // this.attributes[attribute] !== undefined | Attribute exists as actual attribute. If `includeKeys` is turned on for example this will include values that do not have a presence in the model and therefore will not have a `.get()` method
       // avoid[attribute] === undefined           | Attribute shouldn't be in the avoided
       const attribute = this.getAttribute(path);
       if (attribute !== undefined && avoid[path] === undefined) {
-        data[path] = attribute[method](payload[path], { ...payload });
+        data[path] = attribute[method](payload[path], getSiblings);
       }
     }
     return data;
