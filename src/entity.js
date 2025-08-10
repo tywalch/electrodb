@@ -2012,7 +2012,10 @@ class Entity {
         );
         break;
       case MethodTypes.scan:
-        params = this._makeScanParam(filter[ExpressionTypes.FilterExpression]);
+        params = this._makeScanParam(
+          filter[ExpressionTypes.FilterExpression],
+          config,
+        );
         break;
       /* istanbul ignore next */
       default:
@@ -2228,7 +2231,7 @@ class Entity {
   }
 
   /* istanbul ignore next */
-  _makeScanParam(filter = {}) {
+  _makeScanParam(filter = {}, options = {}) {
     let indexBase = TableIndex;
     let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
     let accessPattern =
@@ -2291,7 +2294,10 @@ class Entity {
       params.FilterExpression = filterExpressions.join(" AND ");
     }
 
-    return params;
+    return this._applyProjectionExpressions({
+      parameters: params,
+      config: options,
+    });
   }
 
   _makeSimpleIndexParams(partition, sort) {
