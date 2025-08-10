@@ -791,15 +791,15 @@ describe("Entity", () => {
             },
           },
           output: {
-            gt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
-            lt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
-            gte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
-            lte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
-            main: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+            gt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
+            lt: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
+            gte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
+            lte: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
+            main: 'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
             begins:
-              'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+              'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
             between:
-              'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+              'Incomplete or invalid key composite attributes supplied. Missing properties: "prop2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
           },
         },
       ];
@@ -2935,7 +2935,7 @@ describe("Entity", () => {
             mall: "Washington Square",
             stores: undefined,
           },
-          output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+          output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
         },
         {
           happy: false,
@@ -2952,7 +2952,7 @@ describe("Entity", () => {
             id: "12345",
             mall,
           },
-          output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+          output: `Incomplete or invalid key composite attributes supplied. Missing properties: "stores" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
         },
       ];
       for (let test of tests) {
@@ -8339,33 +8339,33 @@ describe("Entity", () => {
       );
       let getParams = entity.get({ attr1: "abc", attr2: "def" }).params();
       expect(() => entity.get({ attr1: "abc" }).params()).to.throw(
-        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
       );
       expect(() => entity.delete({ attr1: "abc" }).params()).to.throw(
-        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
       );
       expect(() => entity.remove({ attr1: "abc" }).params()).to.throw(
-        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
       );
       expect(() =>
         entity.update({ attr1: "abc" }).set({ attr3: "def" }).params(),
       ).to.throw(
-        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
       );
       expect(() =>
         entity.patch({ attr1: "abc" }).set({ attr3: "def" }).params(),
       ).to.throw(
-        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
       );
       expect(() =>
         entity.put({ attr1: "abc", attr3: "def" }).params(),
       ).to.throw(
-        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
       );
       expect(() =>
         entity.create({ attr1: "abc", attr3: "def" }).params(),
       ).to.throw(
-        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes',
+        'Incomplete or invalid key composite attributes supplied. Missing properties: "attr2" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes',
       );
 
       // empty strings don't count
@@ -8702,14 +8702,14 @@ describe("Entity", () => {
           "should throw because result would create incomplete key without prop7",
         success: false,
         input: { prop0, prop6 },
-        output: `Incomplete composite attributes: Without the composite attributes "prop7" the following access patterns cannot be updated: "accessPattern3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        output: `Incomplete composite attributes: Without the composite attributes "prop7" the following access patterns cannot be updated: "accessPattern3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       },
       {
         description:
           "should throw because result would create incomplete key without prop6",
         success: false,
         input: { prop0, prop7 },
-        output: `Incomplete composite attributes: Without the composite attributes "prop6" the following access patterns cannot be updated: "accessPattern3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        output: `Incomplete composite attributes: Without the composite attributes "prop6" the following access patterns cannot be updated: "accessPattern3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       },
       {
         description: "should update prop9 and build gsi3sk",
@@ -8748,21 +8748,21 @@ describe("Entity", () => {
           "should throw because result would create incomplete key without prop12",
         success: false,
         input: { prop0, prop11 },
-        output: `Incomplete composite attributes: Without the composite attributes "prop12" the following access patterns cannot be updated: "accessPattern5". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        output: `Incomplete composite attributes: Without the composite attributes "prop12" the following access patterns cannot be updated: "accessPattern5". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       },
       {
         description:
           "should throw because result would create incomplete key without prop15",
         success: false,
         input: { prop0, prop14 },
-        output: `Incomplete composite attributes: Without the composite attributes "prop15" the following access patterns cannot be updated: "accessPattern6". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        output: `Incomplete composite attributes: Without the composite attributes "prop15" the following access patterns cannot be updated: "accessPattern6". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       },
       {
         description:
           "should throw because result would create incomplete key without prop14",
         success: false,
         input: { prop0, prop15 },
-        output: `Incomplete composite attributes: Without the composite attributes "prop14" the following access patterns cannot be updated: "accessPattern6". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+        output: `Incomplete composite attributes: Without the composite attributes "prop14" the following access patterns cannot be updated: "accessPattern6". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
       },
       {
         description: "should update prop14, prop15, and set gsi5sk",
