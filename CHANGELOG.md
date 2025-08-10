@@ -590,5 +590,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 - [Issue #439](https://github.com/tywalch/electrodb/issues/439); Fixed missing TypeScript types for `attributes` property on `scan`, `find`, and `match` methods.
 
 ## [3.4.4]
+- Reduced ElectroDB's pre/post-processing overhead before/after DynamoDB requests by as much as 85% in some cases.
+
+## [3.4.5]
 ### Fixed
 - [Issue #519](https://github.com/tywalch/electrodb/issues/519); The `concurrency` option has been deprecated in the TS types, which did not affect any runtime behavior, in favor of the `concurrent` option.
