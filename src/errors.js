@@ -171,7 +171,7 @@ const ErrorCodes = {
   },
   IncompleteCompositeAttributes: {
     code: 2002,
-    section: "incomplete-composite-attributes",
+    section: "missing-composite-attributes",
     name: "IncompleteCompositeAttributes",
     sym: ErrorCode,
   },

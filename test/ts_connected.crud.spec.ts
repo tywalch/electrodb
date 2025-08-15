@@ -2309,7 +2309,7 @@ describe("Entity", () => {
       } catch (err: any) {
         expect(err).to.not.be.null;
         expect(err.message).to.equal(
-          `Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+          `Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
         );
       }
     });
@@ -2323,7 +2323,7 @@ describe("Entity", () => {
       } catch (err: any) {
         expect(err).to.not.be.null;
         expect(err.message).to.equal(
-          `Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+          `Incomplete composite attributes: Without the composite attributes "prop7", "prop8" the following access patterns cannot be updated: "index3". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
         );
       }
     });
@@ -4380,6 +4380,16 @@ describe("attributes query option", () => {
       },
     ]);
 
+
+    const scanParams = entityWithSK.scan.params({
+      // @ts-ignore - the ParamOptions type does not accept attributes
+      // but this is valid in runtime
+      attributes: ["attr2", "attr9", "attr5", "attr10"],
+    });
+    expect(scanParams.ProjectionExpression).to.equal(
+      "#__edb_e__, #__edb_v__, #pk, #sk, #attr2, #prop9, #attr5, #attr10",
+    );
+
     const matchItem = await entityWithSK
       .match({
         attr1: item.attr1,
@@ -5877,7 +5887,7 @@ describe("upsert", () => {
         })
         .params();
     }).to.throw(
-      `Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incomplete-composite-attributes`,
+      `Incomplete composite attributes: Without the composite attributes "createdAt" the following access patterns cannot be updated: "projects". If a composite attribute is readOnly and cannot be set, use the 'composite' chain method on update to supply the value for key formatting purposes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#missing-composite-attributes`,
     );
   });
 });

@@ -12,36 +12,36 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-In **_ElectroDB_** a `Service` represents a collection of related Entities. Services allow you to build queries that span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, you do not need to import models into a Service to use them individually; However, you do need to use a Service if you intend to make queries that "join" multiple Entities.
+In **_ElectroDB_** a `Service` represents a collection of related Entities. Services allow you to build queries that span across Entities. Similar to Entities, Services can coexist on a single table without collision. You can use Entities independent of Services, and you do not need to import models into a Service to use them individually. However, you do need to use a Service if you intend to make queries that "join" multiple Entities.
 
 ## Creation
 
-The property name you assign the entity will then be "alias", or name, you can reference that entity by through the Service. Aliases can be useful if you are building a service with multiple versions of the same entity or wish to change the reference name of an entity without impacting the schema/key names of that entity.
+The property name you assign the entity will become the "alias" by which you can reference the entity through the Service. Aliases can be useful if you are building a service with multiple versions of the same entity, or if you wish to change the reference name of an entity without impacting the schema/key names of that entity.
 
 ```typescript
 import { Service } from "electrodb";
 
 const TaskApp = new Service(
   {
-    employee: Employee, // available at TaskApp.entities.personnel
-    task: Task, // available at TaskApp.entities.directives
+    employee: Employee, // available at TaskApp.entities.employee
+    task: Task, // available at TaskApp.entities.task
   },
   { table, client },
 );
 ```
 
-Services take an _optional_ second parameter, similar to Entities, with a `client` and `table`. Using this constructor interface, the Service will utilize the values from those entities, if they were provided, or be passed values to override the `client` or `table` name on the individual entities.
+As with Entities, Services take an _optional_ second parameter that allows you to specify a `client` and `table`. Using this constructor interface, the Service will inherit these values from its entities, if they were provided. Values passed directly to the Service will override the `client` or `table` values on the individual entities.
 
 ## Options
 
 | Property | Description                                                                                                                                                                                                                              |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| table    | The name of the dynamodb table in aws.                                                                                                                                                                                                   |
-| client   | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, but required if you actually need to query against a database. |
+| table    | The name of the DynamoDB table in AWS.                                                                                                                                                                                                   |
+| client   | (optional) An instance of `DynamoDBClient` from the `aws-sdk` to be used when querying a DynamoDB table. This is optional if you only wish to use the `params` functionality, but required if you actually need to query against a database. |
 
 ## Validation
 
-When joining an Entity to a Service, ElectroDB will perform numerous validations to ensure the provided Entities are consistently defined. The following is a list of the validations performed on Service creation:
+When joining an Entity to a Service, ElectroDB will perform several validations to ensure the provided Entities are consistently defined. The following is a list of the validations performed on Service creation:
 
 - [Entity](/en/modeling/entities) names must be unique across a Service.
 - [Collection](/en/modeling/collections) names must be unique across a Service.

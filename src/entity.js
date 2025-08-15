@@ -2036,7 +2036,9 @@ class Entity {
         break;
       case MethodTypes.scan:
         params = this._makeScanParam(
+          
           filter[ExpressionTypes.FilterExpression],
+          config,
           state.query.index,
         );
         break;
@@ -2254,8 +2256,9 @@ class Entity {
   }
 
   /* istanbul ignore next */
-  _makeScanParam(filter = {}, index = TableIndex) {
-    let hasSortKey = this.model.lookup.indexHasSortKeys[index];
+  _makeScanParam(filter = {}, options = {}, index = TableIndex) {
+    let indexBase = TableIndex;
+    let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
     let accessPattern =
       this.model.translations.indexes.fromIndexToAccessPattern[index];
     let pkField = this.model.indexes[accessPattern].pk.field;
@@ -2320,7 +2323,10 @@ class Entity {
       params.IndexName = index;
     }
 
-    return params;
+    return this._applyProjectionExpressions({
+      parameters: params,
+      config: options,
+    });
   }
 
   _makeSimpleIndexParams(partition, sort) {

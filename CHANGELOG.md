@@ -589,6 +589,13 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - [Issue #439](https://github.com/tywalch/electrodb/issues/439); Fixed missing TypeScript types for `attributes` property on `scan`, `find`, and `match` methods.
 
+## [3.4.4]
+- Reduced ElectroDB's pre/post-processing overhead before/after DynamoDB requests by as much as 85% in some cases.
+
+## [3.4.5]
+### Fixed
+- [Issue #510](https://github.com/tywalch/electrodb/issues/510); Fixes the issue where ElectroDB did not create the ProjectionExpression DynamoDB parameter when scanning a table and specifying attributes to return.
+
 ## [3.5.0]
 ### Added
 - [Issue #507](https://github.com/tywalch/electrodb/issues/507); You can now scan an index. [See docs](https://electrodb.dev/en/queries/scan/#scanning-an-index)
