@@ -95,10 +95,10 @@ type LoadTableOptions = {
 
 async function loadTable(options: LoadTableOptions) {
   const { books, genres, members, authors } = options;
-  await Genre.put(genres).go({ concurrency: 3 });
-  await Member.put(members).go({ concurrency: 3 });
-  await Author.put(authors).go({ concurrency: 3 });
-  await Book.put(books).go({ concurrency: 3 });
+  await Genre.put(genres).go({ concurrent: 3 });
+  await Member.put(members).go({ concurrent: 3 });
+  await Author.put(authors).go({ concurrent: 3 });
+  await Book.put(books).go({ concurrent: 3 });
 }
 
 async function main() {

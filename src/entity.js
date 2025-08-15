@@ -1404,7 +1404,7 @@ class Entity {
     if (isNaN(value) || value < 1) {
       throw new e.ElectroError(
         e.ErrorCodes.InvalidConcurrencyOption,
-        "Query option 'concurrency' must be of type 'number' and greater than zero.",
+        "Query option 'concurrent' must be of type 'number' and greater than zero.",
       );
     }
     return value;

@@ -491,19 +491,19 @@ expectAssignable<GetParametersFinishers>(getSingleFinishersWithoutSK);
 expectAssignable<GetParametersFinishers>(getBatchFinishersWithoutSK);
 entityWithSK
   .get([{ attr1: "adg", attr2: "ada" }])
-  .go({ concurrency: 24, preserveBatchOrder: true });
+  .go({ concurrent: 24, preserveBatchOrder: true });
 expectError(
   entityWithSK
     .get([{ attr1: "adg", attr2: "ada" }])
-    .params({ concurrency: 24, preserveBatchOrder: true }),
+    .params({ concurrent: 24, preserveBatchOrder: true }),
 );
 entityWithoutSK
   .get([{ attr1: "adg" }])
-  .go({ concurrency: 24, preserveBatchOrder: true });
+  .go({ concurrent: 24, preserveBatchOrder: true });
 expectError(
   entityWithoutSK
     .get([{ attr1: "adg" }])
-    .params({ concurrency: 24, preserveBatchOrder: true }),
+    .params({ concurrent: 24, preserveBatchOrder: true }),
 );
 
 let getSingleGoWithSK = entityWithSK.get({ attr1: "adg", attr2: "ada" }).go;
@@ -560,23 +560,23 @@ expectAssignable<GetSingleParamsParamsWithoutSK>({
 });
 
 expectError<GetSingleGoParamsWithSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   preserveBatchOrder: true,
 });
 expectError<GetSingleGoParamsWithoutSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   preserveBatchOrder: true,
 });
 
 expectError<GetSingleParamsParamsWithSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   preserveBatchOrder: true,
 });
 expectError<GetSingleParamsParamsWithoutSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   preserveBatchOrder: true,
 });
@@ -586,7 +586,7 @@ expectAssignable<GetBatchGoParamsWithSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 expectAssignable<GetBatchGoParamsWithoutSK>({
@@ -594,7 +594,7 @@ expectAssignable<GetBatchGoParamsWithoutSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
@@ -616,7 +616,7 @@ expectNotAssignable<GetBatchParamsParamsWithSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   attributes: ["attrz1"],
 });
@@ -625,7 +625,7 @@ expectNotAssignable<GetBatchParamsParamsWithoutSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   attributes: ["attrz1"],
 });
@@ -817,13 +817,13 @@ expectAssignable<DeleteParametersFinishers>(deleteSingleFinishersWithoutSK);
 expectAssignable<DeleteParametersFinishers>(deleteBatchFinishers);
 expectAssignable<DeleteParametersFinishers>(deleteBatchFinishersWithoutSK);
 
-entityWithSK.delete([{ attr1: "adg", attr2: "ada" }]).go({ concurrency: 24 });
-entityWithoutSK.delete([{ attr1: "adg" }]).go({ concurrency: 24 });
+entityWithSK.delete([{ attr1: "adg", attr2: "ada" }]).go({ concurrent: 24 });
+entityWithoutSK.delete([{ attr1: "adg" }]).go({ concurrent: 24 });
 
 entityWithSK
   .delete([{ attr1: "adg", attr2: "ada" }])
-  .params({ concurrency: 24 });
-entityWithoutSK.delete([{ attr1: "adg" }]).params({ concurrency: 24 });
+  .params({ concurrent: 24 });
+entityWithoutSK.delete([{ attr1: "adg" }]).params({ concurrent: 24 });
 
 let deleteSingleGo = entityWithSK.delete({ attr1: "adg", attr2: "ada" }).go;
 let deleteSingleGoWithoutSK = entityWithoutSK.delete({ attr1: "adg" }).go;
@@ -918,18 +918,18 @@ expectAssignable<DeleteSingleParamsParamsWithoutSK>({
   table: "abc",
 });
 
-expectError<DeleteSingleGoParams>({ concurrency: 10, unprocessed: "raw" });
+expectError<DeleteSingleGoParams>({ concurrent: 10, unprocessed: "raw" });
 expectError<DeleteSingleGoParamsWithoutSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
 expectNotAssignable<DeleteSingleGoParams>({ response: "updated_new" });
 expectNotAssignable<DeleteSingleGoParamsWithoutSK>({ response: "updated_new" });
 
-expectError<DeleteSingleParamsParams>({ concurrency: 10, unprocessed: "raw" });
+expectError<DeleteSingleParamsParams>({ concurrent: 10, unprocessed: "raw" });
 expectError<DeleteSingleParamsParamsWithoutSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
@@ -943,7 +943,7 @@ expectAssignable<DeleteBatchGoParams>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 expectAssignable<DeleteBatchGoParamsWithoutSK>({
@@ -951,7 +951,7 @@ expectAssignable<DeleteBatchGoParamsWithoutSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
@@ -960,7 +960,7 @@ expectAssignable<DeleteBatchParamsParams>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 expectAssignable<DeleteBatchParamsParamsWithoutSK>({
@@ -968,7 +968,7 @@ expectAssignable<DeleteBatchParamsParamsWithoutSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
@@ -1226,9 +1226,9 @@ expectAssignable<PutSingleParamsParamsWithoutSK>({
   response: "all_old",
 });
 
-expectError<PutSingleGoParams>({ concurrency: 10, unprocessed: "raw" });
+expectError<PutSingleGoParams>({ concurrent: 10, unprocessed: "raw" });
 expectError<PutSingleGoParamsWithoutSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
@@ -1238,9 +1238,9 @@ expectError<PutSingleGoParamsWithoutSK>({ response: "updated_new" });
 expectError<PutSingleParamsParams>({ response: "updated_new" });
 expectError<PutSingleParamsParamsWithoutSK>({ response: "updated_new" });
 
-expectError<PutSingleParamsParams>({ concurrency: 10, unprocessed: "raw" });
+expectError<PutSingleParamsParams>({ concurrent: 10, unprocessed: "raw" });
 expectError<PutSingleParamsParamsWithoutSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
@@ -1249,7 +1249,7 @@ expectAssignable<PutBatchGoParams>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 expectAssignable<PutBatchGoParamsWithoutSK>({
@@ -1257,7 +1257,7 @@ expectAssignable<PutBatchGoParamsWithoutSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
@@ -1266,7 +1266,7 @@ expectNotAssignable<PutBatchGoParams>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   response: "all_old",
 });
@@ -1275,7 +1275,7 @@ expectNotAssignable<PutBatchGoParamsWithoutSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   response: "all_old",
 });
@@ -1285,7 +1285,7 @@ expectAssignable<PutBatchParamsParams>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 expectAssignable<PutBatchParamsParamsWithoutSK>({
@@ -1293,7 +1293,7 @@ expectAssignable<PutBatchParamsParamsWithoutSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 
@@ -1302,7 +1302,7 @@ expectNotAssignable<PutBatchParamsParams>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   response: "all_old",
 });
@@ -1311,7 +1311,7 @@ expectNotAssignable<PutBatchParamsParamsWithoutSK>({
   originalErr: true,
   params: {},
   table: "abc",
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
   response: "all_old",
 });
@@ -1488,12 +1488,12 @@ expectAssignable<CreateParamsParamsWithoutSK>({
   table: "abc",
 });
 
-expectError<CreateGoParams>({ concurrency: 10, unprocessed: "raw" });
-expectError<CreateGoParamsWithoutSK>({ concurrency: 10, unprocessed: "raw" });
+expectError<CreateGoParams>({ concurrent: 10, unprocessed: "raw" });
+expectError<CreateGoParamsWithoutSK>({ concurrent: 10, unprocessed: "raw" });
 
-expectError<CreateParamsParams>({ concurrency: 10, unprocessed: "raw" });
+expectError<CreateParamsParams>({ concurrent: 10, unprocessed: "raw" });
 expectError<CreateParamsParamsWithoutSK>({
-  concurrency: 10,
+  concurrent: 10,
   unprocessed: "raw",
 });
 

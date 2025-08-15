@@ -2595,7 +2595,11 @@ export type ParamOptions = {
 
 export interface BulkOptions extends QueryOptions {
   unprocessed?: "raw" | "item";
+  /**
+   * @deprecated use "concurrent" instead
+   */
   concurrency?: number;
+  concurrent?: number;
   preserveBatchOrder?: boolean;
 }
 
@@ -2614,7 +2618,11 @@ interface GoBatchGetTerminalOptions<Attributes> {
   pages?: number;
   attributes?: ReadonlyArray<Attributes>;
   unprocessed?: "raw" | "item";
+  /**
+   * @deprecated use "concurrent" instead
+   */
   concurrency?: number;
+  concurrent?: number;
   preserveBatchOrder?: boolean;
   listeners?: Array<ElectroEventListener>;
   logger?: ElectroEventListener;
