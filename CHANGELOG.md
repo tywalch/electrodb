@@ -596,7 +596,6 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - [Issue #510](https://github.com/tywalch/electrodb/issues/510); Fixes the issue where ElectroDB did not create the ProjectionExpression DynamoDB parameter when scanning a table and specifying attributes to return.
 
-
 ## [3.4.6]
 ### Fixed
 - [Issue #519](https://github.com/tywalch/electrodb/issues/519); The `concurrency` option has been deprecated in the TS types, which did not affect any runtime behavior, in favor of the `concurrent` option.
