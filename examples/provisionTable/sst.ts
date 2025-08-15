@@ -46,14 +46,14 @@ export function ElectroDbTable(
       globalIndexes[secondaryIndex.indexName] = {
         partitionKey: secondaryIndex.partitionKey.field,
         sortKey: secondaryIndex.sortKey?.field,
-        projection: secondaryIndex.keysOnly ? "keys_only" : "all",
+        projection: secondaryIndex.projection,
       };
     } else if (secondaryIndex.type === "LocalSecondaryIndex") {
       fields[secondaryIndex.sortKey.field] = "string";
 
       localIndexes[secondaryIndex.indexName] = {
         sortKey: secondaryIndex.sortKey?.field,
-        projection: secondaryIndex.keysOnly ? "keys_only" : "all",
+        projection: secondaryIndex.projection,
       };
     }
   }

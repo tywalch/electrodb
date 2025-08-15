@@ -30,6 +30,7 @@ const {
   CastKeyOptions,
   ComparisonTypes,
   DataOptions,
+  IndexProjectionOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -106,12 +107,25 @@ class Entity {
   }
 
   get scan() {
-    return this._makeChain(
+    const result = this._makeChain(
       TableIndex,
       this._clausesWithFilters,
       clauses.index,
       { _isPagination: true },
     ).scan();
+
+    for (const accessPattern in this.model.indexes) {
+      const index = this.model.indexes[accessPattern].index;
+
+      result[accessPattern] = this._makeChain(
+        index,
+        this._clausesWithFilters,
+        clauses.index,
+        { _isPagination: true },
+      ).scan();
+    }
+
+    return result;
   }
 
   setIdentifier(type = "", identifier = "") {
@@ -652,6 +666,7 @@ class Entity {
       _isCollectionQuery: false,
       preserveBatchOrder: true,
       ignoreOwnership: config._providedIgnoreOwnership,
+      attributes: config._providedAttributes,
     });
 
     const unprocessed = [];
@@ -689,7 +704,9 @@ class Entity {
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
-    const shouldHydrate = config.hydrate && method === MethodTypes.query;
+    const shouldHydrate =
+      config.hydrate &&
+      (method === MethodTypes.query || method === MethodTypes.scan);
     do {
       let response = await this._exec(
         method,
@@ -1640,6 +1657,7 @@ class Entity {
       listeners: [],
       preserveBatchOrder: false,
       attributes: [],
+      _providedAttributes: [],
       terminalOperation: undefined,
       formatCursor: u.cursorFormatter,
       order: undefined,
@@ -1727,6 +1745,7 @@ class Entity {
 
       if (Array.isArray(option.attributes)) {
         config.attributes = config.attributes.concat(option.attributes);
+        config._providedAttributes = option.attributes;
       }
 
       if (option.preserveBatchOrder === true) {
@@ -1875,6 +1894,10 @@ class Entity {
       if (option.hydrate) {
         config.hydrate = true;
         config.ignoreOwnership = true;
+        // if we will hydrate later, we don't want to provide a ProjectionExpression since the attributes
+        // may contain non-projected attributes that the user expects to receive from the main table
+        // after hydration
+        config.attributes = [];
       }
 
       if (validations.isFunction(option.hydrator)) {
@@ -2015,6 +2038,7 @@ class Entity {
         params = this._makeScanParam(
           filter[ExpressionTypes.FilterExpression],
           config,
+          state.query.index,
         );
         break;
       /* istanbul ignore next */
@@ -2231,17 +2255,17 @@ class Entity {
   }
 
   /* istanbul ignore next */
-  _makeScanParam(filter = {}, options = {}) {
+  _makeScanParam(filter = {}, options = {}, index = TableIndex) {
     let indexBase = TableIndex;
     let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
     let accessPattern =
-      this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
+      this.model.translations.indexes.fromIndexToAccessPattern[index];
     let pkField = this.model.indexes[accessPattern].pk.field;
     let { pk, sk } = this._makeIndexKeys({
-      index: indexBase,
+      index,
     });
 
-    let keys = this._makeParameterKey(indexBase, pk, ...sk);
+    let keys = this._makeParameterKey(index, pk, ...sk);
     // trim empty key values (this can occur when keys are defined by users)
     for (let key in keys) {
       if (keys[key] === undefined || keys[key] === "") {
@@ -2292,6 +2316,10 @@ class Entity {
 
     if (filterExpressions.length) {
       params.FilterExpression = filterExpressions.join(" AND ");
+    }
+
+    if (index) {
+      params.IndexName = index;
     }
 
     return this._applyProjectionExpressions({
@@ -4249,6 +4277,7 @@ class Entity {
       fields: [],
       attributes: [],
       labels: {},
+      projections: [],
     };
     let seenIndexes = {};
     let seenIndexFields = {};
@@ -4366,7 +4395,7 @@ class Entity {
               e.ErrorCodes.DuplicateIndexCompositeAttributes,
               `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${u.commaSeparatedString(
                 duplicates,
-              )}. Composite attributes can only be used more than once in an index if your sort key is limitted to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys.`,
+              )}. Composite attributes can only be used more than once in an index if your sort key is limited to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys.`,
             );
           }
         }
@@ -4383,7 +4412,30 @@ class Entity {
         scope: indexScope,
         condition: indexCondition,
         conditionDefined: conditionDefined,
+        projection: index.projection,
       };
+
+      let projections = [];
+
+      if (index.projection !== undefined) {
+        if (typeof index.projection === "string" && (
+            index.projection.toLowerCase() === IndexProjectionOptions.keys_only ||
+            index.projection.toLowerCase() === IndexProjectionOptions.all
+        )) {
+          definition.projection = index.projection.toLowerCase();
+        } else if (Array.isArray(index.projection) && index.projection.length > 0 && index.projection.every((attr) => typeof attr === "string")) {
+          definition.projection = index.projection;
+          projections = definition.projection.map((name) => ({
+            name,
+            accessPattern,
+          }));
+        } else {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidProjectionDefinition,
+            `The Access Pattern '${accessPattern}' contains an invalid "projection" value: ${u.toDisplayString(index.projection)}. Valid projection values include ${u.commaSeparatedString(Object.values(IndexProjectionOptions))}, or an array of attribute names with a length greater than one.`
+          )
+        }
+      }
 
       indexHasSubCollections[indexName] =
         inCollection && Array.isArray(collection);
@@ -4440,6 +4492,7 @@ class Entity {
       };
 
       facets.attributes = [...facets.attributes, ...attributes];
+      facets.projections = [...facets.projections, ...projections];
 
       facets.fields.push(pk.field);
 

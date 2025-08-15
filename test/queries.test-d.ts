@@ -37,7 +37,8 @@ class MockEntity<
   A extends string,
   F extends string,
   C extends string,
-  S extends Schema<A, F, C>,
+  S extends Schema<A, F, C, P>,
+  P extends string = string
 > {
   readonly schema: S;
 
@@ -49,8 +50,8 @@ class MockEntity<
     return {} as GoQueryTerminal<A, F, C, S, ResponseItem<A, F, C, S>>;
   }
 
-  getScanTerminal(): QueryRecordsGo<ResponseItem<A, F, C, S>> {
-    return {} as QueryRecordsGo<ResponseItem<A, F, C, S>>;
+  getScanTerminal(): QueryRecordsGo<ResponseItem<A, F, C, S>, S> {
+    return {} as QueryRecordsGo<ResponseItem<A, F, C, S>, S>;
   }
 
   // getPageQueryTerminal(): PageQueryTerminal<A,F,C,S, ResponseItem<A,F,C,S>, {abc: string}> {
