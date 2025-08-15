@@ -2036,7 +2036,6 @@ class Entity {
         break;
       case MethodTypes.scan:
         params = this._makeScanParam(
-          
           filter[ExpressionTypes.FilterExpression],
           config,
           state.query.index,
