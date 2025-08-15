@@ -596,7 +596,6 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - [Issue #510](https://github.com/tywalch/electrodb/issues/510); Fixes the issue where ElectroDB did not create the ProjectionExpression DynamoDB parameter when scanning a table and specifying attributes to return.
 
-
 ## [3.4.6]
 ### Fixed
 - [Issue #516](https://github.com/tywalch/electrodb/issues/516); Fixed the missing ProjectionExpression parameter when performing a batchGet with specific attributes to return.
