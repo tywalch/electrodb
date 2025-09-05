@@ -1667,6 +1667,22 @@ class Entity {
       _includeOnResponseItem: {},
     };
 
+    // Auto-set ignoreOwnership: true for INCLUDE or KEYS_ONLY indexes
+    if (context.state && context.state.query && context.state.query.index) {
+      const indexName = context.state.query.index;
+      const accessPattern =
+        this.model.translations.indexes.fromIndexToAccessPattern[indexName];
+      if (accessPattern) {
+        const indexDefinition = this.model.indexes[accessPattern];
+        if (
+          indexDefinition.projection === IndexProjectionOptions.keys_only ||
+          Array.isArray(indexDefinition.projection)
+        ) {
+          config.ignoreOwnership = true;
+        }
+      }
+    }
+
     return provided.filter(Boolean).reduce((config, option) => {
       if (typeof option.order === "string") {
         switch (option.order.toLowerCase()) {
@@ -1869,7 +1885,7 @@ class Entity {
         }
       }
 
-      if (option.ignoreOwnership) {
+      if (option.ignoreOwnership !== undefined) {
         config.ignoreOwnership = option.ignoreOwnership;
         config._providedIgnoreOwnership = option.ignoreOwnership;
       }

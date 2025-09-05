@@ -6713,74 +6713,79 @@ describe("scanning an index", () => {
 });
 
 describe("index projection", () => {
-  const entity = new Entity(
-    {
-      model: {
-        version: "1",
-        service: "tests",
-        entity: "projection-include",
+  const createMainEntity = (version: number) =>
+    new Entity(
+      {
+        model: {
+          version: version.toString(),
+          service: "tests",
+          entity: "projection-include",
+        },
+        attributes: {
+          id: { type: "string", required: true },
+          include1: { type: "string" },
+          include2: { type: "boolean" },
+          include3: { type: "number" },
+          exclude1: { type: "string" },
+          exclude2: { type: "number" },
+          exclude3: { type: "boolean" },
+        },
+        indexes: {
+          primary: {
+            collection: "primaryCollection",
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          includeIndex: {
+            index: "gsi1pk-gsi1sk-index",
+            projection: ["include1", "include2", "include3"],
+            collection: "includeIndexCollection",
+            pk: {
+              field: "gsi1pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: ["include1"],
+            },
+          },
+          thirdIndex: {
+            index: "gsi3pk-gsi3sk-index",
+            pk: {
+              field: "gsi3pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "gsi3sk",
+              composite: [],
+            },
+          },
+          keysOnly: {
+            index: "gsi4pk-gsi4sk-index",
+            projection: "keys_only",
+            collection: "keysOnlyCollection",
+            pk: {
+              field: "gsi4pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "gsi4sk",
+              composite: [],
+            },
+          },
+        },
       },
-      attributes: {
-        id: { type: "string", required: true },
-        include1: { type: "string" },
-        include2: { type: "boolean" },
-        include3: { type: "number" },
-        exclude1: { type: "string" },
-        exclude2: { type: "number" },
-        exclude3: { type: "boolean" },
-      },
-      indexes: {
-        primary: {
-          pk: {
-            field: "pk",
-            composite: ["id"],
-          },
-          sk: {
-            field: "sk",
-            composite: [],
-          },
-        },
-        includeIndex: {
-          index: "gsi1pk-gsi1sk-index",
-          projection: ["include1", "include2", "include3"],
-          collection: "includeIndexCollection",
-          pk: {
-            field: "gsi1pk",
-            composite: ["id"],
-          },
-          sk: {
-            field: "gsi1sk",
-            composite: ["include1"],
-          },
-        },
-        thirdIndex: {
-          index: "gsi3pk-gsi3sk-index",
-          pk: {
-            field: "gsi3pk",
-            composite: ["id"],
-          },
-          sk: {
-            field: "gsi3sk",
-            composite: [],
-          },
-        },
-        keysOnly: {
-          index: "gsi4pk-gsi4sk-index",
-          projection: "keys_only",
-          collection: "keysOnlyCollection",
-          pk: {
-            field: "gsi4pk",
-            composite: ["id"],
-          },
-          sk: {
-            field: "gsi4sk",
-            composite: [],
-          },
-        },
-      },
-    },
-    { table: "electro_projectioninclude", client },
-  );
+      { table: "electro_projectioninclude", client },
+    );
+
+  const entity = createMainEntity(1);
+  const entityV2 = createMainEntity(2);
 
   const entity2 = new Entity(
     {
@@ -6800,6 +6805,7 @@ describe("index projection", () => {
       },
       indexes: {
         primary: {
+          collection: "primaryCollection",
           pk: {
             field: "pk",
             composite: ["id"],
@@ -6864,6 +6870,11 @@ describe("index projection", () => {
         item = data;
       });
 
+    // we intentionally create a v2 item to make sure that ElectroDB
+    // doesn't return this item when querying a collection with only v1
+    // and when querying v1 indexes with limited projected attributes
+    await entityV2.create(item).go();
+
     await entity2
       .create({
         id: item.id,
@@ -6880,6 +6891,9 @@ describe("index projection", () => {
       });
 
     await entity.put(item).go({ table: "electro_projectionincludewithoutedb" });
+    await entityV2
+      .put(item)
+      .go({ table: "electro_projectionincludewithoutedb" });
     await entity2
       .put(item2)
       .go({ table: "electro_projectionincludewithoutedb" });
@@ -6945,11 +6959,10 @@ describe("index projection", () => {
     expect(resp).to.deep.equal([item]);
   });
 
-  it("scans index with projected attributes without edb keys using ignoreOwnership", async () => {
+  it("scans index with projected attributes without edb keys", async () => {
     const { data: resp } = await entity.scan.includeIndex.go({
       pages: "all",
       table: "electro_projectionincludewithoutedb",
-      ignoreOwnership: true,
     });
 
     expect(resp).to.deep.equal([
@@ -6993,35 +7006,62 @@ describe("index projection", () => {
     ]);
   });
 
-  it("queries index with keys only", async () => {
-    const { data: resp } = await entity.query.keysOnly({ id: item.id }).go();
+  it("queries index with keys only and ignoreOwnership=false", async () => {
+    const { data: resp } = await entity.query
+      .keysOnly({ id: item.id })
+      .go({ ignoreOwnership: false });
     // we return an empty array because ElectroDB can't verify entity ownership
     // for a keys only index
     expect(resp).to.deep.equal([]);
+  });
+
+  it("scans index with keys only and ignoreOwnership=false", async () => {
+    const { data: resp } = await entity.scan.keysOnly.go({
+      ignoreOwnership: false,
+      pages: "all",
+    });
+    // we return an empty array because ElectroDB can't verify entity ownership
+    // for a keys only index
+    expect(resp).to.deep.equal([]);
+  });
+
+  it("queries index with keys only", async () => {
+    const { data: resp } = await entity.query
+      .keysOnly({ id: item.id })
+      .go({ pages: "all" });
+    expect(resp).to.deep.equal([{}]);
+
+    const { data: respWithKeys } = await entity.query
+      .keysOnly({ id: item.id })
+      .go({ data: "includeKeys", pages: "all" });
+    expect(respWithKeys).to.deep.equal([
+      {
+        gsi4pk: `$tests#id_${item.id}`,
+        gsi4sk: "$keysonlycollection#projection-include_1",
+        pk: `$tests#id_${item.id}`,
+        sk: "$primarycollection#projection-include_1",
+      },
+    ]);
   });
 
   it("scans index with keys only", async () => {
     const { data: resp } = await entity.scan.keysOnly.go({
       pages: "all",
     });
-    // we return an empty array because ElectroDB can't verify entity ownership
-    // for a keys only index
-    expect(resp).to.deep.equal([]);
-  });
-
-  it("queries index with keys only and ignoreOwnership", async () => {
-    const { data: resp } = await entity.query.keysOnly({ id: item.id }).go({
-      ignoreOwnership: true,
-    });
     expect(resp).to.deep.equal([{}]);
-  });
 
-  it("scans index with keys only and ignoreOwnership", async () => {
-    const { data: resp } = await entity.scan.keysOnly.go({
+    const { data: respWithKeys } = await entity.scan.keysOnly.go({
       pages: "all",
-      ignoreOwnership: true,
+      data: "includeKeys",
     });
-    expect(resp).to.deep.equal([{}]);
+    expect(respWithKeys).to.deep.equal([
+      {
+        gsi4pk: `$tests#id_${item.id}`,
+        gsi4sk: "$keysonlycollection#projection-include_1",
+        pk: `$tests#id_${item.id}`,
+        sk: "$primarycollection#projection-include_1",
+      },
+    ]);
   });
 
   it("queries index with keys only and hydrate", async () => {
@@ -7128,10 +7168,12 @@ describe("index projection", () => {
   // });
 
   it("queries collection with projected attributes and hydrate", async () => {
-    const { data } = await service.collections.includeIndexCollection({ id: item.id }).go({
-      pages: "all",
-      hydrate: true,
-    });
+    const { data } = await service.collections
+      .includeIndexCollection({ id: item.id })
+      .go({
+        pages: "all",
+        hydrate: true,
+      });
 
     expect(data).to.deep.equal({
       entity: [item],
@@ -7140,10 +7182,11 @@ describe("index projection", () => {
   });
 
   it("queries keys_only collection", async () => {
-    const { data } = await service.collections.keysOnlyCollection({ id: item.id }).go({
-      pages: "all",
-      ignoreOwnership: true,
-    });
+    const { data } = await service.collections
+      .keysOnlyCollection({ id: item.id })
+      .go({
+        pages: "all",
+      });
 
     expect(data).to.deep.equal({
       entity: [{}],
@@ -7178,16 +7221,111 @@ describe("index projection", () => {
   // });
 
   it("queries keys_only collection with hydrate", async () => {
-    const { data } = await service.collections.keysOnlyCollection({ id: item.id }).go({
-      pages: "all",
-      hydrate: true,
-    });
+    const { data } = await service.collections
+      .keysOnlyCollection({ id: item.id })
+      .go({
+        pages: "all",
+        hydrate: true,
+      });
 
     expect(data).to.deep.equal({
       entity: [item],
       entity2: [item2],
     });
   });
+
+  it("automatically sets ignoreOwnership=true for INCLUDE index", async () => {
+    const params = entity.scan.includeIndex.params({
+      table: "electro_projectionincludewithoutedb",
+      pages: "all",
+    });
+    expect(params.FilterExpression).to.not.include("__edb_e__");
+    expect(params.FilterExpression).to.not.include("__edb_v__");
+
+    const { data: resp } = await entity.scan.includeIndex.go({
+      table: "electro_projectionincludewithoutedb",
+      pages: "all",
+    });
+    expect(resp).to.deep.equal([
+      {
+        include1: item.include1,
+        include2: item.include2,
+        include3: item.include3,
+      },
+    ]);
+  });
+
+  it("automatically sets ignoreOwnership=true for KEYS_ONLY index", async () => {
+    const keysOnlyParams = entity.scan.keysOnly.params();
+    expect(keysOnlyParams.FilterExpression).to.not.include("__edb_e__");
+    expect(keysOnlyParams.FilterExpression).to.not.include("__edb_v__");
+
+    const { data: keysOnlyResp } = await entity.scan.keysOnly.go({
+      pages: "all",
+    });
+    expect(keysOnlyResp).to.deep.equal([{}]);
+  });
+
+  it("does not automatically set ignoreOwnership=true for ALL projection index", async () => {
+    const allProjectionParams = entity.scan.thirdIndex.params();
+    expect(allProjectionParams.FilterExpression).to.include("__edb_e__");
+    expect(allProjectionParams.FilterExpression).to.include("__edb_v__");
+
+    const { data: allProjectionResp } = await entity.scan.thirdIndex.go({
+      pages: "all",
+    });
+    expect(allProjectionResp).to.deep.equal([item]);
+  });
+
+  it("automatically sets ignoreOwnership=true for a collection with INCLUDE index", async () => {
+    const collectionParams = service.collections
+      .includeIndexCollection({ id: item.id })
+      .params();
+    expect(collectionParams.FilterExpression).to.be.undefined;
+    expect(collectionParams.FilterExpression).to.be.undefined;
+
+    const { data: collectionResp } = await service.collections
+      .includeIndexCollection({ id: item.id })
+      .go({
+        pages: "all",
+      });
+    expect(collectionResp).to.deep.equal({
+      entity: [
+        {
+          include1: item.include1,
+          include2: item.include2,
+          include3: item.include3,
+        },
+      ],
+      entity2: [
+        {
+          include1: item2.include1,
+          include2: item2.include2,
+          include3: item2.include3,
+        },
+      ],
+    });
+  });
+
+  it("does not automatically set ignoreOwnership=true for a collection with ALL projection index", async () => {
+    const allProjectionCollectionParams = service.collections
+      .primaryCollection({ id: item.id })
+      .params();
+    expect(allProjectionCollectionParams.FilterExpression).to.include(
+      "__edb_e__",
+    );
+    expect(allProjectionCollectionParams.FilterExpression).to.include(
+      "__edb_v__",
+    );
+
+    const { data: allProjectionCollectionResp } = await service.collections
+      .primaryCollection({ id: item.id })
+      .go({
+        pages: "all",
+      });
+    expect(allProjectionCollectionResp).to.deep.equal({
+      entity: [item],
+      entity2: [item2],
+    });
+  });
 });
-
-
