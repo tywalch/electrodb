@@ -161,7 +161,7 @@ The `INCLUDE` projection type allows you to specify exactly which attributes are
 
 ## Using the Project Property
 
-When defining an index with an `INCLUDE` projection, you can use the `project` property in your ElectroDB entity definition to specify which attributes should be included in the index. This property maps to the `NonKeyAttributes` in the DynamoDB table definition.
+When defining an index with an `INCLUDE` projection, you can use the `projection` property in your ElectroDB entity definition to specify which attributes should be included in the index. This property maps to the `NonKeyAttributes` in the DynamoDB table definition.
 
 ```typescript
 indexes: {
@@ -182,7 +182,7 @@ indexes: {
 
 ## Querying INCLUDE Projections
 
-When querying an index with an `INCLUDE` projection, you can only access the attributes that were specified in the `project` array. ElectroDB will enforce this at the type level.
+When querying an index with an `INCLUDE` projection, you can only access the attributes that were specified in the `projection` array. ElectroDB will enforce this at the type level.
 
 ### Basic Querying
 
@@ -203,13 +203,13 @@ You can only filter on attributes that are included in the projection:
 // ✅ This works - filtering on projected attributes
 const { data } = await tasks.query
   .statusIndex({ status: "open" })
-  .where((attr, op) => op.eq(attr.name, "Important Task"))
+  .where(({ name }, { eq }) => eq(name, "Important Task"))
   .go();
 
 const { data } = await tasks.query
   .statusIndex({ status: "open" })
 // ❌ This would not work - filtering on non-projected attributes
-  .where((attr, op) => op.eq(attr.description, "Some description"))
+  .where(({ description }, { eq }) => eq(description, "Some description"))
   .go();
 ```
 
@@ -251,13 +251,13 @@ const { data } = await tasks.query
 4. **Aggregation Optimization**: Smaller projected indexes are ideal for aggregation queries, reducing the number of requests needed and lowering costs by not scanning irrelevant attributes
 5. **Type Safety**: ElectroDB enforces which attributes are available at the type level
 
-## ⚠️ Critical Considerations
+### Data Integrity with INCLUDE Projections
 
-### Entity Identifier Requirements
+ElectroDB automatically handles data integrity for `INCLUDE` projections through a two-tier validation system:
 
-When using `INCLUDE` projections, you **must** include ElectroDB's internal entity identifier attributes (`__edb_e__` and `__edb_v__`) in your projection. These attributes are essential for ElectroDB's multi-entity guardrail checks.
+**When Entity Identifiers Are Available**
+If your projection includes ElectroDB's internal attributes (`__edb_e__` and `__edb_v__`), ElectroDB uses these for precise entity and version validation:
 
-**Option 1: Include Entity Identifiers (Recommended)**
 ```typescript
 // In your DynamoDB table definition
 "Projection": {
@@ -266,18 +266,18 @@ When using `INCLUDE` projections, you **must** include ElectroDB's internal enti
 }
 ```
 
-**Option 2: Disable Ownership Checks (Use with Caution)**
+**When Entity Identifiers Are Not Available**
+If your projection doesn't include the internal attributes, ElectroDB automatically falls back to validating data integrity using the partition key and sort key structure, which embed the entity name and version information.
+
 ```typescript
-const { data } = await tasks.query
-  .statusIndex({ status: "open" })
-  .go({ ignoreOwnership: true });
+// ElectroDB automatically handles this scenario
+"Projection": {
+  "ProjectionType": "INCLUDE",
+  "NonKeyAttributes": ["name", "status", "createdAt"]
+}
 ```
 
-⚠️ **Warning**: Using `ignoreOwnership: true` disables ElectroDB's entity validation. This means:
-- ElectroDB cannot verify that retrieved items belong to the correct entity
-- Version compatibility checks are disabled
-- You may receive items from different entities or incompatible versions
-- This can lead to unexpected behavior and data integrity issues
+Both approaches ensure data integrity - ElectroDB chooses the appropriate validation method based on what attributes are available in your projection.
 
 ### Other Considerations
 
