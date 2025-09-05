@@ -133,18 +133,6 @@ const ErrorCodes = {
     name: "IncompatibleKeyCasing",
     sym: ErrorCode,
   },
-  InvalidListenerProvided: {
-    code: 1020,
-    section: "invalid-listener-provided",
-    name: "InvalidListenerProvided",
-    sym: ErrorCode,
-  },
-  InvalidLoggerProvided: {
-    code: 1020,
-    section: "invalid-listener-provided",
-    name: "InvalidListenerProvided",
-    sym: ErrorCode,
-  },
   InvalidClientProvided: {
     code: 1021,
     section: "invalid-client-provided",
@@ -155,6 +143,24 @@ const ErrorCodes = {
     code: 1022,
     section: "inconsistent-index-definition",
     name: "Inconsistent Index Definition",
+    sym: ErrorCode,
+  },
+  InvalidListenerProvided: {
+    code: 1023,
+    section: "invalid-listener-provided",
+    name: "InvalidListenerProvided",
+    sym: ErrorCode,
+  },
+  InvalidLoggerProvided: {
+    code: 1024,
+    section: "invalid-listener-provided",
+    name: "InvalidListenerProvided",
+    sym: ErrorCode,
+  },
+  InvalidProjectionDefinition: {
+    code: 1025,
+    section: "invalid-projection-definition",
+    name: "InvalidProjectionDefinition",
     sym: ErrorCode,
   },
   MissingAttribute: {
@@ -292,6 +298,7 @@ class ElectroError extends Error {
     if (code && code.sym === ErrorCode) {
       detail = code;
     }
+    this.cause = cause;
     this._message = message;
     // this.message = `${message} - For more detail on this error reference: ${getHelpLink(detail.section)}`;
     this.message = makeMessage(message, detail.section);
