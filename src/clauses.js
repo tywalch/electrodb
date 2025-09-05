@@ -1267,6 +1267,7 @@ let clauses = {
             operation: options._isTransaction
               ? MethodTypes.transactWrite
               : undefined,
+            state,
           },
         });
 
