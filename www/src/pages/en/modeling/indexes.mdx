@@ -393,7 +393,7 @@ const schema = {
 
 DynamoDB is a case-sensitive data store, and therefore it is common to convert the casing of keys to uppercase or lowercase prior to saving, updating, or querying data to your table. ElectroDB, by default, will lowercase all keys when preparing query parameters. For those who are using ElectroDB with an existing dataset, have preferences on upper or lowercase, or wish to not convert case at all, this can be configured on an index key field basis.
 
-In the example below, we are configuring the casing ElectroDB will use individually for the Partition Key and Sort Key on the GSI "gsi1". For the index's PK, mapped to `gsi1pk`, we ElectroDB will convert this key to uppercase prior to its use in queries. For the index's SK, mapped to `gsi1pk`, we ElectroDB will not convert the case of this key prior to its use in queries.
+In the example below, we are configuring the casing ElectroDB will use individually for the Partition Key and Sort Key on the GSI "gsi1". For the index's PK, mapped to `gsi1pk`, we ElectroDB will convert this key to uppercase prior to its use in queries. For the index's SK, mapped to `gsi1sk`, we ElectroDB will not convert the case of this key prior to its use in queries.
 
 ```typescript
 {
