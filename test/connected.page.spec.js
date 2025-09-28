@@ -6,11 +6,14 @@ const c = require("../src/client");
 const { cursorFormatter } = require("../src/util");
 const { Entity, Service } = require("../");
 
-const endpoint = process.env.LOCAL_DYNAMO_ENDPOINT;
-const region = "us-east-1";
-const isLocal = endpoint !== undefined;
-
-AWS.config.update({ region, endpoint });
+AWS.config.update({ 
+  region: "us-east-1",
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
+ });
 
 const client = new AWS.DynamoDB.DocumentClient();
 const table = "electro";
@@ -279,7 +282,7 @@ Tasks.sentences =
   );
 
 describe("Query Pagination", () => {
-  const total = isLocal ? 500 : 100;
+  const total = 500;
 
   const tasks = new Tasks(TasksModel, { client, table });
   const tasks2 = new Tasks(makeTasksModel(), { client, table });
