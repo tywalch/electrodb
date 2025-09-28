@@ -595,3 +595,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.5]
 ### Fixed
 - [Issue #510](https://github.com/tywalch/electrodb/issues/510); Fixes the issue where ElectroDB did not create the ProjectionExpression DynamoDB parameter when scanning a table and specifying attributes to return.
+
+## [3.4.6]
+### Fixed
+- [Issue #343]((https://github.com/tywalch/electrodb/issues/343)); Fixed issue where ElectroDB would attempt to double set an attribute's value on `upsert` if an index key used the attribute's name as it's field name. This would cause the `upsert` to fail because DyanmoDB prevents duplicate set operations to the same field.
