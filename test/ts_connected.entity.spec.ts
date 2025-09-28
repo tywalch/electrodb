@@ -26,8 +26,12 @@ type ConversionTest = {
 const conversionTests: ConversionTest[] = require("./conversions");
 
 const client = new DocumentClient({
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
   region: "us-east-1",
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 });
 
 const table = "electro";

@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { removeFixings, removeJSONPath } = require("../src/util");
+const { removeFixings } = require("../src/util");
 
 describe("removeFixings", () => {
   it("should remove only a prefix", () => {
