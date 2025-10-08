@@ -599,3 +599,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.6]
 ### Fixed
 - [Issue #343]((https://github.com/tywalch/electrodb/issues/343)); Fixed issue where ElectroDB would attempt to double set an attribute's value on `upsert` if an index key used the attribute's name as it's field name. This would cause the `upsert` to fail because DyanmoDB prevents duplicate set operations to the same field.
+
+## [3.4.7]
+### Fixed
+- [Issue #530]((https://github.com/tywalch/electrodb/issues/530)); Fixed issue where ElectroDB would attempt to set a table index field's value on `upsert` if an index key used an attribute's name as it's field name. This would cause the `upsert` to fail because DyanmoDB prevents set operations on table index fields.
