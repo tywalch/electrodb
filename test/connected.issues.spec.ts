@@ -1,13 +1,23 @@
-// @ts-nocheck
+// @ts-expect-error
 process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = 1;
 import DynamoDB from "aws-sdk/clients/dynamodb";
 import { v4 as uuid } from "uuid";
 import { expect } from "chai";
 import { Entity } from "../";
+import { putTable } from "./table";
 const table = "electro";
 const client = new DynamoDB.DocumentClient({
   region: "us-east-1",
   endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
+});
+
+const dynamodb = new DynamoDB({
+  region: "us-east-1",
+  endpoint: "http://localhost:8000",
   credentials: {
     accessKeyId: "test",
     secretAccessKey: "test",
@@ -96,18 +106,18 @@ describe("Issue #343", () => {
           "#gsi1sk": "gsi1sk",
       },
       "ExpressionAttributeValues": {
-          ":__edb_e___u0": inventory.model.entity,
-          ":__edb_v___u0": inventory.model.version,
+          ":__edb_e___u0": inventory.schema.model.entity,
+          ":__edb_v___u0": inventory.schema.model.version,
           ":accountId_u0": accountId,
           ":transactionId_u0": transactionId,
           ":date_u0": date,
           ":value_u0": value,
-          ":gsi1pk_u0": `$${inventory.model.service}#transactionid_${transactionId}`,
-          ":gsi1sk_u0": `$${inventory.model.entity}_${inventory.model.version}`
+          ":gsi1pk_u0": `$${inventory.schema.model.service}#transactionid_${transactionId}`,
+          ":gsi1sk_u0": `$${inventory.schema.model.entity}_${inventory.schema.model.version}`
       },
       "Key": {
-          "pk": `$${inventory.model.service}#accountid_${accountId}`,
-          "sk": `$${inventory.model.entity}_${inventory.model.version}#date_${date}#transactionid_${transactionId}`
+          "pk": `$${inventory.schema.model.service}#accountid_${accountId}`,
+          "sk": `$${inventory.schema.model.entity}_${inventory.schema.model.version}#date_${date}#transactionid_${transactionId}`
       }   
     });
     
@@ -135,16 +145,16 @@ describe("Issue #343", () => {
         "#value": "value",
       },
       "ExpressionAttributeValues": {
-        ":__edb_e___u0": inventory.model.entity,
-        ":__edb_v___u0": inventory.model.version,
+        ":__edb_e___u0": inventory.schema.model.entity,
+        ":__edb_v___u0": inventory.schema.model.version,
         ":accountId_u0": accountId,
         ":transactionId_u0": transactionId,
         ":date_u0": date,
         ":value_u0": value,
       },
       "Key": {
-        "pk": `$${inventory.model.service}#accountid_${accountId}`,
-        "sk": `$${inventory.model.entity}_${inventory.model.version}#date_${date}#transactionid_${transactionId}`
+        "pk": `$${inventory.schema.model.service}#accountid_${accountId}`,
+        "sk": `$${inventory.schema.model.entity}_${inventory.schema.model.version}#date_${date}#transactionid_${transactionId}`
       }
     });
   });
@@ -178,8 +188,8 @@ describe("Issue #343", () => {
         "#sk": "sk",
       },
       "ExpressionAttributeValues": {
-        ":__edb_e___u0": inventory.model.entity,
-        ":__edb_v___u0": inventory.model.version,
+        ":__edb_e___u0": inventory.schema.model.entity,
+        ":__edb_v___u0": inventory.schema.model.version,
         ":accountId_u0": accountId,
         ":transactionId_u0": transactionId,
         ":date_u0": date,
@@ -187,9 +197,100 @@ describe("Issue #343", () => {
       },
       "ConditionExpression": "attribute_exists(#pk) AND attribute_exists(#sk)",
       "Key": {
-        "pk": `$${inventory.model.service}#accountid_${accountId}`,
-        "sk": `$${inventory.model.entity}_${inventory.model.version}#date_${date}#transactionid_${transactionId}`
+        "pk": `$${inventory.schema.model.service}#accountid_${accountId}`,
+        "sk": `$${inventory.schema.model.entity}_${inventory.schema.model.version}#date_${date}#transactionid_${transactionId}`
       }
     });
   });
 });
+
+describe("Issue #530", () => {
+  const table = `issue_530_${uuid()}`
+
+  before(async () => {
+    await putTable(dynamodb, {
+      "TableName": table,
+      "KeySchema": [
+        {
+          "AttributeName": "ip_addr",
+          "KeyType": "HASH"
+        },
+      ],
+      "AttributeDefinitions": [
+        {
+          "AttributeName": "ip_addr",
+          "AttributeType": "S"
+        },
+      ],
+      "BillingMode": "PAY_PER_REQUEST"
+    });
+  });
+
+  it("should upsert item without apply set to attribute key name", async () => {
+    const Log = new Entity(
+      {
+        model: {
+          entity: "log_record",
+          version: "1",
+          service: "log",
+        },
+        attributes: {
+          ip_addr: {
+            type: "string",
+            required: true,
+            readOnly: true,
+          },
+          expires_ttl: {
+            type: "number",
+          },
+          app: {
+            type: "string",
+          },
+          click_id: {
+            type: "string",
+          },
+          timestamp: {
+            type: "string",
+          },
+        },
+        indexes: {
+          byIpAddr: {
+            pk: {
+              field: "ip_addr",
+              composite: ["ip_addr"],
+            },
+          },
+        },
+      },
+      { table, client }
+    );
+
+    const record = {
+      ip_addr: "127.0.0.1",
+      app: "something",
+    }
+
+    const params = Log.upsert(record).params({});
+    expect(params).to.deep.equal({
+      TableName: table,
+      UpdateExpression: 'SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #app = :app_u0',
+      ExpressionAttributeNames: {
+        '#__edb_e__': '__edb_e__',
+        '#__edb_v__': '__edb_v__',
+        '#app': 'app'
+      },
+      ExpressionAttributeValues: {
+        ':__edb_e___u0': 'log_record',
+        ':__edb_v___u0': '1',
+        ':app_u0': 'something'
+      },
+      Key: {
+        ip_addr: '127.0.0.1'
+      },
+    });
+
+    await Log.upsert(record).go()
+    const result = await Log.get({ ip_addr: record.ip_addr }).go();
+    expect(result.data).to.deep.equal(record);
+  })
+})
