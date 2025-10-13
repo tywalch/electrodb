@@ -205,28 +205,8 @@ describe("Issue #343", () => {
 });
 
 describe("Issue #530", () => {
-  const table = `issue_530_${uuid()}`
-
-  before(async () => {
-    await putTable(dynamodb, {
-      "TableName": table,
-      "KeySchema": [
-        {
-          "AttributeName": "ip_addr",
-          "KeyType": "HASH"
-        },
-      ],
-      "AttributeDefinitions": [
-        {
-          "AttributeName": "ip_addr",
-          "AttributeType": "S"
-        },
-      ],
-      "BillingMode": "PAY_PER_REQUEST"
-    });
-  });
-
   it("should upsert item without apply set to attribute key name", async () => {
+    const table = `issue530`;
     const Log = new Entity(
       {
         model: {
@@ -268,7 +248,7 @@ describe("Issue #530", () => {
     const record = {
       ip_addr: "127.0.0.1",
       app: "something",
-    }
+    };
 
     const params = Log.upsert(record).params({});
     expect(params).to.deep.equal({
@@ -289,7 +269,7 @@ describe("Issue #530", () => {
       },
     });
 
-    await Log.upsert(record).go()
+    await Log.upsert(record).where((attr, op) => op.notExists(attr.ip_addr)).go()
     const result = await Log.get({ ip_addr: record.ip_addr }).go();
     expect(result.data).to.deep.equal(record);
   })
