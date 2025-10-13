@@ -727,4 +727,306 @@ describe("Query Options", () => {
     //     }
     // }).timeout(10000);
   });
+  describe("defaults", () => {
+    it("can be set at the entity level", () => {
+      const schema = {
+        model: {
+          entity: "test",
+          service: "tests",
+          version: "1",
+        },
+        attributes: {
+          id: { type: "string" },
+        },
+        indexes: {
+          primary: {
+            pk: { field: "pk", facets: ["id"] },
+          },
+        },
+      };
+
+      const defaultQueryOptions = { ignoreOwnership: true };
+      const entity = new Entity(schema, { defaultQueryOptions });
+      
+      expect(entity.defaultQueryOptions).to.deep.equal(defaultQueryOptions);
+    });
+
+    it("can be applied to all queries", () => {
+      const schema = {
+        model: {
+          entity: "defaultQueryOptions",
+          service: "tests",
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          name: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              facets: ["id"],
+            },
+          },
+        },
+      };
+
+      const defaultQueryOptions = {
+        ignoreOwnership: true,
+        consistent: true,
+        limit: 100,
+      };
+
+      const entity = new Entity(schema, {
+        table: "test-table",
+        defaultQueryOptions,
+      });
+
+      // Test get operation
+      const getParams = entity.get({ id: "123" }).params();
+      expect(getParams.ConsistentRead).to.equal(true);
+
+      // Test scan operation
+      const scanParams = entity.scan.params();
+      expect(scanParams.ConsistentRead).to.equal(true);
+      expect(scanParams.Limit).to.equal(100);
+
+      // Test query operation
+      const queryParams = entity.query.primary({ id: "123" }).params();
+      expect(queryParams.ConsistentRead).to.equal(true);
+      expect(queryParams.Limit).to.equal(100);
+    });
+
+    it("can be overridden", () => {
+      const schema = {
+        model: {
+          entity: "overrideQueryOptions",
+          service: "tests",
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          name: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              facets: ["id"],
+            },
+          },
+        },
+      };
+
+      const defaultQueryOptions = {
+        ignoreOwnership: true,
+        consistent: true,
+        limit: 100,
+      };
+
+      const entity = new Entity(schema, {
+        table: "test-table",
+        defaultQueryOptions,
+      });
+
+      // Override default options
+      const params = entity.scan.params({
+        consistent: false,
+        limit: 50,
+      });
+
+      expect(params.ConsistentRead).to.be.undefined;
+      expect(params.Limit).to.equal(50);
+    });
+
+    it("allow ignoreOwnership to be applied to all queries", async () => {
+      const schema = {
+        model: {
+          entity: "ignoreOwnershipDefault",
+          service: "tests",
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          name: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              facets: ["id"],
+            },
+          },
+        },
+      };
+
+      const defaultQueryOptions = {
+        ignoreOwnership: true,
+      };
+
+      const entity = new Entity(schema, {
+        table: "test-table",
+        defaultQueryOptions,
+      });
+
+      // First get the actual pk value that would be generated
+      const params = entity.get({ id: "123" }).params();
+      const expectedPk = params.Key.pk;
+
+      // Create a mock client to capture the request
+      const mockClient = {
+        get: (params) => ({
+          promise: () => Promise.resolve({
+            Item: {
+              pk: expectedPk,
+              id: "123",
+              name: "Test",
+              // No entity identifiers - this would normally cause item to be filtered out
+            },
+          }),
+        }),
+        put: () => ({ promise: () => Promise.resolve() }),
+        delete: () => ({ promise: () => Promise.resolve() }),
+        update: () => ({ promise: () => Promise.resolve() }),
+        batchWrite: () => ({ promise: () => Promise.resolve() }),
+        batchGet: () => ({ promise: () => Promise.resolve() }),
+        scan: () => ({ promise: () => Promise.resolve() }),
+        query: () => ({ promise: () => Promise.resolve() }),
+        transactWrite: () => ({ promise: () => Promise.resolve() }),
+        transactGet: () => ({ promise: () => Promise.resolve() }),
+        createSet: () => ({}),
+      };
+
+      const entityWithMockClient = new Entity(schema, {
+        table: "test-table",
+        client: mockClient,
+        defaultQueryOptions,
+      });
+
+      // Execute query and verify ignoreOwnership is applied
+      const result = await entityWithMockClient
+        .get({ id: "123" })
+        .go();
+      
+      // If ignoreOwnership is working, we should get the item back
+      expect(result).to.not.be.null;
+      expect(result.data).to.exist;
+      expect(result.data.id).to.equal("123");
+      expect(result.data.name).to.equal("Test");
+    });
+
+    it("can be empty", () => {
+      const schema = {
+        model: {
+          entity: "emptyDefaultOptions",
+          service: "tests",
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              facets: ["id"],
+            },
+          },
+        },
+      };
+
+      const entity = new Entity(schema, {
+        table: "test-table",
+        defaultQueryOptions: {},
+      });
+
+      const params = entity.get({ id: "123" }).params();
+      expect(params.ConsistentRead).to.be.undefined;
+    });
+
+    it("work with all query types", () => {
+      const schema = {
+        model: {
+          entity: "allQueryTypes",
+          service: "tests",
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          sk: {
+            type: "string",
+          },
+          gsi1pk: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              facets: ["id"],
+            },
+            sk: {
+              field: "sk",
+              facets: ["sk"],
+            },
+          },
+          gsi1: {
+            index: "gsi1",
+            pk: {
+              field: "gsi1pk",
+              facets: ["gsi1pk"],
+            },
+          },
+        },
+      };
+
+      const defaultQueryOptions = {
+        limit: 50,
+        order: "desc",
+      };
+
+      const entity = new Entity(schema, {
+        table: "test-table",
+        defaultQueryOptions,
+      });
+
+      // Test query on primary index
+      const primaryParams = entity.query.primary({ id: "123" }).params();
+      expect(primaryParams.Limit).to.equal(50);
+      expect(primaryParams.ScanIndexForward).to.equal(false);
+
+      // Test query on GSI
+      const gsiParams = entity.query.gsi1({ gsi1pk: "test" }).params();
+      expect(gsiParams.Limit).to.equal(50);
+      expect(gsiParams.ScanIndexForward).to.equal(false);
+
+      // Test find operation
+      const findParams = entity.find({ id: "123" }).params();
+      expect(findParams.Limit).to.equal(50);
+      expect(findParams.ScanIndexForward).to.equal(false);
+
+      // Test match operation
+      const matchParams = entity.match({ id: "123" }).params();
+      expect(matchParams.Limit).to.equal(50);
+      expect(matchParams.ScanIndexForward).to.equal(false);
+    });
+  });
 });

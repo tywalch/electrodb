@@ -62,6 +62,7 @@ class Entity {
     /** start beta/v1 condition **/
     this.config.table = config.table || model.table;
     /** end beta/v1 condition **/
+    this.defaultQueryOptions = config.defaultQueryOptions || {};
     this._filterBuilder = new FilterFactory(
       this.model.schema.attributes,
       FilterOperations,
@@ -1649,249 +1650,255 @@ class Entity {
       _includeOnResponseItem: {},
     };
 
-    return provided.filter(Boolean).reduce((config, option) => {
-      if (typeof option.order === "string") {
-        switch (option.order.toLowerCase()) {
-          case "asc":
-            config.params[ResultOrderParam] = ResultOrderOption.asc;
-            break;
-          case "desc":
-            config.params[ResultOrderParam] = ResultOrderOption.desc;
-            break;
-          default:
+    return [this.defaultQueryOptions, ...provided]
+      .filter(Boolean)
+      .reduce((config, option) => {
+        if (typeof option.order === "string") {
+          switch (option.order.toLowerCase()) {
+            case "asc":
+              config.params[ResultOrderParam] = ResultOrderOption.asc;
+              break;
+            case "desc":
+              config.params[ResultOrderParam] = ResultOrderOption.desc;
+              break;
+            default:
+              throw new e.ElectroError(
+                e.ErrorCodes.InvalidOptions,
+                `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc, received: "${option.order}"`,
+              );
+          }
+        }
+
+        if (typeof option.compare === "string") {
+          const type = ComparisonTypes[option.compare.toLowerCase()];
+          if (type) {
+            config.compare = type;
+            if (type === ComparisonTypes.v2 && option.complete === undefined) {
+              config.complete = true;
+            }
+          } else {
             throw new e.ElectroError(
               e.ErrorCodes.InvalidOptions,
-              `Invalid value for query option "order" provided. Valid options include 'asc' and 'desc, received: "${option.order}"`,
+              `Invalid value for query option "compare" provided. Valid options include ${u.commaSeparatedString(
+                Object.keys(ComparisonTypes),
+              )}, received: "${option.compare}"`,
             );
-        }
-      }
-
-      if (typeof option.compare === "string") {
-        const type = ComparisonTypes[option.compare.toLowerCase()];
-        if (type) {
-          config.compare = type;
-          if (type === ComparisonTypes.v2 && option.complete === undefined) {
-            config.complete = true;
           }
-        } else {
-          throw new e.ElectroError(
-            e.ErrorCodes.InvalidOptions,
-            `Invalid value for query option "compare" provided. Valid options include ${u.commaSeparatedString(
-              Object.keys(ComparisonTypes),
-            )}, received: "${option.compare}"`,
-          );
         }
-      }
 
-      if (typeof option.response === "string" && option.response.length) {
-        const format = ReturnValues[option.response];
-        if (format === undefined) {
-          throw new e.ElectroError(
-            e.ErrorCodes.InvalidOptions,
-            `Invalid value for query option "format" provided: "${
-              option.format
-            }". Allowed values include ${u.commaSeparatedString(
-              Object.keys(ReturnValues),
-            )}.`,
+        if (typeof option.response === "string" && option.response.length) {
+          const format = ReturnValues[option.response];
+          if (format === undefined) {
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidOptions,
+              `Invalid value for query option "format" provided: "${
+                option.format
+              }". Allowed values include ${u.commaSeparatedString(
+                Object.keys(ReturnValues),
+              )}.`,
+            );
+          } else if (format !== ReturnValues.default) {
+            config.response = format;
+            if (context.operation === MethodTypes.transactWrite) {
+              config.params.ReturnValuesOnConditionCheckFailure =
+                FormatToReturnValues[format];
+            } else {
+              config.params.ReturnValues = FormatToReturnValues[format];
+            }
+          }
+        }
+
+        if (option.formatCursor) {
+          const isValid = ["serialize", "deserialize"].every(
+            (method) =>
+              method in option.formatCursor &&
+              validations.isFunction(option.formatCursor[method]),
           );
-        } else if (format !== ReturnValues.default) {
-          config.response = format;
-          if (context.operation === MethodTypes.transactWrite) {
-            config.params.ReturnValuesOnConditionCheckFailure =
-              FormatToReturnValues[format];
+          if (isValid) {
+            config.formatCursor = option.formatCursor;
           } else {
-            config.params.ReturnValues = FormatToReturnValues[format];
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidOptions,
+              `Invalid value for query option "formatCursor" provided. Formatter interface must have serialize and deserialize functions`,
+            );
           }
         }
-      }
 
-      if (option.formatCursor) {
-        const isValid = ["serialize", "deserialize"].every(
-          (method) =>
-            method in option.formatCursor &&
-            validations.isFunction(option.formatCursor[method]),
-        );
-        if (isValid) {
-          config.formatCursor = option.formatCursor;
-        } else {
-          throw new e.ElectroError(
-            e.ErrorCodes.InvalidOptions,
-            `Invalid value for query option "formatCursor" provided. Formatter interface must have serialize and deserialize functions`,
-          );
+        if (option.terminalOperation in TerminalOperation) {
+          config.terminalOperation = TerminalOperation[option.terminalOperation];
         }
-      }
 
-      if (option.terminalOperation in TerminalOperation) {
-        config.terminalOperation = TerminalOperation[option.terminalOperation];
-      }
-
-      if (Array.isArray(option.attributes)) {
-        config.attributes = config.attributes.concat(option.attributes);
-      }
-
-      if (option.preserveBatchOrder === true) {
-        config.preserveBatchOrder = true;
-      }
-
-      if (option.pages !== undefined) {
-        config.pages = option.pages;
-      }
-
-      if (option._isCollectionQuery === true) {
-        config._isCollectionQuery = true;
-      }
-
-      if (option.includeKeys === true) {
-        config.includeKeys = true;
-      }
-
-      if (option.originalErr === true) {
-        config.originalErr = true;
-      }
-
-      if (option.raw === true) {
-        config.raw = true;
-      }
-
-      if (option._isPagination) {
-        config._isPagination = true;
-      }
-
-      if (option.lastEvaluatedKeyRaw === true) {
-        config.lastEvaluatedKeyRaw = true;
-        config.pager = Pager.raw;
-        config.unprocessed = UnprocessedTypes.raw;
-      }
-
-      if (option.cursor) {
-        config.cursor = option.cursor;
-      }
-
-      if (option.data) {
-        if (!DataOptions[option.data]) {
-          throw new e.ElectroError(
-            e.ErrorCodes.InvalidOptions,
-            `Query option 'data' must be one of ${u.commaSeparatedString(
-              Object.keys(DataOptions),
-            )}.`,
-          );
+        if (Array.isArray(option.attributes)) {
+          config.attributes = config.attributes.concat(option.attributes);
         }
-        config.data = option.data;
-        switch (option.data) {
-          case DataOptions.raw:
-            config.raw = true;
-            break;
-          case DataOptions.includeKeys:
-            config.includeKeys = true;
-            break;
+
+        if (option.preserveBatchOrder === true) {
+          config.preserveBatchOrder = true;
         }
-      }
 
-      if (option.count !== undefined) {
-        if (typeof option.count !== "number" || option.count < 1) {
-          throw new e.ElectroError(
-            e.ErrorCodes.InvalidOptions,
-            `Query option 'count' must be of type 'number' and greater than zero.`,
-          );
+        if (option.pages !== undefined) {
+          config.pages = option.pages;
         }
-        config.count = option.count;
-      }
 
-      if (option.consistent === true) {
-        config.consistent = true;
-        config.params.ConsistentRead = true;
-      }
-
-      if (option.limit !== undefined) {
-        config.limit = option.limit;
-        config.params.Limit = option.limit;
-      }
-
-      if (validations.isStringHasLength(option.table)) {
-        config.params.TableName = option.table;
-        config.table = option.table;
-      }
-
-      if (option.concurrent !== undefined) {
-        config.concurrent = option.concurrent;
-      }
-
-      if (validations.isFunction(option.parse)) {
-        config.parse = option.parse;
-      }
-
-      if (typeof option.pager === "string") {
-        if (typeof Pager[option.pager] === "string") {
-          config.pager = option.pager;
-        } else {
-          throw new e.ElectroError(
-            e.ErrorCodes.InvalidOptions,
-            `Invalid value for option "pager" provided: "${
-              option.pager
-            }". Allowed values include ${u.commaSeparatedString(
-              Object.keys(Pager),
-            )}.`,
-          );
+        if (option._isCollectionQuery === true) {
+          config._isCollectionQuery = true;
         }
-      }
 
-      if (typeof option.unprocessed === "string") {
-        if (typeof UnprocessedTypes[option.unprocessed] === "string") {
-          config.unproessed = UnprocessedTypes[option.unprocessed];
-        } else {
-          throw new e.ElectroError(
-            e.ErrorCodes.InvalidOptions,
-            `Invalid value for option "unprocessed" provided: "${
-              option.unprocessed
-            }". Allowed values include ${u.commaSeparatedString(
-              Object.keys(UnprocessedTypes),
-            )}.`,
-          );
+        if (option.includeKeys === true) {
+          config.includeKeys = true;
         }
-      }
 
-      if (option.ignoreOwnership) {
-        config.ignoreOwnership = option.ignoreOwnership;
-        config._providedIgnoreOwnership = option.ignoreOwnership;
-      }
-
-      if (option.listeners) {
-        if (Array.isArray(option.listeners)) {
-          config.listeners = config.listeners.concat(option.listeners);
+        if (option.originalErr === true) {
+          config.originalErr = true;
         }
-      }
 
-      if (option.logger) {
-        if (validations.isFunction(option.logger)) {
-          config.listeners.push(option.logger);
-        } else {
-          throw new e.ElectroError(
-            e.ErrorCodes.InvalidLoggerProvided,
-            `Loggers must be of type function`,
-          );
+        if (option.raw === true) {
+          config.raw = true;
         }
-      }
 
-      if (option.hydrate) {
-        config.hydrate = true;
-        config.ignoreOwnership = true;
-      }
+        if (option._isPagination) {
+          config._isPagination = true;
+        }
 
-      if (validations.isFunction(option.hydrator)) {
-        config.hydrator = option.hydrator;
-      }
+        if (option.lastEvaluatedKeyRaw === true) {
+          config.lastEvaluatedKeyRaw = true;
+          config.pager = Pager.raw;
+          config.unprocessed = UnprocessedTypes.raw;
+        }
 
-      if (option._includeOnResponseItem) {
-        config._includeOnResponseItem = {
-          ...config._includeOnResponseItem,
-          ...option._includeOnResponseItem,
-        };
-      }
+        if (option.cursor) {
+          config.cursor = option.cursor;
+        }
 
-      config.page = Object.assign({}, config.page, option.page);
-      config.params = Object.assign({}, config.params, option.params);
-      return config;
-    }, config);
+        if (option.data) {
+          if (!DataOptions[option.data]) {
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidOptions,
+              `Query option 'data' must be one of ${u.commaSeparatedString(
+                Object.keys(DataOptions),
+              )}.`,
+            );
+          }
+          config.data = option.data;
+          switch (option.data) {
+            case DataOptions.raw:
+              config.raw = true;
+              break;
+            case DataOptions.includeKeys:
+              config.includeKeys = true;
+              break;
+          }
+        }
+
+        if (option.count !== undefined) {
+          if (typeof option.count !== "number" || option.count < 1) {
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidOptions,
+              `Query option 'count' must be of type 'number' and greater than zero.`,
+            );
+          }
+          config.count = option.count;
+        }
+
+        if (option.consistent !== undefined) {
+          config.consistent = option.consistent;
+          if (option.consistent === true) {
+            config.params.ConsistentRead = true;
+          } else if (option.consistent === false) {
+            delete config.params.ConsistentRead;
+          }
+        }
+
+        if (option.limit !== undefined) {
+          config.limit = option.limit;
+          config.params.Limit = option.limit;
+        }
+
+        if (validations.isStringHasLength(option.table)) {
+          config.params.TableName = option.table;
+          config.table = option.table;
+        }
+
+        if (option.concurrent !== undefined) {
+          config.concurrent = option.concurrent;
+        }
+
+        if (validations.isFunction(option.parse)) {
+          config.parse = option.parse;
+        }
+
+        if (typeof option.pager === "string") {
+          if (typeof Pager[option.pager] === "string") {
+            config.pager = option.pager;
+          } else {
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidOptions,
+              `Invalid value for option "pager" provided: "${
+                option.pager
+              }". Allowed values include ${u.commaSeparatedString(
+                Object.keys(Pager),
+              )}.`,
+            );
+          }
+        }
+
+        if (typeof option.unprocessed === "string") {
+          if (typeof UnprocessedTypes[option.unprocessed] === "string") {
+            config.unproessed = UnprocessedTypes[option.unprocessed];
+          } else {
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidOptions,
+              `Invalid value for option "unprocessed" provided: "${
+                option.unprocessed
+              }". Allowed values include ${u.commaSeparatedString(
+                Object.keys(UnprocessedTypes),
+              )}.`,
+            );
+          }
+        }
+
+        if (option.ignoreOwnership) {
+          config.ignoreOwnership = option.ignoreOwnership;
+          config._providedIgnoreOwnership = option.ignoreOwnership;
+        }
+
+        if (option.listeners) {
+          if (Array.isArray(option.listeners)) {
+            config.listeners = config.listeners.concat(option.listeners);
+          }
+        }
+
+        if (option.logger) {
+          if (validations.isFunction(option.logger)) {
+            config.listeners.push(option.logger);
+          } else {
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidLoggerProvided,
+              `Loggers must be of type function`,
+            );
+          }
+        }
+
+        if (option.hydrate) {
+          config.hydrate = true;
+          config.ignoreOwnership = true;
+        }
+
+        if (validations.isFunction(option.hydrator)) {
+          config.hydrator = option.hydrator;
+        }
+
+        if (option._includeOnResponseItem) {
+          config._includeOnResponseItem = {
+            ...config._includeOnResponseItem,
+            ...option._includeOnResponseItem,
+          };
+        }
+
+        config.page = Object.assign({}, config.page, option.page);
+        config.params = Object.assign({}, config.params, option.params);
+        return config;
+      }, config);
   }
 
   _applyParameterOptions({ params = {}, options = {} } = {}) {

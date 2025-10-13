@@ -5007,6 +5007,7 @@ export type EntityConfiguration = {
     entity?: string;
     version?: string;
   };
+  defaultQueryOptions?: QueryOptions;
 };
 
 export class Entity<
