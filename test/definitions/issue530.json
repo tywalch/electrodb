@@ -1,0 +1,16 @@
+{
+  "TableName": "issue530",
+  "KeySchema": [
+    {
+      "AttributeName": "ip_addr",
+      "KeyType": "HASH"
+    }
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "ip_addr",
+      "AttributeType": "S"
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}
