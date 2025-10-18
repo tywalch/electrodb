@@ -603,3 +603,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.4.7]
 ### Fixed
 - [Issue #530]((https://github.com/tywalch/electrodb/issues/530)); Fixed issue where ElectroDB would attempt to set a table index field's value on `upsert` if an index key used an attribute's name as it's field name. This would cause the `upsert` to fail because DyanmoDB prevents set operations on table index fields.
+
+## [3.5.0]
+### Adds
+- Adds option to pass ignoreOwnership during entity creation. We are migrating our codebase to use electrodb. Devs sometimes forget to include this flag and it fails silently because types are not narrowed down from the flags passed inside the .go({...}). It will be convenient if there was an option to pass in ignoreOwnership when creating entities so that errors are minimized. Contribution provided by [@xamogh](https://github.com/xamogh) via [PR #457](https://github.com/tywalch/electrodb/pull/457). Thank you for your contribution!
