@@ -213,7 +213,7 @@ describe("Entity", () => {
               ExpressionAttributeNames: { "#pk": "pk", "#sk1": "sk" },
               ExpressionAttributeValues: {
                 ":pk": "$test_1#prop1_val1#prop2_val2",
-                ":sk1": "$collectiona#entityone",
+                ":sk1": "$collectiona#entityone#prop3_",
               },
               KeyConditionExpression: "#pk = :pk and #sk1 > :sk1",
             },
@@ -222,7 +222,7 @@ describe("Entity", () => {
               ExpressionAttributeNames: { "#pk": "pk", "#sk1": "sk" },
               ExpressionAttributeValues: {
                 ":pk": "$test_1#prop1_val1#prop2_val2",
-                ":sk1": "$collectiona#entityone",
+                ":sk1": "$collectiona#entityone#prop3_",
               },
               KeyConditionExpression: "#pk = :pk and #sk1 < :sk1",
             },
@@ -231,7 +231,7 @@ describe("Entity", () => {
               ExpressionAttributeNames: { "#pk": "pk", "#sk1": "sk" },
               ExpressionAttributeValues: {
                 ":pk": "$test_1#prop1_val1#prop2_val2",
-                ":sk1": "$collectiona#entityone",
+                ":sk1": "$collectiona#entityone#prop3_",
               },
               KeyConditionExpression: "#pk = :pk and #sk1 >= :sk1",
             },
@@ -240,7 +240,7 @@ describe("Entity", () => {
               ExpressionAttributeNames: { "#pk": "pk", "#sk1": "sk" },
               ExpressionAttributeValues: {
                 ":pk": "$test_1#prop1_val1#prop2_val2",
-                ":sk1": "$collectiona#entityone",
+                ":sk1": "$collectiona#entityone#prop3_",
               },
               KeyConditionExpression: "#pk = :pk and #sk1 <= :sk1",
             },
@@ -259,7 +259,7 @@ describe("Entity", () => {
               ExpressionAttributeNames: { "#pk": "pk", "#sk1": "sk" },
               ExpressionAttributeValues: {
                 ":pk": "$test_1#prop1_val1#prop2_val2",
-                ":sk1": "$collectiona#entityone",
+                ":sk1": "$collectiona#entityone#prop3_",
               },
             },
             between: {
@@ -267,8 +267,8 @@ describe("Entity", () => {
               ExpressionAttributeNames: { "#pk": "pk", "#sk1": "sk" },
               ExpressionAttributeValues: {
                 ":pk": "$test_1#prop1_val1#prop2_val2",
-                ":sk1": "$collectiona#entityone",
-                ":sk2": "$collectiona#entityone",
+                ":sk1": "$collectiona#entityone#prop3_",
+                ":sk2": "$collectiona#entityone#prop3_",
               },
               KeyConditionExpression:
                 "#pk = :pk and #sk1 BETWEEN :sk1 AND :sk2",
