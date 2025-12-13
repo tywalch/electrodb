@@ -32,7 +32,7 @@ const {
   DataOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
-const { FilterOperations } = require("./operations");
+const { FilterOperations, ExpressionState } = require("./operations");
 const { WhereFactory } = require("./where");
 const { clauses, ChainState } = require("./clauses");
 const { EventManager } = require("./events");
@@ -426,21 +426,19 @@ class Entity {
   }
 
   async transactWrite(parameters, config) {
-    let response = await this._exec(
+    return this._exec(
       MethodTypes.transactWrite,
       parameters,
       config,
     );
-    return response;
   }
 
   async transactGet(parameters, config) {
-    let response = await this._exec(
+    return this._exec(
       MethodTypes.transactGet,
       parameters,
       config,
     );
-    return response;
   }
 
   async go(method, parameters = {}, config = {}) {
@@ -1281,6 +1279,9 @@ class Entity {
   _trimKeysToIndex({ indexName = TableIndex, provided }) {
     if (!provided) {
       return null;
+    }
+    if (this.model.facets.byIndex[indexName].type === IndexTypes.composite) {
+      return provided;
     }
 
     const pkName = this.model.translations.keys[indexName].pk;
@@ -2635,7 +2636,7 @@ class Entity {
     }
     expressions.UpdateExpression = `${operation.toUpperCase()} ${expressions.UpdateExpression.join(
       ", ",
-    )}`;
+    )}`.trim();
     return expressions;
   }
 
@@ -2662,61 +2663,157 @@ class Entity {
     }
   }
 
-  /* istanbul ignore next */
-  _queryParams(state = {}, options = {}) {
-    const indexKeys = this._makeQueryKeys(state, options);
-    let parameters = {};
+
+  _compositeQueryParams(state = {}, options = {}) {
+    // todo: review "_consolidateQueryFacets"
+    const consolidated = this._consolidateQueryFacets(
+      state.query.keys.sk,
+    ) || [];
+
+    const pkAttributes = state.query.keys.pk;
+    const skAttributes = consolidated[0] || {};
+
+    // provided has length, isArray?
+    const provided = state.query.keys.provided;
+    const queryType = state.query.type;
+    const expressionState = new ExpressionState({ prefix: "k_" })
+
+    const expressions = [];
+    // todo: provided contains "duplicate" values for between
+    // todo: right now between syntax allows different sort key composite values, but multi-attribute indexes only apply between to the last attribute 🤔
+    for (let i = 0; i < provided.length; i++) {
+      const { type, attribute } = provided[i];
+      const value = type === "pk" ? pkAttributes[attribute] : skAttributes[attribute];
+      const field = this.model.schema.getFieldName(attribute);
+      const nameRef = expressionState.setName({}, attribute, field);
+      const valueRef = expressionState.setValue(attribute, value);
+      const shouldApplyEq = !(type === "sk" && i === provided.length - 1)
+      if (shouldApplyEq) {
+        expressions.push(`${nameRef.expression} = ${valueRef}`);
+        continue;
+      }
+      switch (queryType) {
+        case QueryTypes.is:
+        case QueryTypes.eq:
+        case QueryTypes.collection:
+        case QueryTypes.clustered_collection:
+          expressions.push(`${nameRef.expression} = ${valueRef}`);
+          break;
+        case QueryTypes.begins:
+          expressions.push(`begins_with(${nameRef.expression}, ${valueRef})`);
+          break;
+        case QueryTypes.gt:
+          expressions.push(`${nameRef.expression} > ${valueRef}`);
+          break;
+        case QueryTypes.gte:
+          expressions.push(`${nameRef.expression} >= ${valueRef}`);
+          break;
+        case QueryTypes.lt:
+          expressions.push(`${nameRef.expression} < ${valueRef}`);
+          break;
+        case QueryTypes.lte:
+          expressions.push(`${nameRef.expression} <= ${valueRef}`);
+          break;
+        case QueryTypes.between: {
+          const second = consolidated[consolidated.length - 1];
+          const value2 = second[attribute];
+          const valueRef2 = expressionState.setValue(attribute, value2);
+          expressions.push(`${nameRef.expression} BETWEEN ${valueRef} AND ${valueRef2}`);
+          break;
+        }
+        // todo: clean up here
+        default:
+          throw new Error('Not supported')
+      }
+    }
+
+    const filter = state.query.filter[ExpressionTypes.FilterExpression];
+
+    let customExpressions = {
+      names: (options.expressions && options.expressions.names) || {},
+      values: (options.expressions && options.expressions.values) || {},
+      expression: (options.expressions && options.expressions.expression) || "",
+    };
+
+    const identifierExpressions = !options.ignoreOwnership ? this.getIdentifierExpressions() : {};
+
+    const params = {
+      IndexName: state.query.index,
+      KeyConditionExpression: expressions.join(' AND '),
+      TableName: this.getTableName(),
+      ExpressionAttributeNames: this._mergeExpressionsAttributes(
+        filter.getNames(),
+        expressionState.getNames(),
+        customExpressions.names,
+        identifierExpressions.names,
+      ),
+      ExpressionAttributeValues: this._mergeExpressionsAttributes(
+        filter.getValues(),
+        expressionState.getValues(),
+        customExpressions.values,
+        identifierExpressions.values,
+      ),
+    }
+
+    let filerExpressions = [customExpressions.expression, filter.build(), identifierExpressions.expression]
+      .map(s => s.trim())
+      .filter(Boolean)
+      .join(" AND ");
+
+    if (filerExpressions.length) {
+      params.FilterExpression = filerExpressions;
+    }
+
+    return params;
+  }
+
+  _makeQueryParams(state = {}, options = {}, indexKeys) {
     switch (state.query.type) {
       case QueryTypes.is:
-        parameters = this._makeIsQueryParams(
+        return this._makeIsQueryParams(
           state.query,
           state.query.index,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys.pk,
           ...indexKeys.sk,
         );
-        break;
       case QueryTypes.begins:
-        parameters = this._makeBeginsWithQueryParams(
+        return this._makeBeginsWithQueryParams(
           state.query.options,
           state.query.index,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys.pk,
           ...indexKeys.sk,
         );
-        break;
       case QueryTypes.collection:
-        parameters = this._makeBeginsWithQueryParams(
+        return this._makeBeginsWithQueryParams(
           state.query.options,
           state.query.index,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys.pk,
           this._getCollectionSk(state.query.collection),
         );
-        break;
       case QueryTypes.clustered_collection:
-        parameters = this._makeBeginsWithQueryParams(
+        return this._makeBeginsWithQueryParams(
           state.query.options,
           state.query.index,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys.pk,
           ...indexKeys.sk,
         );
-        break;
       case QueryTypes.between:
-        parameters = this._makeBetweenQueryParams(
+        return this._makeBetweenQueryParams(
           state.query.options,
           state.query.index,
           state.query.filter[ExpressionTypes.FilterExpression],
           indexKeys.pk,
           ...indexKeys.sk,
         );
-        break;
       case QueryTypes.gte:
       case QueryTypes.gt:
       case QueryTypes.lte:
       case QueryTypes.lt:
-        parameters = this._makeComparisonQueryParams(
+        return this._makeComparisonQueryParams(
           state.query.index,
           state.query.type,
           state.query.filter[ExpressionTypes.FilterExpression],
@@ -2724,9 +2821,19 @@ class Entity {
           options,
           state.query.options,
         );
-        break;
       default:
         throw new Error(`Invalid query type: ${state.query.type}`);
+    }
+  }
+
+  /* istanbul ignore next */
+  _queryParams(state = {}, options = {}) {
+    const indexKeys = this._makeQueryKeys(state, options);
+    let parameters;
+    if (state.query.options.indexType !== IndexTypes.composite) {
+      parameters = this._makeQueryParams(state, options, indexKeys);
+    } else {
+      parameters = this._compositeQueryParams(state, options);
     }
 
     const appliedParameters = this._applyParameterOptions({
@@ -3238,6 +3345,11 @@ class Entity {
       if (attributes[attribute] !== undefined) {
         facets[attribute] = attributes[attribute];
         indexes.forEach((definition) => {
+          // composite indexes do not have keys
+          if (definition.type === IndexTypes.composite) {
+            return;
+          }
+
           const { index, type } = definition;
           impactedIndexes[index] = impactedIndexes[index] || {};
           impactedIndexes[index][type] = impactedIndexes[index][type] || [];
@@ -3256,9 +3368,12 @@ class Entity {
 
     // this function is used to determine key impact for update `set`, update `delete`, and `put`. This block is currently only used by update `set`
     if (utilizeIncludedOnlyIndexes) {
-      for (const [index, { pk, sk }] of Object.entries(
+      for (const [index, { pk, sk, type }] of Object.entries(
         this.model.facets.byIndex,
       )) {
+        if (type === IndexTypes.composite) {
+          continue;
+        }
         // The main table index is handled somewhere else (messy I know), and we only want to do this processing if an
         // index condition is defined for backwards compatibility. Backwards compatibility is not required for this
         // change, but I have paranoid concerns of breaking changes around sparse indexes.
@@ -3320,10 +3435,12 @@ class Entity {
       }
     }
 
-    let indexesWithMissingComposites = Object.entries(
-      this.model.facets.byIndex,
-    ).map(([index, definition]) => {
-      const { pk, sk } = definition;
+    let indexesWithMissingComposites = [];
+    for (const [index, definition] of Object.entries(this.model.facets.byIndex)) {
+      const { pk, sk, type  } = definition;
+      if (type === IndexTypes.composite) {
+        continue;
+      }
       let impacted = impactedIndexes[index];
       let impact = {
         index,
@@ -3361,8 +3478,8 @@ class Entity {
         }
       }
 
-      return impact;
-    });
+      indexesWithMissingComposites.push(impact);
+    }
 
     let incomplete = [];
     for (const { index, missing, definition } of indexesWithMissingComposites) {
@@ -4448,6 +4565,7 @@ class Entity {
         pk: pk.facets,
         sk: sk.facets,
         all: attributes,
+        type: index.type,
         collection: index.collection,
         hasSortKeys: !!indexHasSortKeys[indexName],
         hasSubCollections: !!indexHasSubCollections[indexName],

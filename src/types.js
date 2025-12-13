@@ -86,9 +86,11 @@ const MethodTypeTranslation = {
   transactGet: "transactGet",
 };
 
+// todo: sync with json schema validation type
 const IndexTypes = {
   isolated: "isolated",
   clustered: "clustered",
+  composite: "composite",
 };
 
 const Comparisons = {
@@ -229,6 +231,7 @@ const ItemOperations = {
   subtract: "subtract",
   append: "append",
   ifNotExists: "ifNotExists",
+  none: "",
 };
 
 const UpsertOperations = {

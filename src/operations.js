@@ -81,9 +81,9 @@ class ExpressionState {
   }
 
   setValue(name, value) {
-    name = this.formatName(name);
-    let valueCount = this.incrementName(name);
-    let expression = `:${name}${valueCount}`;
+    const formated = this.formatName(name);
+    let valueCount = this.incrementName(formated);
+    let expression = `:${formated}${valueCount}`;
     this.values[expression] = value;
     return expression;
   }

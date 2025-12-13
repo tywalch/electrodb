@@ -171,7 +171,8 @@ const Index = {
     },
     type: {
       type: "string",
-      enum: ["clustered", "isolated"],
+      // todo: sync with types.IndexTypes
+      enum: ["clustered", "isolated", "composite"],
       required: false,
     },
     condition: {

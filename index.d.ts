@@ -3674,19 +3674,19 @@ export interface Schema<A extends string, F extends string, C extends string> {
       readonly project?: "keys_only";
       readonly index?: string;
       readonly scope?: string;
-      readonly type?: "clustered" | "isolated";
+      readonly type?: "clustered" | "isolated" | "composite";
       readonly collection?: AccessPatternCollection<C>;
       readonly condition?: (composite: Record<string, unknown>) => boolean;
       readonly pk: {
         readonly casing?: KeyCasingOption;
-        readonly field: string;
+        readonly field?: string;
         readonly composite: ReadonlyArray<F>;
         readonly template?: string;
         readonly cast?: KeyCastOption;
       };
       readonly sk?: {
         readonly casing?: KeyCasingOption;
-        readonly field: string;
+        readonly field?: string;
         readonly composite: ReadonlyArray<F>;
         readonly template?: string;
         readonly cast?: KeyCastOption;
