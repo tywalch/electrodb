@@ -3785,8 +3785,9 @@ class Entity {
           this.model.facets.labels[index] &&
           Array.isArray(this.model.facets.labels[index].sk);
         let labels = hasLabels ? this.model.facets.labels[index].sk : [];
+        const hasFacets = Object.keys(skFacet).length > 0;
         let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, labels, {
-          excludeLabelTail: true,
+          excludeLabelTail: hasFacets,
           excludePostfix,
           transform,
         });
