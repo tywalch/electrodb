@@ -2679,51 +2679,118 @@ class Entity {
     const expressionState = new ExpressionState({ prefix: "k_" })
 
     const expressions = [];
-    // todo: provided contains "duplicate" values for between
-    // todo: right now between syntax allows different sort key composite values, but multi-attribute indexes only apply between to the last attribute 🤔
-    for (let i = 0; i < provided.length; i++) {
-      const { type, attribute } = provided[i];
-      const value = type === "pk" ? pkAttributes[attribute] : skAttributes[attribute];
-      const field = this.model.schema.getFieldName(attribute);
-      const nameRef = expressionState.setName({}, attribute, field);
-      const valueRef = expressionState.setValue(attribute, value);
-      const shouldApplyEq = !(type === "sk" && i === provided.length - 1)
-      if (shouldApplyEq) {
+    if (queryType === QueryTypes.between) {
+      for (const [name, value] of Object.entries(pkAttributes)) {
+        const value = pkAttributes[name];
+        const field = this.model.schema.getFieldName(name);
+        const nameRef = expressionState.setName({}, name, field);
+        const valueRef = expressionState.setValue(name, value);
         expressions.push(`${nameRef.expression} = ${valueRef}`);
-        continue;
       }
-      switch (queryType) {
-        case QueryTypes.is:
-        case QueryTypes.eq:
-        case QueryTypes.collection:
-        case QueryTypes.clustered_collection:
-          expressions.push(`${nameRef.expression} = ${valueRef}`);
-          break;
-        case QueryTypes.begins:
-          expressions.push(`begins_with(${nameRef.expression}, ${valueRef})`);
-          break;
-        case QueryTypes.gt:
-          expressions.push(`${nameRef.expression} > ${valueRef}`);
-          break;
-        case QueryTypes.gte:
-          expressions.push(`${nameRef.expression} >= ${valueRef}`);
-          break;
-        case QueryTypes.lt:
-          expressions.push(`${nameRef.expression} < ${valueRef}`);
-          break;
-        case QueryTypes.lte:
-          expressions.push(`${nameRef.expression} <= ${valueRef}`);
-          break;
-        case QueryTypes.between: {
-          const second = consolidated[consolidated.length - 1];
-          const value2 = second[attribute];
-          const valueRef2 = expressionState.setValue(attribute, value2);
-          expressions.push(`${nameRef.expression} BETWEEN ${valueRef} AND ${valueRef2}`);
+      let is = {}
+      let start = {}
+      let end = {};
+      (state.query.keys.sk ?? []).forEach(({type, facets}) => {
+        if (type === "is") {
+          is = facets;
+        } else if (type === "between") {
+          start = facets;
+        } else if (type === "and") {
+          end = facets;
+        } else {
+          // todo: improve error handling
+          throw new Error('Internal error: Invalid sort key type in composite between query');
+        }
+      });
+
+      let lastFound;
+      const skNames = state.query.facets.sk || [];
+      for (const name of skNames) {
+        if (is[name] !== undefined) {
+          lastFound = name;
+        } else if (start[name] !== undefined && end[name] !== undefined) {
+          lastFound = name;
+        } else if (start[name] !== undefined || end[name] !== undefined) {
+          // todo: improve error handling
+          throw new Error(`Invalid between query: missing start or end value for ${name}`);
+        } else {
           break;
         }
-        // todo: clean up here
-        default:
-          throw new Error('Not supported')
+      }
+
+      for (let i = 0; i < skNames.length; i++) {
+        const name = skNames[i];
+        if (lastFound === name) {
+          const startValue = start[name];
+          const endValue = end[name];
+          const field = this.model.schema.getFieldName(name);
+          const nameRef = expressionState.setName({}, name, field);
+          const startValueRef = expressionState.setValue(name, startValue);
+          const endValueRef = expressionState.setValue(name, endValue);
+          expressions.push(`${nameRef.expression} BETWEEN ${startValueRef} AND ${endValueRef}`);
+        } else if (is[name] !== undefined) {
+          const value = is[name];
+          const field = this.model.schema.getFieldName(name);
+          const nameRef = expressionState.setName({}, name, field);
+          const valueRef = expressionState.setValue(name, value);
+          expressions.push(`${nameRef.expression} = ${valueRef}`);
+        } else if (start[name] !== undefined && end[name] !== undefined) {
+          if (start[name] !== end[name]) {
+            // todo: improve error handling
+            throw new Error(`Invalid between query: start and end values for ${name} must be the same until the last sort key attribute`);
+          }
+          const value = start[name];
+          const field = this.model.schema.getFieldName(name);
+          const nameRef = expressionState.setName({}, name, field);
+          const valueRef = expressionState.setValue(name, value);
+          expressions.push(`${nameRef.expression} = ${valueRef}`);
+        }
+      }
+    } else {
+      for (let i = 0; i < provided.length; i++) {
+        const { type, attribute } = provided[i];
+        const value = type === "pk" ? pkAttributes[attribute] : skAttributes[attribute];
+        const field = this.model.schema.getFieldName(attribute);
+        const nameRef = expressionState.setName({}, attribute, field);
+        const valueRef = expressionState.setValue(attribute, value);
+        const shouldApplyEq = !(type === "sk" && i === provided.length - 1)
+        if (shouldApplyEq) {
+          expressions.push(`${nameRef.expression} = ${valueRef}`);
+          continue;
+        }
+        switch (queryType) {
+          case QueryTypes.is:
+          case QueryTypes.eq:
+          case QueryTypes.collection:
+          case QueryTypes.clustered_collection:
+            expressions.push(`${nameRef.expression} = ${valueRef}`);
+            break;
+          case QueryTypes.begins:
+            expressions.push(`begins_with(${nameRef.expression}, ${valueRef})`);
+            break;
+          case QueryTypes.gt:
+            expressions.push(`${nameRef.expression} > ${valueRef}`);
+            break;
+          case QueryTypes.gte:
+            expressions.push(`${nameRef.expression} >= ${valueRef}`);
+            break;
+          case QueryTypes.lt:
+            expressions.push(`${nameRef.expression} < ${valueRef}`);
+            break;
+          case QueryTypes.lte:
+            expressions.push(`${nameRef.expression} <= ${valueRef}`);
+            break;
+          case QueryTypes.between: {
+            const second = consolidated[consolidated.length - 1];
+            const value2 = second[attribute];
+            const valueRef2 = expressionState.setValue(attribute, value2);
+            expressions.push(`${nameRef.expression} BETWEEN ${valueRef} AND ${valueRef2}`);
+            break;
+          }
+          // todo: clean up here
+          default:
+            throw new Error('Not supported')
+        }
       }
     }
 
