@@ -31,6 +31,7 @@ const QueryTypes = {
   between: "between",
   collection: "collection",
   clustered_collection: "clustered_collection",
+  composite_collection: "composite_collection",
   is: "is",
 };
 

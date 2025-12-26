@@ -3729,7 +3729,7 @@ type ClusteredIndexNameMap<
   C extends string,
   S extends Schema<A, F, C>,
 > = {
-  [I in keyof S["indexes"] as S["indexes"][I] extends { type: "clustered" }
+  [I in keyof S["indexes"] as S["indexes"][I] extends { type: "clustered" | "composite" }
     ? I
     : never]: S["indexes"][I]["collection"] extends AccessPatternCollection<
     infer Name
@@ -3746,7 +3746,7 @@ type IsolatedIndexNameMap<
   C extends string,
   S extends Schema<A, F, C>,
 > = {
-  [I in keyof S["indexes"] as S["indexes"][I] extends { type: "clustered" }
+  [I in keyof S["indexes"] as S["indexes"][I] extends { type: "clustered" | "composite" }
     ? never
     : I]: S["indexes"][I]["collection"] extends AccessPatternCollection<
     infer Name

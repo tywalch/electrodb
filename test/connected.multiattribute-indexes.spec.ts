@@ -265,10 +265,10 @@ type EntityQueryOperation = keyof typeof EntityQueryOperations;
 type ServiceQueryOperation = keyof typeof ServiceQueryOperations;
 type ServiceMutationOperation = keyof typeof ServiceMutationOperations;
 type EntityOperations = EntityQueryOperation | EntityMutationOperation;
-type ServiceOperations = ServiceQueryOperation | ServiceMutationOperation;
+type ServiceOperation = ServiceQueryOperation | ServiceMutationOperation;
 type QueryOperation = EntityQueryOperation | ServiceQueryOperation;
 type MutationOperation = EntityMutationOperation | ServiceMutationOperation;
-type Operation = QueryOperation | MutationOperation;
+type Operation = EntityOperations | ServiceOperation;
 
 type OperationParameters = {
   collection: QueryInput;
@@ -307,6 +307,10 @@ type ParameterBuilders<Op extends Operation, P> = {
     : never;
 }
 
+function expectExhaustive(_: never): never {
+  throw new Error(`Unhandled case in exhaustive check`);
+}
+
 describe("multi-attribute index support", () => {
   describe("parameter building", () => {
     const thing = createThingEntity({
@@ -315,6 +319,7 @@ describe("multi-attribute index support", () => {
       table: localTable,
       name: 'thing',
     });
+
     const gizmo = createThingEntity({
       service: 'parameter-building-test',
       client: localClient,
@@ -325,7 +330,7 @@ describe("multi-attribute index support", () => {
     const service = new Service({ thing, gizmo }, { client: localClient, table: localTable });
 
     // - should always include identifier attributes in ownership filters on multi-attribute indexes: query, begins, gt, gte, lt, lte, between, collection
-    const entityOperations: ParameterBuilders<EntityOperations, ThingRecord> = {
+    const entityOperations: ParameterBuilders<Operation, ThingRecord> = {
       query: (item) => {
         const { country, region, city, manufacturer, model, count, name } = item;
         const params = thing.query.location({ country, region, city, manufacturer, model, count, name }).params();
@@ -418,37 +423,68 @@ describe("multi-attribute index support", () => {
         const params = thing.remove(item).params<DeleteItemInput>();
         return { type: 'remove', params };
       },
-      // transactWrite: (item) => {
-      //   const params = service.transaction.write(({ thing }) => [
-      //     thing.put(item).commit(),
-      //   ]).params();
-      //   return { type: 'transactWrite', params: params as TransactWriteItemsInput };
-      // },
-      // transactGet: (item) => {
-      //   const params = service.transaction.get(({ thing }) => [
-      //     thing.get(item).commit(),
-      //   ]).params();
-      //   return { type: 'transactGet', params: params as TransactGetItemsInput };
-      // },
-      // collection: (item) => {
-      //   const { country, region, city } = item;
-      //   const params = service.collections.inventory({country, region, city}).params<QueryInput>();
-      //   return { type: 'collection', params };
-      // },
-      // collectionLt: (item) => {
-      //   const { country, region, city } = item;
-      //   const params = service.collections.inventory({country, region, city}).params<QueryInput>();
-      //   return { type: 'collection', params };
-      // },
+      transactWrite: (item) => {
+        const params = service.transaction.write(({ thing }) => [
+          thing.put(item).commit(),
+        ]).params();
+        return { type: 'transactWrite', params: params as TransactWriteItemsInput };
+      },
+      transactGet: (item) => {
+        const params = service.transaction.get(({ thing }) => [
+          thing.get(item).commit(),
+        ]).params();
+        return { type: 'transactGet', params: params as TransactGetItemsInput };
+      },
+      collection: (item) => {
+        const { country, region, city } = item;
+        const params = service.collections.inventory({country, region, city}).params<QueryInput>();
+        return { type: 'collection', params };
+      },
+      collectionBegins: (item) => {
+        const { country, region, city, manufacturer, model } = item;
+        const params = service.collections.inventory({country, region, city}).begins({ manufacturer, model }).params<QueryInput>();
+        return { type: 'collectionBegins', params };
+      },
+      collectionLt: (item) => {
+        const { country, region, city, manufacturer, model, count } = item;
+        const params = service.collections.inventory({country, region, city}).lt({ manufacturer, model, count }).params<QueryInput>();
+        return { type: 'collectionLt', params };
+      },
+      collectionLte: (item) => {
+        const { country, region, city, manufacturer, model, count } = item;
+        const params = service.collections.inventory({country, region, city}).lte({ manufacturer, model, count }).params<QueryInput>();
+        return { type: 'collectionLte', params };
+      },
+      collectionGt: (item) => {
+        const { country, region, city, manufacturer, model, count } = item;
+        const params = service.collections.inventory({country, region, city}).gt({ manufacturer, model, count }).params<QueryInput>();
+        return { type: 'collectionGt', params };
+      },
+      collectionGte: (item) => {
+        const { country, region, city, manufacturer, model, count } = item;
+        const params = service.collections.inventory({country, region, city}).gte({ manufacturer, model, count }).params<QueryInput>();
+        return { type: 'collectionGte', params };
+      },
+      collectionBetween: (item1, item2) => {
+        if (!item2) {
+          throw new Error("item2 is required for between operation");
+        }
+        const { country, region, city } = item1;
+        const params = service.collections.inventory({ country, region, city })
+          .between(
+            { manufacturer: item1.manufacturer, model: item1.model, count: item1.count },
+            { manufacturer: item2.manufacturer, model: item2.model, count: item2.count }
+          ).params<QueryInput>();
+        return { type: 'collectionBetween', params };
+      },
     }
 
     describe("ownership filters", () => {
       for (const [operationName, buildParams] of Object.entries(entityOperations)) {
         it(`should include all composite attributes in ownership filter for ${operationName} operation`, () => {
-          const item1 = generateThingRecord();
-          const item2 = generateThingRecord();
+          const item1 = generateThingRecord({ count: 1 });
+          const item2 = generateThingRecord({ ...item1, count: 2 });
           const received = buildParams(item1, item2);
-          const indexPkComposites = ["country", "region", "city"]
           switch (received.type) {
             // these operations are not relevant for ownership filters
             case "batchDelete":
@@ -541,10 +577,69 @@ describe("multi-attribute index support", () => {
                 ":__edb_v___thing": "1"
               });
               break;
+            case "collection":
+              expectSubset(received.type, received.params.ExpressionAttributeValues, {
+                ":__edb_e___thing": "thing",
+                ":__edb_v___thing": "1",
+                ":__edb_e___gizmo": "gizmo",
+                ":__edb_v___gizmo": "1",
+              });
+              break;
+            case "collectionBegins":
+              expectSubset(received.type, received.params.ExpressionAttributeValues, {
+                ":__edb_e___thing": "thing",
+                ":__edb_v___thing": "1",
+                ":__edb_e___gizmo": "gizmo",
+                ":__edb_v___gizmo": "1",
+              });
+              break;
+            case "collectionLt":
+              expectSubset(received.type, received.params.ExpressionAttributeValues, {
+                ":__edb_e___thing": "thing",
+                ":__edb_v___thing": "1",
+                ":__edb_e___gizmo": "gizmo",
+                ":__edb_v___gizmo": "1",
+              });
+              break;
+            case "collectionLte":
+              expectSubset(received.type, received.params.ExpressionAttributeValues, {
+                ":__edb_e___thing": "thing",
+                ":__edb_v___thing": "1",
+                ":__edb_e___gizmo": "gizmo",
+                ":__edb_v___gizmo": "1",
+              });
+              break;
+            case "collectionGt":
+              expectSubset(received.type, received.params.ExpressionAttributeValues, {
+                ":__edb_e___thing": "thing",
+                ":__edb_v___thing": "1",
+                ":__edb_e___gizmo": "gizmo",
+                ":__edb_v___gizmo": "1",
+              });
+              break;
+            case "collectionGte":
+              expectSubset(received.type, received.params.ExpressionAttributeValues, {
+                ":__edb_e___thing": "thing",
+                ":__edb_v___thing": "1",
+                ":__edb_e___gizmo": "gizmo",
+                ":__edb_v___gizmo": "1",
+              });
+              break;
+            case "collectionBetween":
+              expectSubset(received.type, received.params.ExpressionAttributeValues, {
+                ":__edb_e___thing": "thing",
+                ":__edb_v___thing": "1",
+                ":__edb_e___gizmo": "gizmo",
+                ":__edb_v___gizmo": "1",
+              });
+              break;
+            case "transactWrite":
+            case "transactGet":
+              console.log(JSON.stringify(received, null, 4));
+              break;
             // make sure we handle all cases
             default: {
-              // @ts-ignore
-              expectExchaustive(received.type);
+              expectExhaustive(received);
             }
           }
         })
@@ -554,15 +649,10 @@ describe("multi-attribute index support", () => {
     describe("key creation", () => {
       for (const [operationName, buildParams] of Object.entries(entityOperations)) {
         it(`should not format partition and sort keys for muti-attribute indexes on ${operationName} operation`, () => {
-          const item1 = generateThingRecord({count: 1});
-          const item2 = generateThingRecord({
-            ...item1,
-            count: 2
-          });
+          const item1 = generateThingRecord({ count: 1 });
+          const item2 = generateThingRecord({ ...item1, count: 2 });
           const received = buildParams(item1, item2);
           switch (received.type) {
-
-
             // these operations are not relevant for ownership filters
             case "batchDelete":
             case "delete":
@@ -617,10 +707,19 @@ describe("multi-attribute index support", () => {
               expect(received.params.ExpressionAttributeValues).to.not.have.keys(['gsi1pk', 'gsi1sk']);
               expect(received.params.KeyConditionExpression).to.equal("#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0 AND #manufacturer = :manufacturerk_0 AND #model = :modelk_0 AND #count BETWEEN :countk_0 AND :countk_1");
               break;
+            case "collection":
+            case "collectionBegins":
+            case "collectionLt":
+            case "collectionLte":
+            case "collectionGt":
+            case "collectionGte":
+            case "collectionBetween":
+            case "transactWrite":
+            case "transactGet":
+              break;
             // make sure we handle all cases
             default: {
-              // @ts-ignore
-              expectExchaustive(received.type);
+              expectExhaustive(received);
             }
           }
         });

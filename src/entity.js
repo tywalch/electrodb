@@ -306,6 +306,8 @@ class Entity {
     const chain = this._makeChain(index, clauses, clauses.index, chainOptions);
     if (options.indexType === IndexTypes.clustered) {
       return chain.clusteredCollection(collection, facets);
+    } else if (options.indexType === IndexTypes.composite) {
+      return chain.compositeCollection(collection, facets);
     } else {
       return chain.collection(collection, facets);
     }
@@ -2691,13 +2693,14 @@ class Entity {
       let start = {}
       let end = {};
       (state.query.keys.sk ?? []).forEach(({type, facets}) => {
-        if (type === "is") {
+        if (type === QueryTypes.is || type === QueryTypes.composite_collection) {
           is = facets;
-        } else if (type === "between") {
+        } else if (type === QueryTypes.between) {
           start = facets;
-        } else if (type === "and") {
+        } else if (type === QueryTypes.and) {
           end = facets;
         } else {
+          console.log({type, facets});
           // todo: improve error handling
           throw new Error('Internal error: Invalid sort key type in composite between query');
         }
@@ -2762,7 +2765,7 @@ class Entity {
           case QueryTypes.is:
           case QueryTypes.eq:
           case QueryTypes.collection:
-          case QueryTypes.clustered_collection:
+          case QueryTypes.composite_collection:
             expressions.push(`${nameRef.expression} = ${valueRef}`);
             break;
           case QueryTypes.begins:
@@ -2788,6 +2791,7 @@ class Entity {
             break;
           }
           // todo: clean up here
+          case QueryTypes.clustered_collection:
           default:
             throw new Error('Not supported')
         }
@@ -2795,14 +2799,15 @@ class Entity {
     }
 
     const filter = state.query.filter[ExpressionTypes.FilterExpression];
-
     let customExpressions = {
-      names: (options.expressions && options.expressions.names) || {},
-      values: (options.expressions && options.expressions.values) || {},
-      expression: (options.expressions && options.expressions.expression) || "",
+      names: (state.query.options.expressions && state.query.options.expressions.names) || {},
+      values: (state.query.options.expressions && state.query.options.expressions.values) || {},
+      expression: (state.query.options.expressions && state.query.options.expressions.expression) || "",
     };
 
-    const identifierExpressions = !options.ignoreOwnership ? this.getIdentifierExpressions() : {};
+    // identifiers are added via custom expressions on collection queries inside `clauses/handleNonIsolatedCollection`
+    // Don't duplicate filters if they are provided.
+    const identifierExpressions = !options.ignoreOwnership && !customExpressions.expression ? this.getIdentifierExpressions() : {};
 
     const params = {
       IndexName: state.query.index,
@@ -2822,7 +2827,7 @@ class Entity {
       ),
     }
 
-    let filerExpressions = [customExpressions.expression, filter.build(), identifierExpressions.expression]
+    let filerExpressions = [customExpressions.expression || "", filter.build(), identifierExpressions.expression || ""]
       .map(s => s.trim())
       .filter(Boolean)
       .join(" AND ");
@@ -2907,6 +2912,7 @@ class Entity {
       params: parameters,
       options,
     });
+    console.log({appliedParameters, s: state.query.options.expressions});
 
     return this._applyProjectionExpressions({
       parameters: appliedParameters,
@@ -4413,6 +4419,7 @@ class Entity {
     let indexHasSortKeys = {};
     let indexHasSubCollections = {};
     let clusteredIndexes = new Set();
+    let compositeIndexes = new Set();
     let indexAccessPatternTransaction = {
       fromAccessPatternToIndex: {},
       fromIndexToAccessPattern: {},
@@ -4455,8 +4462,10 @@ class Entity {
       let conditionDefined = v.isFunction(index.condition);
       let indexCondition = index.condition || (() => true);
 
-      if (indexType === "clustered") {
+      if (indexType === IndexTypes.clustered) {
         clusteredIndexes.add(accessPattern);
+      } else if (indexType === IndexTypes.composite) {
+        compositeIndexes.add(accessPattern);
       }
       if (seenIndexes[indexName] !== undefined) {
         if (indexName === TableIndex) {
@@ -4817,6 +4826,7 @@ class Entity {
       subCollections,
       indexHasSortKeys,
       clusteredIndexes,
+      compositeIndexes,
       indexHasSubCollections,
       indexes: normalized,
       indexField: indexFieldTranslation,
@@ -5022,6 +5032,7 @@ class Entity {
       subCollections,
       indexCollection,
       clusteredIndexes,
+      compositeIndexes,
       indexHasSortKeys,
       indexAccessPattern,
       indexHasSubCollections,
@@ -5091,6 +5102,7 @@ class Entity {
       modelVersion,
       subCollections,
       lookup: {
+        compositeIndexes,
         clusteredIndexes,
         indexHasSortKeys,
         indexHasSubCollections,

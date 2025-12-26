@@ -654,7 +654,7 @@ class Service {
       );
     }
 
-    if (definition.type === "clustered") {
+    if (definition.type === IndexTypes.clustered || definition.type === IndexTypes.composite) {
       for (
         let i = 0;
         i <
@@ -922,11 +922,11 @@ class Service {
 
     if (
       providedSubCollections.length > 1 &&
-      providedType === IndexTypes.clustered
+      (providedType === IndexTypes.clustered || providedType === IndexTypes.composite)
     ) {
       throw new e.ElectroError(
         e.ErrorCodes.InvalidJoin,
-        `Clustered indexes do not support sub-collections. The sub-collection "${collectionName}", on Entity "${entityName}" must be defined as either an individual collection name or the index must be redefined as an isolated cluster`,
+        `"${providedType}" indexes do not support sub-collections. The sub-collection "${collectionName}", on Entity "${entityName}" must be defined as either an individual collection name or the index must be redefined as an "${IndexTypes.isolated}" cluster`,
       );
     }
     const existingRequiredIndex =
