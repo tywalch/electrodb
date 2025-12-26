@@ -2700,7 +2700,6 @@ class Entity {
         } else if (type === QueryTypes.and) {
           end = facets;
         } else {
-          console.log({type, facets});
           // todo: improve error handling
           throw new Error('Internal error: Invalid sort key type in composite between query');
         }
@@ -2912,7 +2911,6 @@ class Entity {
       params: parameters,
       options,
     });
-    console.log({appliedParameters, s: state.query.options.expressions});
 
     return this._applyProjectionExpressions({
       parameters: appliedParameters,
