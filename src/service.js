@@ -926,7 +926,7 @@ class Service {
     ) {
       throw new e.ElectroError(
         e.ErrorCodes.InvalidJoin,
-        `"${providedType}" indexes do not support sub-collections. The sub-collection "${collectionName}", on Entity "${entityName}" must be defined as either an individual collection name or the index must be redefined as an "${IndexTypes.isolated}" cluster`,
+        `"${providedType}" indexes do not support sub-collections. The sub-collection "${collectionName}", on Entity "${entityName}" must be defined as either an individual collection name or the index must be redefined as an "${IndexTypes.isolated}" index`,
       );
     }
     const existingRequiredIndex =
