@@ -2677,6 +2677,7 @@ class Entity {
 
     // provided has length, isArray?
     const provided = state.query.keys.provided;
+    const all = state.query.facets.all || [];
     const queryType = state.query.type;
     const expressionState = new ExpressionState({ prefix: "k_" })
 
@@ -2706,6 +2707,7 @@ class Entity {
       });
 
       let lastFound;
+      // todo: use the same facet source as non-between queries?
       const skNames = state.query.facets.sk || [];
       for (const name of skNames) {
         if (is[name] !== undefined) {
@@ -2749,13 +2751,20 @@ class Entity {
         }
       }
     } else {
-      for (let i = 0; i < provided.length; i++) {
-        const { type, attribute } = provided[i];
-        const value = type === "pk" ? pkAttributes[attribute] : skAttributes[attribute];
-        const field = this.model.schema.getFieldName(attribute);
-        const nameRef = expressionState.setName({}, attribute, field);
-        const valueRef = expressionState.setValue(attribute, value);
-        const shouldApplyEq = !(type === "sk" && i === provided.length - 1)
+      const attrs = [];
+      for (const { type, name } of all) {
+        const value = type === "pk" ? pkAttributes[name] : skAttributes[name];
+        if (value === undefined) {
+          break;
+        }
+        attrs.push({type, name, value});
+      }
+      for (let i = 0; i < attrs.length; i++) {
+        const { type, name, value } = attrs[i];
+        const field = this.model.schema.getFieldName(name);
+        const nameRef = expressionState.setName({}, name, field);
+        const valueRef = expressionState.setValue(name, value);
+        const shouldApplyEq = !(type === "sk" && i === attrs.length - 1)
         if (shouldApplyEq) {
           expressions.push(`${nameRef.expression} = ${valueRef}`);
           continue;
@@ -2784,8 +2793,8 @@ class Entity {
             break;
           case QueryTypes.between: {
             const second = consolidated[consolidated.length - 1];
-            const value2 = second[attribute];
-            const valueRef2 = expressionState.setValue(attribute, value2);
+            const value2 = second[name];
+            const valueRef2 = expressionState.setValue(name, value2);
             expressions.push(`${nameRef.expression} BETWEEN ${valueRef} AND ${valueRef2}`);
             break;
           }
