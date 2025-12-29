@@ -473,7 +473,7 @@ describe("Query Options", () => {
           },
           output: {
             message:
-              "Query option 'concurrency' must be of type 'number' and greater than zero. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-concurrency-option",
+              "Query option 'concurrent' must be of type 'number' and greater than zero. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-concurrency-option",
           },
         },
         {
@@ -484,7 +484,7 @@ describe("Query Options", () => {
           },
           output: {
             message:
-              "Query option 'concurrency' must be of type 'number' and greater than zero. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-concurrency-option",
+              "Query option 'concurrent' must be of type 'number' and greater than zero. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-concurrency-option",
           },
         },
         {

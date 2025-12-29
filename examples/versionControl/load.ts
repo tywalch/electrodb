@@ -104,15 +104,15 @@ type LoadTableOptions = {
 };
 
 async function loadTable(options: LoadTableOptions) {
-  await models.User.put(options.users).go({ concurrency: 3 });
-  await models.Repository.put(options.repos).go({ concurrency: 3 });
-  await models.Issue.put(options.issues).go({ concurrency: 3 });
-  await models.IssueComment.put(options.issueComments).go({ concurrency: 3 });
-  await models.PullRequest.put(options.pullRequests).go({ concurrency: 3 });
+  await models.User.put(options.users).go({ concurrent: 3 });
+  await models.Repository.put(options.repos).go({ concurrent: 3 });
+  await models.Issue.put(options.issues).go({ concurrent: 3 });
+  await models.IssueComment.put(options.issueComments).go({ concurrent: 3 });
+  await models.PullRequest.put(options.pullRequests).go({ concurrent: 3 });
   await models.PullRequestComment.put(options.pullRequestComments).go({
-    concurrency: 3,
+    concurrent: 3,
   });
-  await models.Subscription.put(options.subscriptions).go({ concurrency: 3 });
+  await models.Subscription.put(options.subscriptions).go({ concurrent: 3 });
 }
 
 async function main() {
