@@ -2679,7 +2679,7 @@ class Entity {
     const provided = state.query.keys.provided;
     const all = state.query.facets.all || [];
     const queryType = state.query.type;
-    const expressionState = new ExpressionState({ prefix: "k_" })
+    const expressionState = new ExpressionState({ prefix: "k_" });
 
     const expressions = [];
     if (queryType === QueryTypes.between) {
@@ -2707,7 +2707,6 @@ class Entity {
       });
 
       let lastFound;
-      // todo: use the same facet source as non-between queries?
       const skNames = state.query.facets.sk || [];
       for (const name of skNames) {
         if (is[name] !== undefined) {
@@ -2801,6 +2800,7 @@ class Entity {
           // todo: clean up here
           case QueryTypes.clustered_collection:
           default:
+            // todo: improve error handling
             throw new Error('Not supported')
         }
       }
@@ -3204,8 +3204,12 @@ class Entity {
   _makeKeysFromAttributes(indexes, attributes, conditions) {
     let indexKeys = {};
     for (let [index, keyTypes] of Object.entries(indexes)) {
+      if (this.model.lookup.compositeIndexes.has(index)) {
+        continue;
+      }
+
       const shouldMakeKeys =
-        !this._indexConditionIsDefined(index) || conditions[index];
+        (!this._indexConditionIsDefined(index) || conditions[index]);
       if (!shouldMakeKeys && index !== TableIndex) {
         continue;
       }
@@ -4470,10 +4474,41 @@ class Entity {
       let indexCondition = index.condition || (() => true);
 
       if (indexType === IndexTypes.clustered) {
+        // todo: make contents consistent with "compositeIndexes" below
+        // this is not consistent with "compositeIndexes" (which uses the index name), this should be fixed in the future.
         clusteredIndexes.add(accessPattern);
       } else if (indexType === IndexTypes.composite) {
-        compositeIndexes.add(accessPattern);
+        if (indexName === TableIndex) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexDefinition,
+            `The Access Pattern "${accessPattern}" cannot be defined as a composite index. AWS DynamoDB does not allow for composite indexes on the main table index.`,
+          );
+        }
+        if (conditionDefined) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexCondition,
+            `The Access Pattern "${accessPattern}" is defined as a "${indexType}" index, but a condition callback is defined. Composite indexes do not support the use of a condition callback.`,
+          );
+        }
+        if (index.pk.field !== undefined || (index.sk && index.sk.field !== undefined)) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexDefinition,
+            `The Access Pattern "${accessPattern}" is defined as a "${indexType}" index, but the Partition Key or Sort Key is defined with a field property. Composite indexes do not support the use of a field property, their attributes defined in the composite array define the indexes member attributes.`,
+          );
+        }
+        // this is not consistent with "clusteredIndexes" (which uses the access pattern name), but it is more correct given the naming.
+        compositeIndexes.add(indexName);
       }
+
+      if (indexType !== IndexTypes.composite) {
+        if (index.pk.field === undefined || (index.sk && index.sk.field === undefined)) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexDefinition,
+            `The Access Pattern "${accessPattern}" is defined as a "${indexType}" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema.`,
+          );
+        }
+      }
+
       if (seenIndexes[indexName] !== undefined) {
         if (indexName === TableIndex) {
           throw new e.ElectroError(
@@ -4500,6 +4535,22 @@ class Entity {
           )}', contains a collection definition without a defined SK. Collections can only be defined on indexes with a defined SK.`,
         );
       }
+
+      if (indexType !== IndexTypes.composite) {
+        if (hasSk && index.sk.field === undefined) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexCompositeAttributes,
+            `The ${accessPattern} Access pattern is defined as a "${indexType}" index, but a Sort Key is defined without a field property. Composite indexes do not support the use of a condition callback.`,
+          );
+        }
+        if (index.pk.field === undefined) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexCompositeAttributes,
+            `The ${accessPattern} Access pattern is defined as a "${indexType}" index, but a Partition Key is defined without a field property. Composite indexes do not support the use of a condition callback.`,
+          );
+        }
+      }
+
       let collection = index.collection || "";
       let customFacets = {
         pk: false,

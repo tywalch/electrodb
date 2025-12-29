@@ -30,6 +30,7 @@ export type DocumentClient =
       scan: DocumentClientMethod;
       transactGet: DocumentClientMethod;
       transactWrite: DocumentClientMethod;
+      query: DocumentClientMethod;
     }
   | {
       send: (command: any) => Promise<any>;
@@ -3648,7 +3649,7 @@ export type NestedAttributes =
 
 export interface IndexWithSortKey {
   readonly sk: {
-    readonly field: string;
+    readonly field?: string;
     readonly composite: ReadonlyArray<string>;
     readonly template?: string;
   };

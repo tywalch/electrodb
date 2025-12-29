@@ -134,27 +134,33 @@ const ErrorCodes = {
     sym: ErrorCode,
   },
   InvalidListenerProvided: {
-    code: 1020,
+    code: 1021,
     section: "invalid-listener-provided",
     name: "InvalidListenerProvided",
     sym: ErrorCode,
   },
   InvalidLoggerProvided: {
-    code: 1020,
+    code: 1022,
     section: "invalid-listener-provided",
     name: "InvalidListenerProvided",
     sym: ErrorCode,
   },
   InvalidClientProvided: {
-    code: 1021,
+    code: 1023,
     section: "invalid-client-provided",
     name: "InvalidClientProvided",
     sym: ErrorCode,
   },
   InconsistentIndexDefinition: {
-    code: 1022,
+    code: 1024,
     section: "inconsistent-index-definition",
     name: "Inconsistent Index Definition",
+    sym: ErrorCode,
+  },
+  InvalidIndexDefinition: {
+    code: 1025,
+    section: "invalid-index-definition",
+    name: "InvalidIndexDefinition",
     sym: ErrorCode,
   },
   MissingAttribute: {

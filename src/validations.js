@@ -89,7 +89,7 @@ const Index = {
       properties: {
         field: {
           type: "string",
-          required: true,
+          required: false,
         },
         facets: {
           type: ["array", "string"],
@@ -127,11 +127,10 @@ const Index = {
     },
     sk: {
       type: "object",
-      required: ["field"],
       properties: {
         field: {
           type: "string",
-          required: true,
+          required: false,
         },
         facets: {
           type: ["array", "string"],

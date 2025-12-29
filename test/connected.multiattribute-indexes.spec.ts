@@ -141,6 +141,9 @@ function createThingEntity(options: CreateThingEntityOptions) {
           // required: true,
           default: "composite_attributes",
         },
+        ttl: {
+          type: "number"
+        }
       },
       indexes: {
         thing: {
@@ -158,11 +161,9 @@ function createThingEntity(options: CreateThingEntityOptions) {
           type: "composite",
           collection: 'inventory',
           pk: {
-            field: "gsi1pk",
             composite: ["country", "region", "city"]
           },
           sk: {
-            field: "gis1sk",
             composite: ["manufacturer", "model", "count", "name"]
           }
         }
@@ -194,6 +195,7 @@ function generateThingRecord(overrides?: Partial<ThingRecord>): ThingRecord {
     manufacturer: faker.company.name(),
     model: faker.commerce.product(),
     count: faker.number.int({ min: 1, max: 1000 }),
+    ttl: Date.now() + (1000 * 60 * 60), // 1 hour from now
     ...overrides,
   }
 }
@@ -203,13 +205,6 @@ function maybeDescribeAWSTest(name: string, fn: (client: DocumentClient, table: 
     process.env.MULTI_ATTRIBUTE_DYNANODB_REGION !== undefined &&
     process.env.MULTI_ATTRIBUTE_DYNANODB_ACCESS_KEY_ID !== undefined &&
     process.env.MULTI_ATTRIBUTE_DYNANODB_SECRET_ACCESS_KEY !== undefined;
-
-  console.log({
-    MULTI_ATTRIBUTE_DYNANODB_TABLE_NAME: process.env.MULTI_ATTRIBUTE_DYNANODB_TABLE_NAME,
-    MULTI_ATTRIBUTE_DYNANODB_REGION: process.env.MULTI_ATTRIBUTE_DYNANODB_REGION,
-    MULTI_ATTRIBUTE_DYNANODB_ACCESS_KEY_ID: process.env.MULTI_ATTRIBUTE_DYNANODB_ACCESS_KEY_ID,
-    MULTI_ATTRIBUTE_DYNANODB_SECRET_ACCESS_KEY: process.env.MULTI_ATTRIBUTE_DYNANODB_SECRET_ACCESS_KEY,
-  });
   if (condition) {
     describe(name, () => {
         const table = expectEnv("MULTI_ATTRIBUTE_DYNANODB_TABLE_NAME");
@@ -228,8 +223,6 @@ function maybeDescribeAWSTest(name: string, fn: (client: DocumentClient, table: 
     describe.skip(name, () => {});
   }
 }
-
-const ENABLE_AWS_TESTS = process.env.RUN_AWS_CONNECTED_TESTS === "true";
 
 const ServiceQueryOperations = {
   collection: 'collection',
@@ -813,15 +806,609 @@ describe("multi-attribute index support", () => {
     })
   });
 
-  describe("conversion functions", () => {})
-  describe("validations", () => {
+  describe("conversion functions", () => {
+
+  });
+
+  describe("multi-attribute index validations", () => {
     describe("schema", () => {
+      it('should allow a missing index field only on composite indexes', () => {
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            },
+          },
+        })).to.throw(`The Access Pattern "record" is defined as a "isolated" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+          },
+        })).not.to.throw();
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "isolated" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              type: 'isolated',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "isolated" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              type: 'clustered',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "clustered" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              pk: {
+                field: 'gsi1pk',
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "isolated" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                field: 'gsi1sk',
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "isolated" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              pk: {
+                field: 'gsi1pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'gsi1sk',
+                composite: ['id'],
+              },
+            }
+          },
+        })).not.to.throw();
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              type: 'clustered',
+              pk: {
+                field: 'gsi1pk',
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "clustered" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              type: 'clustered',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                field: 'gsi1sk',
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "clustered" index, but the Partition Key or Sort Key is defined without a field property. Unless using composite attributes, indexes must be defined with a field property that maps to the field name on the DynamoDB table KeySchema. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              type: 'clustered',
+              pk: {
+                field: 'gsi1pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'gsi1sk',
+                composite: ['id'],
+              },
+            }
+          },
+        })).not.to.throw();
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              type: 'composite',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).not.to.throw();
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              type: 'composite',
+              pk: {
+                field: 'gsi1pk',
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "composite" index, but the Partition Key or Sort Key is defined with a field property. Composite indexes do not support the use of a field property, their attributes defined in the composite array define the indexes member attributes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              type: 'composite',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                field: 'gsi1sk',
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "composite" index, but the Partition Key or Sort Key is defined with a field property. Composite indexes do not support the use of a field property, their attributes defined in the composite array define the indexes member attributes. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+      });
+
+      it('should only allow secondary indexes to be composite indexes', () => {
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              type: 'composite',
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+          },
+        })).to.throw(`The Access Pattern "record" cannot be defined as a composite index. AWS DynamoDB does not allow for composite indexes on the main table index. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-definition`);
+      });
+
+      it('should not accept a `condition` callback on composite indexes', () => {
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              condition: () => true,
+              type: 'composite',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "composite" index, but a condition callback is defined. Composite indexes do not support the use of a condition callback. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-option`);
+      });
+    
       // - index field property should only be allowed to be missing on "composite" indexes
-      // -
+      // - only allow secondary indexes to be composite
       // ? disallow use of "condition" on composite indexes?
+
     });
     describe("query-time", () => {
-      // - should not validate presence of composite attributes on all query and mutation operations: get, batchGet, scan, query, begins, gt, gte, lt, lte, between, update, patch, upsert, put, create, delete, remove, transactGet, transactWrite, collection, collection-begins, collection-gt, collection-gte, collection-lt, collection-lte
+      // - should not validate presence of composite attributes on all query and mutation operations: query, begins, gt, gte, lt, lte, between, update, patch, upsert, put, create, delete, remove, transactGet, transactWrite, collection, collection-begins, collection-gt, collection-gte, collection-lt, collection-lte
     })
   });
 
@@ -1212,9 +1799,5 @@ describe("multi-attribute index support", () => {
         }
       });
     });
-
-    describe("mutation operations", () => {
-      // - should perform all mutation operations correctly on multi-attribute indexes: update, patch, upsert, put, create, delete, remove, transactGet, transactWrite
-    })
   });
 });
