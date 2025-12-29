@@ -7,6 +7,10 @@ const table = "electro";
 const client = new DynamoDB.DocumentClient({
   region: "us-east-1",
   endpoint: process.env.LOCAL_DYNAMO_ENDPOINT,
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 });
 
 describe("Issue #85", () => {

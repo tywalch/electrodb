@@ -11,6 +11,7 @@ const localSecondaryIndexes = require("./definitions/localsecondaryindexes.json"
 const keysOnly = require("./definitions/keysonly.json");
 const castKeys = require("./definitions/castkeys.json");
 const reverseIndex = require("./definitions/reverseindex.json");
+const issue530 = require("./definitions/issue530.json");
 const shouldDestroy = process.argv.includes("--recreate");
 
 if (
@@ -23,8 +24,12 @@ if (
 }
 
 const configuration = {
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT || "http://localhost:8000",
   region: "us-east-1",
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 };
 
 const dynamodb = new DynamoDB(configuration);
@@ -80,6 +85,7 @@ async function main() {
     createTable(dynamodb, "electro_keysonly", keysOnly),
     createTable(dynamodb, "electro_castkeys", castKeys),
     createTable(dynamodb, "electro_reverseindex", reverseIndex),
+    createTable(dynamodb, "issue530", issue530),
   ]);
 }
 

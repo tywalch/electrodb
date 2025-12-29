@@ -11,12 +11,20 @@ const table = "electro";
 
 const v2Client = new V2Client({
   region: "us-east-1",
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT,
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 });
 
 const v3Client = new V3Client({
   region: "us-east-1",
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT,
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 });
 
 const clients = [

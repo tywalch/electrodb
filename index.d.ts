@@ -5015,6 +5015,7 @@ export type EntityConfiguration = {
     entity?: string;
     version?: string;
   };
+  ignoreOwnership?: boolean;
 };
 
 export class Entity<
