@@ -4361,6 +4361,47 @@ describe("attributes query option", () => {
     ]);
   });
 
+  it("should apply projection expression on batchGet", async () => {
+    const item: EntityItem<typeof entityWithSK> = {
+      attr1: uuid(),
+      attr2: "attr2",
+      attr9: 9,
+      attr6: 6,
+      attr4: "abc",
+      attr8: true,
+      attr5: "attr5",
+      attr3: "123",
+      attr7: "attr7",
+      attr10: false,
+    };
+
+    await entityWithSK.put(item).go();
+
+    const params = entityWithSK
+      .get([{ attr1: item.attr1, attr2: item.attr2 }])
+      .params({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      });
+    expect(params[0].RequestItems.electro.ProjectionExpression).to.equal(
+      "#attr2, #prop9, #attr5, #attr10",
+    );
+
+    const { data } = await entityWithSK
+      .get([{ attr1: item.attr1, attr2: item.attr2 }])
+      .go({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      });
+
+    expect(data).to.deep.equal([
+      {
+        attr2: item.attr2,
+        attr9: item.attr9,
+        attr5: item.attr5,
+        attr10: item.attr10,
+      },
+    ]);
+  });
+
   it("should return only the attributes specified in query options", async () => {
     const item: EntityItem<typeof entityWithSK> = {
       attr1: uuid(),
@@ -4412,7 +4453,7 @@ describe("attributes query option", () => {
     ]);
 
     const scanItem = await entityWithSK.scan
-      .where((a, o) => o.eq(a.attr1, item.attr1))
+      .where(({ attr1 }, { eq }) => eq(attr1, item.attr1))
       .go({
         attributes: ["attr2", "attr9", "attr5", "attr10"],
         pages: 'all',
