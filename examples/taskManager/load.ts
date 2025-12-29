@@ -28,9 +28,9 @@ type LoadTableOptions = {
 
 async function loadTable(options: LoadTableOptions) {
   const { tasks, offices, employees } = options;
-  await Task.put(tasks).go({ concurrency: 3 });
-  await Office.put(offices).go({ concurrency: 3 });
-  await Employee.put(employees).go({ concurrency: 3 });
+  await Task.put(tasks).go({ concurrent: 3 });
+  await Office.put(offices).go({ concurrent: 3 });
+  await Employee.put(employees).go({ concurrent: 3 });
 }
 
 async function main() {

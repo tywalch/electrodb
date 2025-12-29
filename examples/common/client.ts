@@ -18,6 +18,10 @@ process.env.AWS_NODEJS_CONNECTION_REUSE_ENABLED = "1";
 export const configuration = {
   endpoint: "http://localhost:8000",
   region: "us-east-1",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 };
 
 export const client = new DocumentClient(configuration);

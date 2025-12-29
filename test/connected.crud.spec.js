@@ -11,11 +11,19 @@ const DynamoDB = require("aws-sdk/clients/dynamodb");
 const v3DynamoDB = require("@aws-sdk/client-dynamodb");
 const v2Client = new DynamoDB.DocumentClient({
   region: "us-east-1",
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT,
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 });
 const v3Client = new v3DynamoDB.DynamoDBClient({
   region: "us-east-1",
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT,
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 });
 const print = (label, val) => console.log(label, JSON.stringify(val, null, 4));
 

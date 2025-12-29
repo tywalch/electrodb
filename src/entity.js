@@ -1404,7 +1404,7 @@ class Entity {
     if (isNaN(value) || value < 1) {
       throw new e.ElectroError(
         e.ErrorCodes.InvalidConcurrencyOption,
-        "Query option 'concurrency' must be of type 'number' and greater than zero.",
+        "Query option 'concurrent' must be of type 'number' and greater than zero.",
       );
     }
     return value;
@@ -1631,7 +1631,7 @@ class Entity {
       consistent: undefined,
       compare: ComparisonTypes.keys,
       complete: false,
-      ignoreOwnership: false,
+      ignoreOwnership: !!this.config.ignoreOwnership,
       _providedIgnoreOwnership: false,
       _isPagination: false,
       _isCollectionQuery: false,
@@ -3788,8 +3788,9 @@ class Entity {
           this.model.facets.labels[index] &&
           Array.isArray(this.model.facets.labels[index].sk);
         let labels = hasLabels ? this.model.facets.labels[index].sk : [];
+        const hasFacets = Object.keys(skFacet).length > 0;
         let sortKey = this._makeKey(prefixes.sk, facets.sk, skFacet, labels, {
-          excludeLabelTail: true,
+          excludeLabelTail: hasFacets,
           excludePostfix,
           transform,
         });

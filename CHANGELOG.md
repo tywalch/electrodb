@@ -598,4 +598,20 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.4.6]
 ### Fixed
-- [Issue #516](https://github.com/tywalch/electrodb/issues/516); Fixed the missing ProjectionExpression parameter when performing a batchGet with specific attributes to return.
+- [Issue #343]((https://github.com/tywalch/electrodb/issues/343)); Fixed issue where ElectroDB would attempt to double set an attribute's value on `upsert` if an index key used the attribute's name as it's field name. This would cause the `upsert` to fail because DyanmoDB prevents duplicate set operations to the same field.
+
+## [3.4.7]
+### Fixed
+- [Issue #530]((https://github.com/tywalch/electrodb/issues/530)); Fixed issue where ElectroDB would attempt to set a table index field's value on `upsert` if an index key used an attribute's name as it's field name. This would cause the `upsert` to fail because DyanmoDB prevents set operations on table index fields.
+
+## [3.5.0]
+### Adds
+- Adds option to pass ignoreOwnership during entity creation. We are migrating our codebase to use electrodb. Devs sometimes forget to include this flag and it fails silently because types are not narrowed down from the flags passed inside the .go({...}). It will be convenient if there was an option to pass in ignoreOwnership when creating entities so that errors are minimized. Contribution provided by [@xamogh](https://github.com/xamogh) via [PR #457](https://github.com/tywalch/electrodb/pull/457). Thank you for your contribution!
+
+## [3.5.1]
+### Fixed
+- [Issue #519](https://github.com/tywalch/electrodb/issues/519); The `concurrency` option has been deprecated in the TS types, which did not affect any runtime behavior, in favor of the `concurrent` option. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #520](https://github.com/tywalch/electrodb/pull/520). Thank you for your contribution!
+
+### [3.5.2]
+### Fixed
+[Issue #516](https://github.com/tywalch/electrodb/issues/516); Fixed the missing ProjectionExpression parameter when performing a batchGet with specific attributes to return. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #517](https://github.com/tywalch/electrodb/pull/517). Thank you for your contribution!

@@ -8,7 +8,11 @@ import DynamoDB from "aws-sdk/clients/dynamodb";
 
 const client = new DynamoDB.DocumentClient({
   region: "us-east-1",
-  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT,
+  endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
+  credentials: {
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  },
 });
 
 function print(label: string, val: any): void;

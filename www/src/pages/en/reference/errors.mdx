@@ -359,7 +359,7 @@ Tables can be defined on the [Service Options](/en/modeling/service#options) obj
 When performing a bulk operation ([Batch Get](/en/queries/batch-get), [Batch Delete Records](/en/mutations/batch-delete), [Batch Put Records](/en/mutations/batch-put)) you can pass an [Execution Option](/en/core-concepts/executing-queries) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 \*_What to do about it:_ \*
-Expect this error only if you're providing a `concurrency` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
+Expect this error only if you're providing a `concurrent` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### Invalid Pages Option
 

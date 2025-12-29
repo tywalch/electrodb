@@ -15,7 +15,6 @@ const {
   AttributeOperationProxy,
   UpdateOperations,
   FilterOperationNames,
-  UpdateOperationNames,
 } = require("./operations");
 const { UpdateExpression } = require("./update");
 const { FilterExpression } = require("./where");
@@ -464,21 +463,21 @@ let clauses = {
             upsert.indexKey = indexKey;
 
             // only "set" data is used to make keys
-            const setFields = Object.entries(
-              entity.model.schema.translateToFields(setAttributes),
-            );
+            const setFields = entity.model.schema.translateToFields(setAttributes);
 
             // add the keys impacted except for the table index keys; they are upserted
             // automatically by dynamo
             for (const key in updatedKeys) {
               const value = updatedKeys[key];
               if (indexKey[key] === undefined) {
-                setFields.push([key, value]);
+                setFields[key] = value;
+              } else {
+                delete setFields[key];
               }
             }
 
             entity._maybeApplyUpsertUpdate({
-              fields: setFields,
+              fields: Object.entries(setFields),
               operation: UpsertOperations.set,
               updateProxy,
               update,
