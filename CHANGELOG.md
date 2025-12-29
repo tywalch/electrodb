@@ -611,3 +611,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.5.1]
 ### Fixed
 - [Issue #519](https://github.com/tywalch/electrodb/issues/519); The `concurrency` option has been deprecated in the TS types, which did not affect any runtime behavior, in favor of the `concurrent` option. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #520](https://github.com/tywalch/electrodb/pull/520). Thank you for your contribution!
+
+### [3.5.2]
+### Fixed
+[Issue #516](https://github.com/tywalch/electrodb/issues/516); Fixed the missing ProjectionExpression parameter when performing a batchGet with specific attributes to return. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #517](https://github.com/tywalch/electrodb/pull/517). Thank you for your contribution!

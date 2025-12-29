@@ -2139,7 +2139,10 @@ class Entity {
 
   _batchGetParams(state, config = {}) {
     let table = config.table || this.getTableName();
-    let userDefinedParams = config.params || {};
+    let userDefinedParams = this._applyProjectionExpressions({
+      parameters: config.params || {},
+      config,
+    });
 
     // TableName is added when the config provided includes "table"
     // this is evaluated upstream so we remove it to avoid forming
