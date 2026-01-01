@@ -340,6 +340,13 @@ const IndexProjectionOptions = {
   keys_only: 'keys_only',
 };
 
+const EntityIdentifiers = {
+  entity: "__edb_e__",
+  version: "__edb_v__",
+}
+
+const EntityIdentifierFields = ["__edb_e__", "__edb_v__"];
+
 module.exports = {
   Pager,
   KeyTypes,
@@ -387,4 +394,6 @@ module.exports = {
   BatchWriteTypes,
   DefaultKeyCasing,
   IndexProjectionOptions,
+  EntityIdentifiers,
+  EntityIdentifierFields,
 };

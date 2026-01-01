@@ -3,7 +3,7 @@ import { Entity, Service } from "../index";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
 import DynamoDB from "aws-sdk/clients/dynamodb";
-const { IndexProjectionOptions } = require('../src/types');
+const { IndexProjectionOptions, EntityIdentifierFields } = require('../src/types');
 const client = new DynamoDB.DocumentClient({
   region: "us-east-1",
   endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
@@ -1827,6 +1827,71 @@ describe("index projection validation", () => {
         }
       })).to.throw('Unknown index projection attributes provided. The following access patterns were defined with unknown attributes: secondary: "unknown" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-projection-definition');
     });
+  });
+
+  it('should not throw when the projection definition contains entity identifiers', () => {
+    expect(() => new Entity({
+      model: {
+        entity: 'projection-validation',
+        service: 'test',
+        version: '1',
+      },
+      attributes: {
+        id: { type: "string" },
+        value: { type: 'string' }
+      },
+      indexes: {
+        main: {
+          pk: {
+            field: 'pk',
+            composite: ['id']
+          }
+        },
+        secondary: {
+          index: 'gsi1',
+          projection: [...EntityIdentifierFields],
+          pk: {
+            field: 'gsi1pk',
+            composite: ['id']
+          }
+        }
+      }
+    })).not.to.throw();
+  });
+
+  it('should throw when the projection definition contains incorrect entity identifiers', () => {
+    expect(() => new Entity({
+      model: {
+        entity: 'projection-validation',
+        service: 'test',
+        version: '1',
+      },
+      attributes: {
+        id: { type: "string" },
+        value: { type: 'string' }
+      },
+      indexes: {
+        main: {
+          pk: {
+            field: 'pk',
+            composite: ['id']
+          }
+        },
+        secondary: {
+          index: 'gsi1',
+          projection: [...EntityIdentifierFields],
+          pk: {
+            field: 'gsi1pk',
+            composite: ['id']
+          }
+        }
+      }
+    }, {
+      identifiers: {
+        entity: 'custom_entity_identifier_field',
+        version: 'custom_version_identifier_field',
+      },
+    })).to.throw('Unknown index projection attributes provided. The following access patterns were defined with unknown attributes: secondary:  "__edb_e__", "__edb_v__" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-projection-definition')
   });
 
   describe('when joining entities on a collection that is defined with projection', () => {
