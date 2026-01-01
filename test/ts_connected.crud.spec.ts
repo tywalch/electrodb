@@ -7,6 +7,8 @@ import {
   QueryResponse,
   Service,
   createConversions,
+  EntityIdentifierFields,
+  DocumentClient as ElectroDocumentClient,
 } from "../index";
 import { expect } from "chai";
 import { v4 as uuid } from "uuid";
@@ -4410,7 +4412,7 @@ describe("attributes query option", () => {
     ]);
 
     const scanItem = await entityWithSK.scan
-      .where(({ attr1 }, { eq }) => eq(attr1, item.attr1))
+      .where((a, o) => o.eq(a.attr1, item.attr1))
       .go({
         attributes: ["attr2", "attr9", "attr5", "attr10"],
         pages: 'all',
@@ -6755,6 +6757,382 @@ describe("scanning an index", () => {
 });
 
 describe("index projection", () => {
+  describe("entity ownership resolution", () => {
+    function createOwnershipEntity({
+      entityName,
+      serviceName,
+      versionNumber,
+      identifiers,
+      client,
+      useMainTableTemplate,
+    }: {
+      client: ElectroDocumentClient
+      tableName: string,
+      entityName: string,
+      serviceName: string,
+      versionNumber: string,
+      identifiers: string[],
+      useMainTableTemplate: boolean;
+    }) {
+      return new Entity(
+        {
+          model: {
+            version: versionNumber,
+            service: serviceName,
+            entity: entityName,
+          },
+          attributes: {
+            orgId: { type: "string", required: true },
+            id: { type: "string", required: true },
+            name: { type: "string", required: true },
+            include1: { type: "string" },
+            include2: { type: "number" },
+            include3: { type: "boolean" },
+            exclude1: { type: "string" },
+            exclude2: { type: "number" },
+            exclude3: { type: "boolean" },
+          },
+          indexes: {
+            primary: {
+              collection: "primaryCollection",
+              pk: {
+                field: "pk",
+                composite: ["orgId"],
+                template: useMainTableTemplate ? "${orgId}" : undefined
+              },
+              sk: {
+                field: "sk",
+                composite: ["id"],
+                template: useMainTableTemplate ? "${id}" : undefined
+              },
+            },
+            includeIndex: {
+              index: "gsi1pk-gsi1sk-index",
+              projection: ["include1", "include2", "include3", ...identifiers],
+              collection: "includeIndexCollection",
+              pk: {
+                field: "gsi1pk",
+                composite: ["name"],
+                // template used to ensure item cannot be identified via it's keys
+                template: "${name}",
+              },
+              sk: {
+                field: "gsi1sk",
+                composite: ["include1"],
+                // template used to ensure item cannot be identified via it's keys
+                template: "${include1}",
+              },
+            },
+          },
+        },
+        { table: "electro_projectioninclude", client },
+      );
+    }
+
+    function createItem(overrides: Partial<EntityItem<ReturnType<typeof createOwnershipEntity>>>): EntityItem<ReturnType<typeof createOwnershipEntity>> {
+      return {
+        id: uuid(),
+        name: uuid(),
+        orgId: uuid(),
+        include1: uuid(),
+        include2: Math.random(),
+        include3: Math.random() > 0.5,
+        exclude1: uuid(),
+        exclude2: Math.random(),
+        exclude3: Math.random() > 0.5,
+        ...overrides,
+      }
+    }
+
+    describe("when ownership a projection array is provided", async () => {
+      it("should retrieve correct items when projection includes identifiers and main table uses default key formatting", async () => {
+        const serviceName = uuid();
+        const name = uuid();
+        const include1 = uuid();
+
+        const entity1 = createOwnershipEntity({
+          identifiers: EntityIdentifierFields,
+          tableName: "electro_projectioninclude",
+          useMainTableTemplate: false,
+          versionNumber: uuid(),
+          entityName: uuid(),
+          serviceName,
+          client,
+        });
+
+        const entity2 = createOwnershipEntity({
+          identifiers: EntityIdentifierFields,
+          tableName: "electro_projectioninclude",
+          useMainTableTemplate: false,
+          versionNumber: uuid(),
+          entityName: uuid(),
+          serviceName,
+          client,
+        });
+
+        const service = new Service({entity1, entity2});
+
+        const item1 = createItem({ name, include1 });
+        const item2 = createItem({ name, include1, include3: !item1.include3 });
+        expect(item1).to.not.deep.equal(item2);
+
+        await Promise.all([
+          entity1.put(item1).go(),
+          entity2.put(item2).go(),
+        ]);
+
+        const [
+          received1,
+          received2,
+          received3,
+        ] = await Promise.all([
+          await entity1.query.includeIndex({ name }).go(),
+          await entity2.query.includeIndex({ name }).go(),
+          await service.collections.includeIndexCollection({ name }).go(),
+        ]);
+
+        const expected1 = [{
+          include1: item1.include1,
+          include2: item1.include2,
+          include3: item1.include3
+        }];
+
+        const expected2 = [{
+          include1: item2.include1,
+          include2: item2.include2,
+          include3: item2.include3
+        }];
+
+        expect(received1.data).to.deep.equal(expected1);
+        expect(received2.data).to.deep.equal(expected2);
+        expect(received3.data).to.deep.equal({
+          entity1: expected1,
+          entity2: expected2,
+        })
+      });
+
+      it("should retrieve correct items when projection doesn't include identifiers and main table uses default key formatting", async () => {
+        const serviceName = uuid();
+        const name = uuid();
+        const include1 = uuid();
+
+        const entity1 = createOwnershipEntity({
+          tableName: "electro_projectionincludewithoutedb",
+          useMainTableTemplate: false,
+          entityName: `e1_${uuid()}`,
+          versionNumber: uuid(),
+          identifiers: [],
+          serviceName,
+          client,
+        });
+
+        const entity2 = createOwnershipEntity({
+          tableName: "electro_projectionincludewithoutedb",
+          useMainTableTemplate: false,
+          entityName: `e2_${uuid()}`,
+          versionNumber: uuid(),
+          identifiers: [],
+          serviceName,
+          client,
+        });
+
+        const service = new Service({entity1, entity2});
+
+        const item1 = createItem({ name, include1 });
+        const item2 = createItem({ name, include1, include3: !item1.include3 });
+        expect(item1).to.not.deep.equal(item2);
+
+        await Promise.all([
+          entity1.put(item1).go(),
+          entity2.put(item2).go(),
+        ]);
+
+        const [
+          received1,
+          received2,
+          received3,
+        ] = await Promise.all([
+          await entity1.query.includeIndex({ name }).go(),
+          await entity2.query.includeIndex({ name }).go(),
+          await service.collections.includeIndexCollection({ name }).go(),
+        ]);
+
+        const expected1 = [{
+          include1: item1.include1,
+          include2: item1.include2,
+          include3: item1.include3
+        }];
+
+        const expected2 = [{
+          include1: item2.include1,
+          include2: item2.include2,
+          include3: item2.include3
+        }];
+
+        expect(received1.data).to.deep.equal(expected1);
+        expect(received2.data).to.deep.equal(expected2);
+      });
+
+      it("should retrieve correct items when projection includes identifiers and main table uses custom non-unique key formatting", async () => {
+        const serviceName = uuid();
+        const name = uuid();
+        const include1 = uuid();
+
+        const entity1 = createOwnershipEntity({
+          identifiers: EntityIdentifierFields,
+          tableName: "electro_projectioninclude",
+          useMainTableTemplate: true,
+          versionNumber: uuid(),
+          entityName: uuid(),
+          serviceName,
+          client,
+        });
+
+        const entity2 = createOwnershipEntity({
+          identifiers: EntityIdentifierFields,
+          tableName: "electro_projectioninclude",
+          useMainTableTemplate: true,
+          versionNumber: uuid(),
+          entityName: uuid(),
+          serviceName,
+          client,
+        });
+
+        const service = new Service({entity1, entity2});
+
+        const item1 = createItem({ name, include1 });
+        const item2 = createItem({ name, include1, include3: !item1.include3 });
+        expect(item1).to.not.deep.equal(item2);
+
+        await Promise.all([
+          entity1.put(item1).go(),
+          entity2.put(item2).go(),
+        ]);
+
+        const [
+          received1,
+          received2,
+          received3,
+        ] = await Promise.all([
+          await entity1.query.includeIndex({ name }).go(),
+          await entity2.query.includeIndex({ name }).go(),
+          await service.collections.includeIndexCollection({ name }).go(),
+        ]);
+
+        const expected1 = [{
+          include1: item1.include1,
+          include2: item1.include2,
+          include3: item1.include3
+        }];
+
+        const expected2 = [{
+          include1: item2.include1,
+          include2: item2.include2,
+          include3: item2.include3
+        }];
+
+        expect(received1.data).to.deep.equal(expected1);
+        expect(received2.data).to.deep.equal(expected2);
+      });
+
+      it("should retrieve correct items when projection doesn't include identifiers and main table uses custom non-unique key formatting", async () => {
+        // this test represents a cautionary tale: escaping default key formats
+        // and not including identifier fields prevents electrodb from inferring
+        // item ownership.
+        const serviceName = uuid();
+        const name = uuid();
+        const include1 = uuid();
+
+        const entity1 = createOwnershipEntity({
+          tableName: "electro_projectionincludewithoutedb",
+          useMainTableTemplate: true,
+          entityName: `e1_${uuid()}`,
+          versionNumber: uuid(),
+          identifiers: [],
+          serviceName,
+          client,
+        });
+
+        const entity2 = createOwnershipEntity({
+          tableName: "electro_projectionincludewithoutedb",
+          useMainTableTemplate: true,
+          entityName: `e2_${uuid()}`,
+          versionNumber: uuid(),
+          identifiers: [],
+          serviceName,
+          client,
+        });
+
+        const service = new Service({entity1, entity2});
+
+        const item1 = createItem({ name, include1 });
+        const item2 = createItem({ name, include1, include3: !item1.include3 });
+        expect(item1).to.not.deep.equal(item2);
+
+        await Promise.all([
+          entity1.put(item1).go(),
+          entity2.put(item2).go(),
+        ]);
+
+        const sortItems = (
+          a: { include1?: string, include2?: number },
+          b: { include1?: string, include2?: number },
+        ) => {
+          return `${a.include1}${a.include2}`.localeCompare(`${b.include1}${b.include2}`);
+        };
+
+        const expected = [{
+          include1: item2.include1,
+          include2: item2.include2,
+          include3: item2.include3
+        }, {
+          include1: item1.include1,
+          include2: item1.include2,
+          include3: item1.include3
+        }].sort(sortItems);
+
+        const [
+          received1,
+          received2,
+          received3,
+        ] = await Promise.all([
+          await entity1.query.includeIndex({ name }).go().then((resp) => {
+            return resp.data.sort(sortItems);
+          }),
+          await entity2.query.includeIndex({ name }).go().then((resp) => {
+            return resp.data.sort(sortItems);
+          }),
+          await service.collections.includeIndexCollection({ name }).go().then((resp) => {
+            return {
+              entity1: resp.data.entity1.sort(sortItems),
+              entity2: resp.data.entity2.sort(sortItems),
+            }
+          }),
+        ]);
+
+        expect(received1).to.deep.equal(expected);
+        expect(received2).to.deep.equal(expected);
+
+        expect(received3.entity1.length + received3.entity2.length).to.equal(2);
+
+        // The entity to which items will be assigned to is non-deterministic
+        // and not important. This test does assume, however, that one of the
+        // two entities will be assigned BOTH items.
+        if (received3.entity1.length) {
+          expect(received3).to.deep.equal({
+            entity1: expected,
+            entity2: [],
+          })
+        } else {
+          expect(received3).to.deep.equal({
+            entity1: [],
+            entity2: expected,
+          })
+        }
+      });
+    });
+  });
+
   const createMainEntity = (version: number) =>
     new Entity(
       {
@@ -6838,7 +7216,7 @@ describe("index projection", () => {
       },
       attributes: {
         id: { type: "string", required: true },
-        include1: { type: "boolean", required: true },
+        include1: { type: "string", required: true },
         include2: { type: "boolean", required: true },
         include3: { type: "number", required: true },
         some1: { type: "string", required: true },
@@ -6900,7 +7278,7 @@ describe("index projection", () => {
     await entity
       .create({
         id: uuid(),
-        include1: "include1",
+        include1: uuid(),
         include2: true,
         include3: 1,
         exclude1: "exclude1",
@@ -6920,7 +7298,7 @@ describe("index projection", () => {
     await entity2
       .create({
         id: item.id,
-        include1: true,
+        include1: uuid(),
         include2: true,
         include3: 1,
         some1: "some1",
@@ -6942,13 +7320,17 @@ describe("index projection", () => {
   });
 
   it("scans primary index", async () => {
-    const { data: resp } = await entity.scan.go({ pages: "all" });
+    const { data: resp } = await entity.scan
+      .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
+      .go({ pages: "all" });
 
     expect(resp).to.deep.equal([item]);
   });
 
   it("scans index with projected attributes", async () => {
-    const { data: resp } = await entity.scan.includeIndex.go({
+    const { data: resp } = await entity.scan.includeIndex
+      .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
+      .go({
       pages: "all",
     });
 
@@ -6962,11 +7344,13 @@ describe("index projection", () => {
   });
 
   it("scans index with projected attributes and hydrate and non-projected attributes", async () => {
-    const { data: resp } = await entity.scan.includeIndex.go({
-      pages: "all",
-      hydrate: true,
-      attributes: ["include1", "exclude1"],
-    });
+    const { data: resp } = await entity.scan.includeIndex
+      .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
+      .go({
+        pages: "all",
+        hydrate: true,
+        attributes: ["include1", "exclude1"],
+      });
 
     expect(resp).to.deep.equal([
       {
@@ -6992,20 +7376,24 @@ describe("index projection", () => {
   });
 
   it("scans index with projected attributes without edb keys using hydrate", async () => {
-    const { data: resp } = await entity.scan.includeIndex.go({
-      pages: "all",
-      table: "electro_projectionincludewithoutedb",
-      hydrate: true,
-    });
+    const { data: resp } = await entity.scan.includeIndex
+      .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
+      .go({
+        pages: "all",
+        table: "electro_projectionincludewithoutedb",
+        hydrate: true,
+      });
 
     expect(resp).to.deep.equal([item]);
   });
 
   it("scans index with projected attributes without edb keys", async () => {
-    const { data: resp } = await entity.scan.includeIndex.go({
-      pages: "all",
-      table: "electro_projectionincludewithoutedb",
-    });
+    const { data: resp } = await entity.scan.includeIndex
+      .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
+      .go({
+        pages: "all",
+        table: "electro_projectionincludewithoutedb",
+      });
 
     expect(resp).to.deep.equal([
       {
@@ -7017,9 +7405,11 @@ describe("index projection", () => {
   });
 
   it("scans index with all projected attributes", async () => {
-    const { data: resp } = await entity.scan.thirdIndex.go({
-      pages: "all",
-    });
+    const { data: resp } = await entity.scan.thirdIndex
+      .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
+      .go({
+        pages: "all",
+      });
     expect(resp).to.deep.equal([
       {
         id: item.id,
@@ -7034,6 +7424,18 @@ describe("index projection", () => {
   });
 
   it("queries index with projected attributes", async () => {
+    const item = await entity
+      .create({
+        id: uuid(),
+        include1: "include1",
+        include2: true,
+        include3: 1,
+        exclude1: "exclude1",
+        exclude2: 2,
+        exclude3: false,
+      })
+      .go()
+      .then((resp) => resp.data);
     const { data: resp } = await entity.query
       .includeIndex({ id: item.id })
       .between({ include1: "include0" }, { include1: "include9" })
@@ -7071,7 +7473,10 @@ describe("index projection", () => {
     const { data: resp } = await entity.query
       .keysOnly({ id: item.id })
       .go({ pages: "all" });
-    expect(resp).to.deep.equal([{}]);
+    expect(resp.length).to.be.greaterThan(0);
+    resp.forEach((item) => {
+      expect(item).to.deep.equal({});
+    });
 
     const { data: respWithKeys } = await entity.query
       .keysOnly({ id: item.id })
@@ -7079,7 +7484,7 @@ describe("index projection", () => {
     expect(respWithKeys).to.deep.equal([
       {
         gsi4pk: `$tests#id_${item.id}`,
-        gsi4sk: "$keysonlycollection#projection-include_1",
+        gsi4sk: `$keysonlycollection#projection-include_1`,
         pk: `$tests#id_${item.id}`,
         sk: "$primarycollection#projection-include_1",
       },
@@ -7090,20 +7495,20 @@ describe("index projection", () => {
     const { data: resp } = await entity.scan.keysOnly.go({
       pages: "all",
     });
-    expect(resp).to.deep.equal([{}]);
+    expect(resp.length).to.be.greaterThan(0);
+    resp.forEach((item) => {
+      expect(item).to.deep.equal({});
+    });
 
-    const { data: respWithKeys } = await entity.scan.keysOnly.go({
+    const received = await entity.scan.keysOnly.go({
       pages: "all",
       data: "includeKeys",
-    });
-    expect(respWithKeys).to.deep.equal([
-      {
-        gsi4pk: `$tests#id_${item.id}`,
-        gsi4sk: "$keysonlycollection#projection-include_1",
-        pk: `$tests#id_${item.id}`,
-        sk: "$primarycollection#projection-include_1",
-      },
-    ]);
+    }).then((resp) => resp.data as any[]);
+    const params = entity.put(item).params();
+    const { pk, sk, gsi4pk, gsi4sk } = params.Item;
+
+    const found = received.find((resp) => resp.pk === pk && resp.sk === sk);
+    expect(found).to.deep.equal({ gsi4pk, gsi4sk, pk, sk });
   });
 
   it("queries index with keys only and hydrate", async () => {
@@ -7118,7 +7523,8 @@ describe("index projection", () => {
       pages: "all",
       hydrate: true,
     });
-    expect(resp).to.deep.equal([item]);
+    const found = resp.find(({id}) => id === item.id);
+    expect(found).to.deep.equal(item);
   });
 
   it("queries index with keys only and hydrate and non-projected attributes", async () => {
@@ -7138,14 +7544,12 @@ describe("index projection", () => {
     const { data: resp } = await entity.scan.keysOnly.go({
       pages: "all",
       hydrate: true,
-      attributes: ["include1", "exclude1"],
+      attributes: ["include1", "exclude1", "id"],
     });
-    expect(resp).to.deep.equal([
-      {
-        include1: item.include1,
-        exclude1: item.exclude1,
-      },
-    ]);
+
+    const { id, include1, exclude1 } = item;
+    const found = resp.find(({id}) => id === item.id);
+    expect(found).to.deep.equal({ id, include1, exclude1 });
   });
 
   // TODO: uncomment when attributes in collection queries are runtime-supported
@@ -7284,11 +7688,14 @@ describe("index projection", () => {
     expect(params.FilterExpression).to.not.include("__edb_e__");
     expect(params.FilterExpression).to.not.include("__edb_v__");
 
-    const { data: resp } = await entity.scan.includeIndex.go({
-      table: "electro_projectionincludewithoutedb",
-      pages: "all",
-    });
-    expect(resp).to.deep.equal([
+    const { data: received } = await entity.scan.includeIndex
+      .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
+      .go({
+        table: "electro_projectionincludewithoutedb",
+        pages: "all",
+      });
+
+    expect(received).to.deep.equal([
       {
         include1: item.include1,
         include2: item.include2,
@@ -7305,7 +7712,10 @@ describe("index projection", () => {
     const { data: keysOnlyResp } = await entity.scan.keysOnly.go({
       pages: "all",
     });
-    expect(keysOnlyResp).to.deep.equal([{}]);
+    expect(keysOnlyResp.length).to.be.greaterThan(0);
+    keysOnlyResp.forEach((item) => {
+      expect(item).to.deep.equal({});
+    });
   });
 
   it("does not automatically set ignoreOwnership=true for ALL projection index", async () => {
@@ -7313,7 +7723,9 @@ describe("index projection", () => {
     expect(allProjectionParams.FilterExpression).to.include("__edb_e__");
     expect(allProjectionParams.FilterExpression).to.include("__edb_v__");
 
-    const { data: allProjectionResp } = await entity.scan.thirdIndex.go({
+    const { data: allProjectionResp } = await entity.scan.thirdIndex
+      .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
+      .go({
       pages: "all",
     });
     expect(allProjectionResp).to.deep.equal([item]);

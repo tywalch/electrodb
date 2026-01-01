@@ -50,16 +50,16 @@ const ImpactedIndexTypeSource = {
 
 class Entity {
   constructor(model, config = {}) {
-    config = c.normalizeConfig(config);
+    this.config = c.normalizeConfig(config);
+    this.identifiers = this.config.identifiers;
+    this.client = this.config.client;
     this.eventManager = new EventManager({
-      listeners: config.listeners,
+      listeners: this.config.listeners,
     });
-    this.eventManager.add(config.logger);
+    this.eventManager.add(this.config.logger);
     this._validateModel(model);
     this.version = EntityVersions.v1;
-    this.config = config;
-    this.client = config.client;
-    this.model = this._parseModel(model, config);
+    this.model = this._parseModel(model, this.config);
     /** start beta/v1 condition **/
     this.config.table = config.table || model.table;
     /** end beta/v1 condition **/
@@ -95,12 +95,6 @@ class Entity {
         ).query(...values);
       };
     }
-
-    this.config.identifiers = config.identifiers || {};
-    this.identifiers = {
-      entity: this.config.identifiers.entity || "__edb_e__",
-      version: this.config.identifiers.version || "__edb_v__",
-    };
     this._instance = ElectroInstance.entity;
     this._instanceType = ElectroInstanceTypes.entity;
     this.schema = model;
@@ -925,6 +919,20 @@ class Entity {
     }
   }
 
+  _shouldTakeItem(item, config) {
+    return (
+      config.ignoreOwnership &&
+      config.attributes &&
+      config.attributes.length > 0 &&
+      !this._attributesIncludeKeys(config.attributes)
+    ) || (
+      (config.ignoreOwnership || config.hydrate) &&
+      this.ownsKeys(item)
+    ) || (
+      this.ownsItem(item)
+    );
+  }
+
   formatResponse(response, index, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
@@ -947,15 +955,7 @@ class Entity {
         results = response;
       } else {
         if (response.Item) {
-          if (
-            (config.ignoreOwnership &&
-              config.attributes &&
-              config.attributes.length > 0 &&
-              !this._attributesIncludeKeys(config.attributes)) ||
-            ((config.ignoreOwnership || config.hydrate) &&
-              this.ownsKeys(response.Item)) ||
-            this.ownsItem(response.Item)
-          ) {
+          if (this._shouldTakeItem(response.Item, config)) {
             results = this.model.schema.formatItemForRetrieval(
               response.Item,
               config,
@@ -966,15 +966,7 @@ class Entity {
         } else if (response.Items) {
           results = [];
           for (let item of response.Items) {
-            if (
-              (config.ignoreOwnership &&
-                config.attributes &&
-                config.attributes.length > 0 &&
-                !this._attributesIncludeKeys(config.attributes)) ||
-              ((config.ignoreOwnership || config.hydrate) &&
-                this.ownsKeys(item)) ||
-              this.ownsItem(item)
-            ) {
+            if (this._shouldTakeItem(item, config)) {
               let record = this.model.schema.formatItemForRetrieval(
                 item,
                 config,
@@ -1674,12 +1666,9 @@ class Entity {
         this.model.translations.indexes.fromIndexToAccessPattern[indexName];
       if (accessPattern) {
         const indexDefinition = this.model.indexes[accessPattern];
-        if (
+        config.ignoreOwnership =
           indexDefinition.projection === IndexProjectionOptions.keys_only ||
-          Array.isArray(indexDefinition.projection)
-        ) {
-          config.ignoreOwnership = true;
-        }
+          (Array.isArray(indexDefinition.projection) && !this.model.indexes[accessPattern].identifiersAreProjected);
       }
     }
 
@@ -4271,7 +4260,7 @@ class Entity {
     return model;
   }
 
-  _normalizeIndexes(indexes) {
+  _normalizeIndexes(indexes, config) {
     let normalized = {};
     let indexFieldTranslation = {};
     let indexHasSortKeys = {};
@@ -4433,6 +4422,7 @@ class Entity {
         condition: indexCondition,
         conditionDefined: conditionDefined,
         projection: index.projection,
+        identifiersAreProjected: false,
       };
 
       let projections = [];
@@ -4445,10 +4435,17 @@ class Entity {
           definition.projection = index.projection.toLowerCase();
         } else if (Array.isArray(index.projection) && index.projection.length > 0 && index.projection.every((attr) => typeof attr === "string")) {
           definition.projection = index.projection;
-          projections = definition.projection.map((name) => ({
-            name,
-            accessPattern,
-          }));
+          let nameIdentifierPresent = false;
+          let versionIdentiferPresent = false;
+          for (const name of definition.projection) {
+            projections.push({ name, accessPattern });
+            if (name === config.identifiers.entity) {
+              nameIdentifierPresent = true;
+            } else if (name === config.identifiers.version) {
+              versionIdentiferPresent = true;
+            }
+          }
+          definition.identifiersAreProjected = nameIdentifierPresent && versionIdentiferPresent;
         } else {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidProjectionDefinition,
@@ -4913,10 +4910,14 @@ class Entity {
       indexHasSortKeys,
       indexAccessPattern,
       indexHasSubCollections,
-    } = this._normalizeIndexes(model.indexes);
+    } = this._normalizeIndexes(model.indexes, config);
     let schema = new Schema(model.attributes, facets, {
-      getClient: () => this.client,
       isRoot: true,
+      getClient: () => this.client,
+      identifiers: {
+        [config.identifiers.entity]: config.identifiers.entity,
+        [config.identifiers.version]: config.identifiers.version,
+      },
     });
 
     let filters = this._normalizeFilters(model.filters);

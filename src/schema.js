@@ -1215,7 +1215,7 @@ class Schema {
   constructor(
     properties = {},
     facets = {},
-    { traverser = new AttributeTraverser(), getClient, parent, isRoot } = {},
+    { traverser = new AttributeTraverser(), getClient, parent, isRoot, identifiers } = {},
   ) {
     this._validateProperties(properties, parent);
     let schema = Schema.normalizeAttributes(properties, facets, {
@@ -1223,6 +1223,7 @@ class Schema {
       getClient,
       parent,
       isRoot,
+      identifiers,
     });
     this.getClient = getClient;
     this.attributes = schema.attributes;
@@ -1242,7 +1243,7 @@ class Schema {
   static normalizeAttributes(
     attributes = {},
     facets = {},
-    { traverser, getClient, parent, isRoot } = {},
+    { traverser, getClient, parent, isRoot, identifiers = {} } = {},
   ) {
     const attributeHasParent = !!parent;
     let invalidProperties = [];
@@ -1541,7 +1542,7 @@ class Schema {
     }
 
     let missingProjectionAttributes = Array.isArray(facets.projections)
-      ? facets.projections.filter(({ name }) => !normalized[name])
+      ? facets.projections.filter(({ name }) => !normalized[name] && !identifiers[name])
       : [];
 
     if (missingProjectionAttributes.length > 0) {

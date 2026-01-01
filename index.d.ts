@@ -1087,6 +1087,13 @@ export type ElectroEventListener = (event: ElectroEvent) => void;
 //     details: any;
 // };
 
+export declare const EntityIdentifiers: {
+  name: "__edb_e__";
+  version: "__edb_v__";
+};
+
+export declare const EntityIdentifierFields: string[];
+
 export type EntityIdentifiers<E extends Entity<any, any, any, any>> =
   E extends Entity<infer A, infer F, infer C, infer S>
     ? AllTableIndexCompositeAttributes<A, F, C, S>

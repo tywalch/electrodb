@@ -2,6 +2,7 @@ const lib = require("@aws-sdk/lib-dynamodb");
 const util = require("@aws-sdk/util-dynamodb");
 const { isFunction } = require("./validations");
 const { ElectroError, ErrorCodes } = require("./errors");
+const { EntityIdentifiers } = require("./types");
 const DocumentClientVersions = {
   v2: "v2",
   v3: "v3",
@@ -289,9 +290,14 @@ function normalizeClient(client) {
 }
 
 function normalizeConfig(config = {}) {
+  const identifiers = config.identifiers || {};
   return {
     ...config,
     client: normalizeClient(config.client),
+    identifiers: {
+      entity: identifiers.entity || EntityIdentifiers.entity,
+      version: identifiers.version || EntityIdentifiers.version
+    }
   };
 }
 
