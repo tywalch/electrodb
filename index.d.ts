@@ -30,6 +30,7 @@ export type DocumentClient =
       scan: DocumentClientMethod;
       transactGet: DocumentClientMethod;
       transactWrite: DocumentClientMethod;
+      query: DocumentClientMethod;
     }
   | {
       send: (command: any) => Promise<any>;
@@ -3656,7 +3657,7 @@ export type NestedAttributes =
 
 export interface IndexWithSortKey {
   readonly sk: {
-    readonly field: string;
+    readonly field?: string;
     readonly composite: ReadonlyArray<string>;
     readonly template?: string;
   };
@@ -3682,19 +3683,19 @@ export interface Schema<A extends string, F extends string, C extends string> {
       readonly project?: "keys_only";
       readonly index?: string;
       readonly scope?: string;
-      readonly type?: "clustered" | "isolated";
+      readonly type?: "clustered" | "isolated" | "composite";
       readonly collection?: AccessPatternCollection<C>;
       readonly condition?: (composite: Record<string, unknown>) => boolean;
       readonly pk: {
         readonly casing?: KeyCasingOption;
-        readonly field: string;
+        readonly field?: string;
         readonly composite: ReadonlyArray<F>;
         readonly template?: string;
         readonly cast?: KeyCastOption;
       };
       readonly sk?: {
         readonly casing?: KeyCasingOption;
-        readonly field: string;
+        readonly field?: string;
         readonly composite: ReadonlyArray<F>;
         readonly template?: string;
         readonly cast?: KeyCastOption;
@@ -3737,7 +3738,7 @@ type ClusteredIndexNameMap<
   C extends string,
   S extends Schema<A, F, C>,
 > = {
-  [I in keyof S["indexes"] as S["indexes"][I] extends { type: "clustered" }
+  [I in keyof S["indexes"] as S["indexes"][I] extends { type: "clustered" | "composite" }
     ? I
     : never]: S["indexes"][I]["collection"] extends AccessPatternCollection<
     infer Name
@@ -3754,7 +3755,7 @@ type IsolatedIndexNameMap<
   C extends string,
   S extends Schema<A, F, C>,
 > = {
-  [I in keyof S["indexes"] as S["indexes"][I] extends { type: "clustered" }
+  [I in keyof S["indexes"] as S["indexes"][I] extends { type: "clustered" | "composite" }
     ? never
     : I]: S["indexes"][I]["collection"] extends AccessPatternCollection<
     infer Name
