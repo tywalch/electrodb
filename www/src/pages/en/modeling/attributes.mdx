@@ -26,7 +26,7 @@ Use the expanded syntax build out more robust attribute options.
   type: "string" | "number" | "boolean" | "list" | "map" | "set" | "any" | ReadonlyArray<string> | CustomAttributeType<T>;
   required?: boolean;
   default?: <T> | (() => <T>);
-  validate?: RegExp | ((value: T) => void | string);
+  validate?: RegExp | ((value: T) => boolean);
   field?: string;
   readOnly?: boolean;
   label?: string;
@@ -71,9 +71,9 @@ Either the default value itself or a synchronous function that returns the desir
 
 ### Validate
 
-**Value Type:** `RegExp`, `(value: T) => void`, `(value: T) => string`
+**Value Type:** `RegExp | ((value: T) => boolean)`
 
-Either regex or a synchronous callback to return an error string (will result in exception using the string as the error's message), or thrown exception in the event of an error. Read more below in [Attribute Validation](#attribute-validation).
+Provide either a regular expression or a synchronous callback that returns a boolean. Return `true` (or any truthy value) when the attribute is valid and `false` (or any falsy value) when it is invalid. Throw your own error inside the callback to surface a custom validation message. Read more below in [Attribute Validation](#attribute-validation).
 
 ### Field
 
@@ -206,9 +206,7 @@ The `validate` property allows for multiple function/type signatures. Here the d
 | signature               | behavior                                                                                                                                                             |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Regexp`                | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute                                                                       |
-| `(value: T) => string`  | If a string value with length is returned, the text will be considered the _reason_ the value is invalid. It will generate a new exception this text as the message. |
-| `(value: T) => boolean` | If a boolean value is returned, `true` or truthy values will signify than a value is invalid while `false` or falsey will be considered valid.                       |
-| `(value: T) => void`    | A void or `undefined` value is returned, will be treated as successful, in this scenario you can throw an Error yourself to interrupt the query                      |
+| `(value: T) => boolean` | Return `true`/truthy for valid values and `false`/falsy for invalid values. Throw an error to interrupt the operation and include a custom validation message.     |
 
 ## Attribute Types
 
