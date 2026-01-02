@@ -1,0 +1,290 @@
+---
+title: Using INCLUDE Projection Global Secondary Indexes
+description: Querying indexes with INCLUDE projections for selective attribute access
+keywords:
+  - electrodb
+  - docs
+  - concepts
+  - dynamodb
+  - query
+  - entity
+  - attribute
+  - schema
+  - index
+  - include
+  - projection
+layout: ../../../layouts/MainLayout.astro
+---
+
+The `INCLUDE` projection type allows you to specify exactly which attributes are included in a Global Secondary Index. This provides a balance between the minimal storage of `KEYS_ONLY` and the complete data access of `ALL` projections. With `INCLUDE` projections, you can optimize your indexes by including only the attributes you need for your queries.
+
+## Example Setup
+
+<blockQuote>
+    <h4>Example Setup</h4>
+    <details>
+        <summary>Table Definition</summary>
+
+        ```json
+        {
+            "TableName": "electro",
+            "KeySchema": [
+                {
+                    "AttributeName": "pk",
+                    "KeyType": "HASH"
+                },
+                {
+                    "AttributeName": "sk",
+                    "KeyType": "RANGE"
+                }
+            ],
+            "AttributeDefinitions": [
+                {
+                    "AttributeName": "pk",
+                    "AttributeType": "S"
+                },
+                {
+                    "AttributeName": "sk",
+                    "AttributeType": "S"
+                },
+                {
+                    "AttributeName": "gsi1pk",
+                    "AttributeType": "S"
+                },
+                {
+                    "AttributeName": "gsi1sk",
+                    "AttributeType": "S"
+                }
+            ],
+            "GlobalSecondaryIndexes": [
+                {
+                    "IndexName": "gsi1pk-gsi1sk-index",
+                    "KeySchema": [
+                        {
+                            "AttributeName": "gsi1pk",
+                            "KeyType": "HASH"
+                        },
+                        {
+                            "AttributeName": "gsi1sk",
+                            "KeyType": "RANGE"
+                        }
+                    ],
+                    "Projection": {
+                        "ProjectionType": "INCLUDE",
+                        "NonKeyAttributes": ["name", "status", "createdAt", "__edb_e__", "__edb_v__"]
+                    }
+                }
+            ],
+            "BillingMode": "PAY_PER_REQUEST"
+        }
+        ```
+
+    </details>
+
+    <details>
+        <summary>Example Entity</summary>
+
+        ```typescript
+        import DynamoDB from "aws-sdk/clients/dynamodb";
+        import { Entity } from 'electrodb';
+
+        const client = new DynamoDB.DocumentClient();
+
+        const table = 'electro';
+
+        const tasks = new Entity({
+            model: {
+                entity: 'tasks',
+                version: '1',
+                service: 'taskapp'
+            },
+            attributes: {
+                taskId: {
+                    type: 'string'
+                },
+                projectId: {
+                    type: 'string'
+                },
+                name: {
+                    type: 'string'
+                },
+                description: {
+                    type: 'string'
+                },
+                status: {
+                    type: ['open', 'in-progress', 'closed'] as const,
+                    default: 'open'
+                },
+                priority: {
+                    type: 'number'
+                },
+                createdAt: {
+                    type: 'number',
+                    default: () => Date.now()
+                },
+                updatedAt: {
+                    type: 'number',
+                    watch: '*',
+                    set: () => Date.now()
+                }
+            },
+            indexes: {
+                tasks: {
+                    pk: {
+                        field: 'pk',
+                        composite: ['projectId']
+                    },
+                    sk: {
+                        field: 'sk',
+                        composite: ['taskId']
+                    }
+                },
+                statusIndex: {
+                    index: 'gsi1pk-gsi1sk-index',
+                    projection: ['name', 'status', 'createdAt'],
+                    pk: {
+                        field: 'gsi1pk',
+                        composite: ['status'],
+                    },
+                    sk: {
+                        field: 'gsi1sk',
+                        composite: ['createdAt'],
+                    }
+                }
+        }
+    }, { table, client });
+    ```
+
+    </details>
+
+</blockQuote>
+
+## Using the Project Property
+
+When defining an index with an `INCLUDE` projection, you can use the `projection` property in your ElectroDB entity definition to specify which attributes should be included in the index. This property maps to the `NonKeyAttributes` in the DynamoDB table definition.
+
+```typescript
+indexes: {
+    statusIndex: {
+        index: 'gsi1pk-gsi1sk-index',
+        projection: ['name', 'status', 'createdAt'], // Only these attributes are included
+        pk: {
+            field: 'gsi1pk',
+            composite: ['status'],
+        },
+        sk: {
+            field: 'gsi1sk',
+            composite: ['createdAt'],
+        }
+    }
+}
+```
+
+## Querying INCLUDE Projections
+
+When querying an index with an `INCLUDE` projection, you can only access the attributes that were specified in the `projection` array. ElectroDB will enforce this at the type level.
+
+### Basic Querying
+
+```typescript
+// Only returns the projected attributes: name, status, createdAt
+const { data, cursor } = await tasks.query
+  .statusIndex({ status: "open" })
+  .go();
+
+// data will only contain: { name: string, status: string, createdAt: number }[]
+```
+
+### Filtering on Projected Attributes
+
+You can only filter on attributes that are included in the projection:
+
+```typescript
+// ✅ This works - filtering on projected attributes
+const { data } = await tasks.query
+  .statusIndex({ status: "open" })
+  .where(({ name }, { eq }) => eq(name, "Important Task"))
+  .go();
+
+const { data } = await tasks.query
+  .statusIndex({ status: "open" })
+// ❌ This would not work - filtering on non-projected attributes
+  .where(({ description }, { eq }) => eq(description, "Some description"))
+  .go();
+```
+
+### Using Hydration
+
+If you need access to non-projected attributes, you can use the `hydrate` option to perform a follow-up `batchGet` operation:
+
+```typescript
+// With hydration, you get all attributes but can only filter on projected ones
+const { data } = await tasks.query
+  .statusIndex({ status: "open" })
+  .where((attr, op) => op.eq(attr.name, "Important Task"))
+  .go({ hydrate: true });
+
+// data will contain all attributes: { taskId, projectId, name, description, status, priority, createdAt, updatedAt }[]
+```
+
+### Selective Attribute Retrieval with Hydration
+
+When using hydration, you can still specify which attributes to return:
+
+```typescript
+const { data } = await tasks.query
+  .statusIndex({ status: "open" })
+  .where((attr, op) => op.eq(attr.name, "Important Task"))
+  .go({ 
+    hydrate: true, 
+    attributes: ['taskId', 'name', 'description'] 
+  });
+
+// data will only contain: { taskId: string, name: string, description: string }[]
+```
+
+## Benefits of INCLUDE Projections
+
+1. **Cost Optimization**: Only store the attributes you need in the index
+2. **Performance**: Smaller index size means faster queries
+3. **Multi-Filter Efficiency**: Create compact indexes for complex filtering patterns. When you have access patterns requiring many optional filters, projecting only necessary attributes creates a smaller "virtual table" that enables efficient multi-filter queries without scanning unnecessary data
+4. **Aggregation Optimization**: Smaller projected indexes are ideal for aggregation queries, reducing the number of requests needed and lowering costs by not scanning irrelevant attributes
+5. **Type Safety**: ElectroDB enforces which attributes are available at the type level
+
+### Data Integrity with INCLUDE Projections
+
+ElectroDB automatically handles data integrity for `INCLUDE` projections through a two-tier validation system:
+
+**When Entity Identifiers Are Available**
+If your projection includes ElectroDB's internal attributes (`__edb_e__` and `__edb_v__`), ElectroDB uses these for precise entity and version validation:
+
+```typescript
+// In your DynamoDB table definition
+"Projection": {
+  "ProjectionType": "INCLUDE",
+  "NonKeyAttributes": ["name", "status", "createdAt", "__edb_e__", "__edb_v__"]
+}
+```
+
+**When Entity Identifiers Are Not Available**
+If your projection doesn't include the internal attributes, ElectroDB automatically falls back to validating data integrity using the partition key and sort key structure, which embed the entity name and version information.
+
+```typescript
+// ElectroDB automatically handles this scenario
+"Projection": {
+  "ProjectionType": "INCLUDE",
+  "NonKeyAttributes": ["name", "status", "createdAt"]
+}
+```
+
+Both approaches ensure data integrity - ElectroDB chooses the appropriate validation method based on what attributes are available in your projection.
+
+### Other Considerations
+
+- **Filtering Limitations**: You can only filter on attributes that are included in the projection
+- **Hydration Overhead**: Using `hydrate: true` will perform additional `batchGet` operations
+
+## References
+
+- [DynamoDB GSI Projection Documentation](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Projection.html)
+- [Using KEYS_ONLY Global Secondary Indexes](/en/recipes/keys-only-gsi) 

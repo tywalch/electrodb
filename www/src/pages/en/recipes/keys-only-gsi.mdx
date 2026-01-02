@@ -156,9 +156,9 @@ It is common to define a Global Secondary Index using a `KEYS_ONLY` projection. 
 
 ## Hydrating Queries
 
-The execution option `hydrate` can be used instruct ElectroDB to perform a `query` followed by an immediate `batchGet` to retrieve each individual item. Hydrate is available when performing `query`, `match`, or `find` operations.
+The execution option `hydrate` can be used instruct ElectroDB to perform a `query` followed by an immediate `batchGet` to retrieve each individual item. Hydrate is available when performing `query`, `scan`, `match`, or `find` operations.
 
-> \_Note: Without hydration, a `KEYS_ONLY` index will likely fail. This is because ElectroDB adds additional attribute filters to queries to aid with entity isolation. These attributes won't be present on a `KEYS_ONLY` index, so DynamoDB will throw. To circumvent this, checkout the [Returning Keys](#returning-keys) section below.
+> \_Note: Without hydration, a `KEYS_ONLY` index will return empty objects as it only contains the keys, which are not returned by ElectroDB by default. To circumvent this, checkout the [Returning Keys](#returning-keys) section below.
 
 ```typescript
 // the locations index (gsi1pk-gsi1sk-index) is a KEYS_ONLY projection
@@ -169,19 +169,19 @@ const { data, cursor } = await assets.query
 
 ## Returning Keys
 
-If you do not wish to "hydrate" your query response, you still have ways you can retrieve the keys returned by DynamoDB. The first mechanism is to use the query execution options `{ ignoreOwnership: true, data: 'includeKeys' }`.
+If you do not wish to "hydrate" your query response, you still have ways you can retrieve the keys returned by DynamoDB. The first mechanism is to use the query execution options `{ data: 'includeKeys' }`.
 
 > _Note: When using typescript these options do not impact the typing of the returned object so this approach may require casting_
 
 ### Include Keys
 
-The query execution options `{ ignoreOwnership: true, data: 'includeKeys' }` allow you to return keys on the `data` array. The option `ignoreOwnership` is also used here to limit filters applied to query to identify item types. ElectroDB filters out items that it cannot identify as belonging to an Entity using identifier attributes (`__edb_e__`, and `__edb_v__`); `KEYS_ONLY` items are then indistinguishable from unidentifiable items.
+The query execution options `{ data: 'includeKeys' }` allow you to return keys on the `data` array.
 
 ```typescript
 // The elements in the `data` array are just the keys of the index, despite the typing saying otherwise.
 const { data, cursor } = await assets.query
   .locations({ state: "Georgia" })
-  .go({ ignoreOwnership: true, data: "includeKeys" });
+  .go({ data: "includeKeys" });
 ```
 
 ### Raw Responses

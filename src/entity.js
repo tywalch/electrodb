@@ -30,6 +30,7 @@ const {
   CastKeyOptions,
   ComparisonTypes,
   DataOptions,
+  IndexProjectionOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -49,16 +50,16 @@ const ImpactedIndexTypeSource = {
 
 class Entity {
   constructor(model, config = {}) {
-    config = c.normalizeConfig(config);
+    this.config = c.normalizeConfig(config);
+    this.identifiers = this.config.identifiers;
+    this.client = this.config.client;
     this.eventManager = new EventManager({
-      listeners: config.listeners,
+      listeners: this.config.listeners,
     });
-    this.eventManager.add(config.logger);
+    this.eventManager.add(this.config.logger);
     this._validateModel(model);
     this.version = EntityVersions.v1;
-    this.config = config;
-    this.client = config.client;
-    this.model = this._parseModel(model, config);
+    this.model = this._parseModel(model, this.config);
     /** start beta/v1 condition **/
     this.config.table = config.table || model.table;
     /** end beta/v1 condition **/
@@ -94,24 +95,31 @@ class Entity {
         ).query(...values);
       };
     }
-
-    this.config.identifiers = config.identifiers || {};
-    this.identifiers = {
-      entity: this.config.identifiers.entity || "__edb_e__",
-      version: this.config.identifiers.version || "__edb_v__",
-    };
     this._instance = ElectroInstance.entity;
     this._instanceType = ElectroInstanceTypes.entity;
     this.schema = model;
   }
 
   get scan() {
-    return this._makeChain(
+    const result = this._makeChain(
       TableIndex,
       this._clausesWithFilters,
       clauses.index,
       { _isPagination: true },
     ).scan();
+
+    for (const accessPattern in this.model.indexes) {
+      const index = this.model.indexes[accessPattern].index;
+
+      result[accessPattern] = this._makeChain(
+        index,
+        this._clausesWithFilters,
+        clauses.index,
+        { _isPagination: true },
+      ).scan();
+    }
+
+    return result;
   }
 
   setIdentifier(type = "", identifier = "") {
@@ -652,6 +660,7 @@ class Entity {
       _isCollectionQuery: false,
       preserveBatchOrder: true,
       ignoreOwnership: config._providedIgnoreOwnership,
+      attributes: config._providedAttributes,
     });
 
     const unprocessed = [];
@@ -689,7 +698,9 @@ class Entity {
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
-    const shouldHydrate = config.hydrate && method === MethodTypes.query;
+    const shouldHydrate =
+      config.hydrate &&
+      (method === MethodTypes.query || method === MethodTypes.scan);
     do {
       let response = await this._exec(
         method,
@@ -908,6 +919,20 @@ class Entity {
     }
   }
 
+  _shouldTakeItem(item, config) {
+    return (
+      config.ignoreOwnership &&
+      config.attributes &&
+      config.attributes.length > 0 &&
+      !this._attributesIncludeKeys(config.attributes)
+    ) || (
+      (config.ignoreOwnership || config.hydrate) &&
+      this.ownsKeys(item)
+    ) || (
+      this.ownsItem(item)
+    );
+  }
+
   formatResponse(response, index, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
@@ -930,15 +955,7 @@ class Entity {
         results = response;
       } else {
         if (response.Item) {
-          if (
-            (config.ignoreOwnership &&
-              config.attributes &&
-              config.attributes.length > 0 &&
-              !this._attributesIncludeKeys(config.attributes)) ||
-            ((config.ignoreOwnership || config.hydrate) &&
-              this.ownsKeys(response.Item)) ||
-            this.ownsItem(response.Item)
-          ) {
+          if (this._shouldTakeItem(response.Item, config)) {
             results = this.model.schema.formatItemForRetrieval(
               response.Item,
               config,
@@ -949,15 +966,7 @@ class Entity {
         } else if (response.Items) {
           results = [];
           for (let item of response.Items) {
-            if (
-              (config.ignoreOwnership &&
-                config.attributes &&
-                config.attributes.length > 0 &&
-                !this._attributesIncludeKeys(config.attributes)) ||
-              ((config.ignoreOwnership || config.hydrate) &&
-                this.ownsKeys(item)) ||
-              this.ownsItem(item)
-            ) {
+            if (this._shouldTakeItem(item, config)) {
               let record = this.model.schema.formatItemForRetrieval(
                 item,
                 config,
@@ -1640,6 +1649,7 @@ class Entity {
       listeners: [],
       preserveBatchOrder: false,
       attributes: [],
+      _providedAttributes: [],
       terminalOperation: undefined,
       formatCursor: u.cursorFormatter,
       order: undefined,
@@ -1648,6 +1658,19 @@ class Entity {
       _objectOnEmpty: false,
       _includeOnResponseItem: {},
     };
+
+    // Auto-set ignoreOwnership: true for INCLUDE or KEYS_ONLY indexes
+    if (context.state && context.state.query && context.state.query.index) {
+      const indexName = context.state.query.index;
+      const accessPattern =
+        this.model.translations.indexes.fromIndexToAccessPattern[indexName];
+      if (accessPattern) {
+        const indexDefinition = this.model.indexes[accessPattern];
+        config.ignoreOwnership =
+          indexDefinition.projection === IndexProjectionOptions.keys_only ||
+          (Array.isArray(indexDefinition.projection) && !this.model.indexes[accessPattern].identifiersAreProjected);
+      }
+    }
 
     return provided.filter(Boolean).reduce((config, option) => {
       if (typeof option.order === "string") {
@@ -1727,6 +1750,7 @@ class Entity {
 
       if (Array.isArray(option.attributes)) {
         config.attributes = config.attributes.concat(option.attributes);
+        config._providedAttributes = option.attributes;
       }
 
       if (option.preserveBatchOrder === true) {
@@ -1850,7 +1874,7 @@ class Entity {
         }
       }
 
-      if (option.ignoreOwnership) {
+      if (option.ignoreOwnership !== undefined) {
         config.ignoreOwnership = option.ignoreOwnership;
         config._providedIgnoreOwnership = option.ignoreOwnership;
       }
@@ -1875,6 +1899,10 @@ class Entity {
       if (option.hydrate) {
         config.hydrate = true;
         config.ignoreOwnership = true;
+        // if we will hydrate later, we don't want to provide a ProjectionExpression since the attributes
+        // may contain non-projected attributes that the user expects to receive from the main table
+        // after hydration
+        config.attributes = [];
       }
 
       if (validations.isFunction(option.hydrator)) {
@@ -2015,6 +2043,7 @@ class Entity {
         params = this._makeScanParam(
           filter[ExpressionTypes.FilterExpression],
           config,
+          state,
         );
         break;
       /* istanbul ignore next */
@@ -2234,17 +2263,17 @@ class Entity {
   }
 
   /* istanbul ignore next */
-  _makeScanParam(filter = {}, options = {}) {
-    let indexBase = TableIndex;
-    let hasSortKey = this.model.lookup.indexHasSortKeys[indexBase];
+  _makeScanParam(filter = {}, options = {}, state = {}) {
+    let index = state.query.index || TableIndex;
+    let hasSortKey = this.model.lookup.indexHasSortKeys[index];
     let accessPattern =
-      this.model.translations.indexes.fromIndexToAccessPattern[indexBase];
+      this.model.translations.indexes.fromIndexToAccessPattern[index];
     let pkField = this.model.indexes[accessPattern].pk.field;
     let { pk, sk } = this._makeIndexKeys({
-      index: indexBase,
+      index,
     });
 
-    let keys = this._makeParameterKey(indexBase, pk, ...sk);
+    let keys = this._makeParameterKey(index, pk, ...sk);
     // trim empty key values (this can occur when keys are defined by users)
     for (let key in keys) {
       if (keys[key] === undefined || keys[key] === "") {
@@ -2295,6 +2324,10 @@ class Entity {
 
     if (filterExpressions.length) {
       params.FilterExpression = filterExpressions.join(" AND ");
+    }
+
+    if (index) {
+      params.IndexName = index;
     }
 
     return this._applyProjectionExpressions({
@@ -4227,7 +4260,7 @@ class Entity {
     return model;
   }
 
-  _normalizeIndexes(indexes) {
+  _normalizeIndexes(indexes, config) {
     let normalized = {};
     let indexFieldTranslation = {};
     let indexHasSortKeys = {};
@@ -4253,6 +4286,7 @@ class Entity {
       fields: [],
       attributes: [],
       labels: {},
+      projections: [],
     };
     let seenIndexes = {};
     let seenIndexFields = {};
@@ -4370,7 +4404,7 @@ class Entity {
               e.ErrorCodes.DuplicateIndexCompositeAttributes,
               `The Access Pattern '${accessPattern}' contains duplicate references the composite attribute(s): ${u.commaSeparatedString(
                 duplicates,
-              )}. Composite attributes can only be used more than once in an index if your sort key is limitted to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys.`,
+              )}. Composite attributes can only be used more than once in an index if your sort key is limited to a single attribute. This is to prevent unexpected runtime errors related to the inability to generate keys.`,
             );
           }
         }
@@ -4387,7 +4421,38 @@ class Entity {
         scope: indexScope,
         condition: indexCondition,
         conditionDefined: conditionDefined,
+        projection: index.projection,
+        identifiersAreProjected: false,
       };
+
+      let projections = [];
+
+      if (index.projection !== undefined) {
+        if (typeof index.projection === "string" && (
+            index.projection.toLowerCase() === IndexProjectionOptions.keys_only ||
+            index.projection.toLowerCase() === IndexProjectionOptions.all
+        )) {
+          definition.projection = index.projection.toLowerCase();
+        } else if (Array.isArray(index.projection) && index.projection.length > 0 && index.projection.every((attr) => typeof attr === "string")) {
+          definition.projection = index.projection;
+          let nameIdentifierPresent = false;
+          let versionIdentiferPresent = false;
+          for (const name of definition.projection) {
+            projections.push({ name, accessPattern });
+            if (name === config.identifiers.entity) {
+              nameIdentifierPresent = true;
+            } else if (name === config.identifiers.version) {
+              versionIdentiferPresent = true;
+            }
+          }
+          definition.identifiersAreProjected = nameIdentifierPresent && versionIdentiferPresent;
+        } else {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidProjectionDefinition,
+            `The Access Pattern '${accessPattern}' contains an invalid "projection" value: ${u.toDisplayString(index.projection)}. Valid projection values include ${u.commaSeparatedString(Object.values(IndexProjectionOptions))}, or an array of attribute names with a length greater than one.`
+          )
+        }
+      }
 
       indexHasSubCollections[indexName] =
         inCollection && Array.isArray(collection);
@@ -4444,6 +4509,7 @@ class Entity {
       };
 
       facets.attributes = [...facets.attributes, ...attributes];
+      facets.projections = [...facets.projections, ...projections];
 
       facets.fields.push(pk.field);
 
@@ -4844,10 +4910,14 @@ class Entity {
       indexHasSortKeys,
       indexAccessPattern,
       indexHasSubCollections,
-    } = this._normalizeIndexes(model.indexes);
+    } = this._normalizeIndexes(model.indexes, config);
     let schema = new Schema(model.attributes, facets, {
-      getClient: () => this.client,
       isRoot: true,
+      getClient: () => this.client,
+      identifiers: {
+        [config.identifiers.entity]: config.identifiers.entity,
+        [config.identifiers.version]: config.identifiers.version,
+      },
     });
 
     let filters = this._normalizeFilters(model.filters);
