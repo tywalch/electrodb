@@ -369,6 +369,7 @@ class Service {
         record,
         entities: this.entities,
         allowMatchOnKeys: config.ignoreOwnership,
+        config,
       });
 
       if (!entityAlias) {
@@ -460,7 +461,7 @@ class Service {
     const expression = identifiers.expression || "";
 
     let options = {
-      // expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
+      // expressions, // DynamoDB doesn't return what I expect it would when provided with these entity filters
       parse: (options, data) => {
         if (options.data === DataOptions.raw) {
           return data;
@@ -501,26 +502,17 @@ class Service {
           });
         }
 
-        // let itemLookup = [];
         let entityItemRefs = {};
-        // let entityResultRefs = {};
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
           for (let entityName in entities) {
             entityItemRefs[entityName] = entityItemRefs[entityName] || [];
             const entity = entities[entityName];
-            // if (entity.ownsKeys({ keys: item })) {
-            if (entity.ownsKeys(item)) {
-              // const entityItemRefsIndex =
+            if (entity.is(item, config)) {
               entityItemRefs[entityName].push({
                 item,
                 itemSlot: i,
               });
-              // itemLookup[i] = {
-              // 	entityName,
-              // 	entityItemRefsIndex,
-              // 	originalItem: item,
-              // }
             }
           }
         }

@@ -1891,7 +1891,7 @@ describe("index projection validation", () => {
         entity: 'custom_entity_identifier_field',
         version: 'custom_version_identifier_field',
       },
-    })).to.throw('Unknown index projection attributes provided. The following access patterns were defined with unknown attributes: secondary:  "__edb_e__", "__edb_v__" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-projection-definition')
+    })).to.throw('Unknown index projection attributes provided. The following access patterns were defined with unknown attributes: secondary: "__edb_e__", "__edb_v__" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-projection-definition')
   });
 
   describe('when joining entities on a collection that is defined with projection', () => {

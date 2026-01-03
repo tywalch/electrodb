@@ -33,7 +33,7 @@ const {
   IndexProjectionOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
-const { FilterOperations } = require("./operations");
+const { FilterOperations, formatExpressionName } = require("./operations");
 const { WhereFactory } = require("./where");
 const { clauses, ChainState } = require("./clauses");
 const { EventManager } = require("./events");
@@ -153,38 +153,32 @@ class Entity {
     );
   }
 
-  _attributesIncludeKeys(attributes = []) {
+  _itemIncludesKeys(item) {
     let { pk, sk } = this.model.prefixes[TableIndex];
-    let pkFound = false;
-    let skFound = false;
-    for (let i = 0; i < attributes.length; i++) {
-      const attribute = attributes[i];
-      if (attribute === sk.field) {
-        skFound = true;
-      }
-      if (attribute === pk.field) {
-        skFound = true;
-      }
-      if (pkFound && skFound) {
-        return true;
-      }
-    }
-    return false;
+    return item[pk.field] !== undefined && (
+      sk.field === undefined || item[sk.field] !== undefined
+    );
   }
 
   ownsKeys(key = {}) {
+    const accessPattern =
+      this.model.translations.indexes.fromIndexToAccessPattern[TableIndex];
     let { pk, sk } = this.model.prefixes[TableIndex];
     let hasSK = this.model.lookup.indexHasSortKeys[TableIndex];
     const typeofPkProvided = typeof key[pk.field];
     const pkPrefixMatch =
-      typeofPkProvided === "string" && key[pk.field].startsWith(pk.prefix);
+      typeofPkProvided === "string" &&
+      key[pk.field].startsWith(pk.prefix) &&
+      (!pk.postfix || key[pk.field].endsWith(pk.postfix));
     const isNumericPk = typeofPkProvided === "number" && pk.cast === "number";
     let pkMatch = pkPrefixMatch || isNumericPk;
     let skMatch = pkMatch && !hasSK;
     if (pkMatch && hasSK) {
       const typeofSkProvided = typeof key[sk.field];
       const skPrefixMatch =
-        typeofSkProvided === "string" && key[sk.field].startsWith(sk.prefix);
+        typeofSkProvided === "string" &&
+        key[sk.field].startsWith(sk.prefix) //&&
+        (!sk.postfix || key[sk.field].endsWith(sk.postfix))
       const isNumericSk = typeofSkProvided === "number" && sk.cast === "number";
       skMatch = skPrefixMatch || isNumericSk;
     }
@@ -919,12 +913,10 @@ class Entity {
     }
   }
 
-  _shouldTakeItem(item, config) {
+  is(item, config) {
     return (
       config.ignoreOwnership &&
-      config.attributes &&
-      config.attributes.length > 0 &&
-      !this._attributesIncludeKeys(config.attributes)
+      !this._itemIncludesKeys(item)
     ) || (
       (config.ignoreOwnership || config.hydrate) &&
       this.ownsKeys(item)
@@ -955,7 +947,7 @@ class Entity {
         results = response;
       } else {
         if (response.Item) {
-          if (this._shouldTakeItem(response.Item, config)) {
+          if (this.is(response.Item, config)) {
             results = this.model.schema.formatItemForRetrieval(
               response.Item,
               config,
@@ -966,7 +958,7 @@ class Entity {
         } else if (response.Items) {
           results = [];
           for (let item of response.Items) {
-            if (this._shouldTakeItem(item, config)) {
+            if (this.is(item, config)) {
               let record = this.model.schema.formatItemForRetrieval(
                 item,
                 config,
@@ -2087,27 +2079,41 @@ class Entity {
       TerminalOperation[config.terminalOperation] === TerminalOperation.go ||
       TerminalOperation[config.terminalOperation] === TerminalOperation.page;
 
-    // 1. Take stock of invalid attributes, if there are any this should be considered
-    //    unintentional and should throw to prevent unintended results
-    // 2. Convert all attribute names to their respective "field" names
-    const unknownAttributes = [];
-    let attributeFields = new Set();
-    for (const attributeName of attributes) {
-      const fieldName = this.model.schema.getFieldName(attributeName);
-      if (typeof fieldName !== "string") {
-        unknownAttributes.push(attributeName);
-      } else {
-        attributeFields.add(fieldName);
+    // Convert all attribute names to their respective "field" names
+    let hasTableIndexPk = false;
+    let hasTableIndexSk = this.model.translations.keys[TableIndex].sk === undefined;
+    const attributeFields = new Map();
+    for (let [key, name] of Object.entries(parameters.ExpressionAttributeNames || {})) {
+      if (key.startsWith("#")) {
+        key = key.slice(1);
+      }
+      attributeFields.set(key, name);
+      if (name === this.model.translations.keys[TableIndex].pk) {
+        hasTableIndexPk = true;
+      }
+      if (name === this.model.translations.keys[TableIndex].sk) {
+        hasTableIndexSk = true;
       }
     }
 
-    // Stop doing work, prepare error message and throw
-    if (attributeFields.size === 0 || unknownAttributes.length > 0) {
-      let message = "Unknown attributes provided in query options";
-      if (unknownAttributes.length) {
-        message += `: ${u.commaSeparatedString(unknownAttributes)}`;
+    if (!hasTableIndexPk) {
+      const field = this.model.translations.keys[TableIndex].pk;
+      const name = formatExpressionName(field, attributeFields);
+      attributeFields.set(name, field);
+    }
+
+    if (!hasTableIndexSk) {
+      const field = this.model.translations.keys[TableIndex].sk;
+      const name = formatExpressionName(field, attributeFields);
+      attributeFields.set(name, field);
+    }
+
+    for (const attributeName of attributes) {
+      const fieldName = this.model.schema.getFieldName(attributeName) || attributeName;
+      if (fieldName) {
+        const formatted = formatExpressionName(fieldName, attributeFields);
+        attributeFields.set(formatted, fieldName);
       }
-      throw new e.ElectroError(e.ErrorCodes.InvalidOptions, message);
     }
 
     // add ExpressionAttributeNames if it doesn't exist already
@@ -2124,8 +2130,8 @@ class Entity {
       enforcesOwnership
     ) {
       // add entity identifiers to so items can be identified
-      attributeFields.add(this.identifiers.entity);
-      attributeFields.add(this.identifiers.version);
+      attributeFields.set(this.identifiers.entity, this.identifiers.entity);
+      attributeFields.set(this.identifiers.version, this.identifiers.version);
 
       // if pagination is required you may enter into a scenario where
       // the LastEvaluatedKey doesn't belong to entity and one must be formed.
@@ -2140,22 +2146,23 @@ class Entity {
 
         for (const attribute of [...tableIndexFacets.all, ...indexFacets.all]) {
           const fieldName = this.model.schema.getFieldName(attribute.name);
-          attributeFields.add(fieldName);
+          const formatted = formatExpressionName(attribute.name, attributeFields);
+          attributeFields.set(formatted, fieldName);
         }
       }
     }
 
-    for (const attributeField of attributeFields) {
+    for (const [attributeField, attributeName] of attributeFields.entries()) {
       // prefix the ExpressionAttributeNames because some prefixes are not allowed
       parameters.ExpressionAttributeNames["#" + attributeField] =
-        attributeField;
+        attributeName;
     }
 
     // if there is already a ProjectionExpression (e.g. config "params"), merge it
     if (typeof parameters.ProjectionExpression === "string") {
       parameters.ProjectionExpression = [
         parameters.ProjectionExpression,
-        ...Object.keys([parameters.ExpressionAttributeNames]),
+        ...Object.keys(parameters.ExpressionAttributeNames),
       ].join(", ");
     } else {
       parameters.ProjectionExpression = Object.keys(
@@ -5017,6 +5024,7 @@ function matchToEntityAlias({
   record,
   entities = {},
   allowMatchOnKeys = false,
+  config = {},
 } = {}) {
   let entity;
   if (paramItem && v.isFunction(paramItem[TransactionCommitSymbol])) {
@@ -5050,7 +5058,7 @@ function matchToEntityAlias({
       // 		entityAlias = alias;
       // 	}
       // }
-    } else if (entities[alias] && entities[alias].ownsKeys(record)) {
+    } else if (entities[alias] && entities[alias].is(record, config)) {
       entityAlias = alias;
       break;
     }

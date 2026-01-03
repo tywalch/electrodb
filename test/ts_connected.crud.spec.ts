@@ -4459,13 +4459,15 @@ describe("attributes query option", () => {
       })
       .params({ attributes: ["attr2", "attr9", "attr5", "attr10"] });
     expect(getParams.ExpressionAttributeNames).to.deep.equal({
+      "#pk": "pk",
+      "#sk": "sk",
       "#attr2": "attr2",
       "#prop9": "prop9", // should convert attribute names to field names when specifying attributes
       "#attr5": "attr5",
       "#attr10": "attr10",
     });
     expect(getParams.ProjectionExpression).to.equal(
-      "#attr2, #prop9, #attr5, #attr10",
+      "#pk, #sk, #attr2, #prop9, #attr5, #attr10",
     );
     const queryParams = entityWithSK.query
       .myIndex({
@@ -4499,6 +4501,8 @@ describe("attributes query option", () => {
         prop9: item.attr9, // should convert attribute names to field names when specifying attributes
         attr2: item.attr2,
         attr10: item.attr10,
+        pk: `$myservice#attr1_${item.attr1}`,
+        sk: `$mycollection2#abc_myversion#attr2_${item.attr2}`,
       },
     });
     const queryRawGo = await entityWithSK.query
@@ -4595,9 +4599,11 @@ describe("attributes query option", () => {
       "#prop9": "prop9", // should convert attribute names to field names when specifying attributes
       "#attr5": "attr5",
       "#attr10": "attr10",
+      "#pk": "pk",
+      "#sk": "sk",
     });
     expect(getIgnoreOwnershipParams.ProjectionExpression).to.equal(
-      "#attr2, #prop9, #attr5, #attr10",
+      "#pk, #sk, #attr2, #prop9, #attr5, #attr10",
     );
 
     expect(getIgnoreOwnership).to.deep.equal({
@@ -4750,7 +4756,7 @@ describe("attributes query option", () => {
       },
     ]);
     expect(params.ProjectionExpression).to.equal(
-      "#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__",
+      "#pk, #sk1, #pk_2, #sk, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__",
     );
   });
 
@@ -4796,33 +4802,7 @@ describe("attributes query option", () => {
       },
     ]);
     expect(params.ProjectionExpression).to.equal(
-      "#pk, #sk1, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__",
-    );
-  });
-
-  it("should throw when unknown attribute names are provided", () => {
-    const attr1 = "attr1";
-    const attr2 = "attr2";
-    const getParams = () =>
-      entityWithSK.get({ attr1, attr2 }).params({
-        // @ts-ignore
-        attributes: ["prop1"],
-      });
-    expect(getParams).to.throw(
-      `Unknown attributes provided in query options: "prop1"`,
-    );
-  });
-
-  it("should throw when non-string attributes are provided", () => {
-    const attr1 = "attr1";
-    const attr2 = "attr2";
-    const getParams = () =>
-      entityWithSK
-        .get({ attr1, attr2 })
-        // @ts-ignore
-        .params({ attributes: [123, { abc: "def" }] });
-    expect(getParams).to.throw(
-      `Unknown attributes provided in query options: "123", "[object Object]"`,
+      "#pk, #sk1, #pk_2, #sk, #attr2, #prop9, #attr5, #attr10, #__edb_e__, #__edb_v__",
     );
   });
 
@@ -6930,6 +6910,10 @@ describe("index projection", () => {
 
         expect(received1.data).to.deep.equal(expected1);
         expect(received2.data).to.deep.equal(expected2);
+        expect(received3.data).to.deep.equal({
+          entity1: expected1,
+          entity2: expected2,
+        });
       });
 
       it("should retrieve correct items when projection includes identifiers and main table uses custom non-unique key formatting", async () => {
@@ -6992,10 +6976,14 @@ describe("index projection", () => {
 
         expect(received1.data).to.deep.equal(expected1);
         expect(received2.data).to.deep.equal(expected2);
+        expect(received3.data).to.deep.equal({
+          entity1: expected1,
+          entity2: expected2,
+        });
       });
 
       it("should retrieve correct items when projection doesn't include identifiers and main table uses custom non-unique key formatting", async () => {
-        // this test represents a cautionary tale: escaping default key formats
+        // this test represents a cautionary tale: escaping default key formating
         // and not including identifier fields prevents electrodb from inferring
         // item ownership.
         const serviceName = uuid();
@@ -7334,6 +7322,27 @@ describe("index projection", () => {
     ]);
   });
 
+  it("performs a collection query on an index with projected attributes and hydrate and non-projected attributes", async () => {
+    const service = new Service({ entity, entity2 });
+    expect(item.id).to.equal(item2.id);
+    const id = item.id;
+    const received = await service.collections.includeIndexCollection({id}).go({
+      attributes: ["include1", "exclude1", "some1"],
+      hydrate: true,
+      pages: "all",
+    });
+
+    expect(received.data.entity).to.deep.equal([{
+      include1: item.include1,
+      exclude1: item.exclude1,
+    }]);
+
+    expect(received.data.entity2).to.deep.equal([{
+      include1: item2.include1,
+      some1: item2.some1,
+    }]);
+  });
+
   it("scans index with projected attributes without edb keys using hydrate", async () => {
     const { data: resp } = await entity.scan.includeIndex
       .where((attr, {eq}) => `${eq(attr.include1, item.include1)} OR ${eq(attr.include1, item2.include1)}`)
@@ -7511,66 +7520,64 @@ describe("index projection", () => {
     expect(found).to.deep.equal({ id, include1, exclude1 });
   });
 
-  // TODO: uncomment when attributes in collection queries are runtime-supported
-  // it("queries collection with projected attributes", async () => {
-  //   const params = service.collections
-  //     .includeIndexCollection({ id: item.id })
-  //     .params({
-  //       // @ts-expect-error - the params type does not include `attributes` but this works in runtime
-  //       attributes: ["include1", "include2"],
-  //     });
-  //   expect(params.ProjectionExpression).to.equal(
-  //     "#pk, #sk1, #__edb_e__, #__edb_v__, #include1, #include2",
-  //   );
+  it("queries collection with projected attributes", async () => {
+    const params = service.collections
+      .includeIndexCollection({ id: item.id })
+      .params({
+        // @ts-expect-error - the params type does not include `attributes` but this works in runtime
+        attributes: ["include1", "include2"],
+      });
+    expect(params.ProjectionExpression).to.equal(
+      "#pk, #sk1, #pk_2, #sk, #include1, #include2",
+    );
 
-  //   const { data } = await service.collections
-  //     .includeIndexCollection({ id: item.id })
-  //     .go({
-  //       pages: "all",
-  //       attributes: ["include1", "include2"],
-  //     });
+    const { data } = await service.collections
+      .includeIndexCollection({ id: item.id })
+      .go({
+        pages: "all",
+        attributes: ["include1", "include2"],
+      });
 
-  //   expect(data).to.deep.equal({
-  //     entity: [
-  //       {
-  //         include1: item.include1,
-  //         include2: item.include2,
-  //       },
-  //     ],
-  //     entity2: [
-  //       {
-  //         include1: item2.include1,
-  //         include2: item2.include2,
-  //       },
-  //     ],
-  //   });
-  // });
+    expect(data).to.deep.equal({
+      entity: [
+        {
+          include1: item.include1,
+          include2: item.include2,
+        },
+      ],
+      entity2: [
+        {
+          include1: item2.include1,
+          include2: item2.include2,
+        },
+      ],
+    });
+  });
 
-  // TODO: uncomment when attributes in collection queries are runtime-supported
-  // it("queries collection with projected attributes and hydrate and non-projected attributes", async () => {
-  //   const { data } = await service.collections
-  //     .includeIndexCollection({ id: item.id })
-  //     .go({
-  //       pages: "all",
-  //       hydrate: true,
-  //       attributes: ["include1", "exclude1", "some1"],
-  //     });
+  it("queries collection with projected attributes and hydrate and non-projected attributes", async () => {
+    const { data } = await service.collections
+      .includeIndexCollection({ id: item.id })
+      .go({
+        pages: "all",
+        hydrate: true,
+        attributes: ["include1", "exclude1", "some1"],
+      });
 
-  //   expect(data).to.deep.equal({
-  //     entity: [
-  //       {
-  //         include1: item.include1,
-  //         exclude1: item.exclude1,
-  //       },
-  //     ],
-  //     entity2: [
-  //       {
-  //         include1: item2.include1,
-  //         some1: item2.some1,
-  //       },
-  //     ],
-  //   });
-  // });
+    expect(data).to.deep.equal({
+      entity: [
+        {
+          include1: item.include1,
+          exclude1: item.exclude1,
+        },
+      ],
+      entity2: [
+        {
+          include1: item2.include1,
+          some1: item2.some1,
+        },
+      ],
+    });
+  });
 
   it("queries collection with projected attributes and hydrate", async () => {
     const { data } = await service.collections
@@ -7599,31 +7606,30 @@ describe("index projection", () => {
     });
   });
 
-  // TODO: uncomment when attributes in collection queries are runtime-supported
-  // it("queries keys_only collection with hydrate", async () => {
-  //   const { data } = await service.collections
-  //     .keysOnlyCollection({ id: item.id })
-  //     .go({
-  //       pages: "all",
-  //       hydrate: true,
-  //       attributes: ["include1", "exclude1", "some1"],
-  //     });
+  it("queries keys_only collection with hydrate", async () => {
+    const { data } = await service.collections
+      .keysOnlyCollection({ id: item.id })
+      .go({
+        pages: "all",
+        hydrate: true,
+        attributes: ["include1", "exclude1", "some1"],
+      });
 
-  //   expect(data).to.deep.equal({
-  //     entity: [
-  //       {
-  //         include1: item.include1,
-  //         exclude1: item.exclude1,
-  //       },
-  //     ],
-  //     entity2: [
-  //       {
-  //         include1: item2.include1,
-  //         some1: item2.some1,
-  //       },
-  //     ],
-  //   });
-  // });
+    expect(data).to.deep.equal({
+      entity: [
+        {
+          include1: item.include1,
+          exclude1: item.exclude1,
+        },
+      ],
+      entity2: [
+        {
+          include1: item2.include1,
+          some1: item2.some1,
+        },
+      ],
+    });
+  });
 
   it("queries keys_only collection with hydrate", async () => {
     const { data } = await service.collections
