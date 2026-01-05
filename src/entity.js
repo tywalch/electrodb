@@ -177,8 +177,8 @@ class Entity {
       const typeofSkProvided = typeof key[sk.field];
       const skPrefixMatch =
         typeofSkProvided === "string" &&
-        key[sk.field].startsWith(sk.prefix) //&&
-        (!sk.postfix || key[sk.field].endsWith(sk.postfix))
+        key[sk.field].startsWith(sk.prefix) &&
+        (!sk.postfix || key[sk.field].endsWith(sk.postfix));
       const isNumericSk = typeofSkProvided === "number" && sk.cast === "number";
       skMatch = skPrefixMatch || isNumericSk;
     }
