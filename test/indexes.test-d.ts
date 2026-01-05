@@ -831,38 +831,35 @@ type AllIndexCollectionProvidedAttrsResponse = {
   cursor: string | null;
 };
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// allIndexCollectionQuery
-//   .go({ attributes: AllIndexCollectionProvidedAttrs })
-//   .then((res) => {
-//     expectType<AllIndexCollectionProvidedAttrsResponse>(res);
-//   });
+allIndexCollectionQuery
+  .go({ attributes: AllIndexCollectionProvidedAttrs })
+  .then((res) => {
+    expectType<AllIndexCollectionProvidedAttrsResponse>(res);
+  });
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// allIndexCollectionQuery
-//   .where((attrs, ops) => {
-//     expectType<AllIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .go({ attributes: AllIndexCollectionProvidedAttrs })
-//   .then((res) => {
-//     expectType<AllIndexCollectionProvidedAttrsResponse>(res);
-//   });
+allIndexCollectionQuery
+  .where((attrs, ops) => {
+    expectType<AllIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go({ attributes: AllIndexCollectionProvidedAttrs })
+  .then((res) => {
+    expectType<AllIndexCollectionProvidedAttrsResponse>(res);
+  });
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// allIndexCollectionQuery
-//   .where((attrs, ops) => {
-//     expectType<AllIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .where((attrs, ops) => {
-//     expectType<AllIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .go({ attributes: AllIndexCollectionProvidedAttrs })
-//   .then((res) => {
-//     expectType<AllIndexCollectionProvidedAttrsResponse>(res);
-//   });
+allIndexCollectionQuery
+  .where((attrs, ops) => {
+    expectType<AllIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .where((attrs, ops) => {
+    expectType<AllIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go({ attributes: AllIndexCollectionProvidedAttrs })
+  .then((res) => {
+    expectType<AllIndexCollectionProvidedAttrsResponse>(res);
+  });
 
 // should not be able to pass attributes from other collections
 expectError(() => allIndexCollectionQuery.go({ attributes: ["unrelated"] }));
@@ -1069,38 +1066,35 @@ keysOnlyIndexCollectionQuery
 
 // calling go() with provided attributes and hydration
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// keysOnlyIndexCollectionQuery
-//   .go({ attributes: KeysOnlyIndexCollectionProvidedAttrs, hydrate: true })
-//   .then((res) => {
-//     expectType<KeysOnlyIndexCollectionProvidedAttrsResponse>(res);
-//   });
+keysOnlyIndexCollectionQuery
+  .go({ attributes: KeysOnlyIndexCollectionProvidedAttrs, hydrate: true })
+  .then((res) => {
+    expectType<KeysOnlyIndexCollectionProvidedAttrsResponse>(res);
+  });
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// keysOnlyIndexCollectionQuery
-//   .where((attrs, ops) => {
-//     expectType<KeysOnlyIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .go({ attributes: KeysOnlyIndexCollectionProvidedAttrs, hydrate: true })
-//   .then((res) => {
-//     expectType<KeysOnlyIndexCollectionProvidedAttrsResponse>(res);
-//   });
+keysOnlyIndexCollectionQuery
+  .where((attrs, ops) => {
+    expectType<KeysOnlyIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go({ attributes: KeysOnlyIndexCollectionProvidedAttrs, hydrate: true })
+  .then((res) => {
+    expectType<KeysOnlyIndexCollectionProvidedAttrsResponse>(res);
+  });
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// keysOnlyIndexCollectionQuery
-//   .where((attrs, ops) => {
-//     expectType<KeysOnlyIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .where((attrs, ops) => {
-//     expectType<KeysOnlyIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .go({ attributes: KeysOnlyIndexCollectionProvidedAttrs, hydrate: true })
-//   .then((res) => {
-//     expectType<KeysOnlyIndexCollectionProvidedAttrsResponse>(res);
-//   });
+keysOnlyIndexCollectionQuery
+  .where((attrs, ops) => {
+    expectType<KeysOnlyIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .where((attrs, ops) => {
+    expectType<KeysOnlyIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go({ attributes: KeysOnlyIndexCollectionProvidedAttrs, hydrate: true })
+  .then((res) => {
+    expectType<KeysOnlyIndexCollectionProvidedAttrsResponse>(res);
+  });
 
 // should not be able to pass attributes from other collections
 expectError(() =>
@@ -1321,38 +1315,35 @@ includeIndexCollectionQuery
 
 // calling go() with provided attributes and hydration
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// includeIndexCollectionQuery
-//   .go({ attributes: IncludeIndexCollectionProvidedAttrs, hydrate: true })
-//   .then((res) => {
-//     expectType<IncludeIndexCollectionProvidedAttrsResponse>(res);
-//   });
+includeIndexCollectionQuery
+  .go({ attributes: IncludeIndexCollectionProvidedAttrs, hydrate: true })
+  .then((res) => {
+    expectType<IncludeIndexCollectionProvidedAttrsResponse>(res);
+  });
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// includeIndexCollectionQuery
-//   .where((attrs, ops) => {
-//     expectType<IncludeIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .go({ attributes: IncludeIndexCollectionProvidedAttrs, hydrate: true })
-//   .then((res) => {
-//     expectType<IncludeIndexCollectionProvidedAttrsResponse>(res);
-//   });
+includeIndexCollectionQuery
+  .where((attrs, ops) => {
+    expectType<IncludeIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go({ attributes: IncludeIndexCollectionProvidedAttrs, hydrate: true })
+  .then((res) => {
+    expectType<IncludeIndexCollectionProvidedAttrsResponse>(res);
+  });
 
-// TODO: uncomment when attributes in collection queries are runtime-supported
-// includeIndexCollectionQuery
-//   .where((attrs, ops) => {
-//     expectType<IncludeIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .where((attrs, ops) => {
-//     expectType<IncludeIndexCollectionWhereAttrs>(attrs);
-//     return "";
-//   })
-//   .go({ attributes: IncludeIndexCollectionProvidedAttrs, hydrate: true })
-//   .then((res) => {
-//     expectType<IncludeIndexCollectionProvidedAttrsResponse>(res);
-//   });
+includeIndexCollectionQuery
+  .where((attrs, ops) => {
+    expectType<IncludeIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .where((attrs, ops) => {
+    expectType<IncludeIndexCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go({ attributes: IncludeIndexCollectionProvidedAttrs, hydrate: true })
+  .then((res) => {
+    expectType<IncludeIndexCollectionProvidedAttrsResponse>(res);
+  });
 
 // should not be able to pass attributes from other collections
 expectError(() =>

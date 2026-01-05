@@ -2756,49 +2756,47 @@ type ServiceQueryGoTerminalOptions<
     | {
         // if should hydrate, all attributes will be available from the main table
         hydrate: true;
-        // TODO: uncomment when attributes in collection queries are runtime-supported
-        // attributes?: ReadonlyArray<Attributes>;
+        attributes?: ReadonlyArray<Attributes>;
       }
     | {
         // if should not hydrate, the only available attributes are the ones that are projected to the index
         hydrate?: false | undefined;
-        // TODO: uncomment when attributes in collection queries are runtime-supported
-        // attributes?: ReadonlyArray<
-        //   {
-        //     [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
-        //       ? E[EntityResultName] extends Entity<any, any, any, any>
-        //         ? E[EntityResultName]["schema"] extends Schema<
-        //             infer A,
-        //             infer F,
-        //             infer C
-        //           >
-        //           ? Collection extends keyof EntityCollections<
-        //               A,
-        //               F,
-        //               C,
-        //               E[EntityResultName]["schema"]
-        //             >
-        //             ? Extract<
-        //                 IndexProjectedAttributeNames<
-        //                   A,
-        //                   F,
-        //                   C,
-        //                   E[EntityResultName]["schema"],
-        //                   EntityCollections<
-        //                     A,
-        //                     F,
-        //                     C,
-        //                     E[EntityResultName]["schema"]
-        //                   >[Collection]
-        //                 >,
-        //                 Attributes
-        //               >
-        //             : never
-        //           : never
-        //         : never
-        //       : never;
-        //   }[Collections[Collection]]
-        // >;
+        attributes?: ReadonlyArray<
+          {
+            [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
+              ? E[EntityResultName] extends Entity<any, any, any, any>
+                ? E[EntityResultName]["schema"] extends Schema<
+                    infer A,
+                    infer F,
+                    infer C
+                  >
+                  ? Collection extends keyof EntityCollections<
+                      A,
+                      F,
+                      C,
+                      E[EntityResultName]["schema"]
+                    >
+                    ? Extract<
+                        IndexProjectedAttributeNames<
+                          A,
+                          F,
+                          C,
+                          E[EntityResultName]["schema"],
+                          EntityCollections<
+                            A,
+                            F,
+                            C,
+                            E[EntityResultName]["schema"]
+                          >[Collection]
+                        >,
+                        Attributes
+                      >
+                    : never
+                  : never
+                : never
+              : never;
+          }[Collections[Collection]]
+        >;
       }
   );
 
