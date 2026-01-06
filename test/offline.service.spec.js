@@ -2616,7 +2616,7 @@ describe("Sub Collections", () => {
           "my_entity",
           "collectionA",
         ],
-        output: `Clustered indexes do not support sub-collections. The sub-collection "collectionA", on Entity "my_entity" must be defined as either an individual collection name or the index must be redefined as an isolated cluster`,
+        output: `"clustered" indexes do not support sub-collections. The sub-collection "collectionA", on Entity "my_entity" must be defined as either an individual collection name or the index must be redefined as an "isolated" index`,
         success: false,
       },
     ];

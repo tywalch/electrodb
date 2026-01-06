@@ -1619,7 +1619,7 @@ describe("service validation", () => {
     });
 
     expect(() => new Service({ entity1 })).to.throw(
-      `Clustered indexes do not support sub-collections. The sub-collection "collection1", on Entity "entity1" must be defined as either an individual collection name or the index must be redefined as an isolated cluster`,
+      `"clustered" indexes do not support sub-collections. The sub-collection "collection1", on Entity "entity1" must be defined as either an individual collection name or the index must be redefined as an "isolated" index`,
     );
   });
 
