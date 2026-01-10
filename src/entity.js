@@ -175,12 +175,16 @@ class Entity {
     let skMatch = pkMatch && !hasSK;
     if (pkMatch && hasSK) {
       const typeofSkProvided = typeof key[sk.field];
-      const skPrefixMatch =
-        typeofSkProvided === "string" &&
-        key[sk.field].startsWith(sk.prefix) &&
-        (!sk.postfix || key[sk.field].endsWith(sk.postfix));
-      const isNumericSk = typeofSkProvided === "number" && sk.cast === "number";
-      skMatch = skPrefixMatch || isNumericSk;
+      if (typeofSkProvided === "number") {
+        skMatch = sk.cast === "number";
+      } else if (typeofSkProvided === "string") {
+        // if sk is a string, check prefix and postfix match
+        const hasNoPrefixOrStartsWithPrefix = !sk.prefix || key[sk.field].startsWith(sk.prefix);
+        const hasNoPostfixOrEndsWithPostfix = !sk.postfix || key[sk.field].endsWith(sk.postfix);
+        skMatch =
+          hasNoPrefixOrStartsWithPrefix &&
+          hasNoPostfixOrEndsWithPostfix;
+      }
     }
 
     return (
