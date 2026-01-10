@@ -12,6 +12,8 @@ const keysOnly = require("./definitions/keysonly.json");
 const castKeys = require("./definitions/castkeys.json");
 const reverseIndex = require("./definitions/reverseindex.json");
 const issue530 = require("./definitions/issue530.json");
+const projectionInclude = require("./definitions/projection-include.json");
+const projectionIncludeWithoutEdb = require("./definitions/projection-include-without-edb.json");
 const shouldDestroy = process.argv.includes("--recreate");
 
 if (
@@ -86,6 +88,8 @@ async function main() {
     createTable(dynamodb, "electro_castkeys", castKeys),
     createTable(dynamodb, "electro_reverseindex", reverseIndex),
     createTable(dynamodb, "issue530", issue530),
+    createTable(dynamodb, "electro_projectioninclude", projectionInclude),
+    createTable(dynamodb, "electro_projectionincludewithoutedb", projectionIncludeWithoutEdb),
   ]);
 }
 

@@ -9,6 +9,37 @@ const { FilterOperations } = require("./filterOperations");
 const e = require("./errors");
 const u = require("./util");
 
+
+/**
+ * formatExpressionName: formats a field name for expression attribute names parameters.
+ * @param {string} name
+ * @param {Map<string, string>} seen
+ */
+function formatExpressionName(name, seen) {
+  const nameWasNotANumber = isNaN(name);
+  const originalName = `${name}`;
+  let formattedName = originalName.replaceAll(/[^\w]/g, "");
+
+  if (formattedName.length === 0) {
+    formattedName = "p";
+  } else if (nameWasNotANumber !== isNaN(formattedName)) {
+    // name became number due to replace
+    formattedName = `p${formattedName}`;
+  }
+
+  const originalFormattedName = formattedName;
+  let nameSuffix = 1;
+  while (
+    seen.has(formattedName) &&
+    seen.get(formattedName) !== originalName
+    ) {
+    formattedName = `${originalFormattedName}_${++nameSuffix}`;
+  }
+
+  seen.set(formattedName, originalName);
+  return formattedName;
+}
+
 class ExpressionState {
   constructor({ prefix } = {}) {
     this.names = {};
@@ -30,29 +61,7 @@ class ExpressionState {
   }
 
   formatName(name = "") {
-    const nameWasNotANumber = isNaN(name);
-    const originalName = `${name}`;
-    let formattedName = originalName.replaceAll(/[^\w]/g, "");
-
-    if (formattedName.length === 0) {
-      formattedName = "p";
-    } else if (nameWasNotANumber !== isNaN(formattedName)) {
-      // name became number due to replace
-      formattedName = `p${formattedName}`;
-    }
-
-    const originalFormattedName = formattedName;
-    let nameSuffix = 1;
-
-    while (
-      this.formattedNameToOriginalNameMap.has(formattedName) &&
-      this.formattedNameToOriginalNameMap.get(formattedName) !== originalName
-    ) {
-      formattedName = `${originalFormattedName}_${++nameSuffix}`;
-    }
-
-    this.formattedNameToOriginalNameMap.set(formattedName, originalName);
-    return formattedName;
+    return formatExpressionName(name, this.formattedNameToOriginalNameMap);
   }
 
   // todo: make the structure: name, value, paths
@@ -403,4 +412,5 @@ module.exports = {
   FilterOperationNames,
   ExpressionState,
   AttributeOperationProxy,
+  formatExpressionName,
 };

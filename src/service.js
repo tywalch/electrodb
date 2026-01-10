@@ -13,7 +13,7 @@ const {
   ElectroInstanceTypes,
   ModelVersions,
   IndexTypes,
-  DataOptions,
+  DataOptions, IndexProjectionOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
 const { FilterOperations } = require("./operations");
@@ -369,6 +369,7 @@ class Service {
         record,
         entities: this.entities,
         allowMatchOnKeys: config.ignoreOwnership,
+        config,
       });
 
       if (!entityAlias) {
@@ -460,7 +461,7 @@ class Service {
     const expression = identifiers.expression || "";
 
     let options = {
-      // expressions, // DynamoDB doesnt return what I expect it would when provided with these entity filters
+      // expressions, // DynamoDB doesn't return what I expect it would when provided with these entity filters
       parse: (options, data) => {
         if (options.data === DataOptions.raw) {
           return data;
@@ -497,29 +498,21 @@ class Service {
             hydrator: undefined,
             _isCollectionQuery: false,
             ignoreOwnership: config._providedIgnoreOwnership,
+            attributes: config._providedAttributes,
           });
         }
 
-        // let itemLookup = [];
         let entityItemRefs = {};
-        // let entityResultRefs = {};
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
           for (let entityName in entities) {
             entityItemRefs[entityName] = entityItemRefs[entityName] || [];
             const entity = entities[entityName];
-            // if (entity.ownsKeys({ keys: item })) {
-            if (entity.ownsKeys(item)) {
-              // const entityItemRefsIndex =
+            if (entity.is(item, config)) {
               entityItemRefs[entityName].push({
                 item,
                 itemSlot: i,
               });
-              // itemLookup[i] = {
-              // 	entityName,
-              // 	entityItemRefsIndex,
-              // 	originalItem: item,
-              // }
             }
           }
         }
@@ -536,6 +529,7 @@ class Service {
             hydrator: undefined,
             _isCollectionQuery: false,
             ignoreOwnership: config._providedIgnoreOwnership,
+            attributes: config._providedAttributes,
           });
           unprocessed = unprocessed.concat(results.unprocessed);
           if (results.data.length !== itemRefs.length) {
@@ -575,6 +569,12 @@ class Service {
     };
   }
 
+  _validateIndexProjectionsMatch(definition = {}, providedIndex = {}) {
+    const definitionProjection = definition.projection;
+    const providedProjection = providedIndex.projection;
+    return v.isMatchingProjection(providedIndex.projection, definition.projection)
+  }
+
   _validateCollectionDefinition(definition = {}, providedIndex = {}) {
     let isCustomMatchPK = definition.pk.isCustom === providedIndex.pk.isCustom;
     let isCustomMatchSK =
@@ -593,6 +593,11 @@ class Service {
       definition,
       providedIndex,
     );
+
+    const matchingProjection = v.isMatchingProjection(
+      providedIndex.projection,
+      definition.projection
+    )
 
     for (
       let i = 0;
@@ -696,6 +701,12 @@ class Service {
         }" does not match established casing "${
           definition.pk.casing || KeyCasing.default
         }" on index "${providedIndexName}". Index casing options must match across all entities participating in a collection`,
+      );
+    }
+
+    if (!matchingProjection) {
+      collectionDifferences.push(
+        `The provided projection definition ${u.commaSeparatedString(providedIndex.projection ?? '<undefined>')} does not match the established projection definition ${u.commaSeparatedString(definition.projection)} on index ${providedIndexName}. Index projection definitions must match across all entities participating in a collection`
       );
     }
 

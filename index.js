@@ -18,7 +18,9 @@ const {
 const { createConversions } = require("./src/conversions");
 
 const {
-  ComparisonTypes
+  ComparisonTypes,
+  EntityIdentifiers,
+  EntityIdentifierFields,
 } = require('./src/types');
 
 module.exports = {
@@ -35,4 +37,6 @@ module.exports = {
   ElectroUserValidationError,
   ElectroAttributeValidationError,
   createConversions,
+  EntityIdentifiers,
+  EntityIdentifierFields,
 };
