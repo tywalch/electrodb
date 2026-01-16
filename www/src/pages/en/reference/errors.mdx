@@ -84,20 +84,34 @@ Errors are coded based on the type of error that has occurred.
 **Code: 1001**
 
 **Why this occurred:**
-If a DynamoDB DocClient is not passed to the constructor of an Entity or Service (`client`), ElectroDB will be unable to query DynamoDB. This error will only appear when a query(using `go()`) is made because ElectroDB is still useful without a DocClient through the use of it's `params()` method.
+If a DynamoDB DocClient is not passed to the constructor of an Entity or Service (`client`) and is also not provided in the query options, ElectroDB will be unable to query DynamoDB. This error will only appear when a query (using `go()`) is made because ElectroDB is still useful without a DocClient through the use of its `params()` method.
 
 **What to do about it:**
-For an Entity be sure to pass the DocClient as the second param to the constructor:
+You can pass the DocClient either at instantiation time or dynamically at query time.
+
+**Option 1: Pass at instantiation**
+
+For an Entity, pass the DocClient as the second param to the constructor:
 
 ```javascript
 new Entity(schema, { client });
 ```
 
-For a Service, the client is passed the same way, as the second param to the constructor:
+For a Service, the client is passed the same way:
 
 ```javascript
 new Service("", { client });
 ```
+
+**Option 2: Pass at query time**
+
+You can also provide the client dynamically in the `go()` options:
+
+```javascript
+await entity.get({ id }).go({ client });
+```
+
+This is useful for scenarios like multi-region routing, per-request client selection, or testing with different clients.
 
 ### Invalid Identifier
 
