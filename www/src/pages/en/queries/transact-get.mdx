@@ -73,12 +73,14 @@ Execution options can be provided to the `.params()` and `.go()` terminal functi
 ```typescript
 {
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 }
 ```
 
-| Option | Default              | Description                                                                                                                                                                                                                                                                                                             |
-| ------ | :------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| client | _(from constructor)_ | Provide a DynamoDB client dynamically at query execution time. This allows per-request client selection without modifying the Entity or Service instance. The client provided here takes precedence over any client set at instantiation time. Both v2 and v3 AWS SDK clients are supported and will be auto-detected. |
+| Option      | Default              | Description                                                                                                                                                                                                                                                                                                             |
+| ----------- | :------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| client      | _(from constructor)_ | Provide a DynamoDB client dynamically at query execution time. This allows per-request client selection without modifying the Entity or Service instance. The client provided here takes precedence over any client set at instantiation time. Both v2 and v3 AWS SDK clients are supported and will be auto-detected. |
+| abortSignal |        _none_        | An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that can be used to cancel the operation. This is useful for implementing request timeouts or cancelling long-running operations. When the signal is aborted, ElectroDB will throw an [`OperationAborted`](/en/reference/errors#operation-aborted) error. |
 
 The following are some links to help you understand the mechanics behind DynamoDB Transacts
 
