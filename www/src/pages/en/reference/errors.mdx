@@ -450,6 +450,22 @@ DynamoDB did not like something about your query.
 **What to do about it:**
 By default ElectroDB tries to keep the stack trace close to your code, ideally this can help you identify what might be going on. A tip to help with troubleshooting: use `.params()` to get more insight into how your query is converted to DocClient params.
 
+### Operation Aborted
+
+**Code: 4002**
+
+**Why this occurred:**
+The operation was cancelled via an `AbortSignal` passed to the [Execution Options](/en/core-concepts/executing-queries). This can happen when:
+- The `AbortController.abort()` method was called before or during the operation
+- A timeout triggered the abort signal
+- The signal was already aborted when passed to the operation
+
+**What to do about it:**
+This error is expected behavior when intentionally cancelling operations. If you're seeing this error unexpectedly:
+1. Check that your `AbortController` is not being aborted prematurely
+2. Verify any timeout values are appropriate for your operation
+3. Ensure the signal is not shared unintentionally between operations
+
 ## Unexpected Errors
 
 ### No Owner For Pager

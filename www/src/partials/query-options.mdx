@@ -20,6 +20,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   order?: 'asc' | 'desc';
   compare?: 'attributes' | 'keys' | 'v2';
   consistent?: boolean;
+  abortSignal?: AbortSignal;
 };
 ```
 
@@ -88,3 +89,14 @@ When set to `attributes`, the `comparison` option instructs ElectroDB to apply a
 ### consistent
 **Default Value:** _none_
 When set to `true`, DynamoDB will return the most up-to-date data reflecting updates from all prior write operations using DynamoDB's [`ConsistentRead`](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html#HowItWorks.ReadConsistency.Strongly) parameter. Strongly consistent reads are only supported on tables and local secondary indexes.
+
+### abortSignal
+**Default Value:** _none_
+An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that can be used to cancel the operation. This is useful for implementing request timeouts or cancelling long-running operations. When the signal is aborted, ElectroDB will throw an [`OperationAborted`](/en/reference/errors#operation-aborted) error. The `abortSignal` option works with both the AWS SDK v2 and v3 DocumentClient.
+
+```typescript
+// Abort if the operation takes longer than 5 seconds
+const result = await MyEntity.query
+  .myIndex({ id: "123" })
+  .go({ abortSignal: AbortSignal.timeout(5000) });
+```

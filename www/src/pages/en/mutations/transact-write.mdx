@@ -321,12 +321,14 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 ```typescript
 {
   token?: string;
+  abortSignal?: AbortSignal;
 }
 ```
 
-| Option | Default | Description                                                                            |
-| ------ | :-----: | -------------------------------------------------------------------------------------- |
-| token  | _none_  | Adds the provided value as a `ClientRequestToken` along with your request to DynamoDB. |
+| Option      | Default | Description                                                                                                                                                                                                                                                                                                  |
+| ----------- | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| token       | _none_  | Adds the provided value as a `ClientRequestToken` along with your request to DynamoDB.                                                                                                                                                                                                                       |
+| abortSignal | _none_  | An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that can be used to cancel the operation. This is useful for implementing request timeouts or cancelling long-running operations. When the signal is aborted, ElectroDB will throw an [`OperationAborted`](/en/reference/errors#operation-aborted) error. |
 
 ## Resources
 
