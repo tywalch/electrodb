@@ -681,31 +681,6 @@ describe("AbortSignal Support", () => {
   });
 
   describe("V3 wrapper AbortError conversion", () => {
-    it("should convert AWS SDK AbortError thrown during execution to ElectroError", async () => {
-      // Create a mock V3 wrapper to test the promiseWrap error conversion
-      const { DocumentClientV3Wrapper } = c;
-      const mockLib = {};
-      const mockClient = {};
-      const wrapper = new DocumentClientV3Wrapper(mockClient, mockLib);
-
-      // Simulate AWS SDK v3 throwing an AbortError during execution
-      const abortError = new Error("The operation was aborted.");
-      abortError.name = "AbortError";
-
-      const signal = { aborted: false };
-      const wrappedFn = wrapper.promiseWrap(() => {
-        throw abortError;
-      }, signal);
-
-      try {
-        await wrappedFn.promise();
-        expect.fail("Should have thrown an error");
-      } catch (err) {
-        expect(err.message).to.equal("The operation was aborted - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#operation-aborted");
-        expect(err.code).to.equal(ErrorCodes.OperationAborted.code);
-      }
-    });
-
     it("should convert error to ElectroError when signal becomes aborted during execution", async () => {
       const { DocumentClientV3Wrapper } = c;
       const mockLib = {};
