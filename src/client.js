@@ -246,12 +246,7 @@ class DocumentClientV3Wrapper {
         try {
           return await fn();
         } catch (err) {
-          if (
-            !!err &&
-            typeof err === "object" &&
-            err.name === "AbortError" ||
-            (signal && signal.aborted)
-          ) {
+          if (signal && signal.aborted) {
             throw new ElectroError(
               ErrorCodes.OperationAborted,
               "The operation was aborted",
