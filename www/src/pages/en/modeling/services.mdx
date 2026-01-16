@@ -37,7 +37,7 @@ As with Entities, Services take an _optional_ second parameter that allows you t
 | Property | Description                                                                                                                                                                                                                              |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | table    | The name of the DynamoDB table in AWS.                                                                                                                                                                                                   |
-| client   | (optional) An instance of `DynamoDBClient` from the `aws-sdk` to be used when querying a DynamoDB table. This is optional if you only wish to use the `params` functionality, but required if you actually need to query against a database. |
+| client   | (optional) An instance of `DynamoDBClient` from the `aws-sdk` to be used when querying a DynamoDB table. This is optional if you only wish to use the `params` functionality, or if you intend to provide the client dynamically at query time via [execution options](/en/core-concepts/executing-queries#execution-options). |
 
 ## Validation
 
