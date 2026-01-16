@@ -510,7 +510,8 @@ class Entity {
       );
     };
     const dynamoDBMethod = MethodTypeTranslation[method];
-    return this.client[dynamoDBMethod](params)
+    const clientOptions = { abortSignal: config.abortSignal };
+    return this.client[dynamoDBMethod](params, clientOptions)
       .promise()
       .then((results) => {
         notifyQuery();
@@ -524,7 +525,10 @@ class Entity {
           enumerable: false,
           value: params,
         });
-        err.__isAWSError = true;
+        // Only mark as AWS error if it's not already an ElectroError
+        if (!err.isElectroError) {
+          err.__isAWSError = true;
+        }
         throw err;
       });
   }
@@ -537,6 +541,12 @@ class Entity {
     let concurrent = this._normalizeConcurrencyValue(config.concurrent);
     let concurrentOperations = u.batchItems(parameters, concurrent);
     for (let operation of concurrentOperations) {
+      if (config.abortSignal && config.abortSignal.aborted) {
+        throw new e.ElectroError(
+          e.ErrorCodes.OperationAborted,
+          "The operation was aborted",
+        );
+      }
       await Promise.all(
         operation.map(async (params) => {
           let response = await this._exec(
@@ -612,6 +622,12 @@ class Entity {
       : [];
     let unprocessedAll = [];
     for (let operation of concurrentOperations) {
+      if (config.abortSignal && config.abortSignal.aborted) {
+        throw new e.ElectroError(
+          e.ErrorCodes.OperationAborted,
+          "The operation was aborted",
+        );
+      }
       await Promise.all(
         operation.map(async (params) => {
           let response = await this._exec(MethodTypes.batchGet, params, config);
@@ -691,6 +707,12 @@ class Entity {
     let hydratedUnprocessed = [];
     const shouldHydrate = config.hydrate && method === MethodTypes.query;
     do {
+      if (config.abortSignal && config.abortSignal.aborted) {
+        throw new e.ElectroError(
+          e.ErrorCodes.OperationAborted,
+          "The operation was aborted",
+        );
+      }
       let response = await this._exec(
         method,
         { ExclusiveStartKey, ...parameters },
@@ -1647,6 +1669,7 @@ class Entity {
       hydrator: (_entity, _indexName, items) => items,
       _objectOnEmpty: false,
       _includeOnResponseItem: {},
+      abortSignal: undefined,
     };
 
     return provided.filter(Boolean).reduce((config, option) => {
@@ -1879,6 +1902,10 @@ class Entity {
 
       if (validations.isFunction(option.hydrator)) {
         config.hydrator = option.hydrator;
+      }
+
+      if (option.abortSignal !== undefined) {
+        config.abortSignal = option.abortSignal;
       }
 
       if (option._includeOnResponseItem) {

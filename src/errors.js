@@ -241,6 +241,12 @@ const ErrorCodes = {
     name: "AWSError",
     sym: ErrorCode,
   },
+  OperationAborted: {
+    code: 4002,
+    section: "operation-aborted",
+    name: "OperationAborted",
+    sym: ErrorCode,
+  },
   UnknownError: {
     code: 5001,
     section: "unknown-error",

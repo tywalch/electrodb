@@ -48,39 +48,94 @@ class DocumentClientV2Wrapper {
     this.__v = "v2";
   }
 
-  get(params) {
-    return this.client.get(params);
+  _wrapRequest(request, signal) {
+    return {
+      promise: () => {
+        return new Promise((resolve, reject) => {
+          if (signal && signal.aborted) {
+            request.abort();
+            return reject(
+              new ElectroError(
+                ErrorCodes.OperationAborted,
+                "The operation was aborted",
+              ),
+            );
+          }
+
+          const onAbort = () => {
+            request.abort();
+            reject(
+              new ElectroError(
+                ErrorCodes.OperationAborted,
+                "The operation was aborted",
+              ),
+            );
+          };
+
+          if (signal) {
+            signal.addEventListener("abort", onAbort, { once: true });
+          }
+
+          request
+            .promise()
+            .then((result) => {
+              if (signal) {
+                signal.removeEventListener("abort", onAbort);
+              }
+              resolve(result);
+            })
+            .catch((err) => {
+              if (signal) {
+                signal.removeEventListener("abort", onAbort);
+              }
+              reject(err);
+            });
+        });
+      },
+    };
   }
 
-  put(params) {
-    return this.client.put(params);
+  get(params, options = {}) {
+    const request = this.client.get(params);
+    return this._wrapRequest(request, options.abortSignal);
   }
 
-  update(params) {
-    return this.client.update(params);
+  put(params, options = {}) {
+    const request = this.client.put(params);
+    return this._wrapRequest(request, options.abortSignal);
   }
 
-  delete(params) {
-    return this.client.delete(params);
+  update(params, options = {}) {
+    const request = this.client.update(params);
+    return this._wrapRequest(request, options.abortSignal);
   }
 
-  batchWrite(params) {
-    return this.client.batchWrite(params);
+  delete(params, options = {}) {
+    const request = this.client.delete(params);
+    return this._wrapRequest(request, options.abortSignal);
   }
 
-  batchGet(params) {
-    return this.client.batchGet(params);
+  batchWrite(params, options = {}) {
+    const request = this.client.batchWrite(params);
+    return this._wrapRequest(request, options.abortSignal);
   }
 
-  scan(params) {
-    return this.client.scan(params);
+  batchGet(params, options = {}) {
+    const request = this.client.batchGet(params);
+    return this._wrapRequest(request, options.abortSignal);
   }
 
-  query(params) {
-    return this.client.query(params);
+  scan(params, options = {}) {
+    const request = this.client.scan(params);
+    return this._wrapRequest(request, options.abortSignal);
   }
 
-  _transact(transactionRequest) {
+  query(params, options = {}) {
+    const request = this.client.query(params);
+    return this._wrapRequest(request, options.abortSignal);
+  }
+
+  _transact(transactionRequest, signal) {
     let cancellationReasons;
     transactionRequest.on("extractError", (response) => {
       try {
@@ -91,34 +146,72 @@ class DocumentClientV2Wrapper {
     });
 
     return {
-      async promise() {
-        return transactionRequest.promise().catch((err) => {
-          if (err) {
-            if (Array.isArray(cancellationReasons)) {
-              return {
-                canceled: cancellationReasons.map((reason) => {
-                  if (reason.Item) {
-                    return unmarshallItem(reason);
-                  }
-                  return reason;
-                }),
-              };
-            }
-            throw err;
+      promise: () => {
+        return new Promise((resolve, reject) => {
+          if (signal && signal.aborted) {
+            transactionRequest.abort();
+            return reject(
+              new ElectroError(
+                ErrorCodes.OperationAborted,
+                "The operation was aborted",
+              ),
+            );
           }
+
+          const onAbort = () => {
+            transactionRequest.abort();
+            reject(
+              new ElectroError(
+                ErrorCodes.OperationAborted,
+                "The operation was aborted",
+              ),
+            );
+          };
+
+          if (signal) {
+            signal.addEventListener("abort", onAbort, { once: true });
+          }
+
+          transactionRequest
+            .promise()
+            .then((result) => {
+              if (signal) {
+                signal.removeEventListener("abort", onAbort);
+              }
+              resolve(result);
+            })
+            .catch((err) => {
+              if (signal) {
+                signal.removeEventListener("abort", onAbort);
+              }
+              if (err) {
+                if (Array.isArray(cancellationReasons)) {
+                  resolve({
+                    canceled: cancellationReasons.map((reason) => {
+                      if (reason.Item) {
+                        return unmarshallItem(reason);
+                      }
+                      return reason;
+                    }),
+                  });
+                } else {
+                  reject(err);
+                }
+              }
+            });
         });
       },
     };
   }
 
-  transactWrite(params) {
+  transactWrite(params, options = {}) {
     const transactionRequest = this.client.transactWrite(params);
-    return this._transact(transactionRequest);
+    return this._transact(transactionRequest, options.abortSignal);
   }
 
-  transactGet(params) {
+  transactGet(params, options = {}) {
     const transactionRequest = this.client.transactGet(params);
-    return this._transact(transactionRequest);
+    return this._transact(transactionRequest, options.abortSignal);
   }
 
   createSet(value, ...rest) {
@@ -141,68 +234,89 @@ class DocumentClientV3Wrapper {
     this.__v = "v3";
   }
 
-  promiseWrap(fn) {
+  promiseWrap(fn, signal) {
     return {
       promise: async () => {
-        return fn();
+        if (signal && signal.aborted) {
+          throw new ElectroError(
+            ErrorCodes.OperationAborted,
+            "The operation was aborted",
+          );
+        }
+        try {
+          return await fn();
+        } catch (err) {
+          if (
+            !!err &&
+            typeof err === "object" &&
+            err.name === "AbortError" ||
+            (signal && signal.aborted)
+          ) {
+            throw new ElectroError(
+              ErrorCodes.OperationAborted,
+              "The operation was aborted",
+            );
+          }
+          throw err;
+        }
       },
     };
   }
 
-  get(params) {
+  get(params, options = {}) {
     return this.promiseWrap(() => {
       const command = new this.lib.GetCommand(params);
-      return this.client.send(command);
-    });
+      return this.client.send(command, { abortSignal: options.abortSignal });
+    }, options.abortSignal);
   }
-  put(params) {
+  put(params, options = {}) {
     return this.promiseWrap(() => {
       const command = new this.lib.PutCommand(params);
-      return this.client.send(command);
-    });
+      return this.client.send(command, { abortSignal: options.abortSignal });
+    }, options.abortSignal);
   }
-  update(params) {
+  update(params, options = {}) {
     return this.promiseWrap(() => {
       const command = new this.lib.UpdateCommand(params);
-      return this.client.send(command);
-    });
+      return this.client.send(command, { abortSignal: options.abortSignal });
+    }, options.abortSignal);
   }
-  delete(params) {
-    return this.promiseWrap(async () => {
+  delete(params, options = {}) {
+    return this.promiseWrap(() => {
       const command = new this.lib.DeleteCommand(params);
-      return this.client.send(command);
-    });
+      return this.client.send(command, { abortSignal: options.abortSignal });
+    }, options.abortSignal);
   }
-  batchWrite(params) {
-    return this.promiseWrap(async () => {
+  batchWrite(params, options = {}) {
+    return this.promiseWrap(() => {
       const command = new this.lib.BatchWriteCommand(params);
-      return this.client.send(command);
-    });
+      return this.client.send(command, { abortSignal: options.abortSignal });
+    }, options.abortSignal);
   }
-  batchGet(params) {
-    return this.promiseWrap(async () => {
+  batchGet(params, options = {}) {
+    return this.promiseWrap(() => {
       const command = new this.lib.BatchGetCommand(params);
-      return this.client.send(command);
-    });
+      return this.client.send(command, { abortSignal: options.abortSignal });
+    }, options.abortSignal);
   }
-  scan(params) {
-    return this.promiseWrap(async () => {
+  scan(params, options = {}) {
+    return this.promiseWrap(() => {
       const command = new this.lib.ScanCommand(params);
-      return this.client.send(command);
-    });
+      return this.client.send(command, { abortSignal: options.abortSignal });
+    }, options.abortSignal);
   }
-  query(params) {
-    return this.promiseWrap(async () => {
+  query(params, options = {}) {
+    return this.promiseWrap(() => {
       const command = new this.lib.QueryCommand(params);
-      return this.client.send(command);
-    });
+      return this.client.send(command, { abortSignal: options.abortSignal });
+    }, options.abortSignal);
   }
 
-  transactWrite(params) {
-    return this.promiseWrap(async () => {
+  transactWrite(params, options = {}) {
+    return this.promiseWrap(() => {
       const command = new this.lib.TransactWriteCommand(params);
       return this.client
-        .send(command)
+        .send(command, { abortSignal: options.abortSignal })
         .then((result) => {
           return result;
         })
@@ -219,13 +333,13 @@ class DocumentClientV3Wrapper {
           }
           throw err;
         });
-    });
+    }, options.abortSignal);
   }
-  transactGet(params) {
-    return this.promiseWrap(async () => {
+  transactGet(params, options = {}) {
+    return this.promiseWrap(() => {
       const command = new this.lib.TransactGetCommand(params);
       return this.client
-        .send(command)
+        .send(command, { abortSignal: options.abortSignal })
         .then((result) => {
           return result;
         })
@@ -242,7 +356,7 @@ class DocumentClientV3Wrapper {
           }
           throw err;
         });
-    });
+    }, options.abortSignal);
   }
   createSet(value) {
     if (Array.isArray(value)) {
