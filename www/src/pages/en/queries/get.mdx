@@ -68,6 +68,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   listeners Array<(event) => void>;
   attributes?: string[];
   consistent?: boolean;
+  abortSignal?: AbortSignal;
 };
 ```
 
@@ -83,3 +84,4 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 | listeners       |         `[]`         | An array of callbacks that are invoked when [internal ElectroDB events](/en/reference/events-logging) occur.                                                                                                                                                                                                                                                                                  |
 | logger          |        _none_        | A convenience option for a single event listener that semantically can be used for logging.                                                                                                                                                                                                                                                                                                   |
 | consistent      |        _none_        | When set to `true`, DynamoDB will return the most up-to-date data reflecting updates from all prior write operations using DynamoDB's [`ConsistentRead`](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html#HowItWorks.ReadConsistency.Strongly) parameter. Strongly consistent reads are only supported on tables and local secondary indexes. |
+| abortSignal     |        _none_        | An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that can be used to cancel the operation. This is useful for implementing request timeouts or cancelling long-running operations. When the signal is aborted, ElectroDB will throw an [`OperationAborted`](/en/reference/errors#operation-aborted) error.                                                      |

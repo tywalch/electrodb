@@ -70,7 +70,15 @@ Calling the async `.go()` method on a transaction returns the following interfac
 
 Execution options can be provided to the `.params()` and `.go()` terminal functions to change query behavior or add customer parameters to a query.
 
-> This method does not currently have any execution options.
+```typescript
+{
+  abortSignal?: AbortSignal;
+}
+```
+
+| Option      | Default | Description                                                                                                                                                                                                                                                                                                  |
+| ----------- | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| abortSignal | _none_  | An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that can be used to cancel the operation. This is useful for implementing request timeouts or cancelling long-running operations. When the signal is aborted, ElectroDB will throw an [`OperationAborted`](/en/reference/errors#operation-aborted) error. |
 
 The following are some links to help you understand the mechanics behind DynamoDB Transacts
 
