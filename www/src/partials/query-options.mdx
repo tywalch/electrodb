@@ -22,6 +22,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
   compare?: 'attributes' | 'keys' | 'v2';
   consistent?: boolean;
   projection?: 'all' | 'keys_only' | string[];
+  abortSignal?: AbortSignal;
 };
 ```
 
@@ -102,3 +103,14 @@ When set to `true`, DynamoDB will return the most up-to-date data reflecting upd
 ### projection
 **Default Value:** 'all'
 The `projection` option maps to the DynamoDB table index definition [Projection](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Projection.html).
+
+### abortSignal
+**Default Value:** _none_
+An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that can be used to cancel the operation. This is useful for implementing request timeouts or cancelling long-running operations. When the signal is aborted, ElectroDB will throw an [`OperationAborted`](/en/reference/errors#operation-aborted) error. The `abortSignal` option works with both the AWS SDK v2 and v3 DocumentClient.
+
+```typescript
+// Abort if the operation takes longer than 5 seconds
+const result = await MyEntity.query
+  .myIndex({ id: "123" })
+  .go({ abortSignal: AbortSignal.timeout(5000) });
+```
