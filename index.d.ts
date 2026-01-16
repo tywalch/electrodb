@@ -2633,6 +2633,7 @@ export interface QueryOptions {
   order?: "asc" | "desc";
   consistent?: boolean;
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 }
 
 // subset of QueryOptions
@@ -2723,6 +2724,7 @@ interface GoBatchGetTerminalOptions<Attributes> {
   logger?: ElectroEventListener;
   consistent?: boolean;
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 }
 
 export type ExecutionOptionCompare = "keys" | "attributes" | "v2";
@@ -2755,6 +2757,7 @@ type ServiceQueryGoTerminalOptions<
   order?: "asc" | "desc";
   consistent?: boolean;
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 } & QueryExecutionComparisonParts &
   (
     | {
@@ -2824,6 +2827,7 @@ type GoQueryTerminalOptions<
   hydrate?: boolean;
   consistent?: boolean;
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 } & QueryExecutionComparisonParts &
   (
     | {
@@ -2852,6 +2856,7 @@ interface TransactWriteQueryOptions {
   logger?: ElectroEventListener;
   response?: "all_old";
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 }
 
 interface TransactGetQueryOptions<Attributes> {
@@ -2865,6 +2870,7 @@ interface TransactGetQueryOptions<Attributes> {
   logger?: ElectroEventListener;
   consistent?: boolean;
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 }
 
 export type ParamTerminalOptions<Attributes> = {
@@ -5906,12 +5912,14 @@ type TransactWriteFunctionOptions = {
   token?: string;
   logger?: ElectroEventListener;
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 };
 
 type TransactGetFunctionOptions = {
   token?: string;
   logger?: ElectroEventListener;
   client?: DocumentClient;
+  abortSignal?: AbortSignal;
 };
 
 type TransactWriteExtractedType<
