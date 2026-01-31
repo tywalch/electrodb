@@ -5,3 +5,4 @@ export * from "./schema.test-d";
 export * from "./queries.test-d";
 export * from "./indexes.test-d";
 export * from "./upsert.test-d";
+export * from "./v2response.test-d";

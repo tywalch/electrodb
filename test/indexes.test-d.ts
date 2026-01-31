@@ -1,196 +1,9 @@
 import { expectType, expectError } from "tsd";
-import { Entity, Service } from "../index";
-const table = "electro";
-const hold = new Entity(
-  {
-    model: {
-      entity: "hold",
-      version: "1",
-      service: "transactions",
-    },
-    attributes: {
-      prop1: {
-        type: "string",
-      },
-      prop2: {
-        type: "string",
-      },
-      prop3: {
-        type: "string",
-      },
-    },
-    indexes: {
-      projects: {
-        collection: "clusteredAll",
-        type: "clustered",
-        pk: {
-          field: "pk",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk",
-          composite: ["prop2", "prop3"],
-        },
-      },
-      other: {
-        index: "two",
-        collection: "emptyAll",
-        // type: 'clustered',
-        pk: {
-          field: "pk2",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk2",
-          composite: ["prop2", "prop3"],
-        },
-      },
-      last: {
-        index: "three",
-        collection: "isolatedSome",
-        type: "clustered",
-        pk: {
-          field: "pk3",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk3",
-          composite: ["prop2", "prop3"],
-        },
-      },
-    },
-  },
-  { table },
-);
-
-const deposit = new Entity(
-  {
-    model: {
-      entity: "hold",
-      version: "1",
-      service: "transactions",
-    },
-    attributes: {
-      prop1: {
-        type: "string",
-      },
-      prop2: {
-        type: "string",
-      },
-      prop3: {
-        type: "string",
-      },
-    },
-    indexes: {
-      projects: {
-        collection: "clusteredAll",
-        type: "clustered",
-        pk: {
-          field: "pk",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk",
-          composite: ["prop2", "prop3"],
-        },
-      },
-      other: {
-        index: "two",
-        collection: "emptyAll",
-        // type: 'clustered',
-        pk: {
-          field: "pk2",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk2",
-          composite: ["prop2", "prop3"],
-        },
-      },
-      last: {
-        index: "three",
-        type: "clustered",
-        collection: "clusteredOne",
-        pk: {
-          field: "pk3",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk3",
-          composite: ["prop2", "prop3"],
-        },
-      },
-    },
-  },
-  { table },
-);
-
-const debit = new Entity(
-  {
-    model: {
-      entity: "debit",
-      version: "1",
-      service: "transactions",
-    },
-    attributes: {
-      prop1: {
-        type: "string",
-      },
-      prop2: {
-        type: "string",
-      },
-      prop4: {
-        type: "number",
-      },
-    },
-    indexes: {
-      projects: {
-        collection: "clusteredAll",
-        type: "clustered",
-        pk: {
-          field: "pk",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk",
-          composite: ["prop2", "prop4"],
-        },
-      },
-      other: {
-        index: "two",
-        collection: "emptyAll",
-        pk: {
-          field: "pk2",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk2",
-          composite: ["prop2", "prop4"],
-        },
-      },
-      last: {
-        index: "three",
-        collection: "isolatedSome",
-        type: "clustered",
-        pk: {
-          field: "pk3",
-          composite: ["prop1"],
-        },
-        sk: {
-          field: "sk3",
-          composite: ["prop2", "prop4"],
-        },
-      },
-    },
-  },
-  { table },
-);
-
-const transactions = new Service({
-  hold,
-  deposit,
-  debit,
-});
+import {
+  transactions,
+  projectionEntity,
+  service
+} from "./indexes-entities.test-d";
 
 async function main() {
   const prop1 = "abc";
@@ -259,97 +72,6 @@ async function main() {
       };
     });
 }
-
-const projectionEntity = new Entity({
-  model: {
-    entity: "projection",
-    version: "1",
-    service: "transactions",
-  },
-  attributes: {
-    id: { type: "string", required: true },
-    include1: { type: "string", required: true },
-    include2: { type: "boolean" },
-    include3: { type: "number" },
-    exclude1: { type: "string" },
-    exclude2: { type: "number" },
-    exclude3: { type: "boolean" },
-  },
-  indexes: {
-    primary: {
-      pk: {
-        field: "pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "sk",
-        composite: [],
-      },
-    },
-    includeIndex: {
-      index: "gsi1pk-gsi1sk-index",
-      projection: ["include1", "include2", "include3"],
-      collection: "includeIndexCollection",
-      pk: {
-        field: "gsi1pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi1sk",
-        composite: [],
-      },
-    },
-    collectionAllIndex: {
-      index: "gsi2pk-gsi2sk-index",
-      collection: "collectionAllIndex",
-      type: 'clustered',
-      pk: {
-        field: "gsi2pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi2sk",
-        composite: [],
-      },
-    },
-    thirdIndex: {
-      index: "gsi3pk-gsi3sk-index",
-      pk: {
-        field: "gsi3pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi3sk",
-        composite: [],
-      },
-    },
-    excludeIndex: {
-      index: "gsi4pk-gsi4sk-index",
-      projection: ["exclude1", "exclude2", "exclude3"],
-      pk: {
-        field: "gsi4pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi4sk",
-        composite: [],
-      },
-    },
-    keysOnly: {
-      index: "gsi5pk-gsi5sk-index",
-      projection: "keys_only",
-      collection: "keysOnlyCollection",
-      pk: {
-        field: "gsi5pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi5sk",
-        composite: [],
-      },
-    },
-  },
-});
 
 // scanning index with INCLUDE index should only return the projected attributes
 projectionEntity.scan.includeIndex.go().then((resp) => {
@@ -549,164 +271,6 @@ expectError(() =>
     .go(),
 );
 
-const projectionEntity2 = new Entity({
-  model: {
-    entity: "projection",
-    version: "1",
-    service: "transactions",
-  },
-  attributes: {
-    id: { type: "string", required: true },
-    include1: { type: "boolean", required: true },
-    include2: { type: "boolean", required: true },
-    include3: { type: "number", required: true },
-    some1: { type: "string", required: true },
-    some2: { type: "number", required: true },
-    some3: { type: "boolean", required: true },
-  },
-  indexes: {
-    primary: {
-      pk: {
-        field: "pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "sk",
-        composite: [],
-      },
-    },
-    myIncludeIndex: {
-      index: "gsi1pk-gsi1sk-index",
-      projection: ["include1", "include2", "include3"],
-      collection: "includeIndexCollection",
-      pk: {
-        field: "gsi1pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi1sk",
-        composite: [],
-      },
-    },
-    collectionAllIndex: {
-      index: "gsi2pk-gsi2sk-index",
-      collection: "collectionAllIndex",
-      type: "clustered",
-      pk: {
-        field: "gsi2pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi2sk",
-        composite: [],
-      },
-    },
-    thirdIndex: {
-      index: "gsi3pk-gsi3sk-index",
-      pk: {
-        field: "gsi3pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi3sk",
-        composite: [],
-      },
-    },
-    excludeIndex: {
-      index: "gsi4pk-gsi4sk-index",
-      projection: ["exclude1", "exclude2", "exclude3"],
-      pk: {
-        field: "gsi4pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi4sk",
-        composite: [],
-      },
-    },
-    myKeysOnly: {
-      index: "gsi5pk-gsi5sk-index",
-      projection: "keys_only",
-      collection: "keysOnlyCollection",
-      pk: {
-        field: "gsi5pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi5sk",
-        composite: [],
-      },
-    },
-  },
-});
-
-const unrelatedEntity = new Entity({
-  model: {
-    entity: "projection",
-    version: "1",
-    service: "transactions",
-  },
-  attributes: {
-    id: { type: "string", required: true },
-    unrelated: { type: "string", required: true },
-  },
-  indexes: {
-    primary: {
-      pk: {
-        field: "pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "sk",
-        composite: [],
-      },
-    },
-    thirdCollectionIndex: {
-      index: "gsi1pk-gsi1sk-index",
-      collection: "thirdCollection",
-      pk: {
-        field: "gsi1pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "gsi1sk",
-        composite: [],
-      },
-    },
-  },
-});
-
-const forthEntity = new Entity({
-  model: {
-    entity: "projection",
-    version: "1",
-    service: "transactions",
-  },
-  attributes: {
-    id: { type: "string", required: true },
-    forth: { type: "string", required: true },
-  },
-  indexes: {
-    primary: {
-      pk: {
-        field: "pk",
-        composite: ["id"],
-      },
-      sk: {
-        field: "sk",
-        composite: [],
-      },
-    },
-  },
-});
-
-const service = new Service({
-  projectionEntity,
-  projectionEntity2,
-  unrelatedEntity,
-  forthEntity,
-});
-
 type AllIndexCollectionWhereAttrs = {
   id: string;
   include1: string | boolean;
@@ -718,6 +282,12 @@ type AllIndexCollectionWhereAttrs = {
   some1: string;
   some2: number;
   some3: boolean;
+};
+
+type ExcludeCollectionWhereAttrs = {
+  exclude1: string;
+  exclude2: number;
+  exclude3: boolean;
 };
 
 type AllIndexCollectionResponse = {
@@ -733,12 +303,31 @@ type AllIndexCollectionResponse = {
     }[];
     projectionEntity2: {
       id: string;
-      include1: boolean;
-      include2: boolean;
-      include3: number;
       some1: string;
       some2: number;
       some3: boolean;
+      exclude1: string;
+      exclude2: number;
+      exclude3: boolean;
+      include1: boolean;
+      include2: boolean;
+      include3: number;
+    }[];
+  };
+  cursor: string | null;
+};
+
+type ExcludeCollectionResponse = {
+  data: {
+    projectionEntity: {
+      exclude1?: string | undefined;
+      exclude2?: number | undefined;
+      exclude3?: boolean | undefined;
+    }[];
+    projectionEntity2: {
+      exclude1: string;
+      exclude2: number;
+      exclude3: boolean;
     }[];
   };
   cursor: string | null;
@@ -749,9 +338,17 @@ const allIndexCollectionQuery = service.collections.collectionAllIndex({
   id: "",
 });
 
+const excludeCollectionQuery = service.collections.excludeCollection({
+  id: "",
+});
+
 // calling go() without a parameter
 allIndexCollectionQuery.go().then((res) => {
   expectType<AllIndexCollectionResponse>(res);
+});
+
+excludeCollectionQuery.go().then((res) => {
+  expectType<ExcludeCollectionResponse>(res);
 });
 
 allIndexCollectionQuery
@@ -762,6 +359,16 @@ allIndexCollectionQuery
   .go()
   .then((res) => {
     expectType<AllIndexCollectionResponse>(res);
+  });
+
+excludeCollectionQuery
+  .where((attrs, ops) => {
+    expectType<ExcludeCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go()
+  .then((res) => {
+    expectType<ExcludeCollectionResponse>(res);
   });
 
 allIndexCollectionQuery
@@ -776,6 +383,20 @@ allIndexCollectionQuery
   .go()
   .then((res) => {
     expectType<AllIndexCollectionResponse>(res);
+  });
+
+excludeCollectionQuery
+  .where((attrs, ops) => {
+    expectType<ExcludeCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .where((attrs, ops) => {
+    expectType<ExcludeCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go()
+  .then((res) => {
+    expectType<ExcludeCollectionResponse>(res);
   });
 
 // calling go() with empty object
@@ -837,6 +458,12 @@ allIndexCollectionQuery
     expectType<AllIndexCollectionProvidedAttrsResponse>(res);
   });
 
+excludeCollectionQuery
+  .go({ attributes: ['exclude1', 'exclude2', 'exclude3'] as const })
+  .then((res) => {
+    expectType<ExcludeCollectionResponse>(res);
+  });
+
 allIndexCollectionQuery
   .where((attrs, ops) => {
     expectType<AllIndexCollectionWhereAttrs>(attrs);
@@ -845,6 +472,16 @@ allIndexCollectionQuery
   .go({ attributes: AllIndexCollectionProvidedAttrs })
   .then((res) => {
     expectType<AllIndexCollectionProvidedAttrsResponse>(res);
+  });
+
+excludeCollectionQuery
+  .where((attrs, ops) => {
+    expectType<ExcludeCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go({ attributes: ["exclude1", "exclude2", "exclude3"] })
+  .then((res) => {
+    expectType<ExcludeCollectionResponse>(res);
   });
 
 allIndexCollectionQuery
@@ -859,10 +496,26 @@ allIndexCollectionQuery
   .go({ attributes: AllIndexCollectionProvidedAttrs })
   .then((res) => {
     expectType<AllIndexCollectionProvidedAttrsResponse>(res);
+  });
+
+excludeCollectionQuery
+  .where((attrs, ops) => {
+    expectType<ExcludeCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .where((attrs, ops) => {
+    expectType<ExcludeCollectionWhereAttrs>(attrs);
+    return "";
+  })
+  .go({ attributes: ["exclude1", "exclude2", "exclude3"] })
+  .then((res) => {
+    expectType<ExcludeCollectionResponse>(res);
   });
 
 // should not be able to pass attributes from other collections
 expectError(() => allIndexCollectionQuery.go({ attributes: ["unrelated"] }));
+
+expectError(() => excludeCollectionQuery.go({ attributes: ["include1"] as const }));
 
 expectError(() =>
   allIndexCollectionQuery
@@ -872,6 +525,16 @@ expectError(() =>
     })
     .go({ attributes: ["unrelated"] }),
 );
+
+expectError(() =>
+  excludeCollectionQuery
+    .where((attrs, ops) => {
+      expectType<ExcludeCollectionWhereAttrs>(attrs);
+      return "";
+    })
+    .go({ attributes: ["include1"] as const }),
+);
+
 
 expectError(() =>
   allIndexCollectionQuery
@@ -888,9 +551,32 @@ expectError(() =>
 
 // should not be able to pass completely non-existent attributes
 expectError(() => allIndexCollectionQuery.go({ attributes: ["invalid"] }));
+expectError(() => excludeCollectionQuery.go({ attributes: ["invalid"] }));
 
 expectError(() =>
   allIndexCollectionQuery
+    .where((attrs, ops) => {
+      expectType<AllIndexCollectionWhereAttrs>(attrs);
+      return "";
+    })
+    .go({ attributes: ["invalid"] }),
+);
+
+expectError(() =>
+  excludeCollectionQuery
+    .where((attrs, ops) => {
+      expectType<ExcludeCollectionWhereAttrs>(attrs);
+      return "";
+    })
+    .go({ attributes: ["invalid"] }),
+);
+
+expectError(() =>
+  allIndexCollectionQuery
+    .where((attrs, ops) => {
+      expectType<AllIndexCollectionWhereAttrs>(attrs);
+      return "";
+    })
     .where((attrs, ops) => {
       expectType<AllIndexCollectionWhereAttrs>(attrs);
       return "";
