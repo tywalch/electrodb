@@ -16,7 +16,7 @@ const {
   DataOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
-const { FilterOperations } = require("./operations");
+const { FilterOperations, ExpressionState } = require("./operations");
 const { WhereFactory } = require("./where");
 const v = require("./validations");
 const c = require("./client");
@@ -279,9 +279,11 @@ class Service {
 
     this.entities[name] = entity;
     for (let collection of this.entities[name].model.collections) {
-      // todo: this used to be inside the collection callback, it does not do well being ran multiple times
-      // this forlook adds the entity filters multiple times
-      this._addCollectionEntity(collection, name, this.entities[name]);
+      this._addCollectionEntity(
+        collection,
+        name,
+        this.entities[name],
+      );
       this.collections[collection] = (...facets) => {
         return this._makeCollectionChain(
           {
@@ -654,7 +656,10 @@ class Service {
       );
     }
 
-    if (definition.type === IndexTypes.clustered || definition.type === IndexTypes.composite) {
+    if (
+      definition.type === IndexTypes.clustered ||
+      definition.type === IndexTypes.composite
+    ) {
       for (
         let i = 0;
         i <
@@ -922,7 +927,8 @@ class Service {
 
     if (
       providedSubCollections.length > 1 &&
-      (providedType === IndexTypes.clustered || providedType === IndexTypes.composite)
+      (providedType === IndexTypes.clustered ||
+        providedType === IndexTypes.composite)
     ) {
       throw new e.ElectroError(
         e.ErrorCodes.InvalidJoin,
@@ -986,7 +992,11 @@ class Service {
     }
   }
 
-  _addCollectionEntity(collection = "", name = "", entity = {}) {
+  _addCollectionEntity(
+    collection = "",
+    name = "",
+    entity = {},
+  ) {
     let providedIndex = this._getEntityIndexFromCollectionName(
       collection,
       entity,
@@ -996,11 +1006,7 @@ class Service {
       entities: {},
       keys: {},
       attributes: {},
-      identifiers: {
-        names: {},
-        values: {},
-        expression: "",
-      },
+      identifiers: new ExpressionState({ prefix: "_c" }),
       index: undefined,
       table: "",
       collection: [],
@@ -1049,10 +1055,12 @@ class Service {
         this.collectionSchema[collection].keys,
       );
     this.collectionSchema[collection].entities[name] = entity;
+
     this.collectionSchema[collection].identifiers =
       this._processEntityIdentifiers(
         this.collectionSchema[collection].identifiers,
-        entity.getIdentifierExpressions(name),
+        name,
+        entity,
       );
     this.collectionSchema[collection].index =
       this._processEntityCollectionIndex(
@@ -1093,20 +1101,16 @@ class Service {
     }
   }
 
-  _processEntityIdentifiers(existing = {}, { names, values, expression } = {}) {
-    let identifiers = {};
-    if (names) {
-      identifiers.names = Object.assign({}, existing.names, names);
-    }
-    if (values) {
-      identifiers.values = Object.assign({}, existing.values, values);
-    }
+  _processEntityIdentifiers(state, alias, entity) {
+    const expression = entity.applyIdentifierExpressionState(state, alias);
     if (expression) {
-      identifiers.expression = [existing.expression, expression]
+      const combined = [state.getExpression().trim(), expression.trim()]
         .filter(Boolean)
         .join(" OR ");
+      state.setExpression(combined);
     }
-    return identifiers;
+
+    return state;
   }
 }
 

@@ -81,16 +81,16 @@ describe('when using the comparison execution option', () => {
                 delete v3Params.ExpressionAttributeNames['#__edb_v__']
               }
               if (v3Params.ExpressionAttributeValues) {
-                delete v3Params.ExpressionAttributeValues[":__edb_e___Attraction"]
-                delete v3Params.ExpressionAttributeValues[":__edb_v___Attraction"]
+                delete v3Params.ExpressionAttributeValues[":__edb_e___Attraction_c0"]
+                delete v3Params.ExpressionAttributeValues[":__edb_v___Attraction_c0"]
               }
               if (v3Params.FilterExpression) {
                 delete v3Params.FilterExpression;
               }
               delete v2Params.ExpressionAttributeNames['#__edb_e__']
               delete v2Params.ExpressionAttributeNames['#__edb_v__']
-              delete v2Params.ExpressionAttributeValues[":__edb_e___Attraction"]
-              delete v2Params.ExpressionAttributeValues[":__edb_v___Attraction"]
+              delete v2Params.ExpressionAttributeValues[":__edb_e___Attraction_c0"]
+              delete v2Params.ExpressionAttributeValues[":__edb_v___Attraction_c0"]
               delete v2Params.FilterExpression;
             } else if (exceptions.minorFilterOrderChanges.includes(testCase.id)) {
               delete v3Params.FilterExpression;

@@ -1507,7 +1507,7 @@ describe("Index definition validations", function () {
       );
 
     expect(createEntity).to.throw(
-      `Partition Key (pk) on Access Pattern 'local2' is defined with the composite attribute(s) "prop1", "prop7", but the accessPattern '(Primary Index)' defines this field with the composite attributes "prop1"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition`,
+      `Partition Key (pk) on Access Pattern 'local2' is defined with the composite attribute(s) "prop1", "prop7", but the Access Pattern 'record' defines this field with the composite attributes "prop1"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition`,
     );
   });
 
@@ -1594,7 +1594,7 @@ describe("Index definition validations", function () {
       );
 
     expect(createEntity).to.throw(
-      'Sort Key (sk) on Access Pattern \'global1\' is defined with the composite attribute(s) "prop6", "prop7", but the accessPattern \'lsi1pk-lsi1sk-index\' defines this field with the composite attributes "prop5", "prop2"\'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-fields',
+      'Sort Key (sk) on Access Pattern \'global1\' is defined with the composite attribute(s) "prop6", "prop7", but the Access Pattern \'local1\' defines this field with the composite attributes "prop5", "prop2"\'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-fields',
     );
   });
 });

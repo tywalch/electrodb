@@ -1314,13 +1314,13 @@ describe("Service Offline", () => {
       ExpressionAttributeValues: {
         ":pk": "$electrotest_1#prop1_abc#prop7_def",
         ":sk1": "$collectiona",
-        ":__edb_e___entityOne": "entityOne",
-        ":__edb_e___entityTwo": "entityTwo",
-        ":__edb_v___entityOne": "1",
-        ":__edb_v___entityTwo": "1",
+        ":__edb_e___entityOne_c0": "entityOne",
+        ":__edb_e___entityTwo_c0": "entityTwo",
+        ":__edb_v___entityOne_c0": "1",
+        ":__edb_v___entityTwo_c0": "1",
       },
       FilterExpression:
-        "((#__edb_e__ = :__edb_e___entityOne AND #__edb_v__ = :__edb_v___entityOne) OR (#__edb_e__ = :__edb_e___entityTwo AND #__edb_v__ = :__edb_v___entityTwo))",
+        "((#__edb_e__ = :__edb_e___entityOne_c0 AND #__edb_v__ = :__edb_v___entityOne_c0) OR (#__edb_e__ = :__edb_e___entityTwo_c0 AND #__edb_v__ = :__edb_v___entityTwo_c0))",
     });
   });
 
@@ -2355,15 +2355,15 @@ describe("Sub Collections", () => {
           ExpressionAttributeValues: {
             ":pk": "$myservice#attr1_abc",
             ":sk1": "$outercollection",
-            ":__edb_e___entityWithMultipleCollections1": "abc",
-            ":__edb_e___entityWithMultipleCollections2": "abc",
-            ":__edb_e___entityWithMultipleCollections3": "abc",
-            ":__edb_v___entityWithMultipleCollections1": "myversion",
-            ":__edb_v___entityWithMultipleCollections2": "myversion",
-            ":__edb_v___entityWithMultipleCollections3": "myversion",
+            ":__edb_e___entityWithMultipleCollections1_c0": "abc",
+            ":__edb_e___entityWithMultipleCollections2_c0": "abc",
+            ":__edb_e___entityWithMultipleCollections3_c0": "abc",
+            ":__edb_v___entityWithMultipleCollections1_c0": "myversion",
+            ":__edb_v___entityWithMultipleCollections2_c0": "myversion",
+            ":__edb_v___entityWithMultipleCollections3_c0": "myversion",
           },
           FilterExpression:
-            "((#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))",
+            "((#__edb_e__ = :__edb_e___entityWithMultipleCollections3_c0 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3_c0) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections1_c0 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1_c0) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2_c0 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2_c0))",
         },
       },
       {
@@ -2381,13 +2381,13 @@ describe("Sub Collections", () => {
           ExpressionAttributeValues: {
             ":pk": "$myservice#attr1_abc",
             ":sk1": "$outercollection#innercollection",
-            ":__edb_e___entityWithMultipleCollections1": "abc",
-            ":__edb_e___entityWithMultipleCollections2": "abc",
-            ":__edb_v___entityWithMultipleCollections1": "myversion",
-            ":__edb_v___entityWithMultipleCollections2": "myversion",
+            ":__edb_e___entityWithMultipleCollections1_c0": "abc",
+            ":__edb_e___entityWithMultipleCollections2_c0": "abc",
+            ":__edb_v___entityWithMultipleCollections1_c0": "myversion",
+            ":__edb_v___entityWithMultipleCollections2_c0": "myversion",
           },
           FilterExpression:
-            "((#__edb_e__ = :__edb_e___entityWithMultipleCollections1 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))",
+            "((#__edb_e__ = :__edb_e___entityWithMultipleCollections1_c0 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections1_c0) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2_c0 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2_c0))",
         },
       },
       {
@@ -2405,14 +2405,14 @@ describe("Sub Collections", () => {
           ExpressionAttributeValues: {
             ":pk": "$myservice#attr2_def",
             ":sk1": "$extracollection",
-            ":__edb_e___entityWithMultipleCollections2": "abc",
-            ":__edb_e___entityWithMultipleCollections3": "abc",
-            ":__edb_v___entityWithMultipleCollections2": "myversion",
-            ":__edb_v___entityWithMultipleCollections3": "myversion",
+            ":__edb_e___entityWithMultipleCollections2_c0": "abc",
+            ":__edb_e___entityWithMultipleCollections3_c0": "abc",
+            ":__edb_v___entityWithMultipleCollections2_c0": "myversion",
+            ":__edb_v___entityWithMultipleCollections3_c0": "myversion",
           },
           IndexName: "index2",
           FilterExpression:
-            "((#__edb_e__ = :__edb_e___entityWithMultipleCollections3 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2))",
+            "((#__edb_e__ = :__edb_e___entityWithMultipleCollections3_c0 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections3_c0) OR (#__edb_e__ = :__edb_e___entityWithMultipleCollections2_c0 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2_c0))",
         },
       },
       {
@@ -2430,12 +2430,12 @@ describe("Sub Collections", () => {
           ExpressionAttributeValues: {
             ":pk": "$myservice#attr2_def",
             ":sk1": "$extracollection#superextracollection",
-            ":__edb_e___entityWithMultipleCollections2": "abc",
-            ":__edb_v___entityWithMultipleCollections2": "myversion",
+            ":__edb_e___entityWithMultipleCollections2_c0": "abc",
+            ":__edb_v___entityWithMultipleCollections2_c0": "myversion",
           },
           IndexName: "index2",
           FilterExpression:
-            "(#__edb_e__ = :__edb_e___entityWithMultipleCollections2 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2)",
+            "(#__edb_e__ = :__edb_e___entityWithMultipleCollections2_c0 AND #__edb_v__ = :__edb_v___entityWithMultipleCollections2_c0)",
         },
       },
     ];

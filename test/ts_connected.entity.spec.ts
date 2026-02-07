@@ -5789,8 +5789,8 @@ describe('execution option compare', () => {
             }, { table: 'electro_reverseindex', client });
           }
 
-          expect(createMismatchedSortKey).to.throw("Partition Key (pk) on Access Pattern 'things' is defined with the composite attribute(s) \"thingId\", but the accessPattern '(Primary Index)' defines this field with the composite attributes '. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition");
-          expect(createMisMatchedPartitionKey).to.throw("Sort Key (sk) on Access Pattern 'things' is defined with the composite attribute(s) \"locationId\", \"groupNumber\", but the accessPattern '(Primary Index)' defines this field with the composite attributes \"locationId\"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-fields");
+          expect(createMismatchedSortKey).to.throw("Partition Key (pk) on Access Pattern 'things' is defined with the composite attribute(s) \"thingId\", but the Access Pattern 'sectors' defines this field with the composite attributes '. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#inconsistent-index-definition");
+          expect(createMisMatchedPartitionKey).to.throw("Sort Key (sk) on Access Pattern 'things' is defined with the composite attribute(s) \"locationId\", \"groupNumber\", but the Access Pattern 'sectors' defines this field with the composite attributes \"locationId\"'. Key fields must have the same composite attribute definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#duplicate-index-fields");
         });
 
       });
@@ -5949,7 +5949,7 @@ describe('execution option compare', () => {
               },
             }
           });
-        }, "Sort Key (sk) on Access Pattern 'followings' is defined with the template field1#${attr1}, but the accessPattern '(Primary Index)' defines this field with the key labels attr1#${attr1}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
+        }, "Sort Key (sk) on Access Pattern 'followings' is defined with the template field1#${attr1}, but the Access Pattern 'followers' defines this field with the key labels attr1#${attr1}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
 
         expectToThrowMessage(() => {
           new Entity({
@@ -6000,7 +6000,7 @@ describe('execution option compare', () => {
               },
             }
           });
-        }, "Partition Key (pk) on Access Pattern 'followings' is defined with the template attr2#${attr2}, but the accessPattern '(Primary Index)' defines this field with the key labels field2#${attr2}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
+        }, "Partition Key (pk) on Access Pattern 'followings' is defined with the template attr2#${attr2}, but the Access Pattern 'followers' defines this field with the key labels field2#${attr2}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
       });
 
       it('should throw when a pk does not match', () => {
@@ -6051,7 +6051,7 @@ describe('execution option compare', () => {
               },
             }
           });
-        }, "Partition Key (pk) on Access Pattern 'followings' is defined with the template attr2#${attr1}, but the accessPattern '(Primary Index)' defines this field with the key labels attr1#${attr1}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
+        }, "Partition Key (pk) on Access Pattern 'followings' is defined with the template attr2#${attr1}, but the Access Pattern 'followers' defines this field with the key labels attr1#${attr1}'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template");
       });
 
     it('should throw if reverse index with template syntax does not match across index definitions', () => {
@@ -6102,7 +6102,7 @@ describe('execution option compare', () => {
               },
             }
           });
-        }, 'Sort Key (sk) on Access Pattern \'followings\' is defined with the template attr3#${attr2}, but the accessPattern \'(Primary Index)\' defines this field with the key labels attr2#${attr2}\'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template');
+        }, 'Sort Key (sk) on Access Pattern \'followings\' is defined with the template attr3#${attr2}, but the Access Pattern \'followers\' defines this field with the key labels attr2#${attr2}\'. Key fields must have the same template definitions across all indexes they are involved with - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#incompatible-key-composite-attribute-template');
       });
     });
 

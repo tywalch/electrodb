@@ -14,7 +14,9 @@ import {
 import { v4 as uuid } from "uuid";
 import { faker } from "@faker-js/faker";
 import { expect } from 'chai';
-import { Service, Entity, EntityItem, EntityRecord } from "../";
+const u = require("../src/util");
+import { Service, Entity, EntityItem, EntityRecord, QueryResponse, createConversions, CollectionResponse } from "../";
+import { maybeDescribeMultiAttributeTest } from "./util";
 
 function createSafeName() {
   return uuid().replace(/-/g, "_");
@@ -74,14 +76,6 @@ function expectNotSubset(label: string, received: any, expected: any) {
 
 const localTable = "TestMultiAttributeIndexesTable";
 
-function expectEnv(name: string) {
-  const env = process.env[name];
-  if (!env) {
-    throw new Error(`Environment variable ${name} is not set`);
-  }
-  return env;
-}
-
 type CreateThingEntityOptions = {
   client: DocumentClient;
   service: string;
@@ -114,14 +108,17 @@ function createThingEntity(options: CreateThingEntityOptions) {
         country: {
           type: "string",
           field: "attr1",
+          required: true,
         },
         region: {
           type: "string",
           field: 'attr2',
+          required: true,
         },
         city: {
           type: "string",
           field: 'attr3',
+          required: true,
         },
         manufacturer: {
           type: "string",
@@ -142,7 +139,8 @@ function createThingEntity(options: CreateThingEntityOptions) {
           default: "composite_attributes",
         },
         ttl: {
-          type: "number"
+          type: "number",
+          default: () => Date.now() + (1000 * 60 * 60), // 1 hour from now
         }
       },
       indexes: {
@@ -176,12 +174,14 @@ function createThingEntity(options: CreateThingEntityOptions) {
 type ThingEntity = ReturnType<typeof createThingEntity>;
 type ThingItem = EntityItem<ThingEntity>;
 type ThingRecord = EntityRecord<ThingEntity>;
+type ThingQueryResponse = QueryResponse<ThingEntity>;
 
 function createThingService(thing: ThingEntity, gizmo: ThingEntity) {
   return new Service({ thing, gizmo });
 }
 
 type ThingService = ReturnType<typeof createThingService>;
+type InventoryCollectionResponse = CollectionResponse<ThingService, 'inventory'>;
 
 function generateThingRecord(overrides?: Partial<ThingRecord>): ThingRecord {
   return {
@@ -197,30 +197,6 @@ function generateThingRecord(overrides?: Partial<ThingRecord>): ThingRecord {
     count: faker.number.int({ min: 1, max: 1000 }),
     ttl: Date.now() + (1000 * 60 * 60), // 1 hour from now
     ...overrides,
-  }
-}
-
-function maybeDescribeAWSTest(name: string, fn: (client: DocumentClient, table: string) => void) {
-  const condition = process.env.MULTI_ATTRIBUTE_DYNANODB_TABLE_NAME !== undefined &&
-    process.env.MULTI_ATTRIBUTE_DYNANODB_REGION !== undefined &&
-    process.env.MULTI_ATTRIBUTE_DYNANODB_ACCESS_KEY_ID !== undefined &&
-    process.env.MULTI_ATTRIBUTE_DYNANODB_SECRET_ACCESS_KEY !== undefined;
-  if (condition) {
-    describe(name, () => {
-        const table = expectEnv("MULTI_ATTRIBUTE_DYNANODB_TABLE_NAME");
-        const client = new DocumentClient({
-          region: expectEnv("MULTI_ATTRIBUTE_DYNANODB_REGION"),
-          credentials: {
-            accessKeyId: expectEnv("MULTI_ATTRIBUTE_DYNANODB_ACCESS_KEY_ID"),
-            secretAccessKey: expectEnv("MULTI_ATTRIBUTE_DYNANODB_SECRET_ACCESS_KEY"),
-          }
-        });
-
-        fn(client, table);
-    });
-  } else {
-    console.warn(`Skipping tests for "${name}"`);
-    describe.skip(name, () => {});
   }
 }
 
@@ -613,100 +589,100 @@ describe("multi-attribute index support", () => {
               break;
             case "query":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                [`:__edb_e___${thing.schema.model.entity}`]: thing.schema.model.entity,
-                [`:__edb_v___${thing.schema.model.entity}`]: "1"
+                [`:__edb_e___${thing.schema.model.entity}k_0`]: thing.schema.model.entity,
+                [`:__edb_v___${thing.schema.model.entity}k_0`]: "1"
               });
               break;
             case "begins":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                [`:__edb_e___${thing.schema.model.entity}`]: thing.schema.model.entity,
-                [`:__edb_v___${thing.schema.model.entity}`]: "1"
+                [`:__edb_e___${thing.schema.model.entity}k_0`]: thing.schema.model.entity,
+                [`:__edb_v___${thing.schema.model.entity}k_0`]: "1"
               });
               break;
             case "gt":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                [`:__edb_e___${thing.schema.model.entity}`]: thing.schema.model.entity,
-                [`:__edb_v___${thing.schema.model.entity}`]: "1"
+                [`:__edb_e___${thing.schema.model.entity}k_0`]: thing.schema.model.entity,
+                [`:__edb_v___${thing.schema.model.entity}k_0`]: "1"
               });
               break;
             case "gte":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                [`:__edb_e___${thing.schema.model.entity}`]: thing.schema.model.entity,
-                [`:__edb_v___${thing.schema.model.entity}`]: "1"
+                [`:__edb_e___${thing.schema.model.entity}k_0`]: thing.schema.model.entity,
+                [`:__edb_v___${thing.schema.model.entity}k_0`]: "1"
               });
               break;
             case "lt":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                [`:__edb_e___${thing.schema.model.entity}`]: thing.schema.model.entity,
-                [`:__edb_v___${thing.schema.model.entity}`]: "1"
+                [`:__edb_e___${thing.schema.model.entity}k_0`]: thing.schema.model.entity,
+                [`:__edb_v___${thing.schema.model.entity}k_0`]: "1"
               });
               break;
             case "lte":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                [`:__edb_e___${thing.schema.model.entity}`]: thing.schema.model.entity,
-                [`:__edb_v___${thing.schema.model.entity}`]: "1"
+                [`:__edb_e___${thing.schema.model.entity}k_0`]: thing.schema.model.entity,
+                [`:__edb_v___${thing.schema.model.entity}k_0`]: "1"
               });
               break;
             case "between":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                [`:__edb_e___${thing.schema.model.entity}`]: thing.schema.model.entity,
-                [`:__edb_v___${thing.schema.model.entity}`]: "1"
+                [`:__edb_e___${thing.schema.model.entity}k_0`]: thing.schema.model.entity,
+                [`:__edb_v___${thing.schema.model.entity}k_0`]: "1"
               });
               break;
             case "collection":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                ":__edb_e___thing": thing.schema.model.entity,
-                ":__edb_v___thing": "1",
-                ":__edb_e___gizmo": gizmo.schema.model.entity,
-                ":__edb_v___gizmo": "1",
+                ":__edb_e___thing_c0": thing.schema.model.entity,
+                ":__edb_v___thing_c0": "1",
+                ":__edb_e___gizmo_c0": gizmo.schema.model.entity,
+                ":__edb_v___gizmo_c0": "1",
               });
               break;
             case "collectionBegins":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                ":__edb_e___thing": thing.schema.model.entity,
-                ":__edb_v___thing": "1",
-                ":__edb_e___gizmo": gizmo.schema.model.entity,
-                ":__edb_v___gizmo": "1",
+                ":__edb_e___thing_c0": thing.schema.model.entity,
+                ":__edb_v___thing_c0": "1",
+                ":__edb_e___gizmo_c0": gizmo.schema.model.entity,
+                ":__edb_v___gizmo_c0": "1",
               });
               break;
             case "collectionLt":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                ":__edb_e___thing": thing.schema.model.entity,
-                ":__edb_v___thing": "1",
-                ":__edb_e___gizmo": gizmo.schema.model.entity,
-                ":__edb_v___gizmo": "1",
+                ":__edb_e___thing_c0": thing.schema.model.entity,
+                ":__edb_v___thing_c0": "1",
+                ":__edb_e___gizmo_c0": gizmo.schema.model.entity,
+                ":__edb_v___gizmo_c0": "1",
               });
               break;
             case "collectionLte":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                ":__edb_e___thing": thing.schema.model.entity,
-                ":__edb_v___thing": "1",
-                ":__edb_e___gizmo": gizmo.schema.model.entity,
-                ":__edb_v___gizmo": "1",
+                ":__edb_e___thing_c0": thing.schema.model.entity,
+                ":__edb_v___thing_c0": "1",
+                ":__edb_e___gizmo_c0": gizmo.schema.model.entity,
+                ":__edb_v___gizmo_c0": "1",
               });
               break;
             case "collectionGt":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                ":__edb_e___thing": thing.schema.model.entity,
-                ":__edb_v___thing": "1",
-                ":__edb_e___gizmo": gizmo.schema.model.entity,
-                ":__edb_v___gizmo": "1",
+                ":__edb_e___thing_c0": thing.schema.model.entity,
+                ":__edb_v___thing_c0": "1",
+                ":__edb_e___gizmo_c0": gizmo.schema.model.entity,
+                ":__edb_v___gizmo_c0": "1",
               });
               break;
             case "collectionGte":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                ":__edb_e___thing": thing.schema.model.entity,
-                ":__edb_v___thing": "1",
-                ":__edb_e___gizmo": gizmo.schema.model.entity,
-                ":__edb_v___gizmo": "1",
+                ":__edb_e___thing_c0": thing.schema.model.entity,
+                ":__edb_v___thing_c0": "1",
+                ":__edb_e___gizmo_c0": gizmo.schema.model.entity,
+                ":__edb_v___gizmo_c0": "1",
               });
               break;
             case "collectionBetween":
               expectSubset(received.type, received.params.ExpressionAttributeValues, {
-                ":__edb_e___thing": thing.schema.model.entity,
-                ":__edb_v___thing": "1",
-                ":__edb_e___gizmo": gizmo.schema.model.entity,
-                ":__edb_v___gizmo": "1",
+                ":__edb_e___thing_c0": thing.schema.model.entity,
+                ":__edb_v___thing_c0": "1",
+                ":__edb_e___gizmo_c0": gizmo.schema.model.entity,
+                ":__edb_v___gizmo_c0": "1",
               });
               break;
             case "transactWrite":
@@ -1412,392 +1388,821 @@ describe("multi-attribute index support", () => {
     })
   });
 
-  maybeDescribeAWSTest("multi-attribute index aws connected tests", (client, table) => {
-    const serviceName = createSafeName(); // important test namespacing
-    const thing = createThingEntity({
-      name: createSafeName(), // important test namespacing
-      service: serviceName,
-      client,
-      table,
-    });
+  maybeDescribeMultiAttributeTest(
+    "multi-attribute index aws connected tests",
+    ({ client, table }) => {
+      const serviceName = createSafeName(); // important test namespacing
+      const thing = createThingEntity({
+        name: createSafeName(), // important test namespacing
+        service: serviceName,
+        client,
+        table,
+      });
 
-    const gizmo = createThingEntity({
-      name: createSafeName(), // important test namespacing
-      service: serviceName,
-      client,
-      table,
-    });
+      const gizmo = createThingEntity({
+        name: createSafeName(), // important test namespacing
+        service: serviceName,
+        client,
+        table,
+      });
 
-    const service = createThingService(thing, gizmo)
+      const service = createThingService(thing, gizmo);
 
-    describe("query operations", () => {
-      const paginationOperations = {
-        query: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model } = item;
-          return {
-            type: 'query' as const,
-            op: () => service.entities.thing.query.location({ country, region, city, manufacturer, model }).go(),
-          };
-        },
-        begins: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model } = item;
-          return {
-            type: 'begins' as const,
-            op: () => service.entities.thing.query.location({ country, region, city }).begins({ manufacturer, model }).go(),
-          }
-        },
-        gt: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model, count } = item;
-          return {
-            type: 'gt' as const,
-            op: () => service.entities.thing.query.location({ country, region, city }).gt({ manufacturer, model, count }).go(),
-          };
-        },
-        gte: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model, count } = item;
-          return {
-            type: 'gte' as const,
-            op: () => service.entities.thing.query.location({ country, region, city }).gte({ manufacturer, model, count }).go(),
-          };
-        },
-        lt: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model, count } = item;
-          return {
-            type: 'lt' as const,
-            op: () => service.entities.thing.query.location({ country, region, city }).lt({ manufacturer, model, count }).go(),
-          };
-        },
-        lte: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model, count } = item;
-          return {
-            type: 'lte' as const,
-            op: () => service.entities.thing.query.location({ country, region, city }).lte({ manufacturer, model, count }).go(),
-          };
-        },
-        between: (item1: ThingRecord, item2?: ThingRecord) => {
-          if (!item2) {
-            throw new Error("item2 is required for between operation");
-          }
-          const { country, region, city } = item1;
-          return {
-            type: 'between' as const,
-            op: () => service.entities.thing.query.location({ country, region, city })
-              .between(
-                { manufacturer: item1.manufacturer, model: item1.model, count: item1.count },
-                { manufacturer: item2.manufacturer, model: item2.model, count: item2.count }
-              ).go(),
-          };
-        },
-        // get: (item: ThingRecord) => {
-        //   return {
-        //     type: 'get' as const,
-        //     op: service.entities.thing.get(item),
-        //   };
-        // },
-        // batchGet: (item: ThingRecord) => {
-        //   return {
-        //     type: 'batchGet' as const,
-        //     op: service.entities.thing.get([item]),
-        //   };
-        // },
-        scan: () => {
-          return {
-            type: 'scan' as const,
-            op: () => service.entities.thing.scan.go(),
-          };
-        },
-        // batchPut: (item: ThingRecord) => {
-        //   return { type: 'batchPut' as const,
-        //     op: service.entities.thing.put([item])
-        //   };
-        // },
-        // batchDelete: (item: ThingRecord) => {
-        //   return { type: 'batchDelete' as const,
-        //     op: service.entities.thing.delete([item])
-        //   };
-        // },
-        // update: (item: ThingRecord) => {
-        //   const {manufacturer, model, id, ...rest} = item;
-        //   return {
-        //     type: 'update' as const,
-        //     op: service.entities.thing.update({manufacturer, model, id}).set(rest)
-        //   }
-        // },
-        // patch: (item: ThingRecord) => {
-        //   const {manufacturer, model, id, ...rest} = item;
-        //   return {
-        //     type: 'patch' as const,
-        //     op: service.entities.thing.patch({manufacturer, model, id}).set(rest)
-        //   }
-        // },
-        // upsert: (item: ThingRecord) => {
-        //   return {
-        //     type: 'upsert' as const,
-        //     op: service.entities.thing.upsert(item)
-        //   };
-        // },
-        // put: (item: ThingRecord) => {
-        //   return {
-        //     type: 'put' as const,
-        //     op: service.entities.thing.put(item)
-        //   };
-        // },
-        // create: (item: ThingRecord) => {
-        //   return {
-        //     type: 'create' as const,
-        //     op: service.entities.thing.create(item)
-        //   };
-        // },
-        // delete: (item: ThingRecord) => {
-        //   return {
-        //     type: 'delete' as const,
-        //     op: service.entities.thing.delete(item)
-        //   };
-        // },
-        // remove: (item: ThingRecord) => {
-        //   return {
-        //     type: 'remove' as const,
-        //     op: service.entities.thing.remove(item)
-        //   };
-        // },
-        // transactWrite: (item: ThingRecord) => {
-        //   return {
-        //     type: 'transactWrite' as const,
-        //     op: service.transaction.write(({ thing }) => [
-        //       thing.put(item).commit(),
-        //     ])
-        //   };
-        // },
-        // transactGet: (item: ThingRecord) => {
-        //   return {
-        //     type: 'transactGet' as const,
-        //     op: service.transaction.get(({ thing }) => [
-        //       thing.get(item).commit(),
-        //     ]),
-        //   };
-        // },
-        collection: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model } = item;
-
-          return {
-            type: 'collection' as const,
-            op: () => service.collections.inventory({country, region, city, manufacturer, model}).go()
-          };
-        },
-        collectionBegins: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model } = item;
-
-          return {
-            type: 'collectionBegins' as const,
-            op: () => service.collections.inventory({country, region, city}).begins({ manufacturer, model }).go()
-          };
-        },
-        collectionLt: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model, count } = item;
-
-          return {
-            type: 'collectionLt' as const,
-            op: () => service.collections.inventory({country, region, city}).lt({ manufacturer, model, count }).go()
-          };
-        },
-        collectionLte: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model, count } = item;
-
-          return {
-            type: 'collectionLte' as const,
-            op: () => service.collections.inventory({country, region, city}).lte({ manufacturer, model, count }).go()
-          };
-        },
-        collectionGt: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model, count } = item;
-
-          return {
-            type: 'collectionGt' as const,
-            op: () => service.collections.inventory({country, region, city}).gt({ manufacturer, model, count }).go()
-          };
-        },
-        collectionGte: (item: ThingRecord) => {
-          const { country, region, city, manufacturer, model, count } = item;
-
-          return {
-            type: 'collectionGte' as const,
-            op: () => service.collections.inventory({country, region, city}).gte({ manufacturer, model, count }).go()
-          };
-        },
-        collectionBetween: (item1: ThingRecord, item2?: ThingRecord) => {
-          if (!item2) {
-            throw new Error("item2 is required for between operation");
-          }
-          const { country, region, city } = item1;
-          return {
-            type: 'collectionBetween' as const,
-            op: () => service.collections.inventory({ country, region, city }).between(
-              { manufacturer: item1.manufacturer, model: item1.model, count: item1.count },
-              { manufacturer: item2.manufacturer, model: item2.model, count: item2.count }
-            ).go(),
-          };
-        },
-      } as const satisfies Record<PaginationOperation, any>;
-
-      describe('when paginating on a multi-attribute index', async () => {
-        const country = uuid();
-        const region = faker.location.state();
-        const city = faker.location.city();
-        const manufacturer = faker.company.name()
-        const model = faker.commerce.productName();
-        const allThings: ThingRecord[] = [];
-        const thingItems: ThingRecord[] = [];
-        const gizmoItems: ThingRecord[] = [];
-        for (let i = 0; i < 100; i++) {
-          const item = generateThingRecord({
-            count: i + 1,
-            manufacturer,
-            country,
-            region,
-            model,
-            city,
-          });
-          allThings.push(item);
-          if (i % 2 === 0) {
-            thingItems.push(item);
-          } else {
-            gizmoItems.push(item);
-          }
-        }
-
-        before(async () => {
-          await Promise.all([
-            thing.put(thingItems).go(),
-            gizmo.put(gizmoItems).go(),
-          ]);
+      describe("conversion use cases: pagination", () => {
+        const entityName = createSafeName();
+        const serviceName = createSafeName();
+        const thing = createThingEntity({
+          service: serviceName,
+          name: entityName,
+          client,
+          table,
         });
 
-        for (const [operationName, genQuery] of Object.entries(paginationOperations)) {
-          it(`should paginate results correctly on multi-attribute indexes with ${operationName} operation`, async () => {
-            const item1 = allThings.find(item => item.count === 50);
-            const item2 = allThings.find(item => item.count === 70);
-            const thingItem = thingItems[0];
-            const gizmoItem = gizmoItems[0];
-            if (item1 === undefined || item2 === undefined || thingItem === undefined || gizmoItem === undefined) {
-              throw new Error('Invalid test setup');
-            }
-            const query = genQuery(item1, item2);
-
-            let cursor: string | null = null;
-            let thingCount = 0;
-            let gizmoCount = 0;
-
-            if (isEntityPaginationOperation(query.type)) {
-              do {
-                const results = await query.op();
-                cursor = results.cursor;
-                if (Array.isArray(results.data)) {
-                  thingCount += results.data.length;
-                }
-              } while (cursor !== null);
-            } else if (isServicePaginationOperation(query.type)) {
-              do {
-                const results = await query.op();
-                cursor = results.cursor;
-                if ('thing' in results.data && Array.isArray(results.data.thing)) {
-                  thingCount += results.data.thing.length;
-                }
-                if ('gizmo' in results.data && Array.isArray(results.data.gizmo)) {
-                  gizmoCount += results.data.gizmo.length;
-                }
-              } while (cursor !== null);
-            }
-
-            switch (query.type) {
-              case ServiceQueryOperations.collectionBetween: {
-                const expectedThingCount = thingItems.filter(item => item.count >= item1.count && item.count <= item2.count).length;
-                const expectedGizmoCount = gizmoItems.filter(item => item.count >= item1.count && item.count <= item2.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                expect(gizmoCount).to.equal(expectedGizmoCount);
-                break;
-              }
-              case EntityQueryOperations.between: {
-                const expectedThingCount = thingItems.filter(item => item.count >= item1.count && item.count <= item2.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                break;
-              }
-              case ServiceQueryOperations.collectionBegins: {
-                const expectedThingCount = thingItems.filter(item => item.model.startsWith(model)).length;
-                const expectedGizmoCount = gizmoItems.filter(item => item.model.startsWith(model)).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                expect(gizmoCount).to.equal(expectedGizmoCount);
-                break;
-              }
-              case EntityQueryOperations.begins: {
-                const expectedThingCount = thingItems.filter(item => item.model.startsWith(model)).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                break;
-              }
-              case ServiceQueryOperations.collection: {
-                expect(thingCount).to.equal(thingItems.length);
-                expect(gizmoCount).to.equal(gizmoItems.length);
-                break;
-              }
-              case EntityQueryOperations.query: {
-                expect(thingCount).to.equal(thingItems.length);
-                break;
-              }
-              case ServiceQueryOperations.collectionGt: {
-                const expectedThingCount = thingItems.filter(item => item.count > item1.count).length;
-                const expectedGizmoCount = gizmoItems.filter(item => item.count > item1.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                expect(gizmoCount).to.equal(expectedGizmoCount);
-                break;
-              }
-              case ServiceQueryOperations.collectionGte: {
-                const expectedThingCount = thingItems.filter(item => item.count >= item1.count).length;
-                const expectedGizmoCount = gizmoItems.filter(item => item.count >= item1.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                expect(gizmoCount).to.equal(expectedGizmoCount);
-                break;
-              }
-              case ServiceQueryOperations.collectionLt: {
-                const expectedThingCount = thingItems.filter(item => item.count < item1.count).length;
-                const expectedGizmoCount = gizmoItems.filter(item => item.count < item1.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                expect(gizmoCount).to.equal(expectedGizmoCount);
-                break;
-              }
-              case ServiceQueryOperations.collectionLte: {
-                const expectedThingCount = thingItems.filter(item => item.count <= item1.count).length;
-                const expectedGizmoCount = gizmoItems.filter(item => item.count <= item1.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                expect(gizmoCount).to.equal(expectedGizmoCount);
-                break;
-              }
-              case EntityQueryOperations.gt: {
-                const expectedThingCount = thingItems.filter(item => item.count > item1.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                break;
-              }
-              case EntityQueryOperations.gte: {
-                const expectedThingCount = thingItems.filter(item => item.count >= item1.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                break;
-              }
-              case EntityQueryOperations.lt: {
-                const expectedThingCount = thingItems.filter(item => item.count < item1.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                break;
-              }
-              case EntityQueryOperations.lte: {
-                const expectedThingCount = thingItems.filter(item => item.count <= item1.count).length;
-                expect(thingCount).to.equal(expectedThingCount);
-                break;
-              }
-              case EntityQueryOperations.scan: {
-                expect(thingCount).to.equal(thingItems.length);
-                break;
-              }
-            }
-          });
+        async function loadItems(country: string, region: string, city: string) {
+          const itemCount = 100;
+          const items = new Array(itemCount).fill({}).map(() => generateThingRecord({
+            country,
+            region,
+            city,
+          }));
+          await thing.put(items).go();
+          return items;
         }
+
+        it("adding a limit should not cause dropped items when paginating", async () => {
+          const country = uuid();
+          const region = uuid();
+          const city = uuid();
+          const items = await loadItems(country, region, city);
+          const limit = 10;
+          let iterations = 0;
+          let cursor: string | null = null;
+          let results: ThingItem[] = [];
+          do {
+            const response: ThingQueryResponse = await thing.query
+              .location({ country, region, city })
+              .go({ cursor, limit });
+            results = results.concat(response.data);
+            cursor = response.cursor;
+            iterations++;
+          } while (cursor);
+
+          expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
+            results.sort((a, z) => a.id.localeCompare(z.id)),
+          );
+        });
+
+        it("should let you use a entity level toCursor conversion to create a cursor based on the last item returned", async () => {
+          const conversions = createConversions(thing);
+
+          const country = uuid();
+          const region = uuid();
+          const city = uuid();
+          const items = await loadItems(country, region, city);
+          const limit = 10;
+          let iterations = 0;
+          let cursor: string | null = null;
+          let results: ThingItem[] = [];
+          do {
+            const response: ThingQueryResponse = await thing.query
+              .location({ country, region, city })
+              .go({ cursor, limit });
+            results = results.concat(response.data);
+            const lastItem = response.data[response.data.length - 1];
+            if (lastItem) {
+              cursor = conversions.fromComposite.toCursor(
+                lastItem,
+              );
+            } else {
+              cursor = null;
+            }
+            iterations++;
+          } while (cursor);
+
+          expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
+            results.sort((a, z) => a.id.localeCompare(z.id)),
+          );
+        });
+
+        it("should let you use the index specific toCursor conversion to create a cursor based on the last item returned", async () => {
+          const conversions = createConversions(thing);
+          const country = uuid();
+          const region = uuid();
+          const city = uuid();
+          const items = await loadItems(country, region, city);
+          const limit = 10;
+          let iterations = 0;
+          let cursor: string | null = null;
+          let results: ThingItem[] = [];
+          do {
+            const response: ThingQueryResponse = await thing.query
+              .location({ country, region, city })
+              .go({ cursor, limit });
+            results = results.concat(response.data);
+            const lastItem = response.data[response.data.length - 1];
+            if (lastItem) {
+              cursor = conversions.byAccessPattern.location.fromComposite.toCursor(lastItem);
+            } else {
+              cursor = null;
+            }
+            iterations++;
+          } while (cursor);
+
+          expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
+            results.sort((a, z) => a.id.localeCompare(z.id)),
+          );
+        });
       });
-    });
-  });
+
+      type PaginationOptions = {
+        cursor: string | null;
+        limit?: number;
+      }
+
+      describe("query operations", () => {
+        const paginationOperations = {
+          query: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model } = item;
+            return {
+              type: "query" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                thing.query
+                  .location({ country, region, city, manufacturer, model })
+                  .go({cursor, limit}),
+
+            };
+          },
+          begins: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model } = item;
+            return {
+              type: "begins" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                thing.query
+                  .location({ country, region, city })
+                  .begins({ manufacturer, model })
+                  .go({cursor, limit}),
+            };
+          },
+          gt: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model, count } = item;
+            return {
+              type: "gt" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                thing.query
+                  .location({ country, region, city })
+                  .gt({ manufacturer, model, count })
+                  .go({cursor, limit}),
+            };
+          },
+          gte: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model, count } = item;
+            return {
+              type: "gte" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                thing.query
+                  .location({ country, region, city })
+                  .gte({ manufacturer, model, count })
+                  .go({cursor, limit}),
+            };
+          },
+          lt: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model, count } = item;
+            return {
+              type: "lt" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                thing.query
+                  .location({ country, region, city })
+                  .lt({ manufacturer, model, count })
+                  .go({cursor, limit}),
+            };
+          },
+          lte: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model, count } = item;
+            return {
+              type: "lte" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                thing.query
+                  .location({ country, region, city })
+                  .lte({ manufacturer, model, count })
+                  .go({cursor, limit}),
+            };
+          },
+          between: (item1: ThingRecord, item2?: ThingRecord) => {
+            if (!item2) {
+              throw new Error("item2 is required for between operation");
+            }
+            const { country, region, city } = item1;
+            return {
+              type: "between" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                thing.query
+                  .location({ country, region, city })
+                  .between(
+                    {
+                      manufacturer: item1.manufacturer,
+                      model: item1.model,
+                      count: item1.count,
+                    },
+                    {
+                      manufacturer: item2.manufacturer,
+                      model: item2.model,
+                      count: item2.count,
+                    },
+                  )
+                  .go({cursor, limit}),
+            };
+          },
+          // get: (item: ThingRecord) => {
+          //   return {
+          //     type: 'get' as const,
+          //     op: thing.get(item),
+          //   };
+          // },
+          // batchGet: (item: ThingRecord) => {
+          //   return {
+          //     type: 'batchGet' as const,
+          //     op: thing.get([item]),
+          //   };
+          // },
+          scan: () => {
+            return {
+              type: "scan" as const,
+              op: ({ cursor, limit }: PaginationOptions) => thing.scan.go({cursor, limit}),
+            };
+          },
+          // batchPut: (item: ThingRecord) => {
+          //   return { type: 'batchPut' as const,
+          //     op: thing.put([item])
+          //   };
+          // },
+          // batchDelete: (item: ThingRecord) => {
+          //   return { type: 'batchDelete' as const,
+          //     op: thing.delete([item])
+          //   };
+          // },
+          // update: (item: ThingRecord) => {
+          //   const {manufacturer, model, id, ...rest} = item;
+          //   return {
+          //     type: 'update' as const,
+          //     op: thing.update({manufacturer, model, id}).set(rest)
+          //   }
+          // },
+          // patch: (item: ThingRecord) => {
+          //   const {manufacturer, model, id, ...rest} = item;
+          //   return {
+          //     type: 'patch' as const,
+          //     op: thing.patch({manufacturer, model, id}).set(rest)
+          //   }
+          // },
+          // upsert: (item: ThingRecord) => {
+          //   return {
+          //     type: 'upsert' as const,
+          //     op: thing.upsert(item)
+          //   };
+          // },
+          // put: (item: ThingRecord) => {
+          //   return {
+          //     type: 'put' as const,
+          //     op: thing.put(item)
+          //   };
+          // },
+          // create: (item: ThingRecord) => {
+          //   return {
+          //     type: 'create' as const,
+          //     op: thing.create(item)
+          //   };
+          // },
+          // delete: (item: ThingRecord) => {
+          //   return {
+          //     type: 'delete' as const,
+          //     op: thing.delete(item)
+          //   };
+          // },
+          // remove: (item: ThingRecord) => {
+          //   return {
+          //     type: 'remove' as const,
+          //     op: thing.remove(item)
+          //   };
+          // },
+          // transactWrite: (item: ThingRecord) => {
+          //   return {
+          //     type: 'transactWrite' as const,
+          //     op: service.transaction.write(({ thing }) => [
+          //       thing.put(item).commit(),
+          //     ])
+          //   };
+          // },
+          // transactGet: (item: ThingRecord) => {
+          //   return {
+          //     type: 'transactGet' as const,
+          //     op: service.transaction.get(({ thing }) => [
+          //       thing.get(item).commit(),
+          //     ]),
+          //   };
+          // },
+          collection: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model } = item;
+
+            return {
+              type: "collection" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                service.collections
+                  .inventory({ country, region, city, manufacturer, model })
+                  .go({cursor, limit}),
+            };
+          },
+          collectionBegins: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model } = item;
+
+            return {
+              type: "collectionBegins" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                service.collections
+                  .inventory({ country, region, city })
+                  .begins({ manufacturer, model })
+                  .go({cursor, limit}),
+            };
+          },
+          collectionLt: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model, count } = item;
+
+            return {
+              type: "collectionLt" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                service.collections
+                  .inventory({ country, region, city })
+                  .lt({ manufacturer, model, count })
+                  .go({cursor, limit}),
+            };
+          },
+          collectionLte: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model, count } = item;
+
+            return {
+              type: "collectionLte" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                service.collections
+                  .inventory({ country, region, city })
+                  .lte({ manufacturer, model, count })
+                  .go({cursor, limit}),
+            };
+          },
+          collectionGt: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model, count } = item;
+
+            return {
+              type: "collectionGt" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                service.collections
+                  .inventory({ country, region, city })
+                  .gt({ manufacturer, model, count })
+                  .go({cursor, limit}),
+            };
+          },
+          collectionGte: (item: ThingRecord) => {
+            const { country, region, city, manufacturer, model, count } = item;
+
+            return {
+              type: "collectionGte" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                service.collections
+                  .inventory({ country, region, city })
+                  .gte({ manufacturer, model, count })
+                  .go({cursor, limit}),
+            };
+          },
+          collectionBetween: (item1: ThingRecord, item2?: ThingRecord) => {
+            if (!item2) {
+              throw new Error("item2 is required for between operation");
+            }
+            const { country, region, city } = item1;
+            return {
+              type: "collectionBetween" as const,
+              op: ({ cursor, limit }: PaginationOptions) =>
+                service.collections
+                  .inventory({ country, region, city })
+                  .between(
+                    {
+                      manufacturer: item1.manufacturer,
+                      model: item1.model,
+                      count: item1.count,
+                    },
+                    {
+                      manufacturer: item2.manufacturer,
+                      model: item2.model,
+                      count: item2.count,
+                    },
+                  )
+                  .go({cursor, limit}),
+            };
+          },
+        } as const satisfies Record<PaginationOperation, any>;
+
+        describe("when paginating on a multi-attribute index", async () => {
+          const country = uuid();
+          const region = faker.location.state();
+          const city = faker.location.city();
+          const manufacturer = faker.company.name();
+          const model = faker.commerce.productName();
+          const allThings: ThingRecord[] = [];
+          const thingItems: ThingRecord[] = [];
+          const gizmoItems: ThingRecord[] = [];
+          for (let i = 0; i < 100; i++) {
+            const item = generateThingRecord({
+              count: i + 1,
+              manufacturer,
+              country,
+              region,
+              model,
+              city,
+            });
+            allThings.push(item);
+            if (i % 2 === 0) {
+              thingItems.push(item);
+            } else {
+              gizmoItems.push(item);
+            }
+          }
+
+          before(async () => {
+            await Promise.all([
+              thing.put(thingItems).go(),
+              gizmo.put(gizmoItems).go(),
+            ]);
+          });
+
+          for (const [operationName, genQuery] of Object.entries(
+            paginationOperations,
+          )) {
+            it(`should paginate results correctly on multi-attribute indexes with ${operationName} operation`, async () => {
+              const item1 = allThings.find((item) => item.count === 50);
+              const item2 = allThings.find((item) => item.count === 70);
+              const thingItem = thingItems[0];
+              const gizmoItem = gizmoItems[0];
+              if (
+                item1 === undefined ||
+                item2 === undefined ||
+                thingItem === undefined ||
+                gizmoItem === undefined
+              ) {
+                throw new Error("Invalid test setup");
+              }
+              const query = genQuery(item1, item2);
+              // if this is as scan, don't limit (we aint got time for that)
+              const limit = operationName === "scan" ? undefined : 2;
+
+              let cursor: string | null = null;
+              let thingCount = 0;
+              let gizmoCount = 0;
+              let iterations = 0;
+              if (isEntityPaginationOperation(query.type)) {
+                do {
+                  iterations++;
+                  const results = await query.op({ cursor, limit }) as ThingQueryResponse;
+                  cursor = results.cursor;
+                  if (Array.isArray(results.data)) {
+                    thingCount += results.data.length;
+                  }
+                } while (cursor !== null);
+              } else if (isServicePaginationOperation(query.type)) {
+                do {
+                  iterations++;
+                  const results = await query.op({ cursor, limit }) as InventoryCollectionResponse;
+                  cursor = results.cursor;
+                  if (
+                    "thing" in results.data &&
+                    Array.isArray(results.data.thing)
+                  ) {
+                    thingCount += results.data.thing.length;
+                  }
+                  if (
+                    "gizmo" in results.data &&
+                    Array.isArray(results.data.gizmo)
+                  ) {
+                    gizmoCount += results.data.gizmo.length;
+                  }
+                } while (cursor !== null);
+              }
+              if (limit) {
+                expect(iterations).to.be.greaterThan(1);
+              }
+              switch (query.type) {
+                case ServiceQueryOperations.collectionBetween: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) =>
+                      item.count >= item1.count && item.count <= item2.count,
+                  ).length;
+                  const expectedGizmoCount = gizmoItems.filter(
+                    (item) =>
+                      item.count >= item1.count && item.count <= item2.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  expect(gizmoCount).to.equal(expectedGizmoCount);
+                  break;
+                }
+                case EntityQueryOperations.between: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) =>
+                      item.count >= item1.count && item.count <= item2.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  break;
+                }
+                case ServiceQueryOperations.collectionBegins: {
+                  const expectedThingCount = thingItems.filter((item) =>
+                    item.model.startsWith(model),
+                  ).length;
+                  const expectedGizmoCount = gizmoItems.filter((item) =>
+                    item.model.startsWith(model),
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  expect(gizmoCount).to.equal(expectedGizmoCount);
+                  break;
+                }
+                case EntityQueryOperations.begins: {
+                  const expectedThingCount = thingItems.filter((item) =>
+                    item.model.startsWith(model),
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  break;
+                }
+                case ServiceQueryOperations.collection: {
+                  expect(thingCount).to.equal(thingItems.length);
+                  expect(gizmoCount).to.equal(gizmoItems.length);
+                  break;
+                }
+                case EntityQueryOperations.query: {
+                  expect(thingCount).to.equal(thingItems.length);
+                  break;
+                }
+                case ServiceQueryOperations.collectionGt: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) => item.count > item1.count,
+                  ).length;
+                  const expectedGizmoCount = gizmoItems.filter(
+                    (item) => item.count > item1.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  expect(gizmoCount).to.equal(expectedGizmoCount);
+                  break;
+                }
+                case ServiceQueryOperations.collectionGte: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) => item.count >= item1.count,
+                  ).length;
+                  const expectedGizmoCount = gizmoItems.filter(
+                    (item) => item.count >= item1.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  expect(gizmoCount).to.equal(expectedGizmoCount);
+                  break;
+                }
+                case ServiceQueryOperations.collectionLt: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) => item.count < item1.count,
+                  ).length;
+                  const expectedGizmoCount = gizmoItems.filter(
+                    (item) => item.count < item1.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  expect(gizmoCount).to.equal(expectedGizmoCount);
+                  break;
+                }
+                case ServiceQueryOperations.collectionLte: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) => item.count <= item1.count,
+                  ).length;
+                  const expectedGizmoCount = gizmoItems.filter(
+                    (item) => item.count <= item1.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  expect(gizmoCount).to.equal(expectedGizmoCount);
+                  break;
+                }
+                case EntityQueryOperations.gt: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) => item.count > item1.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  break;
+                }
+                case EntityQueryOperations.gte: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) => item.count >= item1.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  break;
+                }
+                case EntityQueryOperations.lt: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) => item.count < item1.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  break;
+                }
+                case EntityQueryOperations.lte: {
+                  const expectedThingCount = thingItems.filter(
+                    (item) => item.count <= item1.count,
+                  ).length;
+                  expect(thingCount).to.equal(expectedThingCount);
+                  break;
+                }
+                case EntityQueryOperations.scan: {
+                  expect(thingCount).to.equal(thingItems.length);
+                  break;
+                }
+              }
+            });
+          }
+        });
+      });
+
+      describe("edge cases", () => {
+        describe("when entity names have special characters", () => {
+          // Entity names/aliases and version values are the values used to
+          // uniquely identify an Entity within a service. These values are
+          // stored on DynamoDB items using "identifier" attributes. When
+          // building filter expressions for these identifier attributes we
+          // must also make the ExpressionAttributeNames and
+          // ExpressionAttributeValues unique within the context of the query
+          // operation. There are also character restrictions on these values
+          // imposed by DynamoDB. We use the name/alias of the Entity to help
+          // create these unique values. Howevery, if the Entity name/alias
+          // contains special characters that are not allowed in DynamoDB
+          // ExpressionAttributeNames/Values we must remove them. This can lead
+          // to potential collisions between different Entity names/aliases
+          // that when stripped of special characters become identical.
+          //
+          // These tests ensure that at a minimum queries can be performed
+          // successfully even when special characters are present in the
+          // Entity name/alias.
+          it("should perform entity queries without failure", async () => {
+            const thing = createThingEntity({
+              name: "0*(illegal-characters.arebad!!",
+              service: uuid(),
+              client,
+              table,
+            });
+
+            const params = thing.query
+              .location({
+                country: "usa",
+                region: "ga",
+                city: "atlanta",
+              }).params({});
+
+            expect(params).to.deep.equal({
+              "IndexName": "gsi1",
+              "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
+              "TableName": "multi-attribute-table",
+              "ExpressionAttributeNames": {
+                "#country": "attr1",
+                "#region": "attr2",
+                "#city": "attr3",
+                "#__edb_e__": "__edb_e__",
+                "#__edb_v__": "__edb_v__"
+              },
+              "ExpressionAttributeValues": {
+                ":countryk_0": "usa",
+                ":regionk_0": "ga",
+                ":cityk_0": "atlanta",
+                ":__edb_e___0illegalcharactersarebadk_0": "0*(illegal-characters.arebad!!",
+                ":__edb_v___0illegalcharactersarebadk_0": "1"
+              },
+              "FilterExpression": "(#__edb_e__ = :__edb_e___0illegalcharactersarebadk_0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebadk_0)"
+            });
+
+            await thing.query
+              .location({
+                country: "usa",
+                region: "ga",
+                city: "atlanta",
+              })
+              .go();
+          });
+
+          it("should perform collection queries without failure", async () => {
+            const thingName = "0*(illegal-characters.arebad!!";
+            const thing = createThingEntity({
+              name: thingName,
+              service: uuid(),
+              client,
+              table,
+            });
+
+            const gizmoName = "1*(illegal-characters.superbad!!";
+            const gizmo = createThingEntity({
+              name: gizmoName,
+              service: thing.schema.model.service,
+              client,
+              table,
+            });
+
+            const service = new Service({
+              [thingName]: thing,
+              [gizmoName]: gizmo
+            });
+
+            const params = (service.collections.inventory({
+              country: "usa",
+              region: "ga",
+              city: "atlanta",
+            })).params();
+
+            expect(params).to.deep.equal({
+              "IndexName": "gsi1",
+              "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
+              "TableName": "multi-attribute-table",
+              "ExpressionAttributeNames": {
+                "#country": "attr1",
+                "#region": "attr2",
+                "#city": "attr3",
+                "#__edb_e__": "__edb_e__",
+                "#__edb_v__": "__edb_v__"
+              },
+              "ExpressionAttributeValues": {
+                ":countryk_0": "usa",
+                ":regionk_0": "ga",
+                ":cityk_0": "atlanta",
+                ":__edb_e___0illegalcharactersarebad_c0": "0*(illegal-characters.arebad!!",
+                ":__edb_v___0illegalcharactersarebad_c0": "1",
+                ":__edb_e___1illegalcharacterssuperbad_c0": "1*(illegal-characters.superbad!!",
+                ":__edb_v___1illegalcharacterssuperbad_c0": "1"
+              },
+              "FilterExpression": "((#__edb_e__ = :__edb_e___0illegalcharactersarebad_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_c0) OR (#__edb_e__ = :__edb_e___1illegalcharacterssuperbad_c0 AND #__edb_v__ = :__edb_v___1illegalcharacterssuperbad_c0))"
+            });
+
+            await service.collections.inventory({
+                country: "usa",
+                region: "ga",
+                city: "atlanta",
+              }).go();
+          });
+
+          it('should handle case where removing special characters can result in lack of uniqueness between names', async () => {
+            const thingName = "0*(illegal-characters.arebad!!";
+            const gizmoName = "0*(illegal-characters!!arebad.";
+            // These names must be unique but
+            expect(thingName).to.not.equal(gizmoName);
+
+            const thing = createThingEntity({
+              name: thingName,
+              service: uuid(),
+              client,
+              table,
+            });
+
+            const gizmo = createThingEntity({
+              name: gizmoName,
+              service: thing.schema.model.service,
+              client,
+              table,
+            });
+
+            const service = new Service({
+              [thingName]: thing,
+              [gizmoName]: gizmo
+            });
+
+            const params = (service.collections.inventory({
+              country: "usa",
+              region: "ga",
+              city: "atlanta",
+            })).params();
+
+            expect(params).to.deep.equal({
+              "IndexName": "gsi1",
+              "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
+              "TableName": "multi-attribute-table",
+              "ExpressionAttributeNames": {
+                "#country": "attr1",
+                "#region": "attr2",
+                "#city": "attr3",
+                "#__edb_e__": "__edb_e__",
+                "#__edb_v__": "__edb_v__"
+              },
+              "ExpressionAttributeValues": {
+                ":countryk_0": "usa",
+                ":regionk_0": "ga",
+                ":cityk_0": "atlanta",
+                ":__edb_e___0illegalcharactersarebad_c0": "0*(illegal-characters.arebad!!",
+                ":__edb_v___0illegalcharactersarebad_c0": "1",
+                // we can see in these params that the collision was handled by
+                // appending a _2 to the second occurrence
+                ":__edb_e___0illegalcharactersarebad_2_c0": "0*(illegal-characters!!arebad.",
+                ":__edb_v___0illegalcharactersarebad_2_c0": "1"
+              },
+              "FilterExpression": "((#__edb_e__ = :__edb_e___0illegalcharactersarebad_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_c0) OR (#__edb_e__ = :__edb_e___0illegalcharactersarebad_2_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_2_c0))"
+            });
+
+            await service.collections.inventory({
+              country: "usa",
+              region: "ga",
+              city: "atlanta",
+            }).go();
+          })
+        });
+      });
+    },
+  );
 });

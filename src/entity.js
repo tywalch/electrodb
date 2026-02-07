@@ -1030,12 +1030,13 @@ class Entity {
     let keys = {};
     const secondaryIndexStrictMode =
       options.strict === "all" || options.strict === "pk" ? "pk" : "none";
-    for (const { index } of Object.values(this.model.indexes)) {
+    for (const index of Object.values(this.model.indexes)) {
+      const indexName = index.index;
       const indexKeys = this._fromCompositeToKeysByIndex(
-        { indexName: index, provided },
+        { indexName, provided },
         {
           strict:
-            index === TableIndex ? options.strict : secondaryIndexStrictMode,
+            indexName === TableIndex ? options.strict : secondaryIndexStrictMode,
         },
       );
       if (indexKeys) {
@@ -1219,20 +1220,27 @@ class Entity {
   ) {
     let allKeys = {};
 
-    const indexKeys = this._deconstructIndex({
-      index: indexName,
-      keys: provided,
-    });
-    if (!indexKeys) {
-      throw new e.ElectroError(
-        e.ErrorCodes.InvalidConversionKeysProvided,
-        `Provided keys did not include valid properties for the index "${indexName}"`,
-      );
+    if (this._getIndexType(indexName) === IndexTypes.composite) {
+      const item = this.model.schema.translateFromFields(provided);
+      allKeys = {
+        ...this._findFacets(item, this.model.facets.byIndex[index].pk),
+        ...this._findFacets(item, this.model.facets.byIndex[index].sk),
+      }
+    } else {
+      const indexKeys = this._deconstructIndex({
+        index: indexName,
+        keys: provided,
+      });
+      if (!indexKeys) {
+        throw new e.ElectroError(
+          e.ErrorCodes.InvalidConversionKeysProvided,
+          `Provided keys did not include valid properties for the index "${indexName}"`,
+        );
+      }
+      allKeys = {
+        ...indexKeys,
+      };
     }
-
-    allKeys = {
-      ...indexKeys,
-    };
 
     let tableKeys;
     if (indexName !== TableIndex) {
@@ -1278,6 +1286,10 @@ class Entity {
     );
   }
 
+  _getIndexType(indexName) {
+    return this.model.facets.byIndex[indexName].type;
+  }
+
   _trimKeysToIndex({ indexName = TableIndex, provided }) {
     if (!provided) {
       return null;
@@ -1313,13 +1325,17 @@ class Entity {
       );
     }
 
-    const pkName = this.model.translations.keys[indexName].pk;
-    const skName = this.model.translations.keys[indexName].sk;
-
-    return (
-      provided[pkName] !== undefined &&
-      (!skName || provided[skName] !== undefined)
-    );
+    if (this._getIndexType(indexName) === IndexTypes.composite) {
+      const item = this.model.schema.translateFromFields(provided);
+      return this.model.facets.byIndex[indexName].pk.every((attr) => item[attr] !== undefined);
+    } else {
+      const pkName = this.model.translations.keys[indexName].pk;
+      const skName = this.model.translations.keys[indexName].sk;
+      return (
+        provided[pkName] !== undefined &&
+        (!skName || provided[skName] !== undefined)
+      );
+    }
   }
 
   _formatReturnPager(config, lastEvaluatedKey) {
@@ -1583,11 +1599,18 @@ class Entity {
 
   _constructPagerIndex(index = TableIndex, item, options = {}) {
     let pkAttributes = options.relaxedPk
-      ? item
+      ? this._findFacets(item, this.model.facets.byIndex[index].pk)
       : this._expectFacets(item, this.model.facets.byIndex[index].pk);
     let skAttributes = options.relaxedSk
-      ? item
+      ? this._findFacets(item, this.model.facets.byIndex[index].sk)
       : this._expectFacets(item, this.model.facets.byIndex[index].sk);
+
+    if (this._getIndexType(index) === IndexTypes.composite) {
+      return this.model.schema.translateToFields({
+        ...pkAttributes,
+        ...skAttributes,
+      });
+    }
 
     let keys = this._makeIndexKeys({
       index,
@@ -2217,20 +2240,20 @@ class Entity {
     return key;
   }
 
-  getIdentifierExpressions(alias = this.getName()) {
-    let name = this.getName();
-    let version = this.getVersion();
-    return {
-      names: {
-        [`#${this.identifiers.entity}`]: this.identifiers.entity,
-        [`#${this.identifiers.version}`]: this.identifiers.version,
-      },
-      values: {
-        [`:${this.identifiers.entity}_${alias}`]: name,
-        [`:${this.identifiers.version}_${alias}`]: version,
-      },
-      expression: `(#${this.identifiers.entity} = :${this.identifiers.entity}_${alias} AND #${this.identifiers.version} = :${this.identifiers.version}_${alias})`,
-    };
+  applyIdentifierExpressionState(expressionState, alias) {
+    const name = this.getName();
+    const version = this.getVersion();
+    const nameRef = expressionState.setName({}, this.identifiers.entity, this.identifiers.entity);
+    const versionRef = expressionState.setName({}, this.identifiers.version, this.identifiers.version);
+    const nameVal = expressionState.setValue(
+      `${this.identifiers.entity}_${alias || name}`,
+      name,
+    );
+    const versionVal = expressionState.setValue(
+      `${this.identifiers.version}_${alias || name}`,
+      version,
+    );
+    return `(${nameRef.expression} = ${nameVal} AND ${versionRef.expression} = ${versionVal})`;
   }
 
   /* istanbul ignore next */
@@ -2807,7 +2830,7 @@ class Entity {
     }
 
     const filter = state.query.filter[ExpressionTypes.FilterExpression];
-    let customExpressions = {
+    const customExpressions = {
       names: (state.query.options.expressions && state.query.options.expressions.names) || {},
       values: (state.query.options.expressions && state.query.options.expressions.values) || {},
       expression: (state.query.options.expressions && state.query.options.expressions.expression) || "",
@@ -2815,7 +2838,7 @@ class Entity {
 
     // identifiers are added via custom expressions on collection queries inside `clauses/handleNonIsolatedCollection`
     // Don't duplicate filters if they are provided.
-    const identifierExpressions = !options.ignoreOwnership && !customExpressions.expression ? this.getIdentifierExpressions() : {};
+    const identifierExpression = !options.ignoreOwnership && !customExpressions.expression ? this.applyIdentifierExpressionState(expressionState) : '';
 
     const params = {
       IndexName: state.query.index,
@@ -2825,17 +2848,15 @@ class Entity {
         filter.getNames(),
         expressionState.getNames(),
         customExpressions.names,
-        identifierExpressions.names,
       ),
       ExpressionAttributeValues: this._mergeExpressionsAttributes(
         filter.getValues(),
         expressionState.getValues(),
         customExpressions.values,
-        identifierExpressions.values,
       ),
     }
 
-    let filerExpressions = [customExpressions.expression || "", filter.build(), identifierExpressions.expression || ""]
+    let filerExpressions = [customExpressions.expression || "", filter.build(), identifierExpression]
       .map(s => s.trim())
       .filter(Boolean)
       .join(" AND ");
@@ -3690,7 +3711,11 @@ class Entity {
     }
   }
 
-  _findProperties(obj, properties) {
+  _findFacets(obj, properties) {
+    return Object.fromEntries(this._findProperties(obj, properties));
+  }
+
+  _findProperties(obj, properties = []) {
     return properties.map((name) => [name, obj[name]]);
   }
 
@@ -3861,8 +3886,8 @@ class Entity {
           e.ErrorCodes.IncompatibleKeyCasing,
           `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
             tableIndex.index,
-          )}' is defined with the casing ${keys.pk.casing}, but the accessPattern '${u.formatIndexNameForDisplay(
-            previouslyDefinedPk.indexName,
+          )}' is defined with the casing ${keys.pk.casing}, but the Access Pattern '${u.formatIndexNameForDisplay(
+            previouslyDefinedPk.definition.accessPattern,
           )}' defines the same index field with the ${previouslyDefinedPk.definition.casing === DefaultKeyCasing ? '(default)' : ''} casing ${previouslyDefinedPk.definition.casing}. Key fields must have the same casing definitions across all indexes they are involved with.`,
         );
       }
@@ -3877,8 +3902,8 @@ class Entity {
           e.ErrorCodes.IncompatibleKeyCasing,
           `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
             tableIndex.index,
-          )}' is defined with the casing ${keys.sk.casing}, but the accessPattern '${u.formatIndexNameForDisplay(
-            previouslyDefinedSk.indexName,
+          )}' is defined with the casing ${keys.sk.casing}, but the Access Pattern '${u.formatIndexNameForDisplay(
+            previouslyDefinedSk.definition.accessPattern,
           )}' defines the same index field with the ${previouslyDefinedSk.definition.casing === DefaultKeyCasing ? '(default)' : ''} casing ${previouslyDefinedSk.definition.casing}. Key fields must have the same casing definitions across all indexes they are involved with.`,
         );
       }
@@ -4691,8 +4716,9 @@ class Entity {
       };
 
       facets.attributes = [...facets.attributes, ...attributes];
-
-      facets.fields.push(pk.field);
+      if (definition.type !== IndexTypes.composite) {
+        facets.fields.push(pk.field);
+      }
 
       facets.byIndex[indexName] = {
         customFacets,
@@ -4709,110 +4735,111 @@ class Entity {
         },
       };
 
-      facets.byField = facets.byField || {};
-      facets.byField[pk.field] = facets.byField[pk.field] || {};
-      facets.byField[pk.field][indexName] = pk;
-      if (sk.field) {
-        facets.byField[sk.field] = facets.byField[sk.field] || {};
-        facets.byField[sk.field][indexName] = sk;
-      }
-
-      if (seenIndexFields[pk.field] !== undefined) {
-        const definition = Object.values(facets.byField[pk.field]).find(
-          (definition) => definition.index !== indexName,
-        );
-
-        const definitionsMatch = validations.stringArrayMatch(
-          pk.facets,
-          definition.facets,
-        );
-
-        if (!definitionsMatch) {
-          throw new e.ElectroError(
-            e.ErrorCodes.InconsistentIndexDefinition,
-            `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
-              accessPattern,
-            )}' is defined with the composite attribute(s) ${u.commaSeparatedString(
-              pk.facets,
-            )}, but the accessPattern '${u.formatIndexNameForDisplay(
-              definition.index,
-            )}' defines this field with the composite attributes ${u.commaSeparatedString(
-              definition.facets,
-            )}'. Key fields must have the same composite attribute definitions across all indexes they are involved with`,
-          );
+      if (definition.type !== IndexTypes.composite) {
+        facets.byField = facets.byField || {};
+        facets.byField[pk.field] = facets.byField[pk.field] || {};
+        facets.byField[pk.field][indexName] = pk;
+        if (sk.field) {
+          facets.byField[sk.field] = facets.byField[sk.field] || {};
+          facets.byField[sk.field][indexName] = sk;
         }
 
-        const keyTemplatesMatch = pk.template === definition.template
-
-        if (!keyTemplatesMatch) {
-          throw new e.ElectroError(
-            e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate,
-            `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
-              accessPattern,
-            )}' is defined with the template ${pk.template || '(undefined)'}, but the accessPattern '${u.formatIndexNameForDisplay(
-              definition.index,
-            )}' defines this field with the key labels ${definition.template || '(undefined)'}'. Key fields must have the same template definitions across all indexes they are involved with`,
-          );
-        }
-
-        seenIndexFields[pk.field].push({ accessPattern, type: "pk" });
-      } else {
-        seenIndexFields[pk.field] = [];
-        seenIndexFields[pk.field].push({ accessPattern, type: "pk" });
-      }
-
-      if (sk.field) {
-        if (sk.field === pk.field) {
-          throw new e.ElectroError(
-            e.ErrorCodes.DuplicateIndexFields,
-            `The Access Pattern '${u.formatIndexNameForDisplay(
-              accessPattern,
-            )}' references the field '${
-              sk.field
-            }' as the field name for both the PK and SK. Fields used for indexes need to be unique to avoid conflicts.`,
-          );
-        } else if (seenIndexFields[sk.field] !== undefined) {
-          const definition = Object.values(facets.byField[sk.field]).find(
+        if (seenIndexFields[pk.field] !== undefined) {
+          const definition = Object.values(facets.byField[pk.field]).find(
             (definition) => definition.index !== indexName,
           );
 
           const definitionsMatch = validations.stringArrayMatch(
-            sk.facets,
+            pk.facets,
             definition.facets,
-          )
-
+          );
           if (!definitionsMatch) {
             throw new e.ElectroError(
-              e.ErrorCodes.DuplicateIndexFields,
-              `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
+              e.ErrorCodes.InconsistentIndexDefinition,
+              `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
                 accessPattern,
               )}' is defined with the composite attribute(s) ${u.commaSeparatedString(
-                sk.facets,
-              )}, but the accessPattern '${u.formatIndexNameForDisplay(
-                definition.index,
+                pk.facets,
+              )}, but the Access Pattern '${u.formatIndexNameForDisplay(
+                definition.accessPattern,
               )}' defines this field with the composite attributes ${u.commaSeparatedString(
                 definition.facets,
               )}'. Key fields must have the same composite attribute definitions across all indexes they are involved with`,
             );
           }
 
-          const keyTemplatesMatch = sk.template === definition.template
+          const keyTemplatesMatch = pk.template === definition.template
 
           if (!keyTemplatesMatch) {
             throw new e.ElectroError(
               e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate,
-              `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
+              `Partition Key (pk) on Access Pattern '${u.formatIndexNameForDisplay(
                 accessPattern,
-              )}' is defined with the template ${sk.template || '(undefined)'}, but the accessPattern '${u.formatIndexNameForDisplay(
-                definition.index,
+              )}' is defined with the template ${pk.template || '(undefined)'}, but the Access Pattern '${u.formatIndexNameForDisplay(
+                definition.accessPattern,
               )}' defines this field with the key labels ${definition.template || '(undefined)'}'. Key fields must have the same template definitions across all indexes they are involved with`,
             );
           }
 
-          seenIndexFields[sk.field].push({ accessPattern, type: "sk" });
+          seenIndexFields[pk.field].push({ accessPattern, type: "pk" });
         } else {
-          seenIndexFields[sk.field] = [];
-          seenIndexFields[sk.field].push({ accessPattern, type: "sk" });
+          seenIndexFields[pk.field] = [];
+          seenIndexFields[pk.field].push({ accessPattern, type: "pk" });
+        }
+
+        if (sk.field) {
+          if (sk.field === pk.field) {
+            throw new e.ElectroError(
+              e.ErrorCodes.DuplicateIndexFields,
+              `The Access Pattern '${u.formatIndexNameForDisplay(
+                accessPattern,
+              )}' references the field '${
+                sk.field
+              }' as the field name for both the PK and SK. Fields used for indexes need to be unique to avoid conflicts.`,
+            );
+          } else if (seenIndexFields[sk.field] !== undefined) {
+            const definition = Object.values(facets.byField[sk.field]).find(
+              (definition) => definition.index !== indexName,
+            );
+
+            const definitionsMatch = validations.stringArrayMatch(
+              sk.facets,
+              definition.facets,
+            )
+
+            if (!definitionsMatch) {
+              throw new e.ElectroError(
+                e.ErrorCodes.DuplicateIndexFields,
+                `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
+                  accessPattern,
+                )}' is defined with the composite attribute(s) ${u.commaSeparatedString(
+                  sk.facets,
+                )}, but the Access Pattern '${u.formatIndexNameForDisplay(
+                  definition.accessPattern,
+                )}' defines this field with the composite attributes ${u.commaSeparatedString(
+                  definition.facets,
+                )}'. Key fields must have the same composite attribute definitions across all indexes they are involved with`,
+              );
+            }
+
+            const keyTemplatesMatch = sk.template === definition.template
+
+            if (!keyTemplatesMatch) {
+              throw new e.ElectroError(
+                e.ErrorCodes.IncompatibleKeyCompositeAttributeTemplate,
+                `Sort Key (sk) on Access Pattern '${u.formatIndexNameForDisplay(
+                  accessPattern,
+                )}' is defined with the template ${sk.template || '(undefined)'}, but the Access Pattern '${u.formatIndexNameForDisplay(
+                  definition.accessPattern,
+                )}' defines this field with the key labels ${definition.template || '(undefined)'}'. Key fields must have the same template definitions across all indexes they are involved with`,
+              );
+            }
+
+            seenIndexFields[sk.field].push({ accessPattern, type: "sk" });
+          } else {
+            seenIndexFields[sk.field] = [];
+            seenIndexFields[sk.field].push({ accessPattern, type: "sk" });
+          }
         }
       }
 
