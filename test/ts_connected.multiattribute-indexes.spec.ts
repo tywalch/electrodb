@@ -16,13 +16,12 @@ import { faker } from "@faker-js/faker";
 import { expect } from 'chai';
 const u = require("../src/util");
 import { Service, Entity, EntityItem, EntityRecord, QueryResponse, createConversions, CollectionResponse } from "../";
-import { maybeDescribeMultiAttributeTest } from "./util";
 
 function createSafeName() {
   return uuid().replace(/-/g, "_");
 }
 
-const localClient = new DocumentClient({
+const client = new DocumentClient({
   region: "us-east-1",
   endpoint: process.env.LOCAL_DYNAMO_ENDPOINT ?? "http://localhost:8000",
   credentials: {
@@ -30,6 +29,8 @@ const localClient = new DocumentClient({
     secretAccessKey: "test",
   },
 });
+
+const table = "multi-attribute";
 
 function expectSubset(label: string, received: any, expected: any) {
   try {
@@ -73,8 +74,6 @@ function expectNotSubset(label: string, received: any, expected: any) {
 
   throw new Error(`Expected ${label} to not be a subset, but it was.`);
 }
-
-const localTable = "TestMultiAttributeIndexesTable";
 
 type CreateThingEntityOptions = {
   client: DocumentClient;
@@ -370,18 +369,18 @@ describe("multi-attribute index support", () => {
     const thing = createThingEntity({
       name: createSafeName(), // important test namespacing
       service: serviceName,
-      client: localClient,
-      table: localTable,
+      client: client,
+      table: table,
     });
 
     const gizmo = createThingEntity({
       name: createSafeName(), // important test namespacing
       service: serviceName,
-      client: localClient,
-      table: localTable,
+      client: client,
+      table: table,
     });
 
-    const service = new Service({ thing, gizmo }, { client: localClient, table: localTable });
+    const service = new Service({ thing, gizmo }, { client: client, table: table });
 
     // - should always include identifier attributes in ownership filters on multi-attribute indexes: query, begins, gt, gte, lt, lte, between, collection
     const operations: ParameterBuilders<Operation, ThingRecord> = {
@@ -570,7 +569,7 @@ describe("multi-attribute index support", () => {
               });
               break;
             case "batchPut":
-              expectSubset(received.type, received.params[0]?.RequestItems?.[localTable][0].PutRequest?.Item, {
+              expectSubset(received.type, received.params[0]?.RequestItems?.[table][0].PutRequest?.Item, {
                 "__edb_e__": thing.schema.model.entity,
                 "__edb_v__": "1"
               })
@@ -726,7 +725,7 @@ describe("multi-attribute index support", () => {
               expect(received.params.ExpressionAttributeValues).to.not.have.keys(['gsi1pk', 'gsi1sk']);
               break;
             case "batchPut":
-              expect(received.params[0]?.RequestItems?.[localTable][0].PutRequest?.Item).to.not.have.keys(['gsi1pk', 'gsi1sk']);
+              expect(received.params[0]?.RequestItems?.[table][0].PutRequest?.Item).to.not.have.keys(['gsi1pk', 'gsi1sk']);
               break;
             case "update":
               expect(received.params.ExpressionAttributeValues).to.not.have.keys(['gsi1pk', 'gsi1sk']);
@@ -1388,9 +1387,8 @@ describe("multi-attribute index support", () => {
     })
   });
 
-  maybeDescribeMultiAttributeTest(
-    "multi-attribute index aws connected tests",
-    ({ client, table }) => {
+  describe("multi-attribute index aws connected tests", () => {
+
       const serviceName = createSafeName(); // important test namespacing
       const thing = createThingEntity({
         name: createSafeName(), // important test namespacing
@@ -2017,6 +2015,192 @@ describe("multi-attribute index support", () => {
         });
       });
 
+      describe("multi-attribute conversions", () => {
+        it("should perform all conversions without loss starting with an item", () => {
+          const conversions = createConversions(thing).byAccessPattern.location;
+          const item = generateThingRecord({
+            manufacturer: uuid(),
+            model: uuid(),
+            count: 99,
+            city: uuid(),
+            region: uuid(),
+            country: uuid(),
+            name: uuid(),
+            description: uuid(),
+            id: uuid(),
+            entityName: uuid(),
+            ttl: Date.now() + (1000 * 60 * 60),
+          });
+
+          const compositeOnlyItem = Object.fromEntries([
+            ...thing.schema.indexes.thing.pk.composite,
+            ...thing.schema.indexes.thing.sk.composite,
+            ...thing.schema.indexes.location.pk.composite,
+            ...thing.schema.indexes.location.sk.composite,
+          ].map((attribute) => [attribute, item[attribute]]));
+          
+          const cursor = conversions.fromComposite.toCursor(item);
+          expect(cursor).not.to.be.null;
+
+          const keys = conversions.fromComposite.toKeys(item);
+          expect(keys).not.to.be.null;
+
+          const cursorFromKeys = conversions.fromKeys.toCursor(keys);
+          expect(cursorFromKeys).not.to.be.null;
+          expect(cursor).to.equal(cursorFromKeys);
+        
+          const keysFromCursor = conversions.fromCursor.toKeys(cursor);
+          expect(keysFromCursor).not.to.be.null;
+          expect(keys).to.deep.equal(keysFromCursor);
+
+          const compositeFromCursor = conversions.fromCursor.toComposite(cursor);
+          expect(compositeFromCursor).not.to.be.null;
+          expect(compositeFromCursor).to.deep.equal(compositeOnlyItem);
+
+          const compositeFromKeys = conversions.fromKeys.toComposite(keys);
+          expect(compositeFromKeys).not.to.be.null;
+          expect(compositeFromKeys).to.deep.equal(compositeOnlyItem);
+
+          expect(Object.entries(compositeFromCursor).length).to.be.greaterThan(0);
+          expect(!!compositeFromKeys).to.be.true;
+          expect(Object.entries(compositeFromKeys).length).to.be.greaterThan(0);
+          expect(Object.entries(compositeFromCursor).length).to.equal(Object.entries(compositeFromKeys).length);
+        });
+      })
+      // function compare(provided: string | number, expected: string | number, operation: PaginationOperation): boolean {
+      //   switch (operation) {
+      //     case EntityQueryOperations.begins:
+      //     case ServiceQueryOperations.collectionBegins:
+      //       if (typeof provided === "string" && typeof expected === "string") {
+      //         return expected.startsWith(provided);
+      //       }
+      //     case EntityQueryOperations.gt:
+      //     case ServiceQueryOperations.collectionGt:
+      //       return expected > provided;
+      //     case EntityQueryOperations.gte:
+      //     case ServiceQueryOperations.collectionGte:
+      //       return expected >= provided;
+      //     case EntityQueryOperations.lt:
+      //     case ServiceQueryOperations.collectionLt:
+      //       return expected < provided;
+      //     case EntityQueryOperations.lte:
+      //     case ServiceQueryOperations.collectionLte:
+      //       return expected <= provided;
+      //     default:
+      //       return provided === expected;
+      //   }
+      // }
+
+      // describe("partially provided sort keys", () => {
+      //   type FilterObj = {manufacturer?: string, model?: string, count?: number, name?: string };
+      //   function filterItemsByPartialSortKey(items: ThingItem[], operation: PaginationOperation, filters: FilterObj): ThingItem[] {
+      //     const order = ["manufacturer", "model", "count", "name"] as const;
+      //     const lastProvided = order.find((o => !(o in filters)));
+      //     if (!lastProvided) {
+      //       return items;
+      //     }
+      //     return items.filter((item) => {
+      //       return order.every((key) => {
+      //         const expected = filters[key];
+      //         const provided = item[key];
+      //         if (key === lastProvided) {
+      //           return compare(provided, expected, "query");
+      //         }
+      //         return compare(provided, expected, operation);
+      //       })
+      //     })
+      //   }
+      //
+      //   function toFilterObject(thing: ThingItem, lastProvided: keyof FilterObj) {
+      //     const filterObj: FilterObj = {};
+      //     const order = ["manufacturer", "model", "count", "name"] as const;
+      //     for (const key of order) {
+      //       filterObj[key] = thing[key];
+      //       if (key === lastProvided) {
+      //         break;
+      //       }
+      //     }
+      //     return filterObj;
+      //   }
+      //
+      //   const serviceName = createSafeName();
+      //   const thing = createThingEntity({
+      //     name: createSafeName(),
+      //     service: serviceName,
+      //     client,
+      //     table,
+      //   });
+      //
+      //   const gizmo = createThingEntity({
+      //     name: createSafeName(),
+      //     service: serviceName,
+      //     client,
+      //     table,
+      //   });
+      //
+      //   const service = createThingService(thing, gizmo);
+      //
+      //   const country = uuid();
+      //   const region = uuid();
+      //   const city = uuid();
+      //
+      //   const allThings: ThingRecord[] = [];
+      //   const thingItems: ThingRecord[] = [];
+      //   const gizmoItems: ThingRecord[] = [];
+      //   for (let i = 0; i < 100; i++) {
+      //     const item = generateThingRecord({
+      //       count: i + 1,
+      //       country,
+      //       region,
+      //       city,
+      //     });
+      //     allThings.push(item);
+      //     if (i % 2 === 0) {
+      //       thingItems.push(item);
+      //     } else {
+      //       gizmoItems.push(item);
+      //     }
+      //   }
+      //
+      //   let sortedThingItems: ThingRecord[] = [];
+      //   let sortedGizmoItems: ThingRecord[] = [];
+      //   let middleThing: ThingRecord | null = null;
+      //   let middleGizmo: ThingRecord | null = null;
+      //
+      //   before(async () => {
+      //     await Promise.all([
+      //       thing.put(thingItems).go(),
+      //       gizmo.put(gizmoItems).go(),
+      //     ]);
+      //
+      //     const items = await service.collections.inventory({ country, region, city }).go({pages: 'all'});
+      //     for (const item of items.data.gizmo) {
+      //       sortedGizmoItems.push(item);
+      //     }
+      //     for (const item of items.data.thing) {
+      //       sortedThingItems.push(item);
+      //     }
+      //     expect(sortedGizmoItems.length + sortedThingItems.length).to.equal(allThings.length);
+      //     middleThing = sortedThingItems[Math.floor(sortedThingItems.length / 2)];
+      //     middleGizmo = sortedGizmoItems[Math.floor(sortedGizmoItems.length / 2)];
+      //     expect(middleThing).to.not.be.null;
+      //     expect(middleGizmo).to.not.be.null;
+      //   });
+      //
+      //   for (const lastProvided of thing.schema.indexes.location.sk.composite) {
+      //     it('should correctly filter entity items based on partially provided sort key values', async () => {
+      //       const filter = toFilterObject(middleThing!, lastProvided);
+      //       switch ()
+      //       thing.query.location({country, })
+      //     });
+      //
+      //     it('should correctly filter collection items based on partially provided sort key values', async () => {
+      //       const filter = toFilterObject(middleThing!, lastProvided);
+      //
+      //     });
+      //   }
+      // });
+
       describe("edge cases", () => {
         describe("when entity names have special characters", () => {
           // Entity names/aliases and version values are the values used to
@@ -2054,7 +2238,7 @@ describe("multi-attribute index support", () => {
             expect(params).to.deep.equal({
               "IndexName": "gsi1",
               "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
-              "TableName": "multi-attribute-table",
+              "TableName": "multi-attribute",
               "ExpressionAttributeNames": {
                 "#country": "attr1",
                 "#region": "attr2",
@@ -2112,7 +2296,7 @@ describe("multi-attribute index support", () => {
             expect(params).to.deep.equal({
               "IndexName": "gsi1",
               "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
-              "TableName": "multi-attribute-table",
+              "TableName": "multi-attribute",
               "ExpressionAttributeNames": {
                 "#country": "attr1",
                 "#region": "attr2",
@@ -2173,7 +2357,7 @@ describe("multi-attribute index support", () => {
             expect(params).to.deep.equal({
               "IndexName": "gsi1",
               "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
-              "TableName": "multi-attribute-table",
+              "TableName": "multi-attribute",
               "ExpressionAttributeNames": {
                 "#country": "attr1",
                 "#region": "attr2",

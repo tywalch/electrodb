@@ -1223,8 +1223,8 @@ class Entity {
     if (this._getIndexType(indexName) === IndexTypes.composite) {
       const item = this.model.schema.translateFromFields(provided);
       allKeys = {
-        ...this._findFacets(item, this.model.facets.byIndex[index].pk),
-        ...this._findFacets(item, this.model.facets.byIndex[index].sk),
+        ...this._findFacets(item, this.model.facets.byIndex[indexName].pk),
+        ...this._findFacets(item, this.model.facets.byIndex[indexName].sk),
       }
     } else {
       const indexKeys = this._deconstructIndex({
