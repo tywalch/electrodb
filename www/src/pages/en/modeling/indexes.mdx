@@ -31,21 +31,23 @@ indexes: {
 	[AccessPatternName]: {
 		index?: string;
 		collection?: string | string[];
-		type?: 'isolated' | 'clustered';
+		type?: 'isolated' | 'clustered' | 'composite';
 		pk: {
-			field: string;
+			field?: string; // required unless type is 'composite'
 			composite: AttributeName[];
 			template?: string;
 			cast?: 'string' | 'number';
 			casing?: 'upper' | 'lower' | 'none';
 		},
 		sk?: {
-			field: string;
+			field?: string; // required unless type is 'composite'
 			composite: AttributesName[];
 			template?: string;
 			cast?: 'string' | 'number';
 			casing?: 'upper' | 'lower' | 'none';
 		},
+    condition?: (attr: Record<string, unknown>) => boolean; // only available on `isolated` or `clustered` indexes
+    scope?: string; // only available on `isolated` or `clustered` indexes
 	}
 }
 ```
@@ -56,20 +58,22 @@ indexes: {
 | -------------- | :----------------------------------: | :------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `index`        |               `string`               |    no    | Required when the `Index` defined is a _Global/Local Secondary Index_; but is omitted for the table's primary index.                                                                                                                                                                                                                        |
 | `collection`   |         `string`, `string[]`         |    no    | Used when models are joined to a `Service`. When two entities share a `collection` on the same `index`, they can be queried with one request to DynamoDB. The name of the collection should represent what the query would return as a pseudo `Entity`; See the page on [Collections](/en/modeling/collections) for more information on this functionality. |
-| `type`         |       `isolated`, `clustered`        |    no    | Allows you to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (high volume of records per partition) or [entity relationships](/en/modeling/indexes#isolated-indexes) (high relationship density per partition). When omitted, ElectroDB defaults to `isolation`.                                                     |
+| `type`         | `isolated`, `clustered`, `composite` |    no    | Allows you to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (high volume of records per partition), [entity relationships](/en/modeling/indexes#clustered-indexes) (high relationship density per partition), or leverage DynamoDB's [multi-attribute key](#multi-attribute-indexes) support. When omitted, ElectroDB defaults to `isolated`.                                                     |
 | `condition`    |        `(attr: T) => boolean`        |    no    | A function that accepts all attributes provided every mutation method and returns a boolean value. When provided, ElectroDB will use this function to determine if an index should be be written given a provided set of attributes. This is useful for implementing "sparse" indexes, See the second on [Sparse Indexes](/en/modeling/indexes#sparse-indexes) below for more information on this functionality |
 | `pk`           |               `object`               |   yes    | Configuration for the pk of that index or table                                                                                                                                                                                                                                                                                             |
 | `pk.composite` |              `string[]`              |   yes    | An array that represents the order in which attributes are concatenated to composite attributes the key (see [Composite Attributes](#composing-attributes) below for more on this functionality).                                                                                                                                           |
 | `pk.template`  |               `string`               |    no    | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).                                                                                                                                                |
-| `pk.field`     |               `string`               |   yes    | The name of the index Partition Key field as it exists in DynamoDB, if named differently in the schema attributes.                                                                                                                                                                                                                          |
+| `pk.field`     |               `string`               | yes\*   | The name of the index Partition Key field as it exists in DynamoDB, if named differently in the schema attributes. \*Not required (and not allowed) when `type` is `"composite"`.                                                                                                                                                                                                                          |
 | `pk.casing`    | `default`, `upper`, `lower`, `none`  |    no    | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.                                                                                                                                                                                                                         |
 | `pk.cast`      |          `string`, `number`          |    no    | The `cast` option allows you to define a different primitive type for your key than your attribute. When `number` is used, you are only allowed to have one composite attribute, string values are validated at runtime with `parseInt`, and booleans are cast to `1` or `0`. Default: `string`.                                            |
 | `sk`           |               `object`               |    no    | Configuration for the sk of that index or table                                                                                                                                                                                                                                                                                             |
 | `sk.composite` |              `string[]`              |    no    | Either an Array that represents the order in which attributes are concatenated to composite attributes the key, or a String for a composite attribute template. (see [Composite Attributes](#composite-attributes) below for more on this functionality).                                                                                   |
 | `sk.template`  |               `string`               |    no    | A string that represents the template in which attributes composed to form a key (see [Composite Attribute Templates](#composite-attribute-templates) below for more on this functionality).                                                                                                                                                |
-| `sk.field`     |               `string`               |   yes    | The name of the index Sort Key field as it exists in DynamoDB, if named differently in the schema attributes.                                                                                                                                                                                                                               |
+| `sk.field`     |               `string`               | yes\*   | The name of the index Sort Key field as it exists in DynamoDB, if named differently in the schema attributes. \*Not required (and not allowed) when `type` is `"composite"`.                                                                                                                                                                                                                               |
 | `sk.casing`    | `default`, `upper`, `lower`, `none`, |    no    | Choose a case for ElectroDB to convert your keys to, to avoid casing pitfalls when querying data. Default: `lower`.                                                                                                                                                                                                                         |
 | `sk.cast`      |          `string`, `number`          |    no    | The `cast` option allows you to define a different primitive type for your key than your attribute. When `number` is used, you are only allowed to have one composite attribute, string values are validated at runtime with `parseInt`, and booleans are cast to `1` or `0`. Default: `string`.                                            |
+| `condition`    |        `(attr: T) => boolean`        |    no    | A function that accepts all attributes provided every mutation method and returns a boolean value. When provided, ElectroDB will use this function to determine if an index should be be written given a provided set of attributes. This is useful for implementing "sparse" indexes, See the second on [Sparse Indexes](/en/modeling/indexes#sparse-indexes) below for more information on this functionality |
+| `scope`        |               `string`               |    no    | A string used to further isolate records on an index within a Service's partition. Only available on `isolated` or `clustered` indexes.                                                                                                                                                                                                                          |
 
 ## Composing Indexes
 
@@ -261,11 +265,11 @@ ElectroDB supports many ways to map your indexes to your unique table. From inde
 
 ## Index Types
 
-ElectroDB helps manage your key structure, and works to abstract out the details of how your keys are created/formatted. Depending on your unique data set, you may need ElectroDB to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (i.e. high volume of records per partition) or [entity relationships](/en/modeling/indexes#clustered-indexes) (i.e. high relationship density per partition).
+ElectroDB helps manage your key structure, and works to abstract out the details of how your keys are created/formatted. Depending on your unique data set, you may need ElectroDB to optimize your index for either [entity isolation](/en/modeling/indexes#isolated-indexes) (i.e. high volume of records per partition), [entity relationships](/en/modeling/indexes#clustered-indexes) (i.e. high relationship density per partition), or leverage DynamoDB's [multi-attribute key](/en/modeling/indexes#multi-attribute-indexes) support for more natural key structures.
 
-This option changes how ElectroDB formats your keys for storage, so it is an important consideration to make early in your modeling phase. As a result, this choice cannot be simply walked back without requiring a migration. The choice between `clustered` and `isolated` depends wholly on your unique dataset and access patterns.
+This option changes how ElectroDB formats your keys for storage, so it is an important consideration to make early in your modeling phase. As a result, this choice cannot be simply walked back without requiring a migration. The choice between `clustered`, `isolated`, and `composite` depends wholly on your unique dataset and access patterns.
 
-> You can use [Collections](/en/modeling/collections) with both `isolated` and `clustered` indexes. Isolated indexes are limited to only querying across the partition key while Clustered indexes can also leverage the Sort Key.
+> You can use [Collections](/en/modeling/collections) with `isolated`, `clustered`, and `composite` indexes. Isolated indexes are limited to only querying across the partition key while Clustered and Composite indexes can also leverage the Sort Key.
 
 ### Isolated Indexes
 
@@ -743,3 +747,392 @@ When returned from a query, however, ElectroDB will return the following and tri
   "organizationId": "aaaa-bbbb-cccc-dddd"
 }
 ```
+
+## Multi-Attribute Indexes
+
+AWS DynamoDB has added support for [multi-attribute keys](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.MultipleAttributes.html) on Global Secondary Indexes (GSIs). This feature allows multiple individual attributes to serve as HASH and RANGE key members of a single GSI, instead of concatenating those values into a single partition key or sort key field.
+
+ElectroDB supports this feature through a new index type: `"composite"`. When you define an index with `type: "composite"`, ElectroDB will no longer concatenate your composite attributes into a single key field. Instead, each attribute listed in the `composite` array maps directly to its own column in the DynamoDB GSI key schema. This means your data is stored in its natural form — no prefixes, no delimiters, and no key formatting.
+
+### Defining a Multi-Attribute Index
+
+To define a multi-attribute index, set `type: "composite"` on a secondary index and omit the `field` property from both `pk` and `sk`. 
+
+```typescript
+const InventoryItem = new Entity(
+  {
+    model: {
+      entity: "inventoryitem",
+      version: "1",
+      service: "warehouse",
+    },
+    attributes: {
+      id: {
+        type: "string",
+        required: true,
+      },
+      country: {
+        type: "string",
+        field: "attr1",
+        required: true,
+      },
+      region: {
+        type: "string",
+        field: "attr2",
+        required: true,
+      },
+      city: {
+        type: "string",
+        field: "attr3",
+        required: true,
+      },
+      manufacturer: {
+        type: "string",
+        field: "attr4",
+      },
+      model: {
+        type: "string",
+        field: "attr5",
+      },
+      count: {
+        type: "number",
+        field: "attr6",
+      },
+      name: {
+        type: "string",
+        field: "attr7",
+      },
+    },
+    indexes: {
+      // The main table index still uses traditional pk/sk fields
+      record: {
+        pk: {
+          field: "pk",
+          composite: ["manufacturer"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["model", "id"],
+        },
+      },
+      // A multi-attribute GSI — note: no 'field' on pk or sk
+      location: {
+        index: "gsi1",
+        type: "composite",
+        pk: {
+          composite: ["country", "region", "city"],
+        },
+        sk: {
+          composite: ["manufacturer", "model", "count", "name"],
+        },
+      },
+    },
+  },
+  { table: "your_table_name", client },
+);
+```
+
+#### DynamoDB Table Definition
+
+The DynamoDB table for this entity requires a GSI with a multi-attribute key schema. Note how each attribute is listed individually in the `KeySchema`, with `HASH` for partition key members and `RANGE` for sort key members:
+
+```json
+{
+  "KeySchema": [
+    { "AttributeName": "pk", "KeyType": "HASH" },
+    { "AttributeName": "sk", "KeyType": "RANGE" }
+  ],
+  "AttributeDefinitions": [
+    { "AttributeName": "pk", "AttributeType": "S" },
+    { "AttributeName": "sk", "AttributeType": "S" },
+    { "AttributeName": "attr1", "AttributeType": "S" },
+    { "AttributeName": "attr2", "AttributeType": "S" },
+    { "AttributeName": "attr3", "AttributeType": "S" },
+    { "AttributeName": "attr4", "AttributeType": "S" },
+    { "AttributeName": "attr5", "AttributeType": "N" },
+    { "AttributeName": "attr6", "AttributeType": "S" }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "gsi1",
+      "KeySchema": [
+        { "AttributeName": "attr1", "KeyType": "HASH" },
+        { "AttributeName": "attr2", "KeyType": "HASH" },
+        { "AttributeName": "attr3", "KeyType": "RANGE" },
+        { "AttributeName": "attr4", "KeyType": "RANGE" },
+        { "AttributeName": "attr5", "KeyType": "RANGE" },
+        { "AttributeName": "attr6", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}
+```
+
+### Querying Multi-Attribute Indexes
+
+Querying a `composite` index works the same as other ElectroDB index types. You provide pk composite attributes to initiate the query, and can use sort key operations like `begins`, `between`, `gt`, `gte`, `lt`, and `lte` on the sk composite attributes.
+
+The key difference is in the generated DynamoDB parameters: instead of a single `KeyConditionExpression` using `begins_with` on a concatenated sort key, ElectroDB generates individual equality and comparison conditions for each attribute.
+
+#### Basic Query
+
+```typescript
+const results = await InventoryItem.query
+  .location({ country: "US", region: "Georgia", city: "Atlanta" })
+  .go();
+```
+
+This generates a `KeyConditionExpression` like:
+
+```
+#country = :country AND #region = :region AND #city = :city
+```
+
+#### Sort Key Operations
+
+Sort key operations apply to the sk composite attributes in order. Preceding sk attributes are matched with equality, and the operation applies to the last provided attribute:
+
+```typescript
+// begins_with on 'manufacturer' (city matched with equality)
+await InventoryItem.query
+  .location({ country: "US", region: "Georgia", })
+  .begins({ city: "Atlanta", manufacturer: "A" })
+  .go();
+// KeyConditionExpression:
+//   #country = :country AND #region = :region AND #city = :city
+//   AND begins_with(#manufacturer, :manufacturer)
+
+// Greater than on 'count' (city and manufacturer matched with equality)
+await InventoryItem.query
+  .location({ country: "US", region: "Georgia" })
+  .gt({ city: "Atlanta", manufacturer: "Acme", count: 100 })
+  .go();
+// KeyConditionExpression:
+//   #country = :country AND #region = :region AND #city = :city
+//   AND #manufacturer = :manufacturer AND #count > :count
+
+// Between on 'count' (city and manufacturer matched with equality)
+await InventoryItem.query
+  .location({ country: "US", region: "Georgia" })
+  .between(
+    { city: "Atlanta", manufacturer: "Acme", count: 50 },
+    { city: "Atlanta", manufacturer: "Acme", count: 200 },
+  )
+  .go();
+// KeyConditionExpression:
+//   #country = :country AND #region = :region AND #city = :city
+//   AND #manufacturer = :manufacturer
+//   AND #count BETWEEN :count1 AND :count2
+```
+
+### Multi-Attribute Indexes with Collections
+
+Multi-attribute indexes support [collections](/en/modeling/collections), allowing you to query across multiple entities that share the same `composite` index. This works similarly to collections on `clustered` indexes.
+
+```typescript
+const InventoryItem = new Entity(
+  {
+    model: {
+      entity: "inventoryitem",
+      version: "1",
+      service: "warehouse",
+    },
+    attributes: {
+      id: {
+        type: "string",
+        required: true,
+      },
+      country: {
+        type: "string",
+        field: "attr1",
+        required: true,
+      },
+      region: {
+        type: "string",
+        field: "attr2",
+        required: true,
+      },
+      city: {
+        type: "string",
+        field: "attr3",
+        required: true,
+      },
+      manufacturer: {
+        type: "string",
+        field: "attr4",
+      },
+      model: {
+        type: "string",
+      },
+      count: {
+        type: "number",
+        field: "attr5",
+      },
+      productName: {
+        type: "string",
+        field: "attr6",
+      },
+    },
+    indexes: {
+      record: {
+        pk: {
+          field: "pk",
+          composite: ["manufacturer"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["model", "id"],
+        },
+      },
+      location: {
+        index: "gsi1",
+        type: "composite",
+        collection: "inventory", // shared collection name
+        pk: {
+          composite: ["country", "region"],
+        },
+        sk: {
+          composite: ["city", "manufacturer", "count", "productName"],
+        },
+      },
+    },
+  },
+  { table: "your_table_name", client },
+);
+
+const Warehouse = new Entity(
+  {
+    model: {
+      entity: "warehouse",
+      version: "1",
+      service: "warehouse",
+    },
+    attributes: {
+      warehouseId: {
+        type: "string",
+        required: true,
+        field: "attr4",
+      },
+      country: {
+        type: "string",
+        field: "attr1",
+        required: true,
+      },
+      region: {
+        type: "string",
+        field: "attr2",
+        required: true,
+      },
+      city: {
+        type: "string",
+        field: "attr3",
+        required: true,
+      },
+      streetAddress: {
+        type: "string",
+      },
+    },
+    indexes: {
+      record: {
+        pk: {
+          field: "pk",
+          composite: ["warehouseId"],
+        },
+        sk: {
+          field: "sk",
+          composite: [],
+        },
+      },
+      location: {
+        index: "gsi1",
+        type: "composite",
+        collection: "inventory",
+        pk: {
+          composite: ["country", "region"],
+        },
+        sk: {
+          composite: ["city", "warehouseId"],
+        },
+      },
+    },
+  },
+  { table: "your_table_name", client },
+);
+
+const service = new Service({ InventoryItem, Warehouse });
+```
+
+Query across both entities via the shared collection
+```typescript
+const results = await service.collections
+  .inventory({ country: "US", region: "Georgia", city: "Atlanta" })
+  .go();
+// results.data.InventoryItem -> InventoryItem[]
+// results.data.Warehouse -> Warehouse[]
+```
+
+Collection queries also support sort key operations
+```typescript
+const filtered = await service.collections
+  .inventory({ country: "US", region: "Georgia" })
+  .begins({ city: "A" })
+  .go();
+// results.data.InventoryItem -> InventoryItem[]
+// results.data.Warehouse -> Warehouse[]
+```
+
+### Pagination with Multi-Attribute Indexes
+
+Pagination on composite indexes works transparently. Cursors returned by queries can be used to resume pagination as usual:
+
+```typescript
+let cursor: string | null = null;
+let allResults = [];
+
+do {
+  const response = await InventoryItem.query
+    .location({ country: "US", region: "Georgia", city: "Atlanta" })
+    .go({ cursor, limit: 25 });
+
+  allResults.push(...response.data);
+  cursor = response.cursor;
+} while (cursor !== null);
+```
+
+The `createConversions` utility also supports composite indexes for converting between items, keys, and cursors:
+
+```typescript
+import { createConversions } from "electrodb";
+
+const conversions = createConversions(InventoryItem);
+
+// Convert an item to a cursor for the 'location' access pattern
+const cursor = conversions.byAccessPattern.location.fromComposite.toCursor(item);
+
+// Convert a cursor back to composite attributes
+const composite = conversions.byAccessPattern.location.fromCursor.toComposite(cursor);
+```
+
+### Constraints and Validations
+
+There are a few important constraints to keep in mind when using multi-attribute indexes:
+
+1. **GSI Only**: Multi-attribute indexes can only be used on Global Secondary Indexes. The main table index must use traditional `field`-based keys. Attempting to use `type: "composite"` on the table index will result in an error.
+
+2. **No `field` property**: Composite indexes must not include a `field` property on `pk` or `sk`. The attribute's own `field` mapping (defined in the `attributes` section) determines the DynamoDB column name. Including a `field` property on a composite index will result in an error.
+
+3. **No `condition` callback**: Composite indexes do not support the `condition` callback used for [sparse indexes](#sparse-indexes). Including a `condition` on a composite index will result in an error.
+
+4. **No `template` property**: Since composite indexes store attribute values directly (without concatenation or formatting), the `template` property is not applicable.
+
+5. **No collections**: `composite` indexes do not support collections because these indexes use attribute values directly.
+
+### Gotchas and Tips
+
+- Query comparison operations (e.g. `gt`, `gte`, `lt`, `lte`, `between`) on `composite` indexes apply only to the last provided sort key attribute. This is different from `clustered` or `isolated` indexes where the comparison applies to all provided sort key attributes. This is because `clustered` and `isolated` indexes use concatenated string sort key values, which can be compared across all attributes. `composite` indexes use attribute values directly, and dynamodb only allows comparison applies to the last provided attribute. Be mindful of this, as results may vary between different index types.
+
+- Best practice when using `clustered` or `isolated` indexes is to use generic index field names for you Partition and Sort Keys. This keeps the indexes flexible and reusable across different entities. The same is true for `composite` indexes, where the fields used to compose an index can also be generisized. To support this with ElectroDB, use the `field` property on individual attributes to map to the field name on the DynamoDB table KeySchema. 
+
+

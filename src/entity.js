@@ -2707,7 +2707,6 @@ class Entity {
     const expressions = [];
     if (queryType === QueryTypes.between) {
       for (const [name, value] of Object.entries(pkAttributes)) {
-        const value = pkAttributes[name];
         const field = this.model.schema.getFieldName(name);
         const nameRef = expressionState.setName({}, name, field);
         const valueRef = expressionState.setValue(name, value);

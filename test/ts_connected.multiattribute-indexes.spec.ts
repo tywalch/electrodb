@@ -52,8 +52,8 @@ function expectSubset(label: string, received: any, expected: any) {
         expect(received[key]).to.equal(expected[key]);
       }
     }
-  } catch(e: any) {
-    console.log(JSON.stringify({label, received, expected}, null, 4));
+  } catch (e: any) {
+    console.log(JSON.stringify({ label, received, expected }, null, 4));
     throw e;
   }
 }
@@ -446,13 +446,13 @@ describe("multi-attribute index support", () => {
         return { type: 'batchDelete', params };
       },
       update: (item) => {
-        const {manufacturer, model, id, ...rest} = item;
-        const params = thing.update({manufacturer, model, id}).set(rest).params<UpdateItemInput>();
+        const { manufacturer, model, id, ...rest } = item;
+        const params = thing.update({ manufacturer, model, id }).set(rest).params<UpdateItemInput>();
         return { type: 'update', params };
       },
       patch: (item) => {
-        const {manufacturer, model, id, ...rest} = item;
-        const params = thing.patch({manufacturer, model, id}).set(rest).params<UpdateItemInput>();
+        const { manufacturer, model, id, ...rest } = item;
+        const params = thing.patch({ manufacturer, model, id }).set(rest).params<UpdateItemInput>();
         return { type: 'patch', params };
       },
       upsert: (item) => {
@@ -493,27 +493,27 @@ describe("multi-attribute index support", () => {
       },
       collectionBegins: (item) => {
         const { country, region, city, manufacturer, model } = item;
-        const params = service.collections.inventory({country, region, city}).begins({ manufacturer, model }).params<QueryInput>();
+        const params = service.collections.inventory({ country, region, city }).begins({ manufacturer, model }).params<QueryInput>();
         return { type: 'collectionBegins', params };
       },
       collectionLt: (item) => {
         const { country, region, city, manufacturer, model, count } = item;
-        const params = service.collections.inventory({country, region, city}).lt({ manufacturer, model, count }).params<QueryInput>();
+        const params = service.collections.inventory({ country, region, city }).lt({ manufacturer, model, count }).params<QueryInput>();
         return { type: 'collectionLt', params };
       },
       collectionLte: (item) => {
         const { country, region, city, manufacturer, model, count } = item;
-        const params = service.collections.inventory({country, region, city}).lte({ manufacturer, model, count }).params<QueryInput>();
+        const params = service.collections.inventory({ country, region, city }).lte({ manufacturer, model, count }).params<QueryInput>();
         return { type: 'collectionLte', params };
       },
       collectionGt: (item) => {
         const { country, region, city, manufacturer, model, count } = item;
-        const params = service.collections.inventory({country, region, city}).gt({ manufacturer, model, count }).params<QueryInput>();
+        const params = service.collections.inventory({ country, region, city }).gt({ manufacturer, model, count }).params<QueryInput>();
         return { type: 'collectionGt', params };
       },
       collectionGte: (item) => {
         const { country, region, city, manufacturer, model, count } = item;
-        const params = service.collections.inventory({country, region, city}).gte({ manufacturer, model, count }).params<QueryInput>();
+        const params = service.collections.inventory({ country, region, city }).gte({ manufacturer, model, count }).params<QueryInput>();
         return { type: 'collectionGte', params };
       },
       collectionBetween: (item1, item2) => {
@@ -1376,7 +1376,7 @@ describe("multi-attribute index support", () => {
           },
         })).to.throw(`The Access Pattern "secondary" is defined as a "composite" index, but a condition callback is defined. Composite indexes do not support the use of a condition callback. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-option`);
       });
-    
+
       // - index field property should only be allowed to be missing on "composite" indexes
       // - only allow secondary indexes to be composite
       // ? disallow use of "condition" on composite indexes?
@@ -1389,16 +1389,702 @@ describe("multi-attribute index support", () => {
 
   describe("multi-attribute index aws connected tests", () => {
 
-      const serviceName = createSafeName(); // important test namespacing
+    const serviceName = createSafeName(); // important test namespacing
+    const thing = createThingEntity({
+      name: createSafeName(), // important test namespacing
+      service: serviceName,
+      client,
+      table,
+    });
+
+    const gizmo = createThingEntity({
+      name: createSafeName(), // important test namespacing
+      service: serviceName,
+      client,
+      table,
+    });
+
+    const service = createThingService(thing, gizmo);
+
+    describe("conversion use cases: pagination", () => {
+      const entityName = createSafeName();
+      const serviceName = createSafeName();
       const thing = createThingEntity({
-        name: createSafeName(), // important test namespacing
+        service: serviceName,
+        name: entityName,
+        client,
+        table,
+      });
+
+      async function loadItems(country: string, region: string, city: string) {
+        const itemCount = 100;
+        const items = new Array(itemCount).fill({}).map(() => generateThingRecord({
+          country,
+          region,
+          city,
+        }));
+        await thing.put(items).go();
+        return items;
+      }
+
+      it("adding a limit should not cause dropped items when paginating", async () => {
+        const country = uuid();
+        const region = uuid();
+        const city = uuid();
+        const items = await loadItems(country, region, city);
+        const limit = 10;
+        let iterations = 0;
+        let cursor: string | null = null;
+        let results: ThingItem[] = [];
+        do {
+          const response: ThingQueryResponse = await thing.query
+            .location({ country, region, city })
+            .go({ cursor, limit });
+          results = results.concat(response.data);
+          cursor = response.cursor;
+          iterations++;
+        } while (cursor);
+
+        expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
+          results.sort((a, z) => a.id.localeCompare(z.id)),
+        );
+      });
+
+      it("should let you use a entity level toCursor conversion to create a cursor based on the last item returned", async () => {
+        const conversions = createConversions(thing);
+
+        const country = uuid();
+        const region = uuid();
+        const city = uuid();
+        const items = await loadItems(country, region, city);
+        const limit = 10;
+        let iterations = 0;
+        let cursor: string | null = null;
+        let results: ThingItem[] = [];
+        do {
+          const response: ThingQueryResponse = await thing.query
+            .location({ country, region, city })
+            .go({ cursor, limit });
+          results = results.concat(response.data);
+          const lastItem = response.data[response.data.length - 1];
+          if (lastItem) {
+            cursor = conversions.fromComposite.toCursor(
+              lastItem,
+            );
+          } else {
+            cursor = null;
+          }
+          iterations++;
+        } while (cursor);
+
+        expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
+          results.sort((a, z) => a.id.localeCompare(z.id)),
+        );
+      });
+
+      it("should let you use the index specific toCursor conversion to create a cursor based on the last item returned", async () => {
+        const conversions = createConversions(thing);
+        const country = uuid();
+        const region = uuid();
+        const city = uuid();
+        const items = await loadItems(country, region, city);
+        const limit = 10;
+        let iterations = 0;
+        let cursor: string | null = null;
+        let results: ThingItem[] = [];
+        do {
+          const response: ThingQueryResponse = await thing.query
+            .location({ country, region, city })
+            .go({ cursor, limit });
+          results = results.concat(response.data);
+          const lastItem = response.data[response.data.length - 1];
+          if (lastItem) {
+            cursor = conversions.byAccessPattern.location.fromComposite.toCursor(lastItem);
+          } else {
+            cursor = null;
+          }
+          iterations++;
+        } while (cursor);
+
+        expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
+          results.sort((a, z) => a.id.localeCompare(z.id)),
+        );
+      });
+    });
+
+    type PaginationOptions = {
+      cursor: string | null;
+      limit?: number;
+    }
+
+    describe("query operations", () => {
+      const paginationOperations = {
+        query: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model } = item;
+          return {
+            type: "query" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              thing.query
+                .location({ country, region, city, manufacturer, model })
+                .go({ cursor, limit }),
+
+          };
+        },
+        begins: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model } = item;
+          return {
+            type: "begins" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              thing.query
+                .location({ country, region, city })
+                .begins({ manufacturer, model })
+                .go({ cursor, limit }),
+          };
+        },
+        gt: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model, count } = item;
+          return {
+            type: "gt" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              thing.query
+                .location({ country, region, city })
+                .gt({ manufacturer, model, count })
+                .go({ cursor, limit }),
+          };
+        },
+        gte: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model, count } = item;
+          return {
+            type: "gte" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              thing.query
+                .location({ country, region, city })
+                .gte({ manufacturer, model, count })
+                .go({ cursor, limit }),
+          };
+        },
+        lt: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model, count } = item;
+          return {
+            type: "lt" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              thing.query
+                .location({ country, region, city })
+                .lt({ manufacturer, model, count })
+                .go({ cursor, limit }),
+          };
+        },
+        lte: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model, count } = item;
+          return {
+            type: "lte" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              thing.query
+                .location({ country, region, city })
+                .lte({ manufacturer, model, count })
+                .go({ cursor, limit }),
+          };
+        },
+        between: (item1: ThingRecord, item2?: ThingRecord) => {
+          if (!item2) {
+            throw new Error("item2 is required for between operation");
+          }
+          const { country, region, city } = item1;
+          return {
+            type: "between" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              thing.query
+                .location({ country, region, city })
+                .between(
+                  {
+                    manufacturer: item1.manufacturer,
+                    model: item1.model,
+                    count: item1.count,
+                  },
+                  {
+                    manufacturer: item2.manufacturer,
+                    model: item2.model,
+                    count: item2.count,
+                  },
+                )
+                .go({ cursor, limit }),
+          };
+        },
+        scan: () => {
+          return {
+            type: "scan" as const,
+            op: ({ cursor, limit }: PaginationOptions) => thing.scan.go({ cursor, limit }),
+          };
+        },
+        collection: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model } = item;
+
+          return {
+            type: "collection" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              service.collections
+                .inventory({ country, region, city, manufacturer, model })
+                .go({ cursor, limit }),
+          };
+        },
+        collectionBegins: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model } = item;
+
+          return {
+            type: "collectionBegins" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              service.collections
+                .inventory({ country, region, city })
+                .begins({ manufacturer, model })
+                .go({ cursor, limit }),
+          };
+        },
+        collectionLt: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model, count } = item;
+
+          return {
+            type: "collectionLt" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              service.collections
+                .inventory({ country, region, city })
+                .lt({ manufacturer, model, count })
+                .go({ cursor, limit }),
+          };
+        },
+        collectionLte: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model, count } = item;
+
+          return {
+            type: "collectionLte" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              service.collections
+                .inventory({ country, region, city })
+                .lte({ manufacturer, model, count })
+                .go({ cursor, limit }),
+          };
+        },
+        collectionGt: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model, count } = item;
+
+          return {
+            type: "collectionGt" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              service.collections
+                .inventory({ country, region, city })
+                .gt({ manufacturer, model, count })
+                .go({ cursor, limit }),
+          };
+        },
+        collectionGte: (item: ThingRecord) => {
+          const { country, region, city, manufacturer, model, count } = item;
+
+          return {
+            type: "collectionGte" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              service.collections
+                .inventory({ country, region, city })
+                .gte({ manufacturer, model, count })
+                .go({ cursor, limit }),
+          };
+        },
+        collectionBetween: (item1: ThingRecord, item2?: ThingRecord) => {
+          if (!item2) {
+            throw new Error("item2 is required for between operation");
+          }
+          const { country, region, city } = item1;
+          return {
+            type: "collectionBetween" as const,
+            op: ({ cursor, limit }: PaginationOptions) =>
+              service.collections
+                .inventory({ country, region, city })
+                .between(
+                  {
+                    manufacturer: item1.manufacturer,
+                    model: item1.model,
+                    count: item1.count,
+                  },
+                  {
+                    manufacturer: item2.manufacturer,
+                    model: item2.model,
+                    count: item2.count,
+                  },
+                )
+                .go({ cursor, limit }),
+          };
+        },
+      } as const satisfies Record<PaginationOperation, any>;
+
+      describe("when paginating on a multi-attribute index", async () => {
+        const country = uuid();
+        const region = faker.location.state();
+        const city = faker.location.city();
+        const manufacturer = faker.company.name();
+        const model = faker.commerce.productName();
+        const allThings: ThingRecord[] = [];
+        const thingItems: ThingRecord[] = [];
+        const gizmoItems: ThingRecord[] = [];
+        for (let i = 0; i < 100; i++) {
+          const item = generateThingRecord({
+            count: i + 1,
+            manufacturer,
+            country,
+            region,
+            model,
+            city,
+          });
+          allThings.push(item);
+          if (i % 2 === 0) {
+            thingItems.push(item);
+          } else {
+            gizmoItems.push(item);
+          }
+        }
+
+        before(async () => {
+          await Promise.all([
+            thing.put(thingItems).go(),
+            gizmo.put(gizmoItems).go(),
+          ]);
+        });
+
+        for (const [operationName, genQuery] of Object.entries(
+          paginationOperations,
+        )) {
+          it(`should paginate results correctly on multi-attribute indexes with ${operationName} operation`, async () => {
+            const item1 = allThings.find((item) => item.count === 50);
+            const item2 = allThings.find((item) => item.count === 70);
+            const thingItem = thingItems[0];
+            const gizmoItem = gizmoItems[0];
+            if (
+              item1 === undefined ||
+              item2 === undefined ||
+              thingItem === undefined ||
+              gizmoItem === undefined
+            ) {
+              throw new Error("Invalid test setup");
+            }
+            const query = genQuery(item1, item2);
+            // if this is as scan, don't limit (we aint got time for that)
+            const limit = operationName === "scan" ? undefined : 2;
+
+            let cursor: string | null = null;
+            let thingCount = 0;
+            let gizmoCount = 0;
+            let iterations = 0;
+            if (isEntityPaginationOperation(query.type)) {
+              do {
+                iterations++;
+                const results = await query.op({ cursor, limit }) as ThingQueryResponse;
+                cursor = results.cursor;
+                if (Array.isArray(results.data)) {
+                  thingCount += results.data.length;
+                }
+              } while (cursor !== null);
+            } else if (isServicePaginationOperation(query.type)) {
+              do {
+                iterations++;
+                const results = await query.op({ cursor, limit }) as InventoryCollectionResponse;
+                cursor = results.cursor;
+                if (
+                  "thing" in results.data &&
+                  Array.isArray(results.data.thing)
+                ) {
+                  thingCount += results.data.thing.length;
+                }
+                if (
+                  "gizmo" in results.data &&
+                  Array.isArray(results.data.gizmo)
+                ) {
+                  gizmoCount += results.data.gizmo.length;
+                }
+              } while (cursor !== null);
+            }
+            if (limit) {
+              expect(iterations).to.be.greaterThan(1);
+            }
+            switch (query.type) {
+              case ServiceQueryOperations.collectionBetween: {
+                const expectedThingCount = thingItems.filter(
+                  (item) =>
+                    item.count >= item1.count && item.count <= item2.count,
+                ).length;
+                const expectedGizmoCount = gizmoItems.filter(
+                  (item) =>
+                    item.count >= item1.count && item.count <= item2.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                expect(gizmoCount).to.equal(expectedGizmoCount);
+                break;
+              }
+              case EntityQueryOperations.between: {
+                const expectedThingCount = thingItems.filter(
+                  (item) =>
+                    item.count >= item1.count && item.count <= item2.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                break;
+              }
+              case ServiceQueryOperations.collectionBegins: {
+                const expectedThingCount = thingItems.filter((item) =>
+                  item.model.startsWith(model),
+                ).length;
+                const expectedGizmoCount = gizmoItems.filter((item) =>
+                  item.model.startsWith(model),
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                expect(gizmoCount).to.equal(expectedGizmoCount);
+                break;
+              }
+              case EntityQueryOperations.begins: {
+                const expectedThingCount = thingItems.filter((item) =>
+                  item.model.startsWith(model),
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                break;
+              }
+              case ServiceQueryOperations.collection: {
+                expect(thingCount).to.equal(thingItems.length);
+                expect(gizmoCount).to.equal(gizmoItems.length);
+                break;
+              }
+              case EntityQueryOperations.query: {
+                expect(thingCount).to.equal(thingItems.length);
+                break;
+              }
+              case ServiceQueryOperations.collectionGt: {
+                const expectedThingCount = thingItems.filter(
+                  (item) => item.count > item1.count,
+                ).length;
+                const expectedGizmoCount = gizmoItems.filter(
+                  (item) => item.count > item1.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                expect(gizmoCount).to.equal(expectedGizmoCount);
+                break;
+              }
+              case ServiceQueryOperations.collectionGte: {
+                const expectedThingCount = thingItems.filter(
+                  (item) => item.count >= item1.count,
+                ).length;
+                const expectedGizmoCount = gizmoItems.filter(
+                  (item) => item.count >= item1.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                expect(gizmoCount).to.equal(expectedGizmoCount);
+                break;
+              }
+              case ServiceQueryOperations.collectionLt: {
+                const expectedThingCount = thingItems.filter(
+                  (item) => item.count < item1.count,
+                ).length;
+                const expectedGizmoCount = gizmoItems.filter(
+                  (item) => item.count < item1.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                expect(gizmoCount).to.equal(expectedGizmoCount);
+                break;
+              }
+              case ServiceQueryOperations.collectionLte: {
+                const expectedThingCount = thingItems.filter(
+                  (item) => item.count <= item1.count,
+                ).length;
+                const expectedGizmoCount = gizmoItems.filter(
+                  (item) => item.count <= item1.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                expect(gizmoCount).to.equal(expectedGizmoCount);
+                break;
+              }
+              case EntityQueryOperations.gt: {
+                const expectedThingCount = thingItems.filter(
+                  (item) => item.count > item1.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                break;
+              }
+              case EntityQueryOperations.gte: {
+                const expectedThingCount = thingItems.filter(
+                  (item) => item.count >= item1.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                break;
+              }
+              case EntityQueryOperations.lt: {
+                const expectedThingCount = thingItems.filter(
+                  (item) => item.count < item1.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                break;
+              }
+              case EntityQueryOperations.lte: {
+                const expectedThingCount = thingItems.filter(
+                  (item) => item.count <= item1.count,
+                ).length;
+                expect(thingCount).to.equal(expectedThingCount);
+                break;
+              }
+              case EntityQueryOperations.scan: {
+                expect(thingCount).to.equal(thingItems.length);
+                break;
+              }
+            }
+          });
+        }
+      });
+    });
+
+    describe("multi-attribute conversions", () => {
+      it("should perform all conversions without loss starting with an item", () => {
+        const conversions = createConversions(thing).byAccessPattern.location;
+        const item = generateThingRecord({
+          manufacturer: uuid(),
+          model: uuid(),
+          count: 99,
+          city: uuid(),
+          region: uuid(),
+          country: uuid(),
+          name: uuid(),
+          description: uuid(),
+          id: uuid(),
+          entityName: uuid(),
+          ttl: Date.now() + (1000 * 60 * 60),
+        });
+
+        const compositeOnlyItem = Object.fromEntries([
+          ...thing.schema.indexes.thing.pk.composite,
+          ...thing.schema.indexes.thing.sk.composite,
+          ...thing.schema.indexes.location.pk.composite,
+          ...thing.schema.indexes.location.sk.composite,
+        ].map((attribute) => [attribute, item[attribute]]));
+
+        const cursor = conversions.fromComposite.toCursor(item);
+        expect(cursor).not.to.be.null;
+
+        const keys = conversions.fromComposite.toKeys(item);
+        expect(keys).not.to.be.null;
+
+        const cursorFromKeys = conversions.fromKeys.toCursor(keys);
+        expect(cursorFromKeys).not.to.be.null;
+        expect(cursor).to.equal(cursorFromKeys);
+
+        const keysFromCursor = conversions.fromCursor.toKeys(cursor);
+        expect(keysFromCursor).not.to.be.null;
+        expect(keys).to.deep.equal(keysFromCursor);
+
+        const compositeFromCursor = conversions.fromCursor.toComposite(cursor);
+        expect(compositeFromCursor).not.to.be.null;
+        expect(compositeFromCursor).to.deep.equal(compositeOnlyItem);
+
+        const compositeFromKeys = conversions.fromKeys.toComposite(keys);
+        expect(compositeFromKeys).not.to.be.null;
+        expect(compositeFromKeys).to.deep.equal(compositeOnlyItem);
+
+        expect(Object.entries(compositeFromCursor).length).to.be.greaterThan(0);
+        expect(!!compositeFromKeys).to.be.true;
+        expect(Object.entries(compositeFromKeys).length).to.be.greaterThan(0);
+        expect(Object.entries(compositeFromCursor).length).to.equal(Object.entries(compositeFromKeys).length);
+      });
+    });
+
+    function compare(provided: string | number, expected: string | number, operation: PaginationOperation): boolean {
+      switch (operation) {
+        case EntityQueryOperations.begins:
+        case ServiceQueryOperations.collectionBegins:
+          if (typeof provided === "string" && typeof expected === "string") {
+            return provided.startsWith(expected);
+          }
+          return false; // If not both strings, begins doesn't match
+        case EntityQueryOperations.gt:
+        case ServiceQueryOperations.collectionGt:
+          return provided > expected;
+        case EntityQueryOperations.gte:
+        case ServiceQueryOperations.collectionGte:
+          return provided >= expected;
+        case EntityQueryOperations.lt:
+        case ServiceQueryOperations.collectionLt:
+          return provided < expected;
+        case EntityQueryOperations.lte:
+        case ServiceQueryOperations.collectionLte:
+          return provided <= expected;
+        default:
+          return provided === expected;
+      }
+    }
+
+    type FilterObj = { manufacturer?: string, model?: string, count?: number, name?: string };
+    const order = [undefined, "manufacturer", "model", "count", "name"] as const;
+
+    function getLastProvided(filter: FilterObj): keyof FilterObj | undefined {
+      let lastProvided: keyof FilterObj | undefined = undefined;
+      for (let i = 0; i < order.length; i++) {
+        const curr = order[i];
+        if (curr !== undefined && filter[curr] !== undefined) {
+          lastProvided = curr;
+          // Don't break - continue to find the LAST provided key
+        }
+      }
+      return lastProvided;
+    }
+
+    function filterItemsByPartialSortKey(items: ThingItem[], operation: PaginationOperation, filters: FilterObj): ThingItem[] {
+      const lastProvided = getLastProvided(filters);
+      if (!lastProvided) {
+        return items;
+      }
+
+      return items.filter((item) => {
+        return order.every((key) => {
+          if (key === undefined) {
+            return true; // skip keys beyond what the filter specifies
+          }
+          const expected = filters[key];
+          const provided = item[key];
+          if (expected === undefined) {
+            return true; // skip keys beyond what the filter specifies
+          }
+          if (provided === undefined) {
+            return false;
+          }
+          if (key === lastProvided) {
+            return compare(provided, expected, operation);
+          }
+          return compare(provided, expected, EntityQueryOperations.query);
+        })
+      })
+    }
+
+    function filterItemsByPartialBetweenKey(items: ThingItem[], start: FilterObj, end: FilterObj): ThingItem[] {
+      const left = filterItemsByPartialSortKey(items, EntityQueryOperations.gte, start);
+      const right = filterItemsByPartialSortKey(items, EntityQueryOperations.lte, end);
+      return left.filter((bottom) => right.find((top) => top.id === bottom.id));
+    }
+
+    function toFilterObject(thing: ThingItem, lastProvided: keyof FilterObj): FilterObj {
+      const filterObj: FilterObj = {};
+      for (const key of order) {
+        if (key === undefined) {
+          continue;
+        }
+        const value = thing[key];
+        filterObj[key] = value as any;
+        if (key === lastProvided) {
+          break;
+        }
+      }
+      return filterObj;
+    }
+
+    describe("partially provided sort keys with multi-attribute index", () => {
+      const serviceName = createSafeName();
+      const thing = createThingEntity({
+        name: createSafeName(),
         service: serviceName,
         client,
         table,
       });
 
       const gizmo = createThingEntity({
-        name: createSafeName(), // important test namespacing
+        name: createSafeName(),
         service: serviceName,
         client,
         table,
@@ -1406,987 +2092,502 @@ describe("multi-attribute index support", () => {
 
       const service = createThingService(thing, gizmo);
 
-      describe("conversion use cases: pagination", () => {
-        const entityName = createSafeName();
-        const serviceName = createSafeName();
-        const thing = createThingEntity({
-          service: serviceName,
-          name: entityName,
-          client,
-          table,
-        });
+      const country = uuid();
+      const region = uuid();
+      const city = uuid();
 
-        async function loadItems(country: string, region: string, city: string) {
-          const itemCount = 100;
-          const items = new Array(itemCount).fill({}).map(() => generateThingRecord({
-            country,
-            region,
-            city,
-          }));
-          await thing.put(items).go();
-          return items;
+      const allThings: ThingRecord[] = [];
+      const thingItems: ThingRecord[] = [];
+      const gizmoItems: ThingRecord[] = [];
+      for (let i = 0; i < 100; i++) {
+        const item = generateThingRecord({
+          count: i + 1,
+          country,
+          region,
+          city,
+        });
+        allThings.push(item);
+        if (i % 2 === 0) {
+          thingItems.push(item);
+        } else {
+          gizmoItems.push(item);
         }
-
-        it("adding a limit should not cause dropped items when paginating", async () => {
-          const country = uuid();
-          const region = uuid();
-          const city = uuid();
-          const items = await loadItems(country, region, city);
-          const limit = 10;
-          let iterations = 0;
-          let cursor: string | null = null;
-          let results: ThingItem[] = [];
-          do {
-            const response: ThingQueryResponse = await thing.query
-              .location({ country, region, city })
-              .go({ cursor, limit });
-            results = results.concat(response.data);
-            cursor = response.cursor;
-            iterations++;
-          } while (cursor);
-
-          expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
-            results.sort((a, z) => a.id.localeCompare(z.id)),
-          );
-        });
-
-        it("should let you use a entity level toCursor conversion to create a cursor based on the last item returned", async () => {
-          const conversions = createConversions(thing);
-
-          const country = uuid();
-          const region = uuid();
-          const city = uuid();
-          const items = await loadItems(country, region, city);
-          const limit = 10;
-          let iterations = 0;
-          let cursor: string | null = null;
-          let results: ThingItem[] = [];
-          do {
-            const response: ThingQueryResponse = await thing.query
-              .location({ country, region, city })
-              .go({ cursor, limit });
-            results = results.concat(response.data);
-            const lastItem = response.data[response.data.length - 1];
-            if (lastItem) {
-              cursor = conversions.fromComposite.toCursor(
-                lastItem,
-              );
-            } else {
-              cursor = null;
-            }
-            iterations++;
-          } while (cursor);
-
-          expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
-            results.sort((a, z) => a.id.localeCompare(z.id)),
-          );
-        });
-
-        it("should let you use the index specific toCursor conversion to create a cursor based on the last item returned", async () => {
-          const conversions = createConversions(thing);
-          const country = uuid();
-          const region = uuid();
-          const city = uuid();
-          const items = await loadItems(country, region, city);
-          const limit = 10;
-          let iterations = 0;
-          let cursor: string | null = null;
-          let results: ThingItem[] = [];
-          do {
-            const response: ThingQueryResponse = await thing.query
-              .location({ country, region, city })
-              .go({ cursor, limit });
-            results = results.concat(response.data);
-            const lastItem = response.data[response.data.length - 1];
-            if (lastItem) {
-              cursor = conversions.byAccessPattern.location.fromComposite.toCursor(lastItem);
-            } else {
-              cursor = null;
-            }
-            iterations++;
-          } while (cursor);
-
-          expect(items.sort((a, z) => a.id.localeCompare(z.id))).to.deep.equal(
-            results.sort((a, z) => a.id.localeCompare(z.id)),
-          );
-        });
-      });
-
-      type PaginationOptions = {
-        cursor: string | null;
-        limit?: number;
       }
 
-      describe("query operations", () => {
-        const paginationOperations = {
-          query: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model } = item;
-            return {
-              type: "query" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                thing.query
-                  .location({ country, region, city, manufacturer, model })
-                  .go({cursor, limit}),
+      let sortedThingItems: ThingItem[] = [];
+      let sortedGizmoItems: ThingItem[] = [];
+      let middleThing: ThingItem | null = null;
+      let middleGizmo: ThingItem | null = null;
 
-            };
-          },
-          begins: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model } = item;
-            return {
-              type: "begins" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                thing.query
-                  .location({ country, region, city })
-                  .begins({ manufacturer, model })
-                  .go({cursor, limit}),
-            };
-          },
-          gt: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model, count } = item;
-            return {
-              type: "gt" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                thing.query
-                  .location({ country, region, city })
-                  .gt({ manufacturer, model, count })
-                  .go({cursor, limit}),
-            };
-          },
-          gte: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model, count } = item;
-            return {
-              type: "gte" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                thing.query
-                  .location({ country, region, city })
-                  .gte({ manufacturer, model, count })
-                  .go({cursor, limit}),
-            };
-          },
-          lt: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model, count } = item;
-            return {
-              type: "lt" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                thing.query
-                  .location({ country, region, city })
-                  .lt({ manufacturer, model, count })
-                  .go({cursor, limit}),
-            };
-          },
-          lte: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model, count } = item;
-            return {
-              type: "lte" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                thing.query
-                  .location({ country, region, city })
-                  .lte({ manufacturer, model, count })
-                  .go({cursor, limit}),
-            };
-          },
-          between: (item1: ThingRecord, item2?: ThingRecord) => {
-            if (!item2) {
-              throw new Error("item2 is required for between operation");
-            }
-            const { country, region, city } = item1;
-            return {
-              type: "between" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                thing.query
-                  .location({ country, region, city })
-                  .between(
-                    {
-                      manufacturer: item1.manufacturer,
-                      model: item1.model,
-                      count: item1.count,
-                    },
-                    {
-                      manufacturer: item2.manufacturer,
-                      model: item2.model,
-                      count: item2.count,
-                    },
-                  )
-                  .go({cursor, limit}),
-            };
-          },
-          // get: (item: ThingRecord) => {
-          //   return {
-          //     type: 'get' as const,
-          //     op: thing.get(item),
-          //   };
-          // },
-          // batchGet: (item: ThingRecord) => {
-          //   return {
-          //     type: 'batchGet' as const,
-          //     op: thing.get([item]),
-          //   };
-          // },
-          scan: () => {
-            return {
-              type: "scan" as const,
-              op: ({ cursor, limit }: PaginationOptions) => thing.scan.go({cursor, limit}),
-            };
-          },
-          // batchPut: (item: ThingRecord) => {
-          //   return { type: 'batchPut' as const,
-          //     op: thing.put([item])
-          //   };
-          // },
-          // batchDelete: (item: ThingRecord) => {
-          //   return { type: 'batchDelete' as const,
-          //     op: thing.delete([item])
-          //   };
-          // },
-          // update: (item: ThingRecord) => {
-          //   const {manufacturer, model, id, ...rest} = item;
-          //   return {
-          //     type: 'update' as const,
-          //     op: thing.update({manufacturer, model, id}).set(rest)
-          //   }
-          // },
-          // patch: (item: ThingRecord) => {
-          //   const {manufacturer, model, id, ...rest} = item;
-          //   return {
-          //     type: 'patch' as const,
-          //     op: thing.patch({manufacturer, model, id}).set(rest)
-          //   }
-          // },
-          // upsert: (item: ThingRecord) => {
-          //   return {
-          //     type: 'upsert' as const,
-          //     op: thing.upsert(item)
-          //   };
-          // },
-          // put: (item: ThingRecord) => {
-          //   return {
-          //     type: 'put' as const,
-          //     op: thing.put(item)
-          //   };
-          // },
-          // create: (item: ThingRecord) => {
-          //   return {
-          //     type: 'create' as const,
-          //     op: thing.create(item)
-          //   };
-          // },
-          // delete: (item: ThingRecord) => {
-          //   return {
-          //     type: 'delete' as const,
-          //     op: thing.delete(item)
-          //   };
-          // },
-          // remove: (item: ThingRecord) => {
-          //   return {
-          //     type: 'remove' as const,
-          //     op: thing.remove(item)
-          //   };
-          // },
-          // transactWrite: (item: ThingRecord) => {
-          //   return {
-          //     type: 'transactWrite' as const,
-          //     op: service.transaction.write(({ thing }) => [
-          //       thing.put(item).commit(),
-          //     ])
-          //   };
-          // },
-          // transactGet: (item: ThingRecord) => {
-          //   return {
-          //     type: 'transactGet' as const,
-          //     op: service.transaction.get(({ thing }) => [
-          //       thing.get(item).commit(),
-          //     ]),
-          //   };
-          // },
-          collection: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model } = item;
+      describe("partially provided entity sort keys", () => {
+        before(async () => {
+          await Promise.all([
+            thing.put(thingItems).go(),
+            gizmo.put(gizmoItems).go(),
+          ]);
 
-            return {
-              type: "collection" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                service.collections
-                  .inventory({ country, region, city, manufacturer, model })
-                  .go({cursor, limit}),
-            };
-          },
-          collectionBegins: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model } = item;
+          const items = await service.collections.inventory({ country, region, city }).go({ pages: 'all' });
+          for (const item of items.data.gizmo) {
+            sortedGizmoItems.push(item);
+          }
+          for (const item of items.data.thing) {
+            sortedThingItems.push(item);
+          }
+          expect(sortedGizmoItems.length + sortedThingItems.length).to.equal(allThings.length);
+          middleThing = sortedThingItems[Math.floor(sortedThingItems.length / 2)];
+          middleGizmo = sortedGizmoItems[Math.floor(sortedGizmoItems.length / 2)];
+          expect(middleThing).to.not.be.null;
+          expect(middleGizmo).to.not.be.null;
+        });
 
-            return {
-              type: "collectionBegins" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                service.collections
-                  .inventory({ country, region, city })
-                  .begins({ manufacturer, model })
-                  .go({cursor, limit}),
-            };
-          },
-          collectionLt: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model, count } = item;
+        for (const lastProvided of thing.schema.indexes.location.sk.composite) {
+          const entityComparisonMethods = [
+            EntityQueryOperations.query,
+            EntityQueryOperations.between,
+            EntityQueryOperations.gt,
+            EntityQueryOperations.gte,
+            EntityQueryOperations.lt,
+            EntityQueryOperations.lte,
+          ];
 
-            return {
-              type: "collectionLt" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                service.collections
-                  .inventory({ country, region, city })
-                  .lt({ manufacturer, model, count })
-                  .go({cursor, limit}),
-            };
-          },
-          collectionLte: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model, count } = item;
+          for (const method of entityComparisonMethods) {
+            it(`should correctly filter entity items based on partially provided sort key values using ${method} on the last provided key ${lastProvided}`, async () => {
+              if (!middleThing) {
+                throw new Error("middleThing is null");
+              }
 
-            return {
-              type: "collectionLte" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                service.collections
-                  .inventory({ country, region, city })
-                  .lte({ manufacturer, model, count })
-                  .go({cursor, limit}),
-            };
-          },
-          collectionGt: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model, count } = item;
+              const filter = toFilterObject(middleThing, lastProvided);
 
-            return {
-              type: "collectionGt" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                service.collections
-                  .inventory({ country, region, city })
-                  .gt({ manufacturer, model, count })
-                  .go({cursor, limit}),
-            };
-          },
-          collectionGte: (item: ThingRecord) => {
-            const { country, region, city, manufacturer, model, count } = item;
+              if (method === EntityQueryOperations.query) {
+                const results = await thing.query.location({ country, region, city, ...filter }).go({ pages: 'all' });
+                expect(results.data).to.deep.equal(filterItemsByPartialSortKey(sortedThingItems, method, filter));
+                return;
+              }
 
-            return {
-              type: "collectionGte" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                service.collections
-                  .inventory({ country, region, city })
-                  .gte({ manufacturer, model, count })
-                  .go({cursor, limit}),
-            };
-          },
-          collectionBetween: (item1: ThingRecord, item2?: ThingRecord) => {
-            if (!item2) {
-              throw new Error("item2 is required for between operation");
-            }
-            const { country, region, city } = item1;
-            return {
-              type: "collectionBetween" as const,
-              op: ({ cursor, limit }: PaginationOptions) =>
-                service.collections
-                  .inventory({ country, region, city })
-                  .between(
-                    {
-                      manufacturer: item1.manufacturer,
-                      model: item1.model,
-                      count: item1.count,
-                    },
-                    {
-                      manufacturer: item2.manufacturer,
-                      model: item2.model,
-                      count: item2.count,
-                    },
-                  )
-                  .go({cursor, limit}),
-            };
-          },
-        } as const satisfies Record<PaginationOperation, any>;
+              if (method === EntityQueryOperations.between) {
+                const lastItem = sortedThingItems[sortedThingItems.length - 1];
 
-        describe("when paginating on a multi-attribute index", async () => {
-          const country = uuid();
-          const region = faker.location.state();
-          const city = faker.location.city();
-          const manufacturer = faker.company.name();
-          const model = faker.commerce.productName();
-          const allThings: ThingRecord[] = [];
-          const thingItems: ThingRecord[] = [];
-          const gizmoItems: ThingRecord[] = [];
-          for (let i = 0; i < 100; i++) {
-            const item = generateThingRecord({
-              count: i + 1,
-              manufacturer,
-              country,
-              region,
-              model,
-              city,
+                // Avoid the error "The BETWEEN operator requires upper bound to be greater than or equal to lower bound"
+                const filter1 = toFilterObject({ ...middleThing }, lastProvided);
+                const filter2 = toFilterObject({ ...middleThing, [lastProvided]: lastItem[lastProvided] }, lastProvided);
+                const [startFilter, endFilter] = [filter1, filter2].sort((a, b) => a[lastProvided]! < b[lastProvided]! ? -1 : 1);
+
+                const results = await thing.query.location({ country, region, city }).between(startFilter, endFilter).go({ pages: 'all' });
+                expect(results.data).to.deep.equal(filterItemsByPartialBetweenKey(sortedThingItems, startFilter, endFilter));
+                return;
+              }
+
+              const results = await thing.query.location({ country, region, city })[method](filter).go({ pages: 'all' });
+              expect(results.data).to.deep.equal(filterItemsByPartialSortKey(sortedThingItems, method, filter));
+
             });
-            allThings.push(item);
-            if (i % 2 === 0) {
-              thingItems.push(item);
-            } else {
-              gizmoItems.push(item);
-            }
           }
 
-          before(async () => {
-            await Promise.all([
-              thing.put(thingItems).go(),
-              gizmo.put(gizmoItems).go(),
-            ]);
-          });
+          const serviceComparisonMethods = [
+            EntityQueryOperations.gt,
+            EntityQueryOperations.gte,
+            EntityQueryOperations.lt,
+            EntityQueryOperations.lte,
+            EntityQueryOperations.between,
+            ServiceQueryOperations.collection,
+          ] as const;
 
-          for (const [operationName, genQuery] of Object.entries(
-            paginationOperations,
-          )) {
-            it(`should paginate results correctly on multi-attribute indexes with ${operationName} operation`, async () => {
-              const item1 = allThings.find((item) => item.count === 50);
-              const item2 = allThings.find((item) => item.count === 70);
-              const thingItem = thingItems[0];
-              const gizmoItem = gizmoItems[0];
-              if (
-                item1 === undefined ||
-                item2 === undefined ||
-                thingItem === undefined ||
-                gizmoItem === undefined
-              ) {
-                throw new Error("Invalid test setup");
+          for (const method of serviceComparisonMethods) {
+            it(`should correctly filter collection items based on partially provided sort key values using ${method} on the last provided key ${lastProvided}`, async () => {
+              if (!middleThing) {
+                throw new Error("middleThing is null");
               }
-              const query = genQuery(item1, item2);
-              // if this is as scan, don't limit (we aint got time for that)
-              const limit = operationName === "scan" ? undefined : 2;
 
-              let cursor: string | null = null;
-              let thingCount = 0;
-              let gizmoCount = 0;
-              let iterations = 0;
-              if (isEntityPaginationOperation(query.type)) {
-                do {
-                  iterations++;
-                  const results = await query.op({ cursor, limit }) as ThingQueryResponse;
-                  cursor = results.cursor;
-                  if (Array.isArray(results.data)) {
-                    thingCount += results.data.length;
-                  }
-                } while (cursor !== null);
-              } else if (isServicePaginationOperation(query.type)) {
-                do {
-                  iterations++;
-                  const results = await query.op({ cursor, limit }) as InventoryCollectionResponse;
-                  cursor = results.cursor;
-                  if (
-                    "thing" in results.data &&
-                    Array.isArray(results.data.thing)
-                  ) {
-                    thingCount += results.data.thing.length;
-                  }
-                  if (
-                    "gizmo" in results.data &&
-                    Array.isArray(results.data.gizmo)
-                  ) {
-                    gizmoCount += results.data.gizmo.length;
-                  }
-                } while (cursor !== null);
+              const filter = toFilterObject(middleThing, lastProvided);
+
+              if (method === ServiceQueryOperations.collection) {
+                const results = await service.collections.inventory({ country, region, city, ...filter }).go({ pages: 'all' });
+                expect(results.data.gizmo).to.deep.equal(filterItemsByPartialSortKey(sortedGizmoItems, method, filter));
+                expect(results.data.thing).to.deep.equal(filterItemsByPartialSortKey(sortedThingItems, method, filter));
+                return;
               }
-              if (limit) {
-                expect(iterations).to.be.greaterThan(1);
+
+              if (method === EntityQueryOperations.between) {
+                const lastItem = sortedGizmoItems[sortedGizmoItems.length - 1];
+                const filter1 = toFilterObject({ ...middleThing }, lastProvided);
+                const filter2 = toFilterObject({ ...middleThing, [lastProvided]: lastItem[lastProvided] }, lastProvided);
+                const [startFilter, endFilter] = [filter1, filter2].sort((a, b) => a[lastProvided]! < b[lastProvided]! ? -1 : 1);
+                const results = await service.collections.inventory({ country, region, city }).between(startFilter, endFilter).go({ pages: 'all' });
+                expect(results.data.gizmo).to.deep.equal(filterItemsByPartialBetweenKey(sortedGizmoItems, startFilter, endFilter));
+                expect(results.data.thing).to.deep.equal(filterItemsByPartialBetweenKey(sortedThingItems, startFilter, endFilter));
+                return;
               }
-              switch (query.type) {
-                case ServiceQueryOperations.collectionBetween: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) =>
-                      item.count >= item1.count && item.count <= item2.count,
-                  ).length;
-                  const expectedGizmoCount = gizmoItems.filter(
-                    (item) =>
-                      item.count >= item1.count && item.count <= item2.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  expect(gizmoCount).to.equal(expectedGizmoCount);
-                  break;
-                }
-                case EntityQueryOperations.between: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) =>
-                      item.count >= item1.count && item.count <= item2.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  break;
-                }
-                case ServiceQueryOperations.collectionBegins: {
-                  const expectedThingCount = thingItems.filter((item) =>
-                    item.model.startsWith(model),
-                  ).length;
-                  const expectedGizmoCount = gizmoItems.filter((item) =>
-                    item.model.startsWith(model),
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  expect(gizmoCount).to.equal(expectedGizmoCount);
-                  break;
-                }
-                case EntityQueryOperations.begins: {
-                  const expectedThingCount = thingItems.filter((item) =>
-                    item.model.startsWith(model),
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  break;
-                }
-                case ServiceQueryOperations.collection: {
-                  expect(thingCount).to.equal(thingItems.length);
-                  expect(gizmoCount).to.equal(gizmoItems.length);
-                  break;
-                }
-                case EntityQueryOperations.query: {
-                  expect(thingCount).to.equal(thingItems.length);
-                  break;
-                }
-                case ServiceQueryOperations.collectionGt: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) => item.count > item1.count,
-                  ).length;
-                  const expectedGizmoCount = gizmoItems.filter(
-                    (item) => item.count > item1.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  expect(gizmoCount).to.equal(expectedGizmoCount);
-                  break;
-                }
-                case ServiceQueryOperations.collectionGte: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) => item.count >= item1.count,
-                  ).length;
-                  const expectedGizmoCount = gizmoItems.filter(
-                    (item) => item.count >= item1.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  expect(gizmoCount).to.equal(expectedGizmoCount);
-                  break;
-                }
-                case ServiceQueryOperations.collectionLt: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) => item.count < item1.count,
-                  ).length;
-                  const expectedGizmoCount = gizmoItems.filter(
-                    (item) => item.count < item1.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  expect(gizmoCount).to.equal(expectedGizmoCount);
-                  break;
-                }
-                case ServiceQueryOperations.collectionLte: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) => item.count <= item1.count,
-                  ).length;
-                  const expectedGizmoCount = gizmoItems.filter(
-                    (item) => item.count <= item1.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  expect(gizmoCount).to.equal(expectedGizmoCount);
-                  break;
-                }
-                case EntityQueryOperations.gt: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) => item.count > item1.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  break;
-                }
-                case EntityQueryOperations.gte: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) => item.count >= item1.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  break;
-                }
-                case EntityQueryOperations.lt: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) => item.count < item1.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  break;
-                }
-                case EntityQueryOperations.lte: {
-                  const expectedThingCount = thingItems.filter(
-                    (item) => item.count <= item1.count,
-                  ).length;
-                  expect(thingCount).to.equal(expectedThingCount);
-                  break;
-                }
-                case EntityQueryOperations.scan: {
-                  expect(thingCount).to.equal(thingItems.length);
-                  break;
-                }
-              }
+
+              const results = await service.collections.inventory({ country, region, city })[method](filter).go({ pages: 'all' });
+              expect(results.data.gizmo).to.deep.equal(filterItemsByPartialSortKey(sortedGizmoItems, method, filter));
+              expect(results.data.thing).to.deep.equal(filterItemsByPartialSortKey(sortedThingItems, method, filter));
+
             });
           }
-        });
+        }
       });
+    });
 
-      describe("multi-attribute conversions", () => {
-        it("should perform all conversions without loss starting with an item", () => {
-          const conversions = createConversions(thing).byAccessPattern.location;
-          const item = generateThingRecord({
-            manufacturer: uuid(),
-            model: uuid(),
-            count: 99,
-            city: uuid(),
-            region: uuid(),
-            country: uuid(),
-            name: uuid(),
-            description: uuid(),
-            id: uuid(),
-            entityName: uuid(),
-            ttl: Date.now() + (1000 * 60 * 60),
+    describe("edge cases", () => {
+      describe("when entity names have special characters", () => {
+        // Entity names/aliases and version values are the values used to
+        // uniquely identify an Entity within a service. These values are
+        // stored on DynamoDB items using "identifier" attributes. When
+        // building filter expressions for these identifier attributes we
+        // must also make the ExpressionAttributeNames and
+        // ExpressionAttributeValues unique within the context of the query
+        // operation. There are also character restrictions on these values
+        // imposed by DynamoDB. We use the name/alias of the Entity to help
+        // create these unique values. Howevery, if the Entity name/alias
+        // contains special characters that are not allowed in DynamoDB
+        // ExpressionAttributeNames/Values we must remove them. This can lead
+        // to potential collisions between different Entity names/aliases
+        // that when stripped of special characters become identical.
+        //
+        // These tests ensure that at a minimum queries can be performed
+        // successfully even when special characters are present in the
+        // Entity name/alias.
+        it("should perform entity queries without failure", async () => {
+          const thing = createThingEntity({
+            name: "0*(illegal-characters.arebad!!",
+            service: uuid(),
+            client,
+            table,
           });
 
-          const compositeOnlyItem = Object.fromEntries([
-            ...thing.schema.indexes.thing.pk.composite,
-            ...thing.schema.indexes.thing.sk.composite,
-            ...thing.schema.indexes.location.pk.composite,
-            ...thing.schema.indexes.location.sk.composite,
-          ].map((attribute) => [attribute, item[attribute]]));
-          
-          const cursor = conversions.fromComposite.toCursor(item);
-          expect(cursor).not.to.be.null;
+          const params = thing.query
+            .location({
+              country: "usa",
+              region: "ga",
+              city: "atlanta",
+            }).params({});
 
-          const keys = conversions.fromComposite.toKeys(item);
-          expect(keys).not.to.be.null;
+          expect(params).to.deep.equal({
+            "IndexName": "gsi1",
+            "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
+            "TableName": "multi-attribute",
+            "ExpressionAttributeNames": {
+              "#country": "attr1",
+              "#region": "attr2",
+              "#city": "attr3",
+              "#__edb_e__": "__edb_e__",
+              "#__edb_v__": "__edb_v__"
+            },
+            "ExpressionAttributeValues": {
+              ":countryk_0": "usa",
+              ":regionk_0": "ga",
+              ":cityk_0": "atlanta",
+              ":__edb_e___0illegalcharactersarebadk_0": "0*(illegal-characters.arebad!!",
+              ":__edb_v___0illegalcharactersarebadk_0": "1"
+            },
+            "FilterExpression": "(#__edb_e__ = :__edb_e___0illegalcharactersarebadk_0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebadk_0)"
+          });
 
-          const cursorFromKeys = conversions.fromKeys.toCursor(keys);
-          expect(cursorFromKeys).not.to.be.null;
-          expect(cursor).to.equal(cursorFromKeys);
-        
-          const keysFromCursor = conversions.fromCursor.toKeys(cursor);
-          expect(keysFromCursor).not.to.be.null;
-          expect(keys).to.deep.equal(keysFromCursor);
-
-          const compositeFromCursor = conversions.fromCursor.toComposite(cursor);
-          expect(compositeFromCursor).not.to.be.null;
-          expect(compositeFromCursor).to.deep.equal(compositeOnlyItem);
-
-          const compositeFromKeys = conversions.fromKeys.toComposite(keys);
-          expect(compositeFromKeys).not.to.be.null;
-          expect(compositeFromKeys).to.deep.equal(compositeOnlyItem);
-
-          expect(Object.entries(compositeFromCursor).length).to.be.greaterThan(0);
-          expect(!!compositeFromKeys).to.be.true;
-          expect(Object.entries(compositeFromKeys).length).to.be.greaterThan(0);
-          expect(Object.entries(compositeFromCursor).length).to.equal(Object.entries(compositeFromKeys).length);
+          await thing.query
+            .location({
+              country: "usa",
+              region: "ga",
+              city: "atlanta",
+            })
+            .go();
         });
-      })
-      // function compare(provided: string | number, expected: string | number, operation: PaginationOperation): boolean {
-      //   switch (operation) {
-      //     case EntityQueryOperations.begins:
-      //     case ServiceQueryOperations.collectionBegins:
-      //       if (typeof provided === "string" && typeof expected === "string") {
-      //         return expected.startsWith(provided);
-      //       }
-      //     case EntityQueryOperations.gt:
-      //     case ServiceQueryOperations.collectionGt:
-      //       return expected > provided;
-      //     case EntityQueryOperations.gte:
-      //     case ServiceQueryOperations.collectionGte:
-      //       return expected >= provided;
-      //     case EntityQueryOperations.lt:
-      //     case ServiceQueryOperations.collectionLt:
-      //       return expected < provided;
-      //     case EntityQueryOperations.lte:
-      //     case ServiceQueryOperations.collectionLte:
-      //       return expected <= provided;
-      //     default:
-      //       return provided === expected;
-      //   }
-      // }
 
-      // describe("partially provided sort keys", () => {
-      //   type FilterObj = {manufacturer?: string, model?: string, count?: number, name?: string };
-      //   function filterItemsByPartialSortKey(items: ThingItem[], operation: PaginationOperation, filters: FilterObj): ThingItem[] {
-      //     const order = ["manufacturer", "model", "count", "name"] as const;
-      //     const lastProvided = order.find((o => !(o in filters)));
-      //     if (!lastProvided) {
-      //       return items;
-      //     }
-      //     return items.filter((item) => {
-      //       return order.every((key) => {
-      //         const expected = filters[key];
-      //         const provided = item[key];
-      //         if (key === lastProvided) {
-      //           return compare(provided, expected, "query");
-      //         }
-      //         return compare(provided, expected, operation);
-      //       })
-      //     })
-      //   }
-      //
-      //   function toFilterObject(thing: ThingItem, lastProvided: keyof FilterObj) {
-      //     const filterObj: FilterObj = {};
-      //     const order = ["manufacturer", "model", "count", "name"] as const;
-      //     for (const key of order) {
-      //       filterObj[key] = thing[key];
-      //       if (key === lastProvided) {
-      //         break;
-      //       }
-      //     }
-      //     return filterObj;
-      //   }
-      //
-      //   const serviceName = createSafeName();
-      //   const thing = createThingEntity({
-      //     name: createSafeName(),
-      //     service: serviceName,
-      //     client,
-      //     table,
-      //   });
-      //
-      //   const gizmo = createThingEntity({
-      //     name: createSafeName(),
-      //     service: serviceName,
-      //     client,
-      //     table,
-      //   });
-      //
-      //   const service = createThingService(thing, gizmo);
-      //
-      //   const country = uuid();
-      //   const region = uuid();
-      //   const city = uuid();
-      //
-      //   const allThings: ThingRecord[] = [];
-      //   const thingItems: ThingRecord[] = [];
-      //   const gizmoItems: ThingRecord[] = [];
-      //   for (let i = 0; i < 100; i++) {
-      //     const item = generateThingRecord({
-      //       count: i + 1,
-      //       country,
-      //       region,
-      //       city,
-      //     });
-      //     allThings.push(item);
-      //     if (i % 2 === 0) {
-      //       thingItems.push(item);
-      //     } else {
-      //       gizmoItems.push(item);
-      //     }
-      //   }
-      //
-      //   let sortedThingItems: ThingRecord[] = [];
-      //   let sortedGizmoItems: ThingRecord[] = [];
-      //   let middleThing: ThingRecord | null = null;
-      //   let middleGizmo: ThingRecord | null = null;
-      //
-      //   before(async () => {
-      //     await Promise.all([
-      //       thing.put(thingItems).go(),
-      //       gizmo.put(gizmoItems).go(),
-      //     ]);
-      //
-      //     const items = await service.collections.inventory({ country, region, city }).go({pages: 'all'});
-      //     for (const item of items.data.gizmo) {
-      //       sortedGizmoItems.push(item);
-      //     }
-      //     for (const item of items.data.thing) {
-      //       sortedThingItems.push(item);
-      //     }
-      //     expect(sortedGizmoItems.length + sortedThingItems.length).to.equal(allThings.length);
-      //     middleThing = sortedThingItems[Math.floor(sortedThingItems.length / 2)];
-      //     middleGizmo = sortedGizmoItems[Math.floor(sortedGizmoItems.length / 2)];
-      //     expect(middleThing).to.not.be.null;
-      //     expect(middleGizmo).to.not.be.null;
-      //   });
-      //
-      //   for (const lastProvided of thing.schema.indexes.location.sk.composite) {
-      //     it('should correctly filter entity items based on partially provided sort key values', async () => {
-      //       const filter = toFilterObject(middleThing!, lastProvided);
-      //       switch ()
-      //       thing.query.location({country, })
-      //     });
-      //
-      //     it('should correctly filter collection items based on partially provided sort key values', async () => {
-      //       const filter = toFilterObject(middleThing!, lastProvided);
-      //
-      //     });
-      //   }
-      // });
-
-      describe("edge cases", () => {
-        describe("when entity names have special characters", () => {
-          // Entity names/aliases and version values are the values used to
-          // uniquely identify an Entity within a service. These values are
-          // stored on DynamoDB items using "identifier" attributes. When
-          // building filter expressions for these identifier attributes we
-          // must also make the ExpressionAttributeNames and
-          // ExpressionAttributeValues unique within the context of the query
-          // operation. There are also character restrictions on these values
-          // imposed by DynamoDB. We use the name/alias of the Entity to help
-          // create these unique values. Howevery, if the Entity name/alias
-          // contains special characters that are not allowed in DynamoDB
-          // ExpressionAttributeNames/Values we must remove them. This can lead
-          // to potential collisions between different Entity names/aliases
-          // that when stripped of special characters become identical.
-          //
-          // These tests ensure that at a minimum queries can be performed
-          // successfully even when special characters are present in the
-          // Entity name/alias.
-          it("should perform entity queries without failure", async () => {
-            const thing = createThingEntity({
-              name: "0*(illegal-characters.arebad!!",
-              service: uuid(),
-              client,
-              table,
-            });
-
-            const params = thing.query
-              .location({
-                country: "usa",
-                region: "ga",
-                city: "atlanta",
-              }).params({});
-
-            expect(params).to.deep.equal({
-              "IndexName": "gsi1",
-              "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
-              "TableName": "multi-attribute",
-              "ExpressionAttributeNames": {
-                "#country": "attr1",
-                "#region": "attr2",
-                "#city": "attr3",
-                "#__edb_e__": "__edb_e__",
-                "#__edb_v__": "__edb_v__"
-              },
-              "ExpressionAttributeValues": {
-                ":countryk_0": "usa",
-                ":regionk_0": "ga",
-                ":cityk_0": "atlanta",
-                ":__edb_e___0illegalcharactersarebadk_0": "0*(illegal-characters.arebad!!",
-                ":__edb_v___0illegalcharactersarebadk_0": "1"
-              },
-              "FilterExpression": "(#__edb_e__ = :__edb_e___0illegalcharactersarebadk_0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebadk_0)"
-            });
-
-            await thing.query
-              .location({
-                country: "usa",
-                region: "ga",
-                city: "atlanta",
-              })
-              .go();
+        it("should perform collection queries without failure", async () => {
+          const thingName = "0*(illegal-characters.arebad!!";
+          const thing = createThingEntity({
+            name: thingName,
+            service: uuid(),
+            client,
+            table,
           });
 
-          it("should perform collection queries without failure", async () => {
-            const thingName = "0*(illegal-characters.arebad!!";
-            const thing = createThingEntity({
-              name: thingName,
-              service: uuid(),
-              client,
-              table,
-            });
-
-            const gizmoName = "1*(illegal-characters.superbad!!";
-            const gizmo = createThingEntity({
-              name: gizmoName,
-              service: thing.schema.model.service,
-              client,
-              table,
-            });
-
-            const service = new Service({
-              [thingName]: thing,
-              [gizmoName]: gizmo
-            });
-
-            const params = (service.collections.inventory({
-              country: "usa",
-              region: "ga",
-              city: "atlanta",
-            })).params();
-
-            expect(params).to.deep.equal({
-              "IndexName": "gsi1",
-              "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
-              "TableName": "multi-attribute",
-              "ExpressionAttributeNames": {
-                "#country": "attr1",
-                "#region": "attr2",
-                "#city": "attr3",
-                "#__edb_e__": "__edb_e__",
-                "#__edb_v__": "__edb_v__"
-              },
-              "ExpressionAttributeValues": {
-                ":countryk_0": "usa",
-                ":regionk_0": "ga",
-                ":cityk_0": "atlanta",
-                ":__edb_e___0illegalcharactersarebad_c0": "0*(illegal-characters.arebad!!",
-                ":__edb_v___0illegalcharactersarebad_c0": "1",
-                ":__edb_e___1illegalcharacterssuperbad_c0": "1*(illegal-characters.superbad!!",
-                ":__edb_v___1illegalcharacterssuperbad_c0": "1"
-              },
-              "FilterExpression": "((#__edb_e__ = :__edb_e___0illegalcharactersarebad_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_c0) OR (#__edb_e__ = :__edb_e___1illegalcharacterssuperbad_c0 AND #__edb_v__ = :__edb_v___1illegalcharacterssuperbad_c0))"
-            });
-
-            await service.collections.inventory({
-                country: "usa",
-                region: "ga",
-                city: "atlanta",
-              }).go();
+          const gizmoName = "1*(illegal-characters.superbad!!";
+          const gizmo = createThingEntity({
+            name: gizmoName,
+            service: thing.schema.model.service,
+            client,
+            table,
           });
 
-          it('should handle case where removing special characters can result in lack of uniqueness between names', async () => {
-            const thingName = "0*(illegal-characters.arebad!!";
-            const gizmoName = "0*(illegal-characters!!arebad.";
-            // These names must be unique but
-            expect(thingName).to.not.equal(gizmoName);
+          const service = new Service({
+            [thingName]: thing,
+            [gizmoName]: gizmo
+          });
 
-            const thing = createThingEntity({
-              name: thingName,
-              service: uuid(),
-              client,
-              table,
-            });
+          const params = (service.collections.inventory({
+            country: "usa",
+            region: "ga",
+            city: "atlanta",
+          })).params();
 
-            const gizmo = createThingEntity({
-              name: gizmoName,
-              service: thing.schema.model.service,
-              client,
-              table,
-            });
+          expect(params).to.deep.equal({
+            "IndexName": "gsi1",
+            "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
+            "TableName": "multi-attribute",
+            "ExpressionAttributeNames": {
+              "#country": "attr1",
+              "#region": "attr2",
+              "#city": "attr3",
+              "#__edb_e__": "__edb_e__",
+              "#__edb_v__": "__edb_v__"
+            },
+            "ExpressionAttributeValues": {
+              ":countryk_0": "usa",
+              ":regionk_0": "ga",
+              ":cityk_0": "atlanta",
+              ":__edb_e___0illegalcharactersarebad_c0": "0*(illegal-characters.arebad!!",
+              ":__edb_v___0illegalcharactersarebad_c0": "1",
+              ":__edb_e___1illegalcharacterssuperbad_c0": "1*(illegal-characters.superbad!!",
+              ":__edb_v___1illegalcharacterssuperbad_c0": "1"
+            },
+            "FilterExpression": "((#__edb_e__ = :__edb_e___0illegalcharactersarebad_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_c0) OR (#__edb_e__ = :__edb_e___1illegalcharacterssuperbad_c0 AND #__edb_v__ = :__edb_v___1illegalcharacterssuperbad_c0))"
+          });
 
-            const service = new Service({
-              [thingName]: thing,
-              [gizmoName]: gizmo
-            });
-
-            const params = (service.collections.inventory({
-              country: "usa",
-              region: "ga",
-              city: "atlanta",
-            })).params();
-
-            expect(params).to.deep.equal({
-              "IndexName": "gsi1",
-              "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
-              "TableName": "multi-attribute",
-              "ExpressionAttributeNames": {
-                "#country": "attr1",
-                "#region": "attr2",
-                "#city": "attr3",
-                "#__edb_e__": "__edb_e__",
-                "#__edb_v__": "__edb_v__"
-              },
-              "ExpressionAttributeValues": {
-                ":countryk_0": "usa",
-                ":regionk_0": "ga",
-                ":cityk_0": "atlanta",
-                ":__edb_e___0illegalcharactersarebad_c0": "0*(illegal-characters.arebad!!",
-                ":__edb_v___0illegalcharactersarebad_c0": "1",
-                // we can see in these params that the collision was handled by
-                // appending a _2 to the second occurrence
-                ":__edb_e___0illegalcharactersarebad_2_c0": "0*(illegal-characters!!arebad.",
-                ":__edb_v___0illegalcharactersarebad_2_c0": "1"
-              },
-              "FilterExpression": "((#__edb_e__ = :__edb_e___0illegalcharactersarebad_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_c0) OR (#__edb_e__ = :__edb_e___0illegalcharactersarebad_2_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_2_c0))"
-            });
-
-            await service.collections.inventory({
-              country: "usa",
-              region: "ga",
-              city: "atlanta",
-            }).go();
-          })
+          await service.collections.inventory({
+            country: "usa",
+            region: "ga",
+            city: "atlanta",
+          }).go();
         });
+
+        it('should handle case where removing special characters can result in lack of uniqueness between names', async () => {
+          const thingName = "0*(illegal-characters.arebad!!";
+          const gizmoName = "0*(illegal-characters!!arebad.";
+          // These names must be unique but
+          expect(thingName).to.not.equal(gizmoName);
+
+          const thing = createThingEntity({
+            name: thingName,
+            service: uuid(),
+            client,
+            table,
+          });
+
+          const gizmo = createThingEntity({
+            name: gizmoName,
+            service: thing.schema.model.service,
+            client,
+            table,
+          });
+
+          const service = new Service({
+            [thingName]: thing,
+            [gizmoName]: gizmo
+          });
+
+          const params = (service.collections.inventory({
+            country: "usa",
+            region: "ga",
+            city: "atlanta",
+          })).params();
+
+          expect(params).to.deep.equal({
+            "IndexName": "gsi1",
+            "KeyConditionExpression": "#country = :countryk_0 AND #region = :regionk_0 AND #city = :cityk_0",
+            "TableName": "multi-attribute",
+            "ExpressionAttributeNames": {
+              "#country": "attr1",
+              "#region": "attr2",
+              "#city": "attr3",
+              "#__edb_e__": "__edb_e__",
+              "#__edb_v__": "__edb_v__"
+            },
+            "ExpressionAttributeValues": {
+              ":countryk_0": "usa",
+              ":regionk_0": "ga",
+              ":cityk_0": "atlanta",
+              ":__edb_e___0illegalcharactersarebad_c0": "0*(illegal-characters.arebad!!",
+              ":__edb_v___0illegalcharactersarebad_c0": "1",
+              // we can see in these params that the collision was handled by
+              // appending a _2 to the second occurrence
+              ":__edb_e___0illegalcharactersarebad_2_c0": "0*(illegal-characters!!arebad.",
+              ":__edb_v___0illegalcharactersarebad_2_c0": "1"
+            },
+            "FilterExpression": "((#__edb_e__ = :__edb_e___0illegalcharactersarebad_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_c0) OR (#__edb_e__ = :__edb_e___0illegalcharactersarebad_2_c0 AND #__edb_v__ = :__edb_v___0illegalcharactersarebad_2_c0))"
+          });
+
+          await service.collections.inventory({
+            country: "usa",
+            region: "ga",
+            city: "atlanta",
+          }).go();
+        })
       });
-    },
+    });
+  },
   );
+
+  describe("multi-attribute index documentation examples", () => {
+    function createInventoryItemEntity() {
+      return new Entity({
+        model: {
+          entity: "inventoryitem",
+          version: "1",
+          service: "warehouse",
+        },
+        attributes: {
+          id: {
+            type: "string",
+            required: true,
+          },
+          country: {
+            type: "string",
+            field: "attr1",
+            required: true,
+          },
+          region: {
+            type: "string",
+            field: "attr2",
+            required: true,
+          },
+          city: {
+            type: "string",
+            field: "attr3",
+            required: true,
+          },
+          manufacturer: {
+            type: "string",
+            field: "attr4",
+          },
+          model: {
+            type: "string",
+          },
+          count: {
+            type: "number",
+            field: "attr5",
+          },
+          productName: {
+            type: "string",
+            field: "attr6",
+          },
+        },
+        indexes: {
+          record: {
+            pk: {
+              field: "pk",
+              composite: ["manufacturer"],
+            },
+            sk: {
+              field: "sk",
+              composite: ["model", "id"],
+            },
+          },
+          location: {
+            index: "gsi1",
+            type: "composite",
+            collection: "inventory", // shared collection name
+            pk: {
+              composite: ["country", "region"],
+            },
+            sk: {
+              composite: ["city", "manufacturer", "count", "productName"],
+            },
+          },
+        },
+      },
+        { table: "your_table_name", client },
+      );
+    }
+
+    function createWarehouseEntity() {
+      return new Entity(
+        {
+          model: {
+            entity: "warehouse",
+            version: "1",
+            service: "warehouse",
+          },
+          attributes: {
+            warehouseId: {
+              type: "string",
+              required: true,
+              field: "attr4",
+            },
+            country: {
+              type: "string",
+              field: "attr1",
+              required: true,
+            },
+            region: {
+              type: "string",
+              field: "attr2",
+              required: true,
+            },
+            city: {
+              type: "string",
+              field: "attr3",
+              required: true,
+            },
+            streetAddress: {
+              type: "string",
+            },
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: "pk",
+                composite: ["warehouseId"],
+              },
+              sk: {
+                field: "sk",
+                composite: [],
+              },
+            },
+            location: {
+              index: "gsi1",
+              type: "composite",
+              collection: "inventory",
+              pk: {
+                composite: ["country", "region"],
+              },
+              sk: {
+                composite: ["city", "warehouseId"],
+              },
+            },
+          },
+        },
+        { table: "your_table_name", client },
+      );
+    }
+
+    it("entities should pass schema validation", () => {
+      // shouldn't throw
+      const InventoryItem = createInventoryItemEntity();
+      const Warehouse = createWarehouseEntity();
+      new Service({ InventoryItem, Warehouse });
+    })
+
+    it("should perform queries without failure", () => {
+      const InventoryItem = createInventoryItemEntity();
+      const Warehouse = createWarehouseEntity();
+      const service = new Service({ InventoryItem, Warehouse });
+
+      InventoryItem.query
+        .location({ country: "US", region: "Georgia", })
+        .begins({ city: "Atlanta", manufacturer: "A" })
+        .params();
+
+      InventoryItem.query
+        .location({ country: "US", region: "Georgia" })
+        .gt({ city: "Atlanta", manufacturer: "Acme", count: 100 })
+        .params();
+
+      InventoryItem.query
+        .location({ country: "US", region: "Georgia" })
+        .between(
+          { city: "Atlanta", manufacturer: "Acme", count: 50 },
+          { city: "Atlanta", manufacturer: "Acme", count: 200 },
+        )
+        .params();
+
+        service.collections
+          .inventory({ country: "US", region: "Georgia", city: "Atlanta" })
+          .params();
+        
+          service.collections
+            .inventory({ country: "US", region: "Georgia" })
+            .begins({ city: "A" })
+            .params();
+    });
+  })
 });
