@@ -79,7 +79,17 @@ function batchItems(arr = [], size) {
 }
 
 function commaSeparatedString(array = [], prefix = '"', postfix = '"') {
+  if (typeof array === 'string') {
+    array = [array];
+  }
   return array.map((value) => `${prefix}${value}${postfix}`).join(", ");
+}
+
+function toDisplayString(value) {
+  if (value === undefined) {
+    return "<undefined>";
+  }
+  return JSON.stringify(value);
 }
 
 function formatStringCasing(str, casing, defaultCase) {
@@ -275,6 +285,7 @@ module.exports = {
   removeFixings,
   parseJSONPath,
   shiftSortOrder,
+  toDisplayString,
   getFirstDefined,
   getInstanceType,
   getModelVersion,

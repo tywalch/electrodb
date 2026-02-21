@@ -329,7 +329,6 @@ The casing between instances of the same key field in your model is inconsistent
 **What to do about it:**
 Ensure that the casing of your key fields is consistent across your model.
 
-
 ### InvalidListenerProvided
 
 **Code: 1021**
@@ -347,14 +346,14 @@ Ensure that the listener you are providing is a function.
 You provided an invalid logger to the Entity or Service.
 
 **What to do about it:**
-Ensure that the logger you are providing is a function. 
+Ensure that the logger you are providing is a function.
 
 ### InvalidClientProvided
 
 **Code: 1023**
 
 **Why this occurred:**
-You provided an invalid client to the Entity or Service. 
+You provided an invalid client to the Entity or Service.
 
 **What to do about it:**
 Ensure that the client you are providing matches client interface definition exported from "electrodb" as "DocumentClient".
@@ -367,11 +366,21 @@ Ensure that the client you are providing matches client interface definition exp
 The composite attributes definition of an index was not consistent across all references in the model.
 
 **What to do about it:**
-If you are using Key Schema fields across more than one index, ensure that the composite attributes definition is consistent across all references in the model. 
+If you are using Key Schema fields across more than one index, ensure that the composite attributes definition is consistent across all references in the model.
+
+### Invalid Projection Definition
+
+**Code: 1025**
+
+**Why this occurred:**
+The "projection" property defined on an index of your model is not a valid value. Valid values include `all`, `keys_only`, or a string list of attribute names with a length greater than one. When an Entity is part of a Service, the service also validates that all collection members have the same configuration. Note that an undefined value for projection is functionally equivalent to a value of `all`.
+
+**What to do about it:**
+Ensure that the values you provided match the expected values listed above, and/or that the value is identical across indexes that share a collection.
 
 ### InvalidIndexDefinition
 
-**Code: 1025**
+**Code: 1026**
 
 **Why this occurred:**
 You provided an invalid index definition to the Entity or Service.
@@ -409,7 +418,7 @@ Tables can be defined on the [Service Options](/en/modeling/service#options) obj
 When performing a bulk operation ([Batch Get](/en/queries/batch-get), [Batch Delete Records](/en/mutations/batch-delete), [Batch Put Records](/en/mutations/batch-put)) you can pass an [Execution Option](/en/core-concepts/executing-queries) called `concurrent`, which impacts how many batch requests can occur at the same time. Your value should pass the test of both, `!isNaN(parseInt(value))` and `parseInt(value) > 0`.
 
 \*_What to do about it:_ \*
-Expect this error only if you're providing a `concurrency` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
+Expect this error only if you're providing a `concurrent` option. Double-check the value you are providing is the value you expect to be passing, and that the value passes the tests listed above.
 
 ### Invalid Pages Option
 

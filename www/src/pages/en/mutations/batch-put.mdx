@@ -54,7 +54,7 @@ const unprocessed = await StoreLocations.put([
     leaseEndDate: "2021-01-22",
     rent: "1500.00",
   },
-]).go({ concurrency: 1 }); // `concurrency` value is optional and default's to `1`
+]).go({ concurrent: 1 }); // `concurrent` value is optional and default's to `1`
 ```
 
 ## Response Format

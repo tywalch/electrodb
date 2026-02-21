@@ -157,8 +157,14 @@ const ErrorCodes = {
     name: "Inconsistent Index Definition",
     sym: ErrorCode,
   },
-  InvalidIndexDefinition: {
+  InvalidProjectionDefinition: {
     code: 1025,
+    section: "invalid-projection-definition",
+    name: "InvalidProjectionDefinition",
+    sym: ErrorCode,
+  },
+  InvalidIndexDefinition: {
+    code: 1026,
     section: "invalid-index-definition",
     name: "InvalidIndexDefinition",
     sym: ErrorCode,
@@ -298,6 +304,7 @@ class ElectroError extends Error {
     if (code && code.sym === ErrorCode) {
       detail = code;
     }
+    this.cause = cause;
     this._message = message;
     // this.message = `${message} - For more detail on this error reference: ${getHelpLink(detail.section)}`;
     this.message = makeMessage(message, detail.section);
