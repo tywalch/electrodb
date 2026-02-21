@@ -33,7 +33,7 @@ const {
   IndexProjectionOptions,
 } = require("./types");
 const { FilterFactory } = require("./filters");
-const { FilterOperations, formatExpressionName } = require("./operations");
+const { FilterOperations, ExpressionState, formatExpressionName } = require("./operations");
 const { WhereFactory } = require("./where");
 const { clauses, ChainState } = require("./clauses");
 const { EventManager } = require("./events");
