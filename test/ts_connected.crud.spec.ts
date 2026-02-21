@@ -4342,7 +4342,7 @@ describe("attributes query option", () => {
         attributes: ["attr2", "attr9", "attr5", "attr10"],
       });
     expect(params[0].RequestItems.electro.ProjectionExpression).to.equal(
-      "#attr2, #prop9, #attr5, #attr10",
+      "#pk, #sk, #attr2, #prop9, #attr5, #attr10",
     );
 
     const { data } = await entityWithSK
@@ -4383,7 +4383,7 @@ describe("attributes query option", () => {
         attributes: ["attr2", "attr9", "attr5", "attr10"],
       });
     expect(params[0].RequestItems.electro.ProjectionExpression).to.equal(
-      "#attr2, #prop9, #attr5, #attr10",
+      "#pk, #sk, #attr2, #prop9, #attr5, #attr10",
     );
 
     const { data } = await entityWithSK
