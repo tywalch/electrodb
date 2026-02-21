@@ -1,0 +1,99 @@
+{
+  "KeySchema": [
+    {
+      "AttributeName": "pk",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "sk",
+      "KeyType": "RANGE"
+    }
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "pk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "sk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "gsi1pk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "gsi1sk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "gsi3pk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "gsi3sk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "gsi4pk",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "gsi4sk",
+      "AttributeType": "S"
+    }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "gsi1pk-gsi1sk-index",
+      "KeySchema": [
+        {
+          "AttributeName": "gsi1pk",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "gsi1sk",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "INCLUDE",
+        "NonKeyAttributes": ["include1", "include2", "include3", "__edb_e__", "__edb_v__"]
+      }
+    },
+    {
+      "IndexName": "gsi3pk-gsi3sk-index",
+      "KeySchema": [
+        {
+          "AttributeName": "gsi3pk",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "gsi3sk",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    },
+    {
+      "IndexName": "gsi4pk-gsi4sk-index",
+      "KeySchema": [
+        {
+          "AttributeName": "gsi4pk",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "gsi4sk",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "KEYS_ONLY"
+      }
+    }
+  ],
+  "TableName": "projection-include",
+  "BillingMode": "PAY_PER_REQUEST"
+}

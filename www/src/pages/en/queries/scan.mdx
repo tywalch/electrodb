@@ -73,6 +73,22 @@ await StoreLocations.scan
 }
 ```
 
+## Scanning an Index
+
+You can also scan a specific index by using the access pattern as a method on the scan operation:
+
+```typescript
+await StoreLocations.scan.units.go();
+```
+
+### Use Cases
+
+Scanning an index is particularly useful when you have a [sparse index](/en/modeling/indexes#sparse-indexes) that you want to scan instead of scanning the entire table. 
+
+Sparse indexes contain only a subset of the table's items, making them more efficient for scanning when you're interested solely in the items present in the sparse index.
+
+When scanning an index, ElectroDB automatically adds the [`IndexName`](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html#:~:text=IndexName%20parameter) parameter to the DynamoDB scan request.
+
 ## Execution Options
 
 import PartialExample from "../../../partials/query-options.mdx";
