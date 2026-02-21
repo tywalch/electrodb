@@ -711,7 +711,7 @@ class Service {
 
     if (!matchingProjection) {
       collectionDifferences.push(
-        `The provided projection definition ${u.commaSeparatedString(providedIndex.projection ?? '<undefined>')} does not match the established projection definition ${u.commaSeparatedString(definition.projection)} on index ${providedIndexName}. Index projection definitions must match across all entities participating in a collection`
+        `The provided projection definition ${u.commaSeparatedString(providedIndex.projection !== undefined && providedIndex.projection !== null ? providedIndex.projection : '<undefined>')} does not match the established projection definition ${u.commaSeparatedString(definition.projection)} on index ${providedIndexName}. Index projection definitions must match across all entities participating in a collection`
       );
     }
 
