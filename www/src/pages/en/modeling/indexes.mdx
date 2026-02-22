@@ -872,6 +872,8 @@ The DynamoDB table for this entity requires a GSI with a multi-attribute key sch
 
 ### Querying Multi-Attribute Indexes
 
+In November 2025, DynamoDB added support for querying [multi-attribute GSIs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.DesignPattern.MultiAttributeKeys.html) using the `KeyConditionExpression` syntax. ElectroDB's `composite` index type is designed to take full advantage of this feature, allowing you to query each composite attribute directly without needing to concatenate values into a single key.
+
 Querying a `composite` index works the same as other ElectroDB index types. You provide pk composite attributes to initiate the query, and can use sort key operations like `begins`, `between`, `gt`, `gte`, `lt`, and `lte` on the sk composite attributes.
 
 The key difference is in the generated DynamoDB parameters: instead of a single `KeyConditionExpression` using `begins_with` on a concatenated sort key, ElectroDB generates individual equality and comparison conditions for each attribute.
