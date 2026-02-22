@@ -823,7 +823,7 @@ const InventoryItem = new Entity(
           composite: ["country", "region", "city"],
         },
         sk: {
-          composite: ["manufacturer", "model", "count", "name"],
+          composite: ["manufacturer", "model", "count"],
         },
       },
     },
@@ -896,6 +896,7 @@ This generates a `KeyConditionExpression` like:
 
 Sort key operations apply to the sk composite attributes in order. Preceding sk attributes are matched with equality, and the operation applies to the last provided attribute:
 
+**Begins With**
 ```typescript
 // begins_with on 'manufacturer' (city matched with equality)
 await InventoryItem.query
@@ -905,7 +906,10 @@ await InventoryItem.query
 // KeyConditionExpression:
 //   #country = :country AND #region = :region AND #city = :city
 //   AND begins_with(#manufacturer, :manufacturer)
+```
 
+**Greater Than**
+```typescript
 // Greater than on 'count' (city and manufacturer matched with equality)
 await InventoryItem.query
   .location({ country: "US", region: "Georgia" })
@@ -914,7 +918,10 @@ await InventoryItem.query
 // KeyConditionExpression:
 //   #country = :country AND #region = :region AND #city = :city
 //   AND #manufacturer = :manufacturer AND #count > :count
+```
 
+**Between**
+```typescript
 // Between on 'count' (city and manufacturer matched with equality)
 await InventoryItem.query
   .location({ country: "US", region: "Georgia" })
@@ -991,12 +998,12 @@ const InventoryItem = new Entity(
       location: {
         index: "gsi1",
         type: "composite",
-        collection: "inventory", // shared collection name
+        collection: "inventory",
         pk: {
           composite: ["country", "region"],
         },
         sk: {
-          composite: ["city", "manufacturer", "count", "productName"],
+          composite: ["city", "manufacturer", "count"],
         },
       },
     },
@@ -1083,38 +1090,6 @@ const filtered = await service.collections
   .go();
 // results.data.InventoryItem -> InventoryItem[]
 // results.data.Warehouse -> Warehouse[]
-```
-
-### Pagination with Multi-Attribute Indexes
-
-Pagination on composite indexes works transparently. Cursors returned by queries can be used to resume pagination as usual:
-
-```typescript
-let cursor: string | null = null;
-let allResults = [];
-
-do {
-  const response = await InventoryItem.query
-    .location({ country: "US", region: "Georgia", city: "Atlanta" })
-    .go({ cursor, limit: 25 });
-
-  allResults.push(...response.data);
-  cursor = response.cursor;
-} while (cursor !== null);
-```
-
-The `createConversions` utility also supports composite indexes for converting between items, keys, and cursors:
-
-```typescript
-import { createConversions } from "electrodb";
-
-const conversions = createConversions(InventoryItem);
-
-// Convert an item to a cursor for the 'location' access pattern
-const cursor = conversions.byAccessPattern.location.fromComposite.toCursor(item);
-
-// Convert a cursor back to composite attributes
-const composite = conversions.byAccessPattern.location.fromCursor.toComposite(cursor);
 ```
 
 ### Constraints and Validations
