@@ -896,9 +896,9 @@ This generates a `KeyConditionExpression` like:
 
 Sort key operations apply to the sk composite attributes in order. Preceding sk attributes are matched with equality, and the operation applies to the last provided attribute:
 
-**Begins With**
+Begins with substring expression on 'manufacturer' (city matched with equality)
+
 ```typescript
-// begins_with on 'manufacturer' (city matched with equality)
 await InventoryItem.query
   .location({ country: "US", region: "Georgia", })
   .begins({ city: "Atlanta", manufacturer: "A" })
@@ -908,9 +908,9 @@ await InventoryItem.query
 //   AND begins_with(#manufacturer, :manufacturer)
 ```
 
-**Greater Than**
+Greater than on 'count' (city and manufacturer matched with equality)
+
 ```typescript
-// Greater than on 'count' (city and manufacturer matched with equality)
 await InventoryItem.query
   .location({ country: "US", region: "Georgia" })
   .gt({ city: "Atlanta", manufacturer: "Acme", count: 100 })
@@ -920,9 +920,9 @@ await InventoryItem.query
 //   AND #manufacturer = :manufacturer AND #count > :count
 ```
 
-**Between**
+Between on 'count' (city and manufacturer matched with equality)
+
 ```typescript
-// Between on 'count' (city and manufacturer matched with equality)
 await InventoryItem.query
   .location({ country: "US", region: "Georgia" })
   .between(
