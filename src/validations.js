@@ -1,5 +1,5 @@
 const e = require("./errors");
-const { KeyCasing, IndexProjectionOptions } = require("./types");
+const { KeyCasing, IndexProjectionOptions, IndexTypes } = require("./types");
 
 const Validator = require("jsonschema").Validator;
 Validator.prototype.customFormats.isFunction = function (input) {
@@ -170,8 +170,7 @@ const Index = {
     },
     type: {
       type: "string",
-      // todo: sync with types.IndexTypes
-      enum: ["clustered", "isolated", "composite"],
+      enum: Object.values(IndexTypes),
       required: false,
     },
     condition: {
@@ -190,7 +189,6 @@ const Index = {
 
 const Modelv1 = {
   type: "object",
-  required: true,
   properties: {
     model: {
       type: "object",
@@ -233,7 +231,6 @@ const Modelv1 = {
 
 const ModelBeta = {
   type: "object",
-  required: true,
   properties: {
     service: {
       type: "string",
