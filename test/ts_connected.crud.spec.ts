@@ -4246,6 +4246,61 @@ describe("attributes query option", () => {
     { table, client },
   );
 
+  const entityWithoutSK = new Entity(
+    {
+      model: {
+        entity: "nosk",
+        service: "myservice",
+        version: "myversion",
+      },
+      attributes: {
+        attr1: {
+          type: "string",
+        },
+        attr2: {
+          type: "string",
+        },
+        attr3: {
+          type: ["123", "def", "ghi"] as const,
+          default: "def",
+        },
+        attr4: {
+          type: ["abc", "ghi"] as const,
+          required: true,
+        },
+        attr5: {
+          type: "string",
+        },
+        attr6: {
+          type: "number",
+        },
+        attr7: {
+          type: "any",
+        },
+        attr8: {
+          type: "boolean",
+          required: true,
+        },
+        attr9: {
+          type: "number",
+          field: "prop9",
+        },
+        attr10: {
+          type: "boolean",
+        },
+      },
+      indexes: {
+        myIndex: {
+          pk: {
+            field: "partition_key",
+            composite: ["attr1"],
+          },
+        },
+      },
+    },
+    { table: "electro_nosort", client },
+  );
+
   describe('when attribues result in empty objects on response', () => {
     const User = new Entity({
       model: {
@@ -4503,6 +4558,105 @@ describe("attributes query option", () => {
         attr1: item.attr1,
         attr2: item.attr2,
       })
+      .go({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      })
+      .then((res) => res.data);
+
+    expect(findItem).to.deep.equal([
+      {
+        attr2: item.attr2,
+        attr9: item.attr9,
+        attr5: item.attr5,
+        attr10: item.attr10,
+      },
+    ]);
+  });
+
+  // github issue #548: https://github.com/tywalch/electrodb/issues/548
+  it("should return only the attributes specified in query options when entity has no sort key", async () => {
+    const attr1 = uuid();
+    const item = {
+      attr1,
+      attr2: "attr2",
+      attr9: 9,
+      attr4: "abc" as const,
+      attr8: true,
+      attr5: "attr5",
+      attr7: "attr7",
+      attr10: false,
+    };
+    await entityWithoutSK.put(item).go();
+
+    const getParams = entityWithoutSK
+      .get({ attr1 })
+      .params({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      } as any);
+
+    // Should not contain an empty string value in ExpressionAttributeNames
+    for (const [key, value] of Object.entries(getParams.ExpressionAttributeNames || {})) {
+      expect(value).to.not.equal("", `ExpressionAttributeNames key "${key}" has an empty string value`);
+    }
+
+    const getItem = await entityWithoutSK
+      .get({ attr1 })
+      .go({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      })
+      .then((res) => res.data);
+
+    expect(getItem).to.deep.equal({
+      attr2: item.attr2,
+      attr9: item.attr9,
+      attr5: item.attr5,
+      attr10: item.attr10,
+    });
+
+    const scanParams = entityWithoutSK.scan.params({
+      attributes: ["attr2", "attr9", "attr5", "attr10"],
+    } as any);
+
+    // Should not contain an empty string value in ExpressionAttributeNames
+    for (const [key, value] of Object.entries(scanParams.ExpressionAttributeNames || {})) {
+      expect(value).to.not.equal("", `ExpressionAttributeNames key "${key}" has an empty string value`);
+    }
+
+    const scanItem = await entityWithoutSK.scan
+      .where(({ attr1: a }, { eq }) => eq(a, attr1))
+      .go({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+        pages: 'all',
+      })
+      .then((res) => res.data);
+
+    expect(scanItem).to.deep.equal([
+      {
+        attr2: item.attr2,
+        attr9: item.attr9,
+        attr5: item.attr5,
+        attr10: item.attr10,
+      },
+    ]);
+
+    const matchItem = await entityWithoutSK
+      .match({ attr1 })
+      .go({
+        attributes: ["attr2", "attr9", "attr5", "attr10"],
+      })
+      .then((res) => res.data);
+
+    expect(matchItem).to.deep.equal([
+      {
+        attr2: item.attr2,
+        attr9: item.attr9,
+        attr5: item.attr5,
+        attr10: item.attr10,
+      },
+    ]);
+
+    const findItem = await entityWithoutSK
+      .find({ attr1 })
       .go({
         attributes: ["attr2", "attr9", "attr5", "attr10"],
       })

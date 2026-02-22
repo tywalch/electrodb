@@ -2085,7 +2085,7 @@ class Entity {
 
     // Convert all attribute names to their respective "field" names
     let hasTableIndexPk = false;
-    let hasTableIndexSk = this.model.translations.keys[TableIndex].sk === undefined;
+    let hasTableIndexSk = !this.model.translations.keys[TableIndex].sk;
     const attributeFields = new Map();
     for (let [key, name] of Object.entries(parameters.ExpressionAttributeNames || {})) {
       if (key.startsWith("#")) {
