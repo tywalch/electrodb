@@ -624,3 +624,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Added 
 - [Issue #507](https://github.com/tywalch/electrodb/issues/507); You can now scan an index. [See docs](https://electrodb.dev/en/queries/scan/#scanning-an-index) Contribution provided by [@anatolzak](https://github.com/anatolzak)
 - [Issue #508](https://github.com/tywalch/electrodb/issues/508); Added support for INCLUDE projection type in index definitions, allowing selective attribute projection for optimized query performance and cost reduction. [See docs](https://electrodb.dev/en/recipes/include-projection-gsi) Contribution provided by [@anatolzak](https://github.com/anatolzak)
+
+## [3.6.1]
+### Fixed
+- [Issue #548](https://github.com/tywalch/electrodb/issues/548); Fixed invalid `ProjectionExpression` generated for entities without a sort key when using the `attributes` option. An empty string was incorrectly added to `ExpressionAttributeNames`, causing DynamoDB to reject the request.
