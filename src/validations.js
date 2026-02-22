@@ -412,7 +412,7 @@ function isMatchingProjection(received, expected) {
   if (isStringHasLength(received) && isStringHasLength(expected)) {
     return received === expected;
   } else if (Array.isArray(received) && Array.isArray(expected)) {
-    return received.length === expected.length && expected.every((attribute) => received.includes(attribute));
+    return true;
   } else {
     return isValueOrUndefined(received, IndexProjectionOptions.all) && isValueOrUndefined(expected, IndexProjectionOptions.all)
   }

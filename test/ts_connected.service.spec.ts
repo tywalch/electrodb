@@ -846,7 +846,7 @@ const createIsolatedSingleSKService = (options: CreateServiceOptions) => {
 };
 
 const createCompositeKey = (item: IndexTypeTestItemCompositeKey) => {
-  return item.prop1 ?? "" + item.prop2 ?? "" + item.prop3 ?? "";
+  return (item.prop1 ?? "") + (item.prop2 ?? "") + (item.prop3 ?? "");
 };
 
 const print = (val: any) => console.log(JSON.stringify(val, null, 4));
@@ -3352,4 +3352,622 @@ describe('scope compatibility', () => {
     expect(entity2Response.data.length).to.equal(1);
     expect(entity2Response.data[0]).to.deep.equal(record2);
   })
+});
+
+describe("projection compatibility", () => {
+  const nonAttributeProjectionOptions = [
+    'keys_only',
+    'all',
+    undefined,
+  ] as const;
+  describe("when creating a new service with a collection that is defined with projection", () => {
+    for (const left of nonAttributeProjectionOptions) {
+      for (const right of nonAttributeProjectionOptions) {
+        const isMatch = left === right || (left === undefined && right === 'all') || (right === undefined && left === 'all');
+        it(`should ${isMatch ? 'not throw' : 'throw'} when validating the projection values ${JSON.stringify(left)} and ${JSON.stringify(right)}`, () => {
+          const entity1 = new Entity(
+            {
+              model: {
+                entity: "entity1",
+                service: 'test',
+                version: "1",
+              },
+              attributes: {
+                id: {
+                  type: "string",
+                }
+              },
+              indexes: {
+                primary: {
+                  pk: {
+                    field: "pk",
+                    composite: ["id"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: [],
+                  },
+                },
+                secondary: {
+                  index: 'gsi1',
+                  collection: 'testing',
+                  projection: left,
+                  pk: {
+                    field: "pk",
+                    composite: ["id"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: [],
+                  },
+                },
+              },
+            },
+            { table: "electro", client }
+          );
+          
+          const entity2 = new Entity(
+            {
+              model: {
+                entity: "entity1",
+                service: 'test',
+                version: "1",
+              },
+              attributes: {
+                id: {
+                  type: "string",
+                }
+              },
+              indexes: {
+                primary: {
+                  pk: {
+                    field: "pk",
+                    composite: ["id"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: [],
+                  },
+                },
+                secondary: {
+                  index: 'gsi1',
+                  collection: 'testing',
+                  projection: right,
+                  pk: {
+                    field: "pk",
+                    composite: ["id"],
+                  },
+                  sk: {
+                    field: "sk",
+                    composite: [],
+                  },
+                },
+              },
+            },
+            { table: "electro", client }
+          );
+
+          if (isMatch) {
+            expect(() => new Service({ entity1, entity2 })).not.to.throw();
+          } else {
+            expect(() => new Service({ entity1, entity2 })).to.throw();
+          }
+        })
+      }
+    }
+  });
+
+  describe("when using attribute projection values", () => {
+    it("should allow entities to have different attribute projection values", async () => {
+      const table = "electro_projectionincludewithoutedb";
+      const serviceName = uuid();
+      const entity1 = new Entity({
+        model: {
+          entity: "entity1",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          groupId: {
+            type: "string",
+          },
+          include1: {
+            type: "string",
+          }
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            collection: 'testing',
+            pk: {
+              field: "gsi1pk",
+              composite: ["groupId"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: [],
+            },
+            projection: ["include1"],
+          }
+        },
+      },{ table, client });
+
+      const entity2 = new Entity({
+        model: {
+          entity: "entity2",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          groupId: {
+            type: "string",
+          },
+          include2: {
+            type: "string",
+          },
+          include3: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            collection: 'testing',
+            pk: {
+              field: "gsi1pk",
+              composite: ["groupId"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: [],
+            },
+            projection: ["include2", "include3"],
+          }
+        },
+      }, { table, client });
+
+      const service = new Service({ entity1, entity2 });
+
+      const groupId = uuid();
+
+      const [record1, record2] = await Promise.all([
+        entity1.put({ groupId, id: uuid(), include1: uuid() }).go(),
+        entity2.put({ groupId, id: uuid(), include2: uuid(), include3: uuid() }).go(),
+      ]);
+
+      const collectionResponse = await service.collections.testing({ groupId }).go();
+      expect(collectionResponse.data).to.deep.equal({
+        entity1: [{
+          include1: record1.data.include1,
+        }],
+        entity2: [{
+          include2: record2.data.include2,
+          include3: record2.data.include3,
+        }],
+      });
+    });
+
+
+    it("should allow hydrate entities with different attribute projection values", async () => {
+      const table = "electro_projectionincludewithoutedb";
+      const serviceName = uuid();
+      const entity1 = new Entity({
+        model: {
+          entity: "entity1",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          uniqueToEntity1: {
+            type: "number",
+            required: true,
+          },
+          groupId: {
+            type: "string",
+          },
+          include1: {
+            type: "string",
+          }
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            collection: 'testing',
+            pk: {
+              field: "gsi1pk",
+              composite: ["groupId"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: [],
+            },
+            projection: ["include1"],
+          }
+        },
+      },{ table, client });
+
+      const entity2 = new Entity({
+        model: {
+          entity: "entity2",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          uniqueToEntity2: {
+            type: "string",
+            required: true,
+          },
+          groupId: {
+            type: "string",
+          },
+          include2: {
+            type: "string",
+          },
+          include3: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            collection: 'testing',
+            pk: {
+              field: "gsi1pk",
+              composite: ["groupId"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: [],
+            },
+            projection: ["include2", "include3"],
+          }
+        },
+      }, { table, client });
+
+      const service = new Service({ entity1, entity2 });
+
+      const groupId = uuid();
+      const [record1, record2] = await Promise.all([
+        entity1.put({ groupId, id: uuid(), include1: uuid(), uniqueToEntity1: 1 }).go(),
+        entity2.put({ groupId, id: uuid(), include2: uuid(), include3: uuid(), uniqueToEntity2: '2' }).go(),
+      ]);
+
+      const collectionResponse = await service.collections.testing({ groupId }).go({hydrate: true});
+      expect(collectionResponse.data).to.deep.equal({
+        entity1: [{
+          id: record1.data.id,
+          groupId: record1.data.groupId,
+          include1: record1.data.include1,
+          uniqueToEntity1: record1.data.uniqueToEntity1,
+        }],
+        entity2: [{
+          id: record2.data.id,
+          groupId: record2.data.groupId,
+          include2: record2.data.include2,
+          include3: record2.data.include3,
+          uniqueToEntity2: record2.data.uniqueToEntity2,
+        }],
+      });
+      
+      // mostly testing that the typing works here:
+      expect(collectionResponse.data.entity1[0].uniqueToEntity1 === 1).to.equal(true);
+      // @ts-expect-error
+      expect(collectionResponse.data.entity1[0].uniqueToEntity1 === '2').to.equal(false);
+      
+      expect(collectionResponse.data.entity2[0].uniqueToEntity2 === '2').to.equal(true);
+      // @ts-expect-error
+      expect(collectionResponse.data.entity2[0].uniqueToEntity2 === 2).to.equal(false);
+    });
+
+    it("should further reduce the attributes returned when querying an 'include' index", async () => {
+      const table = "electro_projectionincludewithoutedb";
+      const serviceName = uuid();
+      const entity1 = new Entity({
+        model: {
+          entity: "entity1",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          uniqueToEntity1: {
+            type: "number",
+            required: true,
+          },
+          groupId: {
+            type: "string",
+          },
+          include1: {
+            type: "string",
+          }
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            collection: 'testing',
+            pk: {
+              field: "gsi1pk",
+              composite: ["groupId"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: [],
+            },
+            projection: ["include1"],
+          }
+        },
+      },{ table, client });
+
+      const entity2 = new Entity({
+        model: {
+          entity: "entity2",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          uniqueToEntity2: {
+            type: "string",
+            required: true,
+          },
+          groupId: {
+            type: "string",
+          },
+          include2: {
+            type: "string",
+          },
+          include3: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            collection: 'testing',
+            pk: {
+              field: "gsi1pk",
+              composite: ["groupId"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: [],
+            },
+            projection: ["include2", "include3"],
+          }
+        },
+      }, { table, client });
+
+      const service = new Service({ entity1, entity2 });
+
+      const groupId = uuid();
+      const [record1, record2] = await Promise.all([
+        entity1.put({ groupId, id: uuid(), include1: uuid(), uniqueToEntity1: 1 }).go(),
+        entity2.put({ groupId, id: uuid(), include2: uuid(), include3: uuid(), uniqueToEntity2: '2' }).go(),
+      ]);
+
+      const collectionResponse = await service.collections.testing({ groupId }).go({ 
+        attributes: ["include1", "include2"] 
+      });
+      expect(collectionResponse.data).to.deep.equal({
+        entity1: [{
+          include1: record1.data.include1,
+        }],
+        entity2: [{
+          include2: record2.data.include2,
+        }],
+      });
+      
+      // mostly testing that the typing works here:
+      expect(collectionResponse.data.entity1[0].include1 === record1.data.include1).to.equal(true);
+      
+      expect(collectionResponse.data.entity2[0].include2 === record2.data.include2).to.equal(true);
+      // @ts-expect-error
+      expect(collectionResponse.data.entity2[0].include3 === record2.data.include3).to.equal(false);
+    });
+
+    it("should resolve an empty object when query attributes don't include any projected attributes", async () => {
+      const table = "electro_projectionincludewithoutedb";
+      const serviceName = uuid();
+      const entity1 = new Entity({
+        model: {
+          entity: "entity1",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          uniqueToEntity1: {
+            type: "number",
+            required: true,
+          },
+          groupId: {
+            type: "string",
+          },
+          include1: {
+            type: "string",
+          }
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            collection: 'testing',
+            pk: {
+              field: "gsi1pk",
+              composite: ["groupId"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: [],
+            },
+            projection: ["include1"],
+          }
+        },
+      },{ table, client });
+
+      const entity2 = new Entity({
+        model: {
+          entity: "entity2",
+          service: serviceName,
+          version: "1",
+        },
+        attributes: {
+          id: {
+            type: "string",
+          },
+          uniqueToEntity2: {
+            type: "string",
+            required: true,
+          },
+          groupId: {
+            type: "string",
+          },
+          include2: {
+            type: "string",
+          },
+          include3: {
+            type: "string",
+          },
+        },
+        indexes: {
+          primary: {
+            pk: {
+              field: "pk",
+              composite: ["id"],
+            },
+            sk: {
+              field: "sk",
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            collection: 'testing',
+            pk: {
+              field: "gsi1pk",
+              composite: ["groupId"],
+            },
+            sk: {
+              field: "gsi1sk",
+              composite: [],
+            },
+            projection: ["include2", "include3"],
+          }
+        },
+      }, { table, client });
+
+      const service = new Service({ entity1, entity2 });
+
+      const groupId = uuid();
+      const [_, record2] = await Promise.all([
+        entity1.put({ groupId, id: uuid(), include1: uuid(), uniqueToEntity1: 1 }).go(),
+        entity2.put({ groupId, id: uuid(), include2: uuid(), include3: uuid(), uniqueToEntity2: '2' }).go(),
+      ]);
+
+      const collectionResponse = await service.collections.testing({ groupId }).go({ 
+        attributes: ["include2"] 
+      });
+      expect(collectionResponse.data).to.deep.equal({
+        entity1: [{}],
+        entity2: [{
+          include2: record2.data.include2,
+        }],
+      });
+      
+      // mostly testing that the typing works here:
+      // @ts-expect-error
+      expect(collectionResponse.data.entity1[0].include1 === undefined).to.equal(true);
+      
+      expect(collectionResponse.data.entity2[0].include2 === record2.data.include2).to.equal(true);
+      // @ts-expect-error
+      expect(collectionResponse.data.entity2[0].include3 === record2.data.include3).to.equal(false);
+    });
+  });
 });
