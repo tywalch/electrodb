@@ -46,8 +46,8 @@ indexes: {
 			cast?: 'string' | 'number';
 			casing?: 'upper' | 'lower' | 'none';
 		},
-    condition?: (attr: Record<string, unknown>) => boolean; // only available on `isolated` or `clustered` indexes
-    scope?: string; // only available on `isolated` or `clustered` indexes
+		condition?: (attr: Record<string, unknown>) => boolean; // only available on `isolated` or `clustered` indexes
+		scope?: string; // only available on `isolated` or `clustered` indexes
 	}
 }
 ```
