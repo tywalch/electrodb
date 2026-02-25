@@ -141,8 +141,8 @@ const ErrorCodes = {
   },
   InvalidLoggerProvided: {
     code: 1022,
-    section: "invalid-listener-provided",
-    name: "InvalidListenerProvided",
+    section: "invalid-logger-provided",
+    name: "InvalidLoggerProvided",
     sym: ErrorCode,
   },
   InvalidClientProvided: {
