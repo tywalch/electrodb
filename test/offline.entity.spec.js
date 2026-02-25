@@ -5871,7 +5871,7 @@ describe("Entity", () => {
     });
     it("should require a valid schema", () => {
       expect(() => new Entity()).to.throw(
-        `instance requires property "model", instance requires property "attributes", instance requires property "indexes", instance.model is required - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model`,
+        'instance.model is required, instance requires property "model", instance requires property "attributes", instance requires property "indexes" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model',
       );
     });
   });
