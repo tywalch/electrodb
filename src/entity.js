@@ -2762,7 +2762,7 @@ class Entity {
       let is = {}
       let start = {}
       let end = {};
-      (state.query.keys.sk ?? []).forEach(({type, facets}) => {
+      (state.query.keys.sk || []).forEach(({type, facets}) => {
         if (type === QueryTypes.is || type === QueryTypes.composite_collection) {
           is = facets;
         } else if (type === QueryTypes.between) {
