@@ -630,5 +630,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 - [Issue #548](https://github.com/tywalch/electrodb/issues/548); Fixed invalid `ProjectionExpression` generated for entities without a sort key when using the `attributes` option. An empty string was incorrectly added to `ExpressionAttributeNames`, causing DynamoDB to reject the request.
 
 ## [3.6.2]
-## Added
+### Added
 - Fast follow to 3.6.0, relaxes projection attribute constraint on collection entities. 3.6.0 required [collection] member entities to all share the same attributes when using a `projection` defined index. This constraint came from the original scope of 3.6.0. Thankfully, due to the work of [@anatolzak](https://github.com/anatolzak), 3.6.0 shipped with robust collection typing and this no longer was a concern. 
+
+## [3.7.0]
+### Adds support for [multi-attribute indexes](https://aws.amazon.com/blogs/database/multi-key-support-for-global-secondary-index-in-amazon-dynamodb/) [read more](https://electrodb.dev/en/modeling/indexes/#multi-attribute-indexes).
