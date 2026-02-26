@@ -4562,6 +4562,12 @@ class Entity {
             `The Access Pattern "${accessPattern}" is defined as a "${indexType}" index, but a condition callback is defined. Composite indexes do not support the use of a condition callback.`,
           );
         }
+        if (index.scope !== undefined) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidIndexCondition,
+            `The Access Pattern "${accessPattern}" is defined as a "${indexType}" index, but a "scope" value was defined. Composite indexes do not support the use of scope.`,
+          );
+        }
         if (index.pk.field !== undefined || (index.sk && index.sk.field !== undefined)) {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidIndexDefinition,
@@ -4612,13 +4618,13 @@ class Entity {
         if (hasSk && index.sk.field === undefined) {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidIndexCompositeAttributes,
-            `The ${accessPattern} Access pattern is defined as a "${indexType}" index, but a Sort Key is defined without a field property. Composite indexes do not support the use of a condition callback.`,
+            `The ${accessPattern} Access pattern is defined as a "${indexType}" index, but a Sort Key is defined without a Range Key field mapping.`,
           );
         }
         if (index.pk.field === undefined) {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidIndexCompositeAttributes,
-            `The ${accessPattern} Access pattern is defined as a "${indexType}" index, but a Partition Key is defined without a field property. Composite indexes do not support the use of a condition callback.`,
+            `The ${accessPattern} Access pattern is defined as a "${indexType}" index, but a Partition Key is defined without a HasKey field mapping.`,
           );
         }
       }

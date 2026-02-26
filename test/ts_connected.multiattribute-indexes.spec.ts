@@ -1355,18 +1355,50 @@ describe("multi-attribute index support", () => {
         })).to.throw(`The Access Pattern "secondary" is defined as a "composite" index, but a condition callback is defined. Composite indexes do not support the use of a condition callback. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-option`);
       });
 
-      // - index field property should only be allowed to be missing on "composite" indexes
-      // - only allow secondary indexes to be composite
-      // ? disallow use of "condition" on composite indexes?
-
+      it("should not accept a 'scope' value on composite indexes", () => {
+        expect(() => new Entity({
+          model: {
+            entity: 'test',
+            version: '1',
+            service: 'test',
+          },
+          attributes: {
+            id: {
+              type: 'string',
+            },
+            type: {
+              type: 'string',
+            }
+          },
+          indexes: {
+            record: {
+              pk: {
+                field: 'pk',
+                composite: ['type'],
+              },
+              sk: {
+                field: 'sk',
+                composite: ['id'],
+              },
+            },
+            secondary: {
+              index: 'gsi1pk-gsi1sk-index',
+              scope: 'abc',
+              type: 'composite',
+              pk: {
+                composite: ['type'],
+              },
+              sk: {
+                composite: ['id'],
+              },
+            }
+          },
+        })).to.throw(`The Access Pattern "secondary" is defined as a "composite" index, but a "scope" value was defined. Composite indexes do not support the use of scope. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-option`);
+      });
     });
-    describe("query-time", () => {
-      // - should not validate presence of composite attributes on all query and mutation operations: query, begins, gt, gte, lt, lte, between, update, patch, upsert, put, create, delete, remove, transactGet, transactWrite, collection, collection-begins, collection-gt, collection-gte, collection-lt, collection-lte
-    })
   });
 
   describe("multi-attribute index aws connected tests", () => {
-
     const serviceName = createSafeName(); // important test namespacing
     const thing = createThingEntity({
       name: createSafeName(), // important test namespacing
