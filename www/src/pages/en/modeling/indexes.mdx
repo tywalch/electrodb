@@ -1104,12 +1104,37 @@ There are a few important constraints to keep in mind when using multi-attribute
 
 4. **No `template` property**: Since composite indexes store attribute values directly (without concatenation or formatting), the `template` property is not applicable.
 
-5. **No collections**: `composite` indexes do not support collections because these indexes use attribute values directly.
+5. **No `scope` property**: Composite indexes do not support the `scope` option because these indexes use attribute values directly.
+
+6. **No collections**: `composite` indexes do not support collections because these indexes use attribute values directly.
+
+### How comparison works with composite indexes
+For composite indexes, comparison operators (`gt`, `gte`, `lt`, `lte`, `between`) apply only to the last attribute you provide in the query.
+
+Think of a composite index like a hierarchy of folders:
+
+- The first attribute narrows you to a top-level folder.
+- The second attribute narrows you further.
+- The third attribute narrows you even further.
+- And so on.
+
+You must fully specify each level using equality (`=`) until you reach the last level you provide.
+Only at that final level can you use a range comparison (`gt`, `lt`, etc.).
+
+This is different from clustered or isolated indexes.
+- clustered and isolated indexes first concatenate all attributes into a single string (left to right).
+- Comparisons are then applied to that one combined string.
+- As a result, the comparison operates on the entire concatenated value — not on individual attributes.
+
+By contrast, composite indexes treat each attribute separately and rely on DynamoDB’s rule:
+**Range comparisons can only be applied to the final attribute in the sort key condition.**
+
+If your index has only one attribute, both approaches mostly behave the same. The difference appears when multiple attributes are involved.
 
 ### Gotchas and Tips
 
-- Query comparison operations (e.g. `gt`, `gte`, `lt`, `lte`, `between`) on `composite` indexes apply only to the last provided sort key attribute. This is different from `clustered` or `isolated` indexes where the comparison applies to all provided sort key attributes. This is because `clustered` and `isolated` indexes use concatenated string sort key values, which can be compared across all attributes. `composite` indexes use attribute values directly, and dynamodb only allows comparison applies to the last provided attribute. Be mindful of this, as results may vary between different index types.
+- The values returned when using a `composite` index can be different than when using a `clustered` or `isolated` index with `gt`, `gte`, `lt`, `lte`, and `between` queries. Checkout the section on [How comparison works with composite indexes](#how-comparison-works-with-composite-indexes) above to learn more.
 
-- Best practice when using `clustered` or `isolated` indexes is to use generic index field names for you Partition and Sort Keys. This keeps the indexes flexible and reusable across different entities. The same is true for `composite` indexes, where the fields used to compose an index can also be generisized. To support this with ElectroDB, use the `field` property on individual attributes to map to the field name on the DynamoDB table KeySchema. 
+- Best practice when using `clustered` or `isolated` indexes is to use generic index field names for your Partition and Sort Keys. This keeps the indexes flexible and reusable across different entities. The same is true for `composite` indexes, where the fields used to compose an index can also be generisized. To support this with ElectroDB, use the `field` property on individual attributes to map to the field name on the DynamoDB table KeySchema. 
 
 
