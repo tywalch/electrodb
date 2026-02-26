@@ -241,6 +241,12 @@ const ErrorCodes = {
     name: "IncompleteIndexCompositesAttributesProvided",
     sym: ErrorCode,
   },
+  InvalidQueryParameters: {
+    code: 2013,
+    section: "invalid-query-parameters",
+    name: "InvalidQueryParameters",
+    sym: ErrorCode,
+  },
   InvalidAttribute: {
     code: 3001,
     section: "invalid-attribute",

@@ -2783,8 +2783,10 @@ class Entity {
         } else if (start[name] !== undefined && end[name] !== undefined) {
           lastFound = name;
         } else if (start[name] !== undefined || end[name] !== undefined) {
-          // todo: improve error handling
-          throw new Error(`Invalid between query: missing start or end value for ${name}`);
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidQueryParameters,
+            `Invalid attribute combination provided to between query. Between queries on composite indexes must have the same attribute for start and end values until the last sort key attribute. The provided attribute ${name} is missing ${start[name] !== undefined ? 'an end' : 'a start'} value. This is a DynamoDB constraint.`
+          );
         } else {
           break;
         }
@@ -2808,8 +2810,10 @@ class Entity {
           expressions.push(`${nameRef.expression} = ${valueRef}`);
         } else if (start[name] !== undefined && end[name] !== undefined) {
           if (start[name] !== end[name]) {
-            // todo: improve error handling
-            throw new Error(`Invalid between query: start and end values for ${name} must be the same until the last sort key attribute`);
+            throw new e.ElectroError(
+              e.ErrorCodes.InvalidQueryParameters,
+              `Invalid attribute combination provided to between query. Between queries on composite indexes must have the same attribute for start and end values until the last sort key attribute. The provided attribute ${name} has different start and end values. This is a DynamoDB constraint.`
+            );
           }
           const value = start[name];
           const field = this.model.schema.getFieldName(name);

@@ -1396,6 +1396,99 @@ describe("multi-attribute index support", () => {
         })).to.throw(`The Access Pattern "secondary" is defined as a "composite" index, but a "scope" value was defined. Composite indexes do not support the use of scope. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-index-option`);
       });
     });
+
+    it("should not allow different attributes for start and end values in a between query on a composite index", () => {
+      const entity = new Entity({
+        model: {
+          entity: 'test',
+          version: '1',
+          service: 'test',
+        },
+        attributes: {
+          id: {
+            type: 'string',
+          },
+          type: {
+            type: 'string',
+          },
+          color: {
+            type: 'string',
+          },
+          size: {
+            type: 'string',
+          },
+          vendor: {
+            type: 'string',
+          }
+        },
+        indexes: {
+          record: {
+            pk: {
+              field: 'pk',
+              composite: ['id'],
+            },
+            sk: {
+              field: 'sk',
+              composite: [],
+            },
+          },
+          secondary: {
+            index: 'gsi1pk-gsi1sk-index',
+            type: 'composite',
+            pk: {
+              composite: [],
+            },
+            sk: {
+              composite: ['vendor', 'size', 'color'],
+            },
+          },
+        },
+      }, { table });
+
+      expect(() => entity.query.secondary({}).between({
+        vendor: '1',
+        size: '1',
+        color: '1',
+      }, {
+        vendor: '2',
+        size: '1',
+        color: '2',
+      }).params()).to.throw(`Invalid attribute combination provided to between query. Between queries on composite indexes must have the same attribute for start and end values until the last sort key attribute. The provided attribute vendor has different start and end values. This is a DynamoDB constraint. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-query-parameters`);
+
+      expect(() => entity.query.secondary({ vendor: '1' }).between({
+        size: '1',
+        color: '1',
+      }, {
+        size: undefined,
+        color: '2',
+      }).params()).to.throw(`Invalid attribute combination provided to between query. Between queries on composite indexes must have the same attribute for start and end values until the last sort key attribute. The provided attribute size is missing an end value. This is a DynamoDB constraint. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-query-parameters`);
+
+      expect(() => entity.query.secondary({ vendor: '1' }).between({
+        size: '1',
+        color: '1',
+      }, {
+        size: '1',
+        color: undefined,
+      }).params()).to.throw(`Invalid attribute combination provided to between query. Between queries on composite indexes must have the same attribute for start and end values until the last sort key attribute. The provided attribute color is missing an end value. This is a DynamoDB constraint. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-query-parameters`);
+
+      expect(() => entity.query.secondary({ vendor: '1' }).between({
+        size: '1',
+        color: undefined,
+      }, {
+        size: '1',
+        color: '2',
+      }).params()).to.throw(`Invalid attribute combination provided to between query. Between queries on composite indexes must have the same attribute for start and end values until the last sort key attribute. The provided attribute color is missing a start value. This is a DynamoDB constraint. - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-query-parameters`);
+
+      expect(() => entity.query.secondary({}).between({
+        vendor: '1',
+        size: '1',
+        color: '1',
+      }, {
+        vendor: '1',
+        size: '1',
+        color: '2',
+      }).params()).not.to.throw();
+    });
   });
 
   describe("multi-attribute index aws connected tests", () => {
@@ -2424,8 +2517,7 @@ describe("multi-attribute index support", () => {
         })
       });
     });
-  },
-  );
+  });
 
   describe("multi-attribute index documentation examples", () => {
     function createInventoryItemEntity() {
