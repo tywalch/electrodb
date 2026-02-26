@@ -22,6 +22,72 @@ const v = require("./validations");
 const e = require("./errors");
 const u = require("./util");
 
+function handleNonIsolatedCollection(
+  entity,
+  state,
+  collection = "",
+  facets /* istanbul ignore next */ = {},
+) {
+  if (state.getError() !== null) {
+    return state;
+  }
+  try {
+    const { pk, sk } = state.getCompositeAttributes();
+    return state
+      .setMethod(MethodTypes.query)
+      .setCollection(collection)
+      .setPK(entity._expectFacets(facets, pk))
+      .ifSK(() => {
+        const { composites, unused } = state.identifyCompositeAttributes(
+          facets,
+          sk,
+          pk,
+        );
+        state.setSK(composites);
+        state.beforeBuildParams(({ options, state }) => {
+          const accessPattern =
+            entity.model.translations.indexes.fromIndexToAccessPattern[
+              state.query.index
+            ];
+
+          if (
+            options.compare === ComparisonTypes.attributes ||
+            options.compare === ComparisonTypes.v2
+          ) {
+            if (
+              !entity.model.indexes[accessPattern].sk.isFieldRef &&
+              sk.length > 1
+            ) {
+              state.filterProperties(FilterOperationNames.eq, {
+                ...unused,
+                ...composites,
+              });
+            }
+          }
+        });
+      })
+      .whenOptions(({ options, state }) => {
+        if (!options.ignoreOwnership && !state.getParams()) {
+          state.query.options.expressions.names = {
+            ...state.query.options.expressions.names,
+            ...state.query.options.identifiers.names,
+          };
+          state.query.options.expressions.values = {
+            ...state.query.options.expressions.values,
+            ...state.query.options.identifiers.values,
+          };
+          state.query.options.expressions.expression =
+            state.query.options.expressions.expression.length > 1
+              ? `(${state.query.options.expressions.expression}) AND ${state.query.options.identifiers.expression}`
+              : `${state.query.options.identifiers.expression}`;
+        }
+      });
+  } catch (err) {
+    state.setError(err);
+    return state;
+  }
+}
+
 const methodChildren = {
   upsert: [
     "upsertSet",
@@ -86,6 +152,7 @@ let clauses = {
       "scan",
       "collection",
       "clusteredCollection",
+      "compositeCollection",
       "create",
       "remove",
       "patch",
@@ -93,6 +160,23 @@ let clauses = {
       "batchDelete",
       "batchGet",
     ],
+  },
+  compositeCollection: {
+    name: "compositeCollection",
+    action(
+      entity,
+      state,
+      collection = "",
+      facets /* istanbul ignore next */ = {},
+    ) {
+      return handleNonIsolatedCollection(
+        entity,
+        state.setType(QueryTypes.composite_collection),
+        collection,
+        facets,
+      );
+    },
+    children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go"],
   },
   clusteredCollection: {
     name: "clusteredCollection",
@@ -102,65 +186,12 @@ let clauses = {
       collection = "",
       facets /* istanbul ignore next */ = {},
     ) {
-      if (state.getError() !== null) {
-        return state;
-      }
-      try {
-        const { pk, sk } = state.getCompositeAttributes();
-        return state
-          .setType(QueryTypes.clustered_collection)
-          .setMethod(MethodTypes.query)
-          .setCollection(collection)
-          .setPK(entity._expectFacets(facets, pk))
-          .ifSK(() => {
-            const { composites, unused } = state.identifyCompositeAttributes(
-              facets,
-              sk,
-              pk,
-            );
-            state.setSK(composites);
-            state.beforeBuildParams(({ options, state }) => {
-              const accessPattern =
-                entity.model.translations.indexes.fromIndexToAccessPattern[
-                  state.query.index
-                ];
-
-              if (
-                options.compare === ComparisonTypes.attributes ||
-                options.compare === ComparisonTypes.v2
-              ) {
-                if (
-                  !entity.model.indexes[accessPattern].sk.isFieldRef &&
-                  sk.length > 1
-                ) {
-                  state.filterProperties(FilterOperationNames.eq, {
-                    ...unused,
-                    ...composites,
-                  });
-                }
-              }
-            });
-          })
-          .whenOptions(({ options, state }) => {
-            if (!options.ignoreOwnership && !state.getParams()) {
-              state.query.options.expressions.names = {
-                ...state.query.options.expressions.names,
-                ...state.query.options.identifiers.names,
-              };
-              state.query.options.expressions.values = {
-                ...state.query.options.expressions.values,
-                ...state.query.options.identifiers.values,
-              };
-              state.query.options.expressions.expression =
-                state.query.options.expressions.expression.length > 1
-                  ? `(${state.query.options.expressions.expression}) AND ${state.query.options.identifiers.expression}`
-                  : `${state.query.options.identifiers.expression}`;
-            }
-          });
-      } catch (err) {
-        state.setError(err);
-        return state;
-      }
+      return handleNonIsolatedCollection(
+        entity,
+        state.setType(QueryTypes.clustered_collection),
+        collection,
+        facets,
+      );
     },
     children: ["between", "gte", "gt", "lte", "lt", "begins", "params", "go"],
   },

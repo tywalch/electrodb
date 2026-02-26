@@ -14,6 +14,7 @@ const reverseIndex = require("./definitions/reverseindex.json");
 const issue530 = require("./definitions/issue530.json");
 const projectionInclude = require("./definitions/projection-include.json");
 const projectionIncludeWithoutEdb = require("./definitions/projection-include-without-edb.json");
+const multiattribute = require("./definitions/multiattributekeys.json");
 const shouldDestroy = process.argv.includes("--recreate");
 
 if (
@@ -78,6 +79,7 @@ async function createTable(dynamodb, table, definition) {
 async function main() {
   await Promise.all([
     createTable(dynamodb, "electro", definition),
+    createTable(dynamodb, "multi-attribute", multiattribute),
     createTable(dynamodb, "electro_customkeys", customKeys),
     createTable(dynamodb, "electro_nosort", noSortKeys),
     createTable(dynamodb, "electro_nostringkeys", noStringKeys),

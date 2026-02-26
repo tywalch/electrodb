@@ -1435,13 +1435,13 @@ describe("Entities with custom identifiers and versions", () => {
         ":uniqueToModelOne0": "uniqueToModelOneValue",
         ":pk": "$myservice#prop1_abc",
         ":sk1": "$collectiona",
-        ":__edb_e___entityOne": "entityOne",
-        ":__edb_e___entityTwo": "entityTwo",
-        ":__edb_v___entityOne": "1",
-        ":__edb_v___entityTwo": "1",
+        ":__edb_e___entityOne_c0": "entityOne",
+        ":__edb_e___entityTwo_c0": "entityTwo",
+        ":__edb_v___entityOne_c0": "1",
+        ":__edb_v___entityTwo_c0": "1",
       },
       FilterExpression:
-        "((#__edb_e__ = :__edb_e___entityOne AND #__edb_v__ = :__edb_v___entityOne) OR (#__edb_e__ = :__edb_e___entityTwo AND #__edb_v__ = :__edb_v___entityTwo)) AND #uniqueToModelTwo = :uniqueToModelTwo0 OR #uniqueToModelOne = :uniqueToModelOne0",
+        "((#__edb_e__ = :__edb_e___entityOne_c0 AND #__edb_v__ = :__edb_v___entityOne_c0) OR (#__edb_e__ = :__edb_e___entityTwo_c0 AND #__edb_v__ = :__edb_v___entityTwo_c0)) AND #uniqueToModelTwo = :uniqueToModelTwo0 OR #uniqueToModelOne = :uniqueToModelOne0"
     });
   });
 

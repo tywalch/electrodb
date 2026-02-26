@@ -133,34 +133,40 @@ const ErrorCodes = {
     name: "IncompatibleKeyCasing",
     sym: ErrorCode,
   },
-  InvalidClientProvided: {
-    code: 1021,
-    section: "invalid-client-provided",
-    name: "InvalidClientProvided",
-    sym: ErrorCode,
-  },
-  InconsistentIndexDefinition: {
-    code: 1022,
-    section: "inconsistent-index-definition",
-    name: "Inconsistent Index Definition",
-    sym: ErrorCode,
-  },
   InvalidListenerProvided: {
-    code: 1023,
+    code: 1021,
     section: "invalid-listener-provided",
     name: "InvalidListenerProvided",
     sym: ErrorCode,
   },
   InvalidLoggerProvided: {
+    code: 1022,
+    section: "invalid-logger-provided",
+    name: "InvalidLoggerProvided",
+    sym: ErrorCode,
+  },
+  InvalidClientProvided: {
+    code: 1023,
+    section: "invalid-client-provided",
+    name: "InvalidClientProvided",
+    sym: ErrorCode,
+  },
+  InconsistentIndexDefinition: {
     code: 1024,
-    section: "invalid-listener-provided",
-    name: "InvalidListenerProvided",
+    section: "inconsistent-index-definition",
+    name: "Inconsistent Index Definition",
     sym: ErrorCode,
   },
   InvalidProjectionDefinition: {
     code: 1025,
     section: "invalid-projection-definition",
     name: "InvalidProjectionDefinition",
+    sym: ErrorCode,
+  },
+  InvalidIndexDefinition: {
+    code: 1026,
+    section: "invalid-index-definition",
+    name: "InvalidIndexDefinition",
     sym: ErrorCode,
   },
   MissingAttribute: {
@@ -233,6 +239,12 @@ const ErrorCodes = {
     code: 2012,
     section: "invalid-index-composite-attributes-provided",
     name: "IncompleteIndexCompositesAttributesProvided",
+    sym: ErrorCode,
+  },
+  InvalidQueryParameters: {
+    code: 2013,
+    section: "invalid-query-parameters",
+    name: "InvalidQueryParameters",
     sym: ErrorCode,
   },
   InvalidAttribute: {

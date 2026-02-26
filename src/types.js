@@ -31,6 +31,7 @@ const QueryTypes = {
   between: "between",
   collection: "collection",
   clustered_collection: "clustered_collection",
+  composite_collection: "composite_collection",
   is: "is",
 };
 
@@ -89,6 +90,7 @@ const MethodTypeTranslation = {
 const IndexTypes = {
   isolated: "isolated",
   clustered: "clustered",
+  composite: "composite",
 };
 
 const Comparisons = {
@@ -229,6 +231,7 @@ const ItemOperations = {
   subtract: "subtract",
   append: "append",
   ifNotExists: "ifNotExists",
+  none: "",
 };
 
 const UpsertOperations = {

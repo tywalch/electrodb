@@ -2498,11 +2498,11 @@ describe("Entity", () => {
         ExpressionAttributeValues: {
           ":pk": "$MallStoreDirectory#id_Abcd",
           ":sk1": "$MYCOLLECTION",
-          ":__edb_e___stores": "MallStores",
-          ":__edb_v___stores": "1",
+          ":__edb_e___stores_c0": "MallStores",
+          ":__edb_v___stores_c0": "1",
         },
         FilterExpression:
-          "(#__edb_e__ = :__edb_e___stores AND #__edb_v__ = :__edb_v___stores)",
+          "(#__edb_e__ = :__edb_e___stores_c0 AND #__edb_v__ = :__edb_v___stores_c0)",
       });
     });
 
@@ -5871,7 +5871,7 @@ describe("Entity", () => {
     });
     it("should require a valid schema", () => {
       expect(() => new Entity()).to.throw(
-        `instance requires property "model", instance requires property "attributes", instance requires property "indexes", instance.model is required - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model`,
+        'instance.model is required, instance requires property "model", instance requires property "attributes", instance requires property "indexes" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model',
       );
     });
   });
