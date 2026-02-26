@@ -14,7 +14,6 @@ import {
 import { v4 as uuid } from "uuid";
 import { faker } from "@faker-js/faker";
 import { expect } from 'chai';
-const u = require("../src/util");
 import { Service, Entity, EntityItem, EntityRecord, QueryResponse, createConversions, CollectionResponse } from "../";
 
 function createSafeName() {
@@ -34,7 +33,7 @@ const table = "multi-attribute";
 
 function expectSubset(label: string, received: any, expected: any) {
   try {
-    if (!received === undefined) {
+    if (received === undefined || received === null) {
       throw new Error(`Invalid test: Received value for ${label} is undefined
       received: ${JSON.stringify(received, null, 4)}
       expected: ${JSON.stringify(expected, null, 4)}`);
@@ -56,23 +55,6 @@ function expectSubset(label: string, received: any, expected: any) {
     console.log(JSON.stringify({ label, received, expected }, null, 4));
     throw e;
   }
-}
-
-function expectNotSubset(label: string, received: any, expected: any) {
-  if (!received === undefined) {
-    throw new Error(`Invalid test: Received value for ${label} is undefined`);
-  }
-  if (expected === undefined) {
-    throw new Error(`Invalid test: Expected value for ${label} is undefined`);
-  }
-  try {
-    expectSubset(label, received, expected);
-  } catch {
-    // if we catch an error, it means received is not a subset of expected
-    return;
-  }
-
-  throw new Error(`Expected ${label} to not be a subset, but it was.`);
 }
 
 type CreateThingEntityOptions = {
@@ -359,7 +341,7 @@ type ParameterBuilders<Op extends Operation, P> = {
     : never;
 }
 
-function expectExhaustive(_: never): never {
+function expectExhaustiveSwitch(_: never): never {
   throw new Error(`Unhandled case in exhaustive check`);
 }
 
@@ -693,7 +675,7 @@ describe("multi-attribute index support", () => {
               break;
             // make sure we handle all cases
             default: {
-              expectExhaustive(received);
+              expectExhaustiveSwitch(received);
             }
           }
         })
@@ -773,16 +755,12 @@ describe("multi-attribute index support", () => {
               break;
             // make sure we handle all cases
             default: {
-              expectExhaustive(received);
+              expectExhaustiveSwitch(received);
             }
           }
         });
       }
     })
-  });
-
-  describe("conversion functions", () => {
-
   });
 
   describe("multi-attribute index validations", () => {
@@ -2580,14 +2558,14 @@ describe("multi-attribute index support", () => {
         )
         .params();
 
-        service.collections
-          .inventory({ country: "US", region: "Georgia", city: "Atlanta" })
-          .params();
+      service.collections
+        .inventory({ country: "US", region: "Georgia", city: "Atlanta" })
+        .params();
         
-          service.collections
-            .inventory({ country: "US", region: "Georgia" })
-            .begins({ city: "A" })
-            .params();
+      service.collections
+        .inventory({ country: "US", region: "Georgia" })
+        .begins({ city: "A" })
+        .params();
     });
   })
 });
