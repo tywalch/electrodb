@@ -876,7 +876,6 @@ In November 2025, DynamoDB added support for querying [multi-attribute GSIs](htt
 
 Querying a `composite` index works the same as other ElectroDB index types. You provide pk composite attributes to initiate the query, and can use sort key operations like `begins`, `between`, `gt`, `gte`, `lt`, and `lte` on the sk composite attributes.
 
-The key difference is in the generated DynamoDB parameters: instead of a single `KeyConditionExpression` using `begins_with` on a concatenated sort key, ElectroDB generates individual equality and comparison conditions for each attribute.
 
 #### Basic Query
 
