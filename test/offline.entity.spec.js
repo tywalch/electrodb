@@ -152,7 +152,7 @@ describe("Entity", () => {
       .catch((results) => ({ success: false, results }));
     expect(success).to.be.false;
     expect(results.message).to.equal(
-      "No client defined on model - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#no-client-defined-on-model",
+      "No client defined on model or provided in query options - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#no-client-defined-on-model",
     );
   });
   describe("Schema validation", () => {

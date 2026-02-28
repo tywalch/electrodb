@@ -13,7 +13,11 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-ElectroDB supports both the [v2](https://www.npmjs.com/package/aws-sdk) and [v3](https://www.npmjs.com/package/@aws-sdk/client-dynamodb) aws clients. The client can be supplied creating a new Entity or Service, or added to an Entity/Service instance via the `setClient()` method.
+ElectroDB supports both the [v2](https://www.npmjs.com/package/aws-sdk) and [v3](https://www.npmjs.com/package/@aws-sdk/client-dynamodb) aws clients. The client can be supplied in several ways:
+
+1. When creating a new Entity or Service
+2. Added to an Entity/Service instance via the `setClient()` method
+3. Dynamically at query time via the `client` [execution option](/en/core-concepts/executing-queries#execution-options)
 
 _On the instantiation of an `Entity`:_
 
@@ -79,6 +83,26 @@ const task = new Entity({
 
 task.setClient(client);
 ```
+
+_At query execution time:_
+
+```typescript
+import { Entity } from "electrodb";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+
+const client = new DocumentClient({
+  region: "us-east-1",
+});
+
+const task = new Entity({
+  // your model
+});
+
+// Pass client dynamically when executing the query
+await task.get({ id: "my-id" }).go({ client });
+```
+
+This approach is useful for scenarios like multi-region routing, per-request client selection, or testing with different clients. The client provided at query time takes precedence over any client set at instantiation.
 
 ## V2 Client
 

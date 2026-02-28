@@ -614,11 +614,11 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### [3.5.2]
 ### Fixed
-[Issue #516](https://github.com/tywalch/electrodb/issues/516); Fixed the missing ProjectionExpression parameter when performing a batchGet with specific attributes to return. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #517](https://github.com/tywalch/electrodb/pull/517). Thank you for your contribution!
+- [Issue #516](https://github.com/tywalch/electrodb/issues/516); Fixed the missing ProjectionExpression parameter when performing a batchGet with specific attributes to return. Contribution provided by [@anatolzak](https://github.com/anatolzak) via [PR #517](https://github.com/tywalch/electrodb/pull/517). Thank you for your contribution!
 
 ### [3.5.3]
 ### Fixed
-- [Issue #540](https://github.com/tywalch/electrodb/issues/540) Rolls back a change introduced in 3.5.0 (via [533](https://github.com/tywalch/electrodb/pull/533/)) that caused over-filtering in collection queries, resulting in some collection members not being returned.   
+- [Issue #540](https://github.com/tywalch/electrodb/issues/540) Rolls back a change introduced in 3.5.0 (via [533](https://github.com/tywalch/electrodb/pull/533/)) that caused over-filtering in collection queries, resulting in some collection members not being returned.
 
 ## [3.6.0]
 ### Added 
@@ -635,3 +635,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.7.0]
 ### Adds support for [multi-attribute indexes](https://aws.amazon.com/blogs/database/multi-key-support-for-global-secondary-index-in-amazon-dynamodb/) [read more](https://electrodb.dev/en/modeling/indexes/#multi-attribute-indexes).
+
+## [3.7.1]
+### Added
+- [Issue #543](https://github.com/tywalch/electrodb/issues/543); New `client` option for `go()` method allowing dynamic DynamoDB client override at query execution time. This enables use cases like multi-region routing, per-request client selection, and easier testing. Supported for all operation types: entity operations, collection queries, batch operations, and transactions.
