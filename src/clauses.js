@@ -1358,10 +1358,10 @@ let clauses = {
         return Promise.reject(state.error);
       }
       try {
-        if (entity.client === undefined) {
+        if (entity.client === undefined && options.client === undefined) {
           throw new e.ElectroError(
             e.ErrorCodes.NoClientDefined,
-            "No client defined on model",
+            "No client defined on model or provided in query options",
           );
         }
         options.terminalOperation = TerminalOperation.go;

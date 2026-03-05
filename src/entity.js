@@ -516,7 +516,8 @@ class Entity {
       );
     };
     const dynamoDBMethod = MethodTypeTranslation[method];
-    return this.client[dynamoDBMethod](params)
+    const client = config.client || this.client;
+    return client[dynamoDBMethod](params)
       .promise()
       .then((results) => {
         notifyQuery();
@@ -1929,6 +1930,10 @@ class Entity {
 
       if (validations.isFunction(option.hydrator)) {
         config.hydrator = option.hydrator;
+      }
+
+      if (option.client !== undefined) {
+        config.client = c.normalizeClient(option.client);
       }
 
       if (option._includeOnResponseItem) {

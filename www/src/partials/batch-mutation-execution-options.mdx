@@ -4,6 +4,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 
 ```typescript
 {
+  client?: DocumentClient;
   params?: object;
   table?: string;
   data?: 'raw' | 'includeKeys' | 'attributes';
@@ -20,6 +21,7 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 
 | Option      |       Default        | Description                                                                                                                                                                                                                                                                                                                                                                                   |
 | ----------- | :------------------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| client      | _(from constructor)_ | Provide a DynamoDB client dynamically at query execution time. This allows per-request client selection without modifying the Entity or Service instance. The client provided here takes precedence over any client set at instantiation time. Both v2 and v3 AWS SDK clients are supported and will be auto-detected.                                                                       |
 | params      |         `{}`         | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.                                                                                                                                                                                                                            |
 | table       | _(from constructor)_ | Use a different table than the one defined in the [Service Options](#service-options)                                                                                                                                                                                                                                                                                                         |
 | attributes  |  _(all attributes)_  | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.                                                                                                                                                                                                     |

@@ -70,7 +70,15 @@ Calling the async `.go()` method on a transaction returns the following interfac
 
 Execution options can be provided to the `.params()` and `.go()` terminal functions to change query behavior or add customer parameters to a query.
 
-> This method does not currently have any execution options.
+```typescript
+{
+  client?: DocumentClient;
+}
+```
+
+| Option | Default              | Description                                                                                                                                                                                                                                                                                                             |
+| ------ | :------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| client | _(from constructor)_ | Provide a DynamoDB client dynamically at query execution time. This allows per-request client selection without modifying the Entity or Service instance. The client provided here takes precedence over any client set at instantiation time. Both v2 and v3 AWS SDK clients are supported and will be auto-detected. |
 
 The following are some links to help you understand the mechanics behind DynamoDB Transacts
 
