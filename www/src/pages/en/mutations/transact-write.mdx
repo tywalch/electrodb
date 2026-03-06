@@ -322,13 +322,15 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 {
   client?: DocumentClient;
   token?: string;
+  abortSignal?: AbortSignal;
 }
 ```
 
-| Option | Default              | Description                                                                                                                                                                                                                                                                                                             |
-| ------ | :------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| client | _(from constructor)_ | Provide a DynamoDB client dynamically at query execution time. This allows per-request client selection without modifying the Entity or Service instance. The client provided here takes precedence over any client set at instantiation time. Both v2 and v3 AWS SDK clients are supported and will be auto-detected. |
-| token  |        _none_        | Adds the provided value as a `ClientRequestToken` along with your request to DynamoDB.                                                                                                                                                                                                                                  |
+| Option      | Default              | Description                                                                                                                                                                                                                                                                                                             |
+| ----------- | :------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| client      | _(from constructor)_ | Provide a DynamoDB client dynamically at query execution time. This allows per-request client selection without modifying the Entity or Service instance. The client provided here takes precedence over any client set at instantiation time. Both v2 and v3 AWS SDK clients are supported and will be auto-detected. |
+| token       |        _none_        | Adds the provided value as a `ClientRequestToken` along with your request to DynamoDB.                                                                                                                                                                                                                                  |
+| abortSignal |        _none_        | An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that can be used to cancel the operation. This is useful for implementing request timeouts or cancelling long-running operations. When the signal is aborted, ElectroDB will throw an [`OperationAborted`](/en/reference/errors#operation-aborted) error. |
 
 ## Resources
 

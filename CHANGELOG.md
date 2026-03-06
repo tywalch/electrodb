@@ -621,7 +621,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 - [Issue #540](https://github.com/tywalch/electrodb/issues/540) Rolls back a change introduced in 3.5.0 (via [533](https://github.com/tywalch/electrodb/pull/533/)) that caused over-filtering in collection queries, resulting in some collection members not being returned.
 
 ## [3.6.0]
-### Added 
+### Added
 - [Issue #507](https://github.com/tywalch/electrodb/issues/507); You can now scan an index. [See docs](https://electrodb.dev/en/queries/scan/#scanning-an-index) Contribution provided by [@anatolzak](https://github.com/anatolzak)
 - [Issue #508](https://github.com/tywalch/electrodb/issues/508); Added support for INCLUDE projection type in index definitions, allowing selective attribute projection for optimized query performance and cost reduction. [See docs](https://electrodb.dev/en/recipes/include-projection-gsi) Contribution provided by [@anatolzak](https://github.com/anatolzak)
 
@@ -631,7 +631,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.6.2]
 ### Added
-- Fast follow to 3.6.0, relaxes projection attribute constraint on collection entities. 3.6.0 required [collection] member entities to all share the same attributes when using a `projection` defined index. This constraint came from the original scope of 3.6.0. Thankfully, due to the work of [@anatolzak](https://github.com/anatolzak), 3.6.0 shipped with robust collection typing and this no longer was a concern. 
+- Fast follow to 3.6.0, relaxes projection attribute constraint on collection entities. 3.6.0 required [collection] member entities to all share the same attributes when using a `projection` defined index. This constraint came from the original scope of 3.6.0. Thankfully, due to the work of [@anatolzak](https://github.com/anatolzak), 3.6.0 shipped with robust collection typing and this no longer was a concern.
 
 ## [3.7.0]
 ### Adds support for [multi-attribute indexes](https://aws.amazon.com/blogs/database/multi-key-support-for-global-secondary-index-in-amazon-dynamodb/) [read more](https://electrodb.dev/en/modeling/indexes/#multi-attribute-indexes).
@@ -639,3 +639,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.7.1]
 ### Added
 - [Issue #543](https://github.com/tywalch/electrodb/issues/543); New `client` option for `go()` method allowing dynamic DynamoDB client override at query execution time. This enables use cases like multi-region routing, per-request client selection, and easier testing. Supported for all operation types: entity operations, collection queries, batch operations, and transactions.
+
+## [3.7.2]
+### Added
+- [Issue #545](https://github.com/tywalch/electrodb/issues/545); Added support for passing an `abortSignal` to the `go()` query options, allowing users to cancel in-flight DynamoDB requests.
