@@ -2649,6 +2649,7 @@ export interface UpdateQueryOptions extends QueryOptions {
     | "updated_old"
     | "all_new"
     | "updated_new";
+  returnOnConditionCheckFailure?: "all_old" | "none";
 }
 
 export interface UpdateQueryParams {
@@ -2666,10 +2667,12 @@ export interface UpdateQueryParams {
 
 export interface DeleteQueryOptions extends QueryOptions {
   response?: "default" | "none" | "all_old";
+  returnOnConditionCheckFailure?: "all_old" | "none";
 }
 
 export interface PutQueryOptions extends QueryOptions {
   response?: "default" | "none" | "all_old" | "all_new";
+  returnOnConditionCheckFailure?: "all_old" | "none";
 }
 
 export type ParamOptions = {
@@ -2687,6 +2690,16 @@ export type ParamOptions = {
   order?: "asc" | "desc";
   consistent?: boolean;
 } & QueryExecutionComparisonParts;
+
+// SuccessData: the return type on success (varies by operation and `response` option).
+// ResponseType: the full entity item type, used on the rejected branch. DynamoDB returns
+// the existing (old) item on condition check failure, so this is always the full item.
+// The `| null` on the rejected branch covers cases where no item exists (e.g. patch/remove
+// on a non-existent item). For delete, SuccessData is already `T | null`, so both branches
+// resolve to `T | null` — this is intentional.
+type WithConditionCheck<SuccessData, ResponseType> =
+  | { rejected: false; data: SuccessData }
+  | { rejected: true; data: ResponseType | null };
 
 export interface BulkOptions extends QueryOptions {
   unprocessed?: "raw" | "item";
@@ -3181,6 +3194,11 @@ export type QueryRecordsGo<Item, S extends Schema<string, string, string>> = <
     }>
   : Promise<{ data: Array<Item>; cursor: string | null }>;
 
+type MaybeConditionCheck<O, SuccessData, ResponseType> =
+  O extends { returnOnConditionCheckFailure: "all_old" }
+    ? Promise<WithConditionCheck<SuccessData, ResponseType>>
+    : Promise<{ data: SuccessData }>;
+
 export type UpdateRecordGo<ResponseType, Keys> = <
   T = ResponseType,
   Options extends UpdateQueryOptions = UpdateQueryOptions,
@@ -3189,15 +3207,15 @@ export type UpdateRecordGo<ResponseType, Keys> = <
 ) => Options extends infer O
   ? "response" extends keyof O
     ? O["response"] extends "all_new"
-      ? Promise<{ data: T }>
+      ? MaybeConditionCheck<O, T, T>
       : O["response"] extends "all_old"
-      ? Promise<{ data: T }>
+      ? MaybeConditionCheck<O, T, T>
       : O["response"] extends "default"
-      ? Promise<{ data: Keys }>
+      ? MaybeConditionCheck<O, Keys, T>
       : O["response"] extends "none"
-      ? Promise<{ data: null }>
-      : Promise<{ data: Partial<T> }>
-    : Promise<{ data: Keys }>
+      ? MaybeConditionCheck<O, null, T>
+      : MaybeConditionCheck<O, Partial<T>, T>
+    : MaybeConditionCheck<O, Keys, T>
   : never;
 
 export type UpsertRecordGo<ResponseType, Keys> = <
@@ -3208,15 +3226,15 @@ export type UpsertRecordGo<ResponseType, Keys> = <
 ) => Options extends infer O
   ? "response" extends keyof O
     ? O["response"] extends "all_new"
-      ? Promise<{ data: T }>
+      ? MaybeConditionCheck<O, T, T>
       : O["response"] extends "all_old"
-      ? Promise<{ data: T }>
+      ? MaybeConditionCheck<O, T, T>
       : O["response"] extends "default"
-      ? Promise<{ data: Keys }>
+      ? MaybeConditionCheck<O, Keys, T>
       : O["response"] extends "none"
-      ? Promise<{ data: null }>
-      : Promise<{ data: Partial<T> }>
-    : Promise<{ data: Keys }>
+      ? MaybeConditionCheck<O, null, T>
+      : MaybeConditionCheck<O, Partial<T>, T>
+    : MaybeConditionCheck<O, Keys, T>
   : never;
 
 export type PutRecordGo<ResponseType> = <
@@ -3224,7 +3242,9 @@ export type PutRecordGo<ResponseType> = <
   Options extends PutQueryOptions = PutQueryOptions,
 >(
   options?: Options,
-) => Promise<{ data: T }>;
+) => Options extends infer O
+  ? MaybeConditionCheck<O, T, T>
+  : never;
 
 export type DeleteRecordOperationGo<ResponseType, Keys> = <
   T = ResponseType,
@@ -3234,13 +3254,13 @@ export type DeleteRecordOperationGo<ResponseType, Keys> = <
 ) => Options extends infer O
   ? "response" extends keyof O
     ? O["response"] extends "all_old"
-      ? Promise<{ data: T | null }>
+      ? MaybeConditionCheck<O, T | null, T>
       : O["response"] extends "default"
-        ? Promise<{ data: Keys }>
+        ? MaybeConditionCheck<O, Keys, T>
         : O["response"] extends "none"
-          ? Promise<{ data: null }>
-          : Promise<{ data: Keys | null }>
-    : Promise<{ data: Keys  }>
+          ? MaybeConditionCheck<O, null, T>
+          : MaybeConditionCheck<O, Keys | null, T>
+    : MaybeConditionCheck<O, Keys, T>
   : never;
 
 export type BatchWriteGo<ResponseType> = <O extends BulkOptions>(

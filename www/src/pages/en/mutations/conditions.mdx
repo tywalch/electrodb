@@ -271,6 +271,99 @@ animals.query
   .go();
 ```
 
+## Handling Condition Check Failures
+
+By default, when a condition expression fails (e.g. a `create` on an item that already exists), ElectroDB throws an error. The `returnOnConditionCheckFailure` execution option allows you to handle these failures gracefully by returning the existing item instead of throwing.
+
+This maps to DynamoDB's [`ReturnValuesOnConditionCheckFailure`](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_PutItem.html#DDB-PutItem-request-ReturnValuesOnConditionCheckFailure) parameter and is supported on all write operations: `put`, `create`, `update`, `patch`, `delete`, `remove`, and `upsert`.
+
+> **Note:** This feature requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`. Older v2 SDK versions do not include `ReturnValuesOnConditionCheckFailure` in their API model, so the parameter is silently stripped before reaching DynamoDB.
+
+### Response Format
+
+When `returnOnConditionCheckFailure` is set to `"all_old"`, the response shape changes to a discriminated union with a `rejected` property:
+
+```typescript
+// Condition passed — operation succeeded
+{ rejected: false, data: YourItem }
+
+// Condition failed — existing item returned (or null if no item exists)
+{ rejected: true, data: YourItem | null }
+```
+
+> When this option is _not_ provided, the response format is unchanged (`{ data: YourItem }`).
+
+### Example: Safe Create
+
+A common pattern is to attempt a `create` and gracefully handle the case where the item already exists:
+
+```typescript
+const result = await StoreLocations
+  .create({
+    cityId: "Atlanta1",
+    storeId: "LatteLarrys",
+    mallId: "EastPointe",
+    buildingId: "BuildingA1",
+    unitId: "B47",
+    category: "food/coffee",
+    leaseEndDate: "2020-03-22",
+    rent: "4500.00",
+  })
+  .go({ returnOnConditionCheckFailure: "all_old" });
+
+if (result.rejected) {
+  // The item already exists — result.data contains the existing item
+  console.log("Store already exists:", result.data);
+} else {
+  // The item was created successfully
+  console.log("Store created:", result.data);
+}
+```
+
+### Example: Conditional Update
+
+You can use `returnOnConditionCheckFailure` with `.where()` conditions to inspect the current state of an item when a condition fails:
+
+```typescript
+const result = await StoreLocations
+  .patch({ cityId: "Atlanta1", mallId: "EastPointe", storeId: "LatteLarrys", buildingId: "BuildingA1" })
+  .set({ rent: "5000.00" })
+  .where(({ rent }, { lt }) => lt(rent, "4000.00"))
+  .go({ returnOnConditionCheckFailure: "all_old" });
+
+if (result.rejected) {
+  // Condition failed — rent was not less than 4000.00
+  // result.data contains the current item so you can inspect it
+  console.log("Current rent:", result.data?.rent);
+} else {
+  // Update succeeded
+  console.log("Rent updated successfully");
+}
+```
+
+### Null Data on Rejection
+
+When the condition fails because the target item does not exist (e.g. a `patch` or `remove` on a non-existent item), `result.data` will be `null`:
+
+```typescript
+const result = await StoreLocations
+  .remove({ cityId: "Atlanta1", mallId: "EastPointe", storeId: "LatteLarrys", buildingId: "BuildingA1" })
+  .go({ returnOnConditionCheckFailure: "all_old" });
+
+if (result.rejected) {
+  // result.data is null — no item existed to return
+  console.log("Item did not exist:", result.data === null);
+}
+```
+
+### Combining with Other Options
+
+The `returnOnConditionCheckFailure` option can be combined with other execution options:
+
+- **`response`**: On success, the `data` field respects the `response` option (e.g. `"all_new"` returns the updated item). On rejection, `data` always contains the existing (old) item.
+- **`data`**: Works with `"raw"` and `"includeKeys"` — the rejected item is returned in the requested format.
+- **`originalErr`**: When set to `true`, the raw DynamoDB error is thrown even when `returnOnConditionCheckFailure` is set, bypassing the condition check handling.
+
 ## Advanced Usage
 
 ### Where with Complex Attributes

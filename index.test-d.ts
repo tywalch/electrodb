@@ -5383,3 +5383,78 @@ normalEntity2
       attr9?: number | undefined;
     }>(magnify(results.data));
   });
+
+// returnOnConditionCheckFailure type tests
+// Without option: return type has no `rejected` field
+entityWithSK.put(putItemFull).go().then((result) => {
+  expectType<typeof result.data>(result.data);
+  // @ts-expect-error - rejected should not exist without option
+  result.rejected;
+});
+
+// With returnOnConditionCheckFailure: "none" on put - no rejected field, same as default
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "none" }).then((result) => {
+  expectType<typeof result.data>(result.data);
+  // @ts-expect-error - rejected should not exist with "none"
+  result.rejected;
+});
+
+// With returnOnConditionCheckFailure: "none" on update - no rejected field
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "none" }).then((result) => {
+  expectType<typeof result.data>(result.data);
+  // @ts-expect-error - rejected should not exist with "none"
+  result.rejected;
+});
+
+// With returnOnConditionCheckFailure: "none" on delete - no rejected field
+entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: "none" }).then((result) => {
+  expectType<typeof result.data>(result.data);
+  // @ts-expect-error - rejected should not exist with "none"
+  result.rejected;
+});
+
+// With returnOnConditionCheckFailure: "all_old" on put - return type is discriminated union
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    // data is T | null on rejected branch
+    if (result.data !== null) {
+      expectType<string>(magnify(result.data.attr1));
+    }
+  } else {
+    expectType<false>(result.rejected);
+    expectType<string>(magnify(result.data.attr1));
+  }
+});
+
+// With returnOnConditionCheckFailure: "all_old" on update - discriminated union
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+  } else {
+    expectType<false>(result.rejected);
+    // default response for update returns key attributes
+    expectType<string>(magnify(result.data.attr2));
+  }
+});
+
+// With returnOnConditionCheckFailure: "all_old" on update with response: "all_new"
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "all_old", response: "all_new" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+  } else {
+    expectType<false>(result.rejected);
+    // all_new response type includes entity attributes
+    result.data.attr6;
+  }
+});
+
+// With returnOnConditionCheckFailure: "all_old" on delete - discriminated union
+entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<string>(magnify(result.data.attr2));
+  }
+});

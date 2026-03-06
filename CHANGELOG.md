@@ -639,3 +639,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.7.1]
 ### Added
 - [Issue #543](https://github.com/tywalch/electrodb/issues/543); New `client` option for `go()` method allowing dynamic DynamoDB client override at query execution time. This enables use cases like multi-region routing, per-request client selection, and easier testing. Supported for all operation types: entity operations, collection queries, batch operations, and transactions.
+
+## [3.7.2]
+### Added
+- New `returnOnConditionCheckFailure` execution option for write operations (`put`, `create`, `update`, `patch`, `delete`, `remove`, `upsert`). When set to `"all_old"`, a write that fails due to a condition expression will return the existing item instead of throwing an error. The response includes a `rejected` property to indicate success or failure. This maps to DynamoDB's `ReturnValuesOnConditionCheckFailure` parameter. Requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`.
