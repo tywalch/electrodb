@@ -654,3 +654,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.7.5]
 - [Issue #554](https://github.com/tywalch/electrodb/issues/554); Fixed `hydrate: true` returning no items when querying composite type indexes with `keys_only` or `include` projections.
+
+## [3.8.0]
+### Added
+- New `returnOnConditionCheckFailure` execution option for write operations (`put`, `create`, `update`, `patch`, `delete`, `remove`, `upsert`). When set to `"all_old"`, a write that fails due to a condition expression will return the existing item instead of throwing an error. The response includes a `rejected` property to indicate success or failure. This maps to DynamoDB's `ReturnValuesOnConditionCheckFailure` parameter. Requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`.
